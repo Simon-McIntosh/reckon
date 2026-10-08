@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "a8d228247",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-08T09:28:02.622Z",
+  "dispatched_at": "2026-10-08T09:17:39Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/lane-and-model-routing/gate-evidence-renders-as-written.html",
+      "line": "16",
+      "severity": "follow-on",
+      "text": "follow-on: the Head row records \"92 passed, 19 skipped in 38.97s\" while the reviewed run's own head.log summary line reads \"92 passed, 19 skipped in 28.47s\", so a landed metric is not the cited log's own summary line; the pass and skip counts agree and only the wall-clock differs, so no result changes."
+    }
+  ],
+  "head_log_revision": "7f0275c48267442d11c863e04fa597acdd2557f5",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit 7f0275c48 against base a8d228247; one commit, three files, 218 insertions and 1 deletion \u2014 the new gateEvidenceIsReference grammar and the GateTable branch in docs/ui/plan.jsx, a 162-line test module, and a 19-line landed-report fragment.",
+    "done_when": "the done-when asks for a test that renders a prose-evidence gate with no link and a reference-evidence gate that links to the anchor; tests/test_gate_evidence_renders_as_written.py:122 and :138 assert exactly those two cases over the plan view's own GateTable, and I re-ran the file at head 7f0275c48 (6 passed, EXIT=0, review-head-gate.log).",
+    "goal": "the node's goal is that docs/ui/plan.jsx render a gate's evidence as a link only when the value parses as an anchor reference and as text when it is prose; docs/ui/plan.jsx:184 now branches on gateEvidenceIsReference(gate.evidence), linking a reference and rendering prose in span.r-gate-evidence-prose, matching the goal.",
+    "manifest": "read; it records status complete, commit 7f0275c48, both gate arms with their logs (base a8d228247 86 passed/19 skipped, head 7f0275c48 92 passed/19 skipped), the negative-control log, and the module-eval rationale; its account matches the diff and logs I read.",
+    "write_paths": "read the manifest's declared paths; git diff a8d228247 7f0275c48 touches only docs/ui/plan.jsx, tests/test_gate_evidence_renders_as_written.py and docs/evidence/fragments/lane-and-model-routing/gate-evidence-renders-as-written.html, all inside the declared scope."
+  },
+  "justifications": {
+    "durability": "the reviewed negative control (negative-control.log) reinstates the unconditional <a href> and reddens the three prose-evidence tests (EXIT=1), and because the new tests extract the grammar and GateTable from docs/ui/plan.jsx a revert also makes tests/test_gate_evidence_renders_as_written.py:52 raise, so the guard fails on the regression it guards.",
+    "evidence": "tests/test_gate_evidence_renders_as_written.py renders the plan view's own GateTable through tests/spa_module_eval.py and its 6 tests pass at head (review-head-gate.log 6 passed, EXIT=0; the run's head.log 92 passed/19 skipped), though the render is the module element tree rather than a DOM.",
+    "fit": "the new test follows the existing tests/spa_module_eval.evaluate_jsx_module idiom used by five peers (tests/test_spa_plan_checklist.py, tests/test_spa_dag_layout.py), and the added names carry no plan, version or ticket label.",
+    "goal_fidelity": "docs/ui/plan.jsx:181-188 links only a value gateEvidenceIsReference accepts and renders prose as span.r-gate-evidence-prose, which is exactly the \u00a711 goal.",
+    "reuse": "no client-side reference-grammar owner exists; the grammar mirrors reckon/_schema.py:229-234's _REF_SEGMENT/_PROJECT_SEGMENT and the comment names that owner, so the addition extends a capability the repository owns rather than forking an unrelated one.",
+    "scope_discipline": "git diff a8d228247 7f0275c48 --name-status is exactly the three declared paths, with no other SPA module and no Python source touched."
+  },
+  "node": "review-of-gate-evidence-renders-as-written",
+  "plan": "reckon:lane-and-model-routing",
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: a8d2282474a26399e2d5233ae1437e63c1073130\nreviewed_head_sha: 7f0275c48267442d11c863e04fa597acdd2557f5\nVERDICT goal: the node's goal is that docs/ui/plan.jsx render a gate's evidence as a link only when the value parses as an anchor reference and as text when it is prose; docs/ui/plan.jsx:184 now branches on gateEvidenceIsReference(gate.evidence), linking a reference and rendering prose in span.r-gate-evidence-prose, matching the goal.\nVERDICT done_when: the done-when asks for a test that renders a prose-evidence gate with no link and a reference-evidence gate that links to the anchor; tests/test_gate_evidence_renders_as_written.py:122 and :138 assert exactly those two cases over the plan view's own GateTable, and I re-ran the file at head 7f0275c48 (6 passed, EXIT=0, review-head-gate.log).\nVERDICT write_paths: read the manifest's declared paths; git diff a8d228247 7f0275c48 touches only docs/ui/plan.jsx, tests/test_gate_evidence_renders_as_written.py and docs/evidence/fragments/lane-and-model-routing/gate-evidence-renders-as-written.html, all inside the declared scope.\nVERDICT manifest: read; it records status complete, commit 7f0275c48, both gate arms with their logs (base a8d228247 86 passed/19 skipped, head 7f0275c48 92 passed/19 skipped), the negative-control log, and the module-eval rationale; its account matches the diff and logs I read.\nVERDICT diff: read commit 7f0275c48 against base a8d228247; one commit, three files, 218 insertions and 1 deletion \u2014 the new gateEvidenceIsReference grammar and the GateTable branch in docs/ui/plan.jsx, a 162-line test module, and a 19-line landed-report fragment.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: docs/ui/plan.jsx:181-188 links only a value gateEvidenceIsReference accepts and renders prose as span.r-gate-evidence-prose, which is exactly the \u00a711 goal.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_gate_evidence_renders_as_written.py renders the plan view's own GateTable through tests/spa_module_eval.py and its 6 tests pass at head (review-head-gate.log 6 passed, EXIT=0; the run's head.log 92 passed/19 skipped), though the render is the module element tree rather than a DOM.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff a8d228247 7f0275c48 --name-status is exactly the three declared paths, with no other SPA module and no Python source touched.\nSCORE durability: 19\nJUSTIFICATION durability: the reviewed negative control (negative-control.log) reinstates the unconditional <a href> and reddens the three prose-evidence tests (EXIT=1), and because the new tests extract the grammar and GateTable from docs/ui/plan.jsx a revert also makes tests/test_gate_evidence_renders_as_written.py:52 raise, so the guard fails on the regression it guards.\nSCORE fit: 19\nJUSTIFICATION fit: the new test follows the existing tests/spa_module_eval.evaluate_jsx_module idiom used by five peers (tests/test_spa_plan_checklist.py, tests/test_spa_dag_layout.py), and the added names carry no plan, version or ticket label.\nSCORE reuse: 19\nJUSTIFICATION reuse: no client-side reference-grammar owner exists; the grammar mirrors reckon/_schema.py:229-234's _REF_SEGMENT/_PROJECT_SEGMENT and the comment names that owner, so the addition extends a capability the repository owns rather than forking an unrelated one.\nFINDING docs/evidence/fragments/lane-and-model-routing/gate-evidence-renders-as-written.html:16 follow-on: the Head row records \"92 passed, 19 skipped in 38.97s\" while the reviewed run's own head.log summary line reads \"92 passed, 19 skipped in 28.47s\", so a landed metric is not the cited log's own summary line; the pass and skip counts agree and only the wall-clock differs, so no result changes.",
+  "review_run_id": "r-20261008T091705362102-review-of-gate-evidence-renders-as-written",
+  "reviewed_base_sha": "a8d2282474a26399e2d5233ae1437e63c1073130",
+  "reviewed_head_sha": "7f0275c48267442d11c863e04fa597acdd2557f5",
+  "reviewed_run_id": "r-20261008T084900561128-gate-evidence-renders-as-written",
+  "reviewed_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-picker/gate-evidence-renders-as-written",
+  "reviewer_node": "review-of-gate-evidence-renders-as-written",
+  "reviewer_run_id": "r-20261008T091705362102-review-of-gate-evidence-renders-as-written",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T09:26:08.734543+00:00",
+  "total": 116
+}
