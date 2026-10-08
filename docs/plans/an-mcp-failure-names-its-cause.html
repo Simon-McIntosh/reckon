@@ -21,14 +21,14 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="reckon-reads-answer-in-seconds">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;}">
   <title>An MCP Failure Names Its Cause | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-impl" content="0.64">
-<meta name="plan-version" content="77">
+<meta name="plan-impl" content="0.73">
+<meta name="plan-version" content="78">
 <meta name="plan-modified" content="2026-10-08">
-<meta name="plan-commits" content="cff2bbed,e52b056f">
+<meta name="plan-commits" content="cff2bbed,e52b056f,abb84ca7">
 </head>
 <body>
   <main class="plan-doc">
@@ -74,53 +74,12 @@
       <code>imas-codex serve</code> processes of about 610 MB resident each, roughly 12 GB of a 120 GB
       allocation, most of them in workers that never called the graph.</p>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-08</span>
     <h2 id="s2">§2 — reckon doctor names every MCP failure's cause</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> <code>reckon doctor</code> gains an MCP connections check that reads
-      Claude Code's MCP connection logs and reports, per server, how many connections it saw and how many
-      failed, grouped by cause. The census is a function in a new module <code>reckon/mcp_census.py</code> that
-      takes an explicit window, a start and an end instant; the doctor block calls it for the seven days ending
-      now. Each cause carries its count, newest occurrence, one example log path and the kind of working
-      directory it failed in: main checkout, worker worktree or temporary directory. The census reads that kind with
-      <code>_in_linked_worktree</code> in <code>reckon/cli_entry.py</code>, the existing owner of whether a path is a linked
-      worktree, and a directory under the system temporary directory reads as temporary; it re-derives neither. Most failing
-      directories are gone by the time the census reads them: 1,453 of 1,500 sampled connection records name a directory that no
-      longer exists, and 1,450 of those sit under a <code>reckon-worktrees</code> root. <code>_in_linked_worktree</code> answers
-      false for a missing path, so a missing path is classified by where it sat instead.
-      <code>_repository_named_by_worktree</code> in <code>reckon/hooks/coordinator_obligations.py</code> already reads, from the path
-      alone and without git, which repository a <code>.reckon-worktrees</code> path belongs to, so it answers for a worktree that has
-      been reaped. The census calls it: a missing path it names reads as a worker worktree of that repository. A missing path under the
-      system temporary directory, which holds the legacy <code>reckon-worktrees</code> pool, reads as temporary. Any other missing path
-      reads as gone, never as a main checkout. The fixture log tree in the done-when
-      includes one failure whose worktree directory has been removed, and it is counted as a worker worktree. The causes are the
-      signatures in §1's table, matched by a table of patterns in the same module. A failure no pattern matches
-      is reported as unclassified with its first line rather than dropped, because the next unknown cause is the
-      one this check exists to surface. It also counts <code>storage-slow</code> tool results per tool over the
-      same window: it enumerates transcript files through <code>transcript_index</code> in
-      <code>reckon/velocity.py</code>, the owner of locating Claude Code transcripts, called with that module's
-      <code>TRANSCRIPT_ROOT</code> rather than a root the census resolves itself, and walks their
-      tool-result blocks. That walk is inline in <code>promotion_receipts</code> in <code>reckon/velocity.py</code>, the loop over
-      <code>record["message"]["content"]</code>, so it is extracted into one helper there that <code>promotion_receipts</code> and the
-      census both call, rather than copied. <code>promotion_receipts</code> behaves as before, held by its existing tests. The census
-      adds only the <code>storage-slow</code> count, which no reader has, matching the sentinel through
-      <code>STORAGE_SLOW</code> in <code>reckon/_mcp_tools.py</code>, its one definition, rather than a second spelling. The section adds one module, <code>reckon/mcp_census.py</code>, and one public function in it, the census; nothing
-      is retired, because no existing reader counts MCP connections or <code>storage-slow</code> results, and the doctor block and an
-      agent asking for another window both call that one function. The check adds no command and
-      no option: it is one more block in <code>reckon doctor</code>'s existing report, and an agent that wants
-      the figures for another window calls the census function. It reads and never writes, and its runtime is
-      bounded by naming the log directories it walks.</p>
-    <p><strong>Done when</strong> <code>tests/test_mcp_census.py</code> builds a fixture log tree holding one
-      connection per signature in §1 plus one clean connection and one unmatched failure, and a fixture transcript
-      holding two <code>storage-slow</code> tool results from <code>read_plan</code> and one from <code>roadmap</code>. It asserts that every
-      signature lands in its cause with the right count, the unmatched failure is reported as unclassified, the
-      clean connection counts as a success, the transcript count reads two for <code>read_plan</code> and one for
-      <code>roadmap</code>, and the doctor block prints the census function's figures. A negative control is
-      executed and logged: with the pattern table emptied, every failure reports as unclassified and the test
-      fails; a second, with the tool-result reader returning nothing, fails the transcript count. Run against the real log tree on the fleet node for the window 2026-10-01T01:00:00Z to
-      2026-10-08T01:00:00Z, the census function reproduces §1's imas-cx <code>CONNECTION_CLOSED</code> count within 5%, in a log written to the
-      run directory. The write paths are
-      <code>reckon/mcp_census.py</code>, <code>reckon/project_maintenance_commands.py</code> (where <code>reckon doctor</code> is defined) and <code>reckon/velocity.py</code>, for the extracted walk, and <code>tests/test_mcp_census.py</code>. The tests that import
-      <code>reckon.velocity</code> pass at the head.</p>
+<section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">reckon doctor reports MCP connections by server and failure cause from Claude Code's connection logs; imas-cx CONNECTION_CLOSED reproduces at 1,065 of §1's 1,068. Review 115. <a href="/reckon/evidence/archive/an-mcp-failure-names-its-cause-landed.html#s2-doctor-census">full record</a></p>
+</section>
 
     <section class="section-landed">
   <header><span class="badge badge-shipped">&#10003; landed 2026-10-08</span>
@@ -266,10 +225,11 @@
     <pre class="r-fu-prompt">/reckon-build an-mcp-failure-names-its-cause §8</pre>
     <p class="r-fu-outcome">§8 and §9 landed; the remaining wave is f-amfc-003</p>
     </article>
-<article class="r-fu" data-id="f-amfc-003" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-build" data-written-at="2026-10-08" data-recommends-skill="/reckon-build an-mcp-failure-names-its-cause §2" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-amfc-003" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-build" data-written-at="2026-10-08" data-recommends-skill="/reckon-build an-mcp-failure-names-its-cause §2" data-resolved-at="2026-10-08T16:15:48+00:00" data-resolved-by="s25-quiet-mcp">
     <h4 class="r-fu-title">Build the census, the launch check, the fenced live read, the schema key and the index-backed summary</h4>
     <div class="r-fu-body"><p>§10 (<code>reckon/crew/runs.py</code>) and §12 (<code>reckon/mcp.py</code>, <code>reckon/metadata_index.py</code>) can run together. §2 and then §5 edit the CLI and run in sequence once no other live claim holds it. §11 admits <code>worker_mcp_servers</code> as a reckon-owned flight key.</p></div>
     <pre class="r-fu-prompt">/reckon-build an-mcp-failure-names-its-cause §2</pre>
+    <p class="r-fu-outcome">§2 landed at abb84ca78: reckon doctor names every MCP failure's cause.</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -332,6 +292,9 @@
 </div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261008T102241291974-summary-view-reads-the-index" data-who="reckon-build" data-when="2026-10-08T11:11:00.861Z">
     <div class="r-comment-body"><p>The summary view of one plan takes its plan inventory from the persisted metadata index — read when the tree's shape is unchanged by the directories' stat identity, and walking the corpus only to rebuild a stale index — and resolves the selected document at its canonical path, so a warm review of one plan scans 0 directories at 5 and at 60 plans against 33 and 198 before the change (§12).</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-s2-landed" data-who="reckon-build" data-when="2026-10-08T16:20:00Z">
+    <div class="r-comment-body"><p>gate passed (6 passed EXIT=0; 20 importer modules, 348 passed at the merged head; review 115/120, zero added); section 2 closed. Follow-ons folded into §13.</p></div>
 </div>
 </section>
 </main>
