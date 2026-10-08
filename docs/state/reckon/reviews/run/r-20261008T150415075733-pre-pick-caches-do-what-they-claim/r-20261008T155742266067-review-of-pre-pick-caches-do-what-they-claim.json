@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "0 added: after_suite.failure_ids [] minus baseline_suite.failure_ids [tests/test_pre_pick_state_reads_once.py::test_the_second_dispatch_runs_no_git, tests/test_pre_pick_state_reads_once.py::test_a_worktree_and_its_mount_probe_once].",
+  "base_log_revision": "1f00bba4537b70316bda7a03b15d06e6be515e8b",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-08T16:04:23.399Z",
+  "dispatched_at": "2026-10-08T15:58:08Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_sections.py",
+      "line": "105",
+      "severity": "follow-on",
+      "text": "follow-on: plan section 22 item 1 directs keying the memo by the git common directory; the head keys by the resolved path string probed and aliases the result under the resolved repository-root path, so a mount probed before its worktree, or two linked worktrees, still each probe. The comment and evidence were relaxed to describe that narrower key rather than the mechanism brought up to the claim."
+    },
+    {
+      "file": "tests/test_pre_pick_state_reads_once.py",
+      "line": "342",
+      "severity": "follow-on",
+      "text": "follow-on: the section 22 done-when reads 'the driver's git-invocation count is zero at head and non-zero at base', but the test discriminates base on the first dispatch's probe count (1 at head, 2 at base); at base the second dispatch is itself zero because the path-string cache already holds the worktree spelling it names, so the premise does not hold for a repeated spelling."
+    },
+    {
+      "file": "docs/figures/one-typesafe-model-picker/pre-pick-caches-do-what-they-claim",
+      "line": "",
+      "severity": "follow-on",
+      "text": "follow-on: the declared figure write path was granted but no figure was produced; the evidence fragment carries the 2-probe-to-1-probe result in a table only, so a graphic showing the probe-count comparison the section exists to demonstrate is absent."
+    }
+  ],
+  "head_log_revision": "e0d97794daecab2d30b9b498c837238ec9cf6256",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "repository_identity_once is called only from resolve_project_repository (dispatch_sections.py:105); resolve_project_repository is called from dispatch, dispatch_plan, dispatch_sessions, recovery, resumption, promotion and crew_dispatch_commands.",
+    "diff": "a real diff: the identity memo is keyed by the resolved path string probed and aliased under the resolved repository-root path; the test file gains behavioural sweep and git-count guards; two evidence fragments and the memo comment are rewritten to state the real key.",
+    "done_when": "met for items 1 and 2 and by disclosed redefinition for item 3: a worktree path and then its mount probe once (7 passed EXIT=0 at head; 2 failed/5 passed EXIT=1 at base); the sweep test reddens when the grace stops being applied (EXIT=1) and the identity guard reddens under the path-string key (EXIT=1). Item 3's literal 'zero at head and non-zero at base' is met only by moving the section 22 discriminator to the first dispatch.",
+    "goal": "close the three places section 22 names where section 13's caches and guards claimed more than they did: key the identity memo so a worktree path and its mount cost one probe, exercise the sweep's grace rather than assert its source mentions it, and count git invocations instead of wall clock.",
+    "manifest": "read; records base=1f00bba4537b..., commits f74fda9f2 and e0d97794d, retry_failures, negative-control and sweep-control logs, and baseline_suite/after_suite JSON.",
+    "write_paths": "f74fda9f2 changes reckon/crew/dispatch_sections.py, tests/test_pre_pick_state_reads_once.py and both section 13 evidence fragments, all declared; e0d97794d rewrites the identity comment and the same fragments; reviewed worktree clean at e0d97794d; the declared figure path received no file."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: close the three places section 22 names where section 13's pre-pick caches and guards claimed more than they did \u2014 key the identity memo so a worktree path and its mount cost one probe, exercise the orphan sweep's grace instead of asserting its source mentions it, and count git invocations rather than wall clock.\nVERDICT done_when: met for items 1 and 2 and by disclosed redefinition for item 3. I reproduced the head arm (7 passed EXIT=0, review-head-focused.log) and the base arm (2 failed/5 passed EXIT=1, review-base-focused2.log) in the reviewed run's own scratch trees; the two failing base ids are exactly test_a_worktree_and_its_mount_probe_once and test_the_second_dispatch_runs_no_git. The sweep guard reddens when the grace stops being applied (review-sweep.log, EXIT=1) and the identity guard reddens when the memo is keyed by the path string alone (review-nc.log, EXIT=1). Item 3's literal 'zero at head and non-zero at base' is met only by moving the discriminator to the first dispatch's probe count (1 head/2 base); the second dispatch is zero at base too, and the worker disclosed this in follow_ons.\nVERDICT write_paths: commit f74fda9f2 touches reckon/crew/dispatch_sections.py, tests/test_pre_pick_state_reads_once.py and both section 13 evidence fragments, all declared; commit e0d97794d additionally rewrites only the identity comment and the same fragments. The reviewed worktree is clean at e0d97794d. The declared figure path docs/figures/one-typesafe-model-picker/pre-pick-caches-do-what-they-claim received no file.\nVERDICT manifest: read; it records base=1f00bba4537b..., commits f74fda9f2 and e0d97794d, its retry_failures, the negative-control and sweep-control logs, and baseline_suite/after_suite JSON, from which the added-failure count and ids below are derived.\nVERDICT diff: a real repository diff. repository_identity_once records each probe under the resolved path string probed and aliases the result under the resolved repository-root path it returned, so the mount after the worktree is answered without a probe; the test file replaces the source-assertion sweep guard with a behavioural one and swaps the wall-clock driver for a git-invocation count; the two evidence fragments and the memo comment are rewritten to state the key the mechanism actually uses (a path-string key aliased by the resolved repository root, not the git common directory).\nCALL_SITES: repository_identity_once is called only from resolve_project_repository (reckon/crew/dispatch_sections.py:105); resolve_project_repository is called from dispatch, dispatch_plan, dispatch_sessions, recovery, resourced resumption, promotion and crew_dispatch_commands.\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: all three items are implemented and each guard is behavioural, but the plan directs keying the memo by the git common directory (item 1) and the code instead keeps a path-string key aliased by the resolved repository-root path; the fix commit relaxed the comment and evidence to match that mechanism rather than strengthening it, and the code's own comment states that a mount probed before its worktree, or two linked worktrees, still probe separately. Item 3's done-when holds only by moving the discriminating assertion to the first dispatch.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate logs open with rev/tree/cwd/module/cmd and end EXIT=, and I independently reproduced the head arm (7 passed EXIT=0), the base arm (2 failed/5 passed EXIT=1), the path-string mutation control (test_a_worktree_and_its_mount_probe_once reddens, EXIT=1) and the sweep mutation control (test_the_orphan_sweep_removes_by_the_stated_grace reddens, EXIT=1).\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path both commits change is a declared write path, and the reviewed worktree is clean at e0d97794d; the slack is the declared figure path, which received no file, so the graphic the section exists to show is absent.\nSCORE durability: 17\nJUSTIFICATION durability: both new behaviours are pinned by repository tests that live in the suite, not by a report script, and the two mutation controls show each guard is load-bearing; the guards depend on private internals (dispatch_sections._REPOSITORY_IDENTITIES, routing._scratch_ctime), which couples them to implementation details.\nSCORE fit: 17\nJUSTIFICATION fit: the change extends the existing identity and sweep idioms and the tests read clearly, but they reach into private module state, which is acceptable in a unit test yet brittle to a refactor of the memo's representation.\nSCORE reuse: 18\nJUSTIFICATION reuse: repository_identity_once composes the existing reckon.crew.node.repository_identity probe rather than reimplementing the git-common-dir logic, and the sweep test drives the real garbage_collect_orphan_scratch.\nFINDING reckon/crew/dispatch_sections.py:105 follow-on: plan section 22 item 1 directs keying the identity memo by the git common directory 'as claimed'. The head instead keys by the resolved path string probed and aliases the result under the resolved repository-root path; the comment and both evidence fragments were rewritten to describe that weaker key, and the memo comment itself records that a mount probed before its worktree, or two linked worktrees of one repository, still each pay a probe. The named done-when (worktree path then its mount runs the probe once) is met, but the mechanism is a narrow order-dependent collapse rather than the repository-keyed cache the plan prescribed.\nFINDING tests/test_pre_pick_state_reads_once.py:342 follow-on: item 1's done-when is satisfied by moving the discriminating assertion to the first dispatch. The test asserts len(calls)==1 after the worktree+mount resolution (2 at base) and asserts the second dispatch runs none; the second dispatch is zero at base too, because the base path-string cache already holds the worktree spelling it names, so the plan's stated discriminator 'the driver's git-invocation count is zero at head and non-zero at base' does not hold for the second dispatch. The worker disclosed this in follow_ons.\nFINDING docs/figures/one-typesafe-model-picker/pre-pick-caches-do-what-they-claim follow-on: the declared figure write path was granted but no figure was produced; the evidence fragment carries the 2-probe-to-1-probe result in a table only, so the probe-count comparison the section exists to demonstrate has no graphic.\n",
+  "review_run_id": "r-20261008T155742266067-review-of-pre-pick-caches-do-what-they-claim",
+  "reviewed_base_sha": "1f00bba4537b70316bda7a03b15d06e6be515e8b",
+  "reviewed_head_sha": "e0d97794daecab2d30b9b498c837238ec9cf6256",
+  "reviewed_run_id": "r-20261008T150415075733-pre-pick-caches-do-what-they-claim",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 17,
+    "goal_fidelity": 16,
+    "reuse": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T16:11:59.994506+00:00",
+  "total": 105
+}
