@@ -8,9 +8,9 @@
   <meta name="artifact-kind" content="evidence">
   <meta name="plan-evidence-for" content="reckon:one-typesafe-model-picker">
   <meta name="plan-verifies" content="reckon:one-typesafe-model-picker#s6">
-  <meta name="evidence-verdict" content="fail">
+  <meta name="evidence-verdict" content="pass">
   <meta name="evidence-date" content="2026-10-08">
-  <meta name="evidence-commit" content="4789b9d81">
+  <meta name="evidence-commit" content="d1c0ec689">
   <title>budget-view-is-cached | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -19,7 +19,7 @@
 <main class="plan-doc">
 <section id="budget-view-is-cached">
   <h2 id="budget-view-is-cached-heading">The picker's budget view is cached on its input files</h2>
-  <p id="budget-view-is-cached-body">Base <code>7c882130d</code>, head <code>4789b9d81</code>. The
+  <p id="budget-view-is-cached-body">Base <code>7c882130d</code>, head <code>d1c0ec689</code>. The
   picker's budget view is composed through the stamped pick-input cache that the context census and
   the estimated-hours read already use, keyed on the stamps of every file it reads - the paid-lanes
   document, the banked-reset record, the lane documents and the ledger index. Time-derived fields
@@ -34,10 +34,23 @@
   (<code>read_counts [2747, 6, 6]</code>).</p>
 
   <p id="budget-view-is-cached-tests"><strong>Tests.</strong>
-  <code>tests/test_budget_view_is_cached.py</code>: <strong>4 passed</strong>, <code>EXIT=0</code> -
+  <code>tests/test_budget_view_is_cached.py</code>: <strong>6 passed</strong>, <code>EXIT=0</code> -
   equality (cached == uncached at a pinned clock), second call rebuilds nothing (preflight not
-  re-entered, paid-lanes document not re-opened), touch invalidation, and age advance changing the
-  age fields but not the file-derived ones.</p>
+  re-entered, paid-lanes document not re-opened), touch invalidation, age advance changing the age
+  fields but not the file-derived ones, and the two attribution cases below.</p>
+
+  <p id="budget-view-is-cached-attribution"><strong>The cache failure is kept off the input-error map.</strong>
+  The dispatcher builds the ledger rows, the verdict inputs and the budget view behind one guard each,
+  recording a failure against the input that raised. The cache was not the dispatch's authority: its
+  request key called <code>len(None)</code> when the rows could not be read, so this input raised too
+  and <code>budget_snapshot</code> entered the recorded errors beside <code>records</code> - a failure
+  misattributed to the view. The first head gate proved it: the ledger rows failing put
+  <code>budget_snapshot</code> beside <code>records</code> in
+  <code>selection["input_errors"]</code>. The request key now tolerates an absent records input, and
+  the cached path falls back to the direct, uncached composition if the key, the build, the stamping or
+  the re-age raises. Two cases state it - an absent records input composes rather than raises, and a
+  raising cache falls back to the direct composition - and every input's failure stays attributed to
+  its own name.</p>
 
   <p id="budget-view-is-cached-negative"><strong>Declared negative control</strong>: drop the per-call
   recompute of the age fields; the age test must fail. Executed: the age recompute neutralized in
@@ -47,21 +60,13 @@
 
   <p id="budget-view-is-cached-gate"><strong>Gate</strong> (every <code>tests/test_picker*.py</code>,
   <code>test_pick_candidates_one_pass.py</code>, <code>test_estimated_hours_reads_one_plan.py</code>,
-  <code>test_budget_group_declaration.py</code> and the new file; <code>-n 6</code>). Base arm
-  (<code>git archive</code> extraction of <code>7c882130d</code>): <strong>1 failed / 185 passed</strong>,
-  <code>EXIT=1</code>, id <code>test_picker_in_dispatch.py::test_null_route_names_exclusions</code>;
-  log <code>gate_base.log</code>. Head arm: <strong>1 failed / 189 passed</strong>, <code>EXIT=1</code>,
-  id <code>test_picker_inputs_never_block_dispatch.py::test_a_failing_picker_input_never_blocks_dispatch[records]</code>;
-  log <code>gate_head.log</code>.</p>
-
-  <p id="budget-view-is-cached-regression"><strong>Verdict: fail - one added failure.</strong> The base
-  failure does not reproduce on head (it passes in isolation), and the head failure does not reproduce
-  on base, so the two are not the same defect. On head, when the <code>records</code> picker input
-  fails, the view also raises and <code>budget_snapshot</code> enters
-  <code>selection["input_errors"]</code>: <code>assert {'budget_snapshot', 'records'} == {'records'}</code>.
-  The cached call path now propagates an error the direct composition tolerated; the cache lookup or
-  the request-key build must fall back to the direct composition, or swallow its own failure, so a
-  failing neighbouring input never adds an error of its own.</p>
+  <code>test_budget_group_declaration.py</code> and the new file). Base arm (a <code>git archive</code>
+  extraction of <code>7c882130d</code> under <code>$TMPDIR</code>): <strong>186 passed</strong>,
+  <code>EXIT=0</code>; log <code>gate_base.log</code>. Head arm (the node worktree):
+  <strong>192 passed</strong>, <code>EXIT=0</code>; log <code>gate_head.log</code>. Delta +6 = the six
+  added cases; zero added failure ids. The
+  <code>test_picker_inputs_never_block_dispatch.py::test_a_failing_picker_input_never_blocks_dispatch[records]</code>
+  id the first head gate added now passes.</p>
 </section>
 </main>
 </body>
