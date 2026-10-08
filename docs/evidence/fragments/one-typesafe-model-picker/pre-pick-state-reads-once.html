@@ -38,6 +38,8 @@ stated below with the reproduction that failed on the base revision
 <tbody>
 <tr><th>New tests at head</th><td>6 passed, EXIT=0</td><td><code>tests/test_pre_pick_state_reads_once.py</code></td></tr>
 <tr><th>New tests at base</th><td>4 failed, 2 passed, EXIT=1</td><td>Items 1&ndash;4 each fail on the base revision</td></tr>
+<tr><th>Gate suite at head</th><td>260 passed, 1 failed, EXIT=1</td><td>The single failure is pre-existing at base</td></tr>
+<tr><th>Gate suite at base</th><td>256 passed, 5 failed, EXIT=1</td><td>Added failures against base: 0</td></tr>
 <tr><th>Negative control</th><td>1 failed, EXIT=1: <code>test_a_refused_index_refresh_returns_rows_with_an_age_and_no_aggregate_scan</code></td><td>The declared mutation makes a refused refresh fall back to a full aggregate scan</td></tr>
 <tr><th>Timed driver, second dispatch's pre-pick stages</th><td>under 0.5 s</td><td>Run in a local fixture; it also passes at base there, because a local git probe is milliseconds. The census's 1.7 s median was GPFS latency a fixture cannot reproduce.</td></tr>
 </tbody></table>
@@ -49,6 +51,6 @@ stated below with the reproduction that failed on the base revision
 <tr><th>Product paths</th><td><code>reckon/crew/dispatch_sections.py</code>, <code>reckon/ledger.py</code>, <code>reckon/crew/routing.py</code></td></tr>
 <tr><th>Tests</th><td><code>tests/test_pre_pick_state_reads_once.py</code></td></tr>
 <tr><th>Durable run directory</th><td><code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T124244188927-pre-pick-state-reads-once</code></td></tr>
-<tr><th>Gate receipts</th><td><code>base-arm-repro.log</code>, <code>head-arm.log</code>, <code>negative-control.log</code></td></tr>
+<tr><th>Gate receipts</th><td><code>base-arm-repro.log</code>, <code>base-arm-gate.log</code>, <code>head-arm.log</code>, <code>negative-control.log</code></td></tr>
 </tbody></table>
 </article></main></body></html>
