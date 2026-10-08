@@ -1,0 +1,62 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T02:42:53.185Z",
+  "dispatched_at": "2026-10-08T02:27:12Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/an-mcp-failure-names-its-cause.html:96",
+      "id": "done_when-1",
+      "reason": "as written the gate can only pass on the author's own day and every later worker reads a red or unreproducible measure, so the plan must restore a window parameter or compare against a recorded count.",
+      "text": "the fleet-node check \"reproduces \u00a71's imas-cx CONNECTION_CLOSED count within 5% for the same window\", but the changed \u00a72 says the census reads only \"the last seven days\" and the earlier `--since` option was removed, so the census cannot be pointed at \u00a71's window (2026-10-01..10-08) \u2014 the count moves with each day's roll-off (~545 connections/day against \u00a71's 1,068), exceeding the 5% band the gate asserts",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/an-mcp-failure-names-its-cause.html:85",
+      "id": "reasoning-1",
+      "reason": "a worker following \u00a72 finds its named functions cannot count the deliverable, and the \"changes nothing\" clause removes the one in-scope route to fix it, so the plan must name the tool-result reader or scope its addition.",
+      "text": "\u00a72 counts storage-slow tool results \"through transcript parsing\" by naming transcript_index and session_usage, but transcript_index only maps session ids to transcript files and session_usage only sums token usage (reckon/velocity.py:1363, :1384); neither parses tool_result blocks, and the only tool-result reader there (promotion_receipts) counts Bash promotion receipts, not storage-slow \u2014 so the named mechanism cannot produce the count \u2014 and the same sentence's constraint that the section \"changes nothing in velocity.py\" forbids adding the function that could",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/an-mcp-failure-names-its-cause.html:187",
+      "id": "reasoning-2",
+      "reason": "the node cannot satisfy its own done-when within its write scope; it must either add dispatch.py to the write paths or drop the run-record assertion, and a worker left to choose will edit an unowned file or silently skip half the measure.",
+      "text": "\u00a77's done-when asserts \"the run record names it\" (the servers enabled), but \u00a77's declared write paths are only reckon/_backends.py and the test, while the run record is composed in reckon/crew/dispatch.py (record.update at dispatch.py:~7945) and the _backends.LaunchPlan returned by launch_plan (reckon/_backends.py:340) carries no field for enabled servers",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "6508e0f2e13daa91dc77e6f0f2458833cc9c02635c3aa7283fae693b34fc2819",
+  "plan_slug": "an-mcp-failure-names-its-cause",
+  "plan_version": 13,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T022625563570-plan-review-of-an-mcp-failure-names-its-cause",
+  "reviewed_blob_sha": "49fe8841fc34880df35f6f6baa3fe22657ed007b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited symbol resolves: `_seed_harness_entry` at reckon/_backends.py:2280 (seeded from _backends.py:3203), `transcript_index` at reckon/velocity.py:1363, `session_usage` at reckon/velocity.py:1384, `_run_under_deadline` at reckon/mcp.py:299; the extensionless href `/reckon/reckon-reads-answer-in-seconds` resolves as docs/plans/reckon-reads-answer-in-seconds.html (house convention).",
+    "done_when": "a finding \u2014 \u00a72's fleet-node reproduction requires the census to reproduce \u00a71's count \"for the same window\", but this change removed the `--since` option (\u00a72 now reads only \"the last seven days\"), so the window \u00a71 measured cannot be selected and the count drifts with log roll-off.",
+    "evidence_paths": "pass \u2014 \u00a72 writes tests/test_mcp_census.py, \u00a77 writes tests/test_worker_mcp_servers.py, and the plan's other evidence lands on durable paths (the \u00a74 run directory, \u00a76's reports/reckon/mcp-failures/imas-cx-os-error-2/); no gate writes to a scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 the new symbols (reckon/mcp_census.py, worker_mcp_servers, tests/test_mcp_census.py, tests/test_worker_mcp_servers.py) are named by what they do and carry no plan labels, phase names, ticket numbers or version tags.",
+    "reasoning": "a finding \u2014 \u00a72 names transcript_index and session_usage as the mechanism for counting storage-slow tool results, but neither function reads tool results, and \u00a77's done-when asserts the run record names the enabled servers while \u00a77's declared write paths cannot write the run record.",
+    "single_goal": "pass \u2014 \u00a72 is one census deliverable (MCP-log causes plus the storage-slow count serve the one \"name every failure's cause\" goal) and \u00a77 is one deliverable (a worker starts only the servers its work uses).",
+    "wiring": "pass \u2014 \u00a77's changed write path (reckon/_backends.py) conflicts with no other section, and \u00a72's shared reckon/cli.py write against \u00a75 is recorded in followup f-amfc-001 (\"\u00a75 waits for \u00a72, because both edit reckon/cli.py\")."
+  },
+  "section_digests": {
+    "_document": "f6a17f1794f2a3f9a3ec6c55cb2b418ee0839b7e46ced2f9a3ab2b2373685199",
+    "s1": "d0ea88c8e7e70627417eeb698c89b91962c8e03f4f18bbdc2e310ceeb8b0f1f5",
+    "s2": "823e5e8e272401a3943a9d972952fc0d0f2569a60fe37f986a5c32f4718aa42a",
+    "s3": "82031c5ca9a72cb79729fbc07674f2d108fbebb8874c2e50d572fbd48600c6b2",
+    "s4": "e8ab475d56abc119c369298b36a1fedb5af7d6342681af684858d6c50c994663",
+    "s5": "44e448ad050553b9e4bcdac87bfee8a33ae5cb62c2ea2d3fedb2cb80ea74f589",
+    "s6": "841c8e284e145de96ac3b05055692c1f2474a35d8b9924d8c1be8359e5e7f56b",
+    "s7": "14e3cc4fefd53141fb43030ede797930571f54d7b234b0314cd90f7db1aed619",
+    "s8": "e767ac662612e3267540f7c6afbaf5dfc2387cde567739be1d2cee15e035f12e"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T02:43:20.876036+00:00"
+}
