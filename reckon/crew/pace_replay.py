@@ -245,8 +245,9 @@ def _pace_row(record: Mapping[str, Any]) -> Mapping[str, Any]:
 
 
 # The kinds a field of a pace row is read as.  A trailing ``?`` admits a null as
-# a value of its own -- "no hold fired", "nothing to say" -- while an unmarked
-# kind that is absent, null or blank is a row that cannot be measured.
+# a value of its own -- "no hold fired", "nothing to say" -- written or absent,
+# while an unmarked kind that is absent, null or blank is a row that cannot be
+# measured.
 _TEXT = "text"
 _NUMBER = "number"
 _INSTANT = "instant"
@@ -270,6 +271,18 @@ _ROW_FIELDS: tuple[tuple[tuple[str, ...], str, str, str], ...] = (
         _INSTANT,
         "the pace row recorded_at stamp",
         "the pace row has no recorded instant",
+    ),
+    (
+        ("session",),
+        _TEXT + "?",
+        "the pace row's dispatching session",
+        "the pace row carries no dispatching session",
+    ),
+    (
+        ("lift_id",),
+        _TEXT + "?",
+        "the pace row's lift id",
+        "the pace row carries no lift id",
     ),
     (
         ("policy",),
@@ -391,11 +404,15 @@ def _read(
     nothing, and a report that silently drops the row tells them less.
     """
     value: Any = row
+    nullable = kind.endswith("?")
     for key in path:
         if not isinstance(value, Mapping) or key not in value:
-            return _UnmeasuredAllowance(missing)
+            # An optional field a row simply does not carry reports its own
+            # absence, the same as one written null: a row composed before the
+            # field existed replays rather than reading unmeasured, and the
+            # producer's own "nothing to say" is not damage.
+            return None if nullable else _UnmeasuredAllowance(missing)
         value = value[key]
-    nullable = kind.endswith("?")
     bare = kind[:-1] if nullable else kind
     if value is None or (isinstance(value, str) and not value.strip()):
         return None if nullable else _UnmeasuredAllowance(missing)

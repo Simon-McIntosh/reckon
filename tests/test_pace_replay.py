@@ -483,6 +483,8 @@ _WRITABLE: dict[str, tuple] = {
     "source": (_text,),
     "member": (_text,),
     "reason": (_text, _null),
+    "session": (_text, _null),
+    "lift_id": (_text, _null),
     "score": (_figure,),
     "policy": (_object,),
     "clocks": (_object,),
