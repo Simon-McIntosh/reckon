@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/obligation_snapshot.py:367",
+    "reckon/crew/runs.py:2090",
+    "reckon/crew_follow_commands.py:215",
+    "reckon/crew_follow_commands.py:263"
+  ],
+  "completed_at": "2026-10-08T08:50:26.853Z",
+  "dispatched_at": "2026-10-08T08:31:34Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligation_snapshot.py",
+      "line": "314",
+      "severity": "follow-on",
+      "text": "follow-on: the declaration test asserts containment only (declared set contains the command modules) and does not assert each declared name resolves to a module that carries a command, so an entry that names no command could stay in CLI_MODULE_FILES unnoticed; today cli.py is such an entry -- it re-exports main from cli_entry and contributes no command callback -- and it is legitimately present as the CLI's re-export surface, so this is a gap in the guard's shape rather than a defect in this change."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read the three commits 32d1537ca (refactor), 9b93abe6e (test) and b52d109df (evidence) against base 1d829fe7; each carries a conventional subject and a body and no attribution trailer; the source change is 25 lines in obligation_snapshot.py and 9 in runs.py, the tuple order and the crew/*.py glob unchanged.",
+    "done_when": "the done-when has two clauses; the declaration test walks the click tree from cli.main and requires every top-level reckon command module to be in the tuple, and the stamp test requires both stamps to move when any declared module's bytes change and to hold when nothing does; I ran tests/test_the_cli_module_set_has_one_owner.py at head (2 passed, EXIT=0), reproduced the negative control (removing crew_follow_commands.py from the tuple makes test_every_command_module_is_declared fail naming it, EXIT=1), and reproduced the reviewer's base stamp equality exactly (old=new=follower=108721a8b90c2ba3c09be536ddcd7416e8fc9e51ecdaa82aa8b9aaa9bd5904bf over the extracted base bytes).",
+    "goal": "the node goal is to give the CLI's module set one owner so both code stamps read it; the diff adds CLI_MODULE_FILES to reckon/crew/obligation_snapshot.py:314 and both stamps now build their source list from it -- source_code_stamp at obligation_snapshot.py:340 and follower_code_stamp at reckon/crew/runs.py:222 -- so a CLI module named once advances a running producer and a running follower together.",
+    "manifest": "read; it records the gate 134 passed EXIT=0 (gate.log), the negative control EXIT=1 naming crew_follow_commands.py (negative-control.log), the base stamp equality 108721a8b90c2ba3c09be536ddcd7416e8fc9e51ecdaa82aa8b9aaa9bd5904bf, and names each log on disk.",
+    "write_paths": "the three commits touch only reckon/crew/obligation_snapshot.py, reckon/crew/runs.py, tests/test_the_cli_module_set_has_one_owner.py and docs/evidence/fragments/every-module-fits-a-worker-window/the-cli-module-set-has-one-owner.html, all inside the manifest's declared write paths."
+  },
+  "justifications": {
+    "durability": "tests/test_the_cli_module_set_has_one_owner.py:71 is a positive control asserting the click walk found modules, :74 fails naming any undeclared command module, and :121-129 assert both stamps move on an edit and restore; I confirmed the negative control fires (EXIT=1) and that the walk sees six top-level command modules.",
+    "evidence": "the gate ran 134 passed EXIT=0 (gate.log), I reproduced the negative control at EXIT=1 naming crew_follow_commands.py, and I reproduced the base stamp equality 108721a8b90c2ba3c09be536ddcd7416e8fc9e51ecdaa82aa8b9aaa9bd5904bf independently from the base tree via git show.",
+    "fit": "obligation_snapshot.py:305-317 states the mechanism in a comment, adds one public name and no module, and the module's imports stay stdlib-only at module level so the prompt-hook leaf constraint holds.",
+    "goal_fidelity": "obligation_snapshot.py:314 declares CLI_MODULE_FILES and both obligation_snapshot.py:340 source_code_stamp and runs.py:222 follower_code_stamp build their source lists from it, so the CLI's module set has one owner and the drift the plan names cannot recur through code.",
+    "reuse": "both stamps keep their existing sha256-over-source implementation and crew/*.py glob and only replace seven duplicated literals with one tuple, removing the duplication rather than adding a mechanism.",
+    "scope_discipline": "the three commits change only the four declared paths (obligation_snapshot.py, runs.py, the new test file, the evidence fragment) and touch nothing outside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to give the CLI's module set one owner so both code stamps read it; the diff adds CLI_MODULE_FILES to reckon/crew/obligation_snapshot.py:314 and both stamps now build their source list from it -- source_code_stamp at obligation_snapshot.py:340 and follower_code_stamp at reckon/crew/runs.py:222 -- so a CLI module named once advances a running producer and a running follower together.\nVERDICT done_when: the done-when has two clauses; the declaration test walks the click tree from cli.main and requires every top-level reckon command module to be in the tuple, and the stamp test requires both stamps to move when any declared module's bytes change and to hold when nothing does; I ran tests/test_the_cli_module_set_has_one_owner.py at head (2 passed, EXIT=0), reproduced the negative control (removing crew_follow_commands.py from the tuple makes test_every_command_module_is_declared fail naming it, EXIT=1), and reproduced the reviewer's base stamp equality exactly (old=new=follower=108721a8b90c2ba3c09be536ddcd7416e8fc9e51ecdaa82aa8b9aaa9bd5904bf over the extracted base bytes).\nVERDICT write_paths: the three commits touch only reckon/crew/obligation_snapshot.py, reckon/crew/runs.py, tests/test_the_cli_module_set_has_one_owner.py and docs/evidence/fragments/every-module-fits-a-worker-window/the-cli-module-set-has-one-owner.html, all inside the manifest's declared write paths.\nVERDICT manifest: read; it records the gate 134 passed EXIT=0 (gate.log), the negative control EXIT=1 naming crew_follow_commands.py (negative-control.log), the base stamp equality 108721a8b90c2ba3c09be536ddcd7416e8fc9e51ecdaa82aa8b9aaa9bd5904bf, and names each log on disk.\nVERDICT diff: read the three commits 32d1537ca (refactor), 9b93abe6e (test) and b52d109df (evidence) against base 1d829fe7; each carries a conventional subject and a body and no attribution trailer; the source change is 25 lines in obligation_snapshot.py and 9 in runs.py, the tuple order and the crew/*.py glob unchanged.\nCALL_SITES: reckon/crew/obligation_snapshot.py:367, reckon/crew/runs.py:2090, reckon/crew_follow_commands.py:215, reckon/crew_follow_commands.py:263\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: obligation_snapshot.py:314 declares CLI_MODULE_FILES and both obligation_snapshot.py:340 source_code_stamp and runs.py:222 follower_code_stamp build their source lists from it, so the CLI's module set has one owner and the drift the plan names cannot recur through code.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate ran 134 passed EXIT=0 (gate.log), I reproduced the negative control at EXIT=1 naming crew_follow_commands.py, and I reproduced the base stamp equality 108721a8b90c2ba3c09be536ddcd7416e8fc9e51ecdaa82aa8b9aaa9bd5904bf independently from the base tree via git show.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the three commits change only the four declared paths (obligation_snapshot.py, runs.py, the new test file, the evidence fragment) and touch nothing outside them.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_the_cli_module_set_has_one_owner.py:71 is a positive control asserting the click walk found modules, :74 fails naming any undeclared command module, and :121-129 assert both stamps move on an edit and restore; I confirmed the negative control fires (EXIT=1) and that the walk sees six top-level command modules.\nSCORE fit: 19\nJUSTIFICATION fit: obligation_snapshot.py:305-317 states the mechanism in a comment, adds one public name and no module, and the module's imports stay stdlib-only at module level so the prompt-hook leaf constraint holds.\nSCORE reuse: 18\nJUSTIFICATION reuse: both stamps keep their existing sha256-over-source implementation and crew/*.py glob and only replace seven duplicated literals with one tuple, removing the duplication rather than adding a mechanism.\nFINDING reckon/crew/obligation_snapshot.py:314 follow-on: the declaration test asserts containment only (declared set contains the command modules) and does not assert each declared name resolves to a module that carries a command, so an entry that names no command could stay in CLI_MODULE_FILES unnoticed; today cli.py is such an entry -- it re-exports main from cli_entry and contributes no command callback -- and it is legitimately present as the CLI's re-export surface, so this is a gap in the guard's shape rather than a defect in this change.\nreviewed_base_sha: 1d829fe777ba1661374ad2c3e7398dd81849ca88\nreviewed_head_sha: b52d109df690ae6de5716e33e853421315fd45bf\n",
+  "review_run_id": "r-20261008T083048741944-review-of-the-cli-module-set-has-one-owner",
+  "reviewed_base_sha": "1d829fe777ba1661374ad2c3e7398dd81849ca88",
+  "reviewed_head_sha": "b52d109df690ae6de5716e33e853421315fd45bf",
+  "reviewed_run_id": "r-20261008T081100082756-the-cli-module-set-has-one-owner",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T08:47:57.135143+00:00",
+  "total": 112
+}
