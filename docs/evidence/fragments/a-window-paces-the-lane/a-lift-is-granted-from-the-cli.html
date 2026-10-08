@@ -7,11 +7,11 @@
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="a-window-paces-the-lane">
   <meta name="plan-title" content="A lift is granted from the CLI">
-  <meta name="plan-summary" content="reckon crew budget-lift grants, clears and budget-lifts lists pace lifts through budget_lift. The grant names exactly one form (--multiple, --drain-by or --uncapped), an optional --global or --session scope, --from, --until reset|iso|duration and --clock, requires --reason, prints the group's projected exhaustion at the lifted multiple against its reset and admits regardless, and is refused while RECKON_RUN_ID is set, for an undeclared group, and above budget.lift.max_multiple. budget_lift.clear by id refuses a lift of another group and returns None for one no longer in force, so the id path revokes only what the group path could. budget.lift max_multiple 3.0 and max_hours 168 ship in flight-defaults.yaml, and skills/reckon-build/SKILL.md 4c documents the pace hold, the three reserves, releases_at, the three forms, both scopes and the four end conditions.">
+  <meta name="plan-summary" content="reckon crew budget-lift grants or clears a pace lift on a declared budget group through budget_lift, and budget-lifts lists active and recent lifts as JSON.">
   <meta name="plan-evidence-for" content="reckon:a-window-paces-the-lane">
   <meta name="plan-node" content="a-lift-is-granted-from-the-cli">
   <meta name="plan-recorded-at" content="2026-10-08">
-  <meta name="plan-environment" content="Linux node; Python venv at /home/ITER/mcintos/Code/reckon/.venv; pytest with an isolated RECKON_HOME under tmp_path; head and base measured over the same files">
+  <meta name="plan-environment" content="Linux node; Python venv at /home/ITER/mcintos/Code/reckon/.venv; pytest with an isolated RECKON_HOME under tmp_path">
   <title>A lift is granted from the CLI &mdash; evidence | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -20,43 +20,22 @@
 <main class="plan-doc">
   <header class="plan-header">
     <h1 id="a-lift-is-granted-from-the-cli-title">A lift is granted from the CLI</h1>
-    <p class="plan-summary">Two verbs reach the lift record the resolver already reads. <code>reckon crew budget-lift</code>
-    grants or clears one; <code>reckon crew budget-lifts</code> lists active and recent lifts as JSON. Granting resolves
-    the same configuration <code>preflight</code> does and projects against the group's own published reading, so the
-    printed projection is the lifted multiple's, not an invented one.</p>
+    <p class="plan-summary">The two verbs that reach the lift record the resolver already reads.</p>
   </header>
 
-  <p id="a-lift-is-granted-from-the-cli-grant"><strong>The grant.</strong> Exactly one of <code>--multiple</code>,
-  <code>--drain-by</code> or <code>--uncapped</code> names the form; <code>--global</code> (default) or <code>--session
-  &lt;id&gt;</code> the scope; <code>--from</code>, <code>--until reset|&lt;iso&gt;|&lt;duration&gt;</code> and
-  <code>--clock seven_day|five_hour</code> its window; and <code>--reason</code> is required. The command resolves
-  configuration through the shipped and host layers and reads the group's freshest member reading from the published
-  headroom document, so it prints the projected exhaustion against that reading's reset and admits regardless. It is
-  refused with a non-zero exit while <code>RECKON_RUN_ID</code> is set, when the group is undeclared, and when the
-  multiple exceeds <code>budget.lift.max_multiple</code>. Asserted through click's runner in
-  <code>tests/test_crew_budget_lift_cli.py</code>.</p>
-
-  <p id="a-lift-is-granted-from-the-cli-clear"><strong>The clear, by group or by id.</strong> <code>--clear --group
-  G</code> revokes the group's governing lift; <code>--session</code> and <code>--id</code> narrow it. The id path now
-  refuses an id whose lift belongs to a different group and returns <code>None</code> for one no longer in force &mdash;
-  past its <code>at</code>, older than <code>max_hours</code>, or already cleared &mdash; so an id can revoke only what
-  the group path could. <code>budget_lift.clear</code> in <code>tests/test_budget_lift.py</code>.</p>
-
-  <p id="a-lift-is-granted-from-the-cli-defaults"><strong>The shipped ceilings.</strong> <code>budget.lift
-  max_multiple 3.0</code> and <code>max_hours 168</code> sit in <code>reckon/schema/flight-defaults.yaml</code> beside
-  the other budget defaults, and a fresh flight that declares nothing resolves them &mdash; asserted against the module's
-  own constants in <code>tests/test_budget_lift.py</code>. Both new verbs carry a <code>STATE_PHRASES</code> row and a
-  skill-contract entry, and <code>skills/reckon-build/SKILL.md</code> &sect;4c documents the pace hold, the resume,
-  coordinator and bookend reserves, <code>releases_at</code>, the three forms, both scopes and the four end conditions,
-  with the grant, list and clear commands.</p>
-
-  <p id="a-lift-is-granted-from-the-cli-measure"><strong>The measure.</strong> The gate ran the four named files at base
-  and head: 102 passed over the three that existed at base, 114 passed at head with the new
-  <code>tests/test_crew_budget_lift_cli.py</code> included, zero failures either side. The declared negative control
-  &mdash; the grant path passing <code>environ={}</code> to <code>budget_lift.grant</code> so a fenced run could lift its
-  own budget &mdash; was applied on a scratch copy and the fenced-run refusal went red (<code>assert 0 != 0</code>,
-  exit 1). Every test points <code>RECKON_HOME</code> at a temporary directory and asserts the real
-  <code>budget-lifts.json</code> untouched afterwards.</p>
+  <p id="a-lift-is-granted-from-the-cli-landing"><code>reckon crew budget-lift</code> grants or clears a pace lift on a
+  declared budget group through <code>budget_lift</code> and <code>reckon crew budget-lifts</code> lists active and
+  recent lifts as JSON; the grant names exactly one form (<code>--multiple</code>, <code>--drain-by</code> or
+  <code>--uncapped</code>) with an optional <code>--global</code> or <code>--session</code> scope, <code>--from</code>,
+  <code>--until</code> and <code>--clock</code>, requires <code>--reason</code>, prints the group's projected exhaustion
+  at the lifted multiple against its reset and admits regardless, and is refused while <code>RECKON_RUN_ID</code> is
+  set, for an undeclared group, and above <code>budget.lift.max_multiple</code>. <code>budget_lift.clear</code> by id
+  refuses a lift of another group and returns <code>None</code> for one no longer in force, the shipped
+  <code>flight-defaults</code> carry <code>max_multiple 3.0</code> and <code>max_hours 168</code>, and the build skill's
+  budget fence documents the pace hold, the three reserves, <code>releases_at</code>, the three forms, both scopes and
+  the four end conditions. Gate: 114 passed at head over the four named files (102 at base over the three that existed),
+  zero failures either side; the fenced-run refusal observed red under the declared negative control on a scratch
+  copy.</p>
 </main>
 </body>
 </html>
