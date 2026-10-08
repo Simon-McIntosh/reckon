@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.55">
-<meta name="plan-version" content="57">
+<meta name="plan-version" content="58">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -242,10 +242,16 @@
     <pre class="r-fu-prompt">/reckon-build an-mcp-failure-names-its-cause</pre>
     <p class="r-fu-outcome">§3, §4, §6 and §7 landed; the remaining wave is followup f-amfc-002</p>
     </article>
-<article class="r-fu" data-id="f-amfc-002" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-build" data-written-at="2026-10-08" data-recommends-skill="/reckon-build an-mcp-failure-names-its-cause §8" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-amfc-002" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-build" data-written-at="2026-10-08" data-recommends-skill="/reckon-build an-mcp-failure-names-its-cause §8" data-resolved-at="2026-10-08T09:20:35+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Build the remaining wave, starting with the retry join</h4>
     <div class="r-fu-body"><p>§8 (<code>reckon/mcp.py</code>) and §9 (<code>reckon/resources.py</code>, <code>reckon/_store.py</code>) run together. §2 and then §5 edit <code>reckon/cli.py</code> and run in sequence, after any other live claim on that file clears. §10 names its lock module before editing. §11 admits <code>worker_mcp_servers</code> in <code>reckon/flight.py</code>; a project naming its servers does so in its own repository.</p></div>
     <pre class="r-fu-prompt">/reckon-build an-mcp-failure-names-its-cause §8</pre>
+    <p class="r-fu-outcome">§8 and §9 landed; the remaining wave is f-amfc-003</p>
+    </article>
+<article class="r-fu" data-id="f-amfc-003" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-build" data-written-at="2026-10-08" data-recommends-skill="/reckon-build an-mcp-failure-names-its-cause §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build the census, the launch check, the fenced live read, the schema key and the index-backed summary</h4>
+    <div class="r-fu-body"><p>§10 (<code>reckon/crew/runs.py</code>) and §12 (<code>reckon/mcp.py</code>, <code>reckon/metadata_index.py</code>) can run together. §2 and then §5 edit the CLI and run in sequence once no other live claim holds it. §11 admits <code>worker_mcp_servers</code> as a reckon-owned flight key.</p></div>
+    <pre class="r-fu-prompt">/reckon-build an-mcp-failure-names-its-cause §2</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
