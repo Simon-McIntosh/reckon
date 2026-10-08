@@ -1,0 +1,61 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T05:36:28.506Z",
+  "dispatched_at": "2026-10-08T05:22:18Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/every-review-is-kept-as-a-committed-record.html:154",
+      "id": "reasoning-1",
+      "reason": "\"three times\" is colour under the already-verified root cause, no mechanism keys on it, and correcting it leaves the node unchanged.",
+      "text": "the Why states the run's `prompt.txt` \"names the composed directory three times as the place for `report.md`\", but the file names that directory five times, only two of them as the report location (prompt.txt:136, 165), so the count rests on evidence that does not show it",
+      "type": "reasoning",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/every-review-is-kept-as-a-committed-record.html:154",
+      "id": "anchors_resolve-1",
+      "reason": "the load-bearing figure (3 directories with a `report.md` and no sidecar) reproduces exactly and the denominator carries no mechanism, so the drift is time only and the map's conclusion stands.",
+      "text": "the census figure \"1,477 plan-review report directories on the host\" does not reproduce: a census of the report root today counts 1,517 run directories",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "d5f6d7e9b795ac06ae1b87d1e0db3bf88862936a33a7a8497373967b8b1ec8b3",
+  "plan_slug": "every-review-is-kept-as-a-committed-record",
+  "plan_version": 129,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T052148906816-plan-review-of-every-review-is-kept-as-a-committed-record",
+  "reviewed_blob_sha": "fde6a4968608f22b2e8340358a5c76a94bc2a96c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 every code anchor resolves (`reckon/crew/promotion.py`, `delivered_reports` at `plan_review.py:1919`, `dispatch.json` at `review.py:1323`), and the incident's directories were opened and match, but the census denominator does not reproduce.",
+    "done_when": "pass \u2014 the done-when names a measurable refusal (a composed directory with no report, whose run's report sits in a sibling dir named for the run id, is refused naming both directories) plus two controls: a positive where the report is in place promotes and commits, and the negative \"the first case fails when the refusal is removed\".",
+    "evidence_paths": "pass \u2014 the only artifacts are a repo test and the plan's own report directory under `~/.config/reckon/crew/reports/<project>/plan-review/<slug>/<run>/`, a durable host path; no session scratchpad or node-local temporary path is named.",
+    "naming": "pass \u2014 the section carries no plan labels, ticket numbers or version tags into symbols; `\u00a715`/`\u00a713` are plan-internal section refs and the run ids are observed data, which is the house convention.",
+    "reasoning": "a finding \u2014 the root cause (nothing checks a plan-review run delivered where it was told) is supported by the on-disk evidence and the mechanism reaches promotion, but one citation figure does not match its own file.",
+    "single_goal": "pass \u2014 one node, one deliverable: the misdelivery refusal in `reckon/crew/promotion.py`.",
+    "wiring": "pass \u2014 \u00a715 declares no depends-on/informs/gates and needs none: the node edits `reckon/crew/promotion.py` alone, and the \u00a713 promotion path it extends (6e00dd22f, db761b538) is landed, so no relationship is missing or mis-pointed."
+  },
+  "section_digests": {
+    "_document": "3abe01dc0676ea7c6bbffc6779efad5a14e4b224f68799f979e2619470fa942c",
+    "s1": "0e9b72d369354c8d7be32605938df607ebbbce67023bc6ed8de9c06d12d32df4",
+    "s10": "8e08c7c8a99206f9db453d65cb98c9c40f69e4c07325e55c639d885f927f0ae3",
+    "s11": "a8a04a9908b25d410e85f68b11504ae3940e469acc04fa4ac25e8ebb8373a2d0",
+    "s12": "bb85d80dcb9e0286d21a8ca6acd3af79e736c64c84b5ac85569fc6ce2c73863b",
+    "s13": "18a2d10f1e3c66be8277b7b4ef2922db7611cded7589553da5347b9a1ee5cd0f",
+    "s14": "90fd381b5f80417031410428331e779266feb4e517d89e5237d29cbe1c5e4700",
+    "s15": "62a7b62d010ec8ba6516a523a717fa3d9d116fc99e0cb59268b9f1b31339d758",
+    "s2": "87bfc5d2caae7c2107ebf209d7886ed542b6b34e4f47b7ec3dac6bb990a0ec05",
+    "s3": "4ce83cf60d72c0bc7560ad67b63321b66ad2eab203f056b94bbe6050abe68365",
+    "s4": "14ea9195d5ca24416c1b7e31c1724697cfa10b66641d937ba50243796dfd5b11",
+    "s5": "7f1aafa877b35b589380f7d9a159ef46b7570d317c0593b44a0fdf356f277f73",
+    "s6": "5ecf4c2d9f156607b73fb3e02ebdd52e6c94975806391f24b7334650f4cbc212",
+    "s7": "cd48982a8e4a684a6819271ee9171b2025df2c3c60785738c533eeb4bc6f6810",
+    "s8": "d292be9ad6a414aacd3a2fe40d7730c79ce5dc8f1983898056f5916b02ca2ed0",
+    "s9": "85877b77c395ca8a1482bef5887cfc72cbf6109174dba2c01265aa015a906d73"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T05:36:31.398365+00:00"
+}
