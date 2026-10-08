@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.0">
-<meta name="plan-version" content="9">
+<meta name="plan-version" content="10">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -116,12 +116,13 @@
     <h2 id="s5" data-reckon="section" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links="">§5 — Every section has a todo item</h2>
     <p><strong>Deliverable.</strong> <code>reckon audit-doc</code> reports <code>section-without-todo</code> for an
       authored section heading with no declaration, and <code>todo-without-section</code> for a declaration naming no
-      heading. A plan write that would leave either is refused by widening
-      <code>_require_heading_for_section_records</code> in <code>reckon/_store.py</code>, which
-      <code>_write_state_locked</code> already runs on every plan write in both text and state mode, to cover the
-      declarations in both directions. <code>_require_new_section_contracts</code> is not the owner: it runs only on
-      the text-replace path and only for newly added headings, so it cannot see a declaration a structured write
-      leaves without a heading. The census comes first:
+      heading. A plan write that would leave either is refused by one coverage check over the resulting plan HTML,
+      widened from <code>_require_heading_for_section_records</code> in <code>reckon/_store.py</code> to cover the
+      declarations in both directions. It is called on both write paths. State-mode writes reach it through
+      <code>_write_state_locked</code>, where it runs today. Text-mode writes (<code>edit_plan</code> mode text, through
+      <code>_replace_plan_text</code>) never enter <code>_write_state_locked</code>, so the same function is called
+      there before the write. <code>_require_new_section_contracts</code>, which that text path runs for newly
+      added headings only, keeps its narrower job. The census comes first:
       count the live plans that would fail today, and state the count in the evidence, because closing this guard
       turns every existing gap into a refusal at that plan's next write.</p>
     <p><strong>Done when</strong> the census of every mounted project's live plans is recorded with its count. A test
