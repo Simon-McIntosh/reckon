@@ -7,7 +7,7 @@
   <meta name="reckon-type" content="plan">
   <meta name="plan-slug" content="an-mcp-failure-names-its-cause">
   <meta name="plan-title" content="An MCP Failure Names Its Cause">
-  <meta name="plan-summary" content="MCP servers fail at launch and time out under load with misleading labels; a census names each failure's cause, and launches stop syncing a shared environment.">
+  <meta name="plan-summary" content="MCP servers fail at launch and time out under load with misleading labels; a census names each failure&#x27;s cause, and launches stop syncing a shared environment.">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="8.0">
@@ -21,10 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="reckon-reads-answer-in-seconds">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
   <title>An MCP Failure Names Its Cause | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="8">
+<meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
   <main class="plan-doc">
@@ -98,13 +100,10 @@
       timeout result carries both with a <code>cause</code> of <code>computing</code> or <code>waiting</code>.
       The message and hint name that cause. For computing, they say the call was abandoned while it was still
       working, and give the CLI command that answers without a deadline. The <code>error</code> value stays
-      <code>storage-slow</code> so no existing caller's branch changes. A second call with the same tool and
-      arguments, made while an abandoned body for it is still running, waits on that body rather than
-      starting another, so repeated retries cannot stack copies of one expensive read.</p>
+      <code>storage-slow</code> so no existing caller's branch changes.</p>
     <p><strong>Done when</strong> a test in <code>tests/test_mcp_deadline_names_its_cause.py</code> runs one
       body that spins the CPU past a short deadline and one that sleeps past it. The first reports
-      <code>computing</code> and the second <code>waiting</code>, each with wall and CPU seconds. A third case
-      issues the spinning call twice inside the deadline window and observes one body execution, not two. A
+      <code>computing</code> and the second <code>waiting</code>, each with wall and CPU seconds. A
       negative control is executed and logged: with the CPU measurement removed, the first case reports
       <code>waiting</code> and the test fails. The write paths are <code>reckon/mcp.py</code>,
       <code>reckon/_mcp_tools.py</code> and <code>tests/test_mcp_deadline_names_its_cause.py</code>.</p>
@@ -131,18 +130,23 @@
       mounted project. It flags a launch that runs <code>uv run</code> without <code>--no-sync</code>, or that
       names no absolute <code>--project</code> and so resolves its project from whatever directory the session
       started in. A worker's worktree is the case that fails. For each flagged launch it prints the corrected
-      command, <code>uv run --no-sync --project &lt;absolute checkout&gt; …</code>, and exits non-zero. The
+      command, <code>uv run --no-sync --project &lt;checkout&gt; …</code>. The checkout is written so it
+      names no single user's home: through a variable Claude Code expands in MCP configuration, such as
+      <code>${HOME}</code> or a project-specific variable with a default. A launch whose arguments carry a
+      literal <code>/home/&lt;user&gt;</code> path is flagged too. Doctor exits non-zero when any launch is
+      flagged. The
       existing environment-drift check stays beside it, because a launch that no longer syncs depends on the
       shared environment being kept current, which is already every agent's job. reckon edits no other
       project's <code>.mcp.json</code>. Those edits belong to their repositories and are recorded as followups
       naming each one.</p>
     <p><strong>Done when</strong> <code>tests/test_doctor_mcp_launch.py</code> gives doctor a fixture user
       config and two fixture projects. One project launches with <code>uv run imas-codex serve</code>, one with
-      <code>uv run --no-sync --project /abs/path imas-codex serve</code>, and the user-scope reckon entry
-      launches with <code>uv run --project /abs/path reckon mcp</code>. Doctor flags the first project and the
-      user-scope entry, prints a corrected command for each, passes the second project, and exits non-zero. A
+      <code>uv run --no-sync --project ${HOME}/Code/imas-codex imas-codex serve</code>, and the user-scope reckon
+      entry launches with <code>uv run --project /home/someone/Code/reckon reckon mcp</code>. Doctor flags the first
+      project, and flags the user-scope entry twice (it syncs, and it names one user's home). It prints a
+      corrected command for each, passes the second project, and exits non-zero. A
       negative control is executed and logged: with the <code>--no-sync</code> check removed, the user-scope
-      entry passes and the test fails. Every <code>reckon sync</code> and <code>reckon doctor</code> test that
+      entry is flagged only for its path and the test fails. Every <code>reckon sync</code> and <code>reckon doctor</code> test that
       reads a config resolves it under a temporary home, and the test asserts the real
       <code>~/.claude.json</code> is untouched. The write paths are <code>reckon/cli.py</code> and
       <code>tests/test_doctor_mcp_launch.py</code>.</p>
@@ -156,7 +160,8 @@
       deleted before launch, and a missing <code>TMPDIR</code>. Both ran cleanly. The investigation reproduces the
       failure inside a worker's fence (the bind mounts, <code>CLAUDE_CONFIG_DIR</code>, <code>TMPDIR</code> and
       <code>UV_OFFLINE=1</code> a dispatched worker carries), or finds the path uv could not open from
-      <code>strace</code> or uv's verbose output. It names the cause and the owning repository of the fix.</p>
+      <code>strace</code> or uv's verbose output. It names the cause and the owning repository of the fix. The report and its logs are written to
+      <code>~/.config/reckon/crew/reports/reckon/mcp-failures/imas-cx-os-error-2/</code>, which outlives the run.</p>
     <p><strong>Done when</strong> the report names the file uv failed to open, shows the failure reproduced
       on demand and absent under a changed condition that differs in one variable, and names the repository and
       file whose change removes it. Census figures in the report come from §2's command where it has landed, or
@@ -175,28 +180,42 @@
       <code>--mcp</code> option and finds the project's servers disabled and reckon enabled. With
       <code>--mcp imas-cx</code> it finds imas-cx enabled, and the run record names it. A negative control is
       executed and logged: with the settings write removed, the project server reads enabled and the test
-      fails. The write paths are the dispatch module that writes the harness home, which the design review
-      names, and a new test file.</p>
+      fails. The write paths are <code>reckon/crew/dispatch.py</code>, which writes the run's harness home, and
+      <code>tests/test_worker_mcp_servers.py</code>.</p>
+
+    <h2 id="s8">§8 — A retried reckon read waits for the copy already running</h2>
+<section data-reckon="section" data-id="s8" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Deliverable.</strong> A call to the reckon MCP server with the same tool and arguments as a
+      body <code>_run_under_deadline</code> has abandoned but which is still running waits on that body rather than
+      starting a second one. A coordinator that retries a <code>roadmap</code> after a timeout then gets the first
+      body's answer when it finishes, instead of two copies competing for the interpreter. A call with different
+      arguments is not affected. A write is never joined: it always runs its own body under its own deadline.</p>
+    <p><strong>Done when</strong> a test in <code>tests/test_mcp_retry_joins_running_read.py</code> issues a spinning
+      read twice, the second after the first's deadline expired, and observes one body execution and both calls
+      answered from it. A read with different arguments starts its own body, and a write is never joined. A
+      negative control is executed and logged: with the join removed, two body executions are observed and the test
+      fails. The write paths are <code>reckon/mcp.py</code> and <code>tests/test_mcp_retry_joins_running_read.py</code>,
+      and this section runs after §3, which edits the same file.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
-<div class="r-dec" data-key="launch-form" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="launch-form" data-choice="uv-no-sync" data-by="Simon McIntosh" data-when="2026-10-08T01:52:37+00:00">
     <p class="r-dec-q">What form should every MCP launch take?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="uv-no-sync">uv run --no-sync --project &lt;absolute checkout&gt;, keeping uv's resolution of the console script</button>
-      <button class="r-opt" data-value="venv-script">The checkout's own .venv/bin/&lt;script&gt;, with no uv in the launch</button>
+      <button class="r-opt chosen" data-value="uv-no-sync">uv run --no-sync --project &lt;absolute checkout&gt;, keeping uv&#x27;s resolution of the console script</button>
+      <button class="r-opt" data-value="venv-script">The checkout&#x27;s own .venv/bin/&lt;script&gt;, with no uv in the launch</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">Keep uv in the launch, but with --no-sync and an explicit --project, so no launch writes the shared environment or resolves its project from the session&#x27;s working directory. The path must not name one user&#x27;s home: the launch lines are shared with other users, so they are written through variables Claude Code expands rather than a literal /home/&lt;user&gt; path.</p>
     </div>
 </section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-amfc-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-08" data-recommends-skill="/reckon-build an-mcp-failure-names-its-cause">
+<article class="r-fu" data-id="f-amfc-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-08" data-recommends-skill="/reckon-build an-mcp-failure-names-its-cause" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Build the census and the honest timeout, and find the remaining launch failure</h4>
     <div class="r-fu-body"><p>Plan authored from the 2026-10-08 read of Claude Code's MCP logs and session transcripts. §2, §3, §4 and §6 have disjoint write scopes and can run together. §5 waits for §2, because both edit <code>reckon/cli.py</code>. §7 waits for the launch-form decision only where it changes the harness settings.</p></div>
     <pre class="r-fu-prompt">/reckon-build an-mcp-failure-names-its-cause</pre>
-</article>
+    </article>
 </section>
   </main>
 </body>
