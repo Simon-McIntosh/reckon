@@ -10,9 +10,12 @@ guard existed stays editable.
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 import pytest
 
-from reckon import _store
+from reckon import _plan_html, _store
 from reckon._plan_html import (
     SECTION_DECLARATION_DEFERRED,
     SECTION_DECLARATION_DONE,
@@ -114,22 +117,84 @@ def test_an_already_terminal_plan_is_not_rejudged() -> None:
     assert state["status"] == "done"
 
 
-def test_the_patch_writer_does_not_rejudge_an_already_terminal_plan() -> None:
-    # The patch path keys on the transition too: a plan already at done, holding
-    # an open section, is not re-judged when a patch re-asserts done. The state
-    # carries the requested status after the merge, so the transition is read
-    # from the stored plan; no plan is stored for this fixture, so the state's
-    # own status stands as the status that preceded the write. The state names
-    # no project so the pre-existing terminal-evidence guard — which still runs
-    # on a named project, deliberately — does not mask the section guard here.
+def _write_html(path: Path, project: str, state: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    bare = (
+        "<!doctype html><html><head>"
+        f'<meta name="docs-project" content="{project}">'
+        f"<title>{state['slug']}</title>"
+        '</head><body><main class="plan-doc"></main></body></html>\n'
+    )
+    path.write_text(_plan_html.write_state(bare, state), encoding="utf-8")
+
+
+@pytest.fixture()
+def stored_terminal_plan(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """A mounted project whose plan is already stored at ``done``.
+
+    The plan holds an open section, so it is grandfathered history: it landed
+    under an origin where the guard did not exist. A back-linking evidence
+    record satisfies the terminal-evidence check, leaving the section guard as
+    the only thing that could refuse a patch re-asserting ``done``.
+    """
+    config_home = tmp_path / "config"
+    config_home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(config_home))
+    docs = tmp_path / "repo" / "docs"
+
     state = _open_state(SECTION_DECLARATION_IMPLEMENTABLE)
     state["status"] = SECTION_DECLARATION_DONE
-    state.pop("project")
-    state.pop("slug")
+    _write_html(docs / "plans" / f"{SLUG}.html", PROJECT, state)
+    _write_html(
+        docs / "evidence" / "archive" / f"{SLUG}-landed.html",
+        PROJECT,
+        {
+            "type": "evidence",
+            "slug": f"{SLUG}-landed",
+            "title": "Tick guard execution evidence",
+            "evidence_for": [SLUG],
+            "version": 0,
+        },
+    )
+    (config_home / "mounts.json").write_text(
+        json.dumps({PROJECT: str(docs)}), encoding="utf-8"
+    )
+    return docs
+
+
+def test_the_patch_writer_does_not_rejudge_a_stored_terminal_plan(
+    stored_terminal_plan: Path,
+) -> None:
+    # The production grandfathering case: a plan already stored at done, holding
+    # an open section, is not re-judged when a patch re-asserts done. The state
+    # carries the requested status after the merge, so the transition is read
+    # from the plan on disk — the plan the write would replace.
+    state = _open_state(SECTION_DECLARATION_IMPLEMENTABLE)
+    state["status"] = SECTION_DECLARATION_DONE
 
     _store.validate_landing_patch(state, {"status": "done"})
 
     assert state["status"] == "done"
+
+
+def test_the_patch_writer_refuses_when_the_stored_plan_cannot_be_read(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # The guard fails closed: when the status that preceded the write cannot be
+    # established, the plan is treated as not yet terminal and the section guard
+    # runs, rather than being silently switched off by an unreadable store.
+    state = _open_state(SECTION_DECLARATION_IMPLEMENTABLE)
+    state["status"] = SECTION_DECLARATION_DONE
+
+    def unreadable(*_args: object, **_kwargs: object) -> object:
+        raise OSError("stored plan unreadable")
+
+    monkeypatch.setattr(_store, "read_plan", unreadable)
+
+    with pytest.raises(_store.OpError) as refusal:
+        _store.validate_landing_patch(state, {"status": "done"})
+
+    assert "s2" in str(refusal.value)
 
 
 def test_the_patch_writer_detects_the_transition_from_the_stored_status(

@@ -3254,20 +3254,21 @@ def _status_before_the_patch(state: dict[str, Any]) -> str:
     The patch writer merges the patch into the state before calling its
     validators, so the status the state carries is the requested one and the
     transition cannot be read from it alone. The status that preceded the write
-    survives in the stored plan; where none is readable — an in-memory state
-    with no plan on disk — the state's own status is the best available answer.
+    survives only in the stored plan. When that cannot be read — no project or
+    slug to resolve, a read error, or an empty record — the answer is the empty
+    string, which is not a terminal status, so the section guard runs rather
+    than being silently switched off. This fails closed exactly as the followup
+    rule beside it does.
     """
     project = str(state.get("project") or "")
     slug = str(state.get("slug") or "")
-    if project and slug:
-        try:
-            stored, _version = read_plan(project, slug)
-        except (OSError, CorruptEnvelopeError, ValueError):
-            stored = {}
-        status = str(stored.get("status") or "").strip().lower()
-        if status:
-            return status
-    return str(state.get("status") or "").strip().lower()
+    if not project or not slug:
+        return ""
+    try:
+        stored, _version = read_plan(project, slug)
+    except (OSError, CorruptEnvelopeError, ValueError):
+        return ""
+    return str(stored.get("status") or "").strip().lower()
 
 
 def _require_every_section_ticked(state: dict[str, Any]) -> None:
