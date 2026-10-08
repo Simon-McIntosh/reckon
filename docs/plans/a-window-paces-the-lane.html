@@ -26,7 +26,7 @@
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s6-the-probe-reader-and-the-undeclared-dialect&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="e302ad39,04a479ef,4ef8356f,e219aa99,b2594d65,bacd8e17,6a915fd7,4d043fd0,fd4a158f,95ba8ea7,cb69a87f,768a9285,e5cf008e,6001f577,e6dd0dc4,c011b6f9,82095575,87c98418,8e70585c,b7ba4786,3f0e9621,798f87f8,e37ac897,d34eaf27">
 <meta name="plan-impl" content="0.88">
-<meta name="plan-version" content="180">
+<meta name="plan-version" content="181">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -2427,7 +2427,10 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     <div class="r-comment-body"><p>Node 5 landed: the reserves read the lift through <code>budget_group.effective_block</code> (merged <code>614b2efed</code>, reviewed head <code>03ac347a</code>). It took one repair round for a wall-clock fuse in a test, and the re-review scored 119/120. A merge check passed 123. <code>impl</code> is 30 of 34, 0.88. <a href="/reckon/evidence/archive/a-window-paces-the-lane-landed.html#s10-reserves-read-the-lift">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261008T150526524013-the-reserves-read-the-lift" data-who="reckon-build" data-when="2026-10-08T15:59:32.733Z">
-    <div class="r-comment-body"><p>landing: the bookend, resume and coordinator reserve readers consult budget_group.effective_block — a lift in force zeroes all three reserves for its group and opens the implementation ceiling to 100%, and once the lift ends each returns the configured reserve; gate 111 passed at head vs 104 passed at base, zero added failures, negative control 4 failed EXIT=1. Repair round: _routing_ceiling now passes the fixture instant into _budget_verdict so the ceiling assertion is judged at the fixture&#x27;s own moment rather than the wall clock.</p></div>
+    <div class="r-comment-body"><p>landing: the bookend, resume and coordinator reserve readers consult budget_group.effective_block — a lift in force zeroes all three reserves for its group and opens the implementation ceiling to 100%, and once the lift ends each returns the configured reserve; gate 111 passed at head vs 104 passed at base, zero added failures, negative control 4 failed EXIT=1. Repair round: _routing_ceiling now passes the fixture instant into _budget_verdict so the ceiling assertion is judged at the fixture's own moment rather than the wall clock.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261008T160127279680-review-of-the-reserves-read-the-lift" data-who="reckon-build" data-when="2026-10-08T16:16:34.658Z">
+    <div class="r-comment-body"><p>the review of r-20261008T150526524013-the-reserves-read-the-lift is stored at reviews/reckon/r-20261008T150526524013-the-reserves-read-the-lift.json (and its .at-03ac347a twin), scoring goal_fidelity 20, evidence 20, scope_discipline 20, durability 19, fit 20, reuse 20 (total 119) over base 0eeba7d and head 03ac347a, with 0 added failures and no findings: the repair commit 03ac347a threads now=NOW into _routing_ceiling&#x27;s _budget_verdict call so the routing-ceiling assertion is judged at the fixture instant, removing the wall-clock fuse the prior review flagged blocking.</p></div>
 </div>
 </section>
 </main>
