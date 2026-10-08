@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed run landed no commits and ran no baseline_suite or after_suite gate log \u2014 its evidence is four uv-launch arms (A exit 2, the reproduction it was dispatched to produce; B and C exit 0), so no pytest node id is added and no count was taken; recorded as unmeasured rather than a measured zero, matching the read-time annotation off the reviewed manifest's own fields.",
+  "after_suite": null,
+  "baseline_suite": null,
+  "completed_at": "2026-10-08T02:53:02.418Z",
+  "dispatched_at": "2026-10-08T02:21:45Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T012837840391-imas-cx-os-error-2-cause/manifest.md",
+      "line": "evidence_inputs",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest's item (3) says the 105 post-fix connections are 'all clean', but 48 of them (all on 2026-10-07) carry the 'Read-only file system (os error 30)' signature the report catalogues separately; the report body scopes its 'none after' claim to the os error 2 signature, so the wording is imprecise rather than wrong, and a reader of the manifest alone could read the 48 as successes."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "the node landed no commits; the reviewed worktree is at e5982a8d unchanged, so its deliverable is the report and logs alone.",
+    "done_when": "the measure is the reproduced-and-absent pair plus a named owner and a recorded census; arms A/B/C record it with EXIT sentinels, and the census figures reproduced independently.",
+    "goal": "the node goal is an investigation that names the file uv failed to open, shows the failure reproduced and absent under a one-variable change, and names the owning repository; the report names /home/mcintos/Code/imas-codex as the unopenable path and imas-ambix .mcp.json as the owner.",
+    "manifest": "read; it records the cause, the four commands and EXIT codes, the census counts, and that no repository file was touched.",
+    "write_paths": "the node was fenced to the report directory outside any repository; every artefact lives there and its worktree head e5982a8d is clean."
+  },
+  "justifications": {
+    "durability": "the node landed no code so no suite guards it, but repro-mcp-launch.sh is the falsifier it imposes, turning the failure on (exit 2) and off (exit 0) under a one-token change.",
+    "evidence": "the one-variable pair is recorded with EXIT codes in log-arm-A-registered-dir.txt and log-arm-B-corrected-dir.txt, and I reproduced the census (576/467/63/48, 0 unclassified) from the same inventory; the manifest's 'all clean' wording for the 105 post-fix connections is loose because 48 carry the read-only signature.",
+    "fit": "report.md keeps the repository's report idiom and no filename or symbol in the delivery carries a plan, stage or version label.",
+    "goal_fidelity": "report.md:10 names /home/mcintos/Code/imas-codex as the unopenable path and :17 names imas-ambix .mcp.json as the owner, satisfying both clauses of \u00a76's deliverable.",
+    "reuse": "the node added no code definition and reused the existing instruments (git, uv, strace, Claude Code's per-connection logs) without forking a capability.",
+    "scope_discipline": "the reviewed worktree at e5982a8d is clean, no repository file was modified, and every artefact sits under the fenced report directory."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a76's deliverable is an investigation that names the file uv failed to open, shows the failure reproduced on demand and absent under a one-variable change, and names the owning repository and file; the report at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/mcp-failures/imas-cx-os-error-2/report.md names /home/mcintos/Code/imas-codex as the path uv's chdir could not open and imas-ambix .mcp.json as the owner, meeting each half.\nVERDICT done_when: the done-when is a reproduced-and-absent pair plus a named owner and a recorded census; arms A/B/C in /home/ITER/mcintos/.config/reckon/crew/reports/reckon/mcp-failures/imas-cx-os-error-2/log-arm-A-registered-dir.txt (EXIT=2), log-arm-B-corrected-dir.txt (EXIT=0) and log-arm-C-shipped-config.txt (EXIT=0) differ in one token and record it, and I reproduced the census figures independently from the same log inventory.\nVERDICT write_paths: the node was fenced to the report directory /home/ITER/mcintos/.config/reckon/crew/reports/reckon/mcp-failures/imas-cx-os-error-2, which is outside any repository; every artefact it wrote lives there, and its own registered worktree head e5982a8d is clean with no file staged or modified.\nVERDICT manifest: read; it records the cause (the --directory token naming a nonexistent home component), the four commands run with their EXIT codes, the census counts, the reconciliation of 576 with 467, and no repository file touched.\nVERDICT diff: the node landed no commits \u2014 the reviewed worktree is at e5982a8d, unchanged from its launch, so there is no diff to read commit by commit; its entire deliverable is the report and its logs.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: /home/ITER/mcintos/.config/reckon/crew/reports/reckon/mcp-failures/imas-cx-os-error-2/report.md:10 names /home/mcintos/Code/imas-codex as the unopenable path and :17 names imas-ambix .mcp.json as the owner, satisfying both clause of \u00a76's deliverable.\nSCORE evidence: 18\nJUSTIFICATION evidence: the one-variable pair is recorded with EXIT codes in /home/ITER/mcintos/.config/reckon/crew/reports/reckon/mcp-failures/imas-cx-os-error-2/log-arm-A-registered-dir.txt and log-arm-B-corrected-dir.txt, and I reproduced the census (576/467/63/48, 0 unclassified) from the same inventory, so the figures reproduce; the manifest's summary line calling the 105 post-fix connections 'all clean' is loose because 48 of them carry the separate read-only signature.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the reviewed worktree at e5982a8d is clean (git status --porcelain empty), no repository file was modified, and every artefact sits under the fenced report directory /home/ITER/mcintos/.config/reckon/crew/reports/reckon/mcp-failures/imas-cx-os-error-2.\nSCORE durability: 18\nJUSTIFICATION durability: the node landed no code, so no suite guards it, but /home/ITER/mcintos/.config/reckon/crew/reports/reckon/mcp-failures/imas-cx-os-error-2/repro-mcp-launch.sh is the falsifier it self-imposes \u2014 it turns the failure on (arm A, exit 2) and off (arm B/C, exit 0) under a one-token change \u2014 and the census script is re-runnable against the same logs.\nSCORE fit: 20\nJUSTIFICATION fit: /home/ITER/mcintos/.config/reckon/crew/reports/reckon/mcp-failures/imas-cx-os-error-2/report.md follows the repository's report idiom (verdict, reproduction table, census, log inventory, EXIT sentinels on every command log) and no filename or symbol in the delivery carries a plan, stage or version label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the node added no code definition; it reused the existing instruments (git, uv, strace, Claude Code's own per-connection logs under ~/.cache/claude-cli-nodejs) and forked no capability the repository owns.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T012837840391-imas-cx-os-error-2-cause/manifest.md:evidence_inputs follow-on: the manifest's item (3) says the 105 post-fix connections are 'all clean', but 48 of them (all on 2026-10-07) carry the 'Read-only file system (os error 30)' signature the report itself catalogues separately \u2014 the report body scopes its 'none after' claim to the os-error-2 signature, so the wording is imprecise rather than wrong, and a reader of the manifest alone could read the 48 as successes.\n",
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261008T012837840391-imas-cx-os-error-2-cause.at-e5982a8d645f6ca86b32ded7eb891174dfc635e2.json",
+  "review_run_id": "r-20261008T022026469831-review-of-imas-cx-os-error-2-cause",
+  "reviewed_base_sha": "e5982a8d645f6ca86b32ded7eb891174dfc635e2",
+  "reviewed_commits": [],
+  "reviewed_head_sha": "e5982a8d645f6ca86b32ded7eb891174dfc635e2",
+  "reviewed_run_id": "r-20261008T012837840391-imas-cx-os-error-2-cause",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T02:45:37.314788+00:00",
+  "total": 116
+}
