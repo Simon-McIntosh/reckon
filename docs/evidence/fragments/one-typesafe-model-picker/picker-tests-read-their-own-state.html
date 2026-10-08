@@ -1,0 +1,60 @@
+<section id="picker-tests-read-their-own-state">
+  <h2>The picker's tests read only their own state</h2>
+  <p>
+    Four test-isolation repairs, all in the test tree; no product code changed.
+  </p>
+  <table>
+    <thead>
+      <tr><th>Item</th><th>Change</th><th>Measure</th></tr>
+    </thead>
+    <tr>
+      <td>Stale-window clock</td>
+      <td>Pin the picker snapshot's wall clock to one instant so the reading's
+        age is measured from a single source.</td>
+      <td>Clock moved a day forward: <code>assert 172800.0 == 86400 &plusmn; 1</code>
+        (fails); at the fixed instant the test passes.</td>
+    </tr>
+    <tr>
+      <td>Member-friction store path</td>
+      <td>Resolve the guard's store through the store's own config-home
+        precedence, and assert the fixture's target is never that home.</td>
+      <td>Both guard cases and the escape-destination case pass.</td>
+    </tr>
+    <tr>
+      <td>Watch-reap seam default</td>
+      <td><code>reapable_watch_pids</code> defaults <code>include_named_half</code>
+        off; the one caller whose subject is the scan opts in.</td>
+      <td>Callers written for the record path no longer run the <code>/proc</code>
+        sweep.</td>
+    </tr>
+    <tr>
+      <td>Provider-banner check</td>
+      <td>Suite-wide source scan refusing a test that spawns
+        <code>claude</code>/<code>codex</code> outside the account-probe seam.</td>
+      <td>Passes on the suite as it stands; a test made to spawn
+        <code>codex</code> fails it (<code>run('codex')</code>).</td>
+    </tr>
+  </table>
+  <h3 id="picker-tests-read-their-own-state-callers">The watch-reap seam's callers</h3>
+  <p>
+    <code>reapable_watch_pids</code> unions the seat records under its root with
+    an optional scan of every live process. The value each caller needs, and now
+    passes:
+  </p>
+  <ul>
+    <li><code>per_test_reap_pids</code> (conftest) — <code>include_named_half=armed</code>,
+      true only for a test marked <code>arms_watch_producer</code>.</li>
+    <li>Session-end reap (<code>reaped_watch_producers</code>, conftest) —
+      <code>False</code>.</li>
+    <li><code>test_reaper_catches_unrecorded_producer.py</code> — <code>True</code>
+      (its subject is the scan).</li>
+    <li><code>test_the_session_reap_signals_a_pruned_producer.py</code> (two
+      call sites) and <code>test_test_watchers_are_reaped.py</code> — default
+      <code>False</code>; both read records only.</li>
+  </ul>
+  <h3 id="picker-tests-read-their-own-state-gate">Gate</h3>
+  <p>
+    Base <code>3f7a2f71f</code>: 18 passed, 1 skipped. Head: 22 passed, 1 skipped
+    (the four added check cases). Logs under the run directory.
+  </p>
+</section>
