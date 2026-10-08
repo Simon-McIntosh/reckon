@@ -2098,14 +2098,13 @@ def _lift_moment(text, *, now):
     return now + timedelta(seconds=int(seconds))
 
 
-def _lift_ends(*, until, clock, now, form):
+def _lift_ends(*, until, clock, now):
     """Build ``grant``'s ``ends`` block from ``--until``/``--clock``.
 
-    The default ``reset`` lets the grant anchor the lift to the clock's own
-    reset, which the record resolves at expiry so the lift ends when the window
-    does whatever that turns out to be. An explicit ISO stamp or duration pins
-    the lift's end instead. The drain-by form names its own end and ignores
-    ``--until``.
+    The default ``reset`` anchors the lift to the clock's own reset, which the
+    record resolves at expiry so the lift ends when the window does whatever
+    that turns out to be. An explicit ISO stamp or duration pins the lift's end
+    instead.
     """
     text = str(until or "").strip()
     if not text or text == "reset":
@@ -2302,7 +2301,7 @@ def crew_budget_lift(
                     "duration"
                 )
 
-        ends = _lift_ends(until=until, clock=clock, now=now, form=form)
+        ends = _lift_ends(until=until, clock=clock, now=now)
         readings = budget_lift_module.published_readings(config, group=group, now=now)
 
         lift = budget_lift_module.grant(

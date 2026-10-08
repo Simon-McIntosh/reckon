@@ -543,6 +543,52 @@ def test_ship_skill_authors_the_budget_fence_alone() -> None:
         assert "budget fence" not in path.read_text().lower(), path
 
 
+def test_ship_budget_fence_states_the_all_excluded_bookend_rule() -> None:
+    """The fence must state the rule the code enforces, not its contrary.
+
+    A wallet whose every member the configuration removes from review routing
+    withholds no bookend reserve, because the review role the reserve is sized
+    for can never run there. The sentence is checked beside the function it
+    describes, so the prose and the code are held to one figure.
+    """
+    from reckon.crew import budget_group as budget_group_module
+    from reckon.crew import reserve as reserve_module
+
+    ship = normalized((ROOT / "skills" / "reckon-build" / "SKILL.md").read_text())
+    assert (
+        "is not withheld on a group whose every member `review_excluded_backends` lists"
+        in ship
+    )
+
+    block = {reserve_module.RESERVE_KEY: 0.2}
+    all_excluded = {
+        "review_excluded_backends": ["codex"],
+        "backends": {"codex": {"budget_group": "codex-sub"}},
+    }
+    resolved = budget_group_module.reserve_block_for_group(
+        block, all_excluded, "codex-sub"
+    )
+    assert resolved[reserve_module.RESERVE_KEY] == 0.0
+    # A wallet that can still serve a bookend keeps the reserve it was given.
+    can_serve = {"backends": {"codex": {"budget_group": "codex-sub"}}}
+    served = budget_group_module.reserve_block_for_group(block, can_serve, "codex-sub")
+    assert served[reserve_module.RESERVE_KEY] == 0.2
+
+
+def test_ship_crew_surface_lists_each_budget_lift_form_on_its_own_line() -> None:
+    """The crew-surface inventory shows each budget-lift verb on its own line."""
+    text = (ROOT / "skills" / "reckon-build" / "SKILL.md").read_text()
+    surface = text.split("```text", 1)[1].split("```", 1)[0]
+    forms = [
+        line.strip()
+        for line in surface.splitlines()
+        if line.strip().startswith("reckon crew budget-lift ")
+    ]
+    assert len(forms) == 2
+    assert sum("--clear" in line for line in forms) == 1
+    assert all(not ("--multiple" in line and "--clear" in line) for line in forms)
+
+
 def test_continuation_closes_at_three_altitudes_in_the_skills() -> None:
     ship = normalized((ROOT / "skills" / "reckon-build" / "SKILL.md").read_text())
     orchestration = normalized(
