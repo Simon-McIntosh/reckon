@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "local",
+  "base_log_revision": "7c882130dec0027ba473f12e96eb3a9e8b10b6e5",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:1759 (crew pick --outcomes -> read_outcomes -> summarize -> _codex_lane)",
+    "reckon/crew/picker/prompts.py:241 (lane_context.build -> return_times -> _document_backed_backends)",
+    "reckon/crew/picker/prompts.py:246 (budget_snapshot passed into build)"
+  ],
+  "completed_at": "2026-10-08T01:49:14.151Z",
+  "dispatched_at": "2026-10-08T01:29:05Z",
+  "findings": [
+    {
+      "file": "reckon/crew/picker/prompts.py",
+      "line": "48",
+      "severity": "follow-on",
+      "text": "follow-on: _GLOSSARY[\"budget_source\"] still describes only an account-surface or a ledger reading, so the \"document\" value this change lets a Jev-facing block carry is undocumented where the model reads it."
+    },
+    {
+      "file": "reckon/crew/paid_lanes.py",
+      "line": "900",
+      "severity": "follow-on",
+      "text": "follow-on: codex profiles are still joined to the provider account window by name prefix (name.startswith(\"codex\"), and profile.startswith(\"codex\") at :904), which is the join the plan followup named as joining on the declared budget_group; it stays unaddressed."
+    }
+  ],
+  "head_log_revision": "c8adc9b6485c16554cd474d3b8782a05fa6db9f7",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read both commits against 7c882130; c8adc9b replaces the two startswith(\"codex\") row tests in outcomes.py with _codex_lane and adds _document_backed_backends plus a document_backed flag to _budget_block in lane_context.py, and aa56ba6f9 adds the landing fragment.",
+    "done_when": "the gate is tests/test_picker_joins_codex_by_lane.py, every tests/test_picker*.py, tests/test_old_names_resolve.py and tests/test_jev_weighs_context.py run -n 6 with a base and a head log each ending EXIT; base.log records 190 passed EXIT=0 and head.log 198 passed EXIT=0, and negative-control.log restores the codex name-prefix test to 3 failed EXIT=1.",
+    "goal": "the node's goal is that the picker counts codex runs by lane and labels a document-backed reading by its own source; reckon/crew/picker/outcomes.py:83 (_codex_lane) joins a run to codex through ledger.resolve_name and reckon/crew/picker/lane_context.py:127 (_document_backed_backends) labels a published reading, both reached in the landed diff.",
+    "manifest": "read; it fills baseline_suite (7c882130, base.log, 190 passed, EXIT=0) and after_suite (c8adc9b, head.log, 198 passed, EXIT=0), names the negative_control_log, and its follow_ons already names the prompts.py glossary gap.",
+    "write_paths": "the declared write paths are reckon/crew/picker/outcomes.py, reckon/crew/picker/lane_context.py, tests/test_picker_joins_codex_by_lane.py and the fragment docs/evidence/fragments/one-typesafe-model-picker/picker-joins-codex-by-lane.html; every path in the two commits is inside that set."
+  },
+  "justifications": {
+    "durability": "the negative control reddens test_codex_names_reach_the_codex_lane[gpt-6-astra] and both lookalike cases (negative-control.log:57-59), and tests/test_picker_joins_codex_by_lane.py:181 asserts against an independent window_source input rather than the code's own value.",
+    "evidence": "the gate runs the exact files the done-when names and both arms are recorded with logs whose headers carry the revision and outcomes.__file__ (runs/r-20261008T004712736537-picker-joins-codex-by-lane/head.log:4).",
+    "fit": "the helpers follow the module's idiom and introduce no name the naming rules forbid (reckon/crew/picker/outcomes.py:83, reckon/crew/picker/lane_context.py:127).",
+    "goal_fidelity": "both goal clauses land and are asserted -- the lane join at reckon/crew/picker/outcomes.py:83 and the provenance label at reckon/crew/picker/lane_context.py:167 -- but the plan followup's provider-window prefix join at reckon/crew/paid_lanes.py:900 is untouched.",
+    "reuse": "_codex_lane routes through the existing ledger.resolve_name owner and _document_backed_backends reads the existing budget.WINDOW_SOURCE_DOCUMENT constant, forking no capability.",
+    "scope_discipline": "every changed path is inside the declared write paths, but docs/evidence/fragments/one-typesafe-model-picker/picker-joins-codex-by-lane.html carries a measures table where the node's own contract said it writes no evidence prose."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the picker counts codex runs by lane and labels a document-backed reading by its own source; reckon/crew/picker/outcomes.py:83 (_codex_lane) joins a run to codex through ledger.resolve_name and reckon/crew/picker/lane_context.py:127 (_document_backed_backends) labels a published reading, both reached in the landed diff.\nVERDICT done_when: the gate is tests/test_picker_joins_codex_by_lane.py, every tests/test_picker*.py, tests/test_old_names_resolve.py and tests/test_jev_weighs_context.py run -n 6 with a base and a head log each ending EXIT; base.log records 190 passed EXIT=0 and head.log 198 passed EXIT=0, and negative-control.log restores the codex name-prefix test to 3 failed EXIT=1.\nVERDICT write_paths: the declared write paths are reckon/crew/picker/outcomes.py, reckon/crew/picker/lane_context.py, tests/test_picker_joins_codex_by_lane.py and the fragment docs/evidence/fragments/one-typesafe-model-picker/picker-joins-codex-by-lane.html; every path in the two commits is inside that set.\nVERDICT manifest: read; it fills baseline_suite (7c882130, base.log, 190 passed, EXIT=0) and after_suite (c8adc9b, head.log, 198 passed, EXIT=0), names the negative_control_log, and its follow_ons already names the prompts.py glossary gap.\nVERDICT diff: read both commits against 7c882130; c8adc9b replaces the two startswith(\"codex\") row tests in outcomes.py with _codex_lane and adds _document_backed_backends plus a document_backed flag to _budget_block in lane_context.py, and aa56ba6f9 adds the landing fragment.\nCALL_SITES: reckon/cli.py:1759 (crew pick --outcomes -> read_outcomes -> summarize -> _codex_lane), reckon/crew/picker/prompts.py:241 (lane_context.build -> return_times -> _document_backed_backends), reckon/crew/picker/prompts.py:246 (budget_snapshot passed into build)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: both goal clauses land and are asserted -- the lane join at reckon/crew/picker/outcomes.py:83 and the provenance label at reckon/crew/picker/lane_context.py:167 -- but the plan followup's provider-window prefix join at reckon/crew/paid_lanes.py:900 is untouched.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate runs the exact files the done-when names and both arms are recorded with logs whose headers carry the revision and outcomes.__file__ (runs/r-20261008T004712736537-picker-joins-codex-by-lane/head.log:4).\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every changed path is inside the declared write paths, but docs/evidence/fragments/one-typesafe-model-picker/picker-joins-codex-by-lane.html carries a measures table where the node's own contract said it writes no evidence prose.\nSCORE durability: 18\nJUSTIFICATION durability: the negative control reddens test_codex_names_reach_the_codex_lane[gpt-6-astra] and both lookalike cases (negative-control.log:57-59), and tests/test_picker_joins_codex_by_lane.py:181 asserts against an independent window_source input rather than the code's own value.\nSCORE fit: 19\nJUSTIFICATION fit: the helpers follow the module's idiom and introduce no name the naming rules forbid (reckon/crew/picker/outcomes.py:83, reckon/crew/picker/lane_context.py:127).\nSCORE reuse: 20\nJUSTIFICATION reuse: _codex_lane routes through the existing ledger.resolve_name owner and _document_backed_backends reads the existing budget.WINDOW_SOURCE_DOCUMENT constant, forking no capability.\nFINDING reckon/crew/picker/prompts.py:48 follow-on: _GLOSSARY[\"budget_source\"] still describes only an account-surface or a ledger reading, so the \"document\" value this change lets a Jev-facing block carry is undocumented where the model reads it.\nFINDING reckon/crew/paid_lanes.py:900 follow-on: codex profiles are still joined to the provider account window by name prefix (name.startswith(\"codex\"), and profile.startswith(\"codex\") at :904), which is the join the plan followup named as joining on the declared budget_group; it stays unaddressed.\nreviewed_base_sha: 7c882130dec0027ba473f12e96eb3a9e8b10b6e5\nreviewed_head_sha: aa56ba6f9c2c1f4a7baac10d345c502544d1e82c\n",
+  "review_run_id": "r-20261008T012756712468-review-of-picker-joins-codex-by-lane",
+  "reviewed_base_sha": "7c882130dec0027ba473f12e96eb3a9e8b10b6e5",
+  "reviewed_head_sha": "aa56ba6f9c2c1f4a7baac10d345c502544d1e82c",
+  "reviewed_run_id": "r-20261008T004712736537-picker-joins-codex-by-lane",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T01:49:39.543849+00:00",
+  "total": 112
+}
