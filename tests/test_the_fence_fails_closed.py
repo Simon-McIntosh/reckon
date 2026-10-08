@@ -468,7 +468,7 @@ def _negative_control_report(root: Path) -> tuple[int, list[str]]:
         raise _WorktreeReachedError()
 
     # The mutation: the capability check reports success while bwrap is absent.
-    _backends.shutil.which = which
+    _worker_fence.shutil.which = which
     _backends.fence_capability_problem = lambda *a, **k: None
     dispatch_module._create_worktree = reached
     try:
@@ -490,7 +490,7 @@ def _negative_control_report(root: Path) -> tuple[int, list[str]]:
         lines.append("the dispatch neither refused nor reached the worktree")
         return 1, lines
     finally:
-        _backends.shutil.which = real_which
+        _worker_fence.shutil.which = real_which
         _backends.fence_capability_problem = real_problem
         os.environ.pop("RECKON_HOME", None)
 
