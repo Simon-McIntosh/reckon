@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.5">
-<meta name="plan-version" content="40">
+<meta name="plan-version" content="41">
 <meta name="plan-modified" content="2026-10-08">
 <meta name="plan-commits" content="ed3d6ffc">
 </head>
@@ -105,20 +105,19 @@
 
     <h2 id="s3">§3 — The follower delivers through the policy</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> The follower, armed by a session host or the Monitor fallback alike,
-      prints through §2's coordinator pane, and a held row whose settle window elapses is released by the
-      follower's existing wait pass through <code>PaneRowPath.flush</code>, so a lone completion is never stuck
-      behind a quiet fleet. No option is added to <code>crew follow</code>: a human who wants every row reads
-      the producer's log, which already prints each one, so the full stream needs no second surface. The
-      docstring paragraph of <code>crew_follow</code> that says every transition is delivered is rewritten to
-      state the guarantee §1 gives and to name the producer's log as the full stream.</p>
-    <p><strong>Done when</strong> <code>tests/test_follow_settled_rows.py</code> runs a follower over a
-      fixture stream for one session holding two runs. The first goes dispatched, working, complete and
-      recorded. The second goes working, exited-unfinished and blocked two seconds apart. The pane receives
-      exactly two rows, the complete and the blocked. A completion with no later transition is delivered
-      within the settle window plus one poll interval. A negative control is executed and logged: with the
-      follower building its row path with observer context shown, the first assertion fails. The write paths are <code>reckon/cli.py</code> and
-      <code>tests/test_follow_settled_rows.py</code>.</p>
+    <p><strong>Deliverable.</strong> §2's merge (<code>79d3a5458</code>) already wires the follower through the coordinator pane:
+      <code>follower_row_path</code> in <code>reckon/crew_follow_commands.py</code> builds a <code>PaneRowPath</code> with observer
+      context held, and the follower's wait pass calls <code>path.flush(now=clock())</code>, so a held row whose settle window elapses is
+      released without a later transition. What remains is the reader's contract and its proof. The docstring paragraph of
+      <code>crew_follow</code> that says every transition is delivered is rewritten to state the guarantee §1 gives, and to name the
+      producer's log as the full stream. No option is added to <code>crew follow</code>: a human who wants every row reads the producer's
+      log, which already prints each one.</p>
+    <p><strong>Done when</strong> <code>tests/test_follow_settled_rows.py</code> runs the real follower over a fixture stream for one
+      session holding two runs. The first goes dispatched, working, complete and recorded. The second goes working, exited-unfinished and
+      blocked two seconds apart. The pane receives exactly two rows, the complete and the blocked, and a completion with no later transition
+      is delivered within the settle window plus one poll interval. A negative control is executed and logged: with the follower building
+      its row path with observer context shown, the first assertion fails. The write paths are
+      <code>reckon/crew_follow_commands.py</code> and <code>tests/test_follow_settled_rows.py</code>.</p>
 
     <section class="section-landed">
   <header><span class="badge badge-shipped">&#10003; landed 2026-10-08</span>
