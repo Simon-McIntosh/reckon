@@ -1,4 +1,6 @@
 import json
+import os
+import re
 import shutil
 import subprocess
 from datetime import UTC, datetime
@@ -771,6 +773,246 @@ def migrate_layout(docs_path, project, check):
 
 
 
+_MCP_HOME_VARIABLE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")
+_LITERAL_HOME = re.compile(r"(?:^|[\s=])/(?:home|Users)/[^/\s]+(/|$|\s)")
+
+
+def _expand_mcp_argument(value: str) -> str:
+    """Expand the variables Claude Code substitutes in MCP configuration.
+
+    ``${HOME}`` resolves through :func:`Path.home` so a launch written against
+    the variable is judged against the home the reading process sees, and any
+    other ``${VAR}`` comes from the environment.
+    """
+
+    def substitute(match: re.Match[str]) -> str:
+        name = match.group(1)
+        if name == "HOME":
+            return str(Path.home())
+        return os.environ.get(name, match.group(0))
+
+    return _MCP_HOME_VARIABLE.sub(substitute, value)
+
+
+def _as_home_variable(path: Path) -> str:
+    """Render a checkout path so it names no single user's home."""
+    rendered = str(path)
+    home = str(Path.home())
+    if rendered == home:
+        return "${HOME}"
+    if rendered.startswith(home + os.sep):
+        return "${HOME}" + rendered[len(home) :]
+    match = re.match(r"(?:/home|/Users)/[^/]+(/.*)?$", rendered)
+    if match:
+        return "${HOME}" + (match.group(1) or "")
+    return rendered
+
+
+def _runs_uv(tokens: list[str]) -> bool:
+    return len(tokens) >= 2 and Path(tokens[0]).name == "uv" and tokens[1] == "run"
+
+
+def _project_argument(tokens: list[str]) -> str | None:
+    for index, token in enumerate(tokens):
+        if token in ("--project", "--directory"):
+            if index + 1 < len(tokens):
+                return tokens[index + 1]
+            return None
+        if token.startswith(("--project=", "--directory=")):
+            return token.split("=", 1)[1]
+    return None
+
+
+def _launch_syncs(tokens: list[str]) -> bool:
+    """Whether ``uv run`` would sync before it launches the server."""
+    return "--no-sync" not in tokens
+
+
+def _missing_directory(project: str) -> str | None:
+    """The expanded ``--project`` path when it names no existing directory."""
+    expanded = Path(_expand_mcp_argument(project)).expanduser()
+    return None if expanded.is_dir() else str(expanded)
+
+
+def _literal_home_argument(tokens: list[str]) -> str | None:
+    """The first argument carrying a literal ``/home/<user>`` path."""
+    for token in tokens:
+        if "${" in token:
+            continue
+        if _LITERAL_HOME.search(token):
+            return token
+    return None
+
+
+def _mcp_launch_flags(tokens: list[str]) -> list[tuple[str, str]]:
+    """The reasons a stdio MCP launch is unsafe, in reading order.
+
+    A launch that omits ``--no-sync`` spends the client's connect timeout in
+    ``uv sync``. One that names no absolute ``--project`` resolves its project
+    from whatever directory the session began in, so a worker's session syncs
+    its worktree instead of the checkout. A literal ``/home/<user>`` path is
+    wrong for every other user, and a ``--project`` naming a directory that no
+    longer exists cannot start at all.
+    """
+    if not _runs_uv(tokens):
+        return []
+    flags: list[tuple[str, str]] = []
+    if _launch_syncs(tokens):
+        flags.append(("sync", "runs uv run without --no-sync"))
+    project = _project_argument(tokens)
+    if project is None:
+        flags.append(("resolves from cwd", "names no absolute --project"))
+    elif not Path(_expand_mcp_argument(project)).expanduser().is_absolute():
+        flags.append(("resolves from cwd", "names no absolute --project"))
+    literal = _literal_home_argument(tokens)
+    if literal is not None:
+        flags.append(("names one user's home", literal))
+    if project is not None and Path(_expand_mcp_argument(project)).expanduser().is_absolute():
+        missing = _missing_directory(project)
+        if missing is not None:
+            flags.append(("missing directory", missing))
+    return flags
+
+
+def _launch_remainder(tokens: list[str]) -> list[str]:
+    """The launch arguments with ``uv run``'s sync and project options removed."""
+    rest: list[str] = []
+    skip = False
+    for index, token in enumerate(tokens):
+        if index < 2:
+            continue
+        if skip:
+            skip = False
+            continue
+        if token == "--no-sync":
+            continue
+        if token in ("--project", "--directory"):
+            skip = True
+            continue
+        if token.startswith(("--project=", "--directory=")):
+            continue
+        rest.append(token)
+    return rest
+
+
+def _launch_checkout(tokens: list[str], project_checkout: Path | None) -> Path:
+    """The checkout a corrected launch should name.
+
+    The existing ``--project`` wins when it resolves; otherwise the project's
+    own checkout is the reference, so a launch naming a directory that no
+    longer exists is corrected to the tree it belongs to.
+    """
+    project = _project_argument(tokens)
+    if project is not None:
+        expanded = Path(_expand_mcp_argument(project)).expanduser()
+        if expanded.is_dir():
+            return expanded
+    if project_checkout is not None:
+        return project_checkout
+    if project is not None:
+        return Path(_expand_mcp_argument(project)).expanduser()
+    return Path.cwd()
+
+
+def _corrected_launch(tokens: list[str], checkout: Path) -> str:
+    """The command that would run without syncing, from a fixed checkout."""
+    named = _as_home_variable(checkout)
+    rest = " ".join(_launch_remainder(tokens))
+    return f"uv run --no-sync --project {named} {rest}".rstrip()
+
+
+def _stdio_servers(path: Path) -> dict[str, dict]:
+    """The stdio server entries in an MCP config file, or an empty map."""
+    if not path.is_file():
+        return {}
+    try:
+        config = json.loads(path.read_text())
+    except (json.JSONDecodeError, OSError):
+        return {}
+    servers = config.get("mcpServers")
+    if not isinstance(servers, dict):
+        return {}
+    return {
+        name: entry
+        for name, entry in servers.items()
+        if isinstance(entry, dict) and entry.get("command")
+    }
+
+
+def _mounted_project_checkouts() -> dict[str, Path]:
+    """Map each mounted project to the checkout holding its ``docs/`` directory."""
+    from reckon._store import _mounts_path
+
+    path = _mounts_path()
+    if not path.is_file():
+        return {}
+    try:
+        mounts = json.loads(path.read_text())
+    except (json.JSONDecodeError, OSError):
+        return {}
+    if not isinstance(mounts, dict):
+        return {}
+
+    checkouts: dict[str, Path] = {}
+    for name, entry in mounts.items():
+        if isinstance(entry, str):
+            checkouts[str(name)] = Path(entry).expanduser().resolve().parent
+    return checkouts
+
+
+def _launch_tokens(entry: dict) -> list[str]:
+    args = entry.get("args") or []
+    return [str(entry.get("command")), *(str(arg) for arg in args)]
+
+
+def _audit_mcp_launches() -> list[dict]:
+    """Flag every stdio MCP launch that would sync or resolve from the cwd.
+
+    The launches come from the user-scope entries in ``~/.claude.json`` and the
+    ``.mcp.json`` at the root of each mounted project's checkout — the
+    repository that holds the mount's ``docs/`` directory. A worker's session
+    starts in a worktree, so a launch that resolves its project from the
+    working directory syncs the wrong tree, and one that omits ``--no-sync``
+    spends the client's connect timeout inside ``uv sync``.
+    """
+    sources: list[tuple[str, Path | None, dict]] = []
+    user_config = Path.home() / ".claude.json"
+    for name, entry in _stdio_servers(user_config).items():
+        sources.append((f"user config {user_config.name} → {name}", None, entry))
+    for project, checkout in _mounted_project_checkouts().items():
+        for name, entry in _stdio_servers(checkout / ".mcp.json").items():
+            sources.append((f"project [{project}] .mcp.json → {name}", checkout, entry))
+
+    findings: list[dict] = []
+    for where, project_checkout, entry in sources:
+        tokens = _launch_tokens(entry)
+        flags = _mcp_launch_flags(tokens)
+        if not flags:
+            continue
+        checkout = _launch_checkout(tokens, project_checkout)
+        findings.append(
+            {
+                "where": where,
+                "flags": flags,
+                "corrected": _corrected_launch(tokens, checkout),
+            }
+        )
+    return findings
+
+
+def _echo_mcp_launches(findings: list[dict]) -> bool:
+    """Print the flagged launches; return False when any was flagged."""
+    if not findings:
+        click.echo("  ✓  every stdio MCP launch is sync-free with an absolute project")
+        return True
+    for finding in findings:
+        click.echo(f"  ✗  {finding['where']}")
+        for kind, detail in finding["flags"]:
+            click.echo(f"       {kind}: {detail}")
+        click.echo(f"       fix: {finding['corrected']}")
+    return False
+
+
 def _project_environment_drift() -> tuple[Path | None, list[str]]:
     """Return the source checkout and the changes ``uv sync`` would make to it.
 
@@ -847,6 +1089,8 @@ def doctor():
     - mounts.json reachable (default: ~/docs-server/mounts.json)
     - Every mounted project directory exists
     - Reckon MCP registration present in Claude Code, Claude Desktop or Codex config
+    - Every stdio MCP launch is sync-free and names an absolute project that
+      exists, so a session that starts in a worktree still syncs the checkout
     - The source checkout's environment matches its lockfile, so the MCP
       server's ``uv run`` launch does not sync inside the connect timeout
 
@@ -976,6 +1220,11 @@ def doctor():
         window_end=_iso_instant(now.timestamp()),
     )
     _echo_mcp_census(report)
+
+    # ── MCP launch check ─────────────────────────────────────────────────────
+    click.echo("\nMCP launches")
+    if not _echo_mcp_launches(_audit_mcp_launches()):
+        ok = False
 
     # ── Environment check ────────────────────────────────────────────────────
     checkout, drift = _project_environment_drift()
