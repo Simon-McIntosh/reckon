@@ -399,7 +399,7 @@ def _gate_section_edges(
                 )
                 if judgment is not None:
                     row["judgment"] = _judgment_member(
-                        project, slug, parsed.slug, judgment
+                        project, slug, project, parsed.slug, judgment
                     )
             row.update(
                 {
@@ -769,17 +769,23 @@ def _whole_plan_dependency(
 
 
 def _judgment_member(
-    project: str,
+    dependent_project: str,
     dependent: str,
+    target_project: str,
     target: str,
     judgment: tuple[str, list[str]],
 ) -> dict[str, Any]:
-    """Compose one ``judgment_required`` member naming a held dependency."""
+    """Compose one ``judgment_required`` member naming a held dependency.
+
+    Each side is qualified with its own project: a held dependency may cross a
+    project boundary in a graph, so the target does not belong to the
+    dependent's project and naming it there points at the wrong plan.
+    """
 
     reason, sections = judgment
     return {
-        "dependent": _qualified_plan(project, dependent),
-        "target": _qualified_plan(project, target),
+        "dependent": _qualified_plan(dependent_project, dependent),
+        "target": _qualified_plan(target_project, target),
         "reason": reason,
         "sections": list(sections),
     }
@@ -1054,7 +1060,11 @@ def _after_edges(
             row["satisfied"] = satisfied
             if judgment is not None:
                 row["judgment"] = _judgment_member(
-                    project, str(plan.get("slug") or ""), parsed.slug, judgment
+                    project,
+                    str(plan.get("slug") or ""),
+                    project,
+                    parsed.slug,
+                    judgment,
                 )
         rows.append(row)
     return rows
@@ -2138,7 +2148,11 @@ def resolve_graph_target(
             if judgment is not None:
                 graph_judgment_members.append(
                     _judgment_member(
-                        graph_project, graph_slug, dependency[1], judgment
+                        graph_project,
+                        graph_slug,
+                        dependency[0],
+                        dependency[1],
+                        judgment,
                     )
                 )
         # Readiness is the roadmap row's own verdict for this plan, so both
@@ -2747,7 +2761,9 @@ def _build_roadmap(
                 )
                 if judgment is not None:
                     judgment_required_rows[slug].append(
-                        _judgment_member(project, slug, parsed.slug, judgment)
+                        _judgment_member(
+                            project, slug, project, parsed.slug, judgment
+                        )
                     )
             dependency_row = {
                 "ref": ref,

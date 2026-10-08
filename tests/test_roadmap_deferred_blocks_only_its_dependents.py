@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon.roadmap import build_roadmap
+from reckon.roadmap import build_roadmap, resolve_graph_target
 
 
 def _row(
@@ -273,5 +273,62 @@ def test_an_after_edge_to_an_all_deferred_plan_is_reported(roadmap_rows) -> None
     (member,) = block["members"]
     assert member["dependent"] == "proj:M"
     assert member["target"] == "proj:L"
+    assert member["reason"] == "deferred-only"
+    assert member["sections"] == ["s1", "s2"]
+
+
+def _graph_row(
+    slug: str,
+    *,
+    depends_on: list | None = None,
+    graph_handle: str | None = None,
+    declarations: dict | None = None,
+) -> dict:
+    """One graph inventory row, as project discovery hands it to the resolver."""
+
+    row: dict = {
+        "type": "plan",
+        "slug": slug,
+        "title": slug,
+        "status": "active",
+        "impl": 0.0,
+        "depends_on": depends_on or [],
+        "graph_handle": graph_handle,
+        "sprint": None,
+        "decisions": [],
+    }
+    if declarations is not None:
+        row["section_declarations"] = declarations
+    return row
+
+
+def test_a_graph_judgment_names_the_dependency_its_own_project(
+    monkeypatch, tmp_path
+) -> None:
+    """A cross-project hold qualifies each side with its own project.
+
+    In a graph the held dependency may live in another mounted project, which is
+    the case the graph resolver exists for. The member's target must name the
+    dependency's project — naming it the dependent's project points at a plan
+    that does not exist there.
+    """
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "reckon-home"))
+    projects = {
+        "alpha": [
+            _graph_row("dependent", depends_on=["beta:base"], graph_handle="release"),
+        ],
+        "beta": [
+            _graph_row("base", declarations={"s1": "deferred", "s2": "deferred"}),
+        ],
+    }
+
+    result = resolve_graph_target("release", projects)
+
+    block = result["judgment_required"]
+    assert block["required"] is True
+    assert block["count"] == 1
+    (member,) = block["members"]
+    assert member["dependent"] == "alpha:dependent"
+    assert member["target"] == "beta:base"
     assert member["reason"] == "deferred-only"
     assert member["sections"] == ["s1", "s2"]
