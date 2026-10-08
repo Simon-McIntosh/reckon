@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="docs-project" content="reckon"><meta name="reckon-type" content="evidence">
+<meta name="plan-slug" content="recovery-split-map"><meta name="plan-title" content="Recovery module split map">
+<meta name="plan-summary" content="Statement placement, dependencies and external references for the recovery module move"><meta name="plan-recorded-at" content="2026-10-08"><meta name="plan-verdict" content="mapped">
+<meta name="plan-evidence-for" content="every-module-fits-a-worker-window"><meta name="plan-verifies" content="every-module-fits-a-worker-window#s5">
+<title>Recovery module split map | reckon</title>
+<link rel="stylesheet" href="/_shared/foundation.css"><link rel="stylesheet" href="/_shared/dashboard.css">
+</head><body><main class="plan-doc"><article data-reckon="landed" data-node="recovery-split-map" id="recovery-split-map">
+<h1>Recovery module split map</h1>
+<p>Base <code>0d925378c9966477a8f8e42bef2584641c0a62cc</code> has 527,046 UTF-8 bytes in <code>reckon/crew/recovery.py</code>, or 150,585 context-fit tokens at ceil(bytes / 3.5). The JSON map assigns all 353 non-import top-level statements once. Its largest projected module, <code>reckon/crew/recovery_watch.py</code>, is 30,554 tokens including conservative import and re-export estimates. The original remains a 6,203-token import surface.</p>
+<table id="recovery-split-map-modules"><caption>Produced siblings and original remainder; estimates include source statements and imports.</caption><thead><tr><th>Path</th><th>Concern</th><th>Members</th><th>Estimated tokens</th></tr></thead><tbody>
+<tr><td><code>reckon/crew/recovery_review_subject.py</code></td><td>Review subject and brief</td><td>20</td><td>9,181</td></tr>
+<tr><td><code>reckon/crew/recovery_review_delivery.py</code></td><td>Delivered review turn end</td><td>9</td><td>3,202</td></tr>
+<tr><td><code>reckon/crew/recovery_review_dispatch.py</code></td><td>Review dispatch and lane choice</td><td>55</td><td>20,684</td></tr>
+<tr><td><code>reckon/crew/recovery_repair_dispatch.py</code></td><td>Repair round dispatch and retry</td><td>22</td><td>15,263</td></tr>
+<tr><td><code>reckon/crew/recovery_review_acceptance.py</code></td><td>Review acceptance and outstanding review sweep</td><td>6</td><td>5,555</td></tr>
+<tr><td><code>reckon/crew/recovery_stream.py</code></td><td>Stream and budget evidence</td><td>30</td><td>9,284</td></tr>
+<tr><td><code>reckon/crew/recovery_wait.py</code></td><td>Wait probes and resume window</td><td>65</td><td>13,913</td></tr>
+<tr><td><code>reckon/crew/recovery_liveness.py</code></td><td>Worker and manifest liveness</td><td>42</td><td>13,942</td></tr>
+<tr><td><code>reckon/crew/recovery_memo.py</code></td><td>Classification memo and lane events</td><td>30</td><td>7,665</td></tr>
+<tr><td><code>reckon/crew/recovery_classification.py</code></td><td>Pointer classification and remedy</td><td>1</td><td>21,197</td></tr>
+<tr><td><code>reckon/crew/recovery_watch.py</code></td><td>Closure, fleet transitions and watcher</td><td>59</td><td>30,554</td></tr>
+<tr><td><code>reckon/crew/recovery.py</code> (original)</td><td>Import surface and shared vocabulary</td><td>14</td><td>6,203</td></tr>
+</tbody></table>
+<h2 id="recovery-split-map-seams">Grouping and import order</h2>
+<p>The first banner holds review subject and brief construction. Delivery detection is its own small seam because it ends a reviewer's turn after the stored review and complete manifest both exist. The review reflex separates review dispatch from repair dispatch and acceptance; head movement, lane selection and dispatch stay together in the review dispatch sibling. The repair sibling keeps round markers, scope checks and retry state with the function that opens a repair. Acceptance and outstanding-review sweep form the adjacent review acceptance sibling.</p>
+<p>Classification separates stream evidence, wait probes and worker liveness from the pointer classifier. The memo keeps its in-flight binding and admission byte cell beside their writers; it also owns the lane-event grouping function and its default window constant, so the default binds without importing the original at definition time. Manifest-size memory moves with its writer to liveness. The watcher holds closure, snapshots, fleet transitions, ticker and follow loop; its snapshot cache and commits cache stay with their writers. <code>WAITING_STATES</code> moves to the watcher because its fleet-state assignment reads it at module level. The original retains the shared vocabulary and <code>process_alive</code> patch point.</p>
+<p><strong>Module-level edges:</strong> 3 total. They all point from the memo sibling to the liveness sibling for the three record-name constants. No other produced module has a module-level edge, and no produced module imports the original at module level. The original imports and re-exports the moved names; this is the sole module-level direction back toward the siblings.</p>
+<ul id="recovery-split-map-module-edges"><li><code>reckon/crew/recovery_memo.py</code> → <code>reckon/crew/recovery_liveness.py</code> for <code>ATTEMPT_RECORD_NAME</code></li>
+<li><code>reckon/crew/recovery_memo.py</code> → <code>reckon/crew/recovery_liveness.py</code> for <code>EXIT_RECORD_NAME</code></li>
+<li><code>reckon/crew/recovery_memo.py</code> → <code>reckon/crew/recovery_liveness.py</code> for <code>WORKER_RECORD_NAME</code></li></ul>
+<p>Every function-level reference to a name left in <code>recovery.py</code> uses a local import at the call site when moved. This breaks each back-reference while preserving the original module's patch point, especially <code>process_alive</code>. The JSON lists the other function-level cross-sibling references; each can likewise use a local import, so none creates a module-level cycle.</p>
+<details id="recovery-split-map-backrefs"><summary>Original-module back-references by sibling</summary><ul><li><code>reckon/crew/recovery_review_subject.py</code>: <code>PLAN_REVIEW_NODE_PREFIX</code>, <code>REVIEW_NODE_PREFIX</code></li>
+<li><code>reckon/crew/recovery_review_delivery.py</code>: <code>REVIEW_NODE_PREFIX</code>, <code>REVIEW_ROLE</code></li>
+<li><code>reckon/crew/recovery_review_dispatch.py</code>: <code>PLAN_REVIEW_NODE_PREFIX</code></li>
+<li><code>reckon/crew/recovery_repair_dispatch.py</code>: <code>REVIEW_ROLE</code>, <code>process_alive</code></li>
+<li><code>reckon/crew/recovery_wait.py</code>: <code>WAIT_CONDITION_STATES</code>, <code>WAIT_PROBE_TIMEOUT_SECONDS</code></li>
+<li><code>reckon/crew/recovery_liveness.py</code>: <code>LAUNCH_WINDOW_SECONDS</code>, <code>MANIFEST_REWRITE_WINDOW_SECONDS</code>, <code>WAITING_STATUS</code>, <code>process_alive</code></li>
+<li><code>reckon/crew/recovery_classification.py</code>: <code>RECOVERY_VERBS</code>, <code>RESUMPTION_READING_CLASSIFICATIONS</code>, <code>REVIEW_ROLE</code>, <code>WAITING_STATUS</code></li>
+<li><code>reckon/crew/recovery_watch.py</code>: <code>RECOVERY_CLASSES</code>, <code>RECOVERY_VERBS</code>, <code>WAITING_STATUS</code></li></ul></details>
+<h2 id="recovery-split-map-repoints">Test paths for the move</h2>
+<p>The census found 170 imported or attribute-read names, 44 patched names, and 24 distinct source-read sites. The following 55 test files patch a recovery attribute or read its source. Repoint a patch to the module where its caller now resolves the name; keep a patch on the original only when the caller stays there. Source-path assertions about moved definitions must name their new owner. Copied-package reload tests and package-wide scans remain in the inventory for explicit review.</p>
+<details id="recovery-split-map-repoint-list"><summary>Show test write paths and patched names</summary><ul><li><code>tests/test_a_delivered_review_ends_its_turn.py</code> — patches <code>manifest_status_is_template</code></li>
+<li><code>tests/test_a_live_run_never_reads_dead.py</code> — patches <code>_ledger_run_id_reader</code></li>
+<li><code>tests/test_a_pointer_names_its_launching_host.py</code> — patches <code>process_alive</code></li>
+<li><code>tests/test_a_refused_round_is_read_from_its_manifest.py</code> — patches <code>_reviewed_run_refused_the_round</code></li>
+<li><code>tests/test_a_repair_retry_carries_new_input.py</code> — patches <code>_reviewed_run_refused_the_round</code></li>
+<li><code>tests/test_a_reused_snapshot_takes_the_callers_stall_window.py</code> — patches <code>_live_descendant</code>, <code>local_liveness</code></li>
+<li><code>tests/test_a_review_attempt_that_launches_nothing_leaves_nothing.py</code> — reads source (3 sites)</li>
+<li><code>tests/test_an_overrun_names_its_cause.py</code> — patches <code>_historical_reference_rate</code>, <code>_signal_process_group</code>, <code>_utc_seconds</code>; reads source (3 sites)</li>
+<li><code>tests/test_an_unchanged_run_costs_one_stat.py</code> — patches <code>_remember_snapshot</code></li>
+<li><code>tests/test_an_unmeasured_fleet_reading_names_its_cause.py</code> — patches <code>classify_pointer</code></li>
+<li><code>tests/test_crew.py</code> — patches <code>_signal_process_group</code></li>
+<li><code>tests/test_crew_interrupted_phase.py</code> — patches <code>list_live</code></li>
+<li><code>tests/test_crew_live_honours_fields.py</code> — patches <code>_utc_seconds</code></li>
+<li><code>tests/test_crew_monitor_output.py</code> — reads source (1 site)</li>
+<li><code>tests/test_crew_record_liveness.py</code> — reads source (1 site)</li>
+<li><code>tests/test_crew_recovery.py</code> — patches <code>_signal_process_group</code>, <code>watch_follow</code></li>
+<li><code>tests/test_crew_surface_parity.py</code> — patches <code>_utc_seconds</code></li>
+<li><code>tests/test_crew_ticker.py</code> — patches <code>watch_follow</code></li>
+<li><code>tests/test_every_module_fits_a_worker_window.py</code> — reads source (1 site)</li>
+<li><code>tests/test_every_signal_caller_names_its_run_directory.py</code> — patches <code>_budget_timing</code>, <code>_run_stream_mtime</code>, <code>review_delivered</code></li>
+<li><code>tests/test_fleet_counter_coverage.py</code> — reads source (2 sites)</li>
+<li><code>tests/test_follower_freshness.py</code> — reads source (1 site)</li>
+<li><code>tests/test_follower_reload_is_safe.py</code> — reads source (1 site)</li>
+<li><code>tests/test_liveness_is_read_when_it_is_used.py</code> — patches <code>process_alive</code></li>
+<li><code>tests/test_mcp_crew_obligations.py</code> — patches <code>_utc_seconds</code></li>
+<li><code>tests/test_nothing_sweeps_old_plans.py</code> — patches <code>_sweep_review_tier</code>, <code>classify_pointer</code>, <code>dispatch_repair_for_run</code>, <code>dispatch_review_for_run</code>, <code>list_live</code></li>
+<li><code>tests/test_obligations_snapshot_is_published.py</code> — patches <code>_utc_seconds</code></li>
+<li><code>tests/test_one_function_resolves_a_citation.py</code> — reads source (1 site)</li>
+<li><code>tests/test_partition_live_runs_recorded.py</code> — patches <code>classify_pointer</code></li>
+<li><code>tests/test_plan_review_prefix_is_one_constant.py</code> — reads source (1 site)</li>
+<li><code>tests/test_producer_reads_only_what_changed.py</code> — patches <code>_COMMITS_BEYOND_BASE_CACHE_LIMIT</code></li>
+<li><code>tests/test_producer_says_why_it_stops.py</code> — patches <code>watch_follow</code></li>
+<li><code>tests/test_producer_seat_across_hosts.py</code> — patches <code>_signal_process_group</code></li>
+<li><code>tests/test_producer_shares_the_classifier_verdict.py</code> — patches <code>_newest_stream_last_record_type</code>, <code>_run_stream_quiet_seconds</code>, <code>_stall_wait_reason</code>, <code>_watch_snapshot</code>, <code>_watch_verdict</code>, <code>_worker_record_liveness</code>, <code>classify_pointer</code></li>
+<li><code>tests/test_producer_survives_its_reload.py</code> — reads source (1 site)</li>
+<li><code>tests/test_producer_takes_new_code.py</code> — reads source (1 site)</li>
+<li><code>tests/test_promotion_beat_carries_fleet_state.py</code> — patches <code>classify_pointer</code></li>
+<li><code>tests/test_recover_launches_only_what_it_is_asked.py</code> — patches <code>_derive_missing_manifest</code>, <code>_failed_review_backend</code>, <code>_record_review_dispatch</code>, <code>_resolved_review_config</code>, <code>_review_dispatch_fields</code>, <code>_review_in_flight</code>, <code>_stored_review</code>, <code>_worktree_reclaimed</code>, <code>carry_review_forward</code>, <code>classify_pointer</code>, <code>dispatch_review_for_run</code>, <code>list_live</code></li>
+<li><code>tests/test_recovery_state_typing.py</code> — patches <code>_blocked_session_resolution</code>, <code>_stall_wait_reason</code>, <code>_stream_budget</code>, <code>_stream_quiet_seconds</code></li>
+<li><code>tests/test_recovery_timestamps_reuse_the_parser.py</code> — reads source (2 sites)</li>
+<li><code>tests/test_reflex_dispatches_one_repair.py</code> — patches <code>read_pointer</code></li>
+<li><code>tests/test_reflex_skips_tier_none_reviews.py</code> — patches <code>dispatch_review_for_run</code></li>
+<li><code>tests/test_resume_is_aged_from_its_own_start.py</code> — patches <code>_run_stream_quiet_seconds</code></li>
+<li><code>tests/test_review_plan_command.py</code> — patches <code>list_live</code></li>
+<li><code>tests/test_server_serves_one_code_version.py</code> — reads source (1 site)</li>
+<li><code>tests/test_sprint_liveness.py</code> — patches <code>_watch_snapshot</code>, <code>classify_pointer</code></li>
+<li><code>tests/test_stall_clock_starts_at_the_attempt.py</code> — patches <code>_attempt_started_seconds</code></li>
+<li><code>tests/test_stranded_launch_releases_its_claim.py</code> — patches <code>carry_review_forward</code></li>
+<li><code>tests/test_terminal_run_elapsed.py</code> — patches <code>_signal_process_group</code></li>
+<li><code>tests/test_the_departure_row_says_how_and_what_it_spent.py</code> — patches <code>_discard_recorded</code></li>
+<li><code>tests/test_the_reflex_resumes_an_unpromoted_run.py</code> — patches <code>_opened_repair_rounds</code></li>
+<li><code>tests/test_unwatch_leaves_a_sender_record.py</code> — patches <code>_signal_process_group</code></li>
+<li><code>tests/test_watch_stream_parse_is_cached.py</code> — patches <code>_read_classification_memo</code></li>
+<li><code>tests/test_watch_version_stamp.py</code> — patches <code>unwatch</code></li>
+<li><code>tests/test_worker_wait_contract.py</code> — reads source (2 sites)</li></ul></details>
+<p>The two source-identity assertions most likely to need direct edits are <code>tests/test_one_function_resolves_a_citation.py</code> (the commit resolver moves) and <code>tests/test_crew_record_liveness.py</code> (its explicit source-module list must cover moved liveness code). <code>tests/test_recovery_timestamps_reuse_the_parser.py</code> parses the original file and must follow its moved readers. The other source readers and every patch site are recorded with file and line in the JSON.</p>
+</article></main></body></html>
