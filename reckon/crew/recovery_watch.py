@@ -2018,6 +2018,29 @@ def _recreate_unlinked_registration(project: str, watcher: Mapping[str, Any]) ->
 IDLE_POLL_INTERVAL_CAP_SECONDS = 30.0
 
 
+def _sweep_lift_rows(
+    project: str, seen: dict[str, dict[str, Any]] | None
+) -> dict[str, dict[str, Any]] | None:
+    """Fold the workstation's lifts into the project's stream, or keep memory.
+
+    A lift is workstation-wide and the stream is per project, so the same lift
+    is announced once for each project's producer. The sweep is skipped by any
+    process that is not this project's registered producer — the follower reads
+    the stream and must not write it — and one unreadable lift document is the
+    un-lifted state: the poll is skipped and the memory kept, so a lift is not
+    announced as new when a later poll reads the document again.
+    """
+    from reckon.crew import lift_watch
+
+    if project not in runs._WATCH_STREAM_PRODUCERS:
+        return seen
+    try:
+        return lift_watch.sweep(project, seen=seen)
+    except Exception as exc:  # noqa: BLE001 - one bad read must not end the seat
+        print(f"lift-sweep-failure: {project}: {exc}", flush=True)
+        return seen
+
+
 def watch_ticker(
     project: str,
     *,
@@ -2116,6 +2139,12 @@ def watch_ticker(
         # only as long as this watcher, so an independently armed producer
         # starting later can never be served an earlier watcher's reading.
         snapshot_cache: dict[str, tuple[str, dict[str, Any]]] = {}
+        # The lifts this producer has already announced. None on the first poll
+        # after a (re)arm, so every lift already in force is written as baseline
+        # inventory rather than announced as new, exactly as pointer rows read
+        # on a re-arm. A reload replaces this process image in place, so the
+        # memory resets with the seat and the baseline is re-emitted.
+        lift_seen: dict[str, dict[str, Any]] | None = None
         while True:
             if not runs.renew_watch_host_lease(project):
                 return
@@ -2139,6 +2168,12 @@ def watch_ticker(
             _backends.take_parsed_stream_bytes()
             take_admission_stream_bytes()
             pointers = list_live(project=project)
+            # The lift document is folded on the same poll as the fleet, so a
+            # coordinator watching this project's stream sees a peer lift a
+            # group and sees the lift end on its own. The sweep writes only when
+            # a lift moved, and it never ends the seat: an unreadable document
+            # is the un-lifted state and is skipped with the memory kept.
+            lift_seen = _sweep_lift_rows(project, lift_seen)
             _stop_delivered_reviews(pointers, signal_run=signal_run)
             moment = _utc_seconds()
             current = {

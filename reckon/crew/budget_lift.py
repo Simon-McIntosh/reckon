@@ -74,6 +74,14 @@ FORMS = (MULTIPLE, DRAIN_BY, UNCAPPED)
 GLOBAL = "global"
 SESSION_PREFIX = "session:"
 
+# The four conditions that end a lift, named the way the watch stream reports
+# them. One ladder computes them, in :func:`end_cause`, so the pace path and the
+# watch stream never disagree about why a lift stopped.
+END_CLEAR = "clear"
+END_CEILING = "ceiling"
+END_AT = "at"
+END_RESET = "reset"
+
 DEFAULT_MAX_MULTIPLE = 3.0
 DEFAULT_MAX_HOURS = 168.0
 
@@ -84,6 +92,10 @@ __all__ = [
     "DEFAULT_MAX_HOURS",
     "DEFAULT_MAX_MULTIPLE",
     "DRAIN_BY",
+    "END_AT",
+    "END_CEILING",
+    "END_CLEAR",
+    "END_RESET",
     "FIVE_HOUR",
     "FORMS",
     "GLOBAL",
@@ -96,6 +108,7 @@ __all__ = [
     "clear",
     "drain_line",
     "effective_budget",
+    "end_cause",
     "grant",
     "lifts_path",
     "list_lifts",
@@ -633,6 +646,49 @@ def _applies(lift: Mapping[str, Any], *, group: str, session: str | None) -> boo
     return False
 
 
+def end_cause(
+    lift: Mapping[str, Any],
+    *,
+    readings: Sequence[Mapping[str, Any]] | None,
+    now: datetime,
+    bound: LiftCeilings,
+) -> str | None:
+    """Why a lift is no longer in force at ``now``, or ``None`` while it is.
+
+    The four conditions that end a lift, in the order the pace path reads them:
+    an explicit clear, the hard ceiling, a stated instant, and a reset observed
+    on the group's window — the scheduled rollover the recorded stamp names, or
+    the early limit reset the stamp would hide. The result is one of
+    :data:`END_CLEAR`, :data:`END_CEILING`, :data:`END_AT` or :data:`END_RESET`.
+
+    A lift that has not yet started, or that carries no grant, is not in force
+    either, but neither is an end: both answer ``None`` here, and the caller
+    judging a start or a grant reads those fields directly. :func:`_in_force`
+    and :func:`effective_budget` are bound to this one ladder, so a reader of the
+    pace path and a reader of the watch stream cannot disagree about why a lift
+    stopped — whether it is still in force, or what ended it.
+    """
+    moment = _aware(now)
+    if lift.get("cleared_at"):
+        return END_CLEAR
+    granted = _parse_stamp(lift.get("granted_at"))
+    if granted is not None and not moment < granted + timedelta(hours=bound.max_hours):
+        return END_CEILING
+    ends = lift.get("ends") or {}
+    kind = str(ends.get("kind") or "")
+    if kind == "at":
+        at = _parse_stamp(ends.get("at"))
+        if at is None or not moment < at:
+            return END_AT
+    if kind == "reset":
+        if _reset_observed(lift, readings):
+            return END_RESET
+        recorded = _parse_stamp(ends.get("resets_at"))
+        if recorded is not None and not moment < recorded:
+            return END_RESET
+    return None
+
+
 def _in_force(
     lift: Mapping[str, Any],
     *,
@@ -640,28 +696,20 @@ def _in_force(
     now: datetime,
     bound: LiftCeilings,
 ) -> bool:
-    """Whether every end condition still holds for a lift at ``now``.
+    """Whether a lift is in force at ``now``.
 
-    A lift is in force only when it is uncleared, has started, is before the
-    hard ceiling, is before its stated end, and — for a reset-anchored lift —
-    has not had its clock's reset observed.
+    A lift that has not started, or that carries no grant, is inert but not
+    ended, and neither condition is one of the four :func:`end_cause` names, so
+    both are read here. Every other condition is read through that one ladder,
+    which the pace path and the watch stream share.
     """
-    if lift.get("cleared_at"):
-        return False
+    moment = _aware(now)
     starts = _parse_stamp(lift.get("starts_at"))
-    if starts is not None and now < starts:
+    if starts is not None and moment < starts:
         return False
-    granted = _parse_stamp(lift.get("granted_at"))
-    if granted is None:
+    if _parse_stamp(lift.get("granted_at")) is None:
         return False
-    if not now < granted + timedelta(hours=bound.max_hours):
-        return False
-    end, _ = _end_moment(lift, readings=readings)
-    if end is not None and not now < end:
-        return False
-    ends = lift.get("ends") or {}
-    reset_kind = str(ends.get("kind") or "") == "reset"
-    return not (reset_kind and _reset_observed(lift, readings))
+    return end_cause(lift, readings=readings, now=moment, bound=bound) is None
 
 
 def _end_moment(
