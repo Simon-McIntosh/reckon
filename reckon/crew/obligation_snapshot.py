@@ -319,7 +319,16 @@ def source_code_stamp(package_dir: Path | None = None) -> str:
     computed here are comparable.
     """
     root = Path(package_dir) if package_dir is not None else _PACKAGE_DIR
-    sources = [root / "cli.py", *sorted((root / "crew").glob("*.py"))]
+    sources = [
+        root / "cli.py",
+        root / "cli_entry.py",
+        root / "project_setup_commands.py",
+        root / "crew_dispatch_commands.py",
+        root / "crew_follow_commands.py",
+        root / "crew_run_commands.py",
+        root / "project_maintenance_commands.py",
+        *sorted((root / "crew").glob("*.py")),
+    ]
     stamp = hashlib.sha256()
     for source in sources:
         try:

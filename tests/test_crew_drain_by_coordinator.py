@@ -17,7 +17,7 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from reckon import cli, crew, mcp
+from reckon import cli, crew, crew_dispatch_commands, mcp
 
 CONFIG = {
     "default_backend": "alpha",
@@ -194,7 +194,7 @@ def test_dispatch_refusal_counts_own_run_and_names_observed_peer(
     home, repo, monkeypatch
 ) -> None:
     _own_and_peer(home)
-    monkeypatch.setattr(cli, "_resolved_flight", lambda *args, **kwargs: CONFIG)
+    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *args, **kwargs: CONFIG)
 
     command = CliRunner().invoke(
         cli.main,

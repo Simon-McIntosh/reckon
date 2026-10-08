@@ -9,7 +9,7 @@ from unittest.mock import Mock
 import pytest
 from click.testing import CliRunner
 
-from reckon import budget
+from reckon import budget, crew_dispatch_commands
 from reckon.cli import main
 from reckon.crew.node import TaskNode
 from reckon.crew.picker import PickRequest, client, pick, prompts, snapshot
@@ -426,10 +426,9 @@ def test_lane_zero_share_wins_over_global_room(tmp_path):
 def test_cli_emits_one_selection_without_dispatch(
     monkeypatch, live_facts, config, tmp_path
 ):
-    from reckon import cli
     from reckon.crew import picker
 
-    monkeypatch.setattr(cli, "_dispatch_resolved_flight", lambda *a: config)
+    monkeypatch.setattr(crew_dispatch_commands, "_dispatch_resolved_flight", lambda *a: config)
     monkeypatch.setattr(picker.snapshot.ledger, "runs", lambda *a, **k: [])
     monkeypatch.setattr(client, "load_key", Mock(side_effect=TimeoutError))
     result = CliRunner().invoke(

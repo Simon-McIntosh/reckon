@@ -8,7 +8,14 @@ from types import SimpleNamespace
 import pytest
 from click.testing import CliRunner
 
-from reckon import budget, cli, flight
+from reckon import (
+    budget,
+    cli,
+    crew_dispatch_commands,
+    crew_follow_commands,
+    crew_run_commands,
+    flight,
+)
 from reckon.crew import standing_suite
 
 
@@ -56,10 +63,12 @@ def test_observed_worker_status_does_not_change_the_read_verdict():
 
 
 def test_crew_emit_sites_do_not_put_literal_success_beside_a_result():
-    source = Path(cli.__file__).read_text(encoding="utf-8")
-    tree = ast.parse(source)
+    sources = [
+        Path(module.__file__).read_text(encoding="utf-8")
+        for module in (crew_dispatch_commands, crew_follow_commands, crew_run_commands)
+    ]
     offenders = []
-    for function in tree.body:
+    for function in (node for source in sources for node in ast.parse(source).body):
         if not isinstance(function, ast.FunctionDef) or not function.name.startswith(
             "crew_"
         ):
@@ -81,7 +90,7 @@ def test_crew_emit_sites_do_not_put_literal_success_beside_a_result():
 
 
 def test_preflight_hold_and_clear_result_have_matching_exit_codes(monkeypatch):
-    monkeypatch.setattr(cli, "_dispatch_resolved_flight", lambda *args: {})
+    monkeypatch.setattr(crew_dispatch_commands, "_dispatch_resolved_flight", lambda *args: {})
     monkeypatch.setattr(budget, "recorded_windows", lambda *args, **kwargs: {})
     monkeypatch.setattr(budget, "record_checks", lambda *args, **kwargs: [])
     report = {"held": True, "held_backends": ["metered"], "backends": []}
@@ -98,7 +107,7 @@ def test_preflight_hold_and_clear_result_have_matching_exit_codes(monkeypatch):
 
 
 def test_suite_without_exit_status_is_not_reported_as_success(monkeypatch, tmp_path):
-    monkeypatch.setattr(cli, "_suite_project_root", lambda *args: tmp_path)
+    monkeypatch.setattr(crew_run_commands, "_suite_project_root", lambda *args: tmp_path)
     monkeypatch.setattr(
         flight, "resolve", lambda *args, **kwargs: SimpleNamespace(config={})
     )

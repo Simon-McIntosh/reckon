@@ -9,7 +9,7 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli as cli_module
-from reckon import ledger
+from reckon import crew_dispatch_commands, ledger
 from tests import test_dispatch_names_its_backend as existing_backend_tests
 
 pytest_plugins = ("tests.test_dispatch_names_its_backend",)
@@ -34,9 +34,9 @@ def _invoke(
                 config[key] = value
         return config
 
-    monkeypatch.setattr(cli_module, "_resolved_flight", resolve_flight)
+    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", resolve_flight)
     monkeypatch.setattr(
-        cli_module, "_model_availability_refusal", lambda *_args, **_kwargs: None
+        crew_dispatch_commands, "_model_availability_refusal", lambda *_args, **_kwargs: None
     )
     result = CliRunner().invoke(
         cli_module.main,

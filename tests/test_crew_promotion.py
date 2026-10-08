@@ -2177,5 +2177,5 @@ def test_the_gate_rerun_caller_is_reachable_from_shipped_code() -> None:
     assert {
         "reckon/crew/promotion.py",
         "reckon/crew.py",
-        "reckon/cli.py",
+        "reckon/crew_run_commands.py",
     } <= hits

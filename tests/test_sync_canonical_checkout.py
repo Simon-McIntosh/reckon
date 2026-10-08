@@ -6,6 +6,7 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli as cli_module
+from reckon import project_maintenance_commands
 
 _SHARED_ASSETS = ("foundation.css", "dashboard.css", "state.js", "badge.svg")
 
@@ -60,7 +61,7 @@ def _invoke_self_sync(tmp_path: Path, docs: Path):
 def canonical_docs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """A docs dir that is simultaneously the asset source and the sync target."""
     docs = _build_asset_root(tmp_path / "checkout" / "docs")
-    monkeypatch.setattr(cli_module, "_asset_root", lambda: docs)
+    monkeypatch.setattr(project_maintenance_commands, "_asset_root", lambda: docs)
     return docs
 
 

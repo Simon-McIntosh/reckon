@@ -24,7 +24,7 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from reckon import cli, crew
+from reckon import cli, crew, crew_follow_commands
 from reckon.crew import runs
 from reckon.crew import ticker as ticker_module
 
@@ -59,7 +59,7 @@ def follow_lines(monkeypatch):
     def capture(line, *, stream=None):
         lines.append(line)
 
-    monkeypatch.setattr(cli, "_echo_follow_line", capture)
+    monkeypatch.setattr(crew_follow_commands, "_echo_follow_line", capture)
     return lines
 
 

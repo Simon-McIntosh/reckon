@@ -16,6 +16,7 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli as cli_module
+from reckon import crew_dispatch_commands
 
 CONFIG = {
     "default_backend": "worker",
@@ -126,15 +127,15 @@ def _invoke(
     *,
     beneath=None,
 ):
-    monkeypatch.setattr(cli_module, "_resolved_flight", lambda *_a, **_k: CONFIG)
+    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *_a, **_k: CONFIG)
     monkeypatch.setattr(
-        cli_module, "_model_availability_refusal", lambda *_a, **_k: None
+        crew_dispatch_commands, "_model_availability_refusal", lambda *_a, **_k: None
     )
     if beneath is not None:
         # A seam on the path dispatch walks, standing in for a notice printed
         # anywhere beneath the command — including code this module cannot
         # edit. The notice must reach stderr, never the payload channel.
-        monkeypatch.setattr(cli_module, "_model_availability_refusal", beneath)
+        monkeypatch.setattr(crew_dispatch_commands, "_model_availability_refusal", beneath)
     if "--no-watch" in arguments:
         import importlib
 

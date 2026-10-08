@@ -382,4 +382,4 @@ def test_the_cli_is_the_only_production_caller() -> None:
         if "audit_manifest" in path.read_text(encoding="utf-8")
     }
 
-    assert referencing == {"cli.py", "crew.py", "crew/reports.py"}
+    assert referencing == {"crew_run_commands.py", "crew.py", "crew/reports.py"}

@@ -787,7 +787,7 @@ def test_launch_callers_reach_the_shared_gate() -> None:
         ("reckon/crew/dispatch.py", "dispatch"),
         ("reckon/crew/dispatch_launch.py", "supervised_launch"),
         ("reckon/crew/resumption.py", "_resume"),
-        ("reckon/cli.py", "crew_resume"),
+        ("reckon/crew_run_commands.py", "crew_resume"),
         ("reckon/mcp.py", "_crew_recover"),
     }
     _assert_primitive_launch_paths_reach_gate(root)

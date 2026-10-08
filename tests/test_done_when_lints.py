@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from reckon import cli, crew
+from reckon import cli, crew, crew_dispatch_commands
 
 CONFIG = {
     "default_backend": "worker",
@@ -64,7 +64,7 @@ def repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         json.dumps({"sample": str(root / "docs")}), encoding="utf-8"
     )
     monkeypatch.setenv("RECKON_HOME", str(home))
-    monkeypatch.setattr(cli, "_resolved_flight", lambda *_args, **_kwargs: CONFIG)
+    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *_args, **_kwargs: CONFIG)
     return root
 
 

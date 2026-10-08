@@ -150,8 +150,8 @@ def test_live_producer_and_follower_leave_arm_lock_free(processes):
     reader, writer = socket.socketpair()
     try:
         follower = spawn(
-            "from functools import partial; from reckon import cli; "
-            "cli._follow_watch_lines = partial(cli._follow_watch_lines, sweep=None); "
+            "from functools import partial; from reckon import cli, crew_follow_commands; "
+            "crew_follow_commands._follow_watch_lines = partial(crew_follow_commands._follow_watch_lines, sweep=None); "
             "cli.main(['crew', 'follow', '--project', 'arm-lock-sample', "
             "'--session', 'lock-reader', '--no-color'])",
             stdout=writer,

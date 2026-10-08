@@ -27,7 +27,7 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli as cli_module
-from reckon import crew
+from reckon import crew, crew_dispatch_commands
 from reckon.crew import runs
 from reckon.crew.dispatch import WATCH_ARMING_ENV
 from tests.conftest import reapable_watch_pids
@@ -123,7 +123,7 @@ def test_arms_a_watcher_without_reaping_it(
     difference is that it ends while the producer is still live, which is the
     state a session fixture has to answer for.
     """
-    monkeypatch.setattr(cli_module, "_resolved_flight", lambda *args, **kwargs: CONFIG)
+    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *args, **kwargs: CONFIG)
     monkeypatch.setattr(crew, "_spawn", lambda *args, **kwargs: 4242)
     _write_running_pointer(
         home,

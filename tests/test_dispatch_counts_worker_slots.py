@@ -34,6 +34,7 @@ from click.testing import CliRunner
 
 import reckon.crew.dispatch_sessions as dispatch_sessions_module
 from reckon import cli as cli_module
+from reckon import crew_dispatch_commands
 from reckon.crew import lane_document, runs
 from reckon.crew.dispatch import change_lane
 from reckon.crew.runs import _write_json, pointer_path
@@ -372,10 +373,10 @@ def test_a_zero_allowance_holds_a_real_dispatch(
     config = copy.deepcopy(backend_tests.CONFIG)
     config["backends"]["beta"]["lane_document"] = str(lane_path)
     monkeypatch.setattr(
-        cli_module, "_resolved_flight", lambda *_args, **_kwargs: config
+        crew_dispatch_commands, "_resolved_flight", lambda *_args, **_kwargs: config
     )
     monkeypatch.setattr(
-        cli_module, "_model_availability_refusal", lambda *_args, **_kwargs: None
+        crew_dispatch_commands, "_model_availability_refusal", lambda *_args, **_kwargs: None
     )
 
     result = CliRunner().invoke(

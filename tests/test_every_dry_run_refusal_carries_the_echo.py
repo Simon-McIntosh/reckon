@@ -20,7 +20,7 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli as cli_module
-from reckon import crew
+from reckon import crew, crew_dispatch_commands
 
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
 
@@ -198,7 +198,7 @@ def test_a_dry_run_budget_hold_carries_the_echo(
     """A held wave is a dry-run refusal document like the rest."""
     (home / "flight.yaml").write_text(_host_flight(), encoding="utf-8")
     monkeypatch.setattr(
-        cli_module, "_model_availability_refusal", lambda *_a, **_k: None
+        crew_dispatch_commands, "_model_availability_refusal", lambda *_a, **_k: None
     )
     monkeypatch.setattr(
         dispatch_module,

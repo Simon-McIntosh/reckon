@@ -217,7 +217,16 @@ def follower_code_stamp() -> str:
     running follower.
     """
     package_dir = Path(__file__).resolve().parent.parent
-    sources = [package_dir / "cli.py", *sorted((package_dir / "crew").glob("*.py"))]
+    sources = [
+        package_dir / "cli.py",
+        package_dir / "cli_entry.py",
+        package_dir / "project_setup_commands.py",
+        package_dir / "crew_dispatch_commands.py",
+        package_dir / "crew_follow_commands.py",
+        package_dir / "crew_run_commands.py",
+        package_dir / "project_maintenance_commands.py",
+        *sorted((package_dir / "crew").glob("*.py")),
+    ]
     stamp = hashlib.sha256()
     for source in sources:
         try:

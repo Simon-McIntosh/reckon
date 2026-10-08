@@ -12,7 +12,7 @@ from click.testing import CliRunner
 
 import reckon.crew.dispatch_sessions as dispatch_sessions_module
 from reckon import cli as cli_module
-from reckon import crew
+from reckon import crew, crew_run_commands
 from reckon.crew import recovery
 
 CONFIG = {
@@ -129,7 +129,7 @@ def dispatched_run(tmp_path: Path, monkeypatch) -> tuple[Path, dict]:
 
 def _resolve_config(monkeypatch) -> None:
     monkeypatch.setattr(
-        cli_module,
+        crew_run_commands,
         "_resolved_flight",
         lambda flight_module, project, checkout_path, overrides: CONFIG,
     )

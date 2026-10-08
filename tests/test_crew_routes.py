@@ -14,9 +14,8 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli as cli_module
-from reckon import crew, ledger, serve
+from reckon import crew, crew_dispatch_commands, ledger, serve
 from reckon.crew import routing
-
 
 CONTEXT_CONFIG = {
     "default_backend": "bounded",
@@ -446,7 +445,7 @@ def test_context_refusal_is_exit_five_before_worktree_creation(
     context_dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setattr(
-        cli_module, "_resolved_flight", lambda *_a, **_k: CONTEXT_CONFIG
+        crew_dispatch_commands, "_resolved_flight", lambda *_a, **_k: CONTEXT_CONFIG
     )
     monkeypatch.setattr(routing, "_standing_context_input", _fixed_standing_input)
     monkeypatch.setattr(

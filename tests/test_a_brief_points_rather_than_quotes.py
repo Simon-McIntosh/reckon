@@ -13,7 +13,7 @@ from click.testing import CliRunner
 import reckon.crew.dispatch_plan as dispatch_plan_module
 import reckon.crew.dispatch_sections as dispatch_sections_module
 from reckon import cli as cli_module
-from reckon import crew
+from reckon import crew, crew_dispatch_commands
 from reckon.crew.dispatch import DONE_WHEN_PLAN_TEXT_SPAN_WORDS
 
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
@@ -135,9 +135,9 @@ def _invoke(
     *,
     dry_run: bool = True,
 ):
-    monkeypatch.setattr(cli_module, "_resolved_flight", lambda *_a, **_k: CONFIG)
+    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *_a, **_k: CONFIG)
     monkeypatch.setattr(
-        cli_module, "_model_availability_refusal", lambda *_a, **_k: None
+        crew_dispatch_commands, "_model_availability_refusal", lambda *_a, **_k: None
     )
     return CliRunner().invoke(
         cli_module.main,

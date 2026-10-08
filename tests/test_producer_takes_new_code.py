@@ -98,7 +98,7 @@ import traceback
 
 from click.testing import CliRunner
 
-from reckon import cli
+from reckon import cli, crew_follow_commands
 from reckon.crew import runs
 
 payload_path = pathlib.Path(sys.argv[1])
@@ -113,7 +113,7 @@ runs.follower_code_stamp = lambda: held
 if producer_live_hint:
     runs.producer_live = lambda project: True
 if terminal:
-    cli._follow_replay_visible = lambda: True
+    crew_follow_commands._follow_replay_visible = lambda: True
 
 rows = []
 payload = {"rows": [], "exit_code": None, "output": "", "error": ""}

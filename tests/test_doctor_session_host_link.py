@@ -19,6 +19,7 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli as cli_module
+from reckon import cli_entry, project_maintenance_commands
 from reckon.cli import (
     CREW_HOST_DANGLING,
     CREW_HOST_MISSING,
@@ -201,12 +202,12 @@ def _run_doctor(
     # environment variable; point it at this case's temporary tree so the
     # operator's real ~/.claude/skills is neither read nor reported on.
     monkeypatch.setenv(cli_module.CLAUDE_SKILLS_DIR_ENV, str(skills_dir))
-    monkeypatch.setattr(cli_module, "_reckon_checkout", lambda: main_checkout)
-    monkeypatch.setattr(cli_module, "_project_environment_drift", lambda: (None, []))
+    monkeypatch.setattr(project_maintenance_commands, "_reckon_checkout", lambda: main_checkout)
+    monkeypatch.setattr(project_maintenance_commands, "_project_environment_drift", lambda: (None, []))
     # No real Claude CLI runs during the suite; the plugin-validate leg is
     # exercised through its own tests and through the validator each doctor
     # case injects.
-    monkeypatch.setattr(cli_module, "_claude_plugin_validate", validator)
+    monkeypatch.setattr(project_maintenance_commands, "_claude_plugin_validate", validator)
     return CliRunner().invoke(main, ["doctor"]), skills_dir
 
 
@@ -338,7 +339,7 @@ def _run_sync(
         cli_module.CLAUDE_SKILLS_DIR_ENV,
         str(skills_dir if skills_dir is not None else home / ".claude" / "skills"),
     )
-    monkeypatch.setattr(cli_module, "_reckon_checkout", lambda: checkout)
+    monkeypatch.setattr(cli_entry, "_reckon_checkout", lambda: checkout)
     return (
         CliRunner().invoke(
             main,

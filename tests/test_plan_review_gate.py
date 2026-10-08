@@ -10,7 +10,7 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli as cli_module
-from reckon import crew, flight
+from reckon import crew, crew_dispatch_commands, flight
 from reckon.crew import node as node_module
 from reckon.crew import plan_review
 
@@ -360,7 +360,7 @@ def test_dry_run_names_the_plan_review_error_key(
     """
     _config_home, repo, _plan_path = reviewed_project
     monkeypatch.setattr(
-        cli_module,
+        crew_dispatch_commands,
         "_resolved_flight",
         lambda *args, **kwargs: {**CONFIG, "plan_review_gate": "enforce"},
     )
@@ -415,7 +415,7 @@ def test_launch_path_names_the_plan_review_error_key(
     """
     _config_home, repo, _plan_path = reviewed_project
     monkeypatch.setattr(
-        cli_module,
+        crew_dispatch_commands,
         "_resolved_flight",
         lambda *args, **kwargs: {**CONFIG, "plan_review_gate": "enforce"},
     )
@@ -460,7 +460,7 @@ def test_dry_run_in_report_only_mode_admits_and_carries_the_warning(
     reviewed_project: tuple[Path, Path, Path], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     _config_home, repo, _plan_path = reviewed_project
-    monkeypatch.setattr(cli_module, "_resolved_flight", lambda *args, **kwargs: CONFIG)
+    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *args, **kwargs: CONFIG)
 
     result = CliRunner().invoke(
         cli_module.main,

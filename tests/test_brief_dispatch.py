@@ -23,7 +23,7 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli as cli_module
-from reckon import crew
+from reckon import crew, crew_dispatch_commands
 from reckon.crew import runs
 
 CONFIG = {
@@ -159,9 +159,9 @@ def _cli_arguments(
 
 
 def _invoke(repo: Path, monkeypatch: pytest.MonkeyPatch, arguments: list[str]):
-    monkeypatch.setattr(cli_module, "_resolved_flight", lambda *_a, **_k: CONFIG)
+    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *_a, **_k: CONFIG)
     monkeypatch.setattr(
-        cli_module, "_model_availability_refusal", lambda *_a, **_k: None
+        crew_dispatch_commands, "_model_availability_refusal", lambda *_a, **_k: None
     )
     return CliRunner().invoke(cli_module.main, arguments)
 

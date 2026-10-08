@@ -20,7 +20,7 @@ import pytest
 from click.testing import CliRunner
 
 import reckon.crew.dispatch_admission as dispatch_admission_module
-from reckon import _backends, crew, ledger
+from reckon import _backends, crew, crew_dispatch_commands, ledger
 from reckon import cli as cli_module
 from reckon.crew import plan_review
 from reckon.crew import refusals as refusal_module
@@ -33,7 +33,7 @@ from reckon.crew.refusals import (
 CONVERTED_REFUSAL_FAMILIES = frozenset(f"D{number:02d}" for number in range(1, 24))
 COMMAND_BOUNDARY_FAMILIES = frozenset()
 REFUSAL_SOURCE_PATHS = (
-    "reckon/cli.py",
+    "reckon/crew_dispatch_commands.py",
     "reckon/budget.py",
     "reckon/crew/dispatch.py",
     "reckon/crew/dispatch_accounting.py",
@@ -190,7 +190,7 @@ def repo(tmp_path: Path, home: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     mounts = home / "mounts.json"
     mounts.write_text(json.dumps({"proj": str(root / "docs")}), encoding="utf-8")
     _store_answered_review(plan_path, project="proj", slug="dispatch-safety")
-    monkeypatch.setattr(cli_module, "_resolved_flight", lambda *a, **k: CONFIG)
+    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *a, **k: CONFIG)
     return root
 
 

@@ -24,6 +24,7 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli as cli_module
+from reckon import crew_dispatch_commands
 from reckon.crew import runs
 
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
@@ -90,7 +91,7 @@ def mounts(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Path]:
     config_home = tmp_path / "config"
     config_home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(config_home))
-    monkeypatch.setattr(cli_module, "_resolved_flight", lambda *args, **kwargs: CONFIG)
+    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *args, **kwargs: CONFIG)
 
     amber = _make_checkout(tmp_path / "amber", "amber")
     basalt = _make_checkout(tmp_path / "basalt", "basalt")

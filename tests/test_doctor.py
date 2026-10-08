@@ -110,7 +110,7 @@ class TestDoctor:
                 os.environ, {"RECKON_HOME": str(home / "docs-server")}
             ),
             mock.patch(
-                "reckon.cli._project_environment_drift", return_value=drift
+                "reckon.project_maintenance_commands._project_environment_drift", return_value=drift
             ),
         ):
             result = runner.invoke(main, ["doctor"])
@@ -210,7 +210,7 @@ def test_install_skills_excludes_python_bytecode(tmp_path, monkeypatch):
 
     home = tmp_path / "home"
     home.mkdir()
-    monkeypatch.setattr("reckon.cli._skills_source", lambda: source)
+    monkeypatch.setattr("reckon.project_maintenance_commands._skills_source", lambda: source)
     monkeypatch.setattr("pathlib.Path.home", lambda: home)
 
     result = CliRunner().invoke(main, ["install-skills"])
@@ -239,7 +239,7 @@ def _seed_link_drift(tmp_path, monkeypatch):
     copied = skills / "reckon-copied"
     copied.mkdir()
     (copied / "SKILL.md").write_text("# reckon-copied\n")
-    monkeypatch.setattr("reckon.cli._skills_source", lambda: source)
+    monkeypatch.setattr("reckon.project_maintenance_commands._skills_source", lambda: source)
     monkeypatch.setattr("pathlib.Path.home", lambda: home)
     return source, home, copied
 
@@ -284,7 +284,7 @@ def test_install_skills_accepts_a_consistently_copied_runtime(
         installed = home / ".claude" / "skills" / name
         installed.mkdir(parents=True)
         (installed / "SKILL.md").write_text(f"# {name}\n")
-    monkeypatch.setattr("reckon.cli._skills_source", lambda: source)
+    monkeypatch.setattr("reckon.project_maintenance_commands._skills_source", lambda: source)
     monkeypatch.setattr("pathlib.Path.home", lambda: home)
 
     result = CliRunner().invoke(main, ["install-skills"])

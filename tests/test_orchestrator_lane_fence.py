@@ -22,7 +22,7 @@ from click.testing import CliRunner
 
 import reckon.crew.dispatch_plan as dispatch_plan_module
 from reckon import cli as cli_module
-from reckon import crew
+from reckon import crew, crew_dispatch_commands
 
 # The CLI cases reuse the stub fleet and git repository the backend-routing
 # dispatch test builds, so the declaration is the only new variable.
@@ -52,9 +52,9 @@ def _cli(
     extra=None,
     dry_run: bool = True,
 ):
-    monkeypatch.setattr(cli_module, "_resolved_flight", lambda *_a, **_k: config)
+    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *_a, **_k: config)
     monkeypatch.setattr(
-        cli_module, "_model_availability_refusal", lambda *_a, **_k: None
+        crew_dispatch_commands, "_model_availability_refusal", lambda *_a, **_k: None
     )
     result = CliRunner().invoke(
         cli_module.main,

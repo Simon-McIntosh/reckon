@@ -30,7 +30,7 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from reckon import cli, crew
+from reckon import cli, crew, crew_follow_commands
 from reckon.crew import runs
 
 # The counter block the ticker prints at the end of each transition line:
@@ -108,7 +108,7 @@ def _stub_producer(monkeypatch) -> None:
     def fake_lines(project, **kwargs):
         yield {**_FLEET_TRANSITION, "project": project}
 
-    monkeypatch.setattr(cli, "_follow_watch_lines", fake_lines)
+    monkeypatch.setattr(crew_follow_commands, "_follow_watch_lines", fake_lines)
 
 
 def _follow(*args: str) -> str:

@@ -26,7 +26,7 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from reckon import cli
+from reckon import cli, crew_dispatch_commands
 from reckon.crew.picker import client
 from tests.test_picker import config as config  # noqa: PLC0414 - re-export fixture
 from tests.test_picker import (
@@ -43,7 +43,7 @@ def routed_config(config, monkeypatch):
     config = deepcopy(config)
     config["routing"] = {"picker": "route"}
     config["fences"] = {"time_budget": "25m", "needs_help_after_failures": 2}
-    monkeypatch.setattr(cli, "_resolved_flight", lambda *_a, **_k: config)
+    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *_a, **_k: config)
     return config
 
 
