@@ -181,6 +181,15 @@ budget:
   # retunes the curve without a code change.
   drain_lead_hours: 12.0
   pace_multiple: 1.1
+  # The ceilings a lift grant is checked against, so a layer bounds how far and
+  # how long one declared group's pace may be raised ahead of its configured
+  # rate. A lift multiple must exceed the group's configured pace multiple and
+  # must not exceed max_multiple; max_hours is the hard limit on how long a lift
+  # stays in force whatever its own stated end, bounding the one case a reading
+  # cannot -- a reset-anchored lift whose reset is never observed.
+  lift:
+    max_multiple: 3.0
+    max_hours: 168.0
 
 fences:
   # A role's time_budget is its default; this is the independent hard ceiling.
