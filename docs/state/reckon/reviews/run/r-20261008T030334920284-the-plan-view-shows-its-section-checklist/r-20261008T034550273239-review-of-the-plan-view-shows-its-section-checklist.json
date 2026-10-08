@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "backend": "local",
+  "base_log_revision": null,
+  "call_site_count": 1,
+  "call_sites": [
+    "docs/ui/plan.jsx:1038"
+  ],
+  "completed_at": "2026-10-08T04:10:57.519Z",
+  "dispatched_at": "2026-10-08T03:46:51Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-plan-is-done-when-every-section-is-ticked/the-plan-view-shows-its-section-checklist.html",
+      "line": "37",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment pins the head gate to 6337f8f12 while logs/head.log's header names revision 568502e061, and both negative-control logs were run at 9ee4cb2e -- two commits behind the reviewed head -- so the controls were not re-run against the head, though the checked lines are unchanged there."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against base 4d7e6caa; ce78504df adds the PlanChecklist component and its render, 51e59e01d formats the test, 9ee4cb2e records the render evidence, 6337f8f12 replaces the row link's hash routing with preventDefault plus scrollIntoView, 568502e06 records that repair; 4 files, additive only.",
+    "done_when": "the done_when is a module test rendering three todos, finding three links to #s1/#s2/#s3 above the first heading with the done item checked, failing when the render is removed; tests/test_spa_plan_checklist.py implements exactly that, including the described render-removal negative control.",
+    "goal": "the node's goal is the plan view rendering the payload's todos field above the plan body as a checklist, one linked row per authored section ticked from its declaration; docs/ui/plan.jsx:103 defines PlanChecklist and docs/ui/plan.jsx:1038 renders it, and the real payload carries the fields it reads (verified against parse_plan on the live plan: id, heading, link, declaration, and a close record whose keys include body).",
+    "manifest": "read; it records the head gate (6 passed, EXIT=0), the render-removal control (5 failed, EXIT=1), the handler control (1 failed, EXIT=1) and an adjacent SPA suite (18 passed, 3 skipped, EXIT=0), each naming a log on disk; the head arm runs at the reviewed head 568502e0, but both negative controls ran at the earlier revision 9ee4cb2e.",
+    "write_paths": "the manifest declares docs/ui/plan.jsx, docs/ui/plans.css, tests/test_spa_plan_checklist.py and the evidence fragment; the diff against base 4d7e6caa touches only those four paths as pure additions (+375, -0) and nothing under reckon/."
+  },
+  "justifications": {
+    "durability": "the render-removal control reddens five ids and the handler-drop control reddens exactly test_row_link_click_scrolls_the_section_without_title_navigation, so both guards are proven to fail on regression; the close-body and link assertions echo the fixtures the test passes in, and test_checklist_styles_are_registered is a source-substring check rather than a behavioural guard.",
+    "evidence": "the gate the worker ran (logs/head.log, rev 568502e0, 6 passed, EXIT=0) measures the done_when and is recorded on disk, though both negative-control logs were run at 9ee4cb2e, two commits behind that head.",
+    "fit": "the component follows the surrounding SPA idiom at docs/ui/plan.jsx:103 -- r-prefixed classNames, data-* state attributes, a null-render guard, and dangerouslySetInnerHTML for comment bodies as docs/ui/plan.jsx:89 already does.",
+    "goal_fidelity": "docs/ui/plan.jsx:1038 renders PlanChecklist above the plan body (r-plan-html at docs/ui/plan.jsx:1089), one row per section mapping declaration to checked, deferred or open and showing the close body.",
+    "reuse": "no checklist component existed in docs/ui, and the click-to-scroll idiom extends the repository's selectPlanSection shape (docs/ui/shell-plans.jsx:483) rather than forking a capability, though it repeats that two-line scroll inline instead of sharing a helper.",
+    "scope_discipline": "every changed path (docs/ui/plan.jsx, docs/ui/plans.css, tests/test_spa_plan_checklist.py, the evidence fragment) is inside the manifest's declared write paths and the change is additive with no reckon/ edit."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is the plan view rendering the payload's todos field above the plan body as a checklist, one linked row per authored section ticked from its declaration; docs/ui/plan.jsx:103 defines PlanChecklist and docs/ui/plan.jsx:1038 renders it, and the real payload carries the fields it reads (verified against parse_plan on the live plan: id, heading, link, declaration, and a close record whose keys include body).\nVERDICT done_when: the done_when is a module test rendering three todos, finding three links to #s1/#s2/#s3 above the first heading with the done item checked, failing when the render is removed; tests/test_spa_plan_checklist.py implements exactly that, including the described render-removal negative control.\nVERDICT write_paths: the manifest declares docs/ui/plan.jsx, docs/ui/plans.css, tests/test_spa_plan_checklist.py and the evidence fragment; the diff against base 4d7e6caa touches only those four paths as pure additions (+375, -0) and nothing under reckon/.\nVERDICT manifest: read; it records the head gate (6 passed, EXIT=0), the render-removal control (5 failed, EXIT=1), the handler control (1 failed, EXIT=1) and an adjacent SPA suite (18 passed, 3 skipped, EXIT=0), each naming a log on disk; the head arm runs at the reviewed head 568502e0, but both negative controls ran at the earlier revision 9ee4cb2e.\nVERDICT diff: read commit by commit against base 4d7e6caa; ce78504df adds the PlanChecklist component and its render, 51e59e01d formats the test, 9ee4cb2e records the render evidence, 6337f8f12 replaces the row link's hash routing with preventDefault plus scrollIntoView, 568502e06 records that repair; 4 files, additive only.\nCALL_SITES: docs/ui/plan.jsx:1038\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: docs/ui/plan.jsx:1038 renders PlanChecklist above the plan body (r-plan-html at docs/ui/plan.jsx:1089), one row per section mapping declaration to checked, deferred or open and showing the close body.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate the worker ran (logs/head.log, rev 568502e0, 6 passed, EXIT=0) measures the done_when and is recorded on disk, though both negative-control logs were run at 9ee4cb2e, two commits behind that head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every changed path (docs/ui/plan.jsx, docs/ui/plans.css, tests/test_spa_plan_checklist.py, the evidence fragment) is inside the manifest's declared write paths and the change is additive with no reckon/ edit.\nSCORE durability: 18\nJUSTIFICATION durability: the render-removal control reddens five ids and the handler-drop control reddens exactly test_row_link_click_scrolls_the_section_without_title_navigation, so both guards are proven to fail on regression; the close-body and link assertions echo the fixtures the test passes in, and test_checklist_styles_are_registered is a source-substring check rather than a behavioural guard.\nSCORE fit: 20\nJUSTIFICATION fit: the component follows the surrounding SPA idiom at docs/ui/plan.jsx:103 -- r-prefixed classNames, data-* state attributes, a null-render guard, and dangerouslySetInnerHTML for comment bodies as docs/ui/plan.jsx:89 already does.\nSCORE reuse: 19\nJUSTIFICATION reuse: no checklist component existed in docs/ui, and the click-to-scroll idiom extends the repository's selectPlanSection shape (docs/ui/shell-plans.jsx:483) rather than forking a capability, though it repeats that two-line scroll inline instead of sharing a helper.\nFINDING docs/evidence/fragments/a-plan-is-done-when-every-section-is-ticked/the-plan-view-shows-its-section-checklist.html:37 follow-on: the fragment pins the head gate to 6337f8f12 while logs/head.log's header names revision 568502e061, and both negative-control logs were run at 9ee4cb2e -- two commits behind the reviewed head -- so the controls were not re-run against the head, though the checked lines are unchanged there.\nreviewed_base_sha: 4d7e6caa96aa8c936e26e2e45bdc18b60fcccb6f\nreviewed_head_sha: 568502e061c829bd8174246f7e13f39434329070\n",
+  "review_run_id": "r-20261008T034550273239-review-of-the-plan-view-shows-its-section-checklist",
+  "reviewed_base_sha": "4d7e6caa96aa8c936e26e2e45bdc18b60fcccb6f",
+  "reviewed_head_sha": "568502e061c829bd8174246f7e13f39434329070",
+  "reviewed_run_id": "r-20261008T030334920284-the-plan-view-shows-its-section-checklist",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T04:46:40.345223+00:00",
+  "total": 114
+}
