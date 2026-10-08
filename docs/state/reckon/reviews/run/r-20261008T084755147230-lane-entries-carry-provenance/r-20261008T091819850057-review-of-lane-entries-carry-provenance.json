@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "a8d2282474a26399e2d5233ae1437e63c1073130",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/routing.py:1421",
+    "reckon/mcp.py:4851",
+    "reckon/project_setup_commands.py:364",
+    "reckon/crew/paid_lanes.py:827",
+    "reckon/_store.py:2944"
+  ],
+  "completed_at": "2026-10-08T09:27:54.819Z",
+  "dispatched_at": "2026-10-08T09:18:56Z",
+  "findings": [
+    {
+      "file": "reckon/flight.py",
+      "line": "1177",
+      "severity": "follow-on",
+      "text": "follow-on: _leaf_paths is a second copy of the leaf-traversal rule _record_provenance already applies inline at reckon/flight.py:1171; the two must agree for provenance to be recorded for exactly the leaves the map holds, so a future edit to one silently mislabels provenance and the comment now asserts the agreement rather than holding it, where _record_provenance calling _leaf_paths would give the module one owner for the rule."
+    }
+  ],
+  "head_log_revision": "d78a236257c9f7136a599778cfc81e6a5435dd6c",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read both commits (d78a23625 fix(flight), 6d617290a docs(evidence)) against base a8d228247; reckon/flight.py +99/-3 and the two test files.",
+    "done_when": "The section's done-when names a test resolving a lane-named and a derived entry; tests/test_lane_entries_carry_provenance.py:108 and :133 assert the layer and the source key on both entries, and the manifest records the gate result.",
+    "goal": "The node goal is that every key of an entry expand_lanes builds names the layer and the lanes.* key it came from; reckon/flight.py:1377 _lane_provenance records both maps and reckon/flight.py:1597 carries provenance_sources on ResolvedFlight.",
+    "manifest": "read; it states the gate 572 passed / 1 skipped EXIT=0, names gate-base.log and gate-head.log, and records the negative control 3 failed EXIT=1.",
+    "write_paths": "read the declared paths (reckon/flight.py, tests/test_flight.py, tests/test_lane_entries_carry_provenance.py); every path the diff touches is inside them, plus the declared evidence fragment."
+  },
+  "justifications": {
+    "durability": "tests/test_lane_entries_carry_provenance.py:108 and :133 redden on the pre-change resolver (KeyError and catalogue-instead-of-host), and the masked mutation reddens all three tests, so each names a condition under which it fails.",
+    "evidence": "the gate's two arms are logged in the run directory (gate-base.log 569 passed, gate-head.log 572 passed, 0 added failures) and the negative control negative-control.log is red with EXIT=1.",
+    "fit": "EXPANSION_LAYER at reckon/flight.py:62 and provenance_sources follow the module's existing provenance idiom set by _record_provenance at reckon/flight.py:1162, with mechanism names and no plan label.",
+    "goal_fidelity": "reckon/flight.py:1377 _lane_provenance records the layer and the lanes.* source key for every leaf of the lane level and of each present model, and reckon/flight.py:1597 carries the map on ResolvedFlight.",
+    "reuse": "reckon/flight.py:1177 _leaf_paths re-implements the leaf traversal already inline in _record_provenance at reckon/flight.py:1162-1173 without extending that owner to use it.",
+    "scope_discipline": "the diff at 6d617290a touches only reckon/flight.py, tests/test_flight.py, tests/test_lane_entries_carry_provenance.py and the declared evidence fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is that every key of an entry expand_lanes builds names the layer and the lanes.* key it came from; reckon/flight.py:1377 _lane_provenance records both maps and reckon/flight.py:1597 carries provenance_sources on ResolvedFlight.\nVERDICT done_when: The section's done-when names a test resolving a lane-named and a derived entry; tests/test_lane_entries_carry_provenance.py:108 and :133 assert the layer and the source key on both entries, and the manifest records the gate result.\nVERDICT write_paths: read the declared paths (reckon/flight.py, tests/test_flight.py, tests/test_lane_entries_carry_provenance.py); every path the diff touches is inside them, plus the declared evidence fragment.\nVERDICT manifest: read; it states the gate 572 passed / 1 skipped EXIT=0, names gate-base.log and gate-head.log, and records the negative control 3 failed EXIT=1.\nVERDICT diff: read both commits (d78a23625 fix(flight), 6d617290a docs(evidence)) against base a8d228247; reckon/flight.py +99/-3 and the two test files.\nCALL_SITES: reckon/crew/routing.py:1421, reckon/mcp.py:4851, reckon/project_setup_commands.py:364, reckon/crew/paid_lanes.py:827, reckon/_store.py:2944\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/flight.py:1377 _lane_provenance records the layer and the lanes.* source key for every leaf of the lane level and of each present model, and reckon/flight.py:1597 carries the map on ResolvedFlight.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate's two arms are logged in the run directory (gate-base.log 569 passed, gate-head.log 572 passed, 0 added failures) and the negative control negative-control.log is red with EXIT=1.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff at 6d617290a touches only reckon/flight.py, tests/test_flight.py, tests/test_lane_entries_carry_provenance.py and the declared evidence fragment.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_lane_entries_carry_provenance.py:108 and :133 redden on the pre-change resolver (KeyError and catalogue-instead-of-host), and the masked mutation reddens all three tests, so each names a condition under which it fails.\nSCORE fit: 16\nJUSTIFICATION fit: EXPANSION_LAYER at reckon/flight.py:62 and provenance_sources follow the module's existing provenance idiom set by _record_provenance at reckon/flight.py:1162, with mechanism names and no plan label.\nSCORE reuse: 13\nJUSTIFICATION reuse: reckon/flight.py:1177 _leaf_paths re-implements the leaf traversal already inline in _record_provenance at reckon/flight.py:1162-1173 without extending that owner to use it.\nFINDING reckon/flight.py:1177 follow-on: _leaf_paths is a second copy of the leaf-traversal rule _record_provenance already applies inline at reckon/flight.py:1171; the two must agree for provenance to be recorded for exactly the leaves the map holds, so a future edit to one silently mislabels provenance and the comment now asserts the agreement rather than holding it, where _record_provenance calling _leaf_paths would give the module one owner for the rule.\n",
+  "review_run_id": "r-20261008T091819850057-review-of-lane-entries-carry-provenance",
+  "reviewed_base_sha": "a8d2282474a26399e2d5233ae1437e63c1073130",
+  "reviewed_head_sha": "6d617290aadb0ca711de6812902bf7eca1b5ec56",
+  "reviewed_run_id": "r-20261008T084755147230-lane-entries-carry-provenance",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 13,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T09:26:45.102154+00:00",
+  "total": 102
+}
