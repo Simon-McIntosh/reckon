@@ -138,14 +138,19 @@ def _declared_difficulty(
         hours, provenance = _estimated_hours(plan_repo(), request.project, node)
     except Exception:  # noqa: BLE001 - the declaration is advisory to a pick
         hours, provenance = None, "unavailable"
-    if hours is not None:
-        hours_source = "node" if provenance == "node" else "plan"
-    if provenance == "plan-fallback" and plan_path is not None:
-        # The cached resolve returns the whole plan's effort; a node scoped to
-        # a section is charged that section's own effort where it declares one.
-        section_hours = _section_effort_hours(plan_path, node.section)
-        if section_hours is not None:
-            hours, hours_source = section_hours, "section"
+    if provenance == "node":
+        # The node's own estimate is authoritative over anything the plan says.
+        hours_source = "node"
+    else:
+        if hours is not None:
+            hours_source = "plan"
+        # A section's own declared effort outranks the plan's total, and it is
+        # read whether or not the plan declares a total at all -- most plans do
+        # not, and gating this on the plan's provenance drops their sections.
+        if plan_path is not None:
+            section_hours = _section_effort_hours(plan_path, node.section)
+            if section_hours is not None:
+                hours, hours_source = section_hours, "section"
     if capability is None and plan_path is not None:
         try:
             from reckon.crew.routing import resolve_section_routing

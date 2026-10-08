@@ -48,12 +48,41 @@ PLAN_HTML = (
 )
 
 
+#: A plan that declares no ``plan-effort-hours`` meta at all -- the common case,
+#: and the one where a section's own effort must still be read. Its single
+#: section declares 3.0.
+PLAN_HTML_NO_TOTAL = (
+    "<!doctype html>\n<html><head>\n"
+    '<meta name="docs-project" content="{project}">\n'
+    '<meta name="reckon-type" content="plan">\n'
+    '<meta name="plan-slug" content="{plan_slug}">\n'
+    "</head><body>\n"
+    '<h2 id="s5">&sect;5 &mdash; A section with its own effort</h2>\n'
+    '<section data-reckon="section" data-id="s5" data-effort-hours="3"'
+    ' data-status="implementable"'
+    ' data-capability-version="1.0" data-capability-class="orchestrator"'
+    ' data-capability-reasoning="deep" data-capability-verification="strict"'
+    ' data-capability-risk="critical"></section>\n'
+    "</body></html>\n"
+)
+
+
 @pytest.fixture
 def repo(tmp_path: Path) -> Path:
     plans = tmp_path / "repo" / "docs" / "plans"
     plans.mkdir(parents=True)
     (plans / "probe.html").write_text(
         PLAN_HTML.format(project="proj", plan_slug="probe", plan_hours="48")
+    )
+    return tmp_path / "repo"
+
+
+@pytest.fixture
+def repo_without_a_plan_total(tmp_path: Path) -> Path:
+    plans = tmp_path / "repo" / "docs" / "plans"
+    plans.mkdir(parents=True)
+    (plans / "probe.html").write_text(
+        PLAN_HTML_NO_TOTAL.format(project="proj", plan_slug="probe")
     )
     return tmp_path / "repo"
 
@@ -186,6 +215,19 @@ def test_the_section_effort_wins_over_the_plan_total(repo: Path) -> None:
         picker.PickRequest("proj", _node(section="s3"), estimated_context=1000),
     )["node"]
     assert node["estimated_hours"] == 4.0
+    assert node["estimated_hours_source"] == "section"
+
+
+def test_a_section_effort_is_read_when_the_plan_declares_no_total(
+    repo_without_a_plan_total: Path,
+) -> None:
+    """A plan with no plan-effort-hours meta still yields its section's effort."""
+
+    node = _state_for_jev(
+        repo_without_a_plan_total,
+        picker.PickRequest("proj", _node(section="s5"), estimated_context=1000),
+    )["node"]
+    assert node["estimated_hours"] == 3.0
     assert node["estimated_hours_source"] == "section"
 
 
