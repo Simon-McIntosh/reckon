@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-evidence-for" content="every-review-is-kept-as-a-committed-record">
+  <title>Landing: a misdelivered plan review cannot promote | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <section id="a-misdelivered-plan-review-cannot-promote-landing">
+      <p>Added the promotion precondition <code>_require_plan_review_delivered_in_its_directory</code> in <code>reckon/crew/promotion.py</code>, which refuses a plan-review run when the composed report directory whose <code>dispatch.json</code> names it holds no <code>report.md</code> and a sibling directory under the same plan report root, named for the run's own id, does; the refusal names both directories. The composed directory is found by the same join the delivered-record lookup uses, applied across the plan's whole report root. A delivered report, a run that delivered nowhere, a run whose composed directory is absent, and every run review promote as before. Gate (the new file with <code>tests/test_a_promoted_plan_review_is_committed.py</code> and <code>tests/test_reviews_read_the_committed_store_first.py</code>) 12 passed, EXIT=0; negative control (the refusal removed) <code>test_a_misdelivered_plan_review_is_refused</code> FAILED, EXIT=1.</p>
+    </section>
+  </main>
+</body>
+</html>
