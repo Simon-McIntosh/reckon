@@ -1,0 +1,2538 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effective_input_window": 230144,
+    "effort": "high",
+    "launch": "cli",
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 230144
+  },
+  "attempt": 3,
+  "attempt_kind": "resume",
+  "backend": "clive",
+  "base_sha": "7c882130dec0027ba473f12e96eb3a9e8b10b6e5",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "fallback_credit": null,
+      "inference_geo": "",
+      "input_tokens": 11492651,
+      "input_tokens_cumulative": 11492651,
+      "output_tokens": 29332,
+      "output_tokens_cumulative": 29332,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 431,
+    "files": 6,
+    "removed": 17
+  },
+  "clone_matches": [
+    {
+      "existing_function": {
+        "line": 161,
+        "name": "_run_cumulative_input",
+        "path": "reckon/crew/carryover_census.py"
+      },
+      "run_function": {
+        "line": 863,
+        "name": "_codex_rollout_candidates",
+        "path": "reckon/crew/paid_lanes.py"
+      },
+      "window_line": 916
+    },
+    {
+      "existing_function": {
+        "line": 342,
+        "name": "read_rollout_receipt",
+        "path": "reckon/crew/rollout.py"
+      },
+      "run_function": {
+        "line": 863,
+        "name": "_codex_rollout_candidates",
+        "path": "reckon/crew/paid_lanes.py"
+      },
+      "window_line": 916
+    },
+    {
+      "existing_function": {
+        "line": 338,
+        "name": "lanes",
+        "path": "reckon/crew/picker/lane_context.py"
+      },
+      "run_function": {
+        "line": 182,
+        "name": "return_times",
+        "path": "reckon/crew/picker/lane_context.py"
+      },
+      "window_line": 185
+    },
+    {
+      "existing_function": {
+        "line": 182,
+        "name": "return_times",
+        "path": "reckon/crew/picker/lane_context.py"
+      },
+      "run_function": {
+        "line": 338,
+        "name": "lanes",
+        "path": "reckon/crew/picker/lane_context.py"
+      },
+      "window_line": 339
+    },
+    {
+      "existing_function": {
+        "line": 4135,
+        "name": "_lane_reading_unknown",
+        "path": "reckon/crew/dispatch.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 5533,
+        "name": "plan_dispatch",
+        "path": "reckon/crew/dispatch.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 425
+    },
+    {
+      "existing_function": {
+        "line": 1769,
+        "name": "measure",
+        "path": "reckon/velocity.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 29,
+        "name": "_config",
+        "path": "tests/test_a_review_attempt_that_launches_nothing_leaves_nothing.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 95,
+        "name": "test_download_is_additive_every_other_field_is_unchanged",
+        "path": "tests/test_a_row_carries_its_downloadable_file.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 68,
+        "name": "test_a_pointer_with_no_project_completes_as_withdrawn",
+        "path": "tests/test_a_withdrawn_run_completes_as_withdrawn.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 66,
+        "name": "_state",
+        "path": "tests/test_bookkeeping_earns_no_review.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 201,
+        "name": "test_resolving_one_followup_and_appending_another_leaves_every_unit_covered",
+        "path": "tests/test_bookkeeping_earns_no_review.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 226,
+        "name": "test_a_decision_edit_uncovers_the_document",
+        "path": "tests/test_bookkeeping_earns_no_review.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 66,
+        "name": "_node",
+        "path": "tests/test_brief_beside_a_plan_section.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 222,
+        "name": "test_session_reuse_key_is_byte_identical_for_an_unchanged_configuration",
+        "path": "tests/test_calibration.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 319,
+        "name": "test_normal_plan_write_migrates_mapped_legacy_capability",
+        "path": "tests/test_capability.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 94,
+        "name": "_write_pointer",
+        "path": "tests/test_complete_refuses_an_open_merge.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 93,
+        "name": "test_a_landing_with_no_continuation_is_refused",
+        "path": "tests/test_continuation.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 384
+    },
+    {
+      "existing_function": {
+        "line": 124,
+        "name": "test_a_landing_that_appends_the_next_invocation_is_accepted",
+        "path": "tests/test_continuation.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 169,
+        "name": "test_a_landing_may_instead_record_that_the_chain_closes",
+        "path": "tests/test_continuation.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 384
+    },
+    {
+      "existing_function": {
+        "line": 493,
+        "name": "test_the_chain_stays_intact_from_worker_to_sprint",
+        "path": "tests/test_continuation.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 384
+    },
+    {
+      "existing_function": {
+        "line": 83,
+        "name": "_write_pointer",
+        "path": "tests/test_crew_gate_log_agrees.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 94,
+        "name": "_backend",
+        "path": "tests/test_crew_lane_agnostic_placement.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 167,
+        "name": "test_promotion_splits_narrative_from_run_measurements",
+        "path": "tests/test_crew_promotion.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 241,
+        "name": "_promote",
+        "path": "tests/test_crew_promotion.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 1630,
+        "name": "test_a_checkout_that_cannot_commit_refuses_before_any_store_is_written",
+        "path": "tests/test_crew_promotion.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 2046,
+        "name": "test_snapshot_carries_every_field_the_ticker_column_set_reads",
+        "path": "tests/test_crew_recovery.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 2184,
+        "name": "test_agent_label_returns_the_declared_alias_and_effort_spelling",
+        "path": "tests/test_crew_recovery.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 2209,
+        "name": "test_an_aliased_pointer_renders_the_alias_not_the_model_id",
+        "path": "tests/test_crew_recovery.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 2314,
+        "name": "test_legacy_log_line_renders_and_new_line_renders_two_cells",
+        "path": "tests/test_crew_recovery.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 2432,
+        "name": "_spend_snapshot",
+        "path": "tests/test_crew_recovery.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 63,
+        "name": "test_crew_rows_preserve_fields_without_discovery",
+        "path": "tests/test_crew_route_cost.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 190,
+        "name": "test_all_projects_route_joins_roster_and_navigation",
+        "path": "tests/test_crew_routes.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 76,
+        "name": "_event",
+        "path": "tests/test_crew_ticker.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 624,
+        "name": "test_a_departure_carries_no_explanation_from_the_state_it_left",
+        "path": "tests/test_crew_ticker.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 697,
+        "name": "_fact_event",
+        "path": "tests/test_crew_ticker.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 60,
+        "name": "_event",
+        "path": "tests/test_crew_ticker_layout.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 52,
+        "name": "_config",
+        "path": "tests/test_crew_workspace_requirements.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 26,
+        "name": "build_node",
+        "path": "tests/test_dispatch_context_estimate_is_one_figure.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 578,
+        "name": "_review_config",
+        "path": "tests/test_dispatch_holds_while_the_lane_is_paused.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 551,
+        "name": "_candidate_holders",
+        "path": "tests/test_dispatch_lifetime_probe.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 425
+    },
+    {
+      "existing_function": {
+        "line": 541,
+        "name": "test_append_followup",
+        "path": "tests/test_edit_plan.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 560,
+        "name": "test_append_duplicate_followup_id_rejected",
+        "path": "tests/test_edit_plan.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 626,
+        "name": "test_append_followup_empty_prompt_rejected",
+        "path": "tests/test_edit_plan.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 693,
+        "name": "test_append_followup_rejects_the_former_skill_name",
+        "path": "tests/test_edit_plan.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 716,
+        "name": "test_set_followup_prompt_migrates_existing_handoff",
+        "path": "tests/test_edit_plan.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 875,
+        "name": "test_resolve_followup",
+        "path": "tests/test_edit_plan.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 1019,
+        "name": "test_resolve_duplicate_id_selects_the_open_entry",
+        "path": "tests/test_edit_plan.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 1553,
+        "name": "test_reject_preexisting_empty_followup_prompt_via_validate",
+        "path": "tests/test_edit_plan.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 1747,
+        "name": "test_read_plan_discovery",
+        "path": "tests/test_edit_plan.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 1779,
+        "name": "test_read_plan_discovery_filters_and_summary",
+        "path": "tests/test_edit_plan.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 69,
+        "name": "plan",
+        "path": "tests/test_edit_plan_section_writes.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 111,
+        "name": "_held_through_the_fleet_node",
+        "path": "tests/test_ensure_holds_one_reservation.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 93,
+        "name": "_resumable_run",
+        "path": "tests/test_every_attempt_is_supervised.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 47,
+        "name": "test_five_declared_sections_with_three_landings_all_remain",
+        "path": "tests/test_executable_remainder.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 384
+    },
+    {
+      "existing_function": {
+        "line": 788,
+        "name": "test_the_stripped_variables_are_absent_from_a_spawned_child",
+        "path": "tests/test_fleet_supervisor.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 294,
+        "name": "test_an_empty_observed_set_render_is_byte_identical_to_today",
+        "path": "tests/test_follow_observes_other_sessions.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 30,
+        "name": "_event",
+        "path": "tests/test_follower_freshness.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 42,
+        "name": "_event",
+        "path": "tests/test_follower_reload_is_safe.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 123,
+        "name": "_pointer",
+        "path": "tests/test_gate_log_is_preserved.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 148,
+        "name": "test_cleared_blocker_reports_its_clear_after_its_probe_leaves_the_registry",
+        "path": "tests/test_held_blocker_probe.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 66,
+        "name": "node",
+        "path": "tests/test_jev_prompt_carries_what_it_weighs.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 43,
+        "name": "build_node",
+        "path": "tests/test_jev_weighs_context.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 122,
+        "name": "test_coordinator_written_comment_names_the_coordinator",
+        "path": "tests/test_landing_comment_authorship.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 116,
+        "name": "_pointer",
+        "path": "tests/test_landing_commit_carries_only_its_own_comment.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 305,
+        "name": "_followup_writer",
+        "path": "tests/test_landing_write_races_every_writer.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 108,
+        "name": "test_audit_reports_empty_followup_prompt",
+        "path": "tests/test_mcp_audit.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 102,
+        "name": "test_mcp_roadmap_preserves_named_decision_readiness",
+        "path": "tests/test_mcp_roadmap.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 453,
+        "name": "test_append_followup",
+        "path": "tests/test_mcp_store.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 492,
+        "name": "test_append_followup_rejects_prompt_wall",
+        "path": "tests/test_mcp_store.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 520,
+        "name": "test_list_followups_across_plans",
+        "path": "tests/test_mcp_tools.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 581,
+        "name": "test_list_followups_include_resolved",
+        "path": "tests/test_mcp_tools.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 609,
+        "name": "test_list_questions_across_plans",
+        "path": "tests/test_mcp_tools.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 668,
+        "name": "test_resolve_question",
+        "path": "tests/test_mcp_tools.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 384
+    },
+    {
+      "existing_function": {
+        "line": 712,
+        "name": "test_add_research",
+        "path": "tests/test_mcp_tools.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 117,
+        "name": "_plan",
+        "path": "tests/test_mcp_views.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 752,
+        "name": "test_schema_view_routes_to_every_selected_storage_contract",
+        "path": "tests/test_mcp_views.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 6,
+        "name": "test_roadmap_inventory_preserves_plan_orientation",
+        "path": "tests/test_north_star_rollup.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 384
+    },
+    {
+      "existing_function": {
+        "line": 246,
+        "name": "test_lane_receipts_join_equivalent_names_but_keep_models_separate",
+        "path": "tests/test_old_names_resolve.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 384
+    },
+    {
+      "existing_function": {
+        "line": 32,
+        "name": "test_recorded_classification_is_used_without_observing_logs",
+        "path": "tests/test_partition_live_runs_recorded.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 40,
+        "name": "_node",
+        "path": "tests/test_pick_candidates_one_pass.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 46,
+        "name": "_render_plan",
+        "path": "tests/test_project_state_parity.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 137,
+        "name": "_legacy_index",
+        "path": "tests/test_project_state_parity.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 246,
+        "name": "test_complete_locked_lands_the_comment_the_record_tree_would_write",
+        "path": "tests/test_promotion_readers_name_their_tree.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 120,
+        "name": "test_evidence_round_trip_preserves_qualified_provenance",
+        "path": "tests/test_provenance.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 38,
+        "name": "_write_plan",
+        "path": "tests/test_read_plan_section_view.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 110,
+        "name": "test_sweep_review_lane_uses_local_unless_node_declares_one",
+        "path": "tests/test_recover_launches_only_what_it_is_asked.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 122,
+        "name": "_pointer",
+        "path": "tests/test_refused_promotion_leaves_no_trace.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 121,
+        "name": "_pointer",
+        "path": "tests/test_repromotion_commits_its_recorded_comment.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 44,
+        "name": "_metadata_record",
+        "path": "tests/test_review_scoring.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 456,
+        "name": "test_open_decision_blocks_its_plan_with_a_distinct_blocker_kind",
+        "path": "tests/test_roadmap.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 504,
+        "name": "test_locked_or_deferred_decision_releases_work_and_stays_reported",
+        "path": "tests/test_roadmap.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 47,
+        "name": "_real_record",
+        "path": "tests/test_run_store.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 621,
+        "name": "test_a_store_from_the_narrow_column_shape_migrates_in_place_on_open",
+        "path": "tests/test_run_store.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 669,
+        "name": "test_a_store_from_the_payload_blob_shape_migrates_in_place_on_open",
+        "path": "tests/test_run_store.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 104,
+        "name": "_dispatch",
+        "path": "tests/test_section_attempts_are_tool_owned.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 258,
+        "name": "_figure_index_state",
+        "path": "tests/test_serve_figure_rows.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 1676,
+        "name": "_synthesized_checkout",
+        "path": "tests/test_skill_contracts.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 181,
+        "name": "test_sprint_state_rows_keep_composed_metrics_dates_and_independent_flags",
+        "path": "tests/test_spa_composition.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 170,
+        "name": "_state",
+        "path": "tests/test_spa_document_checks.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 50,
+        "name": "_composed_state",
+        "path": "tests/test_spa_owed_captures.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 384
+    },
+    {
+      "existing_function": {
+        "line": 81,
+        "name": "test_artifact_index_uses_the_full_width_and_owns_its_scroll",
+        "path": "tests/test_spa_plans_geometry.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 384
+    },
+    {
+      "existing_function": {
+        "line": 111,
+        "name": "test_feed_controls_share_the_artifact_index_header",
+        "path": "tests/test_spa_plans_geometry.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 384
+    },
+    {
+      "existing_function": {
+        "line": 41,
+        "name": "_reader_state",
+        "path": "tests/test_spa_reader_fidelity.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 115,
+        "name": "_reader_preload",
+        "path": "tests/test_spa_reader_fidelity.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 55,
+        "name": "_reader_state",
+        "path": "tests/test_spa_reader_provenance.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 242,
+        "name": "_measure_state",
+        "path": "tests/test_spa_reading_mode.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 572,
+        "name": "test_refresh_revalidates_discovery_without_document_navigation",
+        "path": "tests/test_spa_rendered_semantics.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 373,
+        "name": "test_qualified_plan_sprint_round_trips_and_malformed_ref_is_refused",
+        "path": "tests/test_sprint_membership_refs.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 109,
+        "name": "test_newest_run_replacement_invalidates_cache",
+        "path": "tests/test_the_attempts_derivation_is_cached.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 83,
+        "name": "_event",
+        "path": "tests/test_ticker_reads_cleanly.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 77,
+        "name": "_event",
+        "path": "tests/test_ticker_reason_cut_at_a_word.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 28,
+        "name": "row",
+        "path": "tests/test_ticker_renders_wait_facts.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 60,
+        "name": "_event",
+        "path": "tests/test_ticker_row_drops_unread_cells.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 40,
+        "name": "_event",
+        "path": "tests/test_ticker_row_is_one_transition.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 27,
+        "name": "_plan",
+        "path": "tests/test_tool_arguments_accept_a_serialised_list.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 87,
+        "name": "_build_repository",
+        "path": "tests/test_velocity.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 85,
+        "name": "_build_repository",
+        "path": "tests/test_velocity_cache.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 209,
+        "name": "_build_repository_with_an_unpromoted_run",
+        "path": "tests/test_velocity_cache.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 365,
+        "name": "test_measure_reports_the_section_without_reading_a_transcript_store",
+        "path": "tests/test_velocity_coordinator_cost.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 156,
+        "name": "test_the_composer_copies_each_fact_by_name",
+        "path": "tests/test_wait_facts_reach_the_event.py"
+      },
+      "run_function": {
+        "line": 158,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "window_line": 379
+    },
+    {
+      "existing_function": {
+        "line": 50,
+        "name": "check_document",
+        "path": "reckon/compliance.py"
+      },
+      "run_function": {
+        "line": 63,
+        "name": "_row",
+        "path": "tests/test_picker_joins_codex_by_lane.py"
+      },
+      "window_line": 83
+    },
+    {
+      "existing_function": {
+        "line": 1104,
+        "name": "test_discovery_names_plan_effort_and_sprint_capacity_units",
+        "path": "tests/test_mcp_views.py"
+      },
+      "run_function": {
+        "line": 63,
+        "name": "_row",
+        "path": "tests/test_picker_joins_codex_by_lane.py"
+      },
+      "window_line": 87
+    },
+    {
+      "existing_function": {
+        "line": 223,
+        "name": "_picker_row",
+        "path": "tests/test_subscription_lanes_record_no_spend.py"
+      },
+      "run_function": {
+        "line": 63,
+        "name": "_row",
+        "path": "tests/test_picker_joins_codex_by_lane.py"
+      },
+      "window_line": 69
+    },
+    {
+      "existing_function": {
+        "line": 279,
+        "name": "test_picker_inputs_and_rendered_state_equal_full_build",
+        "path": "tests/test_dispatch_speed.py"
+      },
+      "run_function": {
+        "line": 117,
+        "name": "_candidate",
+        "path": "tests/test_picker_joins_codex_by_lane.py"
+      },
+      "window_line": 120
+    },
+    {
+      "existing_function": {
+        "line": 59,
+        "name": "_candidate",
+        "path": "tests/test_pick_records_its_stage_times.py"
+      },
+      "run_function": {
+        "line": 117,
+        "name": "_candidate",
+        "path": "tests/test_picker_joins_codex_by_lane.py"
+      },
+      "window_line": 124
+    },
+    {
+      "existing_function": {
+        "line": 142,
+        "name": "_candidate",
+        "path": "tests/test_picker_helpers_have_one_owner.py"
+      },
+      "run_function": {
+        "line": 117,
+        "name": "_candidate",
+        "path": "tests/test_picker_joins_codex_by_lane.py"
+      },
+      "window_line": 118
+    },
+    {
+      "existing_function": {
+        "line": 53,
+        "name": "_candidate",
+        "path": "tests/test_picker_lanes.py"
+      },
+      "run_function": {
+        "line": 117,
+        "name": "_candidate",
+        "path": "tests/test_picker_joins_codex_by_lane.py"
+      },
+      "window_line": 125
+    },
+    {
+      "existing_function": {
+        "line": 79,
+        "name": "_candidate",
+        "path": "tests/test_picker_return_time.py"
+      },
+      "run_function": {
+        "line": 117,
+        "name": "_candidate",
+        "path": "tests/test_picker_joins_codex_by_lane.py"
+      },
+      "window_line": 123
+    },
+    {
+      "existing_function": {
+        "line": 15,
+        "name": "_node",
+        "path": "tests/test_crew_shadow_overrides.py"
+      },
+      "run_function": {
+        "line": 135,
+        "name": "_node",
+        "path": "tests/test_picker_joins_codex_by_lane.py"
+      },
+      "window_line": 137
+    },
+    {
+      "existing_function": {
+        "line": 279,
+        "name": "test_picker_inputs_and_rendered_state_equal_full_build",
+        "path": "tests/test_dispatch_speed.py"
+      },
+      "run_function": {
+        "line": 135,
+        "name": "_node",
+        "path": "tests/test_picker_joins_codex_by_lane.py"
+      },
+      "window_line": 137
+    },
+    {
+      "existing_function": {
+        "line": 449,
+        "name": "test_candidate_census_reads_the_node_estimate_once",
+        "path": "tests/test_dispatch_speed.py"
+      },
+      "run_function": {
+        "line": 135,
+        "name": "_node",
+        "path": "tests/test_picker_joins_codex_by_lane.py"
+      },
+      "window_line": 137
+    },
+    {
+      "existing_function": {
+        "line": 496,
+        "name": "test_plan_estimate_cache_tracks_edits_and_duplicate_identity",
+        "path": "tests/test_dispatch_speed.py"
+      },
+      "run_function": {
+        "line": 135,
+        "name": "_node",
+        "path": "tests/test_picker_joins_codex_by_lane.py"
+      },
+      "window_line": 137
+    },
+    {
+      "existing_function": {
+        "line": 536,
+        "name": "test_estimate_rejects_plan_metadata_in_a_different_typed_root",
+        "path": "tests/test_dispatch_speed.py"
+      },
+      "run_function": {
+        "line": 135,
+        "name": "_node",
+        "path": "tests/test_picker_joins_codex_by_lane.py"
+      },
+      "window_line": 137
+    },
+    {
+      "existing_function": {
+        "line": 20,
+        "name": "request_node",
+        "path": "tests/test_picker.py"
+      },
+      "run_function": {
+        "line": 135,
+        "name": "_node",
+        "path": "tests/test_picker_joins_codex_by_lane.py"
+      },
+      "window_line": 137
+    },
+    {
+      "existing_function": {
+        "line": 42,
+        "name": "_request",
+        "path": "tests/test_picker_dispatch_pace.py"
+      },
+      "run_function": {
+        "line": 135,
+        "name": "_node",
+        "path": "tests/test_picker_joins_codex_by_lane.py"
+      },
+      "window_line": 137
+    },
+    {
+      "existing_function": {
+        "line": 130,
+        "name": "_node",
+        "path": "tests/test_picker_helpers_have_one_owner.py"
+      },
+      "run_function": {
+        "line": 135,
+        "name": "_node",
+        "path": "tests/test_picker_joins_codex_by_lane.py"
+      },
+      "window_line": 136
+    },
+    {
+      "existing_function": {
+        "line": 18,
+        "name": "request_node",
+        "path": "tests/test_picker_latency.py"
+      },
+      "run_function": {
+        "line": 135,
+        "name": "_node",
+        "path": "tests/test_picker_joins_codex_by_lane.py"
+      },
+      "window_line": 137
+    },
+    {
+      "existing_function": {
+        "line": 194,
+        "name": "test_a_planless_pick_never_scans_the_docs_tree",
+        "path": "tests/test_picker_latency.py"
+      },
+      "run_function": {
+        "line": 135,
+        "name": "_node",
+        "path": "tests/test_picker_joins_codex_by_lane.py"
+      },
+      "window_line": 137
+    },
+    {
+      "existing_function": {
+        "line": 48,
+        "name": "_request",
+        "path": "tests/test_stale_reading_reaches_jev.py"
+      },
+      "run_function": {
+        "line": 135,
+        "name": "_node",
+        "path": "tests/test_picker_joins_codex_by_lane.py"
+      },
+      "window_line": 137
+    },
+    {
+      "existing_function": {
+        "line": 69,
+        "name": "_write_claude_stream",
+        "path": "tests/test_headroom_publishes_real_readings.py"
+      },
+      "run_function": {
+        "line": 193,
+        "name": "_rollout",
+        "path": "tests/test_picker_joins_codex_by_lane.py"
+      },
+      "window_line": 213
+    },
+    {
+      "existing_function": {
+        "line": 11,
+        "name": "_rollout",
+        "path": "tests/test_paid_lanes_codex_window.py"
+      },
+      "run_function": {
+        "line": 193,
+        "name": "_rollout",
+        "path": "tests/test_picker_joins_codex_by_lane.py"
+      },
+      "window_line": 199
+    }
+  ],
+  "commit_resolution": null,
+  "commits": [
+    "c8adc9b6485c16554cd474d3b8782a05fa6db9f7",
+    "aa56ba6f9c2c1f4a7baac10d345c502544d1e82c",
+    "685f7a0043c93e8dd37cd9306ddf7537cedbf4cb",
+    "9aff46e1e2a45ffde91dc2d514d108abe04b8d13",
+    "be006ea3de2cfa11dfde34e5f7f42ed182dacbb8",
+    "6af4acbbc8c6d881b20f0bfd80aa9965bd843a04"
+  ],
+  "completed_at": "2026-10-08T03:19:40.155Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-10-08T00:47:52Z",
+  "disposition": null,
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": "pytest -p",
+    "override": false,
+    "role": "implement",
+    "status": "compatible"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [
+    "reckon/crew/picker/prompts.py",
+    "prompts.py"
+  ],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_picker_joins_codex_by_lane.py tests/test_paid_lanes_codex_window.py tests/test_picker.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T004712736537-picker-joins-codex-by-lane/gate.log"
+  },
+  "impl_move": {
+    "at_complete": null,
+    "at_dispatch": null,
+    "plan": "one-typesafe-model-picker",
+    "reason": "corrective-run:resume",
+    "verdict": "exempt"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-10-08T01:37:25.529099+00:00",
+    "horizon_seconds": 3000,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": "clive",
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-10-08T00:47:25Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 14,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 3,
+    "headroom": 11,
+    "mean_context": 120000,
+    "observed_at": "2026-10-08T00:47:11Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": 14,
+      "aggregate_tokens_per_second": 115.697,
+      "detail": "",
+      "mean_tokens_per_second": 44.499,
+      "observed_at": "2026-10-08T00:47:11Z",
+      "runs": 2.6,
+      "state": "measured"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-10-08T03:19:40.155Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": false,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T004712736537-picker-joins-codex-by-lane/manifest.md",
+  "member": "disposable-r-20261008T004712736537-picker-joins-codex-by-lane",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_picker_joins_codex_by_lane.py::test_paid_lanes_joins_profiles_by_budget_group",
+      "tests/test_picker_joins_codex_by_lane.py::test_paid_lanes_joins_profiles_by_catalogue_lane"
+    ],
+    "baseline_failure_ids": [],
+    "comparison_arm": "after_suite",
+    "control_exit_status": null,
+    "control_failure_ids": [
+      "tests/test_picker_joins_codex_by_lane.py::test_paid_lanes_joins_profiles_by_budget_group",
+      "tests/test_picker_joins_codex_by_lane.py::test_paid_lanes_joins_profiles_by_catalogue_lane"
+    ],
+    "declaration": "restore the codex name-prefix test; the lookalike-name case must fail",
+    "head_failure_ids": [],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T004712736537-picker-joins-codex-by-lane/nc-paid.log",
+    "reason": "the worker's control log lacks its EXIT record, but the re-review (110) ran an independent control at the head: restoring the codex prefix join reddened both new join tests",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T004712736537-picker-joins-codex-by-lane/nc-paid.log",
+    "test_paths": [
+      "tests/test_picker_joins_codex_by_lane.py"
+    ],
+    "verdict": "waived"
+  },
+  "no_commit": null,
+  "node": "picker-joins-codex-by-lane",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 2268,
+          "cached_input_tokens": 795361,
+          "input_tokens": 797631,
+          "output_tokens": 1578,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 799209,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "2d0412cd-9d81-48d8-9d5c-32537d1c4e2b",
+      "session_id": "s25-picker"
+    },
+    "done_when": "Close two picker follow-ons now that lanes are declared. Followup f-otmp-review-small-follow-ons in docs/plans/one-typesafe-model-picker.html lists them. For each, first confirm it still reproduces on main, and record what you saw. If one no longer reproduces, say so in the manifest and skip it.\n\n1. Codex runs are recognised by name prefix. reckon/crew/picker/outcomes.py (around lines 228-230) treats a row as codex with str(row.get(\"backend\") or \"\").startswith(\"codex\"). Join on the lane instead, through the read-side resolver resolve_name that landed this week (it maps backend names, model ids and aliases to a lane and model key). A row written under codex, codex-astra, codex-luna, an old alias or a model id must count as the codex lane, and a non-codex backend whose name happens to start with codex must not.\n2. A document-backed codex reading is labelled with the picker's ledger-source vocabulary. In reckon/crew/picker/lane_context.py, a codex reading that comes from the paid-lanes document carries a budget_source drawn from the ledger's vocabulary. Give it its own provenance label, so Jev and a reader can tell a published document reading from a ledger-derived one.\n3. Tests in tests/test_picker_joins_codex_by_lane.py:\n   - item 1 for each old name, plus a lookalike non-codex name;\n   - item 2: the label differs between a document-backed reading and a ledger-backed one.\n4. Negative control: restoring the startswith(\"codex\") test makes the lookalike-name case fail.\n\nDo not edit reckon/crew/dispatch.py or reckon/cli.py (on hold for a module split), or reckon/crew/picker/snapshot.py (run budget-view-is-cached holds it). Gate: tests/test_picker_joins_codex_by_lane.py, every tests/test_picker*.py, tests/test_old_names_resolve.py and tests/test_jev_weighs_context.py. Run with the main checkout's .venv/bin/python -m pytest -p no:cacheprovider -n 6 in the FOREGROUND, with one log each for base and head under the run directory, each ending in an EXIT line, judged by delta. Write the evidence fragment docs/evidence/fragments/one-typesafe-model-picker/picker-joins-codex-by-lane.html.",
+    "estimated_hours": 1.5,
+    "goal": "The picker counts codex runs by lane and labels a document-backed reading by its own source",
+    "id": "picker-joins-codex-by-lane",
+    "lane_declaration": {
+      "backend": "clive",
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-10-08T00:47:25Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 14,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 3,
+      "headroom": 11,
+      "mean_context": 120000,
+      "observed_at": "2026-10-08T00:47:11Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": 14,
+        "aggregate_tokens_per_second": 115.697,
+        "detail": "",
+        "mean_tokens_per_second": 44.499,
+        "observed_at": "2026-10-08T00:47:11Z",
+        "runs": 2.6,
+        "state": "measured"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T004712736537-picker-joins-codex-by-lane/manifest.md",
+    "negative_control": "restore the codex name-prefix test; the lookalike-name case must fail",
+    "plan": "one-typesafe-model-picker",
+    "requested_backend": "clive",
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§6",
+    "spec_level": "exact",
+    "time_budget": "50m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/picker/outcomes.py",
+      "reckon/crew/picker/lane_context.py",
+      "tests/test_picker_joins_codex_by_lane.py",
+      "docs/evidence/fragments/one-typesafe-model-picker/picker-joins-codex-by-lane.html",
+      "docs/figures/one-typesafe-model-picker/picker-joins-codex-by-lane"
+    ]
+  },
+  "orchestrator_lane_override": null,
+  "orientation_input_tokens": 3491720.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "picker-joins-codex-by-lane",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-10-08T00:47:35.204252+00:00",
+    "score": 0.64375,
+    "source": null,
+    "state": "unknown"
+  },
+  "picker_selection": {
+    "action": "route",
+    "answering_model": "typesafe/jev-1.13-20260917",
+    "backend": "clive",
+    "comment": "",
+    "confidence": 0.83,
+    "decision_source": "jev",
+    "effort": "high",
+    "excluded": [
+      {
+        "availability": "not-probed",
+        "backend": "native",
+        "budget_age_s": null,
+        "budget_reason": null,
+        "burn_multiple": null,
+        "congestion": null,
+        "context": null,
+        "days_to_reset": null,
+        "effort": "high",
+        "family": "in-harness",
+        "local": false,
+        "model": null,
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reasons": [
+          "in-harness-backend"
+        ],
+        "resets_at": null,
+        "stale": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      }
+    ],
+    "fallback_reason": null,
+    "family": "local",
+    "jev_latency_ms": 349.533,
+    "jev_model": "typesafe/jev-1.13",
+    "latency_ms": 464.008,
+    "model": "deepseek-v4.1-flash",
+    "offered": [
+      {
+        "availability": "unknown",
+        "backend": "claude",
+        "budget_age_s": 498392.725715,
+        "budget_reason": null,
+        "burn_multiple": 0.88,
+        "congestion": null,
+        "context": {
+          "estimated_tokens": 62617,
+          "headroom_pct": null,
+          "peak_utilisation_p50_pct": null,
+          "peak_utilisation_p90_pct": null,
+          "peak_utilisation_runs": null,
+          "window_tokens": null
+        },
+        "days_to_reset": 0.0,
+        "effort": "high",
+        "family": "claude",
+        "local": false,
+        "model": "claude-sonnet-5-5",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": 0.132,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": "2026-10-04T06:00:00+00:00",
+        "stale": true,
+        "utilisation_pct": 88.0,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "claude-haiku",
+        "budget_age_s": 498392.725715,
+        "budget_reason": null,
+        "burn_multiple": 0.88,
+        "congestion": null,
+        "context": {
+          "estimated_tokens": 62617,
+          "headroom_pct": null,
+          "peak_utilisation_p50_pct": null,
+          "peak_utilisation_p90_pct": null,
+          "peak_utilisation_runs": null,
+          "window_tokens": null
+        },
+        "days_to_reset": 0.0,
+        "effort": "high",
+        "family": "claude",
+        "local": false,
+        "model": "claude-haiku-4-5-20251001",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": 0.132,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": "2026-10-04T06:00:00+00:00",
+        "stale": true,
+        "utilisation_pct": 88.0,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "claude-opus",
+        "budget_age_s": 498392.725715,
+        "budget_reason": null,
+        "burn_multiple": 0.88,
+        "congestion": null,
+        "context": {
+          "estimated_tokens": 62617,
+          "headroom_pct": null,
+          "peak_utilisation_p50_pct": null,
+          "peak_utilisation_p90_pct": null,
+          "peak_utilisation_runs": null,
+          "window_tokens": null
+        },
+        "days_to_reset": 0.0,
+        "effort": "high",
+        "family": "claude",
+        "local": false,
+        "model": "claude-opus-5-5",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": 0.132,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": "2026-10-04T06:00:00+00:00",
+        "stale": true,
+        "utilisation_pct": 88.0,
+        "worker_slots": null
+      },
+      {
+        "availability": "served",
+        "backend": "clive",
+        "budget_age_s": null,
+        "budget_reason": null,
+        "burn_multiple": null,
+        "congestion": {
+          "admission_verdict": "open",
+          "running": 3,
+          "slots_state": "measured",
+          "stale": false,
+          "waiting": 0
+        },
+        "context": {
+          "estimated_tokens": 62617,
+          "headroom_pct": 72.8,
+          "peak_utilisation_p50_pct": 36.2,
+          "peak_utilisation_p90_pct": 82.8,
+          "peak_utilisation_runs": 967,
+          "window_tokens": 230144
+        },
+        "days_to_reset": null,
+        "effort": "high",
+        "family": "local",
+        "local": true,
+        "model": "deepseek-v4.1-flash",
+        "outcomes": {
+          "failed": 18,
+          "not-run": 17,
+          "passed": 642,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "stale": null,
+        "utilisation_pct": null,
+        "worker_slots": 112
+      },
+      {
+        "availability": "unknown",
+        "backend": "codex",
+        "budget_age_s": 7777.944715,
+        "budget_reason": null,
+        "burn_multiple": 0.9459026887616503,
+        "congestion": null,
+        "context": {
+          "estimated_tokens": 62617,
+          "headroom_pct": null,
+          "peak_utilisation_p50_pct": null,
+          "peak_utilisation_p90_pct": null,
+          "peak_utilisation_runs": null,
+          "window_tokens": null
+        },
+        "days_to_reset": 6.1859585333912035,
+        "effort": "high",
+        "family": "codex",
+        "local": false,
+        "model": "gpt-6-sol",
+        "outcomes": {
+          "failed": 5,
+          "not-run": 0,
+          "passed": 37,
+          "unknown": 0
+        },
+        "pace_allowance": 0.1279201353771495,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": "2026-10-14T05:14:59+00:00",
+        "stale": true,
+        "utilisation_pct": 11.0,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "codex-astra",
+        "budget_age_s": 7777.944715,
+        "budget_reason": null,
+        "burn_multiple": 0.9459026887616503,
+        "congestion": null,
+        "context": {
+          "estimated_tokens": 62617,
+          "headroom_pct": null,
+          "peak_utilisation_p50_pct": null,
+          "peak_utilisation_p90_pct": null,
+          "peak_utilisation_runs": null,
+          "window_tokens": null
+        },
+        "days_to_reset": 6.1859585333912035,
+        "effort": "high",
+        "family": "codex",
+        "local": false,
+        "model": "gpt-6-astra",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 11,
+          "unknown": 0
+        },
+        "pace_allowance": 0.1279201353771495,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": "2026-10-14T05:14:59+00:00",
+        "stale": true,
+        "utilisation_pct": 11.0,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "codex-luna",
+        "budget_age_s": 7777.944715,
+        "budget_reason": null,
+        "burn_multiple": 0.9459026887616503,
+        "congestion": null,
+        "context": {
+          "estimated_tokens": 62617,
+          "headroom_pct": null,
+          "peak_utilisation_p50_pct": null,
+          "peak_utilisation_p90_pct": null,
+          "peak_utilisation_runs": null,
+          "window_tokens": null
+        },
+        "days_to_reset": 6.1859585333912035,
+        "effort": "high",
+        "family": "codex",
+        "local": false,
+        "model": "gpt-6-luna",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": 0.1279201353771495,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": "2026-10-14T05:14:59+00:00",
+        "stale": true,
+        "utilisation_pct": 11.0,
+        "worker_slots": null
+      }
+    ],
+    "probabilities": {
+      "claude:claude-haiku-4-5-20251001": 0,
+      "claude:claude-opus-5-5": 0,
+      "claude:claude-sonnet-5-5": 0.01,
+      "codex:gpt-6-astra": 0,
+      "codex:gpt-6-luna": 0,
+      "codex:gpt-6-sol": 0.11,
+      "hold": 0.03,
+      "local:deepseek-v4.1-flash": 0.85
+    },
+    "rendered_token_estimate": 2223,
+    "usage": {
+      "cost": 0.00023667,
+      "input_tokens": 5635,
+      "output_tokens": 150
+    }
+  },
+  "plan": "one-typesafe-model-picker",
+  "plan_link": null,
+  "promoted_by": null,
+  "promoted_revision": "6af4acbbc8c6d881b20f0bfd80aa9965bd843a04",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "reviewed_base_sha": "9aff46e1e2a45ffde91dc2d514d108abe04b8d13",
+    "reviewed_head_sha": "6af4acbbc8c6d881b20f0bfd80aa9965bd843a04",
+    "scores": {
+      "durability": 19,
+      "evidence": 18,
+      "fit": 20,
+      "goal_fidelity": 19,
+      "reuse": 20,
+      "scope_discipline": 18
+    },
+    "status": "parsed",
+    "total": 114
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "route_mode": "picker",
+  "run_id": "r-20261008T004712736537-picker-joins-codex-by-lane",
+  "scope_acceptances": [
+    {
+      "path": "reckon/crew/paid_lanes.py",
+      "reason": "authorised in the resume advice: the remaining codex name-prefix joins lived there"
+    },
+    {
+      "path": "tests/test_paid_lanes_codex_window.py",
+      "reason": "the paid-lanes tests the declaration-based join supersedes; in the merge-check population"
+    }
+  ],
+  "scope_changed": false,
+  "section": "§6",
+  "session": "s25-picker",
+  "session_harness": "claude",
+  "session_id": "31698c09-e9f8-4ddc-94f0-6930b4df35f3",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": true,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 37321532,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 230144",
+    "elapsed_seconds": 1598.84,
+    "generated_tokens": 135458,
+    "generation_seconds": 942.027,
+    "input_budget_tokens": 230144,
+    "input_utilisation_pct": 83.5,
+    "machine_seconds": 656.813,
+    "peak_input_tokens": 192167,
+    "tokens_per_second": 143.79,
+    "wall_tokens_per_second": 84.72
+  },
+  "time_budget": "50m",
+  "tool_steps": 107.0,
+  "unplanned_reason": null,
+  "unreconciled_override": null,
+  "wall_seconds": 9108,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 3,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-10-08T03:19:44Z",
+    "last_record_type": "result",
+    "launched_at": "2026-10-08T02:52:57Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20261008T004712736537-picker-joins-codex-by-lane",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 24976,
+    "worker_pid": 280462
+  },
+  "worker_seconds": 9078,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
