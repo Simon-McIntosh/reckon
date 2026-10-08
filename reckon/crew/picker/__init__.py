@@ -93,7 +93,7 @@ def _resolved_plan_path(docs: Path, project: str, plan: str) -> Path | None:
     would have found without walking the tree.
     """
 
-    from reckon import capabilities, ledger
+    from reckon import capabilities
     from reckon.crew.routing import _docs_scan_directories
 
     identity = hashlib.sha256(
@@ -118,7 +118,7 @@ def _resolved_plan_path(docs: Path, project: str, plan: str) -> Path | None:
         ]
         path = value.get("path")
         if path:
-            stamp.append([path, ledger._file_identity(Path(path))])
+            stamp.append([path, capabilities.file_stamp(path)])
         return stamp
 
     try:
