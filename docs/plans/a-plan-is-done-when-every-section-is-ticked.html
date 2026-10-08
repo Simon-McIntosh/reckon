@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.5">
-<meta name="plan-version" content="31">
+<meta name="plan-version" content="32">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -128,7 +128,9 @@
     <p><strong>Done when</strong> the census of every mounted project's live plans is recorded with its count. A test
       writes a plan with an undeclared heading and finds the audit error and the write refusal, and a second test
       finds the reverse case. Both fail on the current code, which checks neither; that is their negative
-      control.</p>
+      control. A third test adds a heading and its declaration in one <code>insert_section</code> write and finds it
+      accepted. It fails when the check reads the authored <code>source_text</code> instead of the rendered
+      declarations, and that is its negative control.</p>
 
     <h2 id="s6" data-reckon="section" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links="">§6 — A plan reaches done only when every todo is ticked</h2>
     <p><strong>Deliverable.</strong> A write that sets a plan's status to <code>shipped</code> or <code>done</code> is
