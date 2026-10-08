@@ -97,6 +97,45 @@ function ActionableCommentList({ sectionId, arr, onEdit, onDelete }) {
   );
 }
 
+// One row per authored section, in document order, ticked from its
+// declaration. A pure render of the payload: a row's look is chosen from its
+// declaration, and nothing is filtered, sorted or inferred.
+function PlanChecklist({ todos }) {
+  if (!todos || todos.length === 0) return null;
+  return (
+    <nav className="r-plan-checklist" aria-label="Plan sections">
+      <ol className="r-plan-checklist-list">
+        {todos.map(todo => {
+          const row = todo.declaration === "done" ? "done"
+            : todo.declaration === "deferred" ? "deferred" : "open";
+          return (
+            <li key={todo.id} data-section={todo.id} data-state={row} className={`r-plan-todo is-${row}`}>
+              <input className="r-plan-todo-box" type="checkbox" checked={row === "done"} readOnly tabIndex={-1} aria-label={row === "done" ? "done" : row} />
+              <a
+                className="r-plan-todo-link"
+                href={todo.link}
+                onClick={event => {
+                  // The hash routes the SPA, so a bare href would leave the
+                  // plan for an unrecognised route. Keep the href for copy and
+                  // middle-click; scroll the section into view here instead.
+                  event.preventDefault();
+                  document.getElementById(todo.id)?.scrollIntoView({ block: "start" });
+                }}
+              >{todo.heading}</a>
+              {row !== "done" && (
+                <span className="r-plan-todo-state">{row === "deferred" ? "deferred" : "open"}</span>
+              )}
+              {row === "done" && todo.close && (
+                <span className="r-plan-todo-close" dangerouslySetInnerHTML={{ __html: todo.close.body || "" }} />
+              )}
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
+  );
+}
+
 function GateTable({ gates }) {
   if (!gates || gates.length === 0) return null;
   return (
@@ -996,6 +1035,7 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus 
               {(PG.artifacts || []).length > 0 && <span>artifacts&nbsp;{PG.artifacts.join(", ")}</span>}
             </div>
           )}
+          {isPlan && !usesImageReader && <PlanChecklist todos={fullState?.todos || []} />}
           {usesImageReader ? (
             <figure className="r-reader-figure">
               <div
