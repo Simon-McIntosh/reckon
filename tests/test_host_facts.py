@@ -24,6 +24,7 @@ from reckon import host as host_module
 # Imported by name because ``reckon.crew`` exports a ``dispatch`` *function* of
 # the same name, so ``import reckon.crew.dispatch as ...`` binds that function.
 dispatch_module = import_module("reckon.crew.dispatch")
+dispatch_admission_module = import_module("reckon.crew.dispatch_admission")
 
 # The mount point the probe is asked about: the node's own scratch.
 TMP = "/tmp"  # noqa: S108 — fixture mount point, never opened
@@ -125,14 +126,19 @@ def mount_for(entries: list[tuple[str, str]], target: str) -> str | None:
 @contextmanager
 def stubbed_tmpfs(entries: list[tuple[str, str]]) -> Iterator[None]:
     """Stand-in for the mount-table predicate, answering from fixture entries."""
-    saved = dispatch_module._path_is_tmpfs
-    dispatch_module._path_is_tmpfs = lambda path: (
-        mount_for(entries, os.path.normpath(str(path))) in {"tmpfs", "ramfs"}
-    )
+    saved_dispatch = dispatch_module._path_is_tmpfs
+    saved_admission = dispatch_admission_module._path_is_tmpfs
+
+    def predicate(path: str | Path) -> bool:
+        return mount_for(entries, os.path.normpath(str(path))) in {"tmpfs", "ramfs"}
+
+    dispatch_module._path_is_tmpfs = predicate
+    dispatch_admission_module._path_is_tmpfs = predicate
     try:
         yield
     finally:
-        dispatch_module._path_is_tmpfs = saved
+        dispatch_module._path_is_tmpfs = saved_dispatch
+        dispatch_admission_module._path_is_tmpfs = saved_admission
 
 
 def read_host_facts(
