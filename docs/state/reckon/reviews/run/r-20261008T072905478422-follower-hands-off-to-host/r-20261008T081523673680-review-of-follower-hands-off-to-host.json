@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite/after_suite gate log, so the added-failure count was not taken; supplemental: the reviewed run's own head-arm logs hold no FAILED/ERROR id -- gate-handoff.log 5 passed, gate-siblings.log 33 passed -- so the material added-failure count for the reviewed delta is 0.",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:5317 (crew_follow)",
+    "reckon/cli.py:3710 (_follower_end_event)",
+    "reckon/crew/dispatch.py:1180 (dispatch)"
+  ],
+  "completed_at": "2026-10-08T08:35:25.990Z",
+  "dispatched_at": "2026-10-08T08:16:00Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "2308",
+      "severity": "follow-on",
+      "text": "follow-on: _request_host_follower duplicates the request-line construction and write of _ask_session_host_for_follower at reckon/crew/dispatch_watch.py:531-535, so \"the project and session written to the request FIFO\" is now spelled in two modules; the owner dispatch_watch.py:514 should expose the non-waiting write and call it."
+    },
+    {
+      "file": "reckon/cli.py",
+      "line": "5317",
+      "severity": "follow-on",
+      "text": "follow-on: the start-up handoff returns before _adopt_launched_workers_from_reexec() at reckon/cli.py:5339, so a follower reloaded in place that finds a waiting host hands off without re-registering the launched pids carried across os.execv (reckon/crew/dispatch_launch.py:455-489), leaving those children uncollected; moving the adoption call above the handoff check closes it."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base 0d8f1960; the single commit adds the handoff helpers and the early-return block in crew_follow, the end-row branch, CHILD_ENV, the dispatch condition and two dispatch helpers, the coordinator-reference note, the test file and the fragment.",
+    "done_when": "the done-when names tests/test_follower_hands_off_to_host.py with five cases; all five are present in the diff and the file ran green (5 passed, EXIT=0) in the reviewed run's gate-handoff.log and again in an independent re-run at the reviewed head.",
+    "goal": "the node goal is section 14 of a-follower-lives-as-long-as-its-session, and the diff implements each deliverable -- the start-up handoff in reckon/cli.py:5311-5335, the lifetime-end handover in reckon/cli.py:3665-3725, the host-child marker in reckon/crew/session_host.py:70 and :422, and the dispatch admission at reckon/crew/dispatch.py:1180.",
+    "manifest": "read; it lists commit 24a111f2, the six changed paths, gate-handoff.log (5 passed EXIT=0), gate-siblings.log (33 passed EXIT=0) and negative-control-handoff.log (EXIT=1), and carries no rearm-offending fields.",
+    "write_paths": "the reviewed manifest declares the four source paths, the coordinator reference and the evidence fragment; every path in the diff sits inside them."
+  },
+  "justifications": {
+    "durability": "the negative control in negative-control-handoff.log (EXIT=1) shows test_a_follower_hands_off_to_a_waiting_host_and_exits reddens when the handoff check is removed, and the end-row branch is guarded by its own case, though the stream cases rest on a 2.5 s liveness window.",
+    "evidence": "the gate tests/test_follower_hands_off_to_host.py asserts the done-when's five cases and its 5-passed EXIT=0 is recorded and independently re-run, but the reviewed manifest names no baseline_suite/after_suite, so added_failure_count is unmeasured and the gate logs carry no revision header.",
+    "goal_fidelity": "reckon/cli.py:5317 hands a hand-armed follower's pair to a waiting host and exits 0, reckon/cli.py:3674-3690 drops the re-arm on a handed-over end row, and reckon/crew/dispatch.py:1180 asks a waiting host for a foreignly-attached session, so every deliverable section 14 names is present.",
+    "reuse": "reckon/crew/dispatch.py:2308-2330 _request_host_follower re-implements the FIFO request write that reckon/crew/dispatch_watch.py:514-543 _ask_session_host_for_follower owns inline (same session guard, same _session_host_fifo resolve, same json line and _write_fleet_request call) without extending that owner.",
+    "scope_discipline": "every path in the single-commit diff (reckon/cli.py, reckon/crew/dispatch.py, reckon/crew/session_host.py, tests/test_follower_hands_off_to_host.py, skills/reckon-build/references/coordinator-reference.md and the evidence fragment) is inside the manifest's declared write paths."
+  },
+  "model": "deepseek-v4.1-flash",
+  "node": "review-of-follower-hands-off-to-host",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is section 14 of a-follower-lives-as-long-as-its-session, and the diff implements each deliverable -- the start-up handoff in reckon/cli.py:5311-5335, the lifetime-end handover in reckon/cli.py:3665-3725, the host-child marker in reckon/crew/session_host.py:70 and :422, and the dispatch admission at reckon/crew/dispatch.py:1180.\nVERDICT done_when: the done-when names tests/test_follower_hands_off_to_host.py with five cases; all five are present in the diff and the file ran green (5 passed, EXIT=0) in the reviewed run's gate-handoff.log and again in an independent re-run at the reviewed head.\nVERDICT write_paths: the reviewed manifest declares the four source paths, the coordinator reference and the evidence fragment; every path in the diff sits inside them.\nVERDICT manifest: read; it lists commit 24a111f2, the six changed paths, gate-handoff.log (5 passed EXIT=0), gate-siblings.log (33 passed EXIT=0) and negative-control-handoff.log (EXIT=1), and carries no rearm-offending fields.\nVERDICT diff: read commit by commit against base 0d8f1960; the single commit adds the handoff helpers and the early-return block in crew_follow, the end-row branch, CHILD_ENV, the dispatch condition and two dispatch helpers, the coordinator-reference note, the test file and the fragment.\nCALL_SITES: reckon/cli.py:5317 (crew_follow), reckon/cli.py:3710 (_follower_end_event), reckon/crew/dispatch.py:1180 (dispatch)\n\n\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/cli.py:5317 hands a hand-armed follower's pair to a waiting host and exits 0, reckon/cli.py:3674-3690 drops the re-arm on a handed-over end row, and reckon/crew/dispatch.py:1180 asks a waiting host for a foreignly-attached session, so every deliverable section 14 names is present.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate tests/test_follower_hands_off_to_host.py asserts the done-when's five cases and its 5-passed EXIT=0 is recorded and independently re-run, but the reviewed manifest names no baseline_suite/after_suite, so added_failure_count is unmeasured and the gate logs carry no revision header.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the single-commit diff (reckon/cli.py, reckon/crew/dispatch.py, reckon/crew/session_host.py, tests/test_follower_hands_off_to_host.py, skills/reckon-build/references/coordinator-reference.md and the evidence fragment) is inside the manifest's declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: the negative control in negative-control-handoff.log (EXIT=1) shows test_a_follower_hands_off_to_a_waiting_host_and_exits reddens when the handoff check is removed, and the end-row branch is guarded by its own case, though the stream cases rest on a 2.5 s liveness window.\nSCORE fit: 18\nJUST_PLACEHOLDER\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/dispatch.py:2308-2330 _request_host_follower re-implements the FIFO request write that reckon/crew/dispatch_watch.py:514-543 _ask_session_host_for_follower owns inline (same session guard, same _session_host_fifo resolve, same json line and _write_fleet_request call) without extending that owner.\nFINDING reckon/crew/dispatch.py:2308 follow-on: _request_host_follower duplicates the request-line construction and write of _ask_session_host_for_follower at reckon/crew/dispatch_watch.py:531-535, so \"the project and session written to the request FIFO\" is now spelled in two modules; the owner dispatch_watch.py:514 should expose the non-waiting write and call it.\nFINDING reckon/cli.py:5317 follow-on: the start-up handoff returns before _adopt_launched_workers_from_reexec() at reckon/cli.py:5339, so a follower reloaded in place that finds a waiting host hands off without re-registering the launched pids carried across os.execv (reckon/crew/dispatch_launch.py:455-489), leaving those children uncollected; moving the adoption call above the handoff check closes it.\nreviewed_base_sha: 0d8f1960cf89057d74813ecbd79c91c8ea19bad6\nreviewed_head_sha: 24a111f28627715b511d63241d2b619a0af6ae91\n",
+  "review_run_id": "r-20261008T081523673680-review-of-follower-hands-off-to-host",
+  "reviewed_base_sha": "0d8f1960cf89057d74813ecbd79c91c8ea19bad6",
+  "reviewed_head_sha": "24a111f28627715b511d63241d2b619a0af6ae91",
+  "reviewed_run_id": "r-20261008T072905478422-follower-hands-off-to-host",
+  "role": "review",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T08:31:39.660627+00:00",
+  "total": 92
+}
