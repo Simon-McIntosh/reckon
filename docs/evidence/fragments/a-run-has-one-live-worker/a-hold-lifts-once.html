@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-run-has-one-live-worker">
+  <meta name="plan-evidence-for" content="a-run-has-one-live-worker">
+  <title>A hold lifts once per condition | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>A hold lifts once per condition</h1>
+      <p class="lead">The wait sweep lifted the same hold twice. It decided by reading a single slot on the live pointer that a resume's own launch had already rewritten away, so the second sweep saw no record of the first. The sweep's append-only recovery log already named every lift; it is now what the sweep reads before lifting, and the pointer slot is only a cache of it.</p>
+    </header>
+
+    <section id="a-hold-lifts-once-defect">
+      <h2>The gap: the authority was a slot a rewrite could drop</h2>
+      <p><code>sweep</code> in <code>reckon/crew/resumption.py</code> lifted a hold unless the live pointer's <code>auto_resume</code> slot read back the hold's signature, and <code>_stamp_resumption_trigger</code> wrote that slot by rewriting the whole pointer. The resume's launch then rewrote the pointer from a snapshot taken before the stamp, so the slot read absent for a lift that had happened. On the reported run the sweep lifted, stamped, the launch dropped the stamp, and 70&nbsp;s later the next sweep lifted the same unchanged hold again (recovery log lines 7668 and 7669).</p>
+      <p>The reproduction is the declared negative control below: with the log read removed so only the pointer slot is consulted, the pointer's rewrite between the two sweeps leaves the cache absent and the second sweep resumes the run again.</p>
+    </section>
+
+    <section id="a-hold-lifts-once-what-changed">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>reckon/crew/resumption.py</code> gains <code>_lifted_holds</code>, which reads the project's recovery log and returns the set of <code>(run id, signature)</code> pairs it already records under a sweep's <code>resumed</code> list. A dry-run line lists what a sweep <em>would</em> resume, so reports whose <code>dry_run</code> is set are skipped — a preview lifts nothing and must not retire a hold the sweep never took.</li>
+        <li><code>sweep</code> reads that set once per pass and refuses a lift whose <code>(run id, signature)</code> is already in it, in addition to the existing pointer-slot check. The pointer's <code>auto_resume</code> slot is now a cache: when it agrees the run is skipped without consulting the log, and when a rewrite has dropped it the log still answers. No new record is added and nothing is retired — the log the sweep already appended to is the one it now reads.</li>
+        <li>The module docstring's first bound now states the log as the authority and the slot as its cache.</li>
+      </ul>
+    </section>
+
+    <section id="a-hold-lifts-once-the-gate">
+      <h2>The gate</h2>
+      <p><code>tests/test_a_hold_lifts_once.py</code> builds a refused run whose pid was checked dead on this host, takes a snapshot of its pointer before the sweep's stamp, sweeps, then rewrites the pointer from that pre-stamp snapshot so the <code>auto_resume</code> slot is gone while the lift happened, and sweeps again. The second sweep resumes nothing. The recovery log is asserted to carry exactly the one lift.</p>
+      <figure>
+        <img src="/reckon/figures/a-run-has-one-live-worker/a-hold-lifts-once/sweep-lift-record.svg" alt="Two sweeps of one unchanged hold: the pointer's auto_resume slot is stamped after sweep 1 and dropped by the resume's pointer rewrite, while the append-only recovery log keeps the resumed line, so sweep 2 finds the lift there and resumes nothing.">
+        <figcaption>The pointer slot is stamped by sweep&nbsp;1 and dropped when the resume's launch rewrites the pointer from a pre-stamp snapshot. The append-only recovery log keeps the line, so the second sweep of the unchanged hold finds the lift and resumes nothing.</figcaption>
+      </figure>
+      <ul>
+        <li><code>test_a_pointer_rewrite_cannot_lift_the_same_hold_twice</code> &mdash; first sweep resumes once; after the pointer rewrite the second sweep returns <code>resumed: []</code> with reason <code>already-resumed-for-this-hold</code>, the launcher is still called once, and the log holds exactly the one lift.</li>
+        <li><code>test_a_dry_run_preview_does_not_retire_the_hold</code> &mdash; a preview reports <code>would_resume</code> and launches nothing; the following real sweep still lifts the run once. Deleting the dry-run skip makes the preview retire the hold and this case fails.</li>
+      </ul>
+      <table>
+        <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
+        <tbody>
+          <tr><td>Delivered head, <code>tests/test_a_hold_lifts_once.py</code> (revision on the log's first line)</td><td>2 passed, <code>EXIT=0</code></td><td><code>r-20261008T143609040510-a-hold-lifts-once/logs/head-hold-lifts-once.log</code></td></tr>
+          <tr><td>Delivered head, the tests importing <code>reckon.crew.resumption</code></td><td>175 passed, <code>EXIT=0</code></td><td><code>r-20261008T143609040510-a-hold-lifts-once/logs/head-resumption-importers.log</code></td></tr>
+          <tr><td>Declared negative control, log check removed</td><td>1 failed, 1 passed, <code>EXIT=1</code>; the failing id is the head arm's own first case</td><td><code>r-20261008T143609040510-a-hold-lifts-once/negative-control.log</code></td></tr>
+        </tbody>
+      </table>
+      <p>Logs live under <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T143609040510-a-hold-lifts-once/</code>. Every arm ran in the assigned worktree, with the module under test imported from <code>.../a-hold-lifts-once/reckon/crew/resumption.py</code>.</p>
+    </section>
+
+    <section id="a-hold-lifts-once-negative-control">
+      <h2>Declared negative control</h2>
+      <p>Declared mutation: <em>remove the recovery-log check from the sweep so only the pointer's auto_resume slot is read; the second sweep resumes the run again and the test fails</em>. Applied by dropping <code>or (run_id, signature) in lifted_holds</code> from the sweep's duplicate guard in <code>reckon/crew/resumption.py</code>. <code>test_a_pointer_rewrite_cannot_lift_the_same_hold_twice</code> fails at <code>assert second["resumed"] == []</code>, <code>EXIT=1</code>. The mutation was reverted and the tree returned clean.</p>
+    </section>
+
+    <section id="a-hold-lifts-once-commits">
+      <h2>Commits</h2>
+      <p><code>12c6d3d85</code> &mdash; fix(crew): lift a hold once per condition from the recovery log. Adds <code>_lifted_holds</code> and reads it in <code>sweep</code>, making the pointer's <code>auto_resume</code> slot a cache of the append-only log's lift record. Changes <code>reckon/crew/resumption.py</code>, <code>tests/test_a_hold_lifts_once.py</code>.</p>
+    </section>
+  </main>
+</body>
+</html>
