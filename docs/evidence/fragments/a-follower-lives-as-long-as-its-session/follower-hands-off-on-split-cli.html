@@ -1,0 +1,29 @@
+<section id="follower-hands-off-on-split-cli">
+  <h2>A hand-armed follower hands its session to a waiting host (split modules)</h2>
+  <p>Ported the waiting-host handoff of <code>24a111f28</code> onto the split
+  modules. In <code>reckon/crew_follow_commands.py</code> a <code>crew follow</code>
+  armed by hand beside a session host whose FIFO holds a reader writes the project
+  and session to the host, prints one handoff line ("session host now delivers …;
+  nothing needs re-arming") and exits, and a lifetime-end row hands over in place
+  of a re-arm command via <code>_hand_off_from_follower</code> /
+  <code>_host_handoff_line</code> / <code>_session_host_child</code>.</p>
+  <p>The request is written through <code>reckon/crew/dispatch_watch.py</code>:
+  <code>_request_host_follower</code> is the single spelling of the request line,
+  and <code>_ask_session_host_for_follower</code> and
+  <code>_hand_off_to_waiting_host</code> both call it rather than composing a
+  second copy. The host-child marker <code>RECKON_SESSION_HOST_CHILD</code> is
+  stamped by <code>reckon/crew/dispatch_watch.py</code>'s host peer
+  <code>reckon/crew/session_host.py</code> into every child it runs.</p>
+  <p>The start-up handoff runs <em>after</em> <code>_adopt_launched_workers_from_reexec()</code>,
+  so a follower reloaded in place re-registers the children it carried across the
+  reload before it exits. The dispatch admission (<code>reckon/crew/dispatch.py</code>)
+  asks a waiting host even when a follower the host does not run holds the session,
+  reporting delivery <code>host</code>.</p>
+  <p>Gate <code>tests/test_follower_hands_off_to_host.py</code> ends
+  <code>EXIT=0</code> with 6 passed; the declared negative control — the
+  waiting-host handoff check removed from <code>crew follow</code> — ends
+  <code>EXIT=1</code> with <code>test_a_follower_hands_off_to_a_waiting_host_and_exits</code>
+  failing (the follower streams instead of writing the request);
+  <code>tests/test_session_host.py</code>, <code>tests/test_dispatch_session_host.py</code>
+  and <code>tests/test_session_host_plugin.py</code> end <code>EXIT=0</code>.</p>
+</section>
