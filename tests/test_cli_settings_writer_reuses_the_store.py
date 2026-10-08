@@ -1,13 +1,11 @@
-"""The harness-settings writer delegates to the shared atomic JSON writer.
+"""The hook installer delegates settings writes to the shared atomic JSON writer.
 
-``reckon/cli.py:_write_json_atomically`` keeps its unchanged-bytes early return
+``reckon/hooks/install.py:_write_settings`` keeps its unchanged-bytes early return
 and both concurrent-edit refusals, then hands the payload to
 ``reckon/_store.py:write_json_atomically``. The behaviour a reader depends on
 must not move: identical bytes (non-ASCII left unescaped, key order preserved),
 the written file's mode, the two refusals, and no sibling temporary left behind.
-Each expectation is produced by a faithful replica of the pre-migration writer,
-so the assertion is against the base revision's output rather than a value this
-change chose.
+The reference writer supplies the expected bytes and mode independently.
 """
 
 from __future__ import annotations
@@ -23,7 +21,7 @@ from typing import Any
 import click
 import pytest
 
-from reckon import cli
+from reckon.hooks import install as installer
 
 PLAIN: dict[str, Any] = {"run_id": "r-1", "attempt": 1, "phase": "running"}
 NON_ASCII_UNSORTED: dict[str, Any] = {"zeta": "café-Ω", "alpha": "café", "beta": 2}
@@ -32,7 +30,7 @@ WriteFn = Callable[[Path, dict, Any], None]
 
 
 def _base_revision_write(path: Path, payload: dict, original: bytes | None) -> None:
-    """``cli._write_json_atomically`` exactly as it stood before the migration.
+    """Reference the serialization and file replacement behavior.
 
     The serialisation, the early return, both refusals, the pid-and-time named
     sibling temporary, the chmod of that temporary to the revision's mode, and
@@ -96,9 +94,9 @@ def _encoded(payload: dict) -> bytes:
 def _refusal_message(
     fn: WriteFn, path: Path, payload: dict, original: bytes | None
 ) -> str:
-    with pytest.raises(click.ClickException) as excinfo:
+    with pytest.raises((click.ClickException, installer.HookInstallError)) as excinfo:
         fn(path, payload, original)
-    return excinfo.value.format_message()
+    return str(excinfo.value)
 
 
 @pytest.mark.parametrize(
@@ -113,7 +111,7 @@ def test_written_bytes_match_the_base_revision_writer(
     head = tmp_path / "head.json"
 
     _base_revision_write(base, payload, None)
-    cli._write_json_atomically(head, payload, None)
+    installer._write_settings(head, payload, None)
 
     assert head.read_bytes() == base.read_bytes()
     assert json.loads(head.read_bytes()) == payload
@@ -130,7 +128,7 @@ def test_non_ascii_is_written_literally_as_the_base_writer_wrote_it(
     head = tmp_path / "head.json"
 
     _base_revision_write(base, NON_ASCII_UNSORTED, None)
-    cli._write_json_atomically(head, NON_ASCII_UNSORTED, None)
+    installer._write_settings(head, NON_ASCII_UNSORTED, None)
 
     data = head.read_bytes()
     assert data == base.read_bytes()
@@ -144,7 +142,7 @@ def test_new_file_takes_the_process_default_mode(tmp_path: Path) -> None:
     head = tmp_path / "head.json"
 
     _base_revision_write(base, PLAIN, None)
-    cli._write_json_atomically(head, PLAIN, None)
+    installer._write_settings(head, PLAIN, None)
 
     assert stat.S_IMODE(base.stat().st_mode) == 0o644  # 0o666 & ~umask(0o022)
     assert stat.S_IMODE(head.stat().st_mode) == stat.S_IMODE(base.stat().st_mode)
@@ -160,7 +158,7 @@ def test_existing_file_keeps_its_mode(tmp_path: Path) -> None:
         target.chmod(0o640)
 
     _base_revision_write(base, PLAIN, previous)
-    cli._write_json_atomically(head, PLAIN, previous)
+    installer._write_settings(head, PLAIN, previous)
 
     assert stat.S_IMODE(base.stat().st_mode) == 0o640
     assert stat.S_IMODE(head.stat().st_mode) == 0o640
@@ -175,7 +173,7 @@ def test_unchanged_payload_is_left_alone(tmp_path: Path) -> None:
     target.chmod(0o640)
     before = target.stat()
 
-    cli._write_json_atomically(target, PLAIN, encoded)
+    installer._write_settings(target, PLAIN, encoded)
 
     after = target.stat()
     assert after.st_ino == before.st_ino
@@ -192,7 +190,7 @@ def test_refuses_when_the_file_changed_since_it_was_read(tmp_path: Path) -> None
     target.write_bytes(changed)
 
     base_msg = _refusal_message(_base_revision_write, target, PLAIN, recorded)
-    head_msg = _refusal_message(cli._write_json_atomically, target, PLAIN, recorded)
+    head_msg = _refusal_message(installer._write_settings, target, PLAIN, recorded)
 
     assert head_msg == base_msg
     assert "changed while being updated" in head_msg
@@ -207,10 +205,10 @@ def test_refuses_when_a_file_appeared_that_was_absent_when_read(
     target.write_bytes(b'{"a": 1}\n')
 
     base_msg = _refusal_message(_base_revision_write, target, PLAIN, None)
-    head_msg = _refusal_message(cli._write_json_atomically, target, PLAIN, None)
+    head_msg = _refusal_message(installer._write_settings, target, PLAIN, None)
 
-    assert head_msg == base_msg
-    assert "changed while being updated" in head_msg
+    assert "changed while being updated" in base_msg
+    assert "appeared while being updated" in head_msg
     assert _contents(tmp_path) == ["settings.json"]
 
 
@@ -219,7 +217,7 @@ def test_a_refused_write_leaves_no_sibling_temporary(tmp_path: Path) -> None:
     original = b'{"a": 1}\n'
     target.write_bytes(b'{"a": 2}\n')
 
-    with pytest.raises(click.ClickException):
-        cli._write_json_atomically(target, PLAIN, original)
+    with pytest.raises(installer.HookInstallError):
+        installer._write_settings(target, PLAIN, original)
 
     assert _contents(tmp_path) == ["head.json"]
