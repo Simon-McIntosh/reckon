@@ -10,6 +10,13 @@ from pathlib import Path
 
 import pytest
 
+from reckon.crew import recovery_review_acceptance
+from reckon.crew import recovery_review_dispatch
+from reckon.crew import recovery_memo
+from reckon.crew import recovery_classification
+from reckon.crew import recovery_repair_dispatch
+from reckon.crew import recovery_liveness
+from reckon.crew import recovery_watch
 from reckon.crew import recovery, runs
 from tests import test_a_live_run_never_reads_dead as liveness
 
@@ -30,12 +37,16 @@ def isolated_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
                 pointer, row, moment=moment, stall_seconds=stall_seconds
             )
             with monkeypatch.context() as control:
-                control.setattr(
-                    recovery, "classify_pointer", lambda *args, **kwargs: row
-                )
+                (control.setattr(
+                    recovery_review_dispatch, "classify_pointer", lambda *args, **kwargs: row
+                ), control.setattr(
+                    recovery_review_acceptance, "classify_pointer", lambda *args, **kwargs: row
+                ), control.setattr(
+                    recovery_watch, "classify_pointer", lambda *args, **kwargs: row
+                ))
                 return snapshot(pointer, moment=moment, stall_seconds=stall_seconds)
 
-        monkeypatch.setattr(recovery, "_watch_snapshot", own_pid_snapshot)
+        monkeypatch.setattr(recovery_watch, "_watch_snapshot", own_pid_snapshot)
 
 
 def _git(tree: Path, *args: str) -> str:
@@ -227,15 +238,16 @@ def test_snapshot_and_transition_do_not_rederive_the_classifier_verdict(
             assert kwargs == {"now_seconds": moment, "stale_after_seconds": 3600}
             return row
 
-        monkeypatch.setattr(recovery, "classify_pointer", classified)
-        for name in (
-            "_watch_verdict",
-            "_newest_stream_last_record_type",
-            "_run_stream_quiet_seconds",
-            "_stall_wait_reason",
-            "_worker_record_liveness",
+        (monkeypatch.setattr(recovery_review_dispatch, "classify_pointer", classified), monkeypatch.setattr(recovery_review_acceptance, "classify_pointer", classified), monkeypatch.setattr(recovery_watch, "classify_pointer", classified))
+        for name, modules in (
+            ("_watch_verdict", (recovery_memo, recovery_classification)),
+            ("_newest_stream_last_record_type", (recovery_repair_dispatch, recovery_watch)),
+            ("_run_stream_quiet_seconds", (recovery_watch,)),
+            ("_stall_wait_reason", (recovery_watch,)),
+            ("_worker_record_liveness", (recovery_repair_dispatch, recovery_liveness, recovery_classification, recovery_watch)),
         ):
-            monkeypatch.setattr(recovery, name, refuse)
+            for module in modules:
+                monkeypatch.setattr(module, name, refuse)
         monkeypatch.setattr(runs, "record_process_alive", refuse)
         monkeypatch.setattr(runs, "process_alive", refuse)
         snapshot = recovery._watch_snapshot(pointer, moment=moment, stall_seconds=3600)

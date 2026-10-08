@@ -28,6 +28,10 @@ import pytest
 
 import reckon.mcp as mcp_module
 from reckon.crew import recovery as recovery_module
+from reckon.crew import recovery_classification
+from reckon.crew import recovery_liveness
+from reckon.crew import recovery_stream
+from reckon.crew import recovery_watch
 from reckon.crew import runs
 
 # The census module owns the fixture vocabulary and the seeding helpers for one
@@ -76,7 +80,14 @@ def config_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     )
     monkeypatch.setattr(Path, "home", classmethod(lambda cls: default_home))
     monkeypatch.setattr(obligations_module, "_utc_now", lambda: OBSERVED_AT)
-    monkeypatch.setattr(recovery_module, "_utc_seconds", lambda: OBSERVED_EPOCH)
+    for module in (
+        recovery_module,
+        recovery_classification,
+        recovery_liveness,
+        recovery_stream,
+        recovery_watch,
+    ):
+        monkeypatch.setattr(module, "_utc_seconds", lambda: OBSERVED_EPOCH)
     repo = tmp_path / "repo"
     (repo / "docs" / "state" / PROJECT).mkdir(parents=True)
     (repo / "seed.txt").write_text("seed\n", encoding="utf-8")

@@ -15,6 +15,7 @@ from pathlib import Path
 import pytest
 
 from reckon import _backends, crew, mcp_views
+from reckon.crew import recovery_classification
 from reckon.crew import promotion, recovery
 
 MOMENT = 1_800_000_000.0
@@ -80,7 +81,7 @@ def test_watcher_snapshots_parse_once_and_extend_from_the_append(
         return original(materialised)
 
     monkeypatch.setattr(_backends, "parse_events", counting)
-    monkeypatch.setattr(recovery, "_read_classification_memo", lambda _record: {})
+    monkeypatch.setattr(recovery_classification, "_read_classification_memo", lambda _record: {})
     if os.environ.get("RECKON_TEST_DISABLE_STREAM_CACHE") == "1":
         cached = _backends.cached_stream_events
 
@@ -132,7 +133,7 @@ def test_partition_reuses_all_three_stream_readers(
         return original(materialised)
 
     monkeypatch.setattr(_backends, "parse_events", counting)
-    monkeypatch.setattr(recovery, "_read_classification_memo", lambda _record: {})
+    monkeypatch.setattr(recovery_classification, "_read_classification_memo", lambda _record: {})
     monkeypatch.setattr(
         mcp_views, "_recorded_live_run_classifications", lambda _project: {}
     )

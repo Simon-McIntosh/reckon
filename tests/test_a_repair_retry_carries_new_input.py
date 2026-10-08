@@ -32,6 +32,7 @@ import pytest
 
 import reckon.crew.dispatch_sessions as dispatch_sessions_module
 from reckon import crew
+from reckon.crew import recovery_repair_dispatch
 from reckon.crew import recovery, resumption, runs
 from tests import test_resume_and_lane_change_follow_their_own_attempt as lane
 from tests.test_resume_and_lane_change_follow_their_own_attempt import (  # noqa: F401
@@ -100,7 +101,7 @@ def _declared_negative_controls(monkeypatch: pytest.MonkeyPatch) -> None:
         )
     if os.environ.get(ROUND_MUTATION_ENV) == "1":
         monkeypatch.setattr(
-            recovery, "_reviewed_run_refused_the_round", _unscoped_refusal
+            recovery_repair_dispatch, "_reviewed_run_refused_the_round", _unscoped_refusal
         )
 
 # The refusal manifest an ended turn writes: terminal status, and the round
@@ -147,7 +148,7 @@ def test_a_same_round_retry_after_a_refusal_is_exhausted_not_resumed(
     _stub_dispatch(monkeypatch)
     if os.environ.get(MUTATION_ENV) == "1":
         monkeypatch.setattr(
-            recovery,
+            recovery_repair_dispatch,
             "_reviewed_run_refused_the_round",
             lambda *_args, **_kwargs: False,
             raising=False,

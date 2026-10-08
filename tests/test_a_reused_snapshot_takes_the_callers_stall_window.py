@@ -33,6 +33,8 @@ from pathlib import Path
 
 import pytest
 
+from reckon.crew import recovery_classification
+from reckon.crew import recovery_watch
 from reckon.crew import recovery, runs
 
 PROJECT = "reuse-window"
@@ -128,8 +130,8 @@ def live_child_record(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict:
     # Substitute the process table for the two liveness readings the stall
     # window widens on, so the case exercises the window a live child earns and
     # the reuse that must carry its budget, not this host's process table.
-    monkeypatch.setattr(recovery, "local_liveness", lambda record: (True, True))
-    monkeypatch.setattr(recovery, "_live_descendant", lambda pid: True)
+    (monkeypatch.setattr(recovery_classification, "local_liveness", lambda record: (True, True)), monkeypatch.setattr(recovery_watch, "local_liveness", lambda record: (True, True)))
+    (monkeypatch.setattr(recovery_classification, "_live_descendant", lambda pid: True), monkeypatch.setattr(recovery_watch, "_live_descendant", lambda pid: True))
     return _seed_live_child("r-live-child-budget")
 
 

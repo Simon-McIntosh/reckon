@@ -38,7 +38,7 @@ def test_a_producer_keeps_publishing_after_a_slow_reload(tmp_path, monkeypatch) 
     process, lines = _launch_producer(root, home)
     try:
         _await_seat(PROJECT, before)
-        module = package / "crew" / "recovery.py"
+        module = package / "crew" / "recovery_watch.py"
         module.write_bytes(module.read_bytes() + b"\n# producer reload probe\n")
         after = _stamp_of(root)
 

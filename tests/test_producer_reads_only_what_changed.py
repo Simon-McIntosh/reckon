@@ -23,6 +23,7 @@ from pathlib import Path
 import pytest
 
 from reckon import _backends
+from reckon.crew import recovery_watch
 from reckon.crew import recovery, runs
 
 PROJECT = "producer-reads"
@@ -425,7 +426,7 @@ def test_the_commits_cache_evicts_gone_worktrees_and_stays_bounded(
 ) -> None:
     """A reclaimed worktree's count is dropped and the cache stays bounded."""
     limit = 8
-    monkeypatch.setattr(recovery, "_COMMITS_BEYOND_BASE_CACHE_LIMIT", limit)
+    monkeypatch.setattr(recovery_watch, "_COMMITS_BEYOND_BASE_CACHE_LIMIT", limit)
     cache = recovery._COMMITS_BEYOND_BASE_CACHE
     cache.clear()
     completed = subprocess.CompletedProcess(

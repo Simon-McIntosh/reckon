@@ -28,6 +28,10 @@ from typing import Any
 
 import pytest
 
+from reckon.crew import recovery_classification
+from reckon.crew import recovery_liveness
+from reckon.crew import recovery_stream
+from reckon.crew import recovery_watch
 from reckon.crew import obligation_snapshot, recovery, runs
 from reckon.crew import review as review_module
 
@@ -208,7 +212,7 @@ def test_the_snapshot_carries_the_derivation_over_unmodified_files(
     # own clock moves between the sweep and the comparison and an age that
     # ticked forward would read as a content diff. It is the *inputs* that must
     # be unmodified, not the wall clock.
-    monkeypatch.setattr(recovery, "_utc_seconds", fleet["frozen"].timestamp)
+    (monkeypatch.setattr(recovery_stream, "_utc_seconds", fleet["frozen"].timestamp), monkeypatch.setattr(recovery_liveness, "_utc_seconds", fleet["frozen"].timestamp), monkeypatch.setattr(recovery_classification, "_utc_seconds", fleet["frozen"].timestamp), monkeypatch.setattr(recovery_watch, "_utc_seconds", fleet["frozen"].timestamp))
     _write_pointer(fleet, "r-owed", phase="complete", status="complete")
     _write_pointer(fleet, "r-working", phase="working", status="working")
     with (
@@ -476,7 +480,7 @@ def test_a_slice_equals_the_derivation_over_the_same_files(
     # Both derivations are read at one instant: the classifier's own clock
     # otherwise moves between them and an age that ticked forward would read as
     # a content diff. It is the files that must be unmodified, not the clock.
-    monkeypatch.setattr(recovery, "_utc_seconds", fleet["frozen"].timestamp)
+    (monkeypatch.setattr(recovery_stream, "_utc_seconds", fleet["frozen"].timestamp), monkeypatch.setattr(recovery_liveness, "_utc_seconds", fleet["frozen"].timestamp), monkeypatch.setattr(recovery_classification, "_utc_seconds", fleet["frozen"].timestamp), monkeypatch.setattr(recovery_watch, "_utc_seconds", fleet["frozen"].timestamp))
     _write_pointer(fleet, "r-owed", phase="complete", status="complete")
     _write_pointer(fleet, "r-working", phase="working", status="working")
     now = fleet["frozen"]
@@ -515,7 +519,7 @@ def test_a_moved_head_names_the_same_two_heads_in_snapshot_and_derivation(
     carry no head pair and the two readers would disagree on the run's
     evidence.
     """
-    monkeypatch.setattr(recovery, "_utc_seconds", fleet["frozen"].timestamp)
+    (monkeypatch.setattr(recovery_stream, "_utc_seconds", fleet["frozen"].timestamp), monkeypatch.setattr(recovery_liveness, "_utc_seconds", fleet["frozen"].timestamp), monkeypatch.setattr(recovery_classification, "_utc_seconds", fleet["frozen"].timestamp), monkeypatch.setattr(recovery_watch, "_utc_seconds", fleet["frozen"].timestamp))
     repository = fleet["repo"]
     reviewed_head = _git(repository, "rev-parse", "HEAD")
     head = _commit(repository, "repair.txt", "repair\n")

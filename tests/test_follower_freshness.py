@@ -223,7 +223,7 @@ def test_running_follower_reloads_without_stream_or_registration_gap(
             # on, and the override is what its re-imported module serves. The
             # rewrite names no source line, so it survives any change to how a
             # transition is rendered.
-            renderer = copied_package / "crew" / "recovery.py"
+            renderer = copied_package / "crew" / "recovery_watch.py"
             renderer.write_text(
                 renderer.read_text()
                 + "\n\n_render_watch_transition = format_watch_transition\n\n\n"

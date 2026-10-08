@@ -41,7 +41,7 @@ def test_only_the_shared_resolver_peels_a_revision_to_a_commit() -> None:
                 visit(child, owner)
 
         visit(module)
-    assert sites == {("reckon/crew/recovery.py", "_resolve_commit")}
+    assert sites == {("reckon/crew/recovery_review_subject.py", "_resolve_commit")}
 
 
 def test_former_readers_agree_on_resolving_and_refused_revisions(

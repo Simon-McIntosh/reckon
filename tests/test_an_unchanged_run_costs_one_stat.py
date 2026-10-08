@@ -27,6 +27,7 @@ from pathlib import Path
 
 import pytest
 
+from reckon.crew import recovery_watch
 from reckon.crew import recovery, runs
 from reckon.crew import review as review_module
 
@@ -351,7 +352,7 @@ def test_reuse_matches_full_recompute_over_a_file_sequence(
     # classifies afresh from the files — the whole-recompute arm.
     record["status"] = "running"
     _seed(record)
-    monkeypatch.setattr(recovery, "_remember_snapshot", lambda *a, **k: None)
+    monkeypatch.setattr(recovery_watch, "_remember_snapshot", lambda *a, **k: None)
     whole = drive()
 
     assert reusing, "the case must produce snapshots to compare"

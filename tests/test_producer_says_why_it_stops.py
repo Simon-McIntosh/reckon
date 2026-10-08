@@ -15,6 +15,7 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli, crew
+from reckon.crew import recovery_watch
 from reckon.crew import recovery, runs
 
 
@@ -207,7 +208,7 @@ def test_signal_writes_stop_reason(tmp_path, monkeypatch) -> None:
         signal.getsignal(signal.SIGTERM)(signal.SIGTERM, None)
         yield
 
-    monkeypatch.setattr(recovery, "watch_follow", interrupted)
+    (monkeypatch.setattr(recovery_watch, "watch_follow", interrupted), monkeypatch.setattr(recovery, "watch_follow", interrupted))
     result = CliRunner().invoke(cli.main, ["crew", "watch", "--project", "sample"])
 
     assert result.exit_code == 128 + signal.SIGTERM
@@ -223,7 +224,7 @@ def test_exception_writes_stop_reason(tmp_path, monkeypatch) -> None:
         raise RuntimeError("tick failed")
         yield
 
-    monkeypatch.setattr(recovery, "watch_follow", failed)
+    (monkeypatch.setattr(recovery_watch, "watch_follow", failed), monkeypatch.setattr(recovery, "watch_follow", failed))
     result = CliRunner().invoke(cli.main, ["crew", "watch", "--project", "sample"])
 
     assert result.exit_code != 0

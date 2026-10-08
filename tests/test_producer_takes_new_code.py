@@ -428,7 +428,7 @@ def test_a_producer_reexecutes_onto_changed_code(isolated_home, tmp_path) -> Non
 
         # A comment, and one whose every prefix is a comment, so the module
         # still parses and the change is content-only.
-        module = package / "crew" / "recovery.py"
+        module = package / "crew" / "recovery_watch.py"
         module.write_bytes(module.read_bytes() + b"\n# producer reload probe\n")
         after = _stamp_of(root)
         assert after != before, "a content change must move the stamp"
@@ -465,7 +465,7 @@ def test_a_producer_defers_a_reload_onto_unimportable_code_and_keeps_producing(
         before = _stamp_of(root)
         _await_seat(PROJECT, before)
 
-        module = package / "crew" / "recovery.py"
+        module = package / "crew" / "recovery_watch.py"
         module.write_bytes(module.read_bytes() + CONFLICT_MARKER.encode())
 
         deferred = _read_until(lines, DEFERRED_MARKER)

@@ -14,6 +14,9 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from reckon.crew import recovery_review_delivery
+from reckon.crew import recovery_stream
+from reckon.crew import recovery_watch
 from reckon.crew import recovery
 
 
@@ -143,11 +146,19 @@ def test_watchdog_still_stops_a_live_over_grace_cli_worker(monkeypatch) -> None:
         "log_path": str(Path("/nonexistent/stream.jsonl")),
     }
     signalled: list[tuple[int, str]] = []
-    monkeypatch.setattr(
-        recovery,
+    (monkeypatch.setattr(
+        recovery_review_delivery,
         "_signal_process_group",
         lambda pid, started_at, *, reason="", **kwargs: signalled.append((pid, reason)),
-    )
+    ), monkeypatch.setattr(
+        recovery_stream,
+        "_signal_process_group",
+        lambda pid, started_at, *, reason="", **kwargs: signalled.append((pid, reason)),
+    ), monkeypatch.setattr(
+        recovery_watch,
+        "_signal_process_group",
+        lambda pid, started_at, *, reason="", **kwargs: signalled.append((pid, reason)),
+    ))
     config = {"fences": {"enforce_budget_watchdog": True, "budget_grace_multiple": 2.0}}
 
     recovery._apply_budget_watchdog(record, config)

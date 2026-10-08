@@ -18,6 +18,10 @@ import time
 from pathlib import Path
 
 from reckon import crew, mcp
+from reckon.crew import recovery_classification
+from reckon.crew import recovery_liveness
+from reckon.crew import recovery_stream
+from reckon.crew import recovery_watch
 from reckon.crew import recovery
 
 PROJECT = "alpha"
@@ -217,7 +221,7 @@ def test_runs_view_passes_through_the_coordinator_fields(
     pass its value through, which is the fact under test here.
     """
     frozen = time.time()
-    monkeypatch.setattr(recovery, "_utc_seconds", lambda: frozen)
+    (monkeypatch.setattr(recovery_stream, "_utc_seconds", lambda: frozen), monkeypatch.setattr(recovery_liveness, "_utc_seconds", lambda: frozen), monkeypatch.setattr(recovery_classification, "_utc_seconds", lambda: frozen), monkeypatch.setattr(recovery_watch, "_utc_seconds", lambda: frozen))
     repository, records = _two_live_runs(tmp_path)
     expected = {
         str(record["run_id"]): crew.classify_pointer(record) for record in records

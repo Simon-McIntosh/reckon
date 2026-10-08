@@ -23,6 +23,8 @@ from pathlib import Path
 
 import pytest
 
+from reckon.crew import recovery_liveness
+from reckon.crew import recovery_repair_dispatch
 from reckon.crew import recovery, runs
 
 HOST = socket.gethostname()
@@ -169,7 +171,9 @@ def test_a_predating_pointer_reads_and_classifies_as_it_does_today(
             f"process lookup performed without a recorded host {candidate!r}"
         )
 
-    monkeypatch.setattr(recovery, "process_alive", _forbidden_lookup)
+    # Liveness calls the primitive directly; repair dispatch keeps its imported binding.
+    for module in (recovery_liveness, recovery_repair_dispatch):
+        monkeypatch.setattr(module, "process_alive", _forbidden_lookup)
     row = recovery.classify_pointer(pointer, now_seconds=time.time())
     assert row["process_alive"] is None
     assert row["liveness_proven"] is False

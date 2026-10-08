@@ -13,6 +13,7 @@ from click.testing import CliRunner
 
 from reckon import cli as cli_module
 from reckon import crew, crew_follow_commands, ledger
+from reckon.crew import recovery_watch
 from reckon.crew import recovery
 from reckon.crew import ticker as ticker_module
 
@@ -328,11 +329,15 @@ def test_a_count_above_the_fixed_width_widens_its_own_row() -> None:
 def test_cli_follow_prints_compact_transition_lines_by_default(
     home, monkeypatch
 ) -> None:
-    monkeypatch.setattr(
+    (monkeypatch.setattr(
+        recovery_watch,
+        "watch_follow",
+        lambda *_args, **_kwargs: iter([_event()]),
+    ), monkeypatch.setattr(
         recovery,
         "watch_follow",
         lambda *_args, **_kwargs: iter([_event()]),
-    )
+    ))
 
     result = CliRunner().invoke(
         cli_module.main,
@@ -356,11 +361,15 @@ def test_follow_renders_at_the_resolved_terminal_width(home, monkeypatch) -> Non
     by instantiating a Ticker directly.
     """
     monkeypatch.setattr(ticker_module, "resolve_terminal_width", lambda: 207)
-    monkeypatch.setattr(
+    (monkeypatch.setattr(
+        recovery_watch,
+        "watch_follow",
+        lambda *_args, **_kwargs: iter([_event()]),
+    ), monkeypatch.setattr(
         recovery,
         "watch_follow",
         lambda *_args, **_kwargs: iter([_event()]),
-    )
+    ))
 
     result = CliRunner().invoke(
         cli_module.main,
@@ -379,11 +388,15 @@ def test_follow_explicit_width_beats_the_measurement(home, monkeypatch) -> None:
     """A stated --width still wins over the resolved terminal, so a caller who
     asks for a specific pane gets it even when the measurement differs."""
     monkeypatch.setattr(ticker_module, "resolve_terminal_width", lambda: 207)
-    monkeypatch.setattr(
+    (monkeypatch.setattr(
+        recovery_watch,
+        "watch_follow",
+        lambda *_args, **_kwargs: iter([_event()]),
+    ), monkeypatch.setattr(
         recovery,
         "watch_follow",
         lambda *_args, **_kwargs: iter([_event()]),
-    )
+    ))
 
     result = CliRunner().invoke(
         cli_module.main,
@@ -407,11 +420,15 @@ def test_follow_explicit_width_beats_the_measurement(home, monkeypatch) -> None:
 
 
 def test_cli_follow_keeps_machine_objects_behind_json_flag(home, monkeypatch) -> None:
-    monkeypatch.setattr(
+    (monkeypatch.setattr(
+        recovery_watch,
+        "watch_follow",
+        lambda *_args, **_kwargs: iter([_event()]),
+    ), monkeypatch.setattr(
         recovery,
         "watch_follow",
         lambda *_args, **_kwargs: iter([_event()]),
-    )
+    ))
 
     result = CliRunner().invoke(
         cli_module.main,
@@ -450,11 +467,15 @@ def test_cli_watch_follow_emit_site_preserves_painted_escape_codes(
     """`crew watch --follow` writes through its own emit site, not
     `_echo_follow_line` — it must not let Click strip colour there either."""
     monkeypatch.delenv("NO_COLOR", raising=False)
-    monkeypatch.setattr(
+    (monkeypatch.setattr(
+        recovery_watch,
+        "watch_follow",
+        lambda *_args, **_kwargs: iter([_event()]),
+    ), monkeypatch.setattr(
         recovery,
         "watch_follow",
         lambda *_args, **_kwargs: iter([_event()]),
-    )
+    ))
 
     result = CliRunner().invoke(
         cli_module.main,
@@ -470,11 +491,15 @@ def test_cli_watch_follow_emits_no_escapes_when_colour_is_off(
     home, monkeypatch, suppress
 ) -> None:
     """--no-color and NO_COLOR both leave the emitted line free of escapes."""
-    monkeypatch.setattr(
+    (monkeypatch.setattr(
+        recovery_watch,
+        "watch_follow",
+        lambda *_args, **_kwargs: iter([_event()]),
+    ), monkeypatch.setattr(
         recovery,
         "watch_follow",
         lambda *_args, **_kwargs: iter([_event()]),
-    )
+    ))
     args = ["crew", "watch", "--project", "proj", "--follow"]
     if suppress == "flag":
         args.append("--no-color")
@@ -494,11 +519,15 @@ def test_cli_watch_follows_without_being_asked(home, monkeypatch) -> None:
     A watcher that returns after one event releases the seat, so every landing
     would have to be followed by a re-arm before the next dispatch could run.
     """
-    monkeypatch.setattr(
+    (monkeypatch.setattr(
+        recovery_watch,
+        "watch_follow",
+        lambda *_args, **_kwargs: iter([_event()]),
+    ), monkeypatch.setattr(
         recovery,
         "watch_follow",
         lambda *_args, **_kwargs: iter([_event()]),
-    )
+    ))
 
     result = CliRunner().invoke(
         cli_module.main,
@@ -545,11 +574,15 @@ def test_cli_watch_treats_exit_on_empty_as_selecting_single_event(
     Ignoring it under the new default would silently follow forever for a
     caller that explicitly asked to be told about an empty fleet.
     """
-    monkeypatch.setattr(
+    (monkeypatch.setattr(
+        recovery_watch,
+        "watch_follow",
+        lambda *_args, **_kwargs: pytest.fail("follow must not run here"),
+    ), monkeypatch.setattr(
         recovery,
         "watch_follow",
         lambda *_args, **_kwargs: pytest.fail("follow must not run here"),
-    )
+    ))
 
     result = CliRunner().invoke(
         cli_module.main,

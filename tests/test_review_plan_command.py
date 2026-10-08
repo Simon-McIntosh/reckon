@@ -13,6 +13,11 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli, flight, mcp
+from reckon.crew import recovery_repair_dispatch
+from reckon.crew import recovery_review_acceptance
+from reckon.crew import recovery_review_delivery
+from reckon.crew import recovery_review_dispatch
+from reckon.crew import recovery_watch
 from reckon.crew import plan_review, recovery, review, routing, runs
 from reckon.crew.node import PlanReviewMissingError, TaskNode
 
@@ -206,8 +211,8 @@ def test_gate_accepts_a_stored_or_delivered_review(project, legacy, stored):
 
 def test_plan_review_in_flight_is_shared_across_sessions(project, monkeypatch):
     subject = _subject()
-    monkeypatch.setattr(
-        recovery,
+    (monkeypatch.setattr(
+        recovery_review_delivery,
         "list_live",
         lambda **kw: [
             {
@@ -218,7 +223,55 @@ def test_plan_review_in_flight_is_shared_across_sessions(project, monkeypatch):
                 "phase": "working",
             }
         ],
-    )
+    ), monkeypatch.setattr(
+        recovery_review_dispatch,
+        "list_live",
+        lambda **kw: [
+            {
+                "run_id": "standing-review",
+                "project": "sample",
+                "session": "another-coordinator",
+                "node": {"id": "plan-review-of-fixture"},
+                "phase": "working",
+            }
+        ],
+    ), monkeypatch.setattr(
+        recovery_repair_dispatch,
+        "list_live",
+        lambda **kw: [
+            {
+                "run_id": "standing-review",
+                "project": "sample",
+                "session": "another-coordinator",
+                "node": {"id": "plan-review-of-fixture"},
+                "phase": "working",
+            }
+        ],
+    ), monkeypatch.setattr(
+        recovery_review_acceptance,
+        "list_live",
+        lambda **kw: [
+            {
+                "run_id": "standing-review",
+                "project": "sample",
+                "session": "another-coordinator",
+                "node": {"id": "plan-review-of-fixture"},
+                "phase": "working",
+            }
+        ],
+    ), monkeypatch.setattr(
+        recovery_watch,
+        "list_live",
+        lambda **kw: [
+            {
+                "run_id": "standing-review",
+                "project": "sample",
+                "session": "another-coordinator",
+                "node": {"id": "plan-review-of-fixture"},
+                "phase": "working",
+            }
+        ],
+    ))
     result = recovery.dispatch_review_for_run(subject, config=CONFIG)
     assert result["dispatched"] is False
     assert result["review_run_id"] == "standing-review"

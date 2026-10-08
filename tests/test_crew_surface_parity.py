@@ -12,6 +12,12 @@ from reckon import cli, crew, mcp
 
 
 recovery_module = import_module("reckon.crew.recovery")
+routed_clock_modules = (
+    import_module("reckon.crew.recovery_stream"),
+    import_module("reckon.crew.recovery_liveness"),
+    import_module("reckon.crew.recovery_classification"),
+    import_module("reckon.crew.recovery_watch"),
+)
 runs_module = import_module("reckon.crew.runs")
 
 
@@ -50,7 +56,8 @@ def test_crew_list_matches_live_view_classification(tmp_path, monkeypatch) -> No
     }
     monkeypatch.setenv("RECKON_HOME", str(tmp_path / "crew-home"))
     monkeypatch.setattr(crew, "list_live", lambda project=None: [pointer])
-    monkeypatch.setattr(recovery_module, "_utc_seconds", lambda: 1000.0)
+    for module in routed_clock_modules:
+        monkeypatch.setattr(module, "_utc_seconds", lambda: 1000.0)
     monkeypatch.setattr(
         runs_module,
         "project_watch_visibility",

@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from reckon import ledger
+from reckon.crew import recovery_watch
 from reckon.crew import metering, recovery, ticker
 
 
@@ -83,9 +84,9 @@ def test_four_departures_render_four_words(home: Path, monkeypatch) -> None:
     # marker is the durable fact a deliberate discard leaves behind.
     path = ledger.run_path("sample", run_id, home)
     path.unlink()
-    monkeypatch.setattr(recovery, "_discard_recorded", lambda _run: True)
+    monkeypatch.setattr(recovery_watch, "_discard_recorded", lambda _run: True)
     discarded = recovery.fleet_transitions({run_id: snapshot}, {})[0][0][2]
-    monkeypatch.setattr(recovery, "_discard_recorded", lambda _run: False)
+    monkeypatch.setattr(recovery_watch, "_discard_recorded", lambda _run: False)
     stopped = recovery.fleet_transitions(
         {run_id: snapshot}, {run_id: _snapshot(run_id, "stopped")}
     )[0][0][2]

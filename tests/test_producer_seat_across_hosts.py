@@ -10,6 +10,9 @@ import time
 import pytest
 
 import reckon.crew.dispatch_watch as dispatch_watch_module
+from reckon.crew import recovery_review_delivery
+from reckon.crew import recovery_stream
+from reckon.crew import recovery_watch
 from reckon.crew import runs
 from reckon.crew.host_lease import LEASE_STALE_SECONDS, HostLease
 from reckon.crew.node import CrewError
@@ -75,7 +78,7 @@ def test_second_host_takes_stale_producer_lease(shared_home, monkeypatch):
 
 def test_unwatch_refuses_seat_that_never_releases(shared_home, monkeypatch):
     monkeypatch.setattr(runs, "_publish_watch_stream", lambda *_: None)
-    monkeypatch.setattr(recovery, "_signal_process_group", lambda *args, **kwargs: None)
+    (monkeypatch.setattr(recovery_review_delivery, "_signal_process_group", lambda *args, **kwargs: None), monkeypatch.setattr(recovery_stream, "_signal_process_group", lambda *args, **kwargs: None), monkeypatch.setattr(recovery_watch, "_signal_process_group", lambda *args, **kwargs: None))
 
     with runs._project_watch_claim("example", "30s") as (acquired, _record):
         assert acquired

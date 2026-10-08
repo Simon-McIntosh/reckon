@@ -232,7 +232,7 @@ def test_syntax_error_in_a_follower_module_defers_the_reload(
             # A merge resolved mid-module leaves conflict markers behind: the
             # module no longer parses, and the stamp moves because the bytes
             # changed.
-            broken = copied_package / "crew" / "recovery.py"
+            broken = copied_package / "crew" / "recovery_watch.py"
             broken.write_text(
                 broken.read_text()
                 + "\n<<<<<<< HEAD\n_render_watch_transition = None\n=======\n>>>>>>> other\n"

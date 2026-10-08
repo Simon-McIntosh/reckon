@@ -15,6 +15,11 @@ import pytest
 
 import reckon.crew.dispatch_sessions as dispatch_sessions_module
 from reckon import _backends
+from reckon.crew import recovery_repair_dispatch
+from reckon.crew import recovery_review_acceptance
+from reckon.crew import recovery_review_delivery
+from reckon.crew import recovery_review_dispatch
+from reckon.crew import recovery_watch
 from reckon.crew import node as node_module
 from reckon.crew import recovery, runs
 
@@ -207,7 +212,7 @@ def test_recover_counts_an_interrupted_run(
         session_id="session-survives",
     )
     dispatch_module = importlib.import_module("reckon.crew.dispatch")
-    monkeypatch.setattr(recovery, "list_live", lambda: [pointer])
+    (monkeypatch.setattr(recovery_review_delivery, "list_live", lambda: [pointer]), monkeypatch.setattr(recovery_review_dispatch, "list_live", lambda: [pointer]), monkeypatch.setattr(recovery_repair_dispatch, "list_live", lambda: [pointer]), monkeypatch.setattr(recovery_review_acceptance, "list_live", lambda: [pointer]), monkeypatch.setattr(recovery_watch, "list_live", lambda: [pointer]))
     monkeypatch.setattr(
         dispatch_sessions_module,
         "observe",

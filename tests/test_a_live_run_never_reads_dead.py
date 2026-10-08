@@ -38,6 +38,10 @@ from pathlib import Path
 
 import pytest
 
+from reckon.crew import recovery_classification
+from reckon.crew import recovery_liveness
+from reckon.crew import recovery_repair_dispatch
+from reckon.crew import recovery_watch
 from reckon.crew import recovery, runs
 
 HOST = socket.gethostname()
@@ -62,32 +66,52 @@ def _isolated_crew_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None
 # guard its case is about, so a failure names the guard and not a neighbour.
 _MUTATIONS = {
     "worker-json-wait": lambda mp: mp.setattr(
-        recovery,
+        recovery_classification,
         "_observed_phase",
         lambda phase, **kwargs: (
             "working" if phase in recovery._PRE_SPAWN_PHASES else phase
         ),
     ),
-    "worker-pid-probe": lambda mp: mp.setattr(
-        recovery, "_worker_record_liveness", lambda record: None
-    ),
-    "resume-process-probe": lambda mp: mp.setattr(
-        recovery, "_worker_record_liveness", lambda record: None
-    ),
-    "wrapper-child-probe": lambda mp: mp.setattr(
-        recovery, "_worker_record_liveness", lambda record: None
-    ),
-    "orientation-only-rule": lambda mp: mp.setattr(
-        recovery, "_carries_orientation_write", lambda text, data: False
-    ),
+    "worker-pid-probe": lambda mp: (mp.setattr(
+        recovery_repair_dispatch, "_worker_record_liveness", lambda record: None
+    ), mp.setattr(
+        recovery_liveness, "_worker_record_liveness", lambda record: None
+    ), mp.setattr(
+        recovery_classification, "_worker_record_liveness", lambda record: None
+    ), mp.setattr(
+        recovery_watch, "_worker_record_liveness", lambda record: None
+    )),
+    "resume-process-probe": lambda mp: (mp.setattr(
+        recovery_repair_dispatch, "_worker_record_liveness", lambda record: None
+    ), mp.setattr(
+        recovery_liveness, "_worker_record_liveness", lambda record: None
+    ), mp.setattr(
+        recovery_classification, "_worker_record_liveness", lambda record: None
+    ), mp.setattr(
+        recovery_watch, "_worker_record_liveness", lambda record: None
+    )),
+    "wrapper-child-probe": lambda mp: (mp.setattr(
+        recovery_repair_dispatch, "_worker_record_liveness", lambda record: None
+    ), mp.setattr(
+        recovery_liveness, "_worker_record_liveness", lambda record: None
+    ), mp.setattr(
+        recovery_classification, "_worker_record_liveness", lambda record: None
+    ), mp.setattr(
+        recovery_watch, "_worker_record_liveness", lambda record: None
+    )),
+    "orientation-only-rule": lambda mp: (mp.setattr(
+        recovery_liveness, "_carries_orientation_write", lambda text, data: False
+    ), mp.setattr(
+        recovery_classification, "_carries_orientation_write", lambda text, data: False
+    )),
     "phase-advance": lambda mp: mp.setattr(
-        recovery, "_observed_phase", lambda phase, **kwargs: phase
+        recovery_classification, "_observed_phase", lambda phase, **kwargs: phase
     ),
     "ledger-row-check": lambda mp: mp.setattr(
-        recovery, "_ledger_run_id_reader", lambda project: (lambda: ())
+        recovery_watch, "_ledger_run_id_reader", lambda project: (lambda: ())
     ),
     "bucket-mapping": lambda mp: mp.setattr(
-        recovery,
+        recovery_watch,
         "FLEET_BLOCKED_STATES",
         tuple(
             sorted(
@@ -563,6 +587,11 @@ def test_a_vanished_run_without_a_ledger_row_is_not_called_promoted(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     ledger_ids = {"r-departure"}
+    monkeypatch.setattr(
+        recovery_watch,
+        "_ledger_run_id_reader",
+        lambda _project: lambda: ledger_ids,
+    )
     monkeypatch.setattr(
         recovery,
         "_ledger_run_id_reader",

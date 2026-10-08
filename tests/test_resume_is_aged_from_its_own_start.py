@@ -33,6 +33,7 @@ from pathlib import Path
 
 import pytest
 
+from reckon.crew import recovery_watch
 from reckon.crew import recovery, runs
 from tests import test_a_live_run_never_reads_dead as liveness
 
@@ -68,7 +69,7 @@ def isolated_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
     if os.environ.get(MUTATION_ENV) == "1":
         monkeypatch.setattr(
-            recovery, "_run_stream_quiet_seconds", _age_from_the_stream_alone
+            recovery_watch, "_run_stream_quiet_seconds", _age_from_the_stream_alone
         )
 
 

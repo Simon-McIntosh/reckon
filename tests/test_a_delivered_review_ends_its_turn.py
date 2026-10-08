@@ -17,6 +17,9 @@ from pathlib import Path
 import pytest
 
 from reckon import crew
+from reckon.crew import recovery_classification
+from reckon.crew import recovery_review_delivery
+from reckon.crew import recovery_stream
 from reckon.crew import recovery, review
 from reckon.crew.recovery import watch_ticker
 
@@ -286,7 +289,7 @@ def test_a_template_manifest_status_is_refused_by_the_template_guard(
         consulted.append((str(value), caller))
         return declared(value)
 
-    monkeypatch.setattr(recovery, "manifest_status_is_template", spy)
+    (monkeypatch.setattr(recovery_review_delivery, "manifest_status_is_template", spy), monkeypatch.setattr(recovery_stream, "manifest_status_is_template", spy), monkeypatch.setattr(recovery_classification, "manifest_status_is_template", spy))
     pointer = _reviewer(
         home, delivered=True, stream_offset=3 * 86400.0, manifest_status=template
     )

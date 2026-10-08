@@ -19,6 +19,7 @@ from pathlib import Path
 
 import pytest
 
+from reckon.crew import recovery_review_dispatch
 from reckon.crew import recovery, runs
 
 PROJECT = "stranded-fixture"
@@ -118,7 +119,7 @@ def test_the_reflex_releases_a_stranded_review_and_composes_again(
     # The composed review is refused where it would dispatch from a fixture
     # home; what this test measures is that the refusal is reached at all,
     # because the standing stranded claim no longer returns in flight.
-    monkeypatch.setattr(recovery, "carry_review_forward", lambda *a, **k: None)
+    monkeypatch.setattr(recovery_review_dispatch, "carry_review_forward", lambda *a, **k: None)
 
     report = recovery.dispatch_review_for_run(runs.read_pointer(SOURCE_RUN))
 

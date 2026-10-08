@@ -36,6 +36,8 @@ from pathlib import Path
 import pytest
 
 from reckon import crew, ledger
+from reckon.crew import recovery_repair_dispatch
+from reckon.crew import recovery_review_dispatch
 from reckon.crew import recovery, repair, resumption, runs
 from reckon.crew import review as review_module
 from reckon.crew.dispatch import WATCHER_LOAD_BOUND_SECONDS
@@ -661,7 +663,7 @@ def test_a_pointer_gone_at_launch_dispatches_nothing(
     config_home, repo, head_sha = isolated_project
     _completed_pointer(config_home, repo)
     _store_review(head_sha, FINDINGS)
-    monkeypatch.setattr(recovery, "read_pointer", lambda _run_id: None)
+    (monkeypatch.setattr(recovery_review_dispatch, "read_pointer", lambda _run_id: None), monkeypatch.setattr(recovery_repair_dispatch, "read_pointer", lambda _run_id: None))
     calls: list[dict] = []
     report = _sweep(calls)
     assert report["reviews"]["repaired"] == []

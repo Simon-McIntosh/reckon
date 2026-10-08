@@ -10,6 +10,9 @@ from typing import Any
 import pytest
 
 from reckon import _plan_html, crew, ledger
+from reckon.crew import recovery_review_acceptance
+from reckon.crew import recovery_review_dispatch
+from reckon.crew import recovery_watch
 from reckon.crew import promotion, promotion_release, recovery
 from reckon.crew.runs import _write_json, pointer_path
 
@@ -221,11 +224,19 @@ def test_the_fleet_reading_has_a_constant_shape_for_small_and_large_fleets(
         monkeypatch.setattr(
             promotion_release, "_drain_row", lambda pointer: {"unreconciled": True}
         )
-        monkeypatch.setattr(
-            recovery,
+        (monkeypatch.setattr(
+            recovery_review_dispatch,
             "classify_pointer",
             lambda pointer: {"recovery_classification": "running"},
-        )
+        ), monkeypatch.setattr(
+            recovery_review_acceptance,
+            "classify_pointer",
+            lambda pointer: {"recovery_classification": "running"},
+        ), monkeypatch.setattr(
+            recovery_watch,
+            "classify_pointer",
+            lambda pointer: {"recovery_classification": "running"},
+        ))
         return promotion._fleet_state_reading(PROJECT)
 
     one = reading_for(1)
