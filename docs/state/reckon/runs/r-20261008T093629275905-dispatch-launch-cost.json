@@ -1,0 +1,718 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effective_input_window": 230144,
+    "effort": "high",
+    "launch": "cli",
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 230144
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "3f7a2f71ff433c778659e93e870207d3752c748f",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "fallback_credit": null,
+      "inference_geo": "",
+      "input_tokens": 15800406,
+      "input_tokens_cumulative": 15800406,
+      "output_tokens": 64323,
+      "output_tokens_cumulative": 64323,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 170,
+    "files": 3,
+    "removed": 5
+  },
+  "clone_matches": [
+    {
+      "existing_function": {
+        "line": 434,
+        "name": "__init__",
+        "path": "reckon/crew/node.py"
+      },
+      "run_function": {
+        "line": 83,
+        "name": "__init__",
+        "path": "reckon/crew/dispatch_claims.py"
+      },
+      "window_line": 83
+    },
+    {
+      "existing_function": {
+        "line": 1239,
+        "name": "_peer_claim_is_a_later_racing_arrival",
+        "path": "reckon/crew/dispatch_claims.py"
+      },
+      "run_function": {
+        "line": 1361,
+        "name": "_peer_claim_is_an_unlaunched_racing_winner",
+        "path": "reckon/crew/dispatch_claims.py"
+      },
+      "window_line": 1362
+    },
+    {
+      "existing_function": {
+        "line": 1010,
+        "name": "_live_conflict_rows",
+        "path": "reckon/crew/dispatch_claims.py"
+      },
+      "run_function": {
+        "line": 1451,
+        "name": "_raise_repository_scope_conflict",
+        "path": "reckon/crew/dispatch_claims.py"
+      },
+      "window_line": 1452
+    }
+  ],
+  "commit_resolution": null,
+  "commits": [
+    "1fe678f41f431b47f50ce47a2132c149f9fa0614",
+    "50281aef2d2366a2acaf031d9054c6f644719000"
+  ],
+  "completed_at": "2026-10-08T10:16:27.802Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-10-08T09:36:57Z",
+  "disposition": null,
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": "pytest -p",
+    "override": false,
+    "role": "implement",
+    "status": "compatible"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [
+    "docs/state/reckon",
+    "ledger/review/state-write",
+    "reckon/crew/routing.py"
+  ],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -n 7 -q tests/test_estimate_stage_times_the_estimate.py tests/test_no_test_spawns_a_provider.py tests/test_dispatch_launch_cost.py tests/test_member_friction.py tests/test_picker_dispatch_pace.py tests/test_reaper_catches_unrecorded_producer.py tests/test_test_watchers_are_reaped.py tests/test_the_session_reap_signals_a_pruned_producer.py tests/test_a_racing_loser_outlives_a_withdrawn_winner.py tests/test_budget_view_is_cached.py tests/test_pick_records_its_stage_times.py tests/test_jev_sees_declared_difficulty.py tests/test_picker*.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T093629275905-dispatch-launch-cost/gate.log"
+  },
+  "impl_move": {
+    "at_complete": null,
+    "at_dispatch": null,
+    "plan": "one-typesafe-model-picker",
+    "reason": "no-impl-recorded-at-dispatch",
+    "verdict": "exempt"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-10-08T10:36:33.667205+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": "clive",
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-10-08T09:36:33Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 26,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 10,
+    "headroom": 2,
+    "mean_context": 93333,
+    "observed_at": "2026-10-08T09:36:07Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": 26,
+      "aggregate_tokens_per_second": 407.387,
+      "detail": "",
+      "mean_tokens_per_second": 42.436,
+      "observed_at": "2026-10-08T09:36:07Z",
+      "runs": 9.6,
+      "state": "measured"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-10-08T10:16:27.802Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": false,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T093629275905-dispatch-launch-cost/manifest.md",
+  "member": "disposable-r-20261008T093629275905-dispatch-launch-cost",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_dispatch_launch_cost.py::test_the_module_grace_is_the_derivation_not_a_constant"
+    ],
+    "baseline_failure_ids": [
+      "tests/test_resume_reaps_its_child.py::test_a_shortlived_launcher_leaves_a_worker_that_survives_and_completes"
+    ],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_dispatch_launch_cost.py::test_the_module_grace_is_the_derivation_not_a_constant"
+    ],
+    "declaration": "restore the fixed 15 s claim grace; the observed-grace test must fail",
+    "head_failure_ids": [],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T093629275905-dispatch-launch-cost/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T093629275905-dispatch-launch-cost/negative-control.log",
+    "test_paths": [
+      "tests/test_dispatch_launch_cost.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "dispatch-launch-cost",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 1648,
+          "cached_input_tokens": 419364,
+          "input_tokens": 421014,
+          "output_tokens": 892,
+          "reasoning_output_tokens": 287,
+          "total_tokens": 421906,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "2d0412cd-9d81-48d8-9d5c-32537d1c4e2b",
+      "session_id": "s25-picker"
+    },
+    "done_when": "Build plan one-typesafe-model-picker §18 exactly as the section states; the section is the authority for the three items and the done-when. Measure first, from the ledger and the run directories of recent runs: the launch-to-claim distribution, and a fresh worktree's provisioning time and size by top-level path. Record both in the manifest. Derive the claim grace from the observed figure with a floor. Implement a checkout exclusion only if no test and no worker reads the excluded paths; otherwise state why in the manifest. Tests go in tests/test_dispatch_launch_cost.py. Gate: that file, tests/test_crew_dispatch*.py, plus every test file that imports reckon/crew/dispatch_claims.py or reckon/crew/dispatch_launch.py. Run the gate with the main checkout's .venv/bin/python -m pytest -p no:cacheprovider -n 6 in the FOREGROUND, one log each for base and head under the run directory, each ending in an EXIT= line, judged by delta against the base. Command code now lives in the sibling modules of reckon/cli.py; patch the module whose code reads a name. Write the evidence fragment docs/evidence/fragments/one-typesafe-model-picker/dispatch-launch-cost.html.",
+    "estimated_hours": 2.0,
+    "goal": "dispatch spends its time launching the worker: the claim grace follows the observed launch time and the checkout's size is measured",
+    "id": "dispatch-launch-cost",
+    "lane_declaration": {
+      "backend": "clive",
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-10-08T09:36:33Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 26,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 10,
+      "headroom": 2,
+      "mean_context": 93333,
+      "observed_at": "2026-10-08T09:36:07Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": 26,
+        "aggregate_tokens_per_second": 407.387,
+        "detail": "",
+        "mean_tokens_per_second": 42.436,
+        "observed_at": "2026-10-08T09:36:07Z",
+        "runs": 9.6,
+        "state": "measured"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T093629275905-dispatch-launch-cost/manifest.md",
+    "negative_control": "restore the fixed 15 s claim grace; the observed-grace test must fail",
+    "plan": "one-typesafe-model-picker",
+    "requested_backend": "clive",
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§18",
+    "spec_level": "exact",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/dispatch_claims.py",
+      "reckon/crew/dispatch_launch.py",
+      "tests/test_dispatch_launch_cost.py",
+      "docs/evidence/fragments/one-typesafe-model-picker/dispatch-launch-cost.html",
+      "docs/figures/one-typesafe-model-picker/dispatch-launch-cost"
+    ]
+  },
+  "orchestrator_lane_override": null,
+  "orientation_input_tokens": 4856579.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "dispatch-launch-cost",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-10-08T09:36:43.818220+00:00",
+    "score": 0.64375,
+    "source": null,
+    "state": "unknown"
+  },
+  "picker_selection": {
+    "action": "route",
+    "answering_model": "typesafe/jev-1.13-20260917",
+    "backend": "clive",
+    "comment": "Measure first, then derive the claim grace; a checkout exclusion only if nothing reads it.",
+    "confidence": 0.62,
+    "decision_source": "jev",
+    "effort": "high",
+    "excluded": [
+      {
+        "availability": "not-probed",
+        "backend": "native",
+        "budget_age_s": null,
+        "budget_reason": null,
+        "burn_multiple": null,
+        "congestion": null,
+        "context": null,
+        "days_to_reset": null,
+        "effort": "high",
+        "family": "in-harness",
+        "local": false,
+        "model": null,
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reasons": [
+          "in-harness-backend"
+        ],
+        "resets_at": null,
+        "stale": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      }
+    ],
+    "fallback_reason": null,
+    "family": "local",
+    "jev_latency_ms": 395.224,
+    "jev_model": "typesafe/jev-1.13",
+    "latency_ms": 1467.32,
+    "model": "deepseek-v4.1-flash",
+    "offered": [
+      {
+        "availability": "unknown",
+        "backend": "claude",
+        "budget_age_s": 530148.282382,
+        "budget_reason": null,
+        "burn_multiple": 0.88,
+        "congestion": null,
+        "context": {
+          "estimated_tokens": 105352,
+          "headroom_pct": null,
+          "peak_utilisation_p50_pct": null,
+          "peak_utilisation_p90_pct": null,
+          "peak_utilisation_runs": null,
+          "window_tokens": null
+        },
+        "days_to_reset": 0.0,
+        "effort": "high",
+        "family": "claude",
+        "local": false,
+        "model": "claude-sonnet-5-5",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": 0.132,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": "2026-10-04T06:00:00+00:00",
+        "stale": true,
+        "utilisation_pct": 88.0,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "claude-haiku",
+        "budget_age_s": 530148.282382,
+        "budget_reason": null,
+        "burn_multiple": 0.88,
+        "congestion": null,
+        "context": {
+          "estimated_tokens": 105352,
+          "headroom_pct": null,
+          "peak_utilisation_p50_pct": null,
+          "peak_utilisation_p90_pct": null,
+          "peak_utilisation_runs": null,
+          "window_tokens": null
+        },
+        "days_to_reset": 0.0,
+        "effort": "high",
+        "family": "claude",
+        "local": false,
+        "model": "claude-haiku-4-5-20251001",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": 0.132,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": "2026-10-04T06:00:00+00:00",
+        "stale": true,
+        "utilisation_pct": 88.0,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "claude-opus",
+        "budget_age_s": 530148.282382,
+        "budget_reason": null,
+        "burn_multiple": 0.88,
+        "congestion": null,
+        "context": {
+          "estimated_tokens": 105352,
+          "headroom_pct": null,
+          "peak_utilisation_p50_pct": null,
+          "peak_utilisation_p90_pct": null,
+          "peak_utilisation_runs": null,
+          "window_tokens": null
+        },
+        "days_to_reset": 0.0,
+        "effort": "high",
+        "family": "claude",
+        "local": false,
+        "model": "claude-opus-5-5",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": 0.132,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": "2026-10-04T06:00:00+00:00",
+        "stale": true,
+        "utilisation_pct": 88.0,
+        "worker_slots": null
+      },
+      {
+        "availability": "served",
+        "backend": "clive",
+        "budget_age_s": null,
+        "budget_reason": null,
+        "burn_multiple": null,
+        "congestion": {
+          "admission_verdict": "open",
+          "running": 10,
+          "slots_state": "measured",
+          "stale": false,
+          "waiting": 0
+        },
+        "context": {
+          "estimated_tokens": 105352,
+          "headroom_pct": 54.2,
+          "peak_utilisation_p50_pct": 37.3,
+          "peak_utilisation_p90_pct": 83.0,
+          "peak_utilisation_runs": 993,
+          "window_tokens": 230144
+        },
+        "days_to_reset": null,
+        "effort": "high",
+        "family": "local",
+        "local": true,
+        "model": "deepseek-v4.1-flash",
+        "outcomes": {
+          "failed": 19,
+          "not-run": 17,
+          "passed": 655,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "stale": null,
+        "utilisation_pct": null,
+        "worker_slots": 4
+      },
+      {
+        "availability": "unknown",
+        "backend": "codex",
+        "budget_age_s": 44.488382,
+        "budget_reason": null,
+        "burn_multiple": 2.9621409334162156,
+        "congestion": null,
+        "context": {
+          "estimated_tokens": 105352,
+          "headroom_pct": null,
+          "peak_utilisation_p50_pct": null,
+          "peak_utilisation_p90_pct": null,
+          "peak_utilisation_runs": null,
+          "window_tokens": null
+        },
+        "days_to_reset": 5.818417368263889,
+        "effort": "high",
+        "family": "codex",
+        "local": false,
+        "model": "gpt-6-sol",
+        "outcomes": {
+          "failed": 5,
+          "not-run": 0,
+          "passed": 42,
+          "unknown": 0
+        },
+        "pace_allowance": 0.1856765131582342,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": "2026-10-14T05:14:59+00:00",
+        "stale": false,
+        "utilisation_pct": 50.0,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "codex-astra",
+        "budget_age_s": 44.488382,
+        "budget_reason": null,
+        "burn_multiple": 2.9621409334162156,
+        "congestion": null,
+        "context": {
+          "estimated_tokens": 105352,
+          "headroom_pct": null,
+          "peak_utilisation_p50_pct": null,
+          "peak_utilisation_p90_pct": null,
+          "peak_utilisation_runs": null,
+          "window_tokens": null
+        },
+        "days_to_reset": 5.818417368263889,
+        "effort": "high",
+        "family": "codex",
+        "local": false,
+        "model": "gpt-6-astra",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 11,
+          "unknown": 0
+        },
+        "pace_allowance": 0.1856765131582342,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": "2026-10-14T05:14:59+00:00",
+        "stale": false,
+        "utilisation_pct": 50.0,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "codex-luna",
+        "budget_age_s": 44.488382,
+        "budget_reason": null,
+        "burn_multiple": 2.9621409334162156,
+        "congestion": null,
+        "context": {
+          "estimated_tokens": 105352,
+          "headroom_pct": null,
+          "peak_utilisation_p50_pct": null,
+          "peak_utilisation_p90_pct": null,
+          "peak_utilisation_runs": null,
+          "window_tokens": null
+        },
+        "days_to_reset": 5.818417368263889,
+        "effort": "high",
+        "family": "codex",
+        "local": false,
+        "model": "gpt-6-luna",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": 0.1856765131582342,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": "2026-10-14T05:14:59+00:00",
+        "stale": false,
+        "utilisation_pct": 50.0,
+        "worker_slots": null
+      }
+    ],
+    "probabilities": {
+      "claude:claude-haiku-4-5-20251001": 0,
+      "claude:claude-opus-5-5": 0.02,
+      "claude:claude-sonnet-5-5": 0.01,
+      "codex:gpt-6-astra": 0.05,
+      "codex:gpt-6-luna": 0.01,
+      "codex:gpt-6-sol": 0.2,
+      "hold": 0.04,
+      "local:deepseek-v4.1-flash": 0.67
+    },
+    "rendered_token_estimate": 2055,
+    "usage": {
+      "cost": 0.000228564,
+      "input_tokens": 5442,
+      "output_tokens": 150
+    }
+  },
+  "plan": "one-typesafe-model-picker",
+  "plan_link": null,
+  "promoted_by": null,
+  "promoted_revision": "50281aef2d2366a2acaf031d9054c6f644719000",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "reviewed_base_sha": "3f7a2f71ff433c778659e93e870207d3752c748f",
+    "reviewed_head_sha": "50281aef2d2366a2acaf031d9054c6f644719000",
+    "scores": {
+      "durability": 16,
+      "evidence": 14,
+      "fit": 18,
+      "goal_fidelity": 17,
+      "reuse": 19,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 104
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "route_mode": "picker",
+  "run_id": "r-20261008T093629275905-dispatch-launch-cost",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§18",
+  "session": "s25-picker",
+  "session_harness": "claude",
+  "session_id": "92da0319-68cf-4a8c-a15c-78ee8c00093f",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 15800406,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 230144",
+    "elapsed_seconds": 2366.376,
+    "generated_tokens": 64323,
+    "generation_seconds": 1574.486,
+    "input_budget_tokens": 230144,
+    "input_utilisation_pct": 79.2,
+    "machine_seconds": 791.89,
+    "peak_input_tokens": 182293,
+    "tokens_per_second": 40.85,
+    "wall_tokens_per_second": 27.18
+  },
+  "time_budget": "60m",
+  "tool_steps": 124.0,
+  "unplanned_reason": null,
+  "unreconciled_override": null,
+  "wall_seconds": 2370,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-10-08T10:16:39Z",
+    "last_record_type": "result",
+    "launched_at": "2026-10-08T09:37:04Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20261008T093629275905-dispatch-launch-cost",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 13604,
+    "worker_pid": 25906
+  },
+  "worker_seconds": 2339,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}

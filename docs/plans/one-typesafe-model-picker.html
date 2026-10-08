@@ -25,7 +25,7 @@
   <title>One Typesafe Model Picker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="234">
+<meta name="plan-version" content="235">
 <meta name="plan-modified" content="2026-10-08">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;implementable&quot;,&quot;s20&quot;:&quot;implementable&quot;,&quot;s21&quot;:&quot;implementable&quot;}">
 </head>
@@ -752,13 +752,16 @@
     <div class="r-comment-body"><p>§16 landed: the stale-window test pins its clock, the guard resolves the real store, the reap seam defaults off, and no test may spawn a provider binary (merge <code>73d08fddb</code>, review 99, no failures added). Follow-on is §20. <a href="/reckon/evidence/archive/one-typesafe-model-picker-landed.html#s16">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s16" data-id="c-run-r-20261008T093552471977-picker-tests-read-their-own-state" data-who="reckon-build" data-when="2026-10-08T10:15:39.748Z">
-    <div class="r-comment-body"><p>picker-tests-read-their-own-state ready to land — tests/test_no_test_spawns_a_provider.py, the frozen snapshot clock in test_picker_dispatch_pace.py, the store-path resolution in tests/conftest.py and test_member_friction.py, and the reap-seam default flip. The driving followup &quot;the account-probe guard covers only the run_probe seam; add a suite-wide check that no test spawns a provider binary&quot; is satisfied by the new check; the coordinator owns resolving it and setting plan status.</p></div>
+    <div class="r-comment-body"><p>picker-tests-read-their-own-state ready to land — tests/test_no_test_spawns_a_provider.py, the frozen snapshot clock in test_picker_dispatch_pace.py, the store-path resolution in tests/conftest.py and test_member_friction.py, and the reap-seam default flip. The driving followup "the account-probe guard covers only the run_probe seam; add a suite-wide check that no test spawns a provider binary" is satisfied by the new check; the coordinator owns resolving it and setting plan status.</p></div>
 </div>
 <div class="r-comment" data-section="s18" data-id="c-run-r-20261008T102018501789-review-of-dispatch-launch-cost" data-who="reckon-build" data-when="2026-10-08T10:33:47.100Z">
     <div class="r-comment-body"><p>review of r-20261008T093629275905-dispatch-launch-cost — parsed record scores all six dimensions (goal_fidelity 17, evidence 14, scope_discipline 20, durability 16, fit 18, reuse 19; total 104), reviewed base 3f7a2f71ff433c778659e93e870207d3752c748f to head 50281aef2d2366a2acaf031d9054c6f644719000; the grace derivation reproduces (33.0) and the head gate reproduces green (11 passed EXIT=0), but four follow-ons sit on unverifiable measurement provenance and a narrow not-a-constant guard.</p></div>
 </div>
 <div class="r-comment" data-section="s18" data-id="c-close-s18" data-who="reckon-build" data-when="2026-10-08T11:00:00Z">
     <div class="r-comment-body"><p>§18 landed: the claim grace covers the observed launch tail (33 s against the fixed 15 s), and the checkout's size was measured with the reason its largest share stays (merge <code>5431e6921</code>, review 104, no failures added). The live distribution is §21. <a href="/reckon/evidence/archive/one-typesafe-model-picker-landed.html#s18">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s18" data-id="c-run-r-20261008T093629275905-dispatch-launch-cost" data-who="reckon-build" data-when="2026-10-08T10:16:27.802Z">
+    <div class="r-comment-body"><p>dispatch-launch-cost — the racing-winner claim grace is now derived from the measured launch-to-claim distribution (p90 22 s times 1.5, floored at 5 s, giving 33 s) rather than the fixed 15 s; the checkout is measured at 377 MB in place (359 MB fresh), 75% of it committed run records under docs/state/reckon, and that share could not be excluded because 20 tests and the ledger/review readers depend on it.</p></div>
 </div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261008T101957348795-review-of-estimate-stage-times-the-estimate" data-who="reckon-build" data-when="2026-10-08T10:36:30.698Z">
     <div class="r-comment-body"><p>stored a parsed review of run r-20261008T093501061630-estimate-stage-times-the-estimate: six dimensions scored (goal_fidelity 19, evidence 18, scope_discipline 19, durability 19, fit 19, reuse 20; total 114/120) over the diff 3f7a2f71f..d005674bc, added_failure_count 0, two follow-on findings (fence filename discrepancy; head gate arm records the base revision), no blockers.</p></div>
