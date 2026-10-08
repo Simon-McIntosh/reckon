@@ -66,6 +66,9 @@ _CONNECTION_STAMP = re.compile(
     r"(\d{4})-(\d{2})-(\d{2})T(\d{2})-(\d{2})-(\d{2})-(\d{3})Z"
 )
 _LABEL = re.compile(r'"label"\s*:\s*"([^"]+)"')
+# The sentinel as it appears in a tool result's payload, so a transcript that
+# merely mentions the phrase in prose is not counted as a storage-slow result.
+_SLOW_ERROR = re.compile(r'"error":\s*"?' + re.escape(STORAGE_SLOW) + r'"?')
 _TOOL_PREFIX = re.compile(r"^mcp__[^_]+__")
 
 
@@ -181,11 +184,11 @@ def _storage_slow(transcript_root: Path, start: float, end: float) -> dict:
                             if isinstance(part, dict)
                         )
                     text = str(text or "")
-                    if STORAGE_SLOW not in text:
+                    if not _SLOW_ERROR.search(text):
                         continue
                     label = _LABEL.search(text)
-                    tool = (
-                        label.group(1) if label else uses.get(block.get("tool_use_id"))
+                    tool = uses.get(block.get("tool_use_id")) or (
+                        label.group(1) if label else None
                     )
                     counts[tool or "unknown"] += 1
     return dict(counts)
