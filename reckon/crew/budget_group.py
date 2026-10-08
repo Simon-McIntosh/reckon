@@ -133,6 +133,53 @@ def ungrouped(config: Mapping[str, Any] | None) -> tuple[str, ...]:
     )
 
 
+def all_members_review_excluded(group: str, config: Mapping[str, Any] | None) -> bool:
+    """Whether every member of one declared wallet is barred from review routing.
+
+    The bookend reserve withholds a fraction of a wallet's window for the review
+    and verify roles, from the start of the window. On a wallet whose every
+    member the configuration removes from review routing, no review can ever run
+    there, so the reserved fraction would be spent by nobody and would only keep
+    the implementation work that wallet does serve below its own ceiling. The
+    predicate names that wallet so the reserve can be withheld only where the
+    roles it protects can run.
+
+    Membership comes from the same declaration :func:`declared_groups` restates,
+    and the exclusion is read from the configuration itself. An undeclared group
+    is not all-excluded: it names no members to be sure about, and until the
+    exclusion is certain the reserve stays withheld rather than lifted.
+    """
+    members = declared_groups(config).get(group)
+    if not members:
+        return False
+    from reckon.crew import recovery
+
+    excluded = recovery._review_excluded_backends(
+        config if isinstance(config, Mapping) else {}
+    )
+    return all(member in excluded for member in members)
+
+
+def reserve_block_for_group(
+    block: Mapping[str, Any] | None,
+    config: Mapping[str, Any] | None,
+    group: str | None,
+) -> dict[str, Any]:
+    """Return a budget block whose bookend reserve suits one declared wallet.
+
+    A wallet whose every member is barred from review routing withholds no
+    bookend reserve, so the block it is judged through carries a zeroed
+    ``bookend_reserve_pct``; every other wallet, and every undeclared grouping,
+    is judged through the block unchanged. The caller hands the result to the
+    same reserve judge it would have handed the original block, so the boundary
+    moves only for the wallets that cannot serve the reviews the reserve is for.
+    """
+    resolved = dict(block) if isinstance(block, Mapping) else {}
+    if group is not None and all_members_review_excluded(str(group), config):
+        resolved[reserve_module.RESERVE_KEY] = 0.0
+    return resolved
+
+
 def group_position(
     group: str,
     config: Mapping[str, Any] | None,
@@ -207,7 +254,9 @@ class GroupFigures:
     its next window, ``bar`` is the open-endedness a node must reach at that fill.
     ``reserve_pct`` is the fraction of the wallet's window withheld from work the
     bookends maintain the fleet with; it holds from the start of the window and
-    is therefore reported whatever the reading says.
+    is therefore reported whatever the reading says. A wallet whose every member
+    is barred from review routing withholds none, because the roles the reserve
+    protects can never run there.
     """
 
     group: str
@@ -301,7 +350,9 @@ def group_figures(
         # The bar's threshold, which its own module draws from the fill alone:
         # the score is what a node clears it with, so any score returns it.
         bar=None if fill is None else bar_module.recommend(fill, 1.0).bar,
-        reserve_pct=reserve_module.reserve_pct(budget_block),
+        reserve_pct=reserve_module.reserve_pct(
+            reserve_block_for_group(budget_block, config, group)
+        ),
     )
 
 

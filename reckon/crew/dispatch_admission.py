@@ -33,6 +33,9 @@ from reckon._timestamps import (
     parse_utc,
 )
 from reckon.crew import (
+    budget_group,
+)
+from reckon.crew import (
     lane_document as _lane_document,
 )
 from reckon.crew import (
@@ -306,7 +309,11 @@ def _refuse_against_the_bookend_reserve(
     if pace_record.get("group") is None:
         return
     verdict = reserve_admit_windows(
-        (config or {}).get("budget") or {},
+        budget_group.reserve_block_for_group(
+            (config or {}).get("budget") or {},
+            config,
+            str(pace_record.get("group")),
+        ),
         role=role,
         clocks=pace_record.get("clocks") or {},
         lane=str(pace_record.get("lane") or ""),

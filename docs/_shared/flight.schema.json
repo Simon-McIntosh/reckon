@@ -526,6 +526,15 @@
             "additionalProperties": false,
             "description": "Thresholds that decide whether a wave opens. They are compared against whatever a backend actually reported; a backend that reports nothing is never held by them.",
             "properties": {
+                "bookend_reserve_pct": {
+                    "description": "Headroom withheld from implementation work, in percentage points, so the review and verify roles that keep the fleet honest have a floor at the start of every window rather than only near its ceiling. A fresh dispatch outside those roles stops this fraction below the window's ceiling. On a declared budget group whose every member the configuration removes from review routing, the reserve is not withheld: no review can run on that group, so the fraction it was sized for would starve the implementation work the group does serve. A group with one member that can carry a review keeps the reserve.",
+                    "maximum": 100,
+                    "minimum": 0,
+                    "type": [
+                        "number",
+                        "null"
+                    ]
+                },
                 "coordinator_reserve_pct": {
                     "description": "Headroom withheld from new dispatches, in percentage points, so the coordinator that must survive a wave keeps headroom of its own. The reported account position already counts the coordinator's traffic, but reckon cannot see the total; a wave sized to fill the remaining headroom leaves nothing for the audit, merge and outcome-recording the coordinator does after the workers finish, so it can be refused mid-wave with every worker's output stranded in a worktree and nobody left to land it. A fresh dispatch stops at the ceiling less both this reserve and the resume reserve; a resume may spend either, because answering a stuck worker is the expenditure the reserves were withheld for. The figure is declared, not measured: there is no coordinator burn-rate record on this machine, and reading the account surface on a cadence is what calibrates it later.",
                     "maximum": 100,
