@@ -1,0 +1,50 @@
+<article class="landed-report" data-run-id="r-20261008T093501061630-estimate-stage-times-the-estimate">
+  <h3 id="estimate-stage-times-the-estimate-headline">estimate-stage-times-the-estimate — estimate_ms times the context estimate, and a cached view is not shared</h3>
+  <p id="estimate-stage-times-the-estimate-defect-a">The picker's timing line recorded <code>estimate_ms</code> as the duration of a trivial
+  <code>math.ceil(len(rendered) / 4)</code> division, so it read 0 on every production pick while the
+  context estimate that actually costs time — <code>estimated_context_tokens</code> — ran inside
+  <code>candidates()</code> counted only within <code>snapshot_ms</code>, and again, untimed, in
+  <code>dispatch_picker_selection</code> before <code>pick()</code> began. A test that injects a 50 ms
+  estimator measures the stage against the computation it exists to time.</p>
+  <p id="estimate-stage-times-the-estimate-defect-b">A second defect sat in the cached budget view's zero-delta path.
+  <code>_reage_budget_report</code> returned <code>value["report"]</code> by reference when the clock had
+  not advanced, so a caller that mutated the view it was given rewrote the cached composition and the
+  next read of the same value served the mutation. Reproduced on the base revision with a direct call:
+  the first read <em>is</em> the cached report object and a mutation on it reads back on the second
+  call.</p>
+  <p id="estimate-stage-times-the-estimate-fix"><strong>Fix.</strong> <code>candidates()</code> now measures the context estimate once per pick and
+  reports the figure and its own duration through an <code>estimate_out</code> outlet: a figure already
+  on the request (the dispatch path measures it before the pick's own bound) is reused rather than
+  measured a second time. <code>pick()</code> records that duration as <code>estimate_ms</code>, taking
+  a caller's pre-pick duration when the figure was handed in; the rendered-length division still
+  produces the token figure but carries no stage of its own.
+  <code>dispatch_picker_selection</code> times its pre-pick measurement and hands the figure and its
+  duration into the pick. <code>_reage_budget_report</code> copies the report on the zero-delta path,
+  normalised the same way the advancing path normalises, so a reused view equals the figures the same
+  files produce and never aliases the cache. The comment that claimed most plans declare no total — a
+  claim contradicted by the census below — no longer asserts an unmeasured share; the rule it explains
+  is kept.</p>
+  <p id="estimate-stage-times-the-estimate-census"><strong>Measured share.</strong> A census of the mounted projects' <code>docs/plans/*.html</code>
+  (excluding <code>_</code>-prefixed pages) finds <strong>284 of 404 plans (70.3%)</strong> declare a
+  positive <code>plan-effort-hours</code> total, so the old claim that most plans declare none was
+  false. The figure is recorded here rather than written into the comment, where a moving absolute
+  would rot; the comment keeps the rule and drops the share.</p>
+  <p id="estimate-stage-times-the-estimate-measure"><strong>Measure.</strong>
+  <code>tests/test_estimate_stage_times_the_estimate.py</code> — 5 tests. The injected 50 ms estimator
+  makes the pick record <code>estimate_ms &gt;= 50</code>; a pre-pick figure is reused (the estimator is
+  not called a second time) and its duration recorded; the dispatch path hands the figure and a
+  measured duration to the pick; and the zero-delta read no longer shares its object. The named gate
+  ran <code>tests/test_estimate_stage_times_the_estimate.py</code>, every
+  <code>tests/test_picker*.py</code>, <code>tests/test_pick_records_its_stage_times.py</code>,
+  <code>tests/test_jev_sees_declared_difficulty.py</code>, <code>tests/test_budget_view_is_cached.py</code>
+  and <code>tests/test_jev_weighs_context.py</code> with the main checkout's interpreter
+  (<code>-p no:cacheprovider -n 6</code>): <strong>190 passed, EXIT=0</strong>. The base revision, run in
+  a scratch tree with the same test file, is <strong>4 failed, 186 passed, EXIT=1</strong>, the four
+  failures being exactly the new-behaviour tests; the head introduces no new failure.</p>
+  <p id="estimate-stage-times-the-estimate-negative-control"><strong>Negative control.</strong> Against a scratch copy of the head tree with the estimate stage reverted
+  to timing only the rendered-length division, the injected-estimator test fails —
+  <strong>1 failed, EXIT=1</strong>. The red log is
+  <code>negative-control.log</code> under the run directory, and its header names the scratch module the
+  run imported. Declared mutation: <em>time only the rendered-length division as estimate_ms; the
+  injected 50 ms estimator test must fail</em>.</p>
+</article>

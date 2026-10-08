@@ -3,8 +3,9 @@
 import hashlib
 import json
 import math
+import time
 from collections import Counter
-from collections.abc import Mapping
+from collections.abc import Mapping, MutableMapping
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -537,9 +538,14 @@ def _reage_budget_report(
     report = value["report"]
     built = parse_utc(str(value.get("built_at") or ""))
     delta = (moment - built).total_seconds() if built is not None else 0.0
+    # A caller holds whatever this returns. On the zero-delta path it is the
+    # cache's own report, so a mutation would rewrite the stored composition and
+    # the next read of the same value would serve the mutation. Copy here too,
+    # normalised the same way the advancing path normalises, so a reused view
+    # equals the figures the same files produce and never aliases the cache.
+    report = json.loads(json.dumps(report))
     if delta == 0.0:
         return report
-    report = json.loads(json.dumps(report))
     report["checked_at"] = moment.strftime("%Y-%m-%dT%H:%M:%SZ")
     shelf_seconds = budget.policy(config)["evidence_shelf_life_minutes"] * 60
     for entry in report["backends"]:
@@ -667,6 +673,7 @@ def candidates(
     verdict_inputs: dict[str, Any] | None = None,
     cached_only: bool = False,
     authority: Mapping[str, Any] | None = None,
+    estimate_out: MutableMapping[str, Any] | None = None,
 ) -> list[Candidate]:
     """Read a fresh snapshot; never dispatch or change routing configuration."""
     now = datetime.now(UTC)
@@ -687,15 +694,28 @@ def candidates(
         **shared,
         "node_estimate": routing._estimated_hours(repo, request.project, request.node),
     }
-    # The node's estimate is independent of the candidate, so it is measured
-    # once for the pick and reused wherever a lane declares no window of its
-    # own. Peak utilisation is read once per lane rather than once per row. The
-    # authority is threaded here and into every candidate's verdict so the
-    # request-level figure and the block a candidate carries are one estimate,
-    # not two measured against different granted-path sets.
-    node_context_tokens = estimated_context_tokens(
-        request.node, repo, authority=authority
-    )
+    # One context estimate per pick. A caller that measured it before the pick --
+    # dispatch does, so the figure it weighed was a real census and its stage
+    # records the expensive computation rather than the rendered-length division
+    # -- leaves it on the request; reuse it here rather than measuring a second
+    # time. With no figure in hand the estimate is measured here and its own
+    # duration reported, so the pick's stage can time the measurement wherever
+    # it ran. Peak utilisation is read once per lane rather than once per row,
+    # and the authority is threaded here and into every candidate's verdict so
+    # the request-level figure and the block a candidate carries are one
+    # estimate, not two measured against different granted-path sets.
+    estimate_started = time.perf_counter()
+    if request.estimated_context > 0:
+        node_context_tokens = request.estimated_context
+        estimate_ms: float | None = None
+    else:
+        node_context_tokens = estimated_context_tokens(
+            request.node, repo, authority=authority
+        )
+        estimate_ms = round((time.perf_counter() - estimate_started) * 1000, 3)
+    if estimate_out is not None:
+        estimate_out["tokens"] = node_context_tokens
+        estimate_out["ms"] = estimate_ms
     # One pass over the rows yields every backend's outcome counts and peak
     # utilisation, and one document cache is threaded through the loop so each
     # lane document is parsed once per pick.
