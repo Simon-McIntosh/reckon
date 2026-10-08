@@ -24,7 +24,7 @@
   <title>A Held Dispatch Waits Its Fair Turn | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="4">
 <meta name="plan-modified" content="2026-10-08">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
 </head>
@@ -59,12 +59,12 @@
 
     <h2 id="s3">&sect;3 &mdash; Freed slots go to the sessions using least of the lane</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p>The queue's order is one function over the queued pointers. It reads each session's runs in flight on the lane from the live-pointer store (<code>runs.list_live</code>) and counts them again after every admission. So the session with fewer runs goes first, and once two sessions reach the same count, admissions alternate between them; ties are broken by how long the entry has waited. Entries within one session keep the order they joined. The bound on a wait is the one the obligations view already uses for queued review dispatches, <code>REVIEW_QUEUED_BOUND_SECONDS</code> (30 minutes) in <code>reckon/crew/obligations.py</code>. It is generalised to one queued-wait bound for any queued run rather than declared a second time. An entry that has waited longer is admitted ahead of every entry that has not, so a busy session's work is delayed but never starved.</p>
+    <p>The queue's order is one function over the queued pointers. It reads each session's runs in flight on the lane from the live-pointer store (<code>runs.list_live</code>) and counts them again after every admission. So the session with fewer runs goes first, and once two sessions reach the same count, admissions alternate between them; ties are broken by how long the entry has waited. Entries within one session keep the order they joined. The starvation age is its own named constant beside the order function, 30 minutes. It is deliberately not the obligations view's <code>REVIEW_QUEUED_BOUND_SECONDS</code>, because that bound means the opposite: past it, a review dispatch stops being read as queued, whereas past the starvation age a queued run becomes the queue's first priority. An entry that has waited longer than the starvation age is admitted ahead of every entry that has not, so a busy session's work is delayed but never starved.</p>
     <p><strong>Done when:</strong></p>
     <ul>
       <li>With session A holding four runs and session B none, and both holding queued entries, the next four admissions go to B and the admissions after that alternate between A and B, asserted on the order the function returns with run counts updated after each admission.</li>
       <li>Within one session, entries are admitted in the order they joined.</li>
-      <li>An entry that has waited longer than the shared queued-wait bound is admitted ahead of a lighter session's newer entry, tested with the bound patched to a few seconds, and the obligations view's queued reading uses that same constant.</li>
+      <li>An entry that has waited longer than the starvation age is admitted ahead of a lighter session's newer entry, tested with the age patched to a few seconds.</li>
     </ul>
 
     <h2 id="s4">&sect;4 &mdash; One drainer launches queued work</h2>
@@ -75,12 +75,12 @@
       <li>A test with a lane document that opens one slot finds the highest-ranked queued run launched and no other.</li>
       <li>Two drainers racing over the same queued pointers launch each run once.</li>
       <li>A paused fleet gate launches nothing, and a launch failure leaves the run queued with the failure recorded.</li>
-      <li>The drainer is declared through the fleet services configuration, and the coordinator's follower sees its run move from queued to dispatched.</li>
+      <li>The drainer is declared through the fleet services configuration, and the coordinator's follower sees the run's phase leave <code>queued</code> for the launch phases, <code>starting</code> then <code>working</code>, as it reports a run its coordinator launched itself.</li>
     </ul>
 
     <h2 id="s5">&sect;5 &mdash; Queued work shows where held work already shows</h2>
 <section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
-    <p>A queued run is read by the surfaces that already report held work. The obligations view's queued duty, today <code>review-queued</code>, is generalised to any queued run, so a queued node reads as waiting, not missing. The follower's <code>q</code> column counts the session's queued runs beside the router's waiting requests. <code>crew(view="live")</code> and <code>reckon crew list</code> show each queued run with its position and rank.</p>
+    <p>A queued run is read by the surfaces that already report held work. The obligations view reads a run in the <code>queued</code> phase as waiting, not missing, for as long as the pointer exists, beside its existing <code>review-queued</code> reading, whose 30-minute bound is unchanged. The follower's <code>q</code> column counts the session's queued runs beside the router's waiting requests. <code>crew(view="live")</code> and <code>reckon crew list</code> show each queued run with its position and rank.</p>
     <p><strong>Done when:</strong> a test finds one queued run reported as queued by the obligations view, counted in the follower's <code>q</code> column, and shown with its position and rank by <code>crew(view="live")</code> and <code>reckon crew list</code>, all three reading the same pointer, so the surfaces cannot disagree.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
