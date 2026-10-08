@@ -54,7 +54,9 @@ def _build(tmp_path):
     alpha = tmp_path / "alpha"
     (alpha / "docs").mkdir(parents=True)
     (alpha / ".mcp.json").write_text(
-        _mcp_config({"alpha": {"command": "uv", "args": ["run", "imas-codex", "serve"]}})
+        _mcp_config(
+            {"alpha": {"command": "uv", "args": ["run", "imas-codex", "serve"]}}
+        )
     )
 
     # Project beta is correct: no sync, and its --project exists.
@@ -126,7 +128,7 @@ def _build(tmp_path):
 
 
 def _run_doctor(tmp_path):
-    import unittest.mock as mock
+    from unittest import mock
 
     home, _alpha, _beta, _gamma = _build(tmp_path)
     real = _real_user_config()

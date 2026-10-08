@@ -813,13 +813,13 @@ def _runs_uv(tokens: list[str]) -> bool:
 
 
 def _project_argument(tokens: list[str]) -> str | None:
-    for index, token in enumerate(tokens):
-        if token in ("--project", "--directory"):
+    for index, arg in enumerate(tokens):
+        if arg in ("--project", "--directory"):
             if index + 1 < len(tokens):
                 return tokens[index + 1]
             return None
-        if token.startswith(("--project=", "--directory=")):
-            return token.split("=", 1)[1]
+        if arg.startswith(("--project=", "--directory=")):
+            return arg.split("=", 1)[1]
     return None
 
 
@@ -836,11 +836,11 @@ def _missing_directory(project: str) -> str | None:
 
 def _literal_home_argument(tokens: list[str]) -> str | None:
     """The first argument carrying a literal ``/home/<user>`` path."""
-    for token in tokens:
-        if "${" in token:
+    for arg in tokens:
+        if "${" in arg:
             continue
-        if _LITERAL_HOME.search(token):
-            return token
+        if _LITERAL_HOME.search(arg):
+            return arg
     return None
 
 
@@ -860,14 +860,15 @@ def _mcp_launch_flags(tokens: list[str]) -> list[tuple[str, str]]:
     if _launch_syncs(tokens):
         flags.append(("sync", "runs uv run without --no-sync"))
     project = _project_argument(tokens)
-    if project is None:
-        flags.append(("resolves from cwd", "names no absolute --project"))
-    elif not Path(_expand_mcp_argument(project)).expanduser().is_absolute():
+    project_path = (
+        Path(_expand_mcp_argument(project)).expanduser() if project is not None else None
+    )
+    if project_path is None or not project_path.is_absolute():
         flags.append(("resolves from cwd", "names no absolute --project"))
     literal = _literal_home_argument(tokens)
     if literal is not None:
         flags.append(("names one user's home", literal))
-    if project is not None and Path(_expand_mcp_argument(project)).expanduser().is_absolute():
+    if project_path is not None and project_path.is_absolute():
         missing = _missing_directory(project)
         if missing is not None:
             flags.append(("missing directory", missing))
@@ -878,20 +879,20 @@ def _launch_remainder(tokens: list[str]) -> list[str]:
     """The launch arguments with ``uv run``'s sync and project options removed."""
     rest: list[str] = []
     skip = False
-    for index, token in enumerate(tokens):
+    for index, arg in enumerate(tokens):
         if index < 2:
             continue
         if skip:
             skip = False
             continue
-        if token == "--no-sync":
+        if arg == "--no-sync":
             continue
-        if token in ("--project", "--directory"):
+        if arg in ("--project", "--directory"):
             skip = True
             continue
-        if token.startswith(("--project=", "--directory=")):
+        if arg.startswith(("--project=", "--directory=")):
             continue
-        rest.append(token)
+        rest.append(arg)
     return rest
 
 
