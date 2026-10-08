@@ -1163,23 +1163,24 @@ def _record_provenance(
     data: Mapping[str, Any],
     layer: str,
     provenance: dict[str, str],
-    prefix: str = "",
 ) -> None:
-    """Stamp ``layer`` onto every leaf key path present in ``data``."""
-    for key, value in data.items():
-        path = f"{prefix}{key}"
-        if isinstance(value, Mapping) and value:
-            _record_provenance(value, layer, provenance, prefix=f"{path}.")
-        else:
-            provenance[path] = layer
+    """Stamp ``layer`` onto every leaf key path present in ``data``.
+
+    The walk is ``_leaf_paths``, the module's one definition of a leaf, so a
+    change to what counts as a leaf moves provenance with the lane expansion
+    rather than leaving the two to be kept in step by hand.
+    """
+    for path in _leaf_paths(data):
+        provenance[path] = layer
 
 
 def _leaf_paths(data: Mapping[str, Any], prefix: str = "") -> Iterator[str]:
     """Yield the dotted path of every leaf key in ``data``.
 
-    The leaf shapes ``_record_provenance`` stamps, so the two agree on what a
-    leaf is: a non-empty mapping recurses and everything else — a scalar, an
-    empty mapping, a list — is one.
+    This is the module's one leaf rule: a non-empty mapping recurses and
+    everything else — a scalar, an empty mapping, a list — is a leaf.
+    ``_record_provenance`` walks through it, so provenance and the lane
+    expansion cannot disagree on which paths are leaves.
     """
     for key, value in data.items():
         path = f"{prefix}{key}"

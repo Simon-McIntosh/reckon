@@ -1,0 +1,53 @@
+<article class="landed-report" data-run-id="r-20261008T123138358445-provenance-has-one-leaf-rule" data-node="provenance-has-one-leaf-rule">
+<h3 id="provenance-has-one-leaf-rule-summary">The provenance leaf rule has one owner: <code>_record_provenance</code> walks through <code>_leaf_paths</code></h3>
+<p id="provenance-has-one-leaf-rule-change"><strong>Change.</strong>
+<code>reckon/flight.py::_record_provenance</code> held its own inline leaf
+traversal beside <code>_leaf_paths</code>, a second copy of the rule that stayed
+correct only while the two agreed on which paths are leaves — an agreement
+asserted by a comment rather than held by the code. <code>_record_provenance</code>
+now stamps every leaf by iterating <code>_leaf_paths(data)</code> and holds no
+traversal of its own; the recursive helper and its <code>prefix</code> argument
+are gone. <code>_leaf_paths</code> is the module's one definition of a leaf. The
+walk was already value-identical to the inline one (a non-empty mapping recurses;
+a scalar, an empty mapping and a list are leaves), so resolved provenance is
+unchanged; only the owner of the rule moved.</p>
+<p id="provenance-has-one-leaf-rule-test"><strong>Test.</strong>
+<code>tests/test_provenance_has_one_leaf_rule.py</code> resolves a host layer
+whose lane declares <code>environment: {}</code>. Under the shipped rule the
+empty mapping is a leaf: <code>origin()</code> names its raw layer path
+<code>lanes.claude.environment</code>, and the lane expansion records its source
+<code>backends.claude.environment → lanes.claude.environment</code>. The test
+then replaces <code>_leaf_paths</code> alone with a walk that treats an empty
+mapping as a non-leaf, and asserts both surfaces drop it while a scalar leaf is
+still found. Both surfaces moving together is what one owner means: a resolver
+whose <code>_record_provenance</code> kept its own walk would leave
+<code>origin()</code> naming the empty-mapping key while only
+<code>provenance_sources</code> moved.</p>
+<p id="provenance-has-one-leaf-rule-measure"><strong>Measure.</strong> Gate: the
+new test file, <code>tests/test_lane_entries_carry_provenance.py</code>,
+<code>tests/test_flight.py</code>, <code>tests/test_flight_lanes.py</code>,
+<code>tests/test_flight_catalogue_layer.py</code>,
+<code>tests/test_flight_portfolio.py</code>,
+<code>tests/test_old_names_resolve.py</code>, and every test file that calls
+<code>origin()</code> (<code>test_coordinator_reserve</code>,
+<code>test_budget_group_declaration</code>,
+<code>test_unreconciled_grace_default</code>, <code>test_review_tiers</code>,
+<code>test_crew</code>, <code>test_pace</code>,
+<code>test_backend_environment</code>, <code>test_crew_test_role</code>,
+<code>test_suite_never_calls_live_jev</code>). Run with the main checkout's
+<code>.venv/bin/python -m pytest -p no:cacheprovider -n 6</code>, in the
+foreground. Base arm (15 files, the new file absent) at
+<code>4f0bf656e702dce9ba3bc543c20756adc890616c</code>: 429 passed, EXIT=0. Head
+arm (16 files): 430 passed, EXIT=0 — a delta of +1 (the new case) and zero added
+failures. The head arm ran on the working tree later committed as
+<code>a4ebec5a3b8ab8181bc35f6fef7c9ac758965a22</code>. Logs
+<code>gate-base.log</code> and <code>gate-head.log</code> under the run
+directory, each ending in an <code>EXIT=</code> line.</p>
+<p id="provenance-has-one-leaf-rule-control"><strong>Negative control.</strong>
+Restoring <code>_record_provenance</code>'s own leaf traversal in a scratch tree
+(the base revision) and running the new test reddens it at the binding
+assertion: <code>assert changed.origin('lanes.claude.environment') is None</code>
+reads <code>'host'</code>, <code>1 failed in 0.69s</code>, <code>EXIT=1</code> —
+the failure id the head arm does not fail. Log
+<code>negative-control.log</code> under the run directory.</p>
+</article>
