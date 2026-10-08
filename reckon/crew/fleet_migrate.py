@@ -878,7 +878,8 @@ def migrate(
         if session and session not in known:
             raise MigrationError(f"{session} is absent from the recorded census")
         description = (
-            f"cutover: start {session} on the new job, end it on the old job "
+            f"cutover: probe the new job, end {session} on the old job, "
+            "then start it on the new job "
             f"from migrate-{session}.kdl, and verify each Claude pane"
             if session
             else "cutover: sessions still to move: " + (", ".join(remaining) or "none")
@@ -1061,14 +1062,19 @@ def migrate(
         new_job_id = str(ledger["stand_up"]["job_id"])
         old_job = {"jobid": old_job_id}
         new_job = {"jobid": new_job_id}
-        if not outcome.get("start_request"):
-            request = f"session {session} migrate-{session}"
-            send_supervisor(new_job, request)
-            if outcome.get("phase") != "old-ended":
-                outcome["phase"] = "start-requested"
-            outcome["start_request"] = request
-            path.write_text(json.dumps(ledger, indent=2) + "\n")
         if outcome.get("phase") != "old-ended":
+            token = secrets.token_hex(16)
+            send_supervisor(new_job, f"ready {token}")
+            ready = _wait_for_record(
+                state / "migration" / f"ready-{token}.json",
+                matches=lambda answer: (
+                    answer.get("job_id") == new_job_id
+                    and answer.get("node") == ledger["stand_up"]["node"]
+                    and answer.get("standby") is False
+                ),
+                pause=pause,
+                description="cutover supervisor readiness",
+            )
             argv = fleet_node.placement_argv(
                 old_job,
                 [
@@ -1095,7 +1101,13 @@ def migrate(
                     f"old-node end did not confirm {session}: {result.stderr.strip()}"
                 )
             outcome["phase"] = "old-ended"
+            outcome["relay_ready"] = ready
             outcome["old_end"] = ended
+            path.write_text(json.dumps(ledger, indent=2) + "\n")
+        if not outcome.get("start_request"):
+            request = f"session {session} migrate-{session}"
+            send_supervisor(new_job, request)
+            outcome["start_request"] = request
             path.write_text(json.dumps(ledger, indent=2) + "\n")
         recorded = next(
             item for item in ledger["census"]["sessions"] if item["name"] == session
