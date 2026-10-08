@@ -1,0 +1,64 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T13:38:30.347Z",
+  "dispatched_at": "2026-10-08T13:26:56Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/host_lease.py:30",
+      "id": "thin_wrapper-1",
+      "reason": "the incident is exactly a single-owner violation, so the section must either extend the lease/claim owner or state in its own text why a lease cannot hold a per-session worker (a holder that dies with its supervisor releases, which is why the section needs the live-process read) \u2014 the required justification is absent.",
+      "text": "\u00a74 adds a best-effort /proc scan as a second single-owner mechanism over a live run's worker session; the codebase already owns an authoritative single-owner mechanism, `HostLease` (reckon/crew/host_lease.py:30, already imported into runs.py at line 31 as \"a renewable single-owner lease in the fleet's shared state directory\"), and \u00a74 declines it with \"No claim, lease or renewal is added\" without stating why the owner cannot carry the invariant",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch_launch.py:496",
+      "id": "duplicate_owner-1",
+      "reason": "the section should lift the whole-element match into a shared predicate in its owner module (or take the session token as the direct argument) so runs.py calls it, rather than growing a second copy of the predicate it cites.",
+      "text": "\u00a74 says the whole-element session match \"is the test `_launched_prior_session` in dispatch_launch.py applies to a launch argv\" and that it will call that owner, but `_launched_prior_session(plan)` reads `plan.resumed_session` membership in `plan.argv` (dispatch_launch.py:505-513) and takes a `_backends.LaunchPlan`, not a raw `/proc/<pid>/cmdline`; the \u00a74 write scope is runs.py alone, which cannot modify dispatch_launch.py to share the predicate, so the match will be re-implemented in runs.py",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch_accounting.py:97",
+      "id": "duplicate_owner-2",
+      "reason": "the section should say which single ancestry walker it extends (or why a new one is added beside three), or it adds a fourth partial copy of the same traversal.",
+      "text": "\u00a74 names `_ancestor_processes` as the ancestry owner it calls to exclude the caller and its ancestors, but that helper is private to dispatch_accounting.py and returns `(set[int], list[str])` for the *current* process's ancestry; runs.py cannot top-level import it (runs.py imports its crew peers deferred inside functions to avoid cycles, runs.py:23-31), and it is one of a census of pre-existing ancestry walkers the section does not reconcile: `_ancestor_processes` (reckon/crew/dispatch_accounting.py:97), `_current_and_ancestor_argvs` (reckon/crew/dispatch_watch.py:88, which yields argv \u2014 the shape \u00a74 actually needs), `_ancestor_terminal_paths` (reckon/crew/ticker.py:446), and the /proc-iteration idiom named as the model, `_pipe_reader_pids` (reckon/crew/runs.py:344)",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/recovery.py:7114",
+      "id": "duplicate_owner-3",
+      "reason": "the section must name `local_liveness` as the second owner the read reaches and state whether the walk belongs there (where the pid is guarded out) or in `record_process_alive`, or the invariant will hold on one door and not the other.",
+      "text": "\u00a74 states the two guards \"already take liveness from one owner, `record_process_alive`\", but a second liveness owner composes it: `local_liveness` (reckon/crew/recovery.py:7114), described as the reading \"every consumer that reads liveness from a pointer reads it here so one run cannot read two ways\", and it is what the sweep's own end gate uses (`_observed_end_refusal` \u2192 `local_liveness`, resumption.py:644); its no-pid branch (`if launched_here and record.get(\"pid\")`, recovery.py:7141) skips `record_process_alive` entirely and answers from the stored `process_alive`, so a run whose pointer records no pid does not reach \u00a74's new read, while every consumer of `local_liveness` (classification, promotion, seat guards) would answer from it when a pid is present",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "b4e107868aabb40c5ec255e22f696f98ea309f4d22ccea083a0d6c82fcf5b38e",
+  "plan_slug": "a-run-has-one-live-worker",
+  "plan_version": 16,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T132622521903-plan-review-of-a-run-has-one-live-worker",
+  "reviewed_blob_sha": "6ce3f277faa6c025b6ef5c91845473e33ac165c8",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 neither section introduces a module. \u00a73 re-points an existing authority (the sweep reads the log it already writes) and \u00a74 adds one private helper behind the existing liveness owner in runs.py, so the new behaviour is hidden behind an interface already smaller than what it hides.",
+    "duplicate_owner": "a finding \u2014 \u00a74 names two owners it says it \"calls rather than rewrites\" whose interfaces do not fit the call, so the whole-element session match and the ancestry exclusion will be re-implemented in runs.py; and the plan omits the second liveness owner that the new read also feeds.",
+    "interface_budget": "pass \u2014 public_definitions 1597, cli_options 336, mcp_views 33, refusal_families 23; \u00a73 states \"No new record is added and nothing is retired\" and \u00a74 states \"No public definition is added and no refusal changes\", so each section that could add surface declares it adds none and why the existing refusal family is reused word for word.",
+    "reuse_search": "pass \u2014 the plan searched the codebase it names and cites real, checkable machinery: `record_process_alive` (reckon/crew/runs.py:4541), `_launcher_refusal` (reckon/crew/resumption.py:579) and `resume_plan` (reckon/crew/dispatch_sessions.py:975) as the two guards, `recovery_log_path` (reckon/crew/resumption.py:329) as the record \u00a73 re-reads, and `_pipe_reader_pids` (reckon/crew/runs.py:344) as the /proc walk it copies.",
+    "thin_wrapper": "a finding \u2014 \u00a74 adds a second single-owner mechanism (a /proc argv scan) beside the single-owner lease the codebase already has, and states \"No claim, lease or renewal is added\" without saying why that owner cannot be extended."
+  },
+  "section_digests": {
+    "_document": "02170e104cddeaa30cf41a05bd1a49a7b5ff97780df20792448999435f6144a6",
+    "s1": "db92d3a2d223ac6e6cf721b1e5e7990ca9812048f438ce684697638fe0fc3dc3",
+    "s2": "c9e4ff48584d8ce0112c025c8dad40e4cb43826d16eb632e296e12b13a78a3d5",
+    "s3": "00e5904288b325a87d416a0de5356c779e8e1a630a084b58a753bbbcd9fe71f4",
+    "s4": "c8fe2a5a6c5765bc70ba45627cc9f5778b225a5e1deff2cc1bb1e0e08214362a"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T13:38:48.138981+00:00"
+}
