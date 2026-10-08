@@ -42,6 +42,7 @@ from pathlib import Path
 
 import pytest
 
+import reckon.crew.dispatch_launch as dispatch_launch_module
 from reckon import crew
 from reckon.crew import recovery, resumption, runs
 from reckon.crew.dispatch import WATCH_ARMING_ENV
@@ -89,6 +90,7 @@ class _StubBatchStep:
         self.fifo = runtime_dir / "requests"
         self.acknowledge = acknowledge
         self.lines: list[str] = []
+        self.received_at: float | None = None
         self.supervisor_pid = subprocess.Popen(
             [sys.executable, "-c", "import time; time.sleep(600)"]
         ).pid
@@ -129,6 +131,7 @@ class _StubBatchStep:
                 self._handle(line.decode())
 
     def _handle(self, line: str) -> None:
+        self.received_at = time.monotonic()
         self.lines.append(line)
         if not self.acknowledge:
             return
@@ -319,7 +322,7 @@ def test_a_dispatch_with_no_fleet_record_forks_as_before(
     dispatch_module = importlib.import_module("reckon.crew.dispatch")
 
     recorder = _ForkRecorder()
-    monkeypatch.setattr(dispatch_module, "_spawn_detached_supervisor", recorder)
+    monkeypatch.setattr(dispatch_launch_module, "_spawn_detached_supervisor", recorder)
     record = _dispatch(config_home, repo, "forked")
 
     assert recorder.forked, "no process was started at all"
@@ -346,7 +349,7 @@ def test_the_fleet_lane_stays_off_until_the_batch_step_opts_in(
     stub.start()
     dispatch_module = importlib.import_module("reckon.crew.dispatch")
     recorder = _ForkRecorder()
-    monkeypatch.setattr(dispatch_module, "_spawn_detached_supervisor", recorder)
+    monkeypatch.setattr(dispatch_launch_module, "_spawn_detached_supervisor", recorder)
     try:
         _dispatch(config_home, repo, "optin")
         assert stub.lines == [], "the lane ran without the opt-in"
@@ -365,18 +368,19 @@ def test_an_unacknowledged_fifo_refuses_leaving_no_pointer_or_worktree(
     runtime_dir = _publish_fleet_record(tmp_path, monkeypatch)
     _opt_in(monkeypatch)
     dispatch_module = importlib.import_module("reckon.crew.dispatch")
-    monkeypatch.setattr(dispatch_module, "FLEET_SPAWN_ACK_BOUND_SECONDS", 1.0)
+    monkeypatch.setattr(dispatch_launch_module, "FLEET_SPAWN_ACK_BOUND_SECONDS", 1.0)
     stub = _StubBatchStep(runtime_dir, acknowledge=False)
     stub.start()
     try:
-        started = time.monotonic()
         with pytest.raises(CrewError) as refusal:
             _dispatch(config_home, repo, "silent")
-        elapsed = time.monotonic() - started
+        finished = time.monotonic()
 
         assert len(stub.lines) == 1, "the request was never written"
-        assert elapsed < FLEET_ACK_CEILING, elapsed
-        assert elapsed >= 1.0, "the request was not waited on at all"
+        assert stub.received_at is not None
+        request_wait = finished - stub.received_at
+        assert request_wait < FLEET_ACK_CEILING, request_wait
+        assert request_wait >= 1.0, "the request was not waited on at all"
         assert "did not acknowledge" in str(refusal.value)
         assert runs.list_live(project="sample") == [], "a refusal left a pointer"
         worktree = tmp_path / "worktrees" / "session-silent-node-silent"

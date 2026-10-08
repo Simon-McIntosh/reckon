@@ -11,6 +11,7 @@ from typing import Any
 
 import pytest
 
+import reckon.crew.dispatch_sessions as dispatch_sessions_module
 from reckon.crew import recovery, runs
 from reckon.crew import review as review_module
 
@@ -311,7 +312,7 @@ def test_obligations_reads_scoring_without_observing_or_dispatching(
         pytest.fail("a read reached a mutating dispatch or observe entry point")
 
     monkeypatch.setattr(dispatch_module, "dispatch", side_effect)
-    monkeypatch.setattr(dispatch_module, "observe", side_effect)
+    monkeypatch.setattr(dispatch_sessions_module, "observe", side_effect)
     before = _file_mtimes(config_home, repository / "docs")
 
     result = obligations_module.obligations(PROJECT, SESSION)

@@ -15,6 +15,7 @@ from types import SimpleNamespace
 import pytest
 from click.testing import CliRunner
 
+import reckon.crew.dispatch_sessions as dispatch_sessions_module
 from reckon import _backends, crew
 from reckon import cli as cli_module
 from reckon.crew import recovery, runs
@@ -271,7 +272,6 @@ def test_a_killed_resumed_worker_leaves_its_attempt_exit_record(
         _wait_until(
             lambda: _record_names_attempt(directory / "exit.json", 2),
             "the killed resume's current-attempt exit record",
-            timeout=3.0,
         )
     finally:
         _stop_group(launched_pid)
@@ -322,12 +322,12 @@ def test_crew_redispatch_keeps_the_harness_behind_a_supervisor(
     runs._write_json(runs.pointer_path(run_id), pointer)
     plan = _sleeping_plan(Path(pointer["worktree"]), dialect)
     resolution = _lane_resolution(dialect)
-    monkeypatch.setattr(dispatch_module, "plan_dispatch", lambda **kwargs: resolution)
+    monkeypatch.setattr(dispatch_sessions_module, "plan_dispatch", lambda **kwargs: resolution)
     monkeypatch.setattr(
-        dispatch_module, "resolve_dispatch_ledger_root", lambda authority: tmp_path
+        dispatch_sessions_module, "resolve_dispatch_ledger_root", lambda authority: tmp_path
     )
     monkeypatch.setattr(
-        dispatch_module,
+        dispatch_sessions_module,
         "_budget_verdict",
         lambda **kwargs: {"held": False, "backend": "beta"},
     )

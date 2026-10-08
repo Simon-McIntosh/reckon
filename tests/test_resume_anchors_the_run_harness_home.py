@@ -38,6 +38,7 @@ from pathlib import Path
 
 import pytest
 
+import reckon.crew.dispatch_sessions as dispatch_sessions_module
 from reckon import _backends, crew
 from tests import test_a_live_run_never_reads_dead as liveness
 
@@ -86,7 +87,7 @@ class Fixture:
         # The fence is stated rather than inherited from the launcher default:
         # a fenced resume is the case whose codex home falls back to the
         # operator's sealed one when the composed home is missing.
-        monkeypatch.setattr(dispatch_module, "FENCE_WORKERS", True)
+        monkeypatch.setattr(dispatch_sessions_module, "FENCE_WORKERS", True)
         self.config_home = config_home
         self.operator_home = root / "operator-home"
         self._seed_operator_home()

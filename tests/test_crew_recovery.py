@@ -16,6 +16,7 @@ from typing import Any
 import pytest
 from click.testing import CliRunner
 
+import reckon.crew.dispatch_sessions as dispatch_sessions_module
 from reckon import _backends, _plan_html, crew, ledger
 from reckon import cli as cli_module
 from reckon.crew import recovery, reports, runs
@@ -847,7 +848,7 @@ def test_observe_and_watch_render_failure_only_after_the_process_stops(
     dispatch_module = importlib.import_module("reckon.crew.dispatch")
     liveness = {"alive": True}
     monkeypatch.setattr(
-        dispatch_module, "process_alive", lambda _pid: liveness["alive"]
+        dispatch_sessions_module, "process_alive", lambda _pid: liveness["alive"]
     )
     monkeypatch.setattr(runs, "process_alive", lambda _pid: liveness["alive"])
 

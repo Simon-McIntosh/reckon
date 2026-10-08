@@ -18,6 +18,8 @@ import tempfile
 from pathlib import Path
 from unittest import mock
 
+import reckon.crew.dispatch_watch as dispatch_watch_module
+
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
 WATCH_ARMING_ENV = dispatch_module.WATCH_ARMING_ENV
 
@@ -111,7 +113,7 @@ def test_an_ordinary_home_outside_the_session_still_arms(monkeypatch) -> None:
         monkeypatch.delenv(WATCH_ARMING_ENV, raising=False)
         monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
         monkeypatch.delenv("PYTEST_VERSION", raising=False)
-        monkeypatch.setattr(dispatch_module, "_declared_basetemp", lambda: None)
+        monkeypatch.setattr(dispatch_watch_module, "_declared_basetemp", lambda: None)
 
         dispatch_module._refuse_arming_under_a_throwaway_home("sample")
     finally:
@@ -123,7 +125,7 @@ def test_the_declared_basetemp_is_read_from_the_session_command_line() -> None:
     root = Path(tempfile.gettempdir()) / "no-pytest-name"
     argv = [["pytest", "-q", f"--basetemp={root}", "tests/"]]
     with mock.patch.object(
-        dispatch_module, "_current_and_ancestor_argvs", return_value=argv
+        dispatch_watch_module, "_current_and_ancestor_argvs", return_value=argv
     ):
         assert dispatch_module._declared_basetemp() == root
 
@@ -135,6 +137,6 @@ def test_a_home_under_the_declared_root_is_a_throwaway_home() -> None:
     inside = root / "config"
     outside = base / "reckon-guard-elsewhere"
 
-    with mock.patch.object(dispatch_module, "_declared_basetemp", return_value=root):
+    with mock.patch.object(dispatch_watch_module, "_declared_basetemp", return_value=root):
         assert dispatch_module._temporary_home_root(inside) == root
         assert dispatch_module._temporary_home_root(outside) is None

@@ -27,6 +27,7 @@ from typing import Any
 
 import pytest
 
+import reckon.crew.dispatch_launch as dispatch_launch_module
 from reckon.crew import runs
 
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
@@ -59,7 +60,7 @@ def _control(monkeypatch: pytest.MonkeyPatch, guard: str):
     """Drop the writer, for the run whose only purpose is to fail without it."""
     if NEGATIVE_CONTROL in {guard, "all"}:
         monkeypatch.setattr(
-            dispatch_module, "_publish_stored_phase", lambda *args, **kwargs: None
+            dispatch_launch_module, "_publish_stored_phase", lambda *args, **kwargs: None
         )
 
 
@@ -239,7 +240,7 @@ def test_a_spawn_failure_leaves_the_stored_phase_at_launch_failed(
     def explode(_spec: Any) -> int:
         raise OSError("worker executable not found")
 
-    monkeypatch.setattr(dispatch_module, "_supervisor_spawn_worker", explode)
+    monkeypatch.setattr(dispatch_launch_module, "_supervisor_spawn_worker", explode)
 
     assert _read_phase(run_id) == "starting"
     previous = {sig: signal.getsignal(sig) for sig in (signal.SIGTERM, signal.SIGHUP)}
@@ -271,7 +272,7 @@ def test_an_abandoned_launch_leaves_the_stored_phase_at_launch_failed(
 
     stopped = threading.Event()
     stopped.set()
-    monkeypatch.setattr(dispatch_module, "_record_stop_before_spawn", lambda: stopped)
+    monkeypatch.setattr(dispatch_launch_module, "_record_stop_before_spawn", lambda: stopped)
 
     assert _read_phase(run_id) == "starting"
     previous = {sig: signal.getsignal(sig) for sig in (signal.SIGTERM, signal.SIGHUP)}

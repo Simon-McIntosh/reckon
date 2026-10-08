@@ -15,6 +15,7 @@ from pathlib import Path
 
 import pytest
 
+import reckon.crew.dispatch_watch as dispatch_watch_module
 from reckon import crew
 from reckon.crew import runs
 
@@ -148,7 +149,7 @@ def test_dispatch_refuses_a_follower_when_no_watcher_process_exists(
     dispatch_module = importlib.import_module("reckon.crew.dispatch")
     config_home, repo = isolated_project
     monkeypatch.setattr(
-        dispatch_module, "_start_watch_producer", lambda project: _ExitedProducer()
+        dispatch_watch_module, "_start_watch_producer", lambda project: _ExitedProducer()
     )
 
     with pytest.raises(crew.WatcherRequired) as refusal:

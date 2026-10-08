@@ -10,6 +10,7 @@ import os
 from datetime import datetime
 from pathlib import Path
 
+import reckon.crew.dispatch_launch as dispatch_launch_module
 from reckon import crew
 from tests import test_a_live_run_never_reads_dead as liveness
 from tests.test_crew import CONFIG, _node, home, repo  # noqa: F401
@@ -60,7 +61,7 @@ def _launch(
     def process_start_time(_pid):
         return 900_001
 
-    monkeypatch.setattr(dispatch_module, "_process_start_time", process_start_time)
+    monkeypatch.setattr(dispatch_launch_module, "_process_start_time", process_start_time)
 
     manifest = home / f"{node_id}-manifest.md"
     record = crew.dispatch(

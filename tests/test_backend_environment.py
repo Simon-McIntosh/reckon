@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+import reckon.crew.dispatch_sessions as dispatch_sessions_module
 from reckon import _backends, crew
 from reckon.flight import FlightConfigError, flight_report, resolve
 from tests.test_crew import CONFIG, _node, home, repo  # noqa: F401
@@ -220,6 +221,7 @@ def test_run_record_agent_configuration_excludes_environment(
     # The run owns a harness home only when it is fenced, so the fence is opted
     # into here: without it the plan environment carries the declared entries
     # alone and the comparison below would be measuring the unfenced path.
+    monkeypatch.setattr(dispatch_sessions_module, "FENCE_WORKERS", True)
     monkeypatch.setattr(dispatch_module, "FENCE_WORKERS", True)
     launched: dict[str, object] = {}
     config = copy.deepcopy(CONFIG)

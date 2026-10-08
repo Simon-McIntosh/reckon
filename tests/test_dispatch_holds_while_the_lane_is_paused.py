@@ -27,6 +27,7 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
+import reckon.crew.dispatch_admission as dispatch_admission_module
 from reckon import cli as cli_module
 from reckon import crew
 
@@ -361,7 +362,7 @@ def test_a_permission_error_waits(
     def refuse(path: Path) -> str:
         raise PermissionError(13, "Permission denied")
 
-    monkeypatch.setattr(dispatch_module, "_gate_text_reader", refuse)
+    monkeypatch.setattr(dispatch_admission_module, "_gate_text_reader", refuse)
     payload, result = _cli(
         dispatch_repo,
         monkeypatch,
@@ -377,13 +378,13 @@ def test_a_read_past_its_deadline_waits(
     dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     gate = _gate_file(tmp_path)
-    monkeypatch.setattr(dispatch_module, "LANE_GATE_READ_DEADLINE_SECONDS", 0.05)
+    monkeypatch.setattr(dispatch_admission_module, "LANE_GATE_READ_DEADLINE_SECONDS", 0.05)
 
     def stalled(path: Path) -> str:
         time.sleep(1.0)
         return "{}"
 
-    monkeypatch.setattr(dispatch_module, "_gate_text_reader", stalled)
+    monkeypatch.setattr(dispatch_admission_module, "_gate_text_reader", stalled)
     payload, result = _cli(
         dispatch_repo,
         monkeypatch,
@@ -441,7 +442,7 @@ def test_a_lane_read_past_its_deadline_skips_the_comparison(
 ) -> None:
     gate = _gate_file(tmp_path, paused=False)
     lane = _lane_document(tmp_path, config_path=gate)
-    monkeypatch.setattr(dispatch_module, "LANE_GATE_READ_DEADLINE_SECONDS", 0.05)
+    monkeypatch.setattr(dispatch_admission_module, "LANE_GATE_READ_DEADLINE_SECONDS", 0.05)
     real_reader = dispatch_module._gate_text_reader
 
     def stalled_for_lane(path: Path) -> str:
@@ -449,7 +450,7 @@ def test_a_lane_read_past_its_deadline_skips_the_comparison(
             time.sleep(1.0)
         return real_reader(path)
 
-    monkeypatch.setattr(dispatch_module, "_gate_text_reader", stalled_for_lane)
+    monkeypatch.setattr(dispatch_admission_module, "_gate_text_reader", stalled_for_lane)
     payload, result = _cli(
         dispatch_repo,
         monkeypatch,

@@ -54,6 +54,7 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
+import reckon.crew.dispatch_watch as dispatch_watch_module
 from reckon import cli, crew
 from reckon.crew import runs
 
@@ -830,7 +831,7 @@ def test_a_refusal_names_every_unmet_follower_condition_and_the_one_command(
             return 1
 
     monkeypatch.setattr(
-        dispatch_module,
+        dispatch_watch_module,
         "_start_watch_producer",
         lambda _project: _DeadSupervisor(),
     )
@@ -889,7 +890,7 @@ def test_a_launch_that_carries_no_delivery_still_needs_the_producer(
             return 1
 
     monkeypatch.setattr(
-        dispatch_module, "_start_watch_producer", lambda _project: _DeadSupervisor()
+        dispatch_watch_module, "_start_watch_producer", lambda _project: _DeadSupervisor()
     )
 
     with runs.follower_registration(project, session, delivery="stream"):

@@ -35,6 +35,7 @@ from pathlib import Path
 
 import pytest
 
+import reckon.crew.dispatch_launch as dispatch_launch_module
 from reckon import _backends
 from reckon.crew.dispatch import _spawn
 from reckon.crew.runs import process_alive
@@ -304,7 +305,7 @@ def test_a_worker_left_defunct_by_the_launcher_is_still_reported(
     """
     tree = tmp_path
     tree.mkdir(exist_ok=True)
-    monkeypatch.setattr(crew_dispatch, "_reap_launched_workers", lambda: None)
+    monkeypatch.setattr(dispatch_launch_module, "_reap_launched_workers", lambda: None)
     pid, _log = _spawn_worker(tree, "left-defunct")
     assert _pid_defunct_within(pid), (
         f"worker {pid} exited and nothing waited on it, which is the state "

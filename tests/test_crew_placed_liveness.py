@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import importlib
 
+import reckon.crew.dispatch_launch as dispatch_launch_module
 from reckon.crew import recovery, runs
 
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
@@ -140,9 +141,9 @@ def test_an_ordinary_end_is_not_a_scheduler_kill() -> None:
 def test_a_job_that_never_started_records_its_scheduler_reason(
     monkeypatch,
 ) -> None:
-    monkeypatch.setattr(dispatch_module, "_placement_job_state", lambda _p, _j: "FAILED")
+    monkeypatch.setattr(dispatch_launch_module, "_placement_job_state", lambda _p, _j: "FAILED")
     monkeypatch.setattr(
-        dispatch_module, "scheduler_job_reason", lambda _p, _j: "launch failed"
+        dispatch_launch_module, "scheduler_job_reason", lambda _p, _j: "launch failed"
     )
     record = dispatch_module._launch_failure_record(
         {"backend": "alpha", "argv": ["/usr/bin/srun"], "stderr_path": "/nonexistent"},
@@ -157,9 +158,9 @@ def test_a_job_that_never_started_records_its_scheduler_reason(
 
 def test_a_job_killed_for_memory_records_the_distinct_kind(monkeypatch) -> None:
     monkeypatch.setattr(
-        dispatch_module, "_placement_job_state", lambda _p, _j: "OUT_OF_MEMORY"
+        dispatch_launch_module, "_placement_job_state", lambda _p, _j: "OUT_OF_MEMORY"
     )
-    monkeypatch.setattr(dispatch_module, "scheduler_job_reason", lambda _p, _j: None)
+    monkeypatch.setattr(dispatch_launch_module, "scheduler_job_reason", lambda _p, _j: None)
     record = dispatch_module._launch_failure_record(
         {"backend": "alpha", "argv": [], "stderr_path": "/nonexistent"},
         exit_status=137,
@@ -176,14 +177,14 @@ def test_a_job_still_in_the_system_is_not_recorded_as_a_launch_failure(
     stream = tmp_path / "stream.jsonl"
     stream.write_text("", encoding="utf-8")
     monkeypatch.setattr(
-        dispatch_module, "_placed_record_identity", lambda _r: (PLACEMENT, "1274000")
+        dispatch_launch_module, "_placed_record_identity", lambda _r: (PLACEMENT, "1274000")
     )
     monkeypatch.setattr(
-        dispatch_module, "_placement_job_alive", lambda _p, _j: True
+        dispatch_launch_module, "_placement_job_alive", lambda _p, _j: True
     )
     recorded: list = []
     monkeypatch.setattr(
-        dispatch_module, "_mutate_pointer", lambda _r, _m: recorded.append(_r)
+        dispatch_launch_module, "_mutate_pointer", lambda _r, _m: recorded.append(_r)
     )
     dispatch_module._record_launch_failure(
         {
@@ -207,11 +208,11 @@ def test_the_payload_log_decides_that_the_work_ran(monkeypatch, tmp_path) -> Non
     stream = tmp_path / "stream.jsonl"
     stream.write_text('{"type":"result"}\n', encoding="utf-8")
     monkeypatch.setattr(
-        dispatch_module, "_placed_record_identity", lambda _r: (PLACEMENT, "1274000")
+        dispatch_launch_module, "_placed_record_identity", lambda _r: (PLACEMENT, "1274000")
     )
     recorded: list = []
     monkeypatch.setattr(
-        dispatch_module, "_mutate_pointer", lambda _r, _m: recorded.append(_r)
+        dispatch_launch_module, "_mutate_pointer", lambda _r, _m: recorded.append(_r)
     )
     dispatch_module._record_launch_failure(
         {

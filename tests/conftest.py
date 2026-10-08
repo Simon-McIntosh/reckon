@@ -30,6 +30,7 @@ from pathlib import Path
 
 import pytest
 
+import reckon.crew.dispatch_plan as dispatch_plan_module
 from reckon.cli import CLAUDE_SKILLS_DIR_ENV
 from reckon.crew.dispatch import (
     WATCH_ARMING_ENV,
@@ -758,7 +759,7 @@ def _answered_scratch_headroom(request, monkeypatch):
         return
     dispatch_module = importlib.import_module("reckon.crew.dispatch")
     monkeypatch.setattr(
-        dispatch_module,
+        dispatch_plan_module,
         "require_worker_scratch_headroom",
         lambda config: {"free_bytes": 1, "floor_bytes": 0},
     )

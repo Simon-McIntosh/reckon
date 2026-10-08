@@ -35,6 +35,7 @@ from pathlib import Path
 
 import pytest
 
+import reckon.crew.dispatch_sessions as dispatch_sessions_module
 from reckon import crew
 from reckon.crew import fleet_supervisor, runs
 from reckon.crew.dispatch import (
@@ -207,6 +208,7 @@ def host(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, Path, P
     monkeypatch.setattr(dispatch_module, "_create_worktree", prepare_worktree)
     # The fence is off so the stub harness is the process the supervisor starts,
     # rather than a fence wrapper whose only job here would be to re-exec it.
+    monkeypatch.setattr(dispatch_sessions_module, "FENCE_WORKERS", False)
     monkeypatch.setattr(dispatch_module, "FENCE_WORKERS", False)
     monkeypatch.setenv(WATCH_ARMING_ENV, "off")
 

@@ -17,13 +17,15 @@ from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
 
+import reckon.crew.dispatch_picker as dispatch_picker_module
+
 # ``reckon.crew.dispatch`` names a function on the package, so bind the module
 # through the import system rather than the package attribute.
 dispatch = importlib.import_module("reckon.crew.dispatch")
 picker = importlib.import_module("reckon.crew.picker")
+from reckon.crew.node import TaskNode
 from reckon.crew.picker import lane_context, snapshot
 from reckon.crew.picker.types import PickRequest
-from reckon.crew.node import TaskNode
 
 
 def _node() -> TaskNode:
@@ -150,7 +152,7 @@ def test_expected_wait_counts_a_foreign_projects_live_worker(monkeypatch):
 def test_slow_client_still_times_out_as_a_recorded_fallback(monkeypatch):
     """A Jev client slower than the bound yields a fallback, never a refusal."""
 
-    monkeypatch.setattr(dispatch, "PICKER_DISPATCH_TIMEOUT_SECONDS", 0.05)
+    monkeypatch.setattr(dispatch_picker_module, "PICKER_DISPATCH_TIMEOUT_SECONDS", 0.05)
 
     def slow_pick(
         request,

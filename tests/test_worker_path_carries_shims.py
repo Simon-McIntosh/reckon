@@ -16,6 +16,7 @@ from pathlib import Path
 
 import pytest
 
+import reckon.crew.dispatch_launch as dispatch_launch_module
 from reckon import host as host_module
 from reckon._backends import LaunchPlan
 from reckon.crew.node import TaskNode
@@ -163,7 +164,7 @@ def test_persisted_worker_environments_exclude_dispatcher_secrets(
             }
 
         monkeypatch.setattr(
-            dispatch_module,
+            dispatch_launch_module,
             "_persisted_worker_environment",
             restore_full_environment_merge,
         )
