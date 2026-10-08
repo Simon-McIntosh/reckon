@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T09:14:53.365Z",
+  "dispatched_at": "2026-10-08T09:07:46Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html:84",
+      "id": "reasoning-1",
+      "reason": "the node would install the claim guard on the prediction path only; the real `crew resume`/dispatch launcher and the process that must acquire the claim are both outside the named mechanism, so the defect \u00a74 exists to close stays open on the production path.",
+      "text": "\u00a74 says \"A held claim refuses the launch\" and names the guard as `_launcher_refusal` in `reckon/crew/resumption.py`, but that function is only the sweep's prediction mirror (called once, at `resumption.py:1294`); the real launcher guard is `resume_plan` in `reckon/crew/dispatch_sessions.py:995`, which already duplicates this guard and the docstring at `resumption.py:593` holds the two in parity (\"`resume_plan` and this function must refuse the same record with the same message\"), enforced by `tests/test_dry_run_predicts_the_launcher.py:180-183`. \u00a74 grants write paths only `reckon/crew/resumption.py`, `reckon/crew/runs.py` and the new test, and names no caller for the claim's acquisition (\"A launched worker holds a claim on its worker session for its lifetime\" \u2014 nothing says who writes it). A builder following \u00a74 literally edits the mirror, not the real launch path, and the parity test would then either fail or the production resume would be admitted.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html:103",
+      "id": "wiring-1",
+      "reason": "as written the plan's driving followup misroutes the second guard to \u00a73 and provides no invocation for \u00a74, so \u00a74's live-session claim can be dropped without any followup appearing unresolved.",
+      "text": "the only open followup `f-arolw-002` recommends `/reckon-build a-run-has-one-live-worker \u00a73` and its body says \"\u00a73 repairs the two guards \u00a72 named, with a test reproducing each\", but \u00a73's deliverable and done-when cover only the once-only lift (one test, `tests/test_a_hold_lifts_once.py`); the second guard is \u00a74, which carries no followup at all. A coordinator closing \u00a73's followup would believe both guards landed and leave \u00a74 unbuilt.",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "865e3f3d45834ee4e758f1cff071f0cf91626c2a81208df0a4788d4b0ea2b404",
+  "plan_slug": "a-run-has-one-live-worker",
+  "plan_version": 8,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T090719968739-plan-review-of-a-run-has-one-live-worker",
+  "reviewed_blob_sha": "96b03ec628e4849a42c50e0e5155d0c34fd9ca31",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/resumption.py` (`sweep`, `_launcher_refusal`, `_stamp_resumption_trigger`), `reckon/crew/runs.py` (`record_process_alive`), the \u00a72 report, the `a-run-has-one-live-worker-landed.html#s2-second-launcher` archive (the `s2-second-launcher` id exists) and the `a-crew-process-ends-with-its-owner` dependency all resolve; \u00a73's \"recovery log lines 7668 and 7669\" names a line without naming its file, but the \u00a72 report it cites names `~/.config/reckon/crew/recovery/nova.jsonl`.",
+    "done_when": "pass \u2014 \u00a73 (\"the test fails on the current code\") and \u00a74 (\"the first case is admitted on the current code and the test fails\") each name an executed negative control, and \u00a74 declares both the refusing and the admitting arm.",
+    "evidence_paths": "pass \u2014 the done-whens log the negative control to the run's record beside the run; no scratchpad or node-local temporary path is named.",
+    "naming": "pass \u2014 test filenames are behaviour-named, no plan labels, ticket numbers or version tags reach a symbol or comment.",
+    "reasoning": "a finding \u2014 \u00a74's stated root cause and \u00a73's both match the \u00a72 report, but \u00a74 names `_launcher_refusal` (the sweep's prediction mirror) as \"the launch path\" and scopes writes away from the real launcher, so the repaired guard would not run on the production resume call.",
+    "single_goal": "pass \u2014 \u00a73 carries the once-only lift and \u00a74 the live-session claim; each has one deliverable and one test, though \u00a73's prose also narrates the guard \u00a74 delivers.",
+    "wiring": "a finding \u2014 \u00a74 declares `data-status=\"implementable\"` but has no driving followup, and the only open followup (`f-arolw-002`) recommends \u00a73 while its body says \u00a73 repairs \"the two guards \u00a72 named\"."
+  },
+  "section_digests": {
+    "_document": "02170e104cddeaa30cf41a05bd1a49a7b5ff97780df20792448999435f6144a6",
+    "s1": "db92d3a2d223ac6e6cf721b1e5e7990ca9812048f438ce684697638fe0fc3dc3",
+    "s2": "c9e4ff48584d8ce0112c025c8dad40e4cb43826d16eb632e296e12b13a78a3d5",
+    "s3": "a11d99fbf82d658981e1aa497af0ca592272fdd73095208d9a60336628355720",
+    "s4": "11c400ca6487dc6d3e51fc00cab278b8866b1b03407500cb2c9e331edee4aec5"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T09:15:11.071709+00:00"
+}
