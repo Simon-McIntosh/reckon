@@ -158,9 +158,15 @@ def test_a_dispatch_path_clive_launch_is_fenced_and_carries_the_operator_hooks(
     assert harness.is_dir()
     seeded = json.loads((harness / "settings.json").read_text())
     assert seeded["hooks"] == OPERATOR_HOOKS
-    # Only the hooks key crossed: a credential or an allow-list in the operator
-    # settings must not be copied into the run home.
-    assert set(seeded) == {"hooks"}
+    # Only the operator's hooks key crossed; a credential or an allow-list it
+    # also declares must not. The seeder adds its own worker-MCP record, which
+    # names no operator key.
+    assert set(seeded) == {
+        _backends.PROJECT_MCP_SERVERS_ENABLED_KEY,
+        _backends.ENABLED_PROJECT_MCP_SERVERS_KEY,
+        "hooks",
+    }
+    assert "env" not in seeded
     assert (harness / "CLAUDE.md").read_text() == OPERATOR_GUIDANCE
 
 

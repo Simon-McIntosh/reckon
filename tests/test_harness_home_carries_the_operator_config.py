@@ -167,7 +167,7 @@ def test_a_backend_entry_replaces_its_dialect_default():
 def test_a_claude_run_home_carries_the_operator_settings_and_instructions(
     tmp_path: Path,
 ):
-    """settings.json holds only the hooks key; CLAUDE.md holds the operator text."""
+    """settings.json holds the operator hooks and the worker MCP record."""
     home = _operator_home(tmp_path)
     run = tmp_path / "run"
     run.mkdir()
@@ -178,8 +178,11 @@ def test_a_claude_run_home_carries_the_operator_settings_and_instructions(
     assert harness == run / "harness"
 
     seeded = json.loads((harness / "settings.json").read_text())
-    assert set(seeded) == {"hooks"}
+    # The operator's own keys cross, plus the MCP record the seeder adds: the
+    # project's servers are off by default and none is named enabled here.
     assert seeded["hooks"] == CLAUDE_SETTINGS["hooks"]
+    assert seeded[_backends.PROJECT_MCP_SERVERS_ENABLED_KEY] is False
+    assert seeded[_backends.ENABLED_PROJECT_MCP_SERVERS_KEY] == []
     assert STOP_COMMAND in json.dumps(seeded["hooks"])
 
     copied = harness / "CLAUDE.md"

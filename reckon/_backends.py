@@ -2021,6 +2021,21 @@ CLAUDE_CREDENTIAL_FILENAME = ".credentials.json"
 # and the capability a refusal names are the same string.
 FENCE_BINARY = "bwrap"
 
+# The flight-config key a project uses to name the MCP servers its workers may
+# start. Read from the resolved flight configuration at seed time: a project
+# naming no servers seeds the setting that disables every project ``.mcp.json``
+# server, so a worker starts only the user-scope servers — reckon among them —
+# rather than inheriting each server the checkout happens to register.
+WORKER_MCP_SERVERS = "worker_mcp_servers"
+
+# The two harness settings the seed writes into a run home's ``settings.json``.
+# ``enableAllProjectMcpServers`` is the switch the harness reads for the
+# project's ``.mcp.json`` servers as a group, and ``enabledMcpjsonServers`` is
+# the per-server allow list that names the ones this run may start. Named once
+# so the writer and a reader agree on the spelling the harness itself reads.
+PROJECT_MCP_SERVERS_ENABLED_KEY = "enableAllProjectMcpServers"
+ENABLED_PROJECT_MCP_SERVERS_KEY = "enabledMcpjsonServers"
+
 
 def _probe_user_namespace() -> subprocess.CompletedProcess[str]:
     """Run one throwaway fence to prove a user namespace can be created.
@@ -2134,6 +2149,7 @@ def seed_harness_home(
     declaration: Iterable[Mapping[str, Any]] = (),
     adjacent_declaration: Iterable[Mapping[str, Any]] = (),
     resume_session: str | None = None,
+    worker_mcp_servers: Iterable[str] = (),
 ) -> None:
     """Create a run's harness home carrying what its harness reads there.
 
@@ -2167,11 +2183,23 @@ def seed_harness_home(
     because the harness looks for it under the home its variable names; the
     transcript is copied at the same relative path, and a fresh launch (no
     session) copies none.
+
+    ``worker_mcp_servers`` names the project's worker-visible MCP servers. For
+    the claude-shaped harness, whose settings file governs them, the run home's
+    settings then records that the project's ``.mcp.json`` servers start only
+    when the project asks for them, rather than every worker inheriting each
+    server the checkout registers.
     """
     home.mkdir(parents=True, exist_ok=True)
     declared = _HARNESS_HOME.get(dialect_name)
     if declared is None:
         return
+    # An existing settings.json belongs to the run that wrote it, so the MCP
+    # record is written only into a file this seed creates. A resumed run keeps
+    # its own file, which already carries the record written when the run home
+    # was first seeded — the same home, so the record survives the resume, and a
+    # run's own state is never overwritten.
+    settings_preexisting = (home / "settings.json").exists()
     source_home = Path(operator_home) / declared[2]
     for entry in declaration or ():
         relative = entry.get("path")
@@ -2191,6 +2219,53 @@ def seed_harness_home(
         _merge_harness_entry(source, home / relative, entry.get("keys"))
     if resume_session:
         _seed_harness_session(home, source_home, str(resume_session))
+    if dialect_name == "claude" and not settings_preexisting:
+        _seed_worker_mcp_settings(home, worker_mcp_servers)
+
+
+def _declared_worker_mcp_servers(config: Mapping[str, Any] | None) -> list[str]:
+    """Return the worker MCP servers a resolved flight config names, in order.
+
+    Read from the config under :data:`WORKER_MCP_SERVERS`. Absence, or a value
+    that is not a list — a bare string would iterate character by character —
+    names no server, so a project that asks for nothing starts none. Duplicates
+    and empty names are dropped so the seeded record names each server once.
+    """
+    if not isinstance(config, Mapping):
+        return []
+    declared = config.get(WORKER_MCP_SERVERS)
+    if not isinstance(declared, Iterable) or isinstance(declared, (str, bytes)):
+        return []
+    names: list[str] = []
+    for name in declared:
+        text = str(name)
+        if text and text not in names:
+            names.append(text)
+    return names
+
+
+def _seed_worker_mcp_settings(home: Path, worker_mcp_servers: Iterable[str]) -> None:
+    """Record in the run home's settings which MCP servers its harness starts.
+
+    A worker whose harness starts in a run home with no settings inherits every
+    server the checkout's ``.mcp.json`` registers — about twenty on one project
+    measured in 2026-10-08, each paying a process and a launch that fails in a
+    third of worktrees. So the seeded settings disables the project's servers as
+    a group and enables only the ones the project names.
+
+    The write is called only for a settings.json this seed created, so the
+    hooks the operator carries are updated in place and nothing is lost; a run's
+    own settings.json is never touched. reckon is a user-scope server carried in
+    ``.claude.json`` and is not governed by this key, so it stays enabled without
+    being named here.
+    """
+    path = home / "settings.json"
+    settings = dict(_load_json_mapping(path) or {})
+    settings[PROJECT_MCP_SERVERS_ENABLED_KEY] = False
+    settings[ENABLED_PROJECT_MCP_SERVERS_KEY] = list(worker_mcp_servers)
+    mode = _permission_bits(path)
+    path.write_text(json.dumps(settings, indent=2, sort_keys=True) + "\n")
+    path.chmod(0o644 if mode is None else mode | 0o200)
 
 
 def _merge_harness_entry(
@@ -3207,6 +3282,7 @@ def launch_plan(
             declaration=harness_home_files(dialect.name, backend),
             adjacent_declaration=harness_home_adjacent_files(dialect.name),
             resume_session=resume_session,
+            worker_mcp_servers=_declared_worker_mcp_servers(fence_config),
         )
         environment[_HARNESS_HOME[dialect.name][0]] = str(harness)
     argv = dialect.argv(
