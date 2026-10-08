@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="docs-project" content="reckon"><meta name="reckon-type" content="evidence">
+<meta name="plan-slug" content="pre-pick-state-reads-once"><meta name="plan-title" content="Dispatch reads its shared pre-pick state once">
+<meta name="plan-summary" content="Repository identity, ledger index fallback, estimate stamp and the scratch age rule each read once and keep the last good copy">
+<meta name="plan-evidence-for" content="one-typesafe-model-picker"><meta name="plan-verifies" content="one-typesafe-model-picker#s13">
+<meta name="plan-recorded-at" content="2026-10-08"><meta name="plan-verdict" content="pass">
+<meta name="plan-environment" content="fleet node 98dci4-clu-2002, job 1281970, shared root Python environment">
+<meta name="plan-tags" content="crew,dispatch,ledger,cache,latency">
+<title>Dispatch reads its shared pre-pick state once | reckon</title>
+<link rel="stylesheet" href="/_shared/foundation.css"><link rel="stylesheet" href="/_shared/double.css">
+</head><body><main class="plan-doc"><article data-reckon="landed" data-node="pre-pick-state-reads-once" id="pre-pick-state-reads-once">
+<h1>Dispatch reads its shared pre-pick state once</h1>
+<p>Four pre-pick defects on the 2026-10-07 census path were repaired. Each is
+stated below with the reproduction that failed on the base revision
+<code>e0497bd71</code> and the check that now passes.</p>
+
+<table id="pre-pick-state-reads-once-items"><caption>Each defect, its base reproduction and its head check</caption>
+<thead><tr><th>Item</th><th>Base reproduction (e0497bd71)</th><th>Head behaviour</th></tr></thead>
+<tbody>
+<tr><th>1. Repository resolved once per process</th>
+<td>The second <code>resolve_project_repository</code> in one process re-ran its git probe: <code>the second resolution ran git: [(&hellip; 'rev-parse', '--path-format=absolute', '--git-common-dir'), (&hellip;)]</code></td>
+<td>The git probe is paid once per path per process, keyed by each path's git common directory; the second resolution runs no git command.</td></tr>
+<tr><th>2. Refused index refresh keeps the last good index</th>
+<td>A refused refresh fell through to <code>_load_aggregate</code>; with the aggregate stubbed the read returned <code>set()</code> against the expected rows.</td>
+<td><code>load</code> reads the last published index read-only, returns its rows with <code>index_age_seconds</code>, and opens the aggregate only when no good index can be read.</td></tr>
+<tr><th>3. Estimate stamp sees sibling plans</th>
+<td>An in-place edit to a sibling plan left the stamp unmoved: <code>the sibling plan's edit did not move the estimate stamp</code>.</td>
+<td>Every candidate plan file the resolve walks past is stamped, so a sibling's metadata edit is a cache miss.</td></tr>
+<tr><th>4. Survey docstring states the sweep's age rule</th>
+<td><code>the survey docstring no longer states the age rule</code> &mdash; the survey said unattributed scratch is never removed, while the orphan sweep removes it by age.</td>
+<td>The docstring states the rule the orphan sweep applies (<code>SCRATCH_GRACE_SECONDS (7200 seconds)</code>); a test fails if the two diverge.</td></tr>
+</tbody></table>
+
+<table id="pre-pick-state-reads-once-measure"><caption>Quantitative outcomes</caption>
+<thead><tr><th>Measure</th><th>Result</th><th>Bound or qualification</th></tr></thead>
+<tbody>
+<tr><th>New tests at head</th><td>6 passed, EXIT=0</td><td><code>tests/test_pre_pick_state_reads_once.py</code></td></tr>
+<tr><th>New tests at base</th><td>4 failed, 2 passed, EXIT=1</td><td>Items 1&ndash;4 each fail on the base revision</td></tr>
+<tr><th>Gate suite at head</th><td>260 passed, 1 failed, EXIT=1</td><td>The single failure is pre-existing at base</td></tr>
+<tr><th>Gate suite at base</th><td>256 passed, 5 failed, EXIT=1</td><td>Added failures against base: 0</td></tr>
+<tr><th>Negative control</th><td>1 failed, EXIT=1: <code>test_a_refused_index_refresh_returns_rows_with_an_age_and_no_aggregate_scan</code></td><td>The declared mutation makes a refused refresh fall back to a full aggregate scan</td></tr>
+<tr><th>Timed driver, second dispatch's pre-pick stages</th><td>under 0.5 s</td><td>Run in a local fixture; it also passes at base there, because a local git probe is milliseconds. The census's 1.7 s median was GPFS latency a fixture cannot reproduce.</td></tr>
+</tbody></table>
+
+<table id="pre-pick-state-reads-once-bindings"><caption>Reproducible inputs and source bindings</caption>
+<thead><tr><th>Item</th><th>Binding</th></tr></thead>
+<tbody>
+<tr><th>Base revision</th><td><code>e0497bd71fc1561bb9e072b0dd0e0615bffcb2aa</code></td></tr>
+<tr><th>Product paths</th><td><code>reckon/crew/dispatch_sections.py</code>, <code>reckon/ledger.py</code>, <code>reckon/crew/routing.py</code></td></tr>
+<tr><th>Tests</th><td><code>tests/test_pre_pick_state_reads_once.py</code></td></tr>
+<tr><th>Durable run directory</th><td><code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T124244188927-pre-pick-state-reads-once</code></td></tr>
+<tr><th>Gate receipts</th><td><code>base-arm-repro.log</code>, <code>base-arm-gate.log</code>, <code>head-arm.log</code>, <code>negative-control.log</code></td></tr>
+</tbody></table>
+</article></main></body></html>
