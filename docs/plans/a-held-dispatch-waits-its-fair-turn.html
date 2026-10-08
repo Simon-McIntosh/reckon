@@ -24,7 +24,7 @@
   <title>A Held Dispatch Waits Its Fair Turn | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="3">
 <meta name="plan-modified" content="2026-10-08">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
 </head>
@@ -49,39 +49,39 @@
 
     <h2 id="s2">&sect;2 &mdash; A held dispatch is queued</h2>
 <section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p>When a dispatch on the local lane is held for want of a slot, <code>reckon crew dispatch</code> records the complete request as one entry in a queue on shared storage: the project, plan, section, node, session, every dispatch option, the hold's reason, and when it joined. It answers with the entry's identity and its position, and exits as held rather than refused. Queueing the same node again from the same session updates its entry rather than adding a second. <code>--no-queue</code> keeps today's behaviour: hold and return. A paused fleet gate holds the queue as a whole, and no entry is admitted while it is paused.</p>
+    <p>When a dispatch on the local lane is held for want of a slot, <code>reckon crew dispatch</code> records it where held work already lives. It becomes a live run pointer in a new <code>queued</code> phase, written through the live-pointer store in <code>reckon/crew/runs.py</code>. The pointer carries the complete request (project, plan, section, node, session and every dispatch option), the hold's reason, and when it joined. No worktree is created and no worker is launched. This follows the review reflex, which records its held dispatch on the run it is for (<code>review_dispatch</code> on the pointer, in <code>reckon/crew/recovery.py</code>), so a queued dispatch and the run it becomes are one object. Dispatch answers with the run id and its position, and exits as held rather than refused. Dispatching the same node again from the same session updates its queued pointer rather than adding a second. A paused fleet gate admits nothing from the queue. No option, command or view is added: a queued run is listed by <code>crew(view="live")</code> and <code>reckon crew list</code>, and withdrawn with <code>reckon crew discard</code>.</p>
     <p><strong>Done when:</strong></p>
     <ul>
-      <li>A held dispatch, under a lane document granting the session no slot, writes one queue entry carrying everything a later admission needs, and prints its identity and position.</li>
-      <li>Queueing the same node twice from one session leaves one entry. <code>--no-queue</code> writes none.</li>
-      <li>No test reads or writes the real crew state: the queue directory and the lane document are temporary.</li>
+      <li>A held dispatch, under a lane document granting the session no slot, leaves one live pointer in the <code>queued</code> phase carrying everything a later admission needs, creates no worktree, launches no worker, and prints the run id and its position.</li>
+      <li>Dispatching the same node twice from one session leaves one queued pointer, and <code>reckon crew discard</code> of a queued run removes it so it is never launched.</li>
+      <li>No test reads or writes the real crew state: the pointer directory and the lane document are temporary.</li>
     </ul>
 
     <h2 id="s3">&sect;3 &mdash; Freed slots go to the sessions using least of the lane</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p>The queue's order is one function. Entries are ranked by their session's runs in flight on the lane, counted again after every admission, so the session with fewer runs goes first and, once two sessions reach the same count, admissions alternate between them; ties are broken by how long the entry has waited. Entries within one session keep the order they joined. An entry that has waited longer than the queue's maximum wait, declared in flight config as <code>queue.max_wait</code> with a default of 30 minutes, is admitted ahead of every entry that has not, so a busy session's work is delayed but never starved.</p>
+    <p>The queue's order is one function over the queued pointers. It reads each session's runs in flight on the lane from the live-pointer store (<code>runs.list_live</code>) and counts them again after every admission. So the session with fewer runs goes first, and once two sessions reach the same count, admissions alternate between them; ties are broken by how long the entry has waited. Entries within one session keep the order they joined. The bound on a wait is the one the obligations view already uses for queued review dispatches, <code>REVIEW_QUEUED_BOUND_SECONDS</code> (30 minutes) in <code>reckon/crew/obligations.py</code>. It is generalised to one queued-wait bound for any queued run rather than declared a second time. An entry that has waited longer is admitted ahead of every entry that has not, so a busy session's work is delayed but never starved.</p>
     <p><strong>Done when:</strong></p>
     <ul>
       <li>With session A holding four runs and session B none, and both holding queued entries, the next four admissions go to B and the admissions after that alternate between A and B, asserted on the order the function returns with run counts updated after each admission.</li>
       <li>Within one session, entries are admitted in the order they joined.</li>
-      <li>An entry that has waited longer than <code>queue.max_wait</code> is admitted ahead of a lighter session's newer entry, tested with the bound set to a few seconds, so no entry waits without limit.</li>
+      <li>An entry that has waited longer than the shared queued-wait bound is admitted ahead of a lighter session's newer entry, tested with the bound patched to a few seconds, and the obligations view's queued reading uses that same constant.</li>
     </ul>
 
     <h2 id="s4">&sect;4 &mdash; One drainer launches queued work</h2>
 <section data-reckon="section" data-id="s4" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
-    <p>One drainer reads the lane document and the queue. Whenever the router grants room to a session that has queued work, the drainer takes the highest-ranked admissible entry and dispatches it through the same <code>dispatch</code> function a coordinator calls, with that entry's recorded session and options. It then records the run on the entry and removes the entry from the queue. Exactly one drainer runs per lane, held by a host lease; where it runs is the subject of the <code>drainer</code> decision. A dispatch that fails at launch leaves its entry in the queue with the failure recorded, rather than dropping it.</p>
+    <p>The drainer is the one new loop. It is declared in the fleet services configuration and run by the fleet supervisor. The supervisor already starts each declared service exactly once behind its host lease and restarts it with backoff, so the drainer takes no lease of its own. On a cadence it reads the lane document and the queued pointers. Whenever the router grants room to a session with queued work, it admits the highest-ranked entry by launching that run through the same dispatch path a coordinator uses, so the queued pointer becomes the dispatched run. A launch that fails leaves the pointer queued with the failure recorded.</p>
     <p><strong>Done when:</strong></p>
     <ul>
-      <li>A test with a lane document that opens one slot finds the highest-ranked entry dispatched, its run id on the entry, and the entry out of the queue.</li>
-      <li>Two drainers started against one queue admit each entry once, shown by two drainers racing over the same entries.</li>
-      <li>A paused fleet gate admits nothing, and a launch failure keeps its entry with the failure recorded.</li>
-      <li>The coordinator's follower sees the run appear as dispatched, as it does for a run it dispatched itself.</li>
+      <li>A test with a lane document that opens one slot finds the highest-ranked queued run launched and no other.</li>
+      <li>Two drainers racing over the same queued pointers launch each run once.</li>
+      <li>A paused fleet gate launches nothing, and a launch failure leaves the run queued with the failure recorded.</li>
+      <li>The drainer is declared through the fleet services configuration, and the coordinator's follower sees its run move from queued to dispatched.</li>
     </ul>
 
-    <h2 id="s5">&sect;5 &mdash; Queued work is visible and can be withdrawn</h2>
+    <h2 id="s5">&sect;5 &mdash; Queued work shows where held work already shows</h2>
 <section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
-    <p><code>crew(view="queue")</code> and <code>reckon crew queue</code> list the entries in admission order, each with its session, node, position, wait and rank. <code>reckon crew queue withdraw</code> removes one entry, and a withdrawn entry is never launched. The follower's <code>q</code> column counts the session's own queued dispatches beside the router's waiting requests. The obligations view reports a queued node as waiting, not as missing.</p>
-    <p><strong>Done when:</strong> a test lists entries in the order &sect;3 admits them; a withdrawn entry is never dispatched by the drainer; and the queue view and the CLI listing report the same entries, so the two surfaces cannot disagree.</p>
+    <p>A queued run is read by the surfaces that already report held work. The obligations view's queued duty, today <code>review-queued</code>, is generalised to any queued run, so a queued node reads as waiting, not missing. The follower's <code>q</code> column counts the session's queued runs beside the router's waiting requests. <code>crew(view="live")</code> and <code>reckon crew list</code> show each queued run with its position and rank.</p>
+    <p><strong>Done when:</strong> a test finds one queued run reported as queued by the obligations view, counted in the follower's <code>q</code> column, and shown with its position and rank by <code>crew(view="live")</code> and <code>reckon crew list</code>, all three reading the same pointer, so the surfaces cannot disagree.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -121,7 +121,7 @@
     </article>
 <article class="r-fu" data-id="f-ahdwft-build-locked" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="fleet-move-20261007" data-written-at="2026-10-08" data-recommends-skill="/reckon-build a-held-dispatch-waits-its-fair-turn §2" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Build the queue, its order, the drainer and the views</h4>
-    <div class="r-fu-body"><p>The three decisions are locked: the local lane queues held dispatches, priority is runs in flight counted after every admission, and the drainer is a declared fleet service. &sect;2 and &sect;3 can run together; &sect;4 needs both; &sect;5 follows &sect;2.</p></div>
+    <div class="r-fu-body"><p>The three decisions are locked: the local lane queues held dispatches, priority is runs in flight counted after every admission, and the drainer is a declared fleet service. §2 and §3 can run together; §4 needs both; §5 follows §2.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-held-dispatch-waits-its-fair-turn §2</pre>
     </article>
 </section>
