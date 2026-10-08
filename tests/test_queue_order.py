@@ -77,16 +77,20 @@ def test_starved_entry_precedes_a_lighter_sessions_new_entry(monkeypatch) -> Non
     assert queue_order.admission_order(queued, in_flight, now=now)[0]["run_id"] == "A-0"
 
 
-def test_wait_breaks_equal_counts_and_queued_runs_hold_no_slot() -> None:
+def test_queued_run_holds_no_lane_slot() -> None:
     now = datetime(2026, 10, 8, tzinfo=UTC)
     queued = [
         _queued("A", 0, now - timedelta(seconds=10)),
         _queued("B", 0, now - timedelta(seconds=20)),
     ]
+    # A's only live pointer is its own queued entry, which holds no lane slot;
+    # B holds one run in flight. The freed slot goes to A ahead of B even though
+    # B has waited longer.
     live = [
         queued[0],
-        {"session": "B", "backend": "other", "phase": "working"},
-        {"session": "B", "backend": "local", "phase": "complete"},
+        {"session": "B", "backend": "local", "phase": "working"},
     ]
 
-    assert queue_order.admission_order(queued, live, now=now)[0]["run_id"] == "B-0"
+    order = queue_order.admission_order(queued, live, now=now)
+
+    assert order[0]["run_id"] == "A-0"
