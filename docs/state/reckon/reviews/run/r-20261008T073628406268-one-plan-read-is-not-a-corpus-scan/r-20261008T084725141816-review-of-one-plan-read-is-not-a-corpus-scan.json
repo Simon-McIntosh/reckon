@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "4cd309a0e7ba270b9eaed281cc4a77556df5b974",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/resources.py:667"
+  ],
+  "completed_at": "2026-10-08T09:02:49.508Z",
+  "dispatched_at": "2026-10-08T08:47:55Z",
+  "findings": [
+    {
+      "file": "tests/test_one_plan_read_is_not_a_corpus_scan.py",
+      "line": "170",
+      "severity": "follow-on",
+      "text": "follow-on: The node's declared negative control (RECKON_TEST_REVERT_DIRECT_READ_RESOLUTION) reverts resources._resolve_canonical to None, which routes both arms of test_duplicate_slug_matches_scan through the scan path, so the gained test passes trivially under that toggle; its red evidence is duplicate-repro.log, a standalone script that prints MISMATCH but exits 0. Folding the pre-repair first-match resolution into the toggle would give the duplicate-slug test a pytest red log beside the flat-in-corpus one."
+    }
+  ],
+  "head_log_revision": "6bc95ab743bf9713319fc8e21d20b3aa7878c6ae",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "Read the two commits gained since 1500780fa against it: 7a8832335 changes _resolve_canonical from a first-match loop to a candidate count (return None unless exactly one claimant) and adds test_duplicate_slug_matches_scan with its fixture and helper; 6bc95ab74 updates the landing fragment's summary and evidence paragraphs. 72 insertions, 12 deletions across the three paths.",
+    "done_when": "Section 9's done-when (scandir parity between 5- and 60-plan fixtures, summary payload equality with the scan path, a logged negative control, a warm fleet-node read under 30 s) is unchanged by the gained commits, which add a duplicate-slug arm. I re-ran the head test: 2 passed EXIT=0 at 6bc95ab (review-head-test.log). The node's negative control still fails EXIT=1 at 22 vs 132 (negative-control.log), the fleet warm read is 0.041 s against a 30 s deadline (fleet-warm-read.log), and tests/test_one_plan_read_is_not_a_corpus_scan.py:206 asserts the new duplicate-slug case.",
+    "goal": "The node goal is \"a read about one named plan resolves that plan without a corpus scan\" (plan section 9); the gained commits keep that fast path and correct it where the canonical location is ambiguous. reckon/resources.py:640-647 now collects the canonical candidates and returns None unless exactly one exists, so a slug that both a live and an archived document claim defers to the whole-tree scan instead of answering the live resource.",
+    "manifest": "The reviewed run's manifest reads complete; its baseline_suite (revision 4cd309a0e) and after_suite (revision 6bc95ab) logs each record 104 passed EXIT=0 with zero failures, so added_failure_count is 0 and added_failure_ids is empty.",
+    "write_paths": "The gained diff touches exactly three files - docs/evidence/fragments/an-mcp-failure-names-its-cause/one-plan-read-is-not-a-corpus-scan.html, reckon/resources.py and tests/test_one_plan_read_is_not_a_corpus_scan.py - each inside the node's declared write paths (reckon/resources.py, reckon/_store.py, tests/test_one_plan_read_is_not_a_corpus_scan.py and the landing fragment)."
+  },
+  "justifications": {
+    "durability": "tests/test_one_plan_read_is_not_a_corpus_scan.py:215 compares the fast path against the scan path as an independent oracle rather than asserting a literal, and reddens when the first-match resolution is restored, so the guard tests the property the fix exists to hold.",
+    "evidence": "The gained test reddens against the true pre-repair resolution (injected: 1 failed EXIT=1, review-negative-control-gained.log) and passes at head (2 passed EXIT=0, review-head-test.log), so the new test is a real guard; the node's own REVERT_ENV toggle does not exercise it and duplicate-repro.log is the standalone red evidence the worker logged.",
+    "fit": "reckon/resources.py:621-631 keeps the surrounding private-helper docstring idiom and names the ambiguity by mechanism; the new test and helpers carry no plan or stage label.",
+    "goal_fidelity": "reckon/resources.py:645 returns None unless exactly one canonical candidate exists, so the fast path answers only unambiguous slugs and the ambiguous case falls to the scan that owns the collision decision, keeping section 9's read about one plan off the corpus walk.",
+    "reuse": "reckon/resources.py:640-647 reuses _canonical_resource_at and the existing candidate list rather than adding a second lookup or a cache of its own.",
+    "scope_discipline": "The gained diff touches only the three declared paths and no other file; 7a8832335 and 6bc95ab74 each stage explicit paths only."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 1500780fa7cf4dbcfaf7ed0309367a862bb07614\nreviewed_head_sha: 6bc95ab743bf9713319fc8e21d20b3aa7878c6ae\n\nThis review covers only the commits the run gained since it was reviewed at\n1500780fa: 7a8832335 (defer a slug that both a live and an archived document\nclaim) and 6bc95ab74 (landing-fragment update).\n\nVERDICT goal: The node goal is \"a read about one named plan resolves that plan without a corpus scan\" (plan section 9); the gained commits keep that fast path and correct it where the canonical location is ambiguous. reckon/resources.py:640-647 now collects the canonical candidates and returns None unless exactly one exists, so a slug that both a live and an archived document claim defers to the whole-tree scan instead of answering the live resource.\nVERDICT done_when: Section 9's done-when (scandir parity between 5- and 60-plan fixtures, summary payload equality with the scan path, a logged negative control, a warm fleet-node read under 30 s) is unchanged by the gained commits, which add a duplicate-slug arm. I re-ran the head test: 2 passed EXIT=0 at 6bc95ab (review-head-test.log). The node's negative control still fails EXIT=1 at 22 vs 132 (negative-control.log), the fleet warm read is 0.041 s against a 30 s deadline (fleet-warm-read.log), and tests/test_one_plan_read_is_not_a_corpus_scan.py:206 asserts the new duplicate-slug case.\nVERDICT write_paths: The gained diff touches exactly three files - docs/evidence/fragments/an-mcp-failure-names-its-cause/one-plan-read-is-not-a-corpus-scan.html, reckon/resources.py and tests/test_one_plan_read_is_not_a_corpus_scan.py - each inside the node's declared write paths (reckon/resources.py, reckon/_store.py, tests/test_one_plan_read_is_not_a_corpus_scan.py and the landing fragment).\nVERDICT manifest: The reviewed run's manifest reads complete; its baseline_suite (revision 4cd309a0e) and after_suite (revision 6bc95ab) logs each record 104 passed EXIT=0 with zero failures, so added_failure_count is 0 and added_failure_ids is empty.\nVERDICT diff: Read the two commits gained since 1500780fa against it: 7a8832335 changes _resolve_canonical from a first-match loop to a candidate count (return None unless exactly one claimant) and adds test_duplicate_slug_matches_scan with its fixture and helper; 6bc95ab74 updates the landing fragment's summary and evidence paragraphs. 72 insertions, 12 deletions across the three paths.\nVERDICT call_sites: The changed function _resolve_canonical has one production call site, reckon/resources.py:667 inside resolve_resource, which the one-plan read reaches through _store.read_plan (reckon/_store.py:297).\n\nCALL_SITES: reckon/resources.py:667\n\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/resources.py:645 returns None unless exactly one canonical candidate exists, so the fast path answers only unambiguous slugs and the ambiguous case falls to the scan that owns the collision decision, keeping section 9's read about one plan off the corpus walk.\nSCORE evidence: 18\nJUSTIFICATION evidence: The gained test reddens against the true pre-repair resolution (injected: 1 failed EXIT=1, review-negative-control-gained.log) and passes at head (2 passed EXIT=0, review-head-test.log), so the new test is a real guard; the node's own REVERT_ENV toggle does not exercise it and duplicate-repro.log is the standalone red evidence the worker logged.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The gained diff touches only the three declared paths and no other file; 7a8832335 and 6bc95ab74 each stage explicit paths only.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_one_plan_read_is_not_a_corpus_scan.py:215 compares the fast path against the scan path as an independent oracle rather than asserting a literal, and reddens when the first-match resolution is restored, so the guard tests the property the fix exists to hold.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/resources.py:621-631 keeps the surrounding private-helper docstring idiom and names the ambiguity by mechanism; the new test and helpers carry no plan or stage label.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/resources.py:640-647 reuses _canonical_resource_at and the existing candidate list rather than adding a second lookup or a cache of its own.\n\nFINDING tests/test_one_plan_read_is_not_a_corpus_scan.py:170 follow-on: The node's declared negative control (RECKON_TEST_REVERT_DIRECT_READ_RESOLUTION) reverts resources._resolve_canonical to None, which routes both arms of test_duplicate_slug_matches_scan through the scan path, so the gained test passes trivially under that toggle; its red evidence is duplicate-repro.log, a standalone script that prints MISMATCH but exits 0. Folding the pre-repair first-match resolution into the toggle would give the duplicate-slug test a pytest red log beside the flat-in-corpus one.\n",
+  "review_run_id": "r-20261008T084725141816-review-of-one-plan-read-is-not-a-corpus-scan",
+  "reviewed_base_sha": "1500780fa7cf4dbcfaf7ed0309367a862bb07614",
+  "reviewed_head_sha": "6bc95ab743bf9713319fc8e21d20b3aa7878c6ae",
+  "reviewed_run_id": "r-20261008T073628406268-one-plan-read-is-not-a-corpus-scan",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T09:00:51.043379+00:00",
+  "total": 113
+}
