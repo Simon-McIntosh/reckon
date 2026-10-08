@@ -75,6 +75,25 @@ def _candidates(monkeypatch, tmp_path, config, records, view):
     }
 
 
+def _freeze_snapshot_clock(monkeypatch, moment):
+    """Pin the picker snapshot's wall clock, so its age is measured from ``moment``.
+
+    ``snapshot`` reads ``datetime.now(UTC)`` for a budget reading's age, and the
+    test's own ``now`` is a second read of the same clock. Two reads that
+    straddle a second — or a host that pauses between them — make the measured
+    age drift from the recorded observation, which is what made the
+    stale-window case fail intermittently. Pinning the module's clock leaves a
+    single source for both.
+    """
+
+    class _FrozenDatetime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return moment if tz is None else moment.astimezone(tz)
+
+    monkeypatch.setattr(snapshot, "datetime", _FrozenDatetime)
+
+
 def _receipt_record(observed, reset, *, used_percent=2.0):
     return {
         "run_id": "sample-run",
@@ -195,7 +214,8 @@ def test_missing_recorded_window_names_absence_without_inventing_figures(
 
 
 def test_old_recorded_window_is_marked_stale(monkeypatch, tmp_path):
-    now = datetime.now(UTC)
+    now = datetime(2026, 5, 5, 12, 0, 0, tzinfo=UTC)
+    _freeze_snapshot_clock(monkeypatch, now)
     observed = now - timedelta(days=1)
     records = [
         _receipt_record(

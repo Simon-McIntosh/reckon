@@ -29,6 +29,7 @@ import pytest
 from reckon import crew, ledger
 from reckon.crew import recovery
 from reckon.crew.node import member_in_flight_verdict
+from tests.conftest import real_store_home, real_store_is_not_a_fixture_target
 
 CONFIG = {
     "default_backend": "worker",
@@ -54,24 +55,22 @@ FIXTURE_PROJECT = "sample"
 FIXTURE_MEMBER = "fixture-member"
 FIXTURE_RUN_IDS = ("r-first", "r-second")
 
-#: Where a dispatcher that ignores the isolated RECKON_HOME still lands: the
-#: crew home under the real user home. The guard watches it by default.
-_ESCAPE_HOME = Path.home() / ".config" / "reckon"
-
 
 def _guard_store() -> Path:
     """The crew home the isolation guard inspects.
 
     Without an override this is the real crew home, the destination an escaped
     write reaches when a dispatcher bypasses RECKON_HOME, so the guard can fire
-    on exactly the write it exists to catch. ``RECKON_GUARD_HOME`` redirects it
-    to a temporary stand-in for the tests that plant entries, so those never
-    touch the real home.
+    on exactly the write it exists to catch. It is resolved through
+    ``real_store_home`` rather than rebuilt from a path literal, so the guard
+    watches the home the code actually resolves. ``RECKON_GUARD_HOME``
+    redirects it to a temporary stand-in for the tests that plant entries, so
+    those never touch the real home.
     """
     override = os.environ.get("RECKON_GUARD_HOME")
     if override:
         return Path(override).expanduser()
-    return _ESCAPE_HOME
+    return real_store_home()
 
 
 def _fixture_writes_under(store: Path) -> list[str]:
@@ -137,6 +136,7 @@ def isolated_project(
     monkeypatch: pytest.MonkeyPatch,
 ) -> Iterator[tuple[Path, Path]]:
     config_home = tmp_path / "config"
+    real_store_is_not_a_fixture_target(config_home)
     config_home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(config_home))
 
@@ -175,7 +175,7 @@ def test_isolation_guard_watches_the_escape_destination(
     write lands — not a fixture directory nothing writes."""
     monkeypatch.delenv("RECKON_GUARD_HOME", raising=False)
     watched = _guard_store()
-    assert watched == Path.home() / ".config" / "reckon"
+    assert watched == real_store_home()
     assert tmp_path not in watched.parents
 
 

@@ -123,7 +123,7 @@ def test_the_per_test_reap_signals_a_producer_that_never_wrote_a_seat_record(
         _await_names_home(process, home)
         assert process.poll() is None, "the stand-in must be live for this measure"
 
-        reaped = reapable_watch_pids(tmp_path)
+        reaped = reapable_watch_pids(tmp_path, include_named_half=True)
         assert process.pid in reaped, (
             "the reap does not reach a producer that never wrote a seat record; "
             "it will survive to fail the session-end scan"
