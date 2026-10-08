@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "e77182ac9f5d56d3ced1971f114122e60f2ca56c",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/budget.py:2827 group_pace reads effective_block[\"lift_id\"]",
+    "reckon/crew/budget_lift.py effective_budget sets lift_id only when a lift governs"
+  ],
+  "completed_at": "2026-10-08T16:42:20.224Z",
+  "dispatched_at": "2026-10-08T16:33:35Z",
+  "findings": [],
+  "head_log_revision": "e3f2e25f2287234da9dd26bd847d5aae850b28ff",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s): the reader at reckon/budget.py:2827 and the setter at reckon/crew/budget_lift.py:416.",
+    "diff": "read the gained commits d10a6771b..4c7c29c9f; e3f2e25f2 changes 13 lines in reckon/budget.py (group_pace reads effective_block['lift_id'] instead of the presence of a 'lift' key, with a comment on why) and 11 lines in tests/test_pace_reads_the_lift.py (the fixture now carries the shipped budget.lift ceilings, and test_the_configured_pace_holds_the_implement_dispatch asserts the allowance reports no lift); 4c7c29c9f adds a 7-line evidence fact naming the distinction; all inside the run's declared write paths.",
+    "done_when": "the repair's done-when is that a group under no lift reports no lift and no lift marker while the ceilings stay where declared; test_the_configured_pace_holds_the_implement_dispatch asserts allowance['lift'] and ['lift_hold'] are None over a config that declares budget.lift, and I reproduced it green at head (9 passed) and red at the pre-fix head (4 failed).",
+    "goal_fidelity": "the prior re-review's blocking-shaped follow-on (budget.lift ceilings mistaken for a lift in force at budget.py:2827) is closed: group_pace now decides a lift in force from the resolver's lift_id, and I reproduced the closed behaviour.",
+    "manifest": "read; status complete; baseline_suite (e77182ac9, 152 passed, EXIT=0) and after_suite (e3f2e25f2, 162 passed, EXIT=0) reconcile with gate-baseline.log and gate-after.log, both failure_id lists empty, and the negative_control_log records EXIT=1 with three ids the head arm does not fail.",
+    "write_paths": "read the gained diff against the manifest's five declared paths; the three changed paths (reckon/budget.py, tests/test_pace_reads_the_lift.py, docs/evidence/fragments/a-window-paces-the-lane/the-pace-reads-the-lift.html) are all inside them and none outside."
+  },
+  "justifications": {
+    "durability": "the added assertions in tests/test_pace_reads_the_lift.py guard the collision directly (the fixture declares budget.lift, the allowance must report none) and redden on the pre-fix tree at d10a6771b, and every test derives its figures from the fixture with a fixed NOW; the one interaction not separately asserted is a config that declares the ceilings while a lift is also in force, where effective_budget overwrites the key with the summary.",
+    "evidence": "both gate arms are green with a red negative control and a reproduction log, and I re-ran independently: the extracted head tree gives 9 passed EXIT=0 and the same tests over the pre-fix reckon/budget.py give 4 failed EXIT=1 with the four ids the run's own reproduction log names; the after log now names the fix commit e3f2e25f2 rather than the base sha plus a working tree, though it does not name the reviewed head 4c7c29c9f, a doc-only commit no test reads and the manifest explains.",
+    "fit": "the repair reuses the resolver's own lift_id, keeps the lift inside the allowance the entry already carries, and its comment states the mechanism (why the 'lift' key is not the signal) rather than the incident; no added name carries a plan, sprint or ticket label.",
+    "goal_fidelity": "budget.py:2827 now reads effective_block['lift_id'], which budget_lift.effective_budget sets on line 416 only when a lift governs, so a configuration that declares the budget.lift ceilings no longer reports them as a lift in force; my reproduction read the ceilings as the allowance's lift on the pre-fix tree and None at head.",
+    "reuse": "group_pace reuses the resolver's lift_id rather than re-deriving a lift-in-force predicate, so the one seam the section names stays the one place a lift is decided, and the fixture reuses the shipped ceiling figures.",
+    "scope_discipline": "the gained commits touch only reckon/budget.py, tests/test_pace_reads_the_lift.py and the evidence fragment, all inside the node's five declared write paths, and carry nothing beyond the fix and its one evidence line."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal_fidelity: the prior re-review's follow-on that budget.lift ceilings were mistaken for a lift in force at budget.py:2827 is closed; group_pace reads the resolver's lift_id.\nVERDICT done_when: test_the_configured_pace_holds_the_implement_dispatch asserts the allowance reports no lift over a config that declares budget.lift; reproduced green at head (9 passed) and red at the pre-fix head (4 failed).\nVERDICT write_paths: the three gained paths are all inside the run's declared five write paths.\nVERDICT manifest: status complete; baseline 152 passed EXIT=0 at e77182ac9, after 162 passed EXIT=0 at e3f2e25f2, zero failures each; negative control EXIT=1 with three ids.\nVERDICT diff: gained commits d10a6771b..4c7c29c9f; e3f2e25f2 changes 13 lines in reckon/budget.py and 11 in tests/test_pace_reads_the_lift.py, 4c7c29c9f adds a 7-line evidence fact.\nVERDICT call_sites: reckon/budget.py:2827 group_pace reads effective_block[\"lift_id\"], reckon/crew/budget_lift.py:416 effective_budget sets lift_id.\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: budget.py:2827 now reads effective_block['lift_id'], set only by the resolver when a lift governs, so a config declaring the budget.lift ceilings no longer reports them as a lift in force; reproduced the ceilings read as a lift pre-fix and None at head.\nSCORE evidence: 19\nJUSTIFICATION evidence: both gate arms green (152 and 162, EXIT=0) with a red negative control and a reproduction log; I independently reproduced head green (9 passed) and pre-fix red (4 failed, matching the run's ids); the after log names the fix commit e3f2e25f2 rather than the reviewed head 4c7c29c9f, a doc-only commit the manifest explains.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the gained commits touch only reckon/budget.py, tests/test_pace_reads_the_lift.py and the evidence fragment, all inside the node's declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: the added assertions guard the collision and redden on the pre-fix tree, and every test uses a fixed NOW; the ceilings-present-with-a-lift-in-force interaction is not separately asserted.\nSCORE fit: 20\nJUSTIFICATION fit: the repair reuses the resolver's lift_id, keeps the lift inside the existing allowance mapping, and its comment states the mechanism; no name carries a plan or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: group_pace reads the resolver's own lift_id rather than re-deriving a lift-in-force predicate, keeping the one seam.\n",
+  "review_run_id": "r-20261008T163313705319-review-of-the-pace-reads-the-lift",
+  "reviewed_base_sha": "d10a6771b948c5972a4a24f46fde089f3d70f5da",
+  "reviewed_head_sha": "4c7c29c9f4597bd5d1e5c7f951789b00b9cc9e5b",
+  "reviewed_run_id": "r-20261008T150419991564-the-pace-reads-the-lift",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T16:40:40.050289+00:00",
+  "total": 118
+}
