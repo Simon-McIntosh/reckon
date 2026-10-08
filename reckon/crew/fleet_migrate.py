@@ -100,7 +100,15 @@ def _listed_sessions(
     timeout: float | None = None,
 ) -> list[tuple[str, bool]]:
     """Read zellij's session list with each server's exited state."""
-    options: dict[str, Any] = {"capture_output": True, "text": True, "check": check}
+    environment = os.environ.copy()
+    for key in ("ZELLIJ", "ZELLIJ_SESSION_NAME", "ZELLIJ_PANE_ID"):
+        environment.pop(key, None)
+    options: dict[str, Any] = {
+        "capture_output": True,
+        "text": True,
+        "check": check,
+        "env": environment,
+    }
     if timeout is not None:
         options["timeout"] = timeout
     result = invoke(["zellij", "list-sessions", "--no-formatting"], **options)
@@ -870,7 +878,7 @@ def migrate(
         if session and session not in known:
             raise MigrationError(f"{session} is absent from the recorded census")
         description = (
-            f"cutover: end {session} on the old job, start it on the new job "
+            f"cutover: start {session} on the new job, end it on the old job "
             f"from migrate-{session}.kdl, and verify each Claude pane"
             if session
             else "cutover: sessions still to move: " + (", ".join(remaining) or "none")
@@ -1053,6 +1061,13 @@ def migrate(
         new_job_id = str(ledger["stand_up"]["job_id"])
         old_job = {"jobid": old_job_id}
         new_job = {"jobid": new_job_id}
+        if not outcome.get("start_request"):
+            request = f"session {session} migrate-{session}"
+            send_supervisor(new_job, request)
+            if outcome.get("phase") != "old-ended":
+                outcome["phase"] = "start-requested"
+            outcome["start_request"] = request
+            path.write_text(json.dumps(ledger, indent=2) + "\n")
         if outcome.get("phase") != "old-ended":
             argv = fleet_node.placement_argv(
                 old_job,
@@ -1082,7 +1097,6 @@ def migrate(
             outcome["phase"] = "old-ended"
             outcome["old_end"] = ended
             path.write_text(json.dumps(ledger, indent=2) + "\n")
-        send_supervisor(new_job, f"session {session} migrate-{session}")
         recorded = next(
             item for item in ledger["census"]["sessions"] if item["name"] == session
         )
@@ -1183,7 +1197,7 @@ def migrate(
 if __name__ == "__main__":
     if sys.argv[1:] == ["collect-local"]:
         print(json.dumps(collect_local()))
-    elif len(sys.argv) in {3, 4} and sys.argv[1] == "request":
+    elif len(sys.argv) >= 3 and sys.argv[1] == "request":
         _local_request(" ".join(sys.argv[2:]))
     elif len(sys.argv) == 3 and sys.argv[1] == "end-session":
         print(json.dumps(_end_local_session(sys.argv[2])))

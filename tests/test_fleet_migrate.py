@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import json
+import os
 import subprocess
 from pathlib import Path
 
@@ -14,6 +15,31 @@ from reckon.cli import main
 from reckon.crew import fleet_migrate
 
 FIXTURE = Path(__file__).parent / "fixtures" / "fleet_migrate"
+
+
+def test_session_listing_ignores_callers_zellij_context(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    for key in ("ZELLIJ", "ZELLIJ_SESSION_NAME", "ZELLIJ_PANE_ID"):
+        monkeypatch.setenv(key, "caller-session")
+    observed_env = []
+
+    def invoke(argv, **kwargs):
+        observed_env.append(kwargs["env"])
+        inherited = any(
+            key in kwargs["env"]
+            for key in ("ZELLIJ", "ZELLIJ_SESSION_NAME", "ZELLIJ_PANE_ID")
+        )
+        output = "caller-session (current)\n" if inherited else ""
+        return subprocess.CompletedProcess(argv, 0, output, "")
+
+    assert fleet_migrate._active_sessions(invoke=invoke) == []
+    assert len(observed_env) == 1
+    assert all(
+        key not in observed_env[0]
+        for key in ("ZELLIJ", "ZELLIJ_SESSION_NAME", "ZELLIJ_PANE_ID")
+    )
+    assert os.environ["ZELLIJ_SESSION_NAME"] == "caller-session"
 
 
 def _source(tmp_path: Path) -> dict:
