@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:every-reckon-hook-runs-under-reckons-interpreter">
+  <meta name="plan-verifies" content="reckon:every-reckon-hook-runs-under-reckons-interpreter#s6">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-08">
+  <meta name="evidence-commit" content="bb165ba2c">
+  <title>One function names the checkout interpreter | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="one-function-names-the-checkout-interpreter">
+  <h2>One function names the checkout interpreter</h2>
+  <p>Base <code>4e9e3a9c2</code>, head <code>bb165ba2c</code>. The checkout
+  interpreter was composed in two places: <code>interpreter_bootstrap.ensure_interpreter</code>
+  built <code>&lt;script&gt;/../../../.venv/bin/python</code> inline, because a bare hook runs
+  before any reckon import and cannot call the installer, and
+  <code>install.interpreter_path</code> built the same path for the commands it writes into a
+  harness settings file. The installer's worker-git-guard recogniser decomposed the same
+  layout again in its <code>bin</code>/<code>.venv</code> name checks. The layout now lives in
+  one stdlib-only resolver, <code>interpreter_bootstrap.checkout_interpreter(script)</code>;
+  <code>ensure_interpreter</code> and <code>install.interpreter_path</code> both call it, and
+  the recogniser asks <code>interpreter_bootstrap.is_checkout_interpreter</code>. No module
+  under <code>reckon/hooks</code> other than the bootstrap composes the path, so the installer
+  and a bare hook cannot name different interpreters for one checkout.</p>
+
+  <p><strong>The new test fails before its change.</strong> A synthetic checkout is built under
+  <code>tmp_path</code> (<code>reckon/hooks/coordinator_obligations.py</code> beside a copied
+  bootstrap, and <code>.venv/bin/python</code>), and the test asserts
+  <code>install.interpreter_path(script)</code> and
+  <code>interpreter_bootstrap.checkout_interpreter(script)</code> both resolve it. A second
+  case scans every <code>*.py</code> under <code>reckon/hooks</code> for the composed layout and
+  requires exactly <code>interpreter_bootstrap.py</code> to hold it; a third holds the predicate
+  to the resolver.</p>
+
+  <p><strong>Gate</strong> (<code>tests/test_one_function_names_the_interpreter.py</code>,
+  <code>test_hook_installer.py</code>, <code>test_hook_scripts_correct_their_interpreter.py</code>,
+  <code>test_reckon_hook_commands.py</code>, <code>test_guard_install.py</code>;
+  <code>PYTHONPATH=$PWD &lt;main&gt;/.venv/bin/python -m pytest -p no:cacheprovider</code>).
+  <strong>34 passed</strong>, <code>EXIT=0</code>, module file the worktree's own
+  <code>reckon/hooks/install.py</code>; log <code>gate.log</code> in the run directory.</p>
+
+  <p><strong>Declared negative control</strong>: make <code>interpreter_path()</code> return a
+  different path than the bootstrap resolver. Applied by returning
+  <code>&lt;script&gt;/../../../.venv/bin/python3</code> instead of delegating: the two tests
+  that compare the sides then fail — <code>EXIT=1</code>, <strong>2 failed / 2 passed</strong>,
+  ids <code>test_installer_and_bootstrap_name_the_same_interpreter</code> and
+  <code>test_installer_default_names_the_same_interpreter_as_the_bootstrap</code>; log
+  <code>negative-control.log</code>. The mutation was reverted before the gate re-run.</p>
+</section>
+</main>
+</body>
+</html>
