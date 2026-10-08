@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="a-crew-process-ends-with-its-owner">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
   <title>A Run Has One Live Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -67,6 +67,34 @@
       launch, by file and line, and the condition under which it admits one. It states whether that condition can be
       reproduced with a fixture run whose recorded worker pid is alive under a different parent. A repair section is
       then added to this plan with that reproduction as its negative control.</p>
+
+    <h2 id="s3">§3 — A hold lifts once, and a live session refuses a second worker</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<p><strong>Deliverable.</strong> §2's investigation named two guards that failed. Its report is
+      <code>~/.config/reckon/crew/reports/reckon/one-live-worker/second-launcher/report.md</code>.</p>
+    <p>First, the wait sweep's once-only stamp. <code>sweep</code> in <code>reckon/crew/resumption.py</code> lifts a hold
+      unless the live pointer's <code>auto_resume</code> slot reads back the hold's signature, and
+      <code>_stamp_resumption_trigger</code> writes that slot by rewriting the whole pointer. The sweep resumed the nova
+      run at 02:25:08Z and stamped it. The resume's own launch then rewrote the pointer from a snapshot taken before
+      the stamp, so 70 s later the next sweep lifted the same hold again (recovery log lines 7668 and 7669).</p>
+    <p>Second, the launch backstop. <code>_launcher_refusal</code> refuses only when a pid the run's records name is
+      alive (<code>record_process_alive</code> in <code>reckon/crew/runs.py</code>). The second worker ran under
+      ppid 1 with no attempt record, so nothing named it.</p>
+    <p>A hold is lifted at most once per condition: the stamp lives where a whole-pointer rewrite cannot drop it. That
+      is either an append-only record of lifts beside the run, or the pointer lock held across the launch and the
+      stamp. The launcher also refuses while any live process holds the run's worker session. The worker holds a
+      session claim for its lifetime, and the launcher reads that claim rather than only the pids the record
+      names.</p>
+    <p><strong>Done when</strong> <code>tests/test_a_hold_lifts_once.py</code> passes two cases:</p>
+    <ul>
+      <li>A fixture run's pointer is rewritten from a snapshot taken before the sweep's stamp, between two sweeps of an
+        unchanged hold. The second sweep resumes nothing.</li>
+      <li>A fixture whose recorded pids are dead, but whose session claim is held by a live process, is refused with
+        a live-session reason.</li>
+    </ul>
+    <p>Each fails on the current code, which is the negative control, executed and logged. The write paths are
+      <code>reckon/crew/resumption.py</code>, <code>reckon/crew/runs.py</code> and
+      <code>tests/test_a_hold_lifts_once.py</code>.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
