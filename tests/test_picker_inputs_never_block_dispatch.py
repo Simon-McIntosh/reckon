@@ -13,7 +13,6 @@ lets the picker fall back.
 
 from __future__ import annotations
 
-import importlib
 import json
 import subprocess
 from pathlib import Path
@@ -21,9 +20,8 @@ from types import SimpleNamespace
 
 import pytest
 
+import reckon.crew.dispatch_picker as dispatch_picker_module
 from reckon import _plan_html, crew, ledger
-
-dispatch = importlib.import_module("reckon.crew.dispatch")
 
 PROJECT = "proj"
 PLAN = "plan-a"
@@ -184,7 +182,7 @@ def test_a_failing_picker_input_never_blocks_dispatch(
     healthy stub: the recorded fallback must name only the input that failed,
     so it is attributable to the guard rather than to the picker.
     """
-    monkeypatch.setattr(dispatch, INPUT_BUILDERS[name], _raise_builder(name))
+    monkeypatch.setattr(dispatch_picker_module, INPUT_BUILDERS[name], _raise_builder(name))
     from reckon.crew import picker
 
     monkeypatch.setattr(picker, "pick", lambda *_a, **_k: _selection())
