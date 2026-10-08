@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/recovery.py:4017",
+    "reckon/crew/standing_suite.py:46",
+    "reckon/crew/dispatch_plan.py:994",
+    "reckon/crew/reports.py:1081",
+    "reckon/crew/routing.py:2113"
+  ],
+  "completed_at": "2026-10-08T10:00:50.143Z",
+  "dispatched_at": "2026-10-08T09:42:05Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/every-module-fits-a-worker-window/promotion-split-map.json",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the map still lists _revision_is_ancestor as a member of reckon/crew/promotion.py while the landed tree holds it in reckon/crew/promotion_scope.py, and the diff updated only the new promotion-module-split-moved.html fragment, so the canonical placement record the plan names now misplaces a member."
+    },
+    {
+      "file": "docs/state/reckon/shared-write-paths.json",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the diff removes the reckon/crew/promotion.py entry and adds none of the six produced modules, so the concurrency guidance the declaration carried is dropped rather than re-expressed for the split files."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read at 5218c36a..59c7d5ea; two commits, 8,868 insertions and 8,246 deletions across 26 files, dominated by the move of statements out of reckon/crew/promotion.py and the repointing of the census tests.",
+    "done_when": "the section 6 done-when is the section 3 conditions applied to promotion.py; the manifest records scripts/check_pure_move.py at EXIT=0 over 241 statements, the 40-file census at 512 passed, the module-size guard at 4 passed and its declared size mutation at EXIT=1, so the conditions are measured and recorded rather than claimed.",
+    "goal": "the node was dispatched to split reckon/crew/promotion.py per section 6 with the map at docs/evidence/fragments/every-module-fits-a-worker-window/promotion-split-map.html; the landed change took reckon/crew/promotion.py from 9,286 lines and 199 top-level definitions to 1,738 lines and 8, and added six siblings, so the split the goal names exists.",
+    "manifest": "read; it records the four gate results above, the pure-move JSON at 241/241 statements and the landing fragment, but leaves baseline_suite and after_suite empty, so the reviewed run's added-failure count is unmeasured.",
+    "write_paths": "the manifest declares 25 paths under reckon/crew/, tests/, docs/evidence and docs/state."
+  },
+  "justifications": {
+    "durability": "tests/test_every_module_fits_a_worker_window.py:30 removed reckon/crew/promotion.py from the size ALLOWLIST and the declared mutation restoring its size reddens that guard at EXIT=1.",
+    "evidence": "census-committed.log records 512 passed at revision 4c5d6b8b and negative-control-committed.log records the size mutation at EXIT=1, but no baseline_suite/after_suite arm is recorded so the promotion suite delta is unmeasured.",
+    "fit": "each sibling names one concern (reckon/crew/promotion_checks.py, promotion_gate.py, promotion_scope.py) and carries no part number or version, matching the naming of reckon/crew/review.py.",
+    "goal_fidelity": "reckon/crew/promotion.py:1495-1738 re-exports every moved name and the six siblings (largest reckon/crew/promotion_checks.py at 2,084 lines) each sit under the bound, so the split landed, with one member placed off the map.",
+    "reuse": "the diff moves existing statements and adds no new mechanism, so no capability is forked; the only added code is the re-export block at reckon/crew/promotion.py:1495.",
+    "scope_discipline": "git diff --name-status 5218c36a 59c7d5ea lists 26 paths and every one is inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node was dispatched to split reckon/crew/promotion.py per section 6 with the map at docs/evidence/fragments/every-module-fits-a-worker-window/promotion-split-map.html; the landed change took reckon/crew/promotion.py from 9,286 lines and 199 top-level definitions to 1,738 lines and 8, and added six siblings, so the split the goal names exists.\nVERDICT done_when: the section 6 done-when is the section 3 conditions applied to promotion.py; the manifest records scripts/check_pure_move.py at EXIT=0 over 241 statements, the 40-file census at 512 passed, the module-size guard at 4 passed and its declared size mutation at EXIT=1, so the conditions are measured and recorded rather than claimed.\nVERDICT write_paths: the manifest declares 25 paths under reckon/crew/, tests/, docs/evidence and docs/state.\nVERDICT manifest: read; it records the four gate results above, the pure-move JSON at 241/241 statements and the landing fragment, but leaves baseline_suite and after_suite empty, so the reviewed run's added-failure count is unmeasured.\nVERDICT diff: read at 5218c36a..59c7d5ea; two commits, 8,868 insertions and 8,246 deletions across 26 files, dominated by the move of statements out of reckon/crew/promotion.py and the repointing of the census tests.\nCALL_SITES: reckon/crew/recovery.py:4017, reckon/crew/standing_suite.py:46, reckon/crew/dispatch_plan.py:994, reckon/crew/reports.py:1081, reckon/crew/routing.py:2113\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:1495-1738 re-exports every moved name and the six siblings (largest reckon/crew/promotion_checks.py at 2,084 lines) each sit under the bound, so the split landed, with one member placed off the map.\nSCORE evidence: 17\nJUSTIFICATION evidence: census-committed.log records 512 passed at revision 4c5d6b8b and negative-control-committed.log records the size mutation at EXIT=1, but no baseline_suite/after_suite arm is recorded so the promotion suite delta is unmeasured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-status 5218c36a 59c7d5ea lists 26 paths and every one is inside the manifest's declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_every_module_fits_a_worker_window.py:30 removed reckon/crew/promotion.py from the size ALLOWLIST and the declared mutation restoring its size reddens that guard at EXIT=1.\nSCORE fit: 18\nJUSTIFICATION fit: each sibling names one concern (reckon/crew/promotion_checks.py, promotion_gate.py, promotion_scope.py) and carries no part number or version, matching the naming of reckon/crew/review.py.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff moves existing statements and adds no new mechanism, so no capability is forked; the only added code is the re-export block at reckon/crew/promotion.py:1495.\nFINDING docs/evidence/fragments/every-module-fits-a-worker-window/promotion-split-map.json:1 follow-on: the map still lists _revision_is_ancestor as a member of reckon/crew/promotion.py while the landed tree holds it in reckon/crew/promotion_scope.py, and the diff updated only the new promotion-module-split-moved.html fragment, so the canonical placement record the plan names now misplaces a member.\nFINDING docs/state/reckon/shared-write-paths.json:1 follow-on: the diff removes the reckon/crew/promotion.py entry and adds none of the six produced modules, so the concurrency guidance the declaration carried is dropped rather than re-expressed for the split files.\nreviewed_base_sha: 5218c36a8a165dbe0b5d8767e4446fafb116fd90\nreviewed_head_sha: 59c7d5ea932db7ad724574fe6b460502798f85df\n",
+  "review_run_id": "r-20261008T094141913531-review-of-promotion-module-split-moved",
+  "reviewed_base_sha": "5218c36a8a165dbe0b5d8767e4446fafb116fd90",
+  "reviewed_head_sha": "59c7d5ea932db7ad724574fe6b460502798f85df",
+  "reviewed_run_id": "r-20261008T090013799518-promotion-module-split-moved",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T09:56:29.825860+00:00",
+  "total": 112
+}
