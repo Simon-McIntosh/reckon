@@ -80,6 +80,28 @@ def _fallback_kind(reason: object) -> str:
     return "other"
 
 
+def _codex_lane(row: Mapping[str, Any]) -> bool:
+    """Whether a run ran on the codex lane, joined through the catalogue.
+
+    A row is joined on the lane its backend names, not on a name prefix: the
+    lane's declared name, its models, an old alias and a model id all resolve to
+    the codex lane, while a backend whose name merely begins with ``codex``
+    reaches it only when the catalogue says it does. A backend the catalogue
+    cannot resolve is its own lane, so an unrecognised name is never folded into
+    codex.
+    """
+
+    name = str(row.get("backend") or "")
+    lane = str(row.get("lane") or "")
+    if not lane:
+        try:
+            lane, _ = ledger.resolve_name(name)
+        except ValueError:
+            lane = None
+        lane = lane or name
+    return lane == "codex"
+
+
 def _hold_path(docs: Path, project: str) -> Path:
     return docs / "state" / project / "picker-holds.jsonl"
 
@@ -224,10 +246,8 @@ def summarize(
                         and value >= 0
                     ]
                     level = _burn_level(min(measured)) if measured else "unknown"
-                    burn[level].append(
-                        routed and str(row.get("backend") or "").startswith("codex")
-                    )
-            if routed and str(row.get("backend") or "").startswith("codex"):
+                    burn[level].append(routed and _codex_lane(row))
+            if routed and _codex_lane(row):
                 chosen = next(
                     (
                         c
