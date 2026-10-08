@@ -1024,6 +1024,22 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
     expected = {
         ("crew", "ack"): {"--run", "--reason", "--until"},
         ("crew", "attach"): {"--run", "--task"},
+        ("crew", "budget-lift"): {
+            "--group",
+            "--multiple",
+            "--drain-by",
+            "--uncapped",
+            "--global",
+            "--session",
+            "--from",
+            "--until",
+            "--clock",
+            "--reason",
+            "--clear",
+            "--id",
+            "--pretty",
+        },
+        ("crew", "budget-lifts"): {"--group", "--pretty"},
         ("crew", "complete"): {
             "--run",
             "--gate",
