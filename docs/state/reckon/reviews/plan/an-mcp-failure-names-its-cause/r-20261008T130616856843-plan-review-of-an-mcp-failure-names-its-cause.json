@@ -1,0 +1,48 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T13:15:30.615Z",
+  "dispatched_at": "2026-10-08T13:06:44Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/an-mcp-failure-names-its-cause.html:84",
+      "id": "reuse_search-1",
+      "reason": "the census's central grouping (main checkout / worker worktree / temporary) is the census's purpose and would be wrong for ~97% of connections, so the author must name a classifier that reads the historical path rather than live git state.",
+      "text": "\u00a72 classifies the failure's working directory with `_in_linked_worktree` (`reckon/cli_entry.py:132`), but that owner compares the path's live git toplevel against its collapsed main-checkout root and returns `False` whenever the path is gone (`_git_capture` returns `None` for a removed directory; `repository_identity` collapses a worktree into its main checkout), so a worker worktree that has since been reaped reads as a main checkout; across 1,500 connection records sampled from `~/.cache/claude-cli-nodejs` on 2026-10-08, 1,453 record a cwd that no longer exists and 1,450 of those are worktree-shaped (`.../.reckon-worktrees/...`), all of which this classifier returns `False` for \u2014 the census would therefore report \u00a71's 1,068 `CONNECTION_CLOSED` worker-worktree failures as main-checkout failures and leave the worker-worktree bucket near empty. The encoded cache-directory name (`-home-...-Code--reckon-worktrees` with `/`\u2192`-`, which survives removal, being lossy for hyphens it cannot be decoded, only matched) is the input that can classify a historical path",
+      "type": "reuse_search",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "1b054849822b8f0212793e82637d288c99191d3c854504840a4bdb95ca511da8",
+  "plan_slug": "an-mcp-failure-names-its-cause",
+  "plan_version": 69,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T130616856843-plan-review-of-an-mcp-failure-names-its-cause",
+  "reviewed_blob_sha": "4c249f51c728d9ff7c32783f7d4206f149b09af9",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the census module hides the log-tree shape, the signature pattern table, the transcript walk and the directory-kind classification behind one function that doctor and an agent-supplied window both reach.",
+    "duplicate_owner": "pass \u2014 transcript-root enumeration and the content-block walk are delegated to their owners (`transcript_index` at `reckon/velocity.py:1363`, the extracted walk in `promotion_receipts` at `reckon/velocity.py:1551`) rather than forked, and no second reader of `~/.cache/claude-cli-nodejs` exists (grepped `reckon/`: none).",
+    "interface_budget": "pass \u2014 public_definitions 1597, cli_options 336, mcp_views 33, refusal_families 23; \u00a72 adds one module-level function and no command, view or refusal, and states in its own text that the `storage-slow` count has no existing reader, so nothing can be merged away.",
+    "reuse_search": "a finding \u2014 \u00a72 cites `_in_linked_worktree` in `reckon/cli_entry.py` as the owner that classifies the failure's working-directory kind, but that owner answers a live-git question and returns `False` for a worktree that no longer exists on disk, so it cannot classify the historical paths the census reads.",
+    "thin_wrapper": "pass \u2014 the census adds a capability no reader holds (the `storage-slow` count) rather than wrapping an existing reader, and it reuses the content-block walk by extracting it into `reckon/velocity.py` instead of copying it."
+  },
+  "section_digests": {
+    "_document": "fde96442d568e87088a9d75f21259acff20938624fe68039941e7b52e4c2123e",
+    "s1": "d0ea88c8e7e70627417eeb698c89b91962c8e03f4f18bbdc2e310ceeb8b0f1f5",
+    "s10": "469866bcda74ceac15429518848b4083b1f85964c53820829d32e65df2661acc",
+    "s11": "ba5d0db257057d6dede25c9555898552abc78e291d39b953a7da192229ffbd2f",
+    "s12": "371c3889cd142db38637604c178d996b86294895ad0edc5534d1731f0271fefe",
+    "s2": "d74a3de11c849587d85e890ec78c1c983d9cd513329865368bfb26170aa789e8",
+    "s3": "05d43e5ed58103318c10e33d1dc6795cf27a2ab17593f4c172bb381d8c00fcde",
+    "s4": "fd5d8817baa9c4f4d8838eaad2fd20fb5a6088ac1c8dad8718a0fc1f7eeec45f",
+    "s5": "0efccf9b7631774bee09027c337e0599e1d4ad91274eb1c58105ba82279f9a54",
+    "s6": "38a3b13749c17899e607aeb6eb1c1324c5b7b7ecbe0f2027b43a50657e063c20",
+    "s7": "9a485205c44b324dcb24ad7acf24f7bfd53171fa8c18a03e9c9a2bdf3a458bed",
+    "s8": "019dc7e9b6ed8d4895820ecc99822eb6c6d34ba61c11a67986dd5d0154d5f3c1",
+    "s9": "633f50004da507a9f6881ceffc2c738ff841e6e61a27b5ff963f53749c491fcd"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T13:22:55.386054+00:00"
+}
