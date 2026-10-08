@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="an-mcp-failure-names-its-cause">
+  <meta name="plan-title" content="An MCP Failure Names Its Cause">
+  <meta name="plan-summary" content="MCP servers fail at launch and time out under load with misleading labels; a census names each failure's cause, and launches stop syncing a shared environment.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="8.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S25">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-depends-on" content="reckon-reads-answer-in-seconds">
+  <meta name="plan-north-star" content="unattended-execution">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+  <title>An MCP Failure Names Its Cause | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: the servers every session leans on fail, and say the wrong thing when they do</h2>
+    <p>Every coordinator and worker reaches reckon's plan and crew state through the <code>reckon</code> MCP
+      server, and the IMAS projects reach their graph through <code>imas-cx</code>. When either fails, a session
+      falls back to the CLI or stops. The lead reported both as recurrent on 2026-10-08, and asked for a way to
+      find the cause of each failure, not only a fix for the current one.</p>
+    <p>Claude Code writes one log per server connection under
+      <code>~/.cache/claude-cli-nodejs/&lt;cwd&gt;/mcp-logs-&lt;server&gt;/&lt;timestamp&gt;.jsonl</code>.
+      Reading every such log from the seven days to 2026-10-08 (3,815 <code>reckon</code> connections and 1,652
+      <code>imas-cx</code> connections, across main checkouts and worker worktrees) gives these failure
+      signatures:</p>
+    <table>
+      <thead><tr><th>Server</th><th>Signature in the log</th><th>Count</th><th>Where</th></tr></thead>
+      <tbody>
+        <tr><td>imas-cx</td><td><code>Connection failed (CONNECTION_CLOSED)</code>, the server exiting before it answered</td><td>1,068</td><td>worker worktrees</td></tr>
+        <tr><td>imas-cx</td><td><code>Failed to generate package metadata for imas-standard-names @ editable+../imas-standard-names</code></td><td>751</td><td>imas-codex worktrees: imas-codex's <code>.mcp.json</code> runs <code>uv run imas-codex serve</code> from the working directory, so the relative source resolves beside the worktree, where no sibling checkout exists</td></tr>
+        <tr><td>imas-cx</td><td><code>error: No such file or directory (os error 2)</code>, 40 ms after launch</td><td>576</td><td>imas-ambix worktrees; the cause is not yet known</td></tr>
+        <tr><td>both</td><td><code>failed to remove file …/.venv/bin/…: Read-only file system</code></td><td>136 imas-cx, 173 reckon</td><td>fenced workers: <code>uv run</code> without <code>--no-sync</code> tries to rewrite the shared environment's console scripts, which the fence mounts read-only</td></tr>
+        <tr><td>imas-cx</td><td><code>CONNECT_TIMEOUT … 30000ms</code></td><td>30</td><td>worker worktrees under load</td></tr>
+        <tr><td>reckon</td><td><code>Failed to validate request … input_value='server/discover'</code> on stderr</td><td>808</td><td>everywhere; harmless, the connection succeeds in the same millisecond</td></tr>
+      </tbody>
+    </table>
+    <p>The <code>reckon</code> server's recurrent failure is not in those logs, because it is a tool result
+      rather than a lost connection. Transcripts under <code>~/.claude/projects</code> since 2026-10-01 hold 180
+      <code>storage-slow</code> results in 32 sessions: 84 from <code>read_plan</code>, 51 from
+      <code>roadmap</code>, 42 from <code>crew</code> and 3 from <code>edit_plan</code>. The label claims the
+      filesystem was slow. On 2026-10-08 a <code>stat</code> of the plan whose <code>read_plan</code> had just
+      timed out took 3 ms, while <code>reckon roadmap --project reckon</code> from the CLI took 87 s wall and
+      44 s of CPU on a node with load average 31. <code>_run_under_deadline</code> in <code>reckon/mcp.py</code>
+      runs each tool body on a worker thread under a 30 s read deadline and abandons it at the deadline. An
+      abandoned body that is busy computing keeps its thread and its share of the interpreter, so the next call
+      competes with it. A deadline that cannot tell computing from waiting reports both as storage. The shipped
+      plan <a href="/reckon/reckon-reads-answer-in-seconds">reckon-reads-answer-in-seconds</a> brought warm
+      reads to seconds. Every session and every worker now starts its own server, so a read is warm only after
+      that server has answered once.</p>
+    <p>The environment is not stale. <code>reckon doctor</code> on 2026-10-08 reported the reckon environment
+      matching its lockfile and its editable install pointing at the main checkout, so a resync would not have
+      prevented any of these failures. The launches themselves are the problem: every one runs <code>uv run</code>,
+      which syncs before it starts the server.</p>
+    <p>Each worker sandbox also starts its own servers. On 2026-10-08 the fleet node carried about twenty
+      <code>imas-codex serve</code> processes of about 610 MB resident each, roughly 12 GB of a 120 GB
+      allocation, most of them in workers that never called the graph.</p>
+
+    <h2 id="s2">§2 — reckon doctor names every MCP failure's cause</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> <code>reckon doctor mcp</code> reads Claude Code's MCP connection logs
+      for a window (default seven days, <code>--since</code> to change it) and reports, per server, how many
+      connections it saw and how many failed, grouped by cause. Each cause carries its count, newest occurrence,
+      one example log path and the kind of working directory it failed in: main checkout, worker worktree or
+      temporary directory. The causes are the signatures in §1's table, matched by a table of patterns in a new
+      module <code>reckon/mcp_census.py</code>. A failure no pattern matches is reported as unclassified with
+      its first line rather than dropped, because the next unknown cause is the one this command exists to
+      surface. It also counts <code>storage-slow</code> tool results per tool from the transcripts for the
+      same window. <code>--json</code> emits the same report for an agent. The command reads and never
+      writes, and its runtime is bounded by naming the log directories it walks.</p>
+    <p><strong>Done when</strong> <code>tests/test_mcp_census.py</code> builds a fixture log tree holding one
+      connection per signature in §1 plus one clean connection and one unmatched failure. It asserts that every
+      signature lands in its cause with the right count, the unmatched failure is reported as unclassified, the
+      clean connection counts as a success, and the JSON and text outputs agree. A negative control is
+      executed and logged: with the pattern table emptied, every failure reports as unclassified and the test
+      fails. Run against the real log tree on the fleet node, the census reproduces §1's imas-cx
+      <code>CONNECTION_CLOSED</code> count within 5% for the same window. The write paths are
+      <code>reckon/mcp_census.py</code>, <code>reckon/cli.py</code> and <code>tests/test_mcp_census.py</code>.</p>
+
+    <h2 id="s3">§3 — A reckon MCP timeout says whether it was computing or waiting</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> <code>_run_under_deadline</code> in <code>reckon/mcp.py</code> measures
+      the thread CPU time its body has spent at the moment the deadline expires, beside the wall time, and the
+      timeout result carries both with a <code>cause</code> of <code>computing</code> or <code>waiting</code>.
+      The message and hint name that cause. For computing, they say the call was abandoned while it was still
+      working, and give the CLI command that answers without a deadline. The <code>error</code> value stays
+      <code>storage-slow</code> so no existing caller's branch changes. A second call with the same tool and
+      arguments, made while an abandoned body for it is still running, waits on that body rather than
+      starting another, so repeated retries cannot stack copies of one expensive read.</p>
+    <p><strong>Done when</strong> a test in <code>tests/test_mcp_deadline_names_its_cause.py</code> runs one
+      body that spins the CPU past a short deadline and one that sleeps past it. The first reports
+      <code>computing</code> and the second <code>waiting</code>, each with wall and CPU seconds. A third case
+      issues the spinning call twice inside the deadline window and observes one body execution, not two. A
+      negative control is executed and logged: with the CPU measurement removed, the first case reports
+      <code>waiting</code> and the test fails. The write paths are <code>reckon/mcp.py</code>,
+      <code>reckon/_mcp_tools.py</code> and <code>tests/test_mcp_deadline_names_its_cause.py</code>.</p>
+
+    <h2 id="s4">§4 — Measure where a reckon read spends its time</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> A measurement of <code>read_plan</code> (summary view of one plan),
+      <code>roadmap</code> (summary view of the reckon project) and <code>crew</code> (live view) as an MCP
+      server answers them: cold, the first call of a fresh server, and warm, the third call. Each is reported
+      with wall time, process CPU time and the top functions by cumulative time from a profile. It runs on the
+      fleet node under its ordinary load, records that load, and compares the warm figures with the claim
+      <a href="/reckon/reckon-reads-answer-in-seconds">reckon-reads-answer-in-seconds</a> shipped. The report
+      is written to the run directory and ends with the change it recommends, which becomes a new section of
+      this plan if it is reckon's to make.</p>
+    <p><strong>Done when</strong> the report gives cold and warm wall and CPU seconds for all three reads,
+      names the functions that dominate the slowest one, and says whether the warm path still answers within
+      the deadline. A positive control is part of the measurement: a call against a fixture project of three
+      plans answers in under a second on the same node.</p>
+
+    <h2 id="s5">§5 — reckon doctor flags any MCP launch that would sync or resolve from its working directory</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> <code>reckon doctor</code> reads every stdio MCP server registered for
+      Claude Code: the user-scope entries in <code>~/.claude.json</code> and the <code>.mcp.json</code> of each
+      mounted project. It flags a launch that runs <code>uv run</code> without <code>--no-sync</code>, or that
+      names no absolute <code>--project</code> and so resolves its project from whatever directory the session
+      started in. A worker's worktree is the case that fails. For each flagged launch it prints the corrected
+      command, <code>uv run --no-sync --project &lt;absolute checkout&gt; …</code>, and exits non-zero. The
+      existing environment-drift check stays beside it, because a launch that no longer syncs depends on the
+      shared environment being kept current, which is already every agent's job. reckon edits no other
+      project's <code>.mcp.json</code>. Those edits belong to their repositories and are recorded as followups
+      naming each one.</p>
+    <p><strong>Done when</strong> <code>tests/test_doctor_mcp_launch.py</code> gives doctor a fixture user
+      config and two fixture projects. One project launches with <code>uv run imas-codex serve</code>, one with
+      <code>uv run --no-sync --project /abs/path imas-codex serve</code>, and the user-scope reckon entry
+      launches with <code>uv run --project /abs/path reckon mcp</code>. Doctor flags the first project and the
+      user-scope entry, prints a corrected command for each, passes the second project, and exits non-zero. A
+      negative control is executed and logged: with the <code>--no-sync</code> check removed, the user-scope
+      entry passes and the test fails. Every <code>reckon sync</code> and <code>reckon doctor</code> test that
+      reads a config resolves it under a temporary home, and the test asserts the real
+      <code>~/.claude.json</code> is untouched. The write paths are <code>reckon/cli.py</code> and
+      <code>tests/test_doctor_mcp_launch.py</code>.</p>
+
+    <h2 id="s6">§6 — Find why imas-cx exits with os error 2 in imas-ambix worktrees</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> An investigation of the 576 imas-cx launches that died 40 ms after start
+      with <code>error: No such file or directory (os error 2)</code>, all in imas-ambix worktrees, where
+      imas-ambix's <code>.mcp.json</code> runs <code>uv run --project /home/ITER/mcintos/Code/imas-codex imas-codex
+      serve --no-embed</code>. Two hypotheses were tested on 2026-10-08 and do not reproduce: a working directory
+      deleted before launch, and a missing <code>TMPDIR</code>. Both ran cleanly. The investigation reproduces the
+      failure inside a worker's fence (the bind mounts, <code>CLAUDE_CONFIG_DIR</code>, <code>TMPDIR</code> and
+      <code>UV_OFFLINE=1</code> a dispatched worker carries), or finds the path uv could not open from
+      <code>strace</code> or uv's verbose output. It names the cause and the owning repository of the fix.</p>
+    <p><strong>Done when</strong> the report names the file uv failed to open, shows the failure reproduced
+      on demand and absent under a changed condition that differs in one variable, and names the repository and
+      file whose change removes it. Census figures in the report come from §2's command where it has landed, or
+      from a recorded count otherwise.</p>
+
+    <h2 id="s7">§7 — A worker starts only the MCP servers its work uses</h2>
+<section data-reckon="section" data-id="s7" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> A dispatched worker's harness starts the <code>reckon</code> server and
+      no project MCP server unless the node asks for one. Dispatch already writes each run's own harness home
+      under <code>CLAUDE_CONFIG_DIR</code>, so the worker's settings there disable the project's
+      <code>.mcp.json</code> servers by default. A <code>--mcp &lt;name&gt;</code> dispatch option enables a
+      named one for a node whose work queries it, and the run record carries the servers it enabled. A
+      worker that needs the graph is no worse off. One that does not stops paying about 610 MB of memory and a
+      launch that fails in a third of worktrees.</p>
+    <p><strong>Done when</strong> a dispatch test reads the harness settings written for a fixture run with no
+      <code>--mcp</code> option and finds the project's servers disabled and reckon enabled. With
+      <code>--mcp imas-cx</code> it finds imas-cx enabled, and the run record names it. A negative control is
+      executed and logged: with the settings write removed, the project server reads enabled and the test
+      fails. The write paths are the dispatch module that writes the harness home, which the design review
+      names, and a new test file.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="launch-form" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">What form should every MCP launch take?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="uv-no-sync">uv run --no-sync --project &lt;absolute checkout&gt;, keeping uv's resolution of the console script</button>
+      <button class="r-opt" data-value="venv-script">The checkout's own .venv/bin/&lt;script&gt;, with no uv in the launch</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-amfc-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-08" data-recommends-skill="/reckon-build an-mcp-failure-names-its-cause">
+    <h4 class="r-fu-title">Build the census and the honest timeout, and find the remaining launch failure</h4>
+    <div class="r-fu-body"><p>Plan authored from the 2026-10-08 read of Claude Code's MCP logs and session transcripts. §2, §3, §4 and §6 have disjoint write scopes and can run together. §5 waits for §2, because both edit <code>reckon/cli.py</code>. §7 waits for the launch-form decision only where it changes the harness settings.</p></div>
+    <pre class="r-fu-prompt">/reckon-build an-mcp-failure-names-its-cause</pre>
+</article>
+</section>
+  </main>
+</body>
+</html>

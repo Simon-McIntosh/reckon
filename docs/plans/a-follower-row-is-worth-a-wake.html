@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-follower-row-is-worth-a-wake">
+  <meta name="plan-title" content="A Follower Row Is Worth A Wake">
+  <meta name="plan-summary" content="Every ticker row wakes the coordinator; deliver a settled change only when it asks for action or is news nobody caused, never starts, echoes or replays.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="6.5">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S25">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-depends-on" content="a-follower-outlives-its-monitor">
+  <meta name="plan-north-star" content="unattended-execution">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <title>A Follower Row Is Worth A Wake | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: a row is a turn, and most rows ask for nothing</h2>
+    <p>Each line the follower prints reaches the coordinating session as a notification, and each
+      notification can open a turn. The session host from
+      <a href="/reckon/a-follower-lives-as-long-as-its-session">a-follower-lives-as-long-as-its-session</a>
+      keeps that stream open for the whole session, so the stream's density is now the main cost of
+      watching a fleet. The lead reads the same lines in the same transcript, so a row that wastes the
+      coordinator's turn also costs the lead attention.</p>
+    <p>On 2026-10-08 the lead asked for the stream to carry important transitions and to drop start-up
+      flap and rapid transitions: a dispatch should not produce <em>dispatched → working</em>, a bare
+      <em>working</em> and an exit row in quick succession. The measurement below is the case for doing
+      that, read from every Claude Code transcript under <code>~/.claude/projects</code> with a
+      <code>Monitor event</code> notification since 2026-10-07 (14 sessions, 2,676 notifications,
+      3,128 rows) and from the producer streams under <code>~/.config/reckon/crew/watch/*.events</code>
+      since 2026-10-05 (6,825 transitions over 2,027 runs).</p>
+    <table>
+      <thead><tr><th>Row the coordinator received</th><th>Rows</th><th>Share</th><th>Asks the coordinator for</th></tr></thead>
+      <tbody>
+        <tr><td><code>dispatched → working</code></td><td>624</td><td>20%</td><td>nothing: the dispatch call already returned the launch</td></tr>
+        <tr><td>a terminal echo: <code>→ recorded</code>, <code>→ promoted</code>, <code>→ withdrawn</code>, <code>→ discarded</code></td><td>699</td><td>22%</td><td>nothing in the usual case: the coordinator's own <code>crew complete</code> caused it</td></tr>
+        <tr><td>a bare re-announcement with no arrow, emitted when a follower attaches or its host restarts it</td><td>446</td><td>14%</td><td>nothing: the state was already delivered</td></tr>
+        <tr><td>Monitor expiry and re-arm lines</td><td>95</td><td>3%</td><td>a re-arm, which the session host now makes unnecessary</td></tr>
+        <tr><td>an action state: complete, unpromoted, blocked, stalled, stopped, waiting, wait-aged, failed, unreadable</td><td>1,053</td><td>34%</td><td>a promotion, a review, a decision or a repair</td></tr>
+        <tr><td>a return to working from complete, unpromoted, blocked or waiting</td><td>152</td><td>5%</td><td>news: a repair round or a recovery started</td></tr>
+      </tbody>
+    </table>
+    <p>About three rows in five ask for nothing. The producer stream also shows the rapid transitions directly. A run reaches a
+      settled state through a chain of rows written seconds apart: <code>exited-unfinished → blocked</code>
+      within 2 s, <code>blocked → wait-aged → blocked</code> within 3 to 8 s,
+      <code>working → stopped → discarded</code> within a median 18 s. The stream also carries rows whose
+      state does not change at all (<code>withdrawn → withdrawn</code>, <code>recorded → recorded</code>,
+      <code>working → working</code>). Session <code>9cf43820</code> received
+      <code>dispatched → working</code> at 02:50:15 and then a bare <code>working</code> for the same run at
+      02:53:00. That was the replay of a follower its host had restarted at 02:52:42. Session
+      <code>184d1501</code>'s first plugin batch at 02:34:36 replayed rows stamped 11:55 and 12:07 the day before.</p>
+    <p>The producer already says which rows ask for something. Every transition carries a
+      <code>recovery</code> verb: <code>observe</code> on 2,125 of 2,125 rows into working and 268 of 275
+      into withdrawn, an empty verb on every terminal record, and <code>promote</code>, <code>review</code>,
+      <code>decide</code>, <code>resume</code>, <code>wait</code>, <code>investigate</code>,
+      <code>repair</code> or <code>redispatch</code> on every row that needs the coordinator.
+      <code>NEEDS_ACTION</code> and <code>SETTLED_STATES</code> in <code>reckon/crew/ticker.py</code>
+      draw the same line for the display. This plan reuses both and adds no new classification.</p>
+    <p><code>crew_follow</code>'s docstring in <code>reckon/cli.py</code> says every transition is
+      delivered and that no option narrows to action states, because hiding a recovery hides the news a
+      reader is waiting for. This plan keeps that guarantee in a different form. Every change that asks for action or
+      reverses an action row the reader was shown is delivered, and only rows that ask for nothing and
+      reverse nothing are held back. <code>--all</code> keeps the complete stream for a human pane.</p>
+    <p>The active plan
+      <a href="/reckon/a-follower-keeps-your-work-in-view">a-follower-keeps-your-work-in-view</a> proposes
+      a needs-you line on a ten-minute cadence. Under host delivery that is a turn every ten minutes per
+      session whether or not anything changed. Its owner should weigh this plan's measurement before
+      building that cadence. Nothing here edits that plan.</p>
+
+    <h2 id="s2">§2 — One row policy decides what a follower delivers</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> A pure module, <code>reckon/crew/row_policy.py</code>, that takes one
+      run's transitions in order, each with its <code>observed_at</code>, <code>to_state</code> and
+      <code>recovery</code>, and returns the rows a reader should receive and when. It holds a run's
+      change until the run has gone a settle window with no further transition. Twenty seconds covers
+      every measured chain in §1, and no row is ever held more than two minutes from its first
+      transition. When a change settles, the policy compares the settled state with the state this
+      reader last judged for the run and classifies the net change:</p>
+    <ul>
+      <li><strong>Deliver</strong> when the settled state is in <code>NEEDS_ACTION</code>, or its
+        <code>recovery</code> verb is anything other than <code>observe</code> or empty.</li>
+      <li><strong>Deliver</strong> when the reader was shown an action row for the run and the run has
+        since returned to working. That is the recovery the docstring protects.</li>
+      <li><strong>Deliver</strong> when a run reaches a terminal state without the reader having been
+        shown an action row for it, such as a working run withdrawn or discarded by another actor.</li>
+      <li><strong>Hold back</strong> a start (<code>dispatched</code> or <code>working</code> with
+        <code>observe</code>), a row whose state equals the judged state, a terminal state reached
+        after the reader was shown the action row that led to it, and a run that appears and reaches a
+        terminal state inside one settle window without asking for anything.</li>
+    </ul>
+    <p>The judged state advances on every settled change, delivered or held back. A held-back change has
+      been judged, and judging it again at the next attach is the replay this plan removes. The policy
+      composes no text: it returns the event to render, so the ticker's row format and colours are
+      unchanged. It is composed in Python because the live MCP view and an agent reading the stream need
+      the same answer as the pane.</p>
+    <p><strong>Done when</strong> <code>tests/test_row_policy.py</code> drives the policy with the measured
+      sequences as fixtures and checks each one:</p>
+    <ul>
+      <li><code>dispatched → working → complete → recorded</code>, with the complete delivered before the
+        recorded arrives, yields exactly one row, the complete.</li>
+      <li><code>working → exited-unfinished → blocked</code> two seconds apart yields one row, the blocked.</li>
+      <li><code>blocked → wait-aged → blocked</code> inside the window yields nothing after a delivered
+        blocked.</li>
+      <li>A delivered blocked followed by working yields the recovery row.</li>
+      <li><code>dispatched → withdrawn → withdrawn</code> yields nothing.</li>
+      <li>A run withdrawn from working with no action row delivered yields the withdrawn row.</li>
+      <li>A run that keeps changing state every ten seconds is delivered within two minutes of its first change.</li>
+    </ul>
+    <p>A negative control is executed and logged: with the settle window set to zero and every change
+      delivered, the first and third cases fail. The write paths are <code>reckon/crew/row_policy.py</code>
+      and <code>tests/test_row_policy.py</code>.</p>
+
+    <h2 id="s3">§3 — The follower delivers through the policy</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> <code>reckon crew follow</code> passes every transition through the
+      §2 policy before it reaches the pane, in the generator <code>_follow_watch_lines</code> in
+      <code>reckon/cli.py</code>, so the same rows go to a session host's follower and to a Monitor
+      fallback. A held row is released by the follower's wait pass when its window elapses, not only when
+      the next transition arrives, so a lone completion is never stuck behind a quiet fleet. The judged
+      state is persisted beside the existing delivered record that <code>note_delivered</code> writes
+      through <code>runs.write_delivered</code>, so a restarted or re-armed follower resumes judging where
+      the last one stopped. A new <code>--all</code> flag bypasses the policy and delivers every row as
+      today, for a human tailing the stream in a pane. The docstring's every-transition paragraph is
+      rewritten to state the guarantee §1 gives.</p>
+    <p><strong>Done when</strong> <code>tests/test_follow_settled_rows.py</code> runs a follower over a
+      fixture stream for one session and checks three things. The stream holds one run that goes dispatched, working,
+      complete and recorded, and one that goes working, exited-unfinished and blocked two seconds apart.
+      The pane receives exactly two rows, the complete and the blocked. With <code>--all</code>
+      the same fixture delivers all six transitions. A completion with no later transition is
+      delivered within the window plus one poll interval. The negative control is executed and logged: with the
+      policy call removed, the first assertion fails with six rows. The write paths are
+      <code>reckon/cli.py</code> and <code>tests/test_follow_settled_rows.py</code>.</p>
+
+    <h2 id="s4">§4 — An attach re-announces nothing the reader has judged</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> When a follower attaches, it draws no row for a run whose current
+      state equals the state the reader last judged. That covers a session's first arming, a host
+      restarting its child after backoff, an in-place reload and a Monitor re-arm. Runs that moved
+      during the gap are passed through the §2 policy, so a run that completed while nobody watched is
+      delivered and a run that merely started is not. A first attach with no judged record draws one
+      summary line naming the session's run counts, then one row for each run in an action state. It
+      draws no row per working run. Under session-host delivery the dim history burst that
+      <code>_follow_history_burst</code> replays from the pane's stored history is not drawn, because
+      the Claude transcript already holds those rows. The Monitor fallback keeps it.</p>
+    <p><strong>Done when</strong> <code>tests/test_follow_attach_is_quiet.py</code> attaches a follower
+      twice to a fixture holding one working run, one unpromoted run and one run that completed between
+      the two attachments. The first attach draws one summary line and the unpromoted row. The second
+      attach draws only the completion, and draws no bare <code>working</code> row. A host-delivered
+      follower with a stored pane history draws no history row. The negative control is executed and logged: with
+      the judged-state comparison removed, the second attach draws a bare <code>working</code> row and
+      the test fails. The write paths are <code>reckon/cli.py</code> and
+      <code>tests/test_follow_attach_is_quiet.py</code>.</p>
+
+    <h2 id="s5">§5 — Replay the measured week through the policy</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> A measurement that feeds every producer stream under
+      <code>~/.config/reckon/crew/watch/*.events</code> from 2026-10-05 to 2026-10-08 through the merged
+      policy, one session at a time, and reports, per session and in total:</p>
+    <ul>
+      <li>the rows today's follower would deliver and the rows the policy delivers;</li>
+      <li>every settled action state the policy held back, which must be none;</li>
+      <li>the longest delay between a transition into an action state and its delivery.</li>
+    </ul>
+    <p>The report is written to the run directory and summarised in the landing record. It reads the
+      streams and writes nothing beside them.</p>
+    <p><strong>Done when</strong> the report shows at least half of today's rows removed, zero held-back
+      action states, and no action row delayed more than two minutes. As a positive control, the same replay with
+      the window at zero reproduces today's row count within 2%.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="start-rows" data-choice="held-back" data-by="Simon McIntosh" data-when="2026-10-08">
+    <p class="r-dec-q">Does a dispatch produce a row when its worker starts?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="held-back">No: a start is held back, and a run that fails to start is delivered by its action state</button>
+      <button class="r-opt" data-value="delivered">Yes: deliver dispatched → working as today</button>
+      </p>
+    <p class="r-dec-rat">The lead's direction on 2026-10-08: dispatched → working rows are not needed. The dispatch call already returned the launch, and a launch that fails reaches stalled, launch-failed or withdrawn, which the policy delivers.</p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-afrw-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-08" data-recommends-skill="/reckon-build a-follower-row-is-worth-a-wake">
+    <h4 class="r-fu-title">Build the row policy, then deliver and attach through it</h4>
+    <div class="r-fu-body"><p>Plan authored from the 2026-10-08 measurement of delivered rows. §2 lands first; §3 and §4 both edit the follower in <code>reckon/cli.py</code> and run in sequence after it; §5 measures the merged result.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-follower-row-is-worth-a-wake</pre>
+</article>
+</section>
+  </main>
+</body>
+</html>
