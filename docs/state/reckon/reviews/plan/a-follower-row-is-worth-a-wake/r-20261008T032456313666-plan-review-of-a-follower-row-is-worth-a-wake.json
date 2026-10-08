@@ -1,0 +1,43 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T03:48:05.698Z",
+  "dispatched_at": "2026-10-08T03:25:36Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-follower-row-is-worth-a-wake.html:198",
+      "id": "done_when-1",
+      "reason": "the \u00a75 node would either report the gate failed on a legitimate policy path or fudge the count, so the gate must exclude noise-pair resolutions or \u00a72 must deliver `completed_unpromoted`; this is a distinct mechanism from the answered delay finding, which is a row delayed 300 s, whereas here the row is dropped outright and the action state is never delivered.",
+      "text": "\u00a75's gate demands \"zero held-back action states\", but the merged policy drops the completing receipt `blocked \u2192 completed_unpromoted`, the resolution of the `(\"working\",\"blocked\")` pair in `NOISE_PAIRS`, via the unchanged `NOISE_RESOLUTIONS` rule, and `completed_unpromoted` is in `SETTLED_STATES` and is counted an action state by \u00a71 and by `HIDDEN_AT_ATTACH`; reproduction (run at base 068fc9650 via `replay_row_policy` over `working\u2192blocked` then `blocked\u2192completed_unpromoted` two seconds apart) printed zero rows for that run, so the settled action state `completed_unpromoted` never reaches the coordinator",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "dfb9efbf0f5c4d7c829b4bd83400a9912ff2b5dc72d09c1f58a9230267b42fc1",
+  "plan_slug": "a-follower-row-is-worth-a-wake",
+  "plan_version": 20,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T032456313666-plan-review-of-a-follower-row-is-worth-a-wake",
+  "reviewed_blob_sha": "a397e73a25085789a9326982a8d551435d63130f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `replay_row_policy`, `NOISE_PAIRS` and `~/.config/reckon/crew/watch/*.events` all resolve, and the four plan/research hrefs target files that exist under `docs/`.",
+    "done_when": "a finding \u2014 \u00a75's gate asserts \"zero held-back action states\" but the merged policy's unchanged noise-pair handling drops a settled action state, so the gate is unachievable as written.",
+    "evidence_paths": "pass \u2014 \u00a75's report goes to the run directory, which survives the run and is openable by a later reader; its inputs are read-only producer streams.",
+    "naming": "pass \u2014 \u00a75 introduces no plan labels, ticket numbers or version tags into code, and no changelog prose.",
+    "reasoning": "pass \u2014 the amended delay clause (\"two minutes beyond the NOISE_PAIRS window its opener carries, which is zero for an opener outside those pairs\") is consistent with \u00a72's \"settle hold never keeps a row more than two minutes\" plus the unchanged 90 s/300 s noise windows, so it is satisfiable, and \u00a75's mechanism runs on the real path (`replay_row_policy` \u2192 `PaneRowPath`, the same class `follower_row_path` feeds).",
+    "single_goal": "pass \u2014 \u00a75 carries one deliverable, the replay measurement and its report.",
+    "wiring": "pass \u2014 the plan's `a-follower-outlives-its-monitor` depends-on resolves to an existing plan, and \u00a75's need for \u00a72's policy and observer-shown pane is carried by the followup's ordering (\u00a72 lands first, \u00a75 measures the merged result)."
+  },
+  "section_digests": {
+    "_document": "57651ac23d8c226b299a6fb3798c4954e38bfc8b12c6a6ee0afcae03f380f75f",
+    "s1": "bea06a70e5a727324f7f05ddea157674cb647360778af5da9d99b6cb372018e7",
+    "s2": "3ee42fb117f700a79bc8c342e9189347db5f6958bc788a127165416e9de7bd41",
+    "s3": "41d4ddd08ef0e265dd9b427e22278337608b4bef109bcc1632efbc0a2b31ec0e",
+    "s4": "2d1b89c737dfa8e215eb5353d9bd4452995d7c371c2446691bb88bd8e5e9f57f",
+    "s5": "5a420feaf96a858172eb9220dc1aea1a997735fbc8a33d53c4649116515bc4b0"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T03:48:15.044341+00:00"
+}
