@@ -581,6 +581,8 @@ def _write_settings(
     path: Path, payload: dict[str, Any], original: bytes | None
 ) -> None:
     """Write the document atomically, refusing to overwrite a concurrent edit."""
+    if original == (_render(payload) + "\n").encode():
+        return
     if original is None:
         if path.exists():
             raise HookInstallError(

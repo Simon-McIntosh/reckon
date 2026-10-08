@@ -473,7 +473,7 @@ def test_sync_replaces_an_installed_guard_without_duplicating_it(
     composed = installer.build_hook_snippet(include_git_guard=True)["hooks"][
         "PreToolUse"
     ][0]
-    assert cli._is_worker_git_guard_group(composed)
+    assert installer._is_crew_guard_group(composed)
     target.write_text(json.dumps({"hooks": {"PreToolUse": [composed]}}))
 
     cli._configure_crew_guards(target, remove=False, include_git_guard=True)
@@ -481,13 +481,11 @@ def test_sync_replaces_an_installed_guard_without_duplicating_it(
     groups = json.loads(target.read_text())["hooks"]["PreToolUse"]
     guards = [group for group in groups if group.get("matcher") == "Bash"]
     assert len(guards) == 1
-    assert cli._is_worker_git_guard_group(guards[0])
+    assert installer._is_crew_guard_group(guards[0])
     assert len(_pre_tool_use_bash_commands({"hooks": {"PreToolUse": guards}})) == 1
 
 
 def test_guard_group_recognises_bare_and_composed_commands() -> None:
-    from reckon import cli
-
     script = installer.worker_git_guard_script_path()
     bare = {
         "matcher": "Bash",
@@ -497,13 +495,14 @@ def test_guard_group_recognises_bare_and_composed_commands() -> None:
 
     for group in (bare, composed):
         assert installer.is_worker_git_guard_group(group)
-        assert cli._is_worker_git_guard_group(group)
+        assert installer._is_crew_guard_group(group)
 
     unrelated = {
         "matcher": "Bash",
         "hooks": [{"type": "command", "command": "/opt/hooks/other_guard.py"}],
     }
     assert not installer.is_worker_git_guard_group(unrelated)
+    assert not installer._is_crew_guard_group(unrelated)
 
 
 def test_sync_uses_the_installer_guard_group_contract(
@@ -523,12 +522,16 @@ def test_sync_uses_the_installer_guard_group_contract(
     cli._configure_crew_guards(target, remove=False, include_git_guard=True)
     assert composed_paths == [cli._worker_git_guard_path()]
 
-    composed = original_composer()
-    monkeypatch.setattr(
-        installer, "is_worker_git_guard_group", lambda group: group is composed
-    )
-    assert cli._is_worker_git_guard_group(composed)
-    assert not cli._is_worker_git_guard_group(original_composer())
+    seen: list[dict] = []
+    original_recognizer = installer._is_crew_guard_group
+
+    def record_recognition(group: dict) -> bool:
+        seen.append(group)
+        return original_recognizer(group)
+
+    monkeypatch.setattr(installer, "_is_crew_guard_group", record_recognition)
+    cli._configure_crew_guards(target, remove=False, include_git_guard=True)
+    assert any(group.get("matcher") == "Bash" for group in seen)
 
 
 def test_the_fragment_is_unchanged_when_the_guard_is_not_requested() -> None:
