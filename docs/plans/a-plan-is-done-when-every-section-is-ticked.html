@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.33">
-<meta name="plan-version" content="20">
+<meta name="plan-version" content="22">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -171,8 +171,8 @@
 
     <h2 id="s9">§9 — A deferred section blocks only the work that names it</h2>
 <section data-reckon="section" data-id="s9" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-<p><strong>Deliverable.</strong> Under §6 a plan holding a deferred section stays open, so a dependency that waits for the whole plan to reach <code>done</code> would wait for ever. The roadmap's readiness judges a dependency by the sections it needs. In <code>reckon/roadmap.py</code>, a whole-plan dependency on a plan (<code>plan-depends-on: other</code>) is satisfied when that plan is complete, or when none of its sections is left <code>implementable</code>: every section is done or deferred, read through §3's open-section predicate. A section dependency (<code>other#sN</code>) is satisfied when that section's declaration is <code>done</code>, as well as by the existing completed-plan and passed-gate routes, and never while the section is deferred or implementable. Today <code>_section_satisfied</code> reads no declaration at all, so a ticked section satisfies nothing until its plan is complete or its gates have passed.</p>
-<p><strong>Done when</strong> tests on a fixture project find the following, with plan A having §1 done, §2 deferred and status active. A plan depending on A is ready. A plan depending on <code>A#s1</code> is ready. A plan depending on <code>A#s2</code> is blocked, and the blocker names <code>A#s2</code>. A plan depending on a plan that still has an implementable section is blocked as today. The first two fail on the current code, which waits for A to be complete; that is their negative control.</p>
+<p><strong>Deliverable.</strong> Under §6 a plan holding a deferred section stays open, so a dependency that waits for the whole plan to reach <code>done</code> would wait for ever. The roadmap's readiness judges a dependency by the sections it needs. In <code>reckon/roadmap.py</code>, a whole-plan dependency on a plan (<code>plan-depends-on: other</code>) is satisfied when that plan is complete, or when at least one of its sections is done and none is left <code>implementable</code>, read through §3's open-section predicate. Two cases are uncertain, and no fixed rule settles them (decision below): a plan whose sections are all deferred, so nothing in it was built, and a plan with an authored heading that carries no declaration. In both, the dependency reads blocked by default, and the roadmap reports it in a <code>judgment_required</code> block, in the same shape as the existing <code>schedule_override</code> block. The block names the dependent, the target, the reason and the sections concerned, so the orchestrator decides: build or un-defer the section, or narrow or remove the dependency. The reckon-build skill names the block beside <code>schedule_override</code> as something the coordinator reports and decides before dispatch. A section dependency (<code>other#sN</code>) is satisfied when that section's declaration is <code>done</code>, as well as by the existing completed-plan and passed-gate routes, and never while the section is deferred or implementable. Today <code>_section_satisfied</code> reads no declaration at all, so a ticked section satisfies nothing until its plan is complete or its gates have passed.</p>
+<p><strong>Done when</strong> tests on a fixture project find the following, with plan A having §1 done, §2 deferred and status active. A plan depending on A is ready. A plan depending on <code>A#s1</code> is ready. A plan depending on <code>A#s2</code> is blocked, and the blocker names <code>A#s2</code>. A plan depending on an all-deferred plan is blocked and appears in <code>judgment_required</code> with the reason <code>deferred-only</code>. A plan depending on a plan with an undeclared heading is blocked and appears there with the reason <code>undeclared-heading</code>. A plan depending on a plan that still has an implementable section is blocked as today, and one depending on a plan that declares no sections stays blocked until that plan is complete. The first two fail on the current code, which waits for A to be complete; removing the <code>judgment_required</code> report fails its two tests. Those are the negative controls.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -185,6 +185,14 @@
       <button class="r-opt chosen" data-value="deferred-blocks">No: done needs every section done</button>
       </p>
     <p class="r-dec-rat">A deferred section is not ticked, so a plan holding one stays open. The deferral blocks only the work that names that section: a whole-plan dependency clears once no section is left implementable, and a dependency on the deferred section itself stays blocked.</p>
+    </div>
+<div class="r-dec" data-key="uncertain-dependency" data-choice="judgment-required" data-by="Simon McIntosh" data-when="2026-10-08T04:52:45+00:00">
+    <p class="r-dec-q">When does a whole-plan dependency clear if nothing in the target was built?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="judgment-required">judgment-required</button>
+      <button class="r-opt" data-value="clear-when-nothing-pending">clear-when-nothing-pending</button>
+      </p>
+    <p class="r-dec-rat">The lead favoured blocking when the target&#x27;s only work is deferred, and asked that it not be fully deterministic. The orchestrator is told that something is blocked and makes the call. An all-deferred target, or one with an undeclared heading, holds its dependent by default and is reported in judgment_required, where the coordinator decides to build or un-defer the section, or to narrow or remove the dependency.</p>
     </div>
 </section>
 
