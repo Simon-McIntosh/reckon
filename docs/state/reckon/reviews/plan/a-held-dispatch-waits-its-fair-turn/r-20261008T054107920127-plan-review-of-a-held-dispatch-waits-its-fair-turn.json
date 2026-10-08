@@ -1,0 +1,51 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T05:55:32.466Z",
+  "dispatched_at": "2026-10-08T05:41:39Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-held-dispatch-waits-its-fair-turn.html:62",
+      "id": "reasoning-1",
+      "reason": "the bound cannot mean both \"prioritise beyond this\" and \"stop calling it queued beyond this\"; the plan must split the constants or state which reading a past-bound entry gets, or \u00a75's measure is unsatisfiable for the long-wait case \u00a73 exists to protect.",
+      "text": "\u00a73 makes REVIEW_QUEUED_BOUND_SECONDS the queue's starvation threshold (\"an entry that has waited longer \u2026 is admitted ahead of every entry that has not\") and tells \u00a75's obligations reading to use \"that same constant\", but the obligations view reads that age the other way: `_queued_review_fields` returns None once `age > REVIEW_QUEUED_BOUND_SECONDS` (`obligations.py:305`), so a run that has waited past the bound is the queue's top priority for admission yet stops being read as queued \u2014 the exact surface \u00a75's done-when asserts will report it as queued",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-held-dispatch-waits-its-fair-turn.html:78",
+      "id": "done_when-1",
+      "reason": "the builder must name the real post-queue phase (the launched pointer's own phase, e.g. `starting`/`working`) for this step to be written so it can fail.",
+      "text": "\u00a74's last done-when requires the coordinator's follower to see the run \"move from queued to dispatched\", but the plan defines only the `queued` phase and no target-phase word, and the live-pointer vocabulary has no `dispatched`: the pre-spawn phases are `{starting, launching, launcher, dispatching}` (`recovery.py:6431`) and the follower's states are `SETTLED_STATES` (`ticker.py:329`), so the assertion names no value a test can check",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "edc5efbfecf333d0733d533f83f2762cefc109096cc6c34733d90ab2a7c5e7dc",
+  "plan_slug": "a-held-dispatch-waits-its-fair-turn",
+  "plan_version": 3,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T054107920127-plan-review-of-a-held-dispatch-waits-its-fair-turn",
+  "reviewed_blob_sha": "185ba77031d1c0665a878e5933b07f2543f76f43",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_lane_worker_allowance` (defined in `dispatch_plan.py:1100`, re-exported at `dispatch.py:2201`), `runs.list_live` (`runs.py:650`), the `review_dispatch` pointer field (`recovery.py:1185`), `REVIEW_QUEUED_BOUND_SECONDS` (`obligations.py:61`), `reckon crew list` (`cli.py:5786`), `reckon crew discard` (`cli.py:7000`) and `fleet/services.json` (`fleet_supervisor.py:43`) all resolve.",
+    "done_when": "a finding \u2014 \u00a74's follower measure asserts a run \"move from queued to dispatched\", naming a state the plan never defines and the codebase does not carry (see FINDING).",
+    "evidence_paths": "pass \u2014 the plan names no gate log or scratchpad path; \u00a72's third done-when commits its tests to temporary pointer and lane documents rather than the real crew state, which is the durable-path discipline the item asks for.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach the symbols \u00a72\u2013\u00a75 describe, and each section states the mechanism rather than a tracker entry.",
+    "reasoning": "a finding \u2014 \u00a73 reuses the obligations bound as the queue's starvation threshold while \u00a75 reuses the same constant for the queued reading, and the two directions are opposite (see FINDING).",
+    "single_goal": "pass \u2014 \u00a72 (queue write), \u00a73 (order function), \u00a74 (drainer loop) and \u00a75 (existing surfaces) each carry one deliverable; \u00a75's three surfaces are the one goal of showing a queued run where held work already shows.",
+    "wiring": "pass \u2014 the plan's `after` link resolves (`docs/plans/the-local-lane-is-the-default.html` exists), the build followup orders \u00a72/\u00a73 together then \u00a74 after both and \u00a75 after \u00a72, and the three decisions the ordering once omitted are now locked, so no section points at a non-existent or wrong node."
+  },
+  "section_digests": {
+    "_document": "78cdc012e7ca72c178fc40a4a6d592f356054fea2d26c779733f3ec3ca0efabe",
+    "s1": "e09f72c38fa12dd06b1fede9137b6a8731c7f42dad95ea4d7873e48b6bcebc93",
+    "s2": "3002e4400864096cb704535aac4889a19b84f93f8ea8260fd38b878e23afea91",
+    "s3": "0091c773d152cb2fd0c13a3078b27e65222e8a940adf8a476b62166c80354c4d",
+    "s4": "453714bbfa10f22ddba47aaa31c7d36b792bb0411de4a8e5ed3283053cbb1597",
+    "s5": "c2bf22d2e365391f501ea797c0970ddede60942beb168d9f59a83acbbae7de14"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T05:58:08.239892+00:00"
+}
