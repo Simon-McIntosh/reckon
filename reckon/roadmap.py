@@ -650,14 +650,12 @@ def _plan_dependency_satisfied(
 
     A completed plan satisfies it. Otherwise the dependency clears once no
     section is left implementable, read through the same open-section predicate
-    the terminal guard uses: a deferred section blocks only the work that names
-    it, so it never holds a whole-plan dependency, and a section already ticked
-    has nothing left to give.
+    the terminal guard uses: every section is then done or deferred, and a
+    deferred section blocks only the work that names it rather than the plan's
+    dependents.
 
-    Three conditions keep that from clearing a dependency on work that was never
-    built. At least one section must be declared done — a plan whose every
-    section is deferred has nothing its dependents can consume, so they keep
-    waiting. Every authored section heading must carry a declaration — a legacy
+    Two conditions keep that from clearing a dependency on work that was never
+    built. Every authored section heading must carry a declaration — a legacy
     plan may declare only some of its sections, and an undeclared heading is
     outstanding work the dependency still needs. And a plan that declares no
     section at all declares no work, so only completion satisfies a dependency
@@ -669,11 +667,6 @@ def _plan_dependency_satisfied(
     view = _plan_authored_state(plan, docs_dir, project, slug)
     declarations = view.get("section_declarations")
     if not isinstance(declarations, Mapping) or not declarations:
-        return False
-    if not any(
-        str(classification or "").strip() == SECTION_DECLARATION_DONE
-        for classification in declarations.values()
-    ):
         return False
     for section in open_sections(view):
         if (

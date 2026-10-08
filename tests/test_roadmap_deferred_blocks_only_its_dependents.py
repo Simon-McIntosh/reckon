@@ -183,8 +183,13 @@ def test_a_plan_without_declarations_blocks_until_complete(roadmap_rows) -> None
     assert complete["F"]["ready"] is True
 
 
-def test_an_all_deferred_plan_keeps_its_dependent_blocked(roadmap_rows) -> None:
-    """A plan whose every section is deferred built nothing its dependents can use."""
+def test_an_all_deferred_plan_leaves_its_dependent_ready(roadmap_rows) -> None:
+    """Every section done or deferred clears the whole-plan dependency.
+
+    A plan whose every section is deferred has left no section implementable, so
+    §9's rule reads the dependency satisfied — a deferred section blocks only
+    the work that names it, never the plan's dependents.
+    """
     roadmap_rows.write(
         "G",
         headings=["s1", "s2"],
@@ -193,8 +198,8 @@ def test_an_all_deferred_plan_keeps_its_dependent_blocked(roadmap_rows) -> None:
     rows = roadmap_rows([_row("G"), _row("H", depends_on=["G"])])
 
     (dependency,) = rows["H"]["depends_on"]
-    assert dependency["satisfied"] is False
-    assert rows["H"]["ready"] is False
+    assert dependency["satisfied"] is True
+    assert rows["H"]["ready"] is True
 
 
 def test_an_undeclared_heading_keeps_the_dependent_blocked(roadmap_rows) -> None:
