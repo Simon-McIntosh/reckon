@@ -1341,7 +1341,8 @@ def _write_state_locked(
         and requested_status in TERMINAL_STATUSES
     ):
         _require_transition_verdict(new_data, "plan-terminal")
-        _require_every_section_ticked(new_data)
+        if requested_status in _LANDED_STATUSES:
+            _require_every_section_ticked(new_data)
         _require_terminal_evidence(project, slug, requested_status, root)
     if state_type == "plan":
         _validate_decision_transitions(new_data, cur_state)

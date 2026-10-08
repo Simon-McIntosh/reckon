@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:a-plan-is-done-when-every-section-is-ticked">
+  <meta name="plan-verifies" content="reckon:a-plan-is-done-when-every-section-is-ticked#s6">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-08">
+  <meta name="evidence-commit" content="958f39384">
+</head>
+<body>
+<main class="plan-doc">
+<section id="a-plan-reaches-done-only-when-every-section-is-ticked">
+  <h2>A plan reaches done only when every section is ticked</h2>
+  <p>A write that moves a plan into <code>shipped</code> or <code>done</code> is refused while any
+  section declaration is still <code>implementable</code> or <code>deferred</code>, and the refusal
+  names the open sections in declaration order. The guard
+  <code>_store._require_every_section_ticked</code> reads the shared
+  <code>_plan_html.open_sections</code> predicate and sits with the existing terminal-status guards:
+  <code>validate_landing_patch</code> for the patch writer, the terminal check in
+  <code>apply_ops</code> for the ops writer, and the terminal block in
+  <code>_write_state_locked</code>. It keys on the transition into a terminal status, so a plan
+  already at one is not re-judged and history under an earlier rule stays editable.</p>
+
+  <h3>Census — plans already terminal with an open section</h3>
+  <p>Run over every mounted project's plans (<code>census_open_sections.py</code>), before the
+  guard: <strong>15 projects, 374 plans, 213 already at a terminal status, 17 of those with a
+  non-empty <code>open_sections</code></strong>. The guard is transition-keyed rather than a
+  state-level invariant precisely so these 17 are not locked by a newer rule: they stay editable
+  but cannot be re-landed while a section is open.</p>
+  <table>
+    <thead><tr><th>Project</th><th>Plan</th><th>Status</th><th>Open</th></tr></thead>
+    <tbody>
+      <tr><td>imas-ambix</td><td>dsv41-flash-four-card-throughput</td><td>shipped</td><td>s5</td></tr>
+      <tr><td>imas-ambix</td><td>dsv41-flash-serve-characterisation</td><td>done</td><td>s4, s5</td></tr>
+      <tr><td>imas-ambix</td><td>dsv41-serve-tuning-for-concurrency</td><td>shipped</td><td>s6</td></tr>
+      <tr><td>imas-codex</td><td>sn-west-cohort-treatment</td><td>shipped</td><td>s8</td></tr>
+      <tr><td>nova</td><td>diiid-vertical-force-balance</td><td>shipped</td><td>s5</td></tr>
+      <tr><td>reckon</td><td>a-crew-process-ends-with-its-owner</td><td>shipped</td><td>s6, s8</td></tr>
+      <tr><td>reckon</td><td>a-follower-outlives-its-monitor</td><td>shipped</td><td>s1</td></tr>
+      <tr><td>reckon</td><td>a-monitor-row-reads-at-a-glance</td><td>shipped</td><td>s1</td></tr>
+      <tr><td>reckon</td><td>a-scoped-follower-counts-its-own-session</td><td>shipped</td><td>s1, s3</td></tr>
+      <tr><td>reckon</td><td>a-stalled-row-says-whether-the-worker-lives</td><td>shipped</td><td>s1</td></tr>
+      <tr><td>reckon</td><td>binding-rules-need-bound-checks</td><td>shipped</td><td>s3</td></tr>
+      <tr><td>reckon</td><td>dispatch-cost-per-durable-node</td><td>shipped</td><td>s7</td></tr>
+      <tr><td>reckon</td><td>reckon-reads-answer-in-seconds</td><td>shipped</td><td>s4</td></tr>
+      <tr><td>reckon</td><td>the-fleet-counters-count-the-fleet</td><td>shipped</td><td>s5</td></tr>
+      <tr><td>reckon</td><td>the-monitor-under-measurement</td><td>done</td><td>s1</td></tr>
+      <tr><td>reckon</td><td>work-does-not-fall-to-the-coordinator</td><td>shipped</td><td>s1, s7, s8</td></tr>
+      <tr><td>reckon</td><td>worker-death-is-recorded</td><td>shipped</td><td>s5</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Measure</h3>
+  <p>Gate: <code>tests/test_terminal_status_needs_every_section_ticked.py</code> at head —
+  <strong>5 passed</strong>, <code>EXIT=0</code>. The two refusal tests set a plan with one
+  implementable, then one deferred, section to <code>done</code> and find the refusal naming
+  <code>s2</code>; a third ticks the section and the same write succeeds; a fourth exercises the
+  patch writer; a fifth shows an already-terminal plan is not re-judged.</p>
+  <ul>
+    <li>Head arm log: <code>head_arm.log</code>.</li>
+    <li>Negative control (guard absent, base <code>786c5ba8</code>): the two refusal tests fail
+      <code>DID NOT RAISE</code> — <code>base_arm.log</code>, <code>EXIT=1</code>.</li>
+  </ul>
+</section>
+</main>
+</body>
+</html>
