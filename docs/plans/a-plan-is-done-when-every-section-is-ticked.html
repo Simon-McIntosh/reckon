@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.73">
-<meta name="plan-version" content="33">
+<meta name="plan-version" content="34">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -252,6 +252,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-close-s6" data-who="reckon-build" data-when="2026-10-08T07:52:36Z">
     <div class="r-comment-body"><p>Landed at merge <code>cd262880</code>, on main at <code>6d72fec58</code>. A write that moves a plan into <code>shipped</code> or <code>done</code> is refused while any section declaration is still <code>implementable</code> or <code>deferred</code>, and the refusal names the open sections. The guard <code>_require_every_section_ticked</code> runs on the state write, the landing patch and the <code>apply_ops</code> landing op. It keys on the transition into a terminal status, and it fails closed when the pre-write status cannot be read. A repair round added that fail-closed branch. Review 114/120. Integrated gate: 8 passed, EXIT=0. Store and roadmap importer population, stacked with s9 at pinned main: 0 added. The one head-only id, <code>test_an_append_meeting_a_landing_write_is_not_lost</code>, failed 3 of 5 repeats on each arm, base included. <a href="/reckon/evidence/fragments/a-plan-is-done-when-every-section-is-ticked/a-plan-reaches-done-only-when-every-section-is-ticked.html">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261008T025558982950-a-plan-reaches-done-only-when-every-section-is-ticked" data-who="reckon-build" data-when="2026-10-08T05:50:34.031Z">
+    <div class="r-comment-body"><p>§6 terminal guard: _store._require_every_section_ticked refuses a write moving a plan to shipped/done while any section is implementable or deferred, read from the shared _plan_html.open_sections predicate, at validate_landing_patch, apply_ops and _write_state_locked, all three transition-keyed so an already-terminal plan is not re-judged; the patch site reads the pre-write status from the stored plan because the patch writer merges the patch before its validators run, and fails closed to the empty status when that plan cannot be read; census 17 of 213 terminal mounted plans hold an open section; gate 8 passed EXIT=0, base arm 5 failed EXIT=1</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-close-s7" data-who="reckon-build" data-when="2026-10-08T04:45:00Z">
     <div class="r-comment-body"><p>Landed at merge <code>8783e616</code>. Both skills and the coordinator reference land a section with <code>append_evidence</code>, a <code>set</code> of its declaration to <code>done</code>, and a <code>c-close-</code> comment carrying the result and the landing-record href. The body stays as authored. The contract tests follow the <code>c-close</code> link to a section of the landing record. Review 111/120. 22 skill-reading test files: 431 passed at both arms, 0 added. <a href="/reckon/evidence/fragments/a-plan-is-done-when-every-section-is-ticked/the-landing-beat-ticks-instead-of-collapsing.html">evidence</a></p></div>
