@@ -24,7 +24,7 @@
   <title>Lane And Model Routing | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="38">
+<meta name="plan-version" content="39">
 <meta name="plan-modified" content="2026-10-08">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -231,10 +231,13 @@
     <div class="r-comment-body"><p>§9 landed: expanded lane entries name each key's layer and <code>lanes.*</code> source, and <code>flight_report</code> serves <code>provenance_sources</code> (merge <code>c901ef916</code>, review 102, no failures added). <a href="/reckon/evidence/archive/lane-and-model-routing-landed.html#s9">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261008T084755147230-lane-entries-carry-provenance" data-who="reckon-build" data-when="2026-10-08T09:15:28.507Z">
-    <div class="r-comment-body"><p>expand_lanes now records, for every key of every entry it builds, the layer of the lanes.* key it copied (103 provenance keys on the fixture&#x27;s two entries; 8 lane-copied keys on backends.claude previously unnamed), plus a provenance_sources map naming that key (carried by flight_report as provenance_sources); the three synthesised keys name the expansion layer and have no source key; gate base 569 passed / head 572 passed, 0 added failures.</p></div>
+    <div class="r-comment-body"><p>expand_lanes now records, for every key of every entry it builds, the layer of the lanes.* key it copied (103 provenance keys on the fixture's two entries; 8 lane-copied keys on backends.claude previously unnamed), plus a provenance_sources map naming that key (carried by flight_report as provenance_sources); the three synthesised keys name the expansion layer and have no source key; gate base 569 passed / head 572 passed, 0 added failures.</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-close-s11" data-who="reckon-build" data-when="2026-10-08T09:35:00Z">
     <div class="r-comment-body"><p>§11 landed: gate evidence links only when it parses as a reference, and prose renders as text (merge <code>943d9ded5</code>, review 116, no failures added). <a href="/reckon/evidence/archive/lane-and-model-routing-landed.html#s11">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261008T084900561128-gate-evidence-renders-as-written" data-who="reckon-build" data-when="2026-10-08T09:13:51.274Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/lane-and-model-routing/gate-evidence-renders-as-written.html — the plan view&#x27;s gate table renders a link only for a gate evidence value that parses through the server&#x27;s reference grammar ([project:]slug[#stage] plus the docs corpus&#x27;s /project/route#anchor and #anchor forms, safe segments from reckon/_schema.py) and renders prose as text; gate base 86 passed / head 92 passed (+6 new), 19 skipped either arm, 0 added failures; negative control (link rendered unconditionally) reddens the 3 prose tests, EXIT=1.</p></div>
 </div>
 </section>
 </main>
