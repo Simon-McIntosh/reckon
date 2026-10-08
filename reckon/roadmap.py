@@ -16,7 +16,16 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-from reckon._plan_html import SECTION_NUMBER_PATTERN, read_state, read_state_file
+from reckon._plan_html import (
+    OPEN_SECTION_DECLARATIONS,
+    SECTION_DECLARATION_DEFERRED,
+    SECTION_DECLARATION_DONE,
+    SECTION_NUMBER_PATTERN,
+    authored_section_headings,
+    open_sections,
+    read_state,
+    read_state_file,
+)
 from reckon._timestamps import parse_utc
 from reckon._schema import (
     GATE_TRANSITIONS,
@@ -180,6 +189,44 @@ def _plan_authored_state(
     return view
 
 
+def _plan_authored_html(
+    plan: Mapping[str, Any],
+    docs_dir: Path | None,
+    project: str,
+    slug: str,
+) -> str:
+    """A plan's authored markup, for the heading walk.
+
+    ``_plan_authored_state`` returns the parsed fields but not the text a
+    heading walk reads when a row already carries its declarations. This reads
+    the same file through the same resolution, memoized by path. An
+    unresolvable plan yields ``""`` — the same "nothing authored" reading the
+    state helper takes.
+    """
+
+    if docs_dir is None:
+        docs_dir = _load_mounts().get(project)
+    if docs_dir is None:
+        return ""
+    try:
+        resource = resolve_resource(
+            docs_dir, project, slug, "plan", include_archived=False
+        )
+    except Exception:  # noqa: BLE001 — a resolution error is "nothing authored"
+        return ""
+    path = getattr(resource, "path", None)
+    if path is None:
+        return ""
+
+    def read_text() -> str:
+        try:
+            return path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            return ""
+
+    return memoized("plan_authored_html", path, read_text)
+
+
 _SECTION_WORD_RE = re.compile(
     rf"\b(?:section|sections)\s+({SECTION_NUMBER_PATTERN}"
     rf"(?:\s*(?:,|and)\s*{SECTION_NUMBER_PATTERN})*)",
@@ -338,10 +385,22 @@ def _gate_section_edges(
             target_status = _status(target)
             if stage:
                 section_found = stage in declared_for(parsed.slug, target)
-                satisfied = section_found and _section_satisfied(target, stage)
+                satisfied = section_found and _section_satisfied(
+                    target,
+                    stage,
+                    _plan_authored_state(target, docs_dir, project, parsed.slug).get(
+                        "section_declarations"
+                    ),
+                )
                 row["section_found"] = section_found
             else:
-                satisfied = target_status in COMPLETED_STATUSES
+                satisfied, judgment = _whole_plan_dependency(
+                    target, docs_dir, project, parsed.slug
+                )
+                if judgment is not None:
+                    row["judgment"] = _judgment_member(
+                        project, slug, project, parsed.slug, judgment
+                    )
             row.update(
                 {
                     "scope": "local",
@@ -548,11 +607,32 @@ def _status(plan: dict[str, Any]) -> str:
     return str(plan.get("workflow_status") or plan.get("status") or "draft")
 
 
-def _section_satisfied(plan: dict[str, Any], section: str) -> bool:
-    """Return whether a target plan has completed one named section."""
+def _section_satisfied(
+    plan: dict[str, Any],
+    section: str,
+    declarations: Mapping[str, Any] | None = None,
+) -> bool:
+    """Return whether a target plan has completed one named section.
+
+    A completed plan satisfies every section, and a ``done`` declaration
+    satisfies the section it names. An ``implementable`` or ``deferred``
+    declaration keeps the section open even when a gate reads passed: the
+    declaration is the author's own state for the section, and a deferred or
+    still-implementable section satisfies nothing. A passed section gate
+    remains the route for a section carrying no declaration.
+    """
 
     if _status(plan) in COMPLETED_STATUSES:
         return True
+    if declarations is None:
+        declarations = plan.get("section_declarations")
+    classification = ""
+    if isinstance(declarations, Mapping):
+        classification = str(declarations.get(section) or "").strip()
+    if classification == SECTION_DECLARATION_DONE:
+        return True
+    if classification in OPEN_SECTION_DECLARATIONS:
+        return False
     section_gates = [
         gate
         for gate in plan.get("gates") or []
@@ -562,6 +642,153 @@ def _section_satisfied(plan: dict[str, Any], section: str) -> bool:
         str(gate.get("verdict") or "").strip().lower() == "passed"
         for gate in section_gates
     )
+
+
+def _plan_dependency_satisfied(
+    plan: dict[str, Any],
+    docs_dir: Path | None,
+    project: str,
+    slug: str,
+) -> bool:
+    """Return whether a whole-plan dependency on ``slug`` is satisfied.
+
+    A completed plan satisfies it. Otherwise the dependency clears once at least
+    one section is done and none is left implementable, read through the same
+    open-section predicate the terminal guard uses: every section is then done
+    or deferred, and a deferred section blocks only the work that names it
+    rather than the plan's dependents. Requiring at least one done section keeps
+    a dependency on unbuilt work from clearing: a plan whose sections are all
+    deferred built nothing, and a plan that declares no section at all declares
+    no work, so only completion satisfies a dependency on it. A heading with no
+    declaration is outstanding work the dependency still needs.
+    """
+
+    if _status(plan) in COMPLETED_STATUSES:
+        return True
+    view = _plan_authored_state(plan, docs_dir, project, slug)
+    declarations = view.get("section_declarations")
+    if not isinstance(declarations, Mapping) or not declarations:
+        return False
+    if not any(
+        str(value).strip() == SECTION_DECLARATION_DONE
+        for value in declarations.values()
+    ):
+        return False
+    for section in open_sections(view):
+        if (
+            str(declarations.get(section) or "").strip()
+            != SECTION_DECLARATION_DEFERRED
+        ):
+            return False
+    declared = {str(section).strip() for section in declarations}
+    for identity, _heading in authored_section_headings(
+        _plan_authored_html(plan, docs_dir, project, slug)
+    ):
+        if identity not in declared:
+            return False
+    return True
+
+
+#: Reasons a whole-plan dependency holds without a fixed rule settling it. The
+#: roadmap reports these so the orchestrator decides, rather than the code
+#: silently clearing a dependency on work that was never built.
+JUDGMENT_REASON_DEFERRED_ONLY = "deferred-only"
+JUDGMENT_REASON_UNDECLARED_HEADING = "undeclared-heading"
+
+
+def _plan_dependency_judgment(
+    plan: dict[str, Any],
+    docs_dir: Path | None,
+    project: str,
+    slug: str,
+) -> tuple[str, list[str]] | None:
+    """Return the judgment reason holding a whole-plan dependency, if any.
+
+    A whole-plan dependency is uncertain only where no fixed rule applies: the
+    target has no section left implementable, yet the dependency does not clear.
+    That is a target whose every declared section is deferred (nothing was
+    built) or a target carrying an authored heading with no declaration. Both
+    hold the dependent by default and are reported, so the orchestrator decides
+    to build or un-defer the section, or to narrow or remove the dependency. A
+    target with a section still implementable is plainly incomplete and is not
+    uncertain, and a target that declares no sections keeps the completion-only
+    rule — neither is a judgment case.
+    """
+
+    if _status(plan) in COMPLETED_STATUSES:
+        return None
+    view = _plan_authored_state(plan, docs_dir, project, slug)
+    declarations = view.get("section_declarations")
+    if not isinstance(declarations, Mapping) or not declarations:
+        return None
+    if any(
+        str(declarations.get(section) or "").strip()
+        != SECTION_DECLARATION_DEFERRED
+        for section in open_sections(view)
+    ):
+        return None
+    declared = {str(section).strip() for section in declarations}
+    undeclared = [
+        identity
+        for identity, _heading in authored_section_headings(
+            _plan_authored_html(plan, docs_dir, project, slug)
+        )
+        if identity not in declared
+    ]
+    if undeclared:
+        return JUDGMENT_REASON_UNDECLARED_HEADING, undeclared
+    if not any(
+        str(value).strip() == SECTION_DECLARATION_DONE
+        for value in declarations.values()
+    ):
+        return JUDGMENT_REASON_DEFERRED_ONLY, sorted(open_sections(view))
+    return None
+
+
+def _whole_plan_dependency(
+    plan: Mapping[str, Any],
+    docs_dir: Path | None,
+    project: str,
+    slug: str,
+) -> tuple[bool, tuple[str, list[str]] | None]:
+    """Return a whole-plan dependency's verdict and its judgment in one call.
+
+    One helper owns the whole-plan decision so every site that can hold a
+    dependent reaches the judgment with the verdict, rather than each site
+    calling the verdict alone and the judgment only where a row is built. A
+    site that reads ``judgment`` and, when it is not ``None``, records the
+    member in ``judgment_required`` guarantees the orchestrator is told
+    whenever an uncertain dependency holds something — through a declared
+    dependency, a gate ref, an after edge, or the graph closure alike.
+    """
+
+    satisfied = _plan_dependency_satisfied(plan, docs_dir, project, slug)
+    if satisfied:
+        return True, None
+    return False, _plan_dependency_judgment(plan, docs_dir, project, slug)
+
+
+def _judgment_member(
+    dependent_project: str,
+    dependent: str,
+    target_project: str,
+    target: str,
+    judgment: tuple[str, list[str]],
+) -> dict[str, Any]:
+    """Compose one ``judgment_required`` member naming a held dependency.
+
+    Each side is qualified with its own project: a held dependency may cross a
+    project boundary in a graph, so the target does not belong to the
+    dependent's project and naming it there points at the wrong plan.
+    """
+
+    reason, sections = judgment
+    return {
+        "dependent": _qualified_plan(dependent_project, dependent),
+        "target": _qualified_plan(target_project, target),
+        "reason": reason,
+        "sections": list(sections),
+    }
 
 
 def execution_gates(plan: dict[str, Any]) -> list[dict[str, Any]]:
@@ -815,16 +1042,30 @@ def _after_edges(
             "status": target_status,
         }
         if parsed.stage:
+            declarations = _plan_authored_state(
+                target, docs_dir, project, parsed.slug
+            ).get("section_declarations")
             found_section = parsed.stage in declared_section_identities(
                 _plan_authored_state(target, docs_dir, project, parsed.slug)
             )
             row["stage"] = parsed.stage
             row["section_found"] = found_section
             row["satisfied"] = found_section and _section_satisfied(
-                target, parsed.stage
+                target, parsed.stage, declarations
             )
         else:
-            row["satisfied"] = target_status in COMPLETED_STATUSES
+            satisfied, judgment = _whole_plan_dependency(
+                target, docs_dir, project, parsed.slug
+            )
+            row["satisfied"] = satisfied
+            if judgment is not None:
+                row["judgment"] = _judgment_member(
+                    project,
+                    str(plan.get("slug") or ""),
+                    project,
+                    parsed.slug,
+                    judgment,
+                )
         rows.append(row)
     return rows
 
@@ -952,7 +1193,13 @@ def _section_scoped_edges(
                     "status": _status(target),
                     "section_found": section_found,
                     "satisfied": section_found
-                    and _section_satisfied(target, parsed.stage),
+                    and _section_satisfied(
+                        target,
+                        parsed.stage,
+                        _plan_authored_state(
+                            target, docs_dir, project, parsed.slug
+                        ).get("section_declarations"),
+                    ),
                 }
             )
             rows.append(row)
@@ -1876,6 +2123,7 @@ def resolve_graph_target(
     decision_blocker_rows: list[dict[str, Any]] = []
     closure_blocker_rows: list[dict[str, Any]] = []
     ready: list[str] = []
+    graph_judgment_members: list[dict[str, Any]] = []
     for key in member_keys:
         plan = plans[key]
         if _status(plan) in COMPLETED_STATUSES:
@@ -1886,10 +2134,27 @@ def resolve_graph_target(
         )
         decision_blocker_rows.extend(unsettled_decisions(plan, graph_sections_map))
         closure_blocker_rows.extend(closure_blockers(plan))
-        dependencies_complete = all(
-            _status(plans[dependency]) in COMPLETED_STATUSES
-            for dependency in plan_blocking_graph[key]
-        )
+        dependencies_complete = True
+        for dependency in plan_blocking_graph[key]:
+            satisfied, judgment = _whole_plan_dependency(
+                plans[dependency],
+                project_state[dependency[0]].get("docs_dir"),
+                dependency[0],
+                dependency[1],
+            )
+            if satisfied:
+                continue
+            dependencies_complete = False
+            if judgment is not None:
+                graph_judgment_members.append(
+                    _judgment_member(
+                        graph_project,
+                        graph_slug,
+                        dependency[0],
+                        dependency[1],
+                        judgment,
+                    )
+                )
         # Readiness is the roadmap row's own verdict for this plan, so both
         # surfaces answer from one computation: authorisation (including a plan
         # released by its cleared hold), its blockers, gates, decisions and
@@ -1933,6 +2198,18 @@ def resolve_graph_target(
         "ready": sorted(ready),
         "decision_blockers": decision_blocker_rows,
         "closure_blockers": closure_blocker_rows,
+        "judgment_required": {
+            "required": bool(graph_judgment_members),
+            "count": len(graph_judgment_members),
+            "members": sorted(
+                graph_judgment_members,
+                key=lambda member: (
+                    str(member.get("dependent") or ""),
+                    str(member.get("target") or ""),
+                    str(member.get("reason") or ""),
+                ),
+            ),
+        },
         "ship_ready": not decision_blocker_rows and not closure_blocker_rows,
         "schedule_override": {
             "required": bool(deferred_members),
@@ -2280,6 +2557,7 @@ def _build_roadmap(
     )
     findings: list[dict[str, Any]] = []
     dependency_rows: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    judgment_required_rows: dict[str, list[dict[str, Any]]] = defaultdict(list)
     after_rows: dict[str, list[dict[str, Any]]] = defaultdict(list)
     local_graph: dict[str, list[str]] = defaultdict(list)
     dependents: dict[str, set[str]] = defaultdict(set)
@@ -2468,14 +2746,25 @@ def _build_roadmap(
                 continue
 
             target_status = _status(target)
-            target_sections = declared_section_identities(
-                _plan_authored_state(target, docs_dir, project, parsed.slug)
-            )
+            target_view = _plan_authored_state(target, docs_dir, project, parsed.slug)
+            target_sections = declared_section_identities(target_view)
             section_found = not parsed.stage or parsed.stage in target_sections
             if parsed.stage:
-                satisfied = section_found and _section_satisfied(target, parsed.stage)
+                satisfied = section_found and _section_satisfied(
+                    target,
+                    parsed.stage,
+                    target_view.get("section_declarations"),
+                )
             else:
-                satisfied = target_status in COMPLETED_STATUSES
+                satisfied, judgment = _whole_plan_dependency(
+                    target, docs_dir, project, parsed.slug
+                )
+                if judgment is not None:
+                    judgment_required_rows[slug].append(
+                        _judgment_member(
+                            project, slug, project, parsed.slug, judgment
+                        )
+                    )
             dependency_row = {
                 "ref": ref,
                 "scope": "local",
@@ -2595,6 +2884,10 @@ def _build_roadmap(
                         "section": str(edge_row.get("stage") or ""),
                         "gate": str(edge_row.get("gate") or ""),
                     }
+            for edge_row in gate_edge_rows:
+                member = edge_row.pop("judgment", None)
+                if member is not None:
+                    judgment_required_rows[slug].append(member)
 
         # A decision scoped to a section the plan never declares holds nothing
         # and can never be satisfied, so it is reported rather than silently
@@ -2629,6 +2922,10 @@ def _build_roadmap(
         # out of every blocker list — an after target that has not shipped
         # orders the plan later without ever holding it.
         after_rows[slug] = _after_edges(project, plan, all_plans, artifacts, docs_dir)
+        for after_row in after_rows[slug]:
+            member = after_row.pop("judgment", None)
+            if member is not None:
+                judgment_required_rows[slug].append(member)
         for row in after_rows[slug]:
             if row.get("found"):
                 continue
@@ -2972,6 +3269,11 @@ def _build_roadmap(
             "schedule_behind_sprint": schedule_boundary
             if is_schedule_deferred
             else None,
+            "judgment_required": {
+                "required": bool(judgment_required_rows.get(slug)),
+                "count": len(judgment_required_rows.get(slug, [])),
+                "members": list(judgment_required_rows.get(slug, [])),
+            },
         }
         mapped_edges = [
             row for row in dependency_rows.get(slug, []) if row.get("source_section")
@@ -3327,6 +3629,14 @@ def _build_roadmap(
         liveness=liveness,
         resolved_items=resolved_sprint_items,
     )
+    judgment_members = sorted(
+        (member for members in judgment_required_rows.values() for member in members),
+        key=lambda member: (
+            str(member.get("dependent") or ""),
+            str(member.get("target") or ""),
+            str(member.get("reason") or ""),
+        ),
+    )
     return {
         "project": project,
         "scope": {"sprint": sprint_id, "plans": len(plan_values)},
@@ -3390,6 +3700,11 @@ def _build_roadmap(
         },
         "schedule_deferred": schedule_deferred,
         "decision_blockers": decision_blockers_report,
+        "judgment_required": {
+            "required": bool(judgment_members),
+            "count": len(judgment_members),
+            "members": judgment_members,
+        },
         "deferred_decisions": deferred_decisions_report,
         "decision_readiness": {
             "ready": not decision_blockers_report,

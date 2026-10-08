@@ -41,7 +41,9 @@ Call `roadmap(project=<id>)` for a sprint, and
 `roadmap(project="graph:<handle>", view="raw")` for a graph, as the canonical
 plan-level graph; do not rebuild dependency order from repeated discovery
 calls. Report `schedule_override.deferred` and its members before dispatch
-rather than silently treating them as schedule-ready.
+rather than silently treating them as schedule-ready; report `judgment_required`
+and its members beside it, and decide each — build or un-defer the section, or
+narrow or remove the dependency — rather than dispatching past it.
 
 **All targets are coordinator-only, a one-node plan included.** The coordinator
 resolves and reads state, reads code for design, checkpoints the DAG and scopes,
