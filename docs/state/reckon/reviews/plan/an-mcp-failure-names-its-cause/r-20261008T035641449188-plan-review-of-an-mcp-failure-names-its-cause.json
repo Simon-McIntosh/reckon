@@ -1,0 +1,72 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T04:16:15.018Z",
+  "dispatched_at": "2026-10-08T03:57:22Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-mcp-failure-names-its-cause.html:154",
+      "id": "done_when-1",
+      "reason": "the third case is the one this revision added, and a node reading \"two fixture projects\" can drop the missing-directory launch, leaving the new rule's gate unable to fire.",
+      "text": "\u00a75's done-when says doctor \"gives doctor a fixture user config and two fixture projects\" and then lists three distinct project launches (uv run imas-codex serve; uv run --no-sync --project ${HOME}/Code/imas-codex imas-codex serve; uv run --no-sync --project ${HOME}/Code/absent serve) and later refers to \"the third\" project, so the fixture it describes cannot be built as written",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-mcp-failure-names-its-cause.html:143",
+      "id": "reasoning-1",
+      "reason": "without naming the expansion the check sees the literal string ${HOME}/Code/imas-codex, which never exists, so it flags the pass-case too and the whole done-when collapses.",
+      "text": "\u00a75 says the corrected command's checkout is written \"through a variable Claude Code expands in MCP configuration, such as ${HOME}\", but the missing-directory rule (\"flags ... a launch whose --project or --directory names a path that does not exist\") is never told to expand that variable, yet the fixture only works if it does: the second project passes because ${HOME}/Code/imas-codex exists under the temporary home while the third fails on ${HOME}/Code/absent",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-mcp-failure-names-its-cause.html:139",
+      "id": "anchors_resolve-1",
+      "reason": "read literally the check finds no .mcp.json for the two projects \u00a76 and \u00a71 exist to catch, so its gate would pass on an empty set.",
+      "text": "\u00a75 tells doctor to read \"the .mcp.json of each mounted project\", but mounts.json maps each project to its docs directory (e.g. imas-codex \u2192 /home/ITER/mcintos/Code/imas-codex/docs) and the .mcp.json is at the checkout root (/home/ITER/mcintos/Code/imas-codex/.mcp.json); <mount>/.mcp.json does not exist for imas-codex, imas-ambix or reckon",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-mcp-failure-names-its-cause.html:89",
+      "id": "reasoning-2",
+      "reason": "no existing reader counts storage-slow results, so the census still needs its own counter and only the justifying clause is overstated; naming velocity's walker would improve reuse but the mechanism stands.",
+      "text": "\u00a72 justifies reading tool-result blocks itself because \"no existing reader parses tool results\", but reckon/velocity.py:1586 already walks every in-window, non-sidechain transcript record's content blocks and extracts tool_result text (the promotion-receipt walker at velocity.py:1555\u20131605)",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "4659398b61338a49a8243fd8128c4531399bf61b252380d098dc2a6524644b2b",
+  "plan_slug": "an-mcp-failure-names-its-cause",
+  "plan_version": 29,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T035641449188-plan-review-of-an-mcp-failure-names-its-cause",
+  "reviewed_blob_sha": "5965926f7928b2315ce6dd4824c4fc56ecf12bac",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a75 names \"the .mcp.json of each mounted project\", but a mounts.json entry is the project's docs directory and each project's .mcp.json sits at its checkout root, so the file does not exist at the location \u00a75 names.",
+    "done_when": "a finding \u2014 \u00a75's done-when enumerates three project launches but describes them as \"two fixture projects\".",
+    "evidence_paths": "pass \u2014 \u00a72's fleet-node census log and \u00a79's warm-call log go to the run directory, and \u00a75's test isolates config under a temporary home and asserts the real ~/.claude.json is untouched.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach \u00a72's or \u00a75's symbols, and no changelog prose is present.",
+    "reasoning": "a finding (two) \u2014 \u00a75's missing-directory rule cannot produce its own done-when without expanding ${HOME} the way Claude Code does, and \u00a72's \"no existing reader parses tool results\" is false against the code.",
+    "single_goal": "pass \u2014 \u00a72 is one doctor block (the MCP census) and \u00a75 is one doctor block (the launch flag), each with its own deliverable and gate.",
+    "wiring": "pass \u2014 the plan's depends-on (reckon-reads-answer-in-seconds) resolves, and \u00a75's dependency on \u00a72 (both edit reckon/cli.py) and \u00a78's on \u00a73 are stated in the followup that carries the build order."
+  },
+  "section_digests": {
+    "_document": "eca3309ad1ee448c0df57fb13e4276127be60f335ff96a3e0bff1ad96e72a7d8",
+    "s1": "d0ea88c8e7e70627417eeb698c89b91962c8e03f4f18bbdc2e310ceeb8b0f1f5",
+    "s10": "44a1c96517a7320b1c237bf1bcbbd71973f7077c24a1618b7d07f8665e36f695",
+    "s2": "0d29fcb4df92d9529b7e59855bc13557601ec4c65124260662fddfaa1f4b3d89",
+    "s3": "82031c5ca9a72cb79729fbc07674f2d108fbebb8874c2e50d572fbd48600c6b2",
+    "s4": "e8ab475d56abc119c369298b36a1fedb5af7d6342681af684858d6c50c994663",
+    "s5": "75e20a532883b2b32a8e6a7cef467b43d1d99a9981ab60101e9be1fc91b24b75",
+    "s6": "38a3b13749c17899e607aeb6eb1c1324c5b7b7ecbe0f2027b43a50657e063c20",
+    "s7": "94a9fbe3b42e3609383a12d22150c7a8eba5ed62efa8aeb7d6cf0e0f44731825",
+    "s8": "e767ac662612e3267540f7c6afbaf5dfc2387cde567739be1d2cee15e035f12e",
+    "s9": "fe0a11cad6c32f17b346471626c2be89c90d7ae7e833958120767162f4ae5bab"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T04:24:15.220008+00:00"
+}
