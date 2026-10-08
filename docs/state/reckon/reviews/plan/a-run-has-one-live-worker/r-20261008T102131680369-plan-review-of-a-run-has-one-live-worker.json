@@ -1,0 +1,64 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T10:31:35.501Z",
+  "dispatched_at": "2026-10-08T10:22:08Z",
+  "findings": [
+    {
+      "anchor": "a-run-has-one-live-worker.html#s3",
+      "id": "reuse_search-1",
+      "reason": "citing the existing lift record and lease lets \u00a73/\u00a74 extend them rather than add two parallel mechanisms, and the \u00a72 report's own repair direction already points at the per-project record.",
+      "text": "the design re-invented machinery it did not search for: \u00a73's \"append-only record of lifts beside the run\" duplicates `recovery_log_path` (`reckon/crew/resumption.py:329`), which the sweep already writes append-only on every lift, one line per sweep carrying each resumed run's id and hold signature (`reckon/crew/resumption.py:1374`; the \u00a72 report reads two such lines, recovery/nova.jsonl 7668\u20137669, with the same hold `wait:65cbdbf2402325fa`); and \u00a74's \"claim on its worker session\" duplicates `HostLease` (`reckon/crew/host_lease.py:26`), the existing single-owner claim with atomic create/renew/release and stale expiry already wrapped by `watch_host_lease` (`reckon/crew/runs.py:148`); \u00a74 also parallels the existing live-writer guard `member_in_flight_verdict` (`reckon/crew/node.py:357`)",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "a-run-has-one-live-worker.html#s4",
+      "id": "thin_wrapper-1",
+      "reason": "the section must either extend the lease or state the property the lease lacks, rather than add a parallel claim with no justification.",
+      "text": "\u00a74 adds a session claim whose semantics (single owner for a lifetime, atomic take, release on exit, a stale claim must not block forever) are exactly `HostLease`'s (`reckon/crew/host_lease.py:26`, `LEASE_STALE_SECONDS`), and the lease centrally owns the renew/release/atomic-link logic a hand-rolled claim would have to restate",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "a-run-has-one-live-worker.html#s4",
+      "id": "duplicate_owner-1",
+      "reason": "a forked claim drifts from the lease owner and a forked lift record from the recovery log; the owner files to extend are `reckon/crew/host_lease.py` and `reckon/crew/resumption.py`.",
+      "text": "\u00a74 owns a second single-owner claim beside `reckon/crew/host_lease.py:26` (`HostLease`, used via `watch_host_lease` at `reckon/crew/runs.py:148`), and \u00a73 owns a second append-only lift record beside `reckon/crew/resumption.py:329` (`recovery_log_path`, written at `reckon/crew/resumption.py:1374`)",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "a-run-has-one-live-worker.html#s4",
+      "id": "interface_budget-1",
+      "reason": "the section must account for the refusal and claim it adds and name the existing guard (`member_in_flight_verdict`, `reckon/crew/node.py:357`) it merges with or supersedes.",
+      "text": "public_definitions 1593, cli_options 336, mcp_views 33, refusal_families 23; \u00a74 introduces a live-session refusal beside the existing live-process refusals (`reckon/crew/dispatch_sessions.py:997`, `reckon/crew/resumption.py:607`, the family the parity test holds word-for-word) and a claim surface, and \u00a73 a durable record, and neither section states what it retires or merges, or why nothing can be",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "865e3f3d45834ee4e758f1cff071f0cf91626c2a81208df0a4788d4b0ea2b404",
+  "plan_slug": "a-run-has-one-live-worker",
+  "plan_version": 9,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T102131680369-plan-review-of-a-run-has-one-live-worker",
+  "reviewed_blob_sha": "2998410e17a304abb75dbfd2055070650a97b225",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 no new module is proposed; both sections edit the existing owner modules behind the `resume_plan`/`_launcher_refusal` pair the plan already names, so no shallow-wrapper sprawl is added.",
+    "duplicate_owner": "a finding \u2014 two shared mechanisms are forked: \u00a73's per-run lift record (owner `reckon/crew/resumption.py:329`) and \u00a74's session claim (owner `reckon/crew/host_lease.py:26`).",
+    "interface_budget": "a finding \u2014 public_definitions 1593, cli_options 336, mcp_views 33, refusal_families 23; \u00a74 adds a live-session refusal beside the two existing live-process refusals and a claim surface without naming what it retires or merges.",
+    "reuse_search": "a finding \u2014 the design cites the guards it edits but misses two mechanisms it re-invents: \u00a73's append-only lift record duplicates `recovery_log_path` (`reckon/crew/resumption.py:329`) and \u00a74's session claim duplicates `HostLease` (`reckon/crew/host_lease.py:26`).",
+    "thin_wrapper": "a finding \u2014 \u00a74's session claim is a thin layer over single-owner lease machinery that already exists, with no statement of why `host_lease.py` cannot carry the session."
+  },
+  "section_digests": {
+    "_document": "02170e104cddeaa30cf41a05bd1a49a7b5ff97780df20792448999435f6144a6",
+    "s1": "db92d3a2d223ac6e6cf721b1e5e7990ca9812048f438ce684697638fe0fc3dc3",
+    "s2": "c9e4ff48584d8ce0112c025c8dad40e4cb43826d16eb632e296e12b13a78a3d5",
+    "s3": "a11d99fbf82d658981e1aa497af0ca592272fdd73095208d9a60336628355720",
+    "s4": "11c400ca6487dc6d3e51fc00cab278b8866b1b03407500cb2c9e331edee4aec5"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T10:31:48.691694+00:00"
+}
