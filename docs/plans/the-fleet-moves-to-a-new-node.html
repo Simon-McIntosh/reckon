@@ -19,11 +19,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-sprint" content="S21">
-  <meta name="plan-section-declarations" content="{&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;implementable&quot;}">
   <title>The Fleet Moves To A New Node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="69">
+<meta name="plan-version" content="70">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -114,28 +114,12 @@
       <li>No test reads the real <code>/proc</code> or writes under the real state directory.</li>
     </ul>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-08</span>
     <h2 id="s3">&sect;3 &mdash; A fleet process gets a bounded thread pool</h2>
-    <section data-reckon="section" data-id="s3" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
-    <p>
-      Every heavy Python process on the node opened a thread pool as wide as its 28
-      cores: an <code>imas-codex serve</code> process holds 57 threads, a pytest process
-      55 to 61. The allocation's environment therefore sets
-      <code>OMP_NUM_THREADS</code>, <code>OPENBLAS_NUM_THREADS</code>,
-      <code>MKL_NUM_THREADS</code>, <code>NUMEXPR_NUM_THREADS</code> and
-      <code>VECLIB_MAXIMUM_THREADS</code> to one declared default, chosen in the
-      <code>thread-cap</code> decision, unless the variable is already set. The setting
-      goes where every process on the node inherits it: the batch script that
-      <code>fleet_node.generate_hold_script</code> writes, which is what starts the
-      supervisor, the zellij servers, the panes and every worker, and
-      <code>reckon/bin/fleet-claude</code> for a pane started some other way. A process
-      that needs more threads raises its own variable.
-    </p>
-    <p><strong>Done when:</strong></p>
-    <ul>
-      <li>The generated hold script exports each variable with the declared default, and keeps a value already set in the submitting environment; tests assert both.</li>
-      <li><code>fleet-claude</code> exports the same defaults without overriding a value already set; a test runs it with a stub <code>claude</code> and reads the environment the stub received.</li>
-      <li>One recorded measurement on the new node, after &sect;10, shows a numpy import holding fewer threads than the 28-wide pool measured on clu-2018.</li>
-    </ul>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">Thread caps at 8 landed in the hold script and <code>fleet-claude</code>; measured on clu-2002 after the move, every Claude pane and the supervisor carry all five caps, and the node ran 734 threads across 93 processes. <a href="/reckon/evidence/archive/the-fleet-moves-to-a-new-node-landed.html#s10-s13">full record</a></p>
+</section>
 
     <h2 id="s4">&sect;4 &mdash; The supervisor collects every child</h2>
     <section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links=""></section>
@@ -223,64 +207,33 @@
   <p class="landed-summary">Rehearsed on 98dci4-clu-2018 on 8 October through <code>reckon fleet-node migrate --rehearse</code>: the probe came back with the same tabs in order and its Claude pane under the same conversation id, and its transcript grew after a prompt; the ledger is kept under <code>~/.local/state/fleet/migration/rehearsals/probe-rehearsal/</code>. <a href="s9">full record</a></p>
 </section>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-08</span>
     <h2 id="s10">&sect;10 &mdash; Stand the new node up in standby</h2>
-    <section data-reckon="section" data-id="s10" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="implementable" data-links=""></section>
-    <p>
-      The new allocation is held before anything stops, so the halt in &sect;11 is as
-      short as possible. A supervisor publishes the fleet record when it starts, and
-      <code>cx</code> attaches wherever that record points, so a new supervisor that
-      published at once would send the next attach to a node with no sessions on it.
-      The migrate command's stand-up step therefore starts the new supervisor in standby: it
-      serves requests, but publishes no fleet record and starts no declared service
-      until the migrate command promotes it at cutover. Until then every attach still
-      reaches the old node. The second rehearsal of &sect;9 runs on the standby node.
-    </p>
-    <p><strong>Done when:</strong></p>
-    <ul>
-      <li>The new allocation is running on a rigel node other than clu-2018, its standby supervisor answers a request, and one step runs inside it.</li>
-      <li>The fleet record and the reservation record still name job 1277272, read after the stand-up.</li>
-      <li>The second probe rehearsal passes on the new node.</li>
-    </ul>
+<section data-reckon="section" data-id="s10" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">Standby job <code>1281970</code> held on <code>98dci4-clu-2002</code> on 8 October; its supervisor answered ready in standby and a step ran inside it before promotion. <a href="/reckon/evidence/archive/the-fleet-moves-to-a-new-node-landed.html#s10-s13">full record</a></p>
+</section>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-08</span>
     <h2 id="s11">&sect;11 &mdash; Quiesce, as late as possible</h2>
-    <section data-reckon="section" data-id="s11" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="implementable" data-links=""></section>
-    <p>
-      Coordinators keep working, and their workers keep running, until the cutover is
-      ready to start. Then, in order:
-    </p>
-    <ol>
-      <li>Hold every launch with <code>reckon crew gate --pause</code> (&sect;6), giving the move as the reason.</li>
-      <li>Message every coordinator pane: reach a checkpoint, launch nothing, record your state in your plan, and reply with your live runs and whether you stopped mid-task. Panes are interactive sessions, which receive peer messages; workers are not, and are never messaged. A session's messaging socket lives in its node's runtime directory, so a peer is reachable only from a session on the same node: measured on 7 October, a login-node session listed one peer and none of the 13 fleet panes. The halt messages are therefore sent by a session on the old fleet node, or the migrate command sends them from a step there.</li>
-      <li>Let running workers finish and land. A run that cannot finish within the halt window is recorded in the ledger with its resume path and left unpromoted, because promoting an unfinished run destroys its resume path.</li>
-      <li>Take the final census. For each pane the ledger records whether it was halted mid-task, and the continue prompt it will receive.</li>
-    </ol>
-    <p>
-      A resumed conversation still shows its earlier background tasks and monitors as
-      running, but their processes ended with the old node. The continue prompt says so,
-      names the new node, and asks the coordinator to re-arm what it needs before it
-      continues from its plan.
-    </p>
-    <p><strong>Done when:</strong> the fleet gate is held, every coordinator pane has replied or is recorded as idle, no worker step of job 1277272 is running except those recorded as parked, and the final census is in the ledger.</p>
+<section data-reckon="section" data-id="s11" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">Fleet gate paused, the halt notice delivered to the old node's 11 sessions through peer messages, and the census taken with continue prompts for every Claude pane. <a href="/reckon/evidence/archive/the-fleet-moves-to-a-new-node-landed.html#s10-s13">full record</a></p>
+</section>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-08</span>
     <h2 id="s12">&sect;12 &mdash; Cut over each session into its own tabs</h2>
-    <section data-reckon="section" data-id="s12" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="implementable" data-links=""></section>
-    <ol>
-      <li>Run the promote step: the worker reservation now names the new job, the standby supervisor publishes the fleet record, and it takes the service leases as the old supervisor stops its two services.</li>
-      <li>Run the cutover step for each of the five sessions in turn, from the login node, checking each before the next.</li>
-      <li>Confirm each pane from outside it: a Claude process on the new node under the expected conversation id, the session visible as a peer, and its transcript growing after its continue prompt.</li>
-    </ol>
-    <p><strong>Done when:</strong> all 13 panes run on the new node in tabs whose names and order match the final census exactly, every halted coordinator has acknowledged its continue prompt, and both imas-ambix services run once, on the new node.</p>
+<section data-reckon="section" data-id="s12" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">All five sessions cut over to clu-2002 with their tabs in order and every Claude pane under its recorded conversation id; the cutover step's relay to the new supervisor failed, and the sessions were moved through the same module steps by hand. <a href="/reckon/evidence/archive/the-fleet-moves-to-a-new-node-landed.html#s10-s13">full record</a></p>
+</section>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-08</span>
     <h2 id="s13">&sect;13 &mdash; Retire the old allocation and resume the work</h2>
-    <section data-reckon="section" data-id="s13" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="implementable" data-links=""></section>
-    <ol>
-      <li>Open the fleet gate with <code>reckon crew gate --open</code>.</li>
-      <li>Resume every parked run with <code>crew resume</code>; each now places into the new job.</li>
-      <li>Run the retire step, which confirms job 1277272 holds no steps and no panes before it cancels that job id, and read what the scheduler answered.</li>
-      <li>Ask SDCC to inspect clu-2018 and return it to service; the drain reason and the step it matched are in the research record.</li>
-      <li>Record the landed evidence, and close the plan.</li>
-    </ol>
-    <p><strong>Done when:</strong> job 1277272 has left the queue, the fleet gate is open, every parked run has resumed or been closed with a reason, and the health sampler is writing on the new node.</p>
+<section data-reckon="section" data-id="s13" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">Job <code>1277272</code> cancelled after the retire check found no worker steps or sessions; the declared services run on clu-2002 under leases, and the launch gate is open. <a href="/reckon/evidence/archive/the-fleet-moves-to-a-new-node-landed.html#s10-s13">full record</a></p>
+</section>
 
     <section class="section-landed">
   <header><span class="badge badge-shipped">&#10003; landed 2026-10-07</span>
@@ -293,12 +246,17 @@
 <section data-reckon="section" data-id="s15" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
 <p><code>reckon/hooks/install.py</code> binds the obligations hook to the checkout's own <code>.venv/bin/python</code>, and states that the worker stop hook "is standard-library only and keeps its bare script command". It no longer is: <code>worker_stop.py</code> imports <code>reckon._timestamps</code>, which needs <code>datetime.UTC</code> from Python 3.11. A bare command resolves <code>python3</code> through the worker's <code>PATH</code>, and a worker launched from a non-interactive shell on a compute node finds the system Python 3.9. Measured on 7 October: every worker this plan dispatched over ssh to the fleet node ended its turn with <code>ImportError: cannot import name 'UTC' from 'datetime' (/usr/lib64/python3.9/datetime.py)</code> in its stop hook, which is non-blocking, so two workers stopped with work uncommitted or unreported and had to be resumed. The worker git guard is launched the same way and imports reckon, and a guard that cannot import fails open. The move drives steps from a login node into other nodes' shells, so this must hold before it.</p><p>Every hook a worker runs is launched by the checkout's own interpreter, as the obligations hook already is, both in the installed user settings and in each fenced worker's harness settings. The docstring states the rule that now holds.</p><p><strong>Done when:</strong></p><ul><li>A test composes the worker hook commands and finds each names the checkout's <code>.venv/bin/python</code> before the script.</li><li>A test runs the worker stop hook and the git guard through their composed commands with a <code>PATH</code> whose first <code>python3</code> is a stub that exits non-zero, and both still run and decide.</li><li>An installed settings file carrying the bare commands is upgraded in place without a duplicate entry.</li></ul>
 
+    <h2 id="s16">§16 — The cutover relays its request and retire ignores the caller&#x27;s session</h2>
+<section data-reckon="section" data-id="s16" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p>The move exposed two defects in <code>reckon fleet-node migrate</code>. First, the cutover step relays <code>session NAME LAYOUT</code> to the new node's supervisor through a step that runs <code>python -m reckon.crew.fleet_migrate request …</code>. The module's entry point accepts a request of at most four arguments and refuses this five-argument one, after the session has already been ended on the old node. Second, the retire check lists sessions in a step that inherits the caller's zellij variables. zellij then marks the caller's own session <code>(current)</code>, and the check counts it as held by the old job.</p><p><strong>Done when:</strong></p><ul><li>The entry point relays a request line of any length as one line, and a test sends <code>session NAME LAYOUT</code> through the step argv the cutover composes.</li><li>The cutover sends its start request before it records the old session as ended, or refuses to end a session whose start request cannot be composed, and a test fails the relay and finds the old session still running.</li><li>The session listing used by census, cutover and retire clears <code>ZELLIJ</code>, <code>ZELLIJ_SESSION_NAME</code> and <code>ZELLIJ_PANE_ID</code> from the step it runs, and a test with those set finds no session counted.</li></ul>
+
     <section data-reckon="gates" id="gates" class="r-gates">
 <h2><span class="sec">§</span> Evidence gates</h2>
-<div class="r-gate" data-id="g-tfmtann-rehearsal" data-section="s9" data-gated-sections="s11,s12,s13" data-status="open" data-verdict="">
+<div class="r-gate" data-id="g-tfmtann-rehearsal" data-section="s9" data-gated-sections="s11,s12,s13" data-status="closed" data-verdict="passed">
     <h4 class="r-gate-measure">A probe session returns in the same tabs, its Claude pane resumed by conversation id, on the current node and on the new node</h4>
     <p class="r-gate-required-evidence">The rehearsal ledgers from §9 and §10, with tab lists and conversation ids before and after.</p>
-    </div>
+    <a class="r-gate-evidence" href="the probe rehearsal ledger at ~/.local/state/fleet/migration/rehearsals/probe-rehearsal/ledger.json passed on clu-2018, and every session&#x27;s cutover on clu-2002 was verified against the census">Evidence</a>
+</div>
 <div class="r-gate" data-id="g-tfmtann-seat" data-section="s14" data-gated-sections="s10,s11,s12,s13" data-status="closed" data-verdict="passed">
     <h4 class="r-gate-measure">One producer per project holds across hosts: a dispatch on a second host defers to a fresh producer lease and never unwatches a producer it cannot see</h4>
     <p class="r-gate-required-evidence">the §14 tests with two simulated hosts and one shared watch directory, passing at the merged head</p>
