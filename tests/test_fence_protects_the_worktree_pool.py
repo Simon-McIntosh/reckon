@@ -38,7 +38,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon import _backends
+from reckon import _backends, _worker_fence
 
 NEGATIVE_CONTROL_MUTATION = (
     "strip Code/.reckon-worktrees from declared_protected_paths — the composed "
@@ -239,12 +239,12 @@ def test_a_worker_writes_its_own_tree_and_not_the_sibling(tmp_path: Path) -> Non
 
 def _negative_control_report(root: Path) -> list[str]:
     pool = Pool(root)
-    original = _backends.declared_protected_paths
-    _backends.declared_protected_paths = _without_pool(pool.home, original)
+    original = _worker_fence.declared_protected_paths
+    _worker_fence.declared_protected_paths = _without_pool(pool.home, original)
     try:
         proc = pool.run_fence(pool.argv())
     finally:
-        _backends.declared_protected_paths = original
+        _worker_fence.declared_protected_paths = original
     return [
         f"stub exit: {proc.returncode}",
         f"results: {pool.results_text().strip()!r}",
