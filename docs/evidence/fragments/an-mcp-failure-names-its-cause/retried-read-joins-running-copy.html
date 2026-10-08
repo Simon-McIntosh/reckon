@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="an-mcp-failure-names-its-cause">
+  <meta name="plan-title" content="An MCP Failure Names Its Cause">
+  <meta name="plan-summary" content="A reckon MCP read retried after its deadline expired waits on the body still running instead of starting a second one; a read with different arguments and every write still run their own body.">
+  <meta name="plan-evidence-for" content="reckon:an-mcp-failure-names-its-cause">
+  <meta name="plan-verifies" content="reckon:an-mcp-failure-names-its-cause#s8">
+  <meta name="plan-commits" content="598da8fbf">
+  <meta name="plan-recorded-at" content="2026-10-08">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="mcp,deadline,retry">
+  <meta name="plan-node" content="retried-read-joins-running-copy">
+  <title>A retried reckon read waits for the copy already running — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="retried-read-joins-running-copy-landed" data-node="retried-read-joins-running-copy" data-reckon="landed" data-when="2026-10-08">
+  <h2 id="retried-read-joins-running-copy-heading">A retried reckon read waits for the copy already running</h2>
+  <p id="retried-read-joins-running-copy-summary">A read body's future is kept in <code>_INFLIGHT_READS</code>, keyed by tool and arguments, for as long as it runs. The registered read adapter awaits that shared future under <code>asyncio.shield</code>, so a call whose deadline expires abandons the wait, not the body, and an identical retry awaits the same future instead of submitting a second copy — one body answers both calls. The registry is emptied by a done-callback when the body finishes, so the next identical read after that starts fresh; a read whose arguments differ keys its own body, and a write is never registered, so it always runs its own body under its own deadline.</p>
+  <p id="retried-read-joins-running-copy-evidence">Gate: <code>tests/test_mcp_retry_joins_running_read.py</code> 4 passed, EXIT=0. A spinning read issued twice, the second after the first's 0.2 s deadline expired, shows one body execution answering both calls; a read with different arguments starts its own body; a write is never joined; a finished read leaves no registration. Negative control: with the read entry replaced by one that always runs a fresh body (the join removed), the first case counts two executions and fails, EXIT=1.</p>
+</article>
+</body>
+</html>
