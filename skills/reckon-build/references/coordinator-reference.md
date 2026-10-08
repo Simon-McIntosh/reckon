@@ -617,7 +617,9 @@ For view-by-view semantics, cross-repository contact, recovery commands, and int
 
 ### One producer for the project, one follower for your session
 
-A producer turns project pointer changes into transitions; a follower delivers this session's transitions. **That producer is not your wake-up.** Arm the payload's `attach_line` before the first dispatch and confirm `session_attached`, not merely producer liveness.
+A producer turns project pointer changes into transitions; a follower delivers this session's transitions. **That producer is not your wake-up.**
+
+**In a Claude session with the crew-host plugin linked, the session host is your delivery.** The host waits on a node-local FIFO named for your Claude process and starts and restarts one `crew follow` per project and session, with no lifetime, for as long as the session lives. A hand-armed follower started beside a waiting host hands its project and session to the host, prints one line saying so, and exits, so you do not re-arm beside a host that already delivers you. Whether a follower is the host's own is read from the host's census record, so a host started before any of this still recognises its child. Arm the payload's `attach_line` before the first dispatch and confirm `session_attached` **only when the session has no waiting host** — a Codex session, a `-p` session, or one started before the plugin was linked. That monitor fallback is unchanged, and dispatch reports `host` delivery when the host serves the session.
 
 **Exactly one monitor per session.** A session arms and attaches exactly ONE monitor: one `reckon crew follow --project P --session S` follower, one per session. A second follower on the same session is a defect, not redundancy. To watch more than your own runs, name them on the one follower with `--observe-session`; **Never arm a second follower.**
 
