@@ -21,7 +21,7 @@ from pathlib import Path
 import pytest
 
 from reckon import ledger
-from reckon.crew import promotion
+from reckon.crew import promotion, promotion_scope
 from reckon.crew.runs import _write_json, pointer_path
 
 RUN_ID = "rolled-back-row"
@@ -154,7 +154,7 @@ def test_survived_row_receipt_keeps_the_do_not_re_promote_wording(
             return subprocess.CompletedProcess(args, 128, "", "index is locked")
         return real_git(checkout, *args, **kwargs)
 
-    monkeypatch.setattr(promotion, "_git", refuse_restore)
+    monkeypatch.setattr(promotion_scope, "_git", refuse_restore)
 
     with pytest.raises(promotion.CrewError) as caught:
         promotion._complete_locked(RUN_ID, gate="not-run", root=repository)

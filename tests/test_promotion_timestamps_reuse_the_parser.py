@@ -33,7 +33,15 @@ from typing import Any
 
 import pytest
 
-from reckon.crew import promotion
+from reckon.crew import (
+    promotion,
+    promotion_checks,
+    promotion_evidence,
+    promotion_gate,
+    promotion_records,
+    promotion_release,
+    promotion_scope,
+)
 
 REFERENCE = "2026-09-26T12:00:00Z"
 
@@ -121,10 +129,19 @@ def test_every_reader_is_covered() -> None:
 
 def test_no_reader_parses_iso_strings_itself() -> None:
     """Promotion parses through reckon._timestamps, not fromisoformat directly."""
-    source = Path(promotion.__file__).read_text()
+    modules = (
+        promotion,
+        promotion_checks,
+        promotion_evidence,
+        promotion_gate,
+        promotion_records,
+        promotion_release,
+        promotion_scope,
+    )
     offenders = [
-        node.lineno
-        for node in ast.walk(ast.parse(source, filename=str(promotion.__file__)))
+        (module.__file__, node.lineno)
+        for module in modules
+        for node in ast.walk(ast.parse(Path(module.__file__).read_text(), filename=str(module.__file__)))
         if isinstance(node, ast.Call)
         and isinstance(node.func, ast.Attribute)
         and node.func.attr == "fromisoformat"

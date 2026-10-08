@@ -22,7 +22,7 @@ from pathlib import Path
 import pytest
 
 from reckon import _plan_html, crew
-from reckon.crew import promotion
+from reckon.crew import promotion, promotion_checks
 from reckon.crew import review as review_module
 from reckon.crew.runs import _write_json, pointer_path
 
@@ -208,9 +208,9 @@ def _terminal_lines() -> str:
 
 def _fast_settle(monkeypatch: pytest.MonkeyPatch) -> None:
     """Shrink the settle's windows so the suite does not pay production timing."""
-    monkeypatch.setattr(promotion, "_STREAM_SETTLE_POLL_SECONDS", 0.01)
-    monkeypatch.setattr(promotion, "_STREAM_SETTLE_QUIESCENCE_SECONDS", 0.05)
-    monkeypatch.setattr(promotion, "_STREAM_SETTLE_MAX_SECONDS", 5.0)
+    monkeypatch.setattr(promotion_checks, "_STREAM_SETTLE_POLL_SECONDS", 0.01)
+    monkeypatch.setattr(promotion_checks, "_STREAM_SETTLE_QUIESCENCE_SECONDS", 0.05)
+    monkeypatch.setattr(promotion_checks, "_STREAM_SETTLE_MAX_SECONDS", 5.0)
 
 
 def test_a_terminal_record_landing_after_exit_is_folded_into_the_row(
@@ -253,9 +253,9 @@ def test_a_terminal_record_landing_after_exit_is_folded_into_the_row(
         return settled_mtime
 
     monkeypatch.setattr(
-        promotion, "_newest_stream_mtime", writer_finishes_after_first_observation
+        promotion_checks, "_newest_stream_mtime", writer_finishes_after_first_observation
     )
-    monkeypatch.setattr(promotion, "process_alive", lambda pid: False)
+    monkeypatch.setattr(promotion_checks, "process_alive", lambda pid: False)
     _fast_settle(monkeypatch)
 
     _stored_review(run_id)
@@ -304,8 +304,8 @@ def test_an_already_quiet_stream_costs_no_settle(
         reads["count"] += 1
         return real_newest(paths)
 
-    monkeypatch.setattr(promotion, "_newest_stream_mtime", count_reads)
-    monkeypatch.setattr(promotion, "process_alive", lambda pid: False)
+    monkeypatch.setattr(promotion_checks, "_newest_stream_mtime", count_reads)
+    monkeypatch.setattr(promotion_checks, "process_alive", lambda pid: False)
 
     observed = promotion._promotion_terminal_observation(record)
 
@@ -329,7 +329,7 @@ def test_a_stream_that_never_receives_a_terminal_record_keeps_the_mtime_fallback
     stream.write_text(PARTIAL_BODY, encoding="utf-8")
     os.utime(stream, None)
 
-    monkeypatch.setattr(promotion, "process_alive", lambda pid: False)
+    monkeypatch.setattr(promotion_checks, "process_alive", lambda pid: False)
     _fast_settle(monkeypatch)
 
     _stored_review(run_id)
@@ -370,9 +370,9 @@ def test_a_live_run_process_is_not_settled_or_changed(
     }
 
     settle_engaged: list[tuple] = []
-    monkeypatch.setattr(promotion, "process_alive", lambda pid: True)
+    monkeypatch.setattr(promotion_checks, "process_alive", lambda pid: True)
     monkeypatch.setattr(
-        promotion,
+        promotion_checks,
         "_wait_out_stream_tail",
         lambda paths: settle_engaged.append(tuple(paths)),
     )
@@ -400,9 +400,9 @@ def test_a_dead_run_process_engages_the_settle(
     }
 
     settle_engaged: list[tuple] = []
-    monkeypatch.setattr(promotion, "process_alive", lambda pid: False)
+    monkeypatch.setattr(promotion_checks, "process_alive", lambda pid: False)
     monkeypatch.setattr(
-        promotion,
+        promotion_checks,
         "_wait_out_stream_tail",
         lambda paths: settle_engaged.append(tuple(paths)),
     )
@@ -424,9 +424,9 @@ def test_the_settle_is_bounded_for_a_stream_that_never_quiesces(
     stream = tmp_path / "stream.jsonl"
     stream.write_text(PARTIAL_BODY, encoding="utf-8")
 
-    monkeypatch.setattr(promotion, "_STREAM_SETTLE_POLL_SECONDS", 0.01)
-    monkeypatch.setattr(promotion, "_STREAM_SETTLE_QUIESCENCE_SECONDS", 0.05)
-    monkeypatch.setattr(promotion, "_STREAM_SETTLE_MAX_SECONDS", 0.5)
+    monkeypatch.setattr(promotion_checks, "_STREAM_SETTLE_POLL_SECONDS", 0.01)
+    monkeypatch.setattr(promotion_checks, "_STREAM_SETTLE_QUIESCENCE_SECONDS", 0.05)
+    monkeypatch.setattr(promotion_checks, "_STREAM_SETTLE_MAX_SECONDS", 0.5)
 
     stop = threading.Event()
 

@@ -40,7 +40,7 @@ import pytest
 
 import reckon.crew.dispatch_launch as dispatch_launch_module
 from reckon import _plan_html, crew
-from reckon.crew import promotion
+from reckon.crew import promotion, promotion_release
 from reckon.crew.runs import _write_json, pointer_path
 
 # `reckon.crew.dispatch` is shadowed by the `dispatch` function the package
@@ -194,7 +194,7 @@ def _plant_scratch(run_id: str) -> Path:
 def _apply_negative_control(monkeypatch: pytest.MonkeyPatch) -> None:
     """The declared mutation: leave the scratch directory in place."""
     monkeypatch.setattr(
-        promotion,
+        promotion_release,
         "remove_worker_scratch",
         lambda _run_id, **_kwargs: {
             "scratch_removed": False,
@@ -392,7 +392,7 @@ def test_the_promotion_release_fallback_reports_the_scratch(
         "repo": str(tmp_path),
         "pid": None,
     }
-    monkeypatch.setattr(promotion, "_worktree_audit", _raise_audit)
+    monkeypatch.setattr(promotion_release, "_worktree_audit", _raise_audit)
 
     release = promotion._release_after_promotion(run_id, record, gate="passed")
 
@@ -414,7 +414,7 @@ def test_the_discard_release_fallback_reports_the_scratch(
     worktree = _worktree(repository, tmp_path, "discard-raises")
     _pointer(run_id, repository=repository, worktree=worktree, launch="cli")
     scratch = _plant_scratch(run_id)
-    monkeypatch.setattr(promotion, "_worktree_audit", _raise_audit)
+    monkeypatch.setattr(promotion_release, "_worktree_audit", _raise_audit)
 
     result = crew.discard(run_id)
 

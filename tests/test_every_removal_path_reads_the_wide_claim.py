@@ -206,7 +206,7 @@ REMOVAL_DRIVERS = {
     "reckon/crew/routing.py::_save_and_release_worktree": (
         _driver_save_and_release_worktree
     ),
-    "reckon/crew/promotion.py::_release_run_workspace": (_driver_release_run_workspace),
+    "reckon/crew/promotion_release.py::_release_run_workspace": (_driver_release_run_workspace),
 }
 
 

@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 from reckon import _plan_html, crew, ledger
-from reckon.crew import promotion
+from reckon.crew import promotion_release
 from reckon.crew.runs import (
     _process_start_time,
     _write_json,
@@ -312,7 +312,7 @@ def test_a_failure_inside_release_leaves_the_ledger_row_intact(
     def _boom(record):
         raise RuntimeError("simulated release failure")
 
-    monkeypatch.setattr(promotion, "_release_run_workspace", _boom)
+    monkeypatch.setattr(promotion_release, "_release_run_workspace", _boom)
 
     promoted = crew.complete(
         run_id,

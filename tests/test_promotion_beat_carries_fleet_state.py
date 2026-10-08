@@ -10,7 +10,7 @@ from typing import Any
 import pytest
 
 from reckon import _plan_html, crew, ledger
-from reckon.crew import promotion, recovery
+from reckon.crew import promotion, promotion_release, recovery
 from reckon.crew.runs import _write_json, pointer_path
 
 PROJECT = "beat-project"
@@ -166,7 +166,7 @@ def test_promotion_carries_a_bounded_fleet_reading_without_changing_the_ledger(
     ]
     for run_id, backend, status in fleet:
         _write_pointer(repository, run_id, backend=backend, status=status)
-    monkeypatch.setattr(promotion, "_utc_now", lambda: FLEET_OBSERVED_AT)
+    monkeypatch.setattr(promotion_release, "_utc_now", lambda: FLEET_OBSERVED_AT)
 
     result = _promote(repository)
     beat = result["fleet_state"]
@@ -213,13 +213,13 @@ def test_the_fleet_reading_has_a_constant_shape_for_small_and_large_fleets(
             }
             for index in range(count)
         ]
-        monkeypatch.setattr(promotion, "list_live", lambda *, project: pointers)
+        monkeypatch.setattr(promotion_release, "list_live", lambda *, project: pointers)
         # The reading derives its unreconciled count from the closure drain's
         # per-pointer step rather than from the whole-project drain, so the stub
         # stands at that step. Each bare pointer is one unreconciled run, which
         # is what the count assertions below read.
         monkeypatch.setattr(
-            promotion, "_drain_row", lambda pointer: {"unreconciled": True}
+            promotion_release, "_drain_row", lambda pointer: {"unreconciled": True}
         )
         monkeypatch.setattr(
             recovery,
@@ -249,7 +249,7 @@ def test_an_unavailable_fleet_reading_does_not_block_promotion(
     def unreadable(*, project: str) -> list[dict[str, Any]]:
         raise failure
 
-    monkeypatch.setattr(promotion, "list_live", unreadable)
+    monkeypatch.setattr(promotion_release, "list_live", unreadable)
 
     result = _promote(repository, "r-unmeasured")
     stored = _stored_row(repository, "r-unmeasured")

@@ -11,7 +11,7 @@ from click.testing import CliRunner, Result
 
 from reckon import _plan_html, _store, crew, ledger
 from reckon.cli import main as cli_main
-from reckon.crew import promotion
+from reckon.crew import promotion, promotion_scope
 from reckon.crew import review as review_module
 from reckon.crew.runs import _write_json, pointer_path
 from tests.conftest import EXECUTABLE_GATE_COMMAND
@@ -1735,7 +1735,7 @@ def _promote_failing(
             )
         return real_git(checkout, *arguments, **kwargs)
 
-    monkeypatch.setattr(promotion, "_git", _failing_landing_commit)
+    monkeypatch.setattr(promotion_scope, "_git", _failing_landing_commit)
     with pytest.raises(crew.CrewError, match="could not commit the landing writes"):
         _promote(repository, run_id, outcome="the landing commit fails and is restored")
     assert pointer_path(run_id).is_file()

@@ -30,7 +30,6 @@ AREAS = ("reckon", "tests")
 ALLOWLIST = frozenset(
     {
         "reckon/_backends.py",
-        "reckon/crew/promotion.py",
         "reckon/crew/recovery.py",
         "reckon/crew/runs.py",
         "reckon/mcp.py",
