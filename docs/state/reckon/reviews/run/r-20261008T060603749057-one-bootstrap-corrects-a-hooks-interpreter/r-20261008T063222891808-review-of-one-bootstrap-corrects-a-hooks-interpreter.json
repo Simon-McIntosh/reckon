@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own manifest suite fields: baseline_suite is null (the run names no base gate log), so the added-failure count is unmeasured rather than zero. The after_suite log gate-final.log is at revision 6a52e6933ff1ebe05eaec3cdc69dda614b05b74b and reports 121 passed EXIT=0. Production annotate_review_of_run on this run returns count None and ids [].",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/hooks/worker_stop.py:65",
+    "reckon/hooks/coordinator_obligations.py:104",
+    "reckon/hooks/worker_git_guard.py:54"
+  ],
+  "completed_at": "2026-10-08T06:54:22.271Z",
+  "dispatched_at": "2026-10-08T06:33:31Z",
+  "findings": [
+    {
+      "file": "reckon/hooks/interpreter_bootstrap.py",
+      "line": "18",
+      "severity": "follow-on",
+      "text": "The checkout interpreter path is computed inline as script_path.parents[2] / '.venv' / 'bin' / 'python', duplicating the capability reckon/hooks/install.py:132 owns as interpreter_path() (and that install.py:233 already re-derives inline). The stdlib-only, pre-reckon load order makes importing that owner impossible from the bootstrap, so this is a hand-kept second source of truth for the venv layout rather than a careless fork; a change to the venv path would have to update both."
+    }
+  ],
+  "head_log_revision": "6a52e6933ff1ebe05eaec3cdc69dda614b05b74b",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call sites",
+    "diff": "read the three commits against f411aa1a: bfd190a1 adds interpreter_bootstrap.py and the three call sites plus the fail-closed guard, 9630d88b isolates the source-wiring assertion from the subprocess verdict, 6a52e6933 gives the stop-hook subprocess an existing manifest so the bootstrap-removal mutation fails.",
+    "done_when": "the \u00a74 done-when's named tests all exist in tests/test_hook_scripts_correct_their_interpreter.py (AST search for importing hooks, old-PATH re-exec equality with the checkout run, the two stdlib guards unchanged, missing-interpreter no-loop, unloadable-rules deny) plus tests/test_worker_git_guard.py:90, and the manifest records the gate-final.log result.",
+    "goal": "the goal is one stdlib-only bootstrap that re-executes a reckon-importing hook under its checkout interpreter and makes the git guard fail closed when it cannot load its rules; the landed change delivers both, reproduced by the 121-passed gate and the red control.",
+    "manifest": "read; it names gate-final.log (121 passed EXIT=0), negative-control-red.log (1 failed), the head 6a52e6933, and status complete with an empty blockers list.",
+    "write_paths": "read the run manifest's declared write paths; every file in the three-commit diff against f411aa1a is inside them."
+  },
+  "justifications": {
+    "durability": "test_importing_hooks_reexecute_under_old_python (tests/test_hook_scripts_correct_their_interpreter.py:131) compares the wrong-interpreter run's (returncode, stdout, stderr) against the checkout-python run, and negative-control-red.log shows that removing the bootstrap call from worker_stop.py reddens it; the source-substring assertions that precede it are weak but the behavioural comparison carries the guard.",
+    "evidence": "gate-final.log (header revision=6a52e6933 tree=\u2026/one-bootstrap-corrects-a-hooks-interpreter, last line 121 passed EXIT=0) and negative-control-red.log (EXIT=1, one failing test under a bootstrap-removal mutation) are recorded on disk and named in the manifest, but the run's manifest carries baseline_suite: null, so its added-failure count is unmeasured rather than zero.",
+    "fit": "the added names (MINIMUM_PYTHON, ensure_interpreter, _ATTEMPT_ENV) are mechanism-descriptive and carry no plan label, the diff scrubs the plan-reference comment at coordinator_obligations.py:107, and the deferred-import-before-reckon pattern matches the existing idiom at worker_git_guard.py:73.",
+    "goal_fidelity": "reckon/hooks/interpreter_bootstrap.py:13 defines ensure_interpreter and :18 resolves the checkout interpreter, and the three importing hooks call it at worker_stop.py:65, coordinator_obligations.py:104 and worker_git_guard.py:54 before their reckon imports, re-executing under the checkout python and denying at worker_git_guard.py:54-64 when it cannot, exactly as the node goal states.",
+    "reuse": "interpreter_bootstrap.py:18 re-derives script_path.parents[2] / '.venv' / 'bin' / 'python', the capability reckon/hooks/install.py:132 owns as interpreter_path(), without extending that owner; the stdlib-only, pre-reckon-bootstrap load order makes importing the owner impossible, but the two expressions are a hand-kept second source of truth.",
+    "scope_discipline": "the three commits change only the seven declared write paths (reckon/hooks/interpreter_bootstrap.py, worker_stop.py, coordinator_obligations.py, worker_git_guard.py, tests/test_hook_scripts_correct_their_interpreter.py, tests/test_worker_git_guard.py, and the evidence fragment); the declared docs/figures directory is correctly unused, since the prompt states this node writes no figure."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: one stdlib-only bootstrap re-executes a reckon-importing hook under its checkout interpreter (reckon/hooks/interpreter_bootstrap.py:13-33) and the git guard fails closed (worker_git_guard.py:54-64, 563-566), called by the three importing hooks before their reckon imports.\nVERDICT done_when: the \u00a74 done-when's tests exist in tests/test_hook_scripts_correct_their_interpreter.py (AST search, old-PATH re-exec equality, two stdlib guards, missing-interpreter no-loop, unloadable-rules deny) and the manifest records the 121-passed gate.\nVERDICT write_paths: every file in the three-commit diff against f411aa1a is inside the declared write paths.\nVERDICT manifest: read; names gate-final.log (121 passed EXIT=0), the red control, status complete, no blockers.\nVERDICT diff: read the three commits against f411aa1a; four hook sources, two test files and the fragment, all within scope.\nCALL_SITES: reckon/hooks/worker_stop.py:65, reckon/hooks/coordinator_obligations.py:104, reckon/hooks/worker_git_guard.py:54\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: interpreter_bootstrap.py:13/18 with the three call sites at worker_stop.py:65, coordinator_obligations.py:104 and worker_git_guard.py:54 deliver the re-exec and the fail-closed deny the goal names.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-final.log (revision=6a52e6933, 121 passed EXIT=0) and negative-control-red.log (EXIT=1, one failing test) are recorded, but baseline_suite null leaves the added-failure count unmeasured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the three commits touch only the seven declared write paths; the declared docs/figures directory is correctly unused.\nSCORE durability: 17\nJUSTIFICATION durability: test_importing_hooks_reexecute_under_old_python compares the wrong-interpreter run against the checkout run and the red control shows a removed bootstrap call reddens it.\nSCORE fit: 18\nJUSTIFICATION fit: added names are mechanism-descriptive and plan-label free, the plan-reference comment at coordinator_obligations.py:107 is scrubbed, and the deferred-import idiom matches worker_git_guard.py:73.\nSCORE reuse: 5\nJUSTIFICATION reuse: interpreter_bootstrap.py:18 duplicates reckon/hooks/install.py:132 interpreter_path() without extending that owner.\nFINDING reckon/hooks/interpreter_bootstrap.py:18 follow-on: the checkout interpreter path is re-derived inline, duplicating install.py:132 interpreter_path(); the pre-reckon stdlib-only load order prevents importing the owner, so the two must be kept in step by hand.",
+  "review_run_id": "r-20261008T063222891808-review-of-one-bootstrap-corrects-a-hooks-interpreter",
+  "reviewed_base_sha": "f411aa1a035d6368b5fa29c65e652e4781c99ecb",
+  "reviewed_head_sha": "6a52e6933ff1ebe05eaec3cdc69dda614b05b74b",
+  "reviewed_run_id": "r-20261008T060603749057-one-bootstrap-corrects-a-hooks-interpreter",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T06:40:00+00:00",
+  "total": 94
+}
