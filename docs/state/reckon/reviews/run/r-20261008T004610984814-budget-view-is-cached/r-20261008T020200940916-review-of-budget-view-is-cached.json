@@ -1,0 +1,96 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs logs/gate_base.log (186 passed, EXIT=0) and logs/gate_head.log (192 passed, EXIT=0): neither arm carries a failing test id, so the run added none. The reviewed manifest names those logs as prose strings under baseline_suite/after_suite rather than as the armed JSON object, so a read-time annotation off the manifest fields alone would report the delta unmeasured; the counts here come from the logs the manifest points at.",
+  "after_suite": {
+    "command": "python -m pytest -p no:cacheprovider -n 6 tests/test_budget_view_is_cached.py tests/test_picker*.py tests/test_pick_candidates_one_pass.py tests/test_estimated_hours_reads_one_plan.py tests/test_budget_group_declaration.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_digest": "sha256:55ad19c610de098f5ecfab8e4e31d7d97331373bb5ef197f3fa4f16610a4f93f",
+    "revision": "76997333f50f0752da55bfd1ee1aeecf07456729"
+  },
+  "base_log_revision": "7c882130dec0027ba473f12e96eb3a9e8b10b6e5",
+  "baseline_suite": {
+    "command": "python -m pytest -p no:cacheprovider -n 6 tests/test_budget_view_is_cached.py tests/test_picker*.py tests/test_pick_candidates_one_pass.py tests/test_estimated_hours_reads_one_plan.py tests/test_budget_group_declaration.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_digest": "sha256:67083717122ae65637b96ae4a3ab321e394b9707ceb3a4e3741cd3c68721b025",
+    "revision": "7c882130dec0027ba473f12e96eb3a9e8b10b6e5"
+  },
+  "completed_at": "2026-10-08T02:12:33.739Z",
+  "dispatched_at": "2026-10-08T02:02:59Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/one-typesafe-model-picker/budget-view-is-cached.html",
+      "line": "test-budget-view-is-cached",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment reports the before median as 10789 ms from logs/before.json (actual median_ms 10838.99) without reconciling it against the 286 ms the node's done-when cites from the snapshot-stall report - a 38x gap a reader cannot resolve, and the one figure the node exists to move. State which measurement scope each figure covers or restate the brief's figure against the same live state."
+    },
+    {
+      "file": "docs/evidence/fragments/one-typesafe-model-picker/budget-view-is-cached.html",
+      "line": "timings",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment states the after maximum as 1.3 ms (warm) while logs/after.json records max_ms 829.60 with read_counts [2749, 6, 6, 6, 6, 6]; the 829.6 ms is the cold build and the warm samples are the other five, so the stated maximum omits the first sample the same log carries. Report both, naming which is cold."
+    },
+    {
+      "file": "reckon/crew/picker/snapshot.py",
+      "line": "536",
+      "severity": "follow-on",
+      "text": "follow-on: _reage_budget_report returns the stored report object unchanged when the interval since built_at is zero, so the dict handed back on a same-moment call is the cached entry itself; a caller that mutates any field of the result mutates the cache. A deep copy on the zero-delta path (cache_root is the caller's, but the picker's own callers are not all read-only) closes it."
+    },
+    {
+      "file": "logs/negative_control.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the declared negative control ran 4 tests (...F) rather than the six-case file it belongs to; the control is on-point (neutralizing the age recompute reddens test_advancing_the_clock_changes_ages_but_not_file_derived_fields, EXIT=1), but running the whole file would also prove the two attribution cases stay green under the mutation."
+    }
+  ],
+  "head_log_revision": "76997333f50f0752da55bfd1ee1aeecf07456729",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site of budget_view in reckon/crew/dispatch.py (the guarded budget_snapshot input) plus the picker's own internal use",
+    "diff": "read against base 7c882130d; the change adds _budget_view_input_paths, _budget_view_request_key, _compose_budget_report, _reage_budget_report and a rewritten budget_view, plus 6 tests and the evidence fragment.",
+    "done_when": "the gate is tests/test_budget_view_is_cached.py, every tests/test_picker*.py, tests/test_pick_candidates_one_pass.py, tests/test_estimated_hours_reads_one_plan.py and every tests/ file importing reckon.budget/crew.budget_group, judged by delta; the manifest records base 186 passed and head 192 passed, both EXIT=0, and the added file is 6 passed which I re-ran independently against the reviewed head.",
+    "goal": "the node goal is that the picker's budget view is cached on the stamps of the files it reads, with ages recomputed per call; reckon/crew/picker/snapshot.py budget_view (line 620) now raises the wall-clock and delegates to a stamped pick-input cache keyed on _budget_view_input_paths plus the ledger index stamp, and _reage_budget_report (:527) advances every time-derived field by the interval since built_at on each call.",
+    "manifest": "read; it records head d1c0ec689 as its own last commit while the worktree head is 76997333f (a later evidence commit), and it names the base/head gate, the declared negative control, the read-count drop and the attribution repair.",
+    "write_paths": "the manifest declares reckon/crew/picker/snapshot.py, tests/test_budget_view_is_cached.py and the evidence fragment; git diff --stat 7c882130d..76997333f names exactly those three files and nothing else."
+  },
+  "justifications": {
+    "durability": "the cache-hit assertions are read of live objects rather than test-supplied constants: the second-call test monkeypatches snapshot.budget.preflight and builtins.open and asserts the paid-lanes document is not reopened, so a revert of the cache reddens it, and the touch test rewrites the document and asserts the preflight count rises; but the negative control as logged ran a 4-test subset (...F) rather than the six-case file, and _reage_budget_report returns the stored report object by reference when the interval is zero, so a caller mutating a same-moment result mutates the cached entry.",
+    "evidence": "logs/gate_base.log and logs/gate_head.log record base 186 passed EXIT=0 and head 192 passed EXIT=0, a delta of +6 equal to the added file's size, and the reviewed negative control is on-point (neutralizing the age recompute in _reage_budget_report reddens the age test, EXIT=1, 1 failed/3 passed); I independently re-ran the reviewed tests/test_budget_view_is_cached.py against the head tree (6 passed, EXIT=0). It does not reach a top score: the cost figure the brief cites (286 ms) is not reconciled with the recorded before median of 10839 ms, and the evidence fragment states the warm maximum as 1.3 ms while after.json records read_counts [2749, 6, 6, 6, 6, 6] with max_ms 829.6 ms - the cold build - so the max is reported without its cold first sample.",
+    "fit": "the cache reuses the existing capabilities.cached_pick_input_stamped idiom (root= cache_root) that routing.context_census and routing._estimated_hours already call, and the new symbols _budget_view_input_paths, _budget_view_request_key, _compose_budget_report, _reage_budget_report are named by mechanism with no plan, ticket or version id; the pre-existing cached_only backend override moves into the wrapper unchanged at snapshot.py:614-622.",
+    "goal_fidelity": "the file-derived report is cached on the stamps of every file the view reads (paid-lanes document, banked-reset record, per-backend lane documents, and the ledger index via ledger.index_stamp, reckon/crew/picker/snapshot.py:596-602), and every time-derived field is recomputed per call by delta from built_at in _reage_budget_report (:527-570), which returns the stored report unchanged only when the interval is zero; the measured cost falls from median 10839 ms to 1.2 ms warm with the read count falling 2745 to 6, so the goal in full is met.",
+    "reuse": "the change introduces no second cache: it routes through the same stamped pick-input cache, and reuses capabilities.file_stamp, ledger.index_stamp, budget.policy and budget.summary rather than reimplementing any of them; _compose_budget_report is the former budget_view body extracted verbatim, so the uncached fallback is the same code path the caller had before.",
+    "scope_discipline": "git diff --stat 7c882130d..76997333f lists only reckon/crew/picker/snapshot.py, tests/test_budget_view_is_cached.py and docs/evidence/fragments/one-typesafe-model-picker/budget-view-is-cached.html, all inside the declared write paths; the brief's hold on reckon/crew/dispatch.py and reckon/cli.py is respected - neither appears in the diff."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the picker's budget view is cached on the stamps of the files it reads and ages recomputed per call; budget_view now delegates to capabilities.cached_pick_input_stamped keyed on _budget_view_input_paths plus ledger.index_stamp, and _reage_budget_report advances every time-derived field by the interval since built_at.\nVERDICT done_when: gate = tests/test_budget_view_is_cached.py plus every tests/test_picker*.py, tests/test_pick_candidates_one_pass.py, tests/test_estimated_hours_reads_one_plan.py and every tests/ file importing reckon.budget/crew.budget_group, judged by delta; base 186 passed EXIT=0, head 192 passed EXIT=0; the added file is 6 passed, re-run independently.\nVERDICT write_paths: three files - reckon/crew/picker/snapshot.py, tests/test_budget_view_is_cached.py, docs/evidence/fragments/one-typesafe-model-picker/budget-view-is-cached.html - exactly the declared paths, dispatch.py and cli.py untouched.\nVERDICT manifest: read; records the gate as a delta, the negative control, the read-count drop and the attribution repair; its baseline_suite/after_suite fields are prose strings rather than the armed JSON object.\nVERDICT diff: read against 7c882130d; adds _budget_view_input_paths, _budget_view_request_key, _compose_budget_report, _reage_budget_report and a rewritten budget_view, 6 tests and the fragment.\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: file-derived report cached on every file's stamp; ages recomputed per call by delta from built_at; cost 10839 ms -> 1.2 ms warm, reads 2745 -> 6.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate and negative control read and on-point; independent head run 6 passed; but before median 10839 ms unreconciled with the brief's 286 ms and the after maximum is stated omitting the cold sample.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: only the three declared paths in the diff; the hold on dispatch.py and cli.py is respected.\nSCORE durability: 17\nJUSTIFICATION durability: cache-hit tests read live objects (preflight count, builtins.open) so a revert reddens them; but the negative control ran a 4-test subset and a zero-delta call returns the cached object by reference.\nSCORE fit: 19\nJUSTIFICATION fit: reuses capabilities.cached_pick_input_stamped and the neighbouring modules; mechanism-named symbols; no plan or ticket ids.\nSCORE reuse: 20\nJUSTIFICATION reuse: no second cache; reuses file_stamp, index_stamp, budget.policy, budget.summary; _compose_budget_report is the former view body, so the fallback is the original path.\nFINDING docs/evidence/fragments/one-typesafe-model-picker/budget-view-is-cached.html follow-on: before median 10839 ms unreconciled with the 286 ms the done-when cites.\nFINDING docs/evidence/fragments/one-typesafe-model-picker/budget-view-is-cached.html follow-on: after maximum stated as 1.3 ms while after.json max_ms is 829.6 (the cold build).\nFINDING reckon/crew/picker/snapshot.py:536 follow-on: zero-delta call returns the cached report object by reference.\nFINDING logs/negative_control.log follow-on: control ran a 4-test subset rather than the six-case file.",
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261008T004610984814-budget-view-is-cached.at-76997333f50f0752da55bfd1ee1aeecf07456729.json",
+  "review_run_id": "r-20261008T020200940916-review-of-budget-view-is-cached",
+  "reviewed_base_sha": "7c882130dec0027ba473f12e96eb3a9e8b10b6e5",
+  "reviewed_head_sha": "76997333f50f0752da55bfd1ee1aeecf07456729",
+  "reviewed_run_id": "r-20261008T004610984814-budget-view-is-cached",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T02:05:00.000000+00:00",
+  "total": 112
+}
