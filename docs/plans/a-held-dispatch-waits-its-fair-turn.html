@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-held-dispatch-waits-its-fair-turn">
+  <meta name="plan-title" content="A Held Dispatch Waits Its Fair Turn">
+  <meta name="plan-summary" content="A dispatch the lane cannot admit joins a queue instead of returning, and freed slots go first to the sessions using least of the lane">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="8.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-sprint" content="S25">
+  <meta name="plan-after" content="the-local-lane-is-the-default">
+  <meta name="plan-standalone" content="It adds a queue to dispatch admission; the router's per-session shares it reads are already published, and no open plan waits on it.">
+  <title>A Held Dispatch Waits Its Fair Turn | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">reckon &middot; crew dispatch</p>
+      <h1>A held dispatch waits its fair turn</h1>
+      <p class="lead">
+        When the lane has no room, a dispatch today returns to its coordinator, which
+        retries on its own schedule. A freed slot goes to whichever coordinator happens
+        to retry next, so a session that dispatches a lot keeps winning, and nothing
+        records who is waiting. This plan gives held dispatches a queue that admits
+        them in fair-share order: the sessions using least of the lane go first.
+      </p>
+    </header>
+
+    <h2 id="s1">&sect;1 &mdash; Context</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-status="done" data-links=""></section>
+    <p>The local lane's router already publishes a fair share for each coordinator session: <code>admission.sessions[&lt;session&gt;].worker_slots</code> in the lane document, beside <code>new_session_worker_slots</code> and the lane-wide <code>worker_slots</code>. <code>_lane_worker_allowance</code> in <code>reckon/crew/dispatch.py</code> reads that share, most specific first. When the share is zero or less, dispatch raises <code>LaneHeld</code>, a kind of <code>LanePaused</code>: nothing is created, the node stays ready, and the caller is expected to retry.</p>
+    <p>So the fairness exists at the moment of admission, but not across the wait. Each held coordinator polls on its own. When a slot frees, the next coordinator to retry takes it, whatever the shares say, and a busy session that retries often keeps taking freed slots. Held work is also invisible: the follower's <code>q</code> column counts the router gate's waiting requests, not reckon's held dispatches, and no view lists them.</p>
+
+    <h2 id="s2">&sect;2 &mdash; A held dispatch is queued</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p>When a dispatch is held for want of a slot, <code>reckon crew dispatch</code> records the complete request as one entry in a queue on shared storage: the project, plan, section, node, session, every dispatch option, the hold's reason, and when it joined. It answers with the entry's identity and its position, and exits as held rather than refused. Queueing the same node again from the same session updates its entry rather than adding a second. <code>--no-queue</code> keeps today's behaviour: hold and return. A paused fleet gate holds the queue as a whole, and no entry is admitted while it is paused.</p>
+    <p><strong>Done when:</strong></p>
+    <ul>
+      <li>A held dispatch, under a lane document granting the session no slot, writes one queue entry carrying everything a later admission needs, and prints its identity and position.</li>
+      <li>Queueing the same node twice from one session leaves one entry. <code>--no-queue</code> writes none.</li>
+      <li>No test reads or writes the real crew state: the queue directory and the lane document are temporary.</li>
+    </ul>
+
+    <h2 id="s3">&sect;3 &mdash; Freed slots go to the sessions using least of the lane</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p>The queue's order is one function. Entries are ranked by their session's use of the lane, so a session with fewer runs in flight comes before a busier one, and entries within one session keep the order they joined. Waiting raises an entry's priority, so a busy session's work is delayed but never starved. The measure of use is the subject of the <code>priority-measure</code> decision.</p>
+    <p><strong>Done when:</strong></p>
+    <ul>
+      <li>With one session holding many runs and another holding none, the next admissions alternate in the lighter session's favour, asserted on the order the function returns.</li>
+      <li>Within one session, entries are admitted in the order they joined.</li>
+      <li>An entry that has waited past a stated bound is admitted ahead of a lighter session's newer entry, so no entry waits without limit.</li>
+    </ul>
+
+    <h2 id="s4">&sect;4 &mdash; One drainer launches queued work</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p>One drainer reads the lane document and the queue. Whenever the router grants room to a session that has queued work, the drainer takes the highest-ranked admissible entry and dispatches it through the same <code>dispatch</code> function a coordinator calls, with that entry's recorded session and options. It then records the run on the entry and removes the entry from the queue. Exactly one drainer runs per lane, held by a host lease; where it runs is the subject of the <code>drainer</code> decision. A dispatch that fails at launch leaves its entry in the queue with the failure recorded, rather than dropping it.</p>
+    <p><strong>Done when:</strong></p>
+    <ul>
+      <li>A test with a lane document that opens one slot finds the highest-ranked entry dispatched, its run id on the entry, and the entry out of the queue.</li>
+      <li>Two drainers started against one queue admit each entry once, shown by two drainers racing over the same entries.</li>
+      <li>A paused fleet gate admits nothing, and a launch failure keeps its entry with the failure recorded.</li>
+      <li>The coordinator's follower sees the run appear as dispatched, as it does for a run it dispatched itself.</li>
+    </ul>
+
+    <h2 id="s5">&sect;5 &mdash; Queued work is visible and can be withdrawn</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p><code>crew(view="queue")</code> and <code>reckon crew queue</code> list the entries in admission order, each with its session, node, position, wait and rank. <code>reckon crew queue withdraw</code> removes one entry, and a withdrawn entry is never launched. The follower's <code>q</code> column counts the session's own queued dispatches beside the router's waiting requests. The obligations view reports a queued node as waiting, not as missing.</p>
+    <p><strong>Done when:</strong> a test lists entries in the order &sect;3 admits them; a withdrawn entry is never dispatched by the drainer; and the queue view and the CLI listing report the same entries, so the two surfaces cannot disagree.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="drainer" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">Where does the drainer run?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="fleet-service">A declared fleet service, one per lane, held by its host lease</button>
+      <button class="r-opt" data-value="project-producer">Inside each project's watch producer</button>
+      </p>
+    <p class="r-dec-rat">Recommended: a fleet service. The lane is shared across projects, so a per-project producer would need cross-project coordination to stay fair, while a declared service already runs once under its lease and survives a move.</p>
+    </div>
+<div class="r-dec" data-key="priority-measure" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">What measures a session's use of the lane?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="runs-in-flight">Runs in flight on the lane now</button>
+      <button class="r-opt" data-value="recent-usage">Usage over a recent window, such as worker-minutes in the last hour</button>
+      </p>
+    <p class="r-dec-rat">Recommended: runs in flight. It matches the router's per-session share and needs no new accounting; a recent-usage window is fairer to bursty sessions but has to be measured and stored.</p>
+    </div>
+<div class="r-dec" data-key="lane-scope" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">Which lanes queue a held dispatch?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="local-lane">The local lane only, where the router publishes shares</button>
+      <button class="r-opt" data-value="every-lane">Every lane that can hold a dispatch, metered lanes included</button>
+      </p>
+    <p class="r-dec-rat">Recommended: the local lane first. It is the lane with published fair shares, and a metered lane's hold is a budget window rather than contention.</p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-ahdwft-build" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-08" data-recommends-skill="/reckon-build a-held-dispatch-waits-its-fair-turn">
+    <h4 class="r-fu-title">Lock the three decisions, then build the queue, its order, the drainer and the views</h4>
+    <div class="r-fu-body"><p>&sect;2 and &sect;3 can run together; &sect;4 needs both and the <code>drainer</code> decision; &sect;5 follows &sect;2.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-held-dispatch-waits-its-fair-turn</pre>
+    </article>
+</section>
+  </main>
+</body>
+</html>
