@@ -18,6 +18,7 @@ import pytest
 
 import reckon._store as _store_module
 import reckon.mcp as _mcp_module
+import reckon.mcp_edit_plan as _mcp_edit_plan
 
 
 # ── Fixtures ───────────────────────────────────────────────────────────────
@@ -50,6 +51,7 @@ def setup(tmp_path, monkeypatch):
     serve_mod._STATE_ROOT = state_root
 
     importlib.reload(_store_module)
+    importlib.reload(_mcp_edit_plan)
     importlib.reload(_mcp_module)
 
     return docs_dir, state_root, project
