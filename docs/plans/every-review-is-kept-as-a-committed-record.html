@@ -20,13 +20,13 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;implementable&quot;}">
   <title>Every Review Is Kept As A Committed Record | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-impl" content="0.98">
-<meta name="plan-version" content="127">
-<meta name="plan-modified" content="2026-10-07">
+<meta name="plan-impl" content="0.95">
+<meta name="plan-version" content="128">
+<meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
   <main class="plan-doc">
@@ -149,6 +149,10 @@
   <p class="landed-summary">A finding that states no claim never reaches repair, a record carrying one is reported as malformed and still kept, and every real finding keeps its id. <a href="s14">full record</a></p>
 </section>
 
+    <h2 id="s15">§15 — A plan review delivered outside its report directory cannot promote</h2>
+<section data-reckon="section" data-id="s15" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> Reported by session nova-2c and measured on 8 October. <code>crew review-plan</code> composed the report directory <code>r-20261008T005220444149-plan-review-of-converged-forward-solve</code> for nova's version-102 content review, with its <code>dispatch.json</code> naming the run <code>r-20261008T005221071177</code>. That run's <code>prompt.txt</code> names the composed directory three times as the place for <code>report.md</code>. The worker wrote <code>report.md</code> into a new directory named for its own run id instead, set its manifest to complete, and was promoted. Its sidecar never sat beside a report, so <code>delivered_reports</code> listed neither, and the review could be neither stored nor answered. Nothing between the worker and the promotion checks that a plan-review run delivered where it was told. A census over all 1,477 plan-review report directories on the host found 3 with a report and no sidecar. This is the only real loss; the other two are a duplicate of a recorded review and an old draft.</p><p><strong>Deliverable.</strong> One node, in <code>reckon/crew/promotion.py</code>. When a plan-review run promotes and the report directory whose <code>dispatch.json</code> names it holds no <code>report.md</code>, promotion is refused. The refusal names the assigned directory, and names any sibling directory under the plan's report root, named for the run's own id, that does hold a <code>report.md</code>, so the coordinator can move the report into place and promote again. A delivered report, and a plan-review run whose composed directory cannot be found, promote as today.</p><p><strong>Done when</strong> a test composes a report directory naming a run, writes that run's <code>report.md</code> into a sibling directory named for the run id, and finds promotion refused, naming both directories. A second case with the report in place promotes and commits the record as §13 does. The first case fails when the refusal is removed.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="review-store" data-choice="committed" data-by="e4e34290, on the lead&#x27;s delegation" data-when="2026-10-06">
@@ -260,6 +264,11 @@
     <div class="r-fu-body"><p>§13's node (3) writes <code>scripts/import_host_reviews.py</code> and §14 writes <code>repair.py</code> and <code>review.py</code>. Their scopes are disjoint, so both dispatch at once.</p></div>
     <pre class="r-fu-prompt">/reckon-build every-review-is-kept-as-a-committed-record §14</pre>
     <p class="r-fu-outcome">Sections 13 and 14 are closed: the dry-run listing (60990277c) and the claimless-finding reader (f9af2390e) landed. Only section 9's 7–13 October recurrence figures remain, under f-erkc-013.</p>
+    </article>
+<article class="r-fu" data-id="f-erkc-016" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="9cf43820" data-written-at="2026-10-08" data-recommends-skill="reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §15: a misdelivered plan review cannot promote</h4>
+    <div class="r-fu-body"><p>Reported by nova-2c. One node in <code>promotion.py</code>.</p></div>
+    <pre class="r-fu-prompt">/reckon-build every-review-is-kept-as-a-committed-record §15</pre>
     </article>
 </section>
 
