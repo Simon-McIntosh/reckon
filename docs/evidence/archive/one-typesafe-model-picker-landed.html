@@ -267,6 +267,11 @@
     <p>§12's second node, §13 and §21 were stacked onto main and measured with the full suite. The base arm hit its 2,700 s timeout at 99%, so its summary never printed. The head arm finished with 12,568 passed and 27 failures and errors. Those 19 failing modules were rerun at base and head: every head failure also fails at base except <code>test_the_cut_stops_the_repeated_docs_scan</code>, §12's own new test. In the stack it counts 2 plan rescans on a warm pick, against 0 expected. So §13 and §21 merged without §12's second node, and a focused gate of 187 tests passed at <code>e03273cec</code>. §12's second node waits on a repair of that interaction. Logs are in <code>~/.cache/reckon-suite-logs/merge-picker-s13-s21-*.log</code>.</p>
   </section>
 
+  <section id="s20">
+    <h2>§20 — the member-friction guard fails on a wrong store (2026-10-08)</h2>
+    <p><code>tests/test_member_friction.py</code> computes the guard's expected store from <code>HOME</code> alone, with <code>RECKON_HOME</code> pointing elsewhere, and checks it under two layouts: XDG (<code>&lt;HOME&gt;/.config/reckon</code>) and legacy (<code>&lt;HOME&gt;/docs-server</code>). Returning the XDG literal from <code>_guard_store()</code> fails only the legacy case, the one that separates the resolver from that literal. Keeping <code>RECKON_HOME</code> fails both.</p><p>Run <code>r-20261008T141154824443-member-friction-guard-fails-on-a-wrong-store</code>, commit <code>e12c1e50f</code>, merged at <code>930391d08</code>. The worker's gate passed 200 at base and 201 at head. The merge check over the module and the provider-spawn guard passed 10 at base and 11 at head, both <code>EXIT=0</code>. Review 119 found no added failures.</p>
+  </section>
+
 </main>
 </body>
 </html>
