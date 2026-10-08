@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="docs-project" content="reckon"><meta name="reckon-type" content="evidence">
+<meta name="plan-slug" content="pre-pick-caches-do-what-they-claim"><meta name="plan-title" content="The pre-pick caches and guards do what they claim">
+<meta name="plan-summary" content="The identity cache is keyed by the repository, the scratch sweep's grace is exercised not asserted, and the driver counts git probes">
+<meta name="plan-evidence-for" content="one-typesafe-model-picker"><meta name="plan-verifies" content="one-typesafe-model-picker#s22">
+<meta name="plan-recorded-at" content="2026-10-08"><meta name="plan-verdict" content="pass">
+<meta name="plan-environment" content="fleet node 98dci4-clu-2002, job 1281970, shared root Python environment">
+<meta name="plan-tags" content="crew,dispatch,cache,scratch,probe">
+<title>The pre-pick caches and guards do what they claim | reckon</title>
+<link rel="stylesheet" href="/_shared/foundation.css"><link rel="stylesheet" href="/_shared/double.css">
+</head><body><main class="plan-doc"><article data-reckon="landed" data-node="pre-pick-caches-do-what-they-claim" id="pre-pick-caches-do-what-they-claim">
+<h1>The pre-pick caches and guards do what they claim</h1>
+<p>Three places where §13's code and tests claimed more than they did were
+closed. Each is stated below with the reproduction that failed on the base
+revision <code>1f00bba45</code> and the check that now passes.</p>
+
+<table id="pre-pick-caches-do-what-they-claim-items"><caption>Each defect, its base reproduction and its head check</caption>
+<thead><tr><th>Item</th><th>Base reproduction (1f00bba45)</th><th>Head behaviour</th></tr></thead>
+<tbody>
+<tr><th>1. The identity cache is keyed by the repository</th>
+<td>Resolving a worktree path then its mount ran two git probes: <code>the mount after the worktree re-probed git: [(&hellip; 'rev-parse', '--path-format=absolute', '--git-common-dir')]</code>. The cache keyed by the path string, so the two spellings of one repository were two entries.</td>
+<td>The memo is keyed by the resolved path string probed, with each result aliased under the resolved repository-root path it returned, so a worktree path followed by its mount costs one probe where it was two. It is not keyed by the git common directory: a mount probed before its worktree, or two linked worktrees, still probe separately.</td></tr>
+<tr><th>2. The sweep guard exercises the grace</th>
+<td>The sweep test only asserted that <code>SCRATCH_GRACE_SECONDS</code> appeared in the source, so it stayed green when the sweep stopped applying the grace.</td>
+<td><code>garbage_collect_orphan_scratch</code> runs on directories one second inside and one second outside the grace the survey docstring states; the inside directory is kept and the outside one removed, and the test fails if the sweep stops applying the figure.</td></tr>
+<tr><th>3. The driver counts git probes</th>
+<td>The driver passed at base: it timed a fixture whose local git probe is milliseconds, so it never showed the fix.</td>
+<td>The driver counts git invocations. It discriminates base on the first dispatch's probe count — the worktree and its mount cost one probe at head, two at base — and asserts the second dispatch runs none; the second dispatch is zero at base too, because the base memo already holds the worktree spelling it names.</td></tr>
+</tbody></table>
+
+<table id="pre-pick-caches-do-what-they-claim-measure"><caption>Quantitative outcomes</caption>
+<thead><tr><th>Measure</th><th>Result</th><th>Bound or qualification</th></tr></thead>
+<tbody>
+<tr><th>New tests at head</th><td>7 passed, EXIT=0</td><td><code>tests/test_pre_pick_state_reads_once.py</code></td></tr>
+<tr><th>New tests at base</th><td>2 failed, 5 passed, EXIT=1</td><td>The two probe-count guards fail on the base revision</td></tr>
+<tr><th>Gate suite at head</th><td>106 passed, EXIT=0</td><td>The gate files plus every importer of <code>reckon.crew.dispatch_sections</code></td></tr>
+<tr><th>Gate suite at base</th><td>2 failed, 104 passed, EXIT=1</td><td>Added failures against base: 0</td></tr>
+<tr><th>Negative control</th><td>1 failed, EXIT=1: <code>test_a_worktree_and_its_mount_probe_once</code></td><td>Keying the identity cache by the path string again makes the mount re-probe</td></tr>
+<tr><th>Sweep control</th><td>1 failed, EXIT=1: <code>test_the_orphan_sweep_removes_by_the_stated_grace</code></td><td>Removing the grace from the sweep makes it remove a directory inside the grace</td></tr>
+</tbody></table>
+
+<table id="pre-pick-caches-do-what-they-claim-bindings"><caption>Reproducible inputs and source bindings</caption>
+<thead><tr><th>Item</th><th>Binding</th></tr></thead>
+<tbody>
+<tr><th>Base revision</th><td><code>1f00bba4537b70316bda7a03b15d06e6be515e8b</code></td></tr>
+<tr><th>Product paths</th><td><code>reckon/crew/dispatch_sections.py</code></td></tr>
+<tr><th>Tests</th><td><code>tests/test_pre_pick_state_reads_once.py</code></td></tr>
+<tr><th>Durable run directory</th><td><code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T150415075733-pre-pick-caches-do-what-they-claim</code></td></tr>
+<tr><th>Gate receipts</th><td><code>base-gate.log</code>, <code>head-gate.log</code>, <code>base-arm.log</code>, <code>negative-control.log</code>, <code>sweep-control.log</code></td></tr>
+</tbody></table>
+</article></main></body></html>
