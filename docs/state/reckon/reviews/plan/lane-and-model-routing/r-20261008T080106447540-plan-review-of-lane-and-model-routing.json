@@ -1,0 +1,88 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T08:14:56.111Z",
+  "dispatched_at": "2026-10-08T08:01:35Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/lane-and-model-routing.html:91",
+      "id": "done_when-1",
+      "reason": "the measure must assert the layer value (`host`) for the derived entry's copied keys, or a shipped fix reports the catalogue as the source of a value the lane supplied.",
+      "text": "\u00a79's done-when asserts only that each copied key on a `expand_lanes`-built entry \"has a layer in provenance\", but resolving the live flight shows `backends.claude-opus.{alias,budget_group,effort,model}` already carry a layer (`catalogue`, set by `_apply_catalogue` at reckon/flight.py:1258) while their value is actually taken from the lane model (`_lane_entry` copies `lanes.claude.models.opus.*` over the catalogue-filled block, reckon/flight.py:1338-1343). On the current resolver ten of the derived entry's copied keys have no layer, so the test does fail today, but an implementation that only adds the missing records and leaves those four layers as `catalogue` passes \u2014 contradicting \u00a79's own rule that \"each copied key gets the layer of the `lanes.*` key it was read from\"",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/lane-and-model-routing.html:91",
+      "id": "reasoning-1",
+      "reason": "a change to a public JSON contract should be declared in the section and its pinned test named, rather than surfacing as an unexplained red in the worker's gate.",
+      "text": "\u00a79 says the command \"needs no change of its own, because it renders the report\", but `reckon flight` renders `flight_report` verbatim (reckon/project_setup_commands.py:373) and `test_default_stdout_parses_as_json_and_exits_zero` pins the payload to an exact key set of seven top-level keys (tests/test_flight.py:1360-1368); carrying the source-key mapping \"beside `provenance`\" adds an eighth top-level key and fails that test and any consumer pinning the CLI/MCP payload shape",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "462c1bb923e748adf9e408369ce708ebfa0817f1b4de0f69ac43d2b82b688ce7",
+  "plan_slug": "lane-and-model-routing",
+  "plan_version": 34,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-08T08:16:16.728786+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-08T08:16:26.440000+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-08T08:16:16.728786+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-08T08:16:26.440000+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-lane-and-model-routing.v34.json",
+  "review_run_id": "r-20261008T080106447540-plan-review-of-lane-and-model-routing",
+  "reviewed_blob_sha": "0da8f9618c28abe1cba3bd45ab5dbf280427dd47",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `expand_lanes` (reckon/flight.py:1352), `origin` (reckon/flight.py:180), `flight_report` (reckon/flight.py:2042), the `reckon flight` command (reckon/project_setup_commands.py:351) and the MCP flight view (reckon/mcp.py:4718) all resolve.",
+    "done_when": "a finding \u2014 the \u00a79 done-when requires a copied key on the derived entry to \"have a layer in provenance\", but four of that entry's copied keys already carry a layer (`catalogue`), so the measure does not pin the layer \u00a79's own rule requires.",
+    "evidence_paths": "pass \u2014 \u00a79 is proven by unit tests under the repository's test tree; it declares no gate log or scratch path.",
+    "naming": "pass \u2014 \u00a79 names mechanisms (`expand_lanes`, `origin`, `flight_report`) and carries no plan label, ticket number or version tag into a symbol or comment.",
+    "reasoning": "a finding \u2014 \u00a79's premise that the derived `backends.claude-opus` \"carries only its four catalogued keys\" is accurate as a statement about provenance, but the four catalogue-attributed keys are in fact overwritten by the lane model during expansion, so the plan both mis-describes the source and never says that adding a top-level key to the `reckon flight` payload changes an exact-key-set contract a test pins.",
+    "single_goal": "pass \u2014 \u00a79 has one deliverable: record per-key provenance and a source-key record for every entry `expand_lanes` builds, and surface it through `flight_report`.",
+    "wiring": "pass \u2014 \u00a79 declares no depends-on/gates beyond the plan's section map, and its write path (`reckon/flight.py` and its tests) collides with no section dependency; nothing it needs is missing."
+  },
+  "section_digests": {
+    "_document": "adb9712c097f2b4773082c2c696f40562be8620731a5f5a5b8b01c17a18155ac",
+    "s0": "5970e86b0d53213fecf631cb616a2db8d8f783a8532dc052f3423814906cde4f",
+    "s1": "6760f63ebdb0d0db10c3c004f30d4f4253bfb7582bc7a0e4054fed73e017a02d",
+    "s10": "9d27e940f021242c82017cf503b8e3d3277451ecaef61d1887ae36cecf3eb5a7",
+    "s11": "2e566713b8ee8cbfcf94503cba2640bac78329b96f748ff0334a858e08287755",
+    "s2": "0c6488cdae0f23d0600410d02191390e773858e9bc75008234f71cc66f01889b",
+    "s3": "6cb602347e0232fe459028eff2010884381d987053d550c4565f581c23032095",
+    "s4": "aa5a29a8662005607992ae17fc914d47e8e48c68b7e65395b4865f6d33ea37f4",
+    "s5": "2ffa1a3b1d2b09433f25a83f8a7a59b1774249bac29b945f2c2273ace57cb1ba",
+    "s6": "6c8117bcfdc7d4b0bafdc4fb2185779998c71b1730b07a0d900b543f02c08ec1",
+    "s7": "07952e2e354db24e76860530568500cc2066b69b4255c020db83677e46cb18e2",
+    "s8": "7ca129403c95fcbc111273a2b419b29279191bc54c157bb6f7d8de0d5b160d34",
+    "s9": "afb3f85583535ce7ff42b6cb0c16e23246a8b2f0fcf564fa641f3796e9d8c930"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T08:16:08.408125+00:00"
+}
