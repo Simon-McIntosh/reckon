@@ -142,6 +142,7 @@ def test_dispatch_reads_the_bounded_receipt_index(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setattr(dispatch_claims, "crew_home", lambda: tmp_path)
+    monkeypatch.setattr(dispatch_claims, "runs_dir", lambda: tmp_path / "runs")
     monkeypatch.setattr(dispatch_launch, "crew_home", lambda: tmp_path)
     monkeypatch.setattr(dispatch_launch, "_pointer_lock", lambda _key: nullcontext())
     registered = datetime(2026, 10, 8, tzinfo=UTC)
