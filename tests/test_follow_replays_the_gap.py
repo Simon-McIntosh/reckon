@@ -6,7 +6,11 @@ holds that record opens with one header line — how many live runs it found and
 how many changed since the record was written — and then draws the runs whose
 state differs from the record, as ordinary transitions from the recorded state.
 A run that did not move draws nothing, and a run the record does not name at all
-is replayed from ``dispatched``, the state every launch passes through.
+is replayed from ``dispatched``, the state every launch passes through. The
+pane withholds observer context, so the replay draws only the rows that ask the
+coordinator for something: a run whose replay resolves into a progress state
+such as ``working`` is held back, and the record therefore holds only the action
+states the pane showed.
 
 The record is written where a row is written to the pane, never where one is
 generated: a row this reader never received is not one it saw, and a replay
@@ -179,23 +183,25 @@ def _naming(lines, node: str) -> list[str]:
 
 
 def test_a_reattach_replays_only_the_runs_that_moved(home, follow_lines) -> None:
-    """The gap is one row per moved run, under one header, and nothing else.
+    """The gap is one action row per moved run, under one header, and nothing else.
 
-    The first arming shows both runs and leaves the record behind. One run is
-    then delivered — it stops working and waits to be promoted — while the other
-    stays exactly where it was. The re-attach opens with the header, draws the
-    moved run once as ``working → unpromoted``, and draws nothing at all for the
-    run that did not move: a run still at the state the record names carries no
-    news.
+    The first arming shows both failed runs and leaves the record behind. One run
+    is then delivered — it stops failing and waits to be promoted — while the
+    other stays exactly where it was. The re-attach opens with the header, draws
+    the moved run once as ``failed → unpromoted``, and draws nothing at all for
+    the run that did not move: a run still at the state the record names carries
+    no news.
     """
     _two_live_runs(home)
+    _deliver(home, RUN_A, "failed")
+    _deliver(home, RUN_B, "failed")
     with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
         assert acquired
         crew.list_live(project=PROJECT)
         _run_follow()
         record = runs.read_delivered(PROJECT, SESSION)
-        assert record.get("states") == {RUN_A: "working", RUN_B: "working"}, (
-            f"the first arming records what it showed; got {record!r}"
+        assert record.get("states") == {RUN_A: "failed", RUN_B: "failed"}, (
+            f"the first arming records the action rows it showed; got {record!r}"
         )
         shown_at = str(record.get("recorded_at") or "")
         assert shown_at, record
@@ -220,7 +226,7 @@ def test_a_reattach_replays_only_the_runs_that_moved(home, follow_lines) -> None
     moved = _naming(follow_lines, "node-a")
     assert len(moved) == 1, f"the moved run is drawn exactly once; got {follow_lines!r}"
     row = moved[0]
-    assert "working" in row and "unpromoted" in row, row
+    assert "failed" in row and "unpromoted" in row, row
     assert ticker_module.ARROW in row, row
 
     assert not _naming(follow_lines, "node-b"), (
@@ -231,15 +237,19 @@ def test_a_reattach_replays_only_the_runs_that_moved(home, follow_lines) -> None
 def test_a_run_the_record_does_not_name_is_replayed_from_dispatched(
     home, follow_lines
 ) -> None:
-    """A run dispatched while nothing was attached is replayed as an arrival.
+    """A run dispatched while nothing was attached is counted, and held back.
 
     The record names the two runs the pane was last shown. A third pointer is
     written afterwards, so the re-attach finds a live run the record does not
     name; it is replayed from ``dispatched``, which is the state its launch
-    passed through, while the two runs the record does name and that did not
-    move draw nothing. The header counts it among the changed.
+    passed through, but the replay resolves into ``working``, an observer state,
+    so the pane withholds it. The two runs the record does name and that did not
+    move draw nothing either, while the header still counts the new run among
+    the changed.
     """
     _two_live_runs(home)
+    _deliver(home, RUN_A, "failed")
+    _deliver(home, RUN_B, "failed")
     with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
         assert acquired
         crew.list_live(project=PROJECT)
@@ -258,8 +268,10 @@ def test_a_run_the_record_does_not_name_is_replayed_from_dispatched(
     assert "3 live runs" in header, header
     assert "1 changed" in header, header
     arrived = _naming(follow_lines, "node-c")
-    assert len(arrived) == 1, f"the unnamed run is replayed once; got {follow_lines!r}"
-    assert "dispatched" in arrived[0] and "working" in arrived[0], arrived[0]
+    assert arrived == [], (
+        f"a run replayed from dispatched into working is observer context the "
+        f"pane withholds; got {follow_lines!r}"
+    )
     assert not _naming(follow_lines, "node-a"), follow_lines
     assert not _naming(follow_lines, "node-b"), follow_lines
 
@@ -272,6 +284,8 @@ def test_the_record_follows_every_row_the_pane_receives(home, follow_lines) -> N
     opens with the header and draws no run at all.
     """
     _two_live_runs(home)
+    _deliver(home, RUN_A, "failed")
+    _deliver(home, RUN_B, "failed")
     with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
         assert acquired
         crew.list_live(project=PROJECT)
@@ -304,12 +318,15 @@ def test_a_json_arming_records_only_what_a_pane_would_draw(
     promoted run asks a reader for nothing — and recording one would leave the
     record holding a state only the JSON consumer received. The pane's next
     attach would diff against a state it never showed, and read the run's
-    re-dispatch as a promotion the reader was never told about.
+    re-dispatch as a promotion the reader was never told about. The run shown as
+    failed is the pane's own row, so it is recorded; the re-dispatched run's
+    replay resolves into working, an observer state, and is withheld.
     """
     repo = home / "repo"
     repo.mkdir()
     _write_pointer(home, RUN_A, "node-a", phase="working")
     _write_pointer(home, RUN_P, "node-p", phase="working", repo=repo)
+    _deliver(home, RUN_A, "failed")
     _promote(home, RUN_P, repo)
 
     with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
@@ -317,7 +334,7 @@ def test_a_json_arming_records_only_what_a_pane_would_draw(
         crew.list_live(project=PROJECT)
         _run_follow(json_output=True)
         record = runs.read_delivered(PROJECT, SESSION)
-        assert record.get("states", {}).get(RUN_A) == "working", record
+        assert record.get("states", {}).get(RUN_A) == "failed", record
         assert RUN_P not in record.get("states", {}), (
             f"a row only the JSON consumer received is not one the pane drew; got {record!r}"
         )
@@ -333,8 +350,7 @@ def test_a_json_arming_records_only_what_a_pane_would_draw(
 
     assert "re-attached" in follow_lines[0], follow_lines
     rows = _naming(follow_lines, "node-p")
-    assert len(rows) == 1, f"the re-dispatched run is drawn once; got {follow_lines!r}"
-    assert "dispatched" in rows[0] and "working" in rows[0], rows[0]
-    assert "promoted" not in rows[0], (
-        f"the pane was never shown that promotion; got {rows[0]!r}"
+    assert rows == [], (
+        f"a run replayed from dispatched into working is observer context the "
+        f"pane withholds; got {follow_lines!r}"
     )

@@ -1,12 +1,10 @@
-"""Every arming draws the fleet once, each row under its run's recorded time.
+"""An arming draws the fleet's action rows, each under its run's recorded time.
 
-The contract has one shape for both halves. A session's *first* arming and a
-*later* re-arm alike draw one row per live run, each stamped with the time that
-run entered its current state and ordered by it. A reader re-arming after a
-Monitor's end is never looking at a blank pane, and never at a burst of rows
-sharing the moment the arming attached. The recorded time comes from the run's
-own stream, so a run that has sat at its state for an hour carries that hour
-rather than the attach's second.
+The pane withholds observer context, so a run in a progress state is not drawn
+at all: an arming over a working fleet opens quiet rather than announcing runs
+that ask the coordinator for nothing. A run that has reached an action state is
+still drawn once, stamped with the time its own stream recorded the state and
+ordered by it, so a reader attaching to a fleet with work waiting sees it.
 
 The cases below drive the follower's own generator against a config home rooted
 in ``tmp_path``, so the rows counted are the rows the pane prints. The first-
@@ -160,15 +158,19 @@ def _rendered_rows(lines: list[str]) -> list[str]:
 # ── The first arming draws the fleet ────────────────────────────────────────
 
 
-def test_a_first_arming_under_a_monitor_draws_the_fleet(home, follow_lines) -> None:
-    """A session's first attach opens with one row per live run, no history.
+def test_a_first_arming_over_a_progress_state_fleet_draws_no_row(
+    home, follow_lines
+) -> None:
+    """A first attach of working runs opens with no fleet row and no history.
 
     Driven through the real command, because the measure is the attach
-    experience rather than the generator's yield: a Monitor reads the follower's
-    stdout as a pipe and has no scrollback to restore, so it must receive the
-    fleet and no frame of stored history. With no checkpoint to continue, the
-    arm derives the fleet from the live pointers, and each row carries the run's
-    own recorded state time rather than the attach's.
+    experience rather than the generator's yield. A run in a progress state is
+    observer context — its row asks the coordinator for nothing — so the pane
+    holds it back and a fleet of working runs reaches the reader as no row at
+    all. A Monitor reads the follower's stdout as a pipe with no scrollback, so
+    an attach row that printed would be exactly the wake this surface exists to
+    remove; what it receives here is the fleet's action rows, and there are
+    none.
     """
     _live_runs(home, *RUNS)
     with runs._project_watch_claim(PROJECT, "1h") as (acquired, seat):
@@ -220,17 +222,9 @@ def test_a_first_arming_under_a_monitor_draws_the_fleet(home, follow_lines) -> N
     rows = _rendered_rows(follow_lines)
     for run_id in RUNS:
         drawn = [line for line in rows if f"node-{run_id}" in line]
-        assert len(drawn) == 1, (
-            f"a first arming draws one row per live run; {run_id} got {drawn!r}"
-        )
-        assert drawn[0].startswith(ticker_module.local_clock(stamps[run_id])), (
-            f"each row leads with its run's recorded state time, never the attach "
-            f"time; wanted {ticker_module.local_clock(stamps[run_id])!r}, got "
-            f"{drawn[0]!r}"
-        )
-        assert "working" in drawn[0], drawn[0]
-        assert "→" not in drawn[0], (
-            f"a first attach draws the fleet as it stands, not a transition; got {drawn[0]!r}"
+        assert drawn == [], (
+            f"a progress-state run is held back on the coordinator pane; "
+            f"{run_id} got {drawn!r}"
         )
 
     assert "── history" not in "\n".join(follow_lines), (
@@ -244,13 +238,13 @@ def test_a_first_arming_under_a_monitor_draws_the_fleet(home, follow_lines) -> N
 def test_a_rearm_that_cannot_continue_draws_each_live_run_with_recorded_times(
     home,
 ) -> None:
-    """An arm that cannot continue the stream still replays the whole fleet.
+    """An arm that cannot continue the stream draws the fleet's action rows.
 
     The stream is replaced between the two arms, so the recorded place names no
-    boundary. The replay does not shrink to "what moved": each live run is drawn
-    once, and each carries the recorded time the stream gave it — the run that
-    moved carries its transition time, and the run that did not carries the
-    earlier clock it entered its state under.
+    boundary. The arm holds back the runs in a progress state and draws the one
+    that moved into an action state, carrying the recorded time the stream gave
+    it — here the run that reached complete carries its transition time, and the
+    run still working is observer context the pane withholds.
     """
     _live_runs(home, *RUNS)
     with runs._project_watch_claim(PROJECT, "1h") as (acquired, seat):
@@ -258,7 +252,9 @@ def test_a_rearm_that_cannot_continue_draws_each_live_run_with_recorded_times(
         stream_path = Path(seat["stream_path"])
         crew.list_live(project=PROJECT)
         first = _arm()
-        assert {event["run_id"] for event in first} == set(RUNS), first
+        assert first == [], (
+            f"a first arm over progress-state runs draws no row; got {first!r}"
+        )
 
         a_stamp = "2026-01-02T03:04:05+00:00"
         b_stamp = "2026-01-02T03:14:15+00:00"
@@ -283,11 +279,10 @@ def test_a_rearm_that_cannot_continue_draws_each_live_run_with_recorded_times(
         )
         second = _arm(resume=None)
 
-    assert [str(event["run_id"]) for event in second] == [RUN_A, RUN_B], (
-        f"every live run is drawn once; got {second!r}"
+    assert [str(event["run_id"]) for event in second] == [RUN_B], (
+        f"only the run that moved into an action state is drawn; got {second!r}"
     )
     by_run = {str(event["run_id"]): event for event in second}
-    assert str(by_run[RUN_A]["observed_at"]) == a_stamp, by_run[RUN_A]
     assert str(by_run[RUN_B]["observed_at"]) == b_stamp, by_run[RUN_B]
     assert str(by_run[RUN_B]["to_state"]) == "complete", by_run[RUN_B]
 
@@ -295,9 +290,10 @@ def test_a_rearm_that_cannot_continue_draws_each_live_run_with_recorded_times(
 def test_a_mid_arming_re_derivation_does_not_reprint_a_shown_run(home) -> None:
     """A re-derivation carrying states the pane already showed is not news.
 
-    The pane drew the fleet on its first read. A reload that re-derives the
-    baseline carries the states it has already shown, and the re-derivation must
-    reach no run twice.
+    The pane's first read holds back every progress-state run, so nothing is
+    drawn for the fleet and nothing is left to reprint. A reload that re-derives
+    the baseline carries the states it has already shown, and the re-derivation
+    must reach no run twice — here, no run at all.
     """
     _live_runs(home, *RUNS)
     with runs._project_watch_claim(PROJECT, "1h") as (acquired, seat):
@@ -305,8 +301,8 @@ def test_a_mid_arming_re_derivation_does_not_reprint_a_shown_run(home) -> None:
         stream_path = Path(seat["stream_path"])
         crew.list_live(project=PROJECT)
         shown = _arm()
-        assert {event["run_id"] for event in shown} == set(RUNS), (
-            f"this arm must draw the fleet: {shown!r}"
+        assert shown == [], (
+            f"progress-state runs are held back, so none is shown: {shown!r}"
         )
 
         # The reload's continuation names a stream that is no longer the one at

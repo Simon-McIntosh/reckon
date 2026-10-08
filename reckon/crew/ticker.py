@@ -35,7 +35,7 @@ from collections.abc import Callable, Iterable, Mapping
 from datetime import UTC, datetime
 from numbers import Real
 from pathlib import Path
-from typing import Any
+from typing import Any, NamedTuple
 
 from reckon._timestamps import parse_iso, parse_utc
 from reckon.crew import lane_document as _lane_document
@@ -337,6 +337,8 @@ SETTLED_STATES = frozenset(
         "failed",
         "stopped",
         "abandoned",
+        "withdrawn",
+        "discarded",
     }
 )
 
@@ -1131,6 +1133,23 @@ ARRIVAL_KIND: tuple[Any, Any] = (None, "dispatched")
 ARRIVAL_STATE = "dispatched"
 ARRIVAL_WINDOW = 90.0
 
+# ── The settle hold ───────────────────────────────────────────────────────────
+#
+# A run reaches a settled state through a chain of rows written seconds apart —
+# ``working -> exited-unfinished -> blocked`` within two seconds,
+# ``blocked -> wait-aged -> blocked`` within three to eight. Each link is a
+# coordinator row on its own, so a pane that printed them one by one would draw
+# a chain the reader has to reassemble. A printing coordinator row is therefore
+# held for the settle window, and a later coordinator row of the same run inside
+# it supersedes the opener: the chain prints once, as its latest row. A later
+# row the policy holds back — the terminal echo ``complete -> recorded`` is the
+# usual one — is not a coordinator row, so it supersedes nothing and the opener
+# still prints. A run that changes faster than the settle window would otherwise
+# never clear the hold, so the settle cap bounds the wait from the chain's first
+# held row: past the cap the latest row prints whatever else is arriving.
+SETTLE_WINDOW = 20.0
+SETTLE_CAP = 120.0
+
 
 def _arrival_resolution(event: Mapping[str, Any]) -> Mapping[str, Any]:
     """A resolving row rewritten to carry the arrival's own left side.
@@ -1160,24 +1179,46 @@ def transition_class(from_state: Any, to_state: Any) -> str:
     return ROW_OBSERVER
 
 
-class RowPolicy:
-    """Hold a row that can open a noise pair; print it only if the pair does not.
+# A withheld row, awaiting the event that decides its fate. ``kind`` is which
+# hold the entry is: an arrival awaiting its first transition, a noise opener
+# awaiting its pair, or a coordinator row awaiting the rest of its chain.
+# ``first_held`` is the moment the row's settle chain began, carried across the
+# supersessions so the settle cap measures from the chain and not from its
+# latest row. The other kinds ignore it.
+class _Hold(NamedTuple):
+    deadline: float
+    opener: Mapping[str, Any]
+    carries_arrival: bool
+    kind: str
+    first_held: float
 
-    One instance follows one pane. It remembers the state last put on screen for
-    each run, which is what turns a re-derivation of a known state into a
-    counter update rather than a second row, and it keeps at most one withheld
-    opener per run while that opener's window is open.
+
+class RowPolicy:
+    """Decide which rows reach the pane, holding back the ones that ask for none.
+
+    One instance follows one pane. Three rules stack. A row that opens an
+    arrival or a noise pair is held for its own measured window, so a launch
+    flicker never reaches the pane. A coordinator row is held for the settle
+    window, so a chain written seconds apart prints once as its latest row. And
+    a row that carries no duty — observer context that only traces the fleet's
+    shape — is held back altogether, unless it is the news the reader is
+    waiting for: a recovery from a duty the pane already printed, an
+    unexplained end, or the resolution of a held noise pair into an action
+    state. A pane built with ``show_observer`` prints observer context as it
+    did before the hold existed, and applies no settle hold.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, *, show_observer: bool = False) -> None:
+        self._show_observer = bool(show_observer)
         self._reported: dict[str, str] = {}
-        # run_id -> (deadline, opener event, carries_arrival). A run carries one
-        # opener at most: a second hold for the same run is a different kind of
-        # noise, and the first opener is released before the second is
-        # considered. ``carries_arrival`` marks a hold the pane's arrival placed
-        # or passed on, so the one row it finally prints names ``dispatched`` on
-        # its left however many hops the hold took.
-        self._held: dict[str, tuple[float, Mapping[str, Any], bool]] = {}
+        # run_id -> the withheld row and its hold. A run carries one hold at
+        # most: a second hold for the same run supersedes the first where the
+        # settle rule says so, and is otherwise handled on its own account.
+        self._held: dict[str, _Hold] = {}
+        # run_id -> whether the pane has been told something actionable for the
+        # run since its arrival. A recovery is news only once a duty was shown,
+        # and an unexplained end is news only while none has been.
+        self._told: dict[str, bool] = {}
 
     def seed(self, run_id: str, state: str) -> None:
         """Remember a state the pane already shows, before this pane's first row.
@@ -1189,14 +1230,163 @@ class RowPolicy:
         """
         if run_id and state:
             self._reported[str(run_id)] = str(state)
+            if self._lands_in_an_action_state({"to_state": str(state)}):
+                self._told[str(run_id)] = True
+
+    def _row_class(self, event: Mapping[str, Any], kind: tuple[Any, Any]) -> str:
+        """The class of a row: coordinator, observer or counter.
+
+        The audit assigns the class per kind, but a kind outside
+        :data:`COORDINATOR_KINDS` that the classifier named actionable still
+        needs the coordinator: ``working -> exited-unfinished`` and its kin do
+        not appear in the audit's list, and growing that list by hand is what
+        the classifier exists to avoid. The classifier owns "needs the
+        coordinator", so its actionable verdict is read here rather than
+        restated.
+        """
+        cls = transition_class(kind[0], kind[1])
+        if cls == ROW_OBSERVER and (
+            self._actionable(event) or self._lands_in_an_action_state(event)
+        ):
+            return ROW_COORDINATOR
+        return cls
+
+    @staticmethod
+    def _lands_in_an_action_state(event: Mapping[str, Any]) -> bool:
+        """Whether the row lands the run in a state the surface calls an action.
+
+        A run finished behind a held block arrives as ``completed_unpromoted``
+        while its classification is not one the classifier calls actionable, and
+        the promotion the reader owes the run is the news that row must carry.
+        The watch surface already owns the vocabulary that decides this, so it is
+        read here rather than restated.
+        """
+        from reckon.crew.runs import WATCH_ATTENTION_STATES
+
+        return str(event.get("to_state") or "") in WATCH_ATTENTION_STATES
+
+    @staticmethod
+    def _actionable(event: Mapping[str, Any]) -> bool:
+        """Whether the row's own classification names a coordinator duty."""
+        from reckon.crew.recovery import ACTIONABLE_RECOVERY_CLASSIFICATIONS
+
+        return (
+            str(event.get("recovery_classification") or "")
+            in ACTIONABLE_RECOVERY_CLASSIFICATIONS
+        )
+
+    def _asks_for_coordinator(
+        self, event: Mapping[str, Any], kind: tuple[Any, Any]
+    ) -> bool:
+        """Whether a row lands the run in a state a coordinator acts on.
+
+        A noise pair's resolution prints only when it lands in an action state.
+        That is a wider test than the row's own classification: a run that
+        finished behind a held block arrives as the state ``completed_unpromoted``
+        while its classification is not one the classifier calls actionable, and
+        the promotion the reader owes the run is the news the pair must carry.
+        """
+        return self._row_class(event, kind) == ROW_COORDINATOR
+
+    def _note_printed(
+        self, run_id: str, event: Mapping[str, Any], *, observed: bool = False
+    ) -> None:
+        """Record what a released row showed, so a later re-derivation is silent.
+
+        The state is remembered for every row the pane is shown, and the run is
+        marked told when the row carried a duty — a coordinator row, or an
+        observer row released on one of its exceptions.
+        """
+        if not run_id:
+            return
+        to_state = str(event.get("to_state") or "")
+        self._reported[run_id] = to_state
+        carries_duty = (
+            observed
+            or self._row_class(event, (event.get("from_state"), to_state))
+            == ROW_COORDINATOR
+        )
+        if carries_duty:
+            self._told[run_id] = True
 
     def _release_expired(self, now: float, out: list[Mapping[str, Any]]) -> None:
-        """Print every opener whose hold window has passed uncompleted."""
-        for run_id in [
-            run_id for run_id, (deadline, _, _) in self._held.items() if deadline <= now
-        ]:
-            _, opener, _ = self._held.pop(run_id)
-            out.append(opener)
+        """Print every held row whose window has passed uncompleted."""
+        for run_id in [r for r, hold in self._held.items() if hold.deadline <= now]:
+            hold = self._held.pop(run_id)
+            out.append(hold.opener)
+            self._note_printed(run_id, hold.opener)
+
+    def _observer_exception(self, event: Mapping[str, Any], run_id: str) -> bool:
+        """Whether an observer row prints despite the hold.
+
+        Two kinds do. A recovery — the run leaves a state into a live one after
+        the pane printed a duty for it — is the news a reader waiting on a
+        repair looks for. And an unexplained end — the run reaches a settled
+        state without the pane ever having shown a duty for it — is the only
+        notice that a run which never asked for anything has stopped.
+        """
+        to_state = str(event.get("to_state") or "")
+        told = bool(self._told.get(run_id))
+        if told and to_state not in SETTLED_STATES:
+            return True
+        return to_state in SETTLED_STATES and not told
+
+    def _hold_settle(
+        self,
+        event: Mapping[str, Any],
+        run_id: str,
+        now: float,
+        chain_start: float,
+    ) -> list[Mapping[str, Any]]:
+        """Hold a coordinator row, or print it when its chain has run too long.
+
+        The row is held for the settle window so a later coordinator row of the
+        same run supersedes it. The cap is measured from the chain's first held
+        row, so a run changing faster than the window still prints within the
+        cap. ``chain_start`` is that first row's moment.
+        """
+        if now >= chain_start + SETTLE_CAP:
+            self._held.pop(run_id, None)
+            self._note_printed(run_id, event)
+            return [event]
+        deadline = min(now + SETTLE_WINDOW, chain_start + SETTLE_CAP)
+        self._held[run_id] = _Hold(deadline, event, False, "settle", chain_start)
+        self._told[run_id] = True
+        return []
+
+    def _resolve_arrival(
+        self,
+        out: list[Mapping[str, Any]],
+        event: Mapping[str, Any],
+        run_id: str,
+        kind: tuple[Any, Any],
+        now: float,
+    ) -> list[Mapping[str, Any]]:
+        """Resolve a held arrival with the run's first transition out of ``dispatched``.
+
+        A noise opener leaving dispatched takes the hold on, so the launch flicker
+        still collapses into whatever resolves it. A coordinator row prints as
+        the arrival collapsed into it, wearing the arrival's left side. A move
+        into an observer kind prints nothing: the launch said nothing the
+        dispatch call had not already returned.
+        """
+        pair = NOISE_PAIRS.get(kind)
+        if pair is not None:
+            _, window = pair
+            self._held[run_id] = _Hold(now + window, event, True, "noise", 0.0)
+            return out
+        if self._row_class(event, kind) == ROW_COORDINATOR:
+            resolved = _arrival_resolution(event)
+            out.append(resolved)
+            self._note_printed(run_id, resolved)
+            return out
+        if self._show_observer:
+            out.append(event)
+            self._note_printed(run_id, event)
+            return out
+        if run_id:
+            self._reported[run_id] = str(event.get("to_state") or "")
+        return out
 
     def feed(self, event: Mapping[str, Any], *, now: float) -> list[Mapping[str, Any]]:
         """Take one delivered row and return the rows that should print for it."""
@@ -1208,24 +1398,39 @@ class RowPolicy:
         to_state = str(event.get("to_state") or "")
         kind = (from_state, to_state)
 
-        # The withheld opener is resolved first: a resolution row completes the
-        # pair whatever else the row means, so the hold is checked before any
-        # rule that could suppress or postpone the row.
-        held = self._held.pop(run_id, None) if run_id else None
+        # A settle hold stands until a coordinator row supersedes it. A row that
+        # is not a coordinator row leaves the hold in place and is judged on its
+        # own account below, so the terminal echo supersedes nothing.
+        chain_start: float | None = None
+        held = self._held.get(run_id, None) if run_id else None
+        if held is not None and held.kind == "settle":
+            if self._row_class(event, kind) == ROW_COORDINATOR:
+                chain_start = held.first_held
+                self._held.pop(run_id, None)
+                held = None
+            else:
+                held = None
+
         if held is not None:
-            opener = held[1]
-            carries_arrival = held[2]
+            self._held.pop(run_id, None)
+            opener = held.opener
             opener_kind = (opener.get("from_state"), opener.get("to_state"))
             resolution = NOISE_PAIRS.get(opener_kind)
             if resolution is not None and kind == resolution[0]:
                 # The pair completed inside the window: both sides are the noise
-                # the hold exists to drop. An arrival whose hold rode this pair
-                # prints the resolution once, wearing the arrival's left side,
-                # so a launch is one row whatever the flicker did in between.
+                # the hold exists to drop, unless the resolution lands in an
+                # action state — a run finishing behind a held block reaches the
+                # coordinator as the net change and nothing else would carry it.
+                resolved = (
+                    _arrival_resolution(event)
+                    if held.carries_arrival
+                    else {**event, "from_state": opener.get("from_state")}
+                )
                 if run_id:
                     self._reported[run_id] = to_state
-                if carries_arrival and run_id:
-                    out.append(_arrival_resolution(event))
+                if self._asks_for_coordinator(event, kind):
+                    out.append(resolved)
+                    self._note_printed(run_id, resolved, observed=True)
                 return out
             if opener_kind == ARRIVAL_KIND:
                 if kind == ARRIVAL_KIND:
@@ -1236,17 +1441,11 @@ class RowPolicy:
                     self._held[run_id] = held
                     return out
                 if from_state == ARRIVAL_STATE and to_state != ARRIVAL_STATE:
-                    # A transition out of dispatched resolves the arrival. When
-                    # that transition is itself a held opener, the hold passes
-                    # to it; otherwise it prints, carrying the arrival's own
-                    # left side, and the two rows collapse to this one.
-                    if kind in NOISE_PAIRS:
-                        self._held[run_id] = (now + NOISE_PAIRS[kind][1], event, True)
-                        return out
-                    if run_id:
-                        self._reported[run_id] = to_state
-                    out.append(event)
-                    return out
+                    # A transition out of dispatched resolves the arrival: a
+                    # noise opener takes the hold on, a coordinator row prints
+                    # as the arrival collapsed into it, and a move into an
+                    # observer kind prints nothing.
+                    return self._resolve_arrival(out, event, run_id, kind, now)
                 if from_state is not None and from_state == to_state:
                     # A rewrite that repeats dispatched is not a move out, so
                     # the arrival keeps its hold and the counter moves alone.
@@ -1285,22 +1484,40 @@ class RowPolicy:
         if run_id and kind == ARRIVAL_KIND:
             # The run's first sighting in dispatched: held so its own row and
             # the transition out of dispatched print as one.
-            self._held[run_id] = (now + ARRIVAL_WINDOW, event, True)
+            self._held[run_id] = _Hold(
+                now + ARRIVAL_WINDOW, event, True, "arrival", 0.0
+            )
             return out
 
         if run_id and kind in NOISE_PAIRS:
             _, window = NOISE_PAIRS[kind]
-            self._held[run_id] = (now + window, event, False)
+            self._held[run_id] = _Hold(now + window, event, False, "noise", 0.0)
             return out
 
-        if kind in NOISE_RESOLUTIONS:
-            if run_id:
-                self._reported[run_id] = to_state
+        cls = self._row_class(event, kind)
+        if cls == ROW_COORDINATOR:
+            if self._show_observer or not run_id:
+                out.append(event)
+                self._note_printed(run_id, event)
+                return out
+            out.extend(
+                self._hold_settle(
+                    event, run_id, now, chain_start if chain_start is not None else now
+                )
+            )
             return out
 
-        if run_id:
-            self._reported[run_id] = to_state
-        out.append(event)
+        # Observer context: held back, unless it is one of the exceptions, and
+        # printed as before on a pane that does not hold it.
+        if self._show_observer or not run_id:
+            out.append(event)
+            self._note_printed(run_id, event)
+            return out
+        if self._observer_exception(event, run_id):
+            out.append(event)
+            self._note_printed(run_id, event, observed=True)
+            return out
+        self._note_printed(run_id, event)
         return out
 
     def flush(self, *, now: float) -> list[Mapping[str, Any]]:
@@ -1331,12 +1548,14 @@ class PaneRowPath:
         *,
         selects: Callable[[Mapping[str, Any]], bool] | None = None,
         reported: Mapping[str, str] | None = None,
+        show_observer: bool = False,
     ) -> None:
         self._selects = selects
+        self._show_observer = bool(show_observer)
         self.reported: dict[str, str] = {
             str(run_id): str(state) for run_id, state in dict(reported or {}).items()
         }
-        self._policy = RowPolicy()
+        self._policy = RowPolicy(show_observer=self._show_observer)
         for run_id, state in self.reported.items():
             self._policy.seed(run_id, state)
 
@@ -1358,7 +1577,7 @@ class PaneRowPath:
         self.reported = {
             str(run_id): str(state) for run_id, state in dict(reported or {}).items()
         }
-        self._policy = RowPolicy()
+        self._policy = RowPolicy(show_observer=self._show_observer)
         for run_id, state in self.reported.items():
             self._policy.seed(run_id, state)
 
@@ -1416,6 +1635,7 @@ def replay_row_policy(
     *,
     clock=row_moment,
     selects: Callable[[Mapping[str, Any]], bool] | None = None,
+    show_observer: bool = False,
 ) -> list[Mapping[str, Any]]:
     """Print an ordered stream the way one follower's own row path would.
 
@@ -1426,7 +1646,7 @@ def replay_row_policy(
     follower's own selection, and a caller measuring a real follower passes the
     same selection function the follower was built with.
     """
-    path = PaneRowPath(selects=selects)
+    path = PaneRowPath(selects=selects, show_observer=show_observer)
     printed: list[Mapping[str, Any]] = []
     for event in events:
         printed.extend(path.feed(event, now=clock(event)))
