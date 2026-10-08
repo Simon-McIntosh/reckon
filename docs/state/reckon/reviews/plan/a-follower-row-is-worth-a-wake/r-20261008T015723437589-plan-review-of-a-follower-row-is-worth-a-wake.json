@@ -1,0 +1,49 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T02:09:06.487Z",
+  "dispatched_at": "2026-10-08T01:58:00Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/ticker.py:329",
+      "id": "duplicate_owner-1",
+      "reason": "binding \u00a72 to SETTLED_STATES/HIDDEN_AT_ATTACH and to ACTIONABLE_RECOVERY_CLASSIFICATIONS replaces two partitions that would drift from the ones the fleet counter already folds.",
+      "text": "\u00a72's terminal set (\"recorded, promoted, withdrawn, discarded\") and its coordinator-kind catch-all (\"a recovery verb other than observe or empty counts as coordinator\") duplicate existing owners: (1) \"a state a run does not leave / asks for nothing\" is already owned by SETTLED_STATES ticker.py:329 and HIDDEN_AT_ATTACH ticker.py:349, and the settled words by FLEET_SETTLED_STATES recovery.py:10569 \u2014 none of them contains `withdrawn` or `discarded`, so the same file would carry a fourth partition of the same states; (2) \"which recovery classifications need the coordinator\" is owned by ACTIONABLE_RECOVERY_CLASSIFICATIONS recovery.py:181, which excludes `wait` and `promote`, so \u00a72's verb test disagrees with that owner for kinds outside COORDINATOR_KINDS.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-follower-row-is-worth-a-wake.html#s3",
+      "id": "interface_budget-1",
+      "reason": "the section must account for the interface surface it adds \u2014 name what the adjacent deprecated filter leaves behind, or state why nothing can be retired or merged.",
+      "text": "\u00a73 adds a new `--all` option to `crew follow` (reconcile against the existing set at cli.py:5100 and the deprecated `--attention` filter at cli.py:5133) without naming what it retires or merges; \u00a72 adds a settle-window module constant (\u00a72 text: \"a module constant beside ARRIVAL_WINDOW\") against public_definitions 1586.",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "15f1e1eac20f4292a3f0a471f8fd66088c5dcc4bda558db3b686d9a74544574e",
+  "plan_slug": "a-follower-row-is-worth-a-wake",
+  "plan_version": 8,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T015723437589-plan-review-of-a-follower-row-is-worth-a-wake",
+  "reviewed_blob_sha": "028bc08bde43fab8a42025ba9fd2cc202ebb0862",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a72 changes one class (RowPolicy) behind its existing feed/flush/seed interface plus one mode on PaneRowPath; \u00a73 releases held rows through the existing wait pass; no new wrapper chain is added.",
+    "duplicate_owner": "a finding \u2014 \u00a72 defines a terminal-state partition inline and re-derives \"needs the coordinator\" beside owners that already hold both.",
+    "interface_budget": "a finding \u2014 public_definitions 1586, cli_options 336, mcp_views 33, refusal_families 23; \u00a73 adds a crew follow CLI option without naming what it retires or merges, or why nothing can be.",
+    "reuse_search": "pass \u2014 \u00a71\u2013\u00a73 name and extend the existing machinery (RowPolicy, PaneRowPath via follower_row_path cli.py:3723, replay_row_policy ticker.py:1412, transition_class ticker.py:1146, COORDINATOR_KINDS ticker.py:1070, ARRIVAL_WINDOW ticker.py:1130, _follow_gap_rows cli.py:3924, RowPolicy.flush) and key the new policy on the persisted recovery field (recovery.py:11003) rather than a new classification.",
+    "thin_wrapper": "pass \u2014 \u00a73 adds a flag to the existing crew follow command rather than a parallel command."
+  },
+  "section_digests": {
+    "_document": "3a26de53f8f85820f474b57bd7f2d9285d3fcd0bbbd9b7815056c2cd2d0d6678",
+    "s1": "8a310d18810f5d180a217842e4518f8e65e137fc152881a8f50090340d441967",
+    "s2": "829152b1788ba9d3d1bb8961ebf4f501dc4f025c10e38b82dd420a7f2755a458",
+    "s3": "be58b6623a82b61eee9ee2684c7792df3dfeca02bcd83c806ffa2c87c49b30db",
+    "s4": "2d1b89c737dfa8e215eb5353d9bd4452995d7c371c2446691bb88bd8e5e9f57f",
+    "s5": "121871d26669536624bbf204933b2d5ef75f84f48944c43e04bc0b123177a8e4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T02:09:44.382008+00:00"
+}

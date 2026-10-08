@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs with reckon.crew.review.added_failures_from_gate_logs: head arm read from the reviewed run's test_plan_todos.head.log (no FAILED id, 5 passed EXIT=0); base arm from its negative-control.log (base code 62db795e, 5 FAILED ids, so the instrument is shown to read ids when present). head minus base = 0 added. The reviewed manifest's baseline_suite (line 19) and after_suite (line 20) are empty, so the store's read-time annotation reports this run's added-failure count unmeasured; the count here is the review node's own reconstruction from the run's focused gate, and no full-suite baseline/after was armed.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/_store.py:_read_state",
+    "reckon/_plan_html.py:_parse_plan_uncached"
+  ],
+  "completed_at": "2026-10-08T02:12:08.314Z",
+  "dispatched_at": "2026-10-08T01:52:52Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T011254596374-the-plan-read-carries-its-section-checklist/manifest.md",
+      "line": "19",
+      "severity": "follow-on",
+      "text": "baseline_suite and after_suite are empty, so the store's read-time annotate_review_of_run reports the run's added-failure count unmeasured; this review reconstructed it from the run's own test_plan_todos.head.log (head, no FAILED id) and negative-control.log (base arm) via reckon.crew.review.added_failures_from_gate_logs, giving 0 added. Harmless here because the gate is a focused green file, but the empty arms are a shape gap against the manifest contract."
+    },
+    {
+      "file": "reckon/_plan_html.py",
+      "line": "869",
+      "severity": "follow-on",
+      "text": "open_sections returns ids in section_declarations map order, not document order (as its docstring states). The plan only requires the section still-open set, which consumers check for non-emptiness, so this is not a defect today; but a later guard or roadmap readiness that expects document order would silently diverge from derive_section_todos, which is in document order. Worth pinning the order in the plan or in the docstring contract."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "two commits: 8c0113f0f adds the derivation, the shared heading reader, the declaration constants and open_sections across _plan_html.py/_store.py/mcp_views.py/tests; 7dfff29d adds the evidence fragment; 344 insertions over 5 files",
+    "done_when": "all three section done-when cases are asserted and a re-run at head 7dfff29d gives 5 passed EXIT=0; the fingerprint test's declared mutation keep_declarations=True reddens it in the run's own negative control",
+    "goal": "the typed read (_store._read_state) and the SPA payload (_plan_html._parse_plan_uncached) both call the one derivation derive_section_todos and both carry a todos list, and open_sections is the one open-section predicate, exactly as the section names",
+    "manifest": "records the focused gate result and a two-arm negative control, but its baseline_suite and after_suite are empty so the store's read-time annotation reads unmeasured; the run's own focused head and base arms support added_failure_count 0",
+    "write_paths": "git diff --stat 62db795e 7dfff29d lists exactly reckon/_plan_html.py, reckon/_store.py, reckon/mcp_views.py, tests/test_plan_todos.py and the evidence fragment, every one inside the manifest's declared scope; reckon/serve.py was declared and correctly left unchanged (the SPA handler forwards the parse record as-is)"
+  },
+  "justifications": {
+    "durability": "the negative control is shown to fire: with base code the four new checklist tests fail (EXIT=1) and with the declared keep_declarations mutation the fingerprint test fails (EXIT=1), so the guards redden on the regressions they guard rather than merely sitting green. Deducted slightly because test_payload_is_json_serialisable asserts only that the substring c-close-s1 encodes, and the fingerprint test already holds today so its only control is the declared mutation",
+    "evidence": "the run's own gate log test_plan_todos.head.log heads with the revision, worktree and command it ran and records 5 passed EXIT=0, reproduced independently at head in a scratch tree (5 passed EXIT=0); the negative control reproduces the declared direction (base 62db795e reddens 4 checklist tests, the keep_declarations=True mutation reddens the fingerprint test). Deducted because the manifest arms no baseline_suite/after_suite, leaving the store's read-time added-failure annotation unmeasured and the count a reconstruction from the focused gate alone",
+    "fit": "the declaration values, the close prefix and the open predicate are named constants with mechanism docstrings; the authored-heading walk that previously lived in mcp_views._authored_section_headings was moved to _plan_html.authored_section_headings and mcp_views now delegates (mcp_views.py:2091), so the two readers cannot diverge; no plan, stage or version label appears in any name or comment",
+    "goal_fidelity": "reckon/_plan_html.py:904 derive_section_todos yields one entry per authored section in document order with id, heading, '#<id>' link, declaration and the c-close-<id> record for a ticked section, and it is called at both reader boundaries (_store.py:678 and _plan_html.py:2314); independently re-ran the fixture at head 7dfff29d: 5 passed",
+    "reuse": "the change reuses plan_headings for the heading walk, section_id_candidates and the existing section_declarations map, and folds the duplicated _authored_section_headings implementation into one owner instead of adding a parallel copy; no new parser or second derivation of impl is introduced",
+    "scope_discipline": "git diff --name-only 62db795e 7dfff29d returns exactly the five files above, all within the declared write paths; no plan-state or shared index mutation"
+  },
+  "model": "deepseek-v4.1-flash",
+  "node": "review-of-the-plan-read-carries-its-section-checklist",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the typed read (_store._read_state) and the SPA payload (_plan_html._parse_plan_uncached) both call the one derivation derive_section_todos and both carry a todos list, and open_sections is the one open-section predicate, exactly as the section names.\nVERDICT done_when: all three section done-when cases are asserted and a re-run at head 7dfff29d gives 5 passed EXIT=0; the fingerprint test's declared mutation keep_declarations=True reddens it in the run's own negative control.\nVERDICT write_paths: git diff --stat 62db795e 7dfff29d lists exactly reckon/_plan_html.py, reckon/_store.py, reckon/mcp_views.py, tests/test_plan_todos.py and the evidence fragment, every one inside the declared scope; reckon/serve.py was declared and correctly left unchanged.\nVERDICT manifest: records the focused gate result and a two-arm negative control, but its baseline_suite and after_suite are empty so the store's read-time annotation reads unmeasured; the run's own focused head and base arms support added_failure_count 0.\nVERDICT diff: two commits (8c0113f0f feature, 7dfff29d evidence fragment); 344 insertions over 5 files.\nCALL_SITES: reckon/_store.py:_read_state, reckon/_plan_html.py:_parse_plan_uncached\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_plan_html.py:904 derive_section_todos yields one entry per authored section in document order with id, heading, '#<id>' link, declaration and the c-close-<id> record for a ticked section, and it is called at both reader boundaries (_store.py:678 and _plan_html.py:2314); independently re-ran the fixture at head 7dfff29d: 5 passed.\nSCORE evidence: 16\nJUSTIFICATION evidence: the run's own gate log test_plan_todos.head.log heads with the revision, worktree and command it ran and records 5 passed EXIT=0, reproduced independently at head in a scratch tree (5 passed EXIT=0); the negative control reproduces the declared direction. Deducted because the manifest arms no baseline_suite/after_suite, leaving the store's read-time added-failure annotation unmeasured and the count a reconstruction from the focused gate alone.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 62db795e 7dfff29d returns exactly the five files above, all within the declared write paths; no plan-state or shared index mutation.\nSCORE durability: 18\nJUSTIFICATION durability: the negative control is shown to fire: with base code the four new checklist tests fail (EXIT=1) and with the declared keep_declarations=True mutation the fingerprint test fails (EXIT=1). Deducted slightly because test_payload_is_json_serialisable asserts only that the substring c-close-s1 encodes, and the fingerprint test already holds today so its only control is the declared mutation.\nSCORE fit: 18\nJUSTIFICATION fit: the declaration values, the close prefix and the open predicate are named constants with mechanism docstrings; the authored-heading walk moved to _plan_html.authored_section_headings and mcp_views.py:2091 now delegates, so the two readers cannot diverge; no plan, stage or version label appears in any name or comment.\nSCORE reuse: 19\nJUSTIFICATION reuse: the change reuses plan_headings and section_id_candidates and folds the duplicated _authored_section_headings implementation into one owner instead of adding a parallel copy.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T011254596374-the-plan-read-carries-its-section-checklist/manifest.md:19 baseline_suite and after_suite are empty, so the store's read-time annotate_review_of_run reports the run's added-failure count unmeasured; this review reconstructed it from the run's own gate logs (0 added).\nFINDING reckon/_plan_html.py:869 open_sections returns ids in declaration-map order, not document order; a later consumer expecting document order would diverge from derive_section_todos.\nreviewed_base_sha: 62db795edb7a85728b44d873c379d655f8b1179c\nreviewed_head_sha: 7dfff29d4b3ca89f231439c807d3cf0c13b0afbd\n",
+  "review_run_id": "r-20261008T015150050726-review-of-the-plan-read-carries-its-section-checklist",
+  "reviewed_base_sha": "62db795edb7a85728b44d873c379d655f8b1179c",
+  "reviewed_head_sha": "7dfff29d4b3ca89f231439c807d3cf0c13b0afbd",
+  "reviewed_run_id": "r-20261008T011254596374-the-plan-read-carries-its-section-checklist",
+  "role": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T02:08:00+00:00",
+  "total": 110
+}
