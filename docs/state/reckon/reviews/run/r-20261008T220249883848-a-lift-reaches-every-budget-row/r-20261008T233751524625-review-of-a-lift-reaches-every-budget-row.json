@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own gate logs. baseline_suite: revision a3cf73e67a01ac04d2003aef28796f4ff85df599, 138 passed, failure_count 0, failure_ids []. after_suite: revision 9d69c3c728761b144ca3272de6796ad50723f41e, 145 passed, failure_count 0, failure_ids []. Zero added failure ids. The base arm lists nine modules and the head arm ten, because the node's new module has no base counterpart, so the zero-added comparison is partly by construction. Independently reproduced at head: the node module tests/test_a_lift_reaches_every_budget_row.py, 7 passed EXIT=0.",
+  "backend": "clive",
+  "base_log_revision": "a3cf73e67a01ac04d2003aef28796f4ff85df599",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch_sessions.py:resume_plan",
+    "reckon/crew/dispatch_sessions.py:change_lane",
+    "reckon/budget.py:preflight"
+  ],
+  "completed_at": "2026-10-08T23:57:58.012Z",
+  "dispatched_at": "2026-10-08T23:38:14Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "972",
+      "severity": "follow-on",
+      "text": "follow-on: budget.pace_row is called without the dispatching session, so the pace row the real dispatch writes carries session None and lift_id None, and _budget_verdict at :783 and :866 likewise omit the session and readings, until a later node threads them."
+    }
+  ],
+  "head_log_revision": "9d69c3c728761b144ca3272de6796ad50723f41e",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base a3cf73e67; three commits, +579/-4 across nine files -- the production change threads session and lift_id onto the pace row, reads the session off the row in the bookend refusal, passes session and clocks in dispatch_sessions, and teaches pace_replay to read session and lift_id as nullable known keys rather than damage.",
+    "done_when": "the gate tests/test_a_lift_reaches_every_budget_row.py drives every clause against a synthesised project and a temporary RECKON_HOME -- a no-lift row records its session and lift_id None and the configured multiple; a session lift marks its own row and not another's; the bookend refusal admits the lifting session and refuses another; _pace_readings hands the row clocks as one reading; a moved seven-day reset ends the lift on routing's path while another session's read does not; another session's preflight names session_lift without applying it; replay reads the multiple the row recorded. 7 passed EXIT=0 reproduced here.",
+    "goal": "Every budget reader a dispatch reaches outside reckon/crew/dispatch.py now takes the dispatching session and the pace clocks -- budget.pace_row accepts session (reckon/budget.py:3193) and passes it to group_pace, records session and lift_id on the row (reckon/budget.py:3247,3252), group_pace reports another session's lift under session_lift without applying it (reckon/budget.py:2870), dispatch_admission reads the session back off the pace record (reckon/crew/dispatch_admission.py:327), and dispatch_sessions threads session and the row's clocks into _budget_verdict (reckon/crew/dispatch_sessions.py:1058,1467); reproduced at head.",
+    "manifest": "read; status complete; commits df9bd5579, 9d69c3c72, 1ed17e138; baseline_suite (a3cf73e67, 138 passed, failure_count 0) and after_suite (9d69c3c72, 145 passed, failure_count 0) both readable and complete; negative_control_log names logs/negative-control.log whose first line repeats the mutation and whose last line is EXIT=1.",
+    "write_paths": "the diff touches reckon/budget.py, reckon/crew/dispatch_admission.py, reckon/crew/dispatch_sessions.py, reckon/crew/pace_replay.py, three test modules, the evidence fragment and the figure -- all inside the declared scope, the last three added when a resume widened the grant; routing.py was declared and not edited because no change was needed; no plan-version or plan-modified meta line moves."
+  },
+  "justifications": {
+    "durability": "the declared mutation (budget.pace_row passing session None to group_pace) reddens two cases in tests/test_a_lift_reaches_every_budget_row.py as recorded and re-read in logs/negative-control.log (2 failed, 5 passed, EXIT=1), and the added assertions compare against independent expected constants (LIFT_MULTIPLE 1.8, MULTIPLE 1.1) rather than against the value the code was handed.",
+    "evidence": "the reviewed run's own arms read base a3cf73e67 138 passed EXIT=0 and head 9d69c3c72 145 passed EXIT=0 with zero failures on both, and I independently reproduced the node module at head 1ed17e138 (7 passed EXIT=0, logs/review-node-module.log); docked because baseline_suite lists nine modules and after_suite ten, the node's new module having no base counterpart, so zero-added is partly by construction.",
+    "fit": "the new helpers are named by mechanism (reckon/budget.py:2874 _other_session_lift, reckon/crew/dispatch_sessions.py:54 _pace_readings), the docstrings state the mechanism, no plan, sprint or ticket identifier and no version suffix appears in the changed source or the three commit subjects, and each commit carries a subject with a body and no AI attribution.",
+    "goal_fidelity": "the session rides budget.pace_row (reckon/budget.py:3247) and group_pace records another session's lift without applying it (reckon/budget.py:2870), and the row's lift_id and lifted multiple are recorded (reckon/budget.py:3352,3355); docked one because the real dispatch call site at reckon/crew/dispatch.py:972 does not yet pass the session, so a production row still carries session None until the next node lands.",
+    "reuse": "_other_session_lift extends the existing lift owner by calling budget_lift.list_lifts and budget_lift.effective_budget (reckon/budget.py:2889) rather than re-deriving lift resolution, and _pace_readings reuses the row's own clocks rather than taking a fresh reading.",
+    "scope_discipline": "git diff a3cf73e67..1ed17e138 --name-only lists exactly the declared files plus the three added by the resume's scope widening (reckon/crew/pace_replay.py, tests/test_dispatch_records_the_pace_row.py, tests/test_pace_replay.py), with no plan, ledger or index path touched."
+  },
+  "model": "deepseek-v4.1-flash",
+  "node": "review-of-a-lift-reaches-every-budget-row",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Every budget reader a dispatch reaches outside reckon/crew/dispatch.py now takes the dispatching session and the pace clocks -- budget.pace_row accepts session (reckon/budget.py:3193) and passes it to group_pace, records session and lift_id on the row (reckon/budget.py:3247,3252), group_pace reports another session's lift under session_lift without applying it (reckon/budget.py:2870), dispatch_admission reads the session back off the pace record (reckon/crew/dispatch_admission.py:327), and dispatch_sessions threads session and the row's clocks into _budget_verdict (reckon/crew/dispatch_sessions.py:1058,1467); reproduced at head.\nVERDICT done_when: the gate tests/test_a_lift_reaches_every_budget_row.py drives every clause against a synthesised project and a temporary RECKON_HOME -- a no-lift row records its session and lift_id None and the configured multiple; a session lift marks its own row and not another's; the bookend refusal admits the lifting session and refuses another; _pace_readings hands the row clocks as one reading; a moved seven-day reset ends the lift on routing's path while another session's read does not; another session's preflight names session_lift without applying it; replay reads the multiple the row recorded. 7 passed EXIT=0 reproduced here.\nVERDICT write_paths: the diff touches reckon/budget.py, reckon/crew/dispatch_admission.py, reckon/crew/dispatch_sessions.py, reckon/crew/pace_replay.py, three test modules, the evidence fragment and the figure -- all inside the declared scope, the last three added when a resume widened the grant; routing.py was declared and not edited because no change was needed; no plan-version or plan-modified meta line moves.\nVERDICT manifest: read; status complete; commits df9bd5579, 9d69c3c72, 1ed17e138; baseline_suite (a3cf73e67, 138 passed, failure_count 0) and after_suite (9d69c3c72, 145 passed, failure_count 0) both readable and complete; negative_control_log names logs/negative-control.log whose first line repeats the mutation and whose last line is EXIT=1.\nVERDICT diff: read commit by commit against base a3cf73e67; three commits, +579/-4 across nine files -- the production change threads session and lift_id onto the pace row, reads the session off the row in the bookend refusal, passes session and clocks in dispatch_sessions, and teaches pace_replay to read session and lift_id as nullable known keys rather than damage.\nCALL_SITES: reckon/crew/dispatch_sessions.py:resume_plan, reckon/crew/dispatch_sessions.py:change_lane, reckon/budget.py:preflight\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the session rides budget.pace_row (reckon/budget.py:3247) and group_pace records another session's lift without applying it (reckon/budget.py:2870), and the row's lift_id and lifted multiple are recorded (reckon/budget.py:3352,3355); docked one because the real dispatch call site at reckon/crew/dispatch.py:972 does not yet pass the session, so a production row still carries session None until the next node lands.\nSCORE evidence: 18\nJUSTIFICATION evidence: the reviewed run's own arms read base a3cf73e67 138 passed EXIT=0 and head 9d69c3c72 145 passed EXIT=0 with zero failures on both, and I independently reproduced the node module at head 1ed17e138 (7 passed EXIT=0, logs/review-node-module.log); docked because baseline_suite lists nine modules and after_suite ten, the node's new module having no base counterpart, so zero-added is partly by construction.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff a3cf73e67..1ed17e138 --name-only lists exactly the declared files plus the three added by the resume's scope widening (reckon/crew/pace_replay.py, tests/test_dispatch_records_the_pace_row.py, tests/test_pace_replay.py), with no plan, ledger or index path touched.\nSCORE durability: 19\nJUSTIFICATION durability: the declared mutation (budget.pace_row passing session None to group_pace) reddens two cases in tests/test_a_lift_reaches_every_budget_row.py as recorded and re-read in logs/negative-control.log (2 failed, 5 passed, EXIT=1), and the added assertions compare against independent expected constants (LIFT_MULTIPLE 1.8, MULTIPLE 1.1) rather than against the value the code was handed.\nSCORE fit: 19\nJUSTIFICATION fit: the new helpers are named by mechanism (reckon/budget.py:2874 _other_session_lift, reckon/crew/dispatch_sessions.py:54 _pace_readings), the docstrings state the mechanism, no plan, sprint or ticket identifier and no version suffix appears in the changed source or the three commit subjects, and each commit carries a subject with a body and no AI attribution.\nSCORE reuse: 19\nJUSTIFICATION reuse: _other_session_lift extends the existing lift owner by calling budget_lift.list_lifts and budget_lift.effective_budget (reckon/budget.py:2889) rather than re-deriving lift resolution, and _pace_readings reuses the row's own clocks rather than taking a fresh reading.\nFINDING reckon/crew/dispatch.py:972 follow-on: budget.pace_row is called without the dispatching session, so the pace row the real dispatch writes carries session None and lift_id None, and _budget_verdict at :783 and :866 likewise omit the session and readings, until a later node threads them.\n",
+  "review_run_id": "r-20261008T233751524625-review-of-a-lift-reaches-every-budget-row",
+  "reviewed_base_sha": "a3cf73e67a01ac04d2003aef28796f4ff85df599",
+  "reviewed_head_sha": "1ed17e138c309f1a168853c459eaec276f83746c",
+  "reviewed_run_id": "r-20261008T220249883848-a-lift-reaches-every-budget-row",
+  "reviewer_run_id": "r-20261008T233751524625-review-of-a-lift-reaches-every-budget-row",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "test_logs": [
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T220249883848-a-lift-reaches-every-budget-row/logs/gate-base.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T220249883848-a-lift-reaches-every-budget-row/logs/gate-head.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T220249883848-a-lift-reaches-every-budget-row/logs/negative-control.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T233751524625-review-of-a-lift-reaches-every-budget-row/logs/review-node-module.log"
+  ],
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T23:58:48.380358+00:00",
+  "total": 114
+}
