@@ -25,7 +25,7 @@
   <title>A Follower Row Is Worth A Wake | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="15">
+<meta name="plan-version" content="18">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -105,7 +105,9 @@
       <li>An unexplained end: the run reaches a state in <code>SETTLED_STATES</code> without this pane having
         printed a coordinator row for it since its arrival. <code>SETTLED_STATES</code> gains
         <code>withdrawn</code> and <code>discarded</code>, which a run also does not leave, so the one owner of
-        "a state a run does not leave" covers them and <code>HIDDEN_AT_ATTACH</code> derives from it as before.</li>
+        "a state a run does not leave" covers them and <code>HIDDEN_AT_ATTACH</code> derives from it as before.
+        A launch withdrawn straight from dispatched within <code>ARRIVAL_WINDOW</code> is not unexplained: it is the
+        coordinator's own refused dispatch, which the dispatch call already reported, so it stays held back.</li>
     </ul>
     <p>An arrival that resolves into an observer kind, the launch's <code>dispatched → working</code>, prints
       nothing. An arrival still sitting in dispatched at <code>ARRIVAL_WINDOW</code> prints as today. A
@@ -194,17 +196,17 @@
       streams and writes nothing beside them.</p>
     <p><strong>Done when</strong> the report shows at least half of today's rows removed, zero held-back
       action states, and no action row delayed more than two minutes. As a positive control, the same replay with
-      the window at zero reproduces today's row count within 2%.</p>
+      observer context shown, the pane <code>replay_row_policy</code> builds for today's behaviour, reproduces today's row count within 2%.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
-<div class="r-dec" data-key="start-rows" data-choice="held-back" data-by="Simon McIntosh" data-when="2026-10-08">
+<div class="r-dec" data-key="start-rows" data-choice="held-back" data-by="Simon McIntosh" data-when="2026-10-08T03:02:25+00:00">
     <p class="r-dec-q">Does a dispatch produce a row when its worker starts?</p>
     <p class="r-dec-opts">
       <button class="r-opt chosen" data-value="held-back">No: a start is held back, and a run that fails to start is delivered by its action state</button>
       <button class="r-opt" data-value="delivered">Yes: deliver dispatched → working as today</button>
       </p>
-    <p class="r-dec-rat">The lead&#x27;s direction on 2026-10-08: dispatched → working rows are not needed. The dispatch call already returned the launch, and a launch that fails reaches stalled, launch-failed or withdrawn, which the policy delivers.</p>
+    <p class="r-dec-rat">The lead&#x27;s direction on 2026-10-08: dispatched → working rows are not needed. The dispatch call already returned the launch. A launch that fails after it was admitted reaches stalled or launch-failed, which the policy delivers. A launch withdrawn at once is the dispatch&#x27;s own refusal, which the dispatch call already reported.</p>
     </div>
 </section>
 
