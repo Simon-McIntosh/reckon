@@ -516,13 +516,23 @@ def test_a_follower_an_old_host_census_lists_never_hands_off(home, tmp_path) -> 
     fifo = _fifo(runtime, owner)
     descriptor = _hold_fifo(fifo)
     process = _arm_listed_by_host(_follower_env(home, runtime, owner.pid), tmp_path)
+    handed = False
     try:
-        time.sleep(STREAM_SECONDS)
-        assert process.poll() is None, (
-            "a follower an old-host census lists must keep streaming"
-        )
-        assert _read_one_line(descriptor, 0.2) == "", (
-            "a censused follower wrote a request to the waiting host"
+        # Give the follower the same bound its handoff partner is allowed to
+        # complete a handoff within, and watch for either tell of one: the
+        # process exiting, or a request reaching the waiting host. Neither may
+        # happen. A shorter wait would pass whenever the follower had simply not
+        # reached its start-up handoff yet, which is the flake this bound removes.
+        deadline = time.monotonic() + START_BOUND
+        while time.monotonic() < deadline:
+            if process.poll() is not None:
+                handed = True
+                break
+            if _read_one_line(descriptor, 0.1):
+                handed = True
+                break
+        assert not handed, (
+            "a follower an old-host census lists must keep streaming, not hand off"
         )
     finally:
         stdout, _stderr = _kill(process)
