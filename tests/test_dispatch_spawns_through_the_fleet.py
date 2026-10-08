@@ -90,6 +90,7 @@ class _StubBatchStep:
         self.fifo = runtime_dir / "requests"
         self.acknowledge = acknowledge
         self.lines: list[str] = []
+        self.received_at: float | None = None
         self.supervisor_pid = subprocess.Popen(
             [sys.executable, "-c", "import time; time.sleep(600)"]
         ).pid
@@ -130,6 +131,7 @@ class _StubBatchStep:
                 self._handle(line.decode())
 
     def _handle(self, line: str) -> None:
+        self.received_at = time.monotonic()
         self.lines.append(line)
         if not self.acknowledge:
             return
@@ -370,14 +372,15 @@ def test_an_unacknowledged_fifo_refuses_leaving_no_pointer_or_worktree(
     stub = _StubBatchStep(runtime_dir, acknowledge=False)
     stub.start()
     try:
-        started = time.monotonic()
         with pytest.raises(CrewError) as refusal:
             _dispatch(config_home, repo, "silent")
-        elapsed = time.monotonic() - started
+        finished = time.monotonic()
 
         assert len(stub.lines) == 1, "the request was never written"
-        assert elapsed < FLEET_ACK_CEILING, elapsed
-        assert elapsed >= 1.0, "the request was not waited on at all"
+        assert stub.received_at is not None
+        request_wait = finished - stub.received_at
+        assert request_wait < FLEET_ACK_CEILING, request_wait
+        assert request_wait >= 1.0, "the request was not waited on at all"
         assert "did not acknowledge" in str(refusal.value)
         assert runs.list_live(project="sample") == [], "a refusal left a pointer"
         worktree = tmp_path / "worktrees" / "session-silent-node-silent"
