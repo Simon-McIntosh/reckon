@@ -1,0 +1,64 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T03:28:08.563Z",
+  "dispatched_at": "2026-10-08T03:06:08Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/an-mcp-failure-names-its-cause.html:93",
+      "id": "done_when-1",
+      "reason": "half the section's deliverable would ship un-gated, so a later reader cannot tell whether the storage-slow count works.",
+      "text": "\u00a72's deliverable also \"counts storage-slow tool results per tool over the same window\" by enumerating transcript files through transcript_index, but the done-when's fixture is \"a fixture log tree holding one connection per signature\" with no transcript fixture, so the transcript-scanning path is asserted by nothing and the gate stays green with it absent",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/an-mcp-failure-names-its-cause.html:144",
+      "id": "done_when-2",
+      "reason": "the rule the \u00a76 investigation exists to prevent would ship with no test that fires it.",
+      "text": "\u00a75's deliverable gained a third flag rule (\"a launch whose --project or --directory names a path that does not exist\", the rule \u00a76's landed cause motivated), but \u00a75's done-when fixture has no launch with a missing path and its negative control only removes the --no-sync branch",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/an-mcp-failure-names-its-cause.html:219",
+      "id": "evidence_paths-1",
+      "reason": "the log the measure depends on has no declared durable path, so the worker may leave it in a scratchpad the run does not survive and the gate evidence cannot be reopened.",
+      "text": "\u00a79's done-when rests on \"A logged warm call on the fleet node\" and \u00a72's on a fleet-node run against the real log tree (line 99), but neither names where that log or report goes, where \u00a74 names the run directory and \u00a76 a report directory",
+      "type": "evidence_paths",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "d66e5507236427b8b79e6e21360c4ce525319b4c78cd5ef06ee33f0949e9e2fc",
+  "plan_slug": "an-mcp-failure-names-its-cause",
+  "plan_version": 22,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T030528936692-plan-review-of-an-mcp-failure-names-its-cause",
+  "reviewed_blob_sha": "27ceb91fb2a3e299a791a83ac85e954154dc6d6c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 /reckon/reckon-reads-answer-in-seconds and /reckon/evidence/archive/an-mcp-failure-names-its-cause-landed.html#s6-imas-cx-os-error-2 both resolve (the anchor is present at line 23 of the landed record); the cited code is all present \u2014 reckon/mcp.py:_run_under_deadline, reckon/_mcp_tools.py STORAGE_SLOW, reckon/velocity.py:transcript_index, reckon/file_memo.py, reckon/_backends.py:_seed_harness_entry, reckon/cli.py, reckon/resources.py, reckon/_store.py, reckon/project_state.py; imas-ambix aa387764 resolves.",
+    "done_when": "a finding \u2014 \u00a72's done-when exercises only the connection-log census; the storage-slow transcript count the same section declares as a deliverable is not covered by its fixture.",
+    "evidence_paths": "a finding \u2014 \u00a79's \"logged warm call on the fleet node\" and \u00a72's fleet-node census run name no destination path, unlike \u00a74 (the run directory) and \u00a76 (a report directory).",
+    "naming": "pass \u2014 the proposed module reckon/mcp_census.py and each proposed test name describe what they check; no plan label, ticket number or version tag reaches code.",
+    "reasoning": "pass \u2014 the three checks hold: the \u00a71/\u00a79/\u00a710 root causes match their cited evidence (a 3 ms stat against 87 s wall / 44 s CPU; the profile's posix.scandir counts; Errno 30 on the .lock path); each changed section's mechanism can produce its done-when; and the callers are named (read_plan, the crew live view, reckon doctor, and the _run_under_deadline read path).",
+    "single_goal": "pass \u2014 \u00a72, \u00a75, \u00a77, \u00a79 and \u00a710 each name one deliverable; \u00a73's in-flight dedup is now its own section (\u00a78).",
+    "wiring": "pass \u2014 plan-depends-on is reckon-reads-answer-in-seconds, which resolves to docs/plans/reckon-reads-answer-in-seconds.html (shipped) and is the plan \u00a71/\u00a74 cite; the intra-plan ordering (\u00a75 after \u00a72, \u00a78 after \u00a73) is declared in followup f-amfc-001 and in \u00a78's own done-when, each naming the right section."
+  },
+  "section_digests": {
+    "_document": "eca3309ad1ee448c0df57fb13e4276127be60f335ff96a3e0bff1ad96e72a7d8",
+    "s1": "d0ea88c8e7e70627417eeb698c89b91962c8e03f4f18bbdc2e310ceeb8b0f1f5",
+    "s10": "44a1c96517a7320b1c237bf1bcbbd71973f7077c24a1618b7d07f8665e36f695",
+    "s2": "b0be3559d401a8be59b6a45b983ef821b5202e651a5634016bb368483bac0ba9",
+    "s3": "82031c5ca9a72cb79729fbc07674f2d108fbebb8874c2e50d572fbd48600c6b2",
+    "s4": "e8ab475d56abc119c369298b36a1fedb5af7d6342681af684858d6c50c994663",
+    "s5": "0b3a077d05bd23e2355674d49a97f2b3b1deb768e9191b46772ed2f5c172b97e",
+    "s6": "38a3b13749c17899e607aeb6eb1c1324c5b7b7ecbe0f2027b43a50657e063c20",
+    "s7": "94a9fbe3b42e3609383a12d22150c7a8eba5ed62efa8aeb7d6cf0e0f44731825",
+    "s8": "e767ac662612e3267540f7c6afbaf5dfc2387cde567739be1d2cee15e035f12e",
+    "s9": "d69b4f2c8b09ea2a7c66af4da6ff11797dc53edf0eb835d122e829023a023f8c"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T03:30:34.538010+00:00"
+}
