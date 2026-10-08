@@ -427,8 +427,23 @@ def _fleet_record(state: Path) -> dict[str, Any]:
     return record
 
 
+class _EnvironmentBoundArgv(list[str]):
+    """Carry subprocess environment through a one-argument step runner."""
+
+    def __init__(self, argv: list[str], env: Mapping[str, str]) -> None:
+        super().__init__(argv)
+        self.env = dict(env)
+
+
 def _run_step(argv: list[str]) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(argv, capture_output=True, text=True, check=False, timeout=30)
+    return subprocess.run(
+        argv,
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=30,
+        env=argv.env if isinstance(argv, _EnvironmentBoundArgv) else None,
+    )
 
 
 def _active_sessions(
@@ -740,7 +755,11 @@ def _rehearse(
             raise MigrationError(f"rehearsal layout is missing: {ledger['layout']}")
 
         def local_sessions() -> list[str]:
-            return _active_sessions(invoke=lambda argv, **_options: run_step(argv))
+            return _active_sessions(
+                invoke=lambda argv, **options: run_step(
+                    _EnvironmentBoundArgv(argv, options["env"])
+                )
+            )
 
         ledger["old_end"] = _end_local_session(
             name, run_step=run_step, active_sessions=local_sessions
