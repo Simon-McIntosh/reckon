@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.92">
-<meta name="plan-version" content="78">
+<meta name="plan-version" content="79">
 <meta name="plan-modified" content="2026-10-08">
 <meta name="plan-commits" content="25c025d3">
 </head>
@@ -446,6 +446,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s15" data-id="c-s15-landed" data-who="reckon-build" data-when="2026-10-08T15:20:00Z">
     <div class="r-comment-body"><p>gate passed (8 passed; population 2,307 passed, zero added; 13 of 13 live host followers recognised); section 15 closed. Ten-minute host watch follows the merge.</p></div>
+</div>
+<div class="r-comment" data-section="s15" data-id="c-run-r-20261008T132715179954-host-follower-never-hands-off" data-who="reckon-build" data-when="2026-10-08T14:36:20.872Z">
+    <div class="r-comment-body"><p>§15 — the reverted hand-off of 3889d7c5d is ported onto current main with no RECKON_SESSION_HOST_CHILD marker: whether a follower is the host&#x27;s own child is read from the host census through the existing _session_host_runs_follower, keyed on the follower&#x27;s own pid. A censused follower streams; a follower no census lists writes its project and session to a waiting host FIFO and exits. Start-up and end-of-lifetime hand-off both land; dispatch asks a waiting host for a foreignly-attached session; the request line has one writer. Gate 8 passed / EXIT=0; negative control 1 failed / EXIT=1.</p></div>
 </div>
 </section>
 </main>
