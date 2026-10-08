@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:a-plan-is-done-when-every-section-is-ticked">
+  <meta name="plan-verifies" content="reckon:a-plan-is-done-when-every-section-is-ticked#s3">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-08">
+  <meta name="evidence-commit" content="8c0113f0f">
+</head>
+<body>
+<main class="plan-doc">
+<section id="the-plan-read-carries-its-section-checklist">
+  <h2>The plan read carries its section checklist</h2>
+  <p><code>_plan_html.derive_section_todos(html_text, state)</code> yields one entry per
+  authored section in document order — id, heading text, the <code>#id</code> link, the
+  declaration, and, for a ticked section, its <code>c-close-&lt;id&gt;</code> record selected by
+  id. It is called at both reader boundaries: <code>_store._read_state</code> for the typed
+  read and <code>_plan_html._parse_plan_uncached</code> for the SPA payload.
+  <code>open_sections(state)</code> is the one public open-section predicate (implementable or
+  deferred). The field is derived on read and never stored.</p>
+  <p>Gate: <code>tests/test_plan_todos.py</code> at head — <strong>5 passed</strong>,
+  <code>EXIT=0</code>. Negative control: base code <code>62db795e</code> fails 4 checklist
+  ids (<code>EXIT=1</code>); the declared mutation <code>keep_declarations=True</code> fails
+  <code>test_ticking_a_section_leaves_the_review_fingerprint_unchanged</code>
+  (<code>EXIT=1</code>).</p>
+</section>
+</main>
+</body>
+</html>
