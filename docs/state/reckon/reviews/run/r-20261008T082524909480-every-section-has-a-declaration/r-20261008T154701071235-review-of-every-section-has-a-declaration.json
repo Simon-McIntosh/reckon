@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own two gate logs read at their real paths (logs/cohort_base_serve.log at 6741a3ef, logs/cohort_head_serve2.log at d490ca02a): both arms fail the same tests/test_mcp_views.py::test_raw_and_schema_are_explicit_layers plus the same tests/conftest.py::test_temp_config_home ERROR, so 0 added. The store's own annotator reports this unmeasured because the manifest's baseline_suite log_path carries a doubled runs/ITER/mcintos/.config/reckon/crew/runs/ prefix; the log itself is present and readable.",
+  "base_log_revision": "6741a3efc71ef2bbb78723ae510d8ad31d16a72f",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-08T16:02:32.688Z",
+  "dispatched_at": "2026-10-08T15:47:50Z",
+  "findings": [
+    {
+      "file": "tests/test_every_section_has_a_declaration.py",
+      "line": "287",
+      "severity": "follow-on",
+      "text": "follow-on: The mounts_discovery_cache fixture restores the serve module globals, but nothing committed asserts they are pristine after the patch-route test; the leak is proven only in the run's scratch probe, so a revert to the direct _MOUNTS_FILE assignment reintroduces the cross-test contamination with no test reddening."
+    },
+    {
+      "file": "docs/_exemplar-plan.html",
+      "line": "18",
+      "severity": "follow-on",
+      "text": "follow-on: The four declarations added here are unguarded - test_canonical_authoring_exemplar_stays_valid asserts audit_html is empty, but audit_html excludes the coverage codes (the base file reports four section-without-todo findings while that test stays green), so removing the meta reddens nothing."
+    },
+    {
+      "file": "skills/reckon-create/SKILL.md",
+      "line": "468",
+      "severity": "follow-on",
+      "text": "follow-on: The new-plan skeleton's declarations are likewise verified by no test, so a plan created from a template that lost them would audit gapped with no test failing."
+    }
+  ],
+  "head_log_revision": "d490ca02aaf8350024ef5d7df565cba6503cdeca",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "Read 9d0b0cada against d490ca02a: four files, +42/-5, three commits. 9f8338463 authors h2 ids s1..s4 in _make_plan_html and adds section_declarations to the schema-boundary test; c2c5143d6 adds plan-section-declarations to the exemplar and to the create skeleton's template and states the rule in Step 3; d490ca02a replaces the patch-route test's direct _MOUNTS_FILE assignment and _DISC_CACHE.clear() with monkeypatch.setattr and a mounts_discovery_cache fixture that restores the cache on teardown. No reckon/*.py is modified, so the coverage guard the prior review verified is untouched and still armed.",
+    "done_when": "s5's done-when names a census plus seven tests. The census (109 gapped of 214 live) is unchanged by this delta. The delta repairs the three tests/test_edit_plan.py failures and the patch-route test's global leak, and I reproduced a focused gate at head d490ca02a (tests/test_every_section_has_a_declaration.py + tests/test_edit_plan.py -> 86 passed, EXIT=0), which the prior review recorded as failing three of those tests at its head.",
+    "goal": "The node goal is that a plan write leaving a heading without a declaration, or a declaration without a heading, is refused. The gained delta 9d0b0cada..d490ca02a adds no production code; it makes the run's own artefacts conform to that guard: docs/_exemplar-plan.html declares its four authored headings, skills/reckon-create/SKILL.md's new-plan skeleton declares its two, tests/test_edit_plan.py's fixture authors the headings its tests declare, and the patch-route test restores the serve globals it installs. I confirmed the exemplar's declaration ids equal its authored headings exactly and that doccheck._section_coverage_findings reports four section-without-todo findings on that same file at base 9d0b0cada and none at head d490ca02a.",
+    "manifest": "The run's manifest reads complete; it now names the after arm at d490ca02a and the baseline at 6741a3ef, and both arms report the same lone failure (tests/test_mcp_views.py::test_raw_and_schema_are_explicit_layers, plus the same tests/conftest.py::test_temp_config_home ERROR), so the added-failure count is 0, down from 3 at the prior review. Two reproducibility defects remain: the arm commands and gate-log headers spell their targets with <cohort_files>/<worktree> placeholders rather than resolvable paths, and the baseline_suite log_path is malformed (a doubled runs/ITER/mcintos/.config/reckon/crew/runs/ prefix), so the store's own annotator reads the base log as absent even though it is present and readable at logs/cohort_base_serve.log.",
+    "write_paths": "The delta touches four files - docs/_exemplar-plan.html, skills/reckon-create/SKILL.md, tests/test_edit_plan.py, tests/test_every_section_has_a_declaration.py - each inside the node's recorded scope (the first two arriving under the round's fence extension the run's own scope_note records, and no path outside that set is touched)."
+  },
+  "justifications": {
+    "durability": "The fixture repair is genuinely guarded - the three edit-plan tests now pass only because the fixture authors the headings they declare - but the globals fix at tests/test_every_section_has_a_declaration.py:287 has no committed assertion that the serve globals are restored after the patch-route test (the proof lives only in the run's scratch probe), and the docs changes have no coverage-check guard at all.",
+    "evidence": "The run re-armed both cohort arms at the delta head and I derived added_failure_count 0 by reading the two logs at their real paths in the run's logs directory and reproducing the focused gate at d490ca02a (86 passed, EXIT=0); docked because the arm commands still name their file set with a <cohort_files> placeholder and the manifest's baseline_suite log_path is malformed so the store's annotator reads the base log as absent.",
+    "fit": "The added fixture and comments name their mechanism (mounts_discovery_cache, \"Every authored heading is declared...\") with no plan, sprint or stage label and no author attribution, matching the surrounding test idiom.",
+    "goal_fidelity": "Every gained commit carries out the guard's consequences on the run's own artefacts, and each claim checks out (docs/_exemplar-plan.html:18 declarations equal the four authored ids; the same file audits with four section-without-todo findings at base and none at head).",
+    "reuse": "The fix uses monkeypatch.setattr, the repository's existing idiom, and the new fixture restores shared module state rather than introducing a second cache or mounts reader; no capability is for reuse.",
+    "scope_discipline": "git diff --stat 9d0b0cada d490ca02a lists exactly the four node-scope files and nothing else, with no unrelated churn and no production module touched."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 9d0b0cada09f1e82c67587275aaff958ca0b7107\nreviewed_head_sha: d490ca02aaf8350024ef5d7df565cba6503cdeca\n\nVERDICT goal: The node goal is that a plan write leaving a heading without a declaration, or a declaration without a heading, is refused. The gained delta 9d0b0cada..d490ca02a adds no production code; it makes the run's own artefacts conform to that guard: docs/_exemplar-plan.html declares its four authored headings, skills/reckon-create/SKILL.md's new-plan skeleton declares its two, tests/test_edit_plan.py's fixture authors the headings its tests declare, and the patch-route test restores the serve globals it installs. I confirmed the exemplar's declaration ids equal its authored headings exactly and that doccheck._section_coverage_findings reports four section-without-todo findings on that same file at base 9d0b0cada and none at head d490ca02a.\nVERDICT done_when: s5's done-when names a census plus seven tests. The census (109 gapped of 214 live) is unchanged by this delta. The delta repairs the three tests/test_edit_plan.py failures and the patch-route test's global leak, and I reproduced a focused gate at head d490ca02a (tests/test_every_section_has_a_declaration.py + tests/test_edit_plan.py -> 86 passed, EXIT=0), which the prior review recorded as failing three of those tests at its head.\nVERDICT write_paths: The delta touches four files - docs/_exemplar-plan.html, skills/reckon-create/SKILL.md, tests/test_edit_plan.py, tests/test_every_section_has_a_declaration.py - each inside the node's recorded scope (the first two arriving under the round's fence extension the run's own scope_note records, and no path outside that set is touched).\nVERDICT manifest: The run's manifest reads complete; it now names the after arm at d490ca02a and the baseline at 6741a3ef, and both arms report the same lone failure (tests/test_mcp_views.py::test_raw_and_schema_are_explicit_layers, plus the same tests/conftest.py::test_temp_config_home ERROR), so the added-failure count is 0, down from 3 at the prior review. Two reproducibility defects remain: the arm commands and gate-log headers spell their targets with <cohort_files>/<worktree> placeholders rather than resolvable paths, and the baseline_suite log_path is malformed (a doubled runs/ITER/mcintos/.config/reckon/crew/runs/ prefix), so the store's own annotator reads the base log as absent even though it is present and readable at logs/cohort_base_serve.log.\nVERDICT diff: Read 9d0b0cada against d490ca02a: four files, +42/-5, three commits. 9f8338463 authors h2 ids s1..s4 in _make_plan_html and adds section_declarations to the schema-boundary test; c2c5143d6 adds plan-section-declarations to the exemplar and to the create skeleton's template and states the rule in Step 3; d490ca02a replaces the patch-route test's direct _MOUNTS_FILE assignment and _DISC_CACHE.clear() with monkeypatch.setattr and a mounts_discovery_cache fixture that restores the cache on teardown. No reckon/*.py is modified, so the coverage guard the prior review verified is untouched and still armed.\n\nCALL_SITES: none\n\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: Every gained commit carries out the guard's consequences on the run's own artefacts, and each claim checks out (docs/_exemplar-plan.html:18 declarations equal the four authored ids; the same file audits with four section-without-todo findings at base and none at head).\nSCORE evidence: 19\nJUSTIFICATION evidence: The run re-armed both cohort arms at the delta head and I derived added_failure_count 0 by reading the two logs at their real paths in the run's logs directory and reproducing the focused gate at d490ca02a (86 passed, EXIT=0); docked because the arm commands still name their file set with a <cohort_files> placeholder and the manifest's baseline_suite log_path is malformed so the store's annotator reads the base log as absent.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 9d0b0cada d490ca02a lists exactly the four node-scope files and nothing else, with no unrelated churn and no production module touched.\nSCORE durability: 15\nJUSTIFICATION durability: The fixture repair is genuinely guarded - the three edit-plan tests now pass only because the fixture authors the headings they declare - but the globals fix at tests/test_every_section_has_a_declaration.py:287 has no committed assertion that the serve globals are restored after the patch-route test (the proof lives only in the run's scratch probe), and the docs changes have no coverage-check guard at all.\nSCORE fit: 20\nJUSTIFICATION fit: The added fixture and comments name their mechanism (mounts_discovery_cache, \"Every authored heading is declared...\") with no plan, sprint or stage label and no author attribution, matching the surrounding test idiom.\nSCORE reuse: 20\nJUSTIFICATION reuse: The fix uses monkeypatch.setattr, the repository's existing idiom, and the new fixture restores shared module state rather than introducing a second cache or mounts reader; no capability is for reuse.\n\nFINDING tests/test_every_section_has_a_declaration.py:287 follow-on: The mounts_discovery_cache fixture restores the serve module globals, but nothing committed asserts they are pristine after the patch-route test; the leak is proven only in the run's scratch probe, so a revert to the direct _MOUNTS_FILE assignment reintroduces the cross-test contamination with no test reddening.\nFINDING docs/_exemplar-plan.html:18 follow-on: The four declarations added here are unguarded - test_canonical_authoring_exemplar_stays_valid asserts audit_html is empty, but audit_html excludes the coverage codes (the base file reports four section-without-todo findings while that test stays green), so removing the meta reddens nothing.\nFINDING skills/reckon-create/SKILL.md:468 follow-on: The new-plan skeleton's declarations are likewise verified by no test, so a plan created from a template that lost them would audit gapped with no test failing.",
+  "review_run_id": "r-20261008T154701071235-review-of-every-section-has-a-declaration",
+  "reviewed_base_sha": "9d0b0cada09f1e82c67587275aaff958ca0b7107",
+  "reviewed_head_sha": "d490ca02aaf8350024ef5d7df565cba6503cdeca",
+  "reviewed_run_id": "r-20261008T082524909480-every-section-has-a-declaration",
+  "scores": {
+    "durability": 15,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T16:01:11.308908+00:00",
+  "total": 114
+}
