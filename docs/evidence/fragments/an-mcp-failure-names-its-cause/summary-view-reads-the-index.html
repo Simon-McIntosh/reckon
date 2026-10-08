@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="an-mcp-failure-names-its-cause">
+  <meta name="plan-title" content="An MCP Failure Names Its Cause">
+  <meta name="plan-evidence-for" content="reckon:an-mcp-failure-names-its-cause">
+  <meta name="plan-verifies" content="reckon:an-mcp-failure-names-its-cause#s12">
+  <meta name="plan-recorded-at" content="2026-10-08">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-node" content="summary-view-reads-the-index">
+  <title>A summary read takes its inventory from the index — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="summary-view-reads-the-index-landed" data-node="summary-view-reads-the-index" data-reckon="landed" data-when="2026-10-08">
+  <h2 id="summary-view-reads-the-index-heading">A summary read takes its inventory from the index</h2>
+  <p id="summary-view-reads-the-index-summary">A one-plan summary read embeds the derived blocking from the project's plan inventory, and the plan's provenance, and both were taken by walking the docs tree and recursively globbing every HTML file, so the filesystem work of a read about one plan grew with the number of plans. The inventory rows now come from the persisted metadata index — the same source a sprint read already uses — and the selected document resolves at its canonical path instead of through the project's whole resource map. The index persists each visited directory's stat identity beside its rows: a reader with no change watch still rehashes every covered file to revalidate, and it needs the file set to do that, so recorded directory identities that all still match let it take the set from the persisted rows instead of walking the tree to rediscover it. Any difference, or an absent index, falls back to the walk and a rebuild.</p>
+  <p id="summary-view-reads-the-index-evidence">Gate: <code>tests/test_summary_view_reads_the_index.py</code> 1 passed, EXIT=0. Counting <code>os.scandir</code> during a warm one-plan <code>read_plan</code> summary view in fixtures of 5 and 60 plans (each plan owning an evidence-fragment directory), the count is equal at both sizes (0), and the index-backed payload equals the walk-backed payload. The counter's own positive control, with the inventory read forced back through the corpus walk, reads 33 (5 plans) and 198 (60 plans). Negative control: with the index read reverted to the walk, the equality assertion fails EXIT=1, counting 33 at 5 plans against 198 at 60. The existing tests importing <code>reckon.mcp</code> pass unchanged.</p>
+</article>
+</body>
+</html>

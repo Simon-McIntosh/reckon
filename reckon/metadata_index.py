@@ -69,7 +69,7 @@ ROW_FIELDS = (
 _SCHEMA = "reckon.metadata-index"
 #: Bumped when an entry gains a field, so an index written by the previous
 #: shape is rebuilt rather than reused with the new field absent.
-_VERSION = 3
+_VERSION = 4
 _FIGURE_DIR = "figures"
 _FIGURE_SUFFIXES = (".png", ".svg", ".gif")
 #: The types discovery keeps in an inventory, so the index answers with the
@@ -91,6 +91,11 @@ class IndexBuild:
     reused: int = 0
     added: int = 0
     removed: int = 0
+    #: Each visited directory's stat identity, keyed by its docs-relative path.
+    #: A later read compares these to decide whether the tree's *shape* — the
+    #: set of directories and the files in them — still matches the persisted
+    #: rows, so it can answer without walking the tree to rediscover them.
+    dir_stamps: dict[str, list[int]] = field(default_factory=dict)
 
     @property
     def changed(self) -> bool:
@@ -188,6 +193,12 @@ def index_rows(
             build = _CACHE.get(key)
         if build is not None:
             return [dict(row) for row in build.rows]
+    covered: list[tuple[str, Path]] | None = None
+    dirs: dict[str, Path] | None = None
+    if revalidate:
+        reused = _reuse_covered(docs_dir, project)
+        if reused is not None:
+            covered, dirs = reused
     build = _build_and_cache(
         key,
         docs_dir,
@@ -195,8 +206,38 @@ def index_rows(
         repo_dir=repo_dir,
         git_first=git_first,
         git_last=git_last,
+        covered=covered,
+        dirs=dirs,
     )
     return [dict(row) for row in build.rows]
+
+
+def _reuse_covered(
+    docs_dir: Path, project: str
+) -> tuple[list[tuple[str, Path]], dict[str, Path]] | None:
+    """Return the persisted file set when the tree's shape is unchanged.
+
+    A reader with no change watch rehashes every covered file to revalidate,
+    and it needs the file set to do that. Rediscovering it walks the tree on
+    every read. The persisted index already lists the files, and the
+    directories' stat identities say whether entry ``*was added or removed``
+    since it was built — so a shape that has not moved is answered without the
+    walk, and any difference (or an absent index) returns ``None`` so the
+    caller walks and rebuilds.
+    """
+
+    stamps = _load_dir_stamps(docs_dir, project)
+    entries = _load_persisted(docs_dir, project)
+    if not stamps or not entries:
+        return None
+    dirs: dict[str, Path] = {}
+    for relative, identity in stamps.items():
+        path = docs_dir / relative
+        if _dir_identity(path) != identity:
+            return None
+        dirs[relative] = path
+    covered = [(relative, docs_dir / relative) for relative in sorted(entries)]
+    return covered, dirs
 
 
 def plan_derivations(docs_dir: Path, project: str) -> list[dict]:
@@ -238,9 +279,17 @@ def _build_and_cache(
     repo_dir: Path | None = None,
     git_first: Mapping[str, int] | None = None,
     git_last: Mapping[str, int] | None = None,
+    covered: list[tuple[str, Path]] | None = None,
+    dirs: dict[str, Path] | None = None,
 ) -> IndexBuild:
     build = build_index(
-        docs_dir, project, repo_dir=repo_dir, git_first=git_first, git_last=git_last
+        docs_dir,
+        project,
+        repo_dir=repo_dir,
+        git_first=git_first,
+        git_last=git_last,
+        covered=covered,
+        dirs=dirs,
     )
     with _LOCK:
         _CACHE[key] = build
@@ -254,17 +303,35 @@ def build_index(
     repo_dir: Path | None = None,
     git_first: Mapping[str, int] | None = None,
     git_last: Mapping[str, int] | None = None,
+    covered: list[tuple[str, Path]] | None = None,
+    dirs: dict[str, Path] | None = None,
 ) -> IndexBuild:
-    """Build one project's rows, re-parsing only what its bytes changed."""
+    """Build one project's rows, re-parsing only what its bytes changed.
+
+    ``covered`` and ``dirs`` let a caller that has already established the
+    tree's shape — by comparing the recorded directory identities — hand the
+    file set in instead of walking the tree to rediscover it. With ``covered``
+    absent the walk runs and both are derived from it.
+    """
 
     docs_dir = Path(docs_dir)
     stamp = _make_stamp(repo_dir, git_first, git_last)
     known = _load_persisted(docs_dir, project)
+    if covered is None:
+        files, walked_dirs = _walk_covered(docs_dir)
+        dirs = dict(walked_dirs)
+    else:
+        files = covered
+        dirs = dirs or {}
     build = IndexBuild(project=project, docs_dir=docs_dir)
+    for relative, path in dirs.items():
+        identity = _dir_identity(path)
+        if identity is not None:
+            build.dir_stamps[relative] = identity
     entries: list[dict] = []
     seen: set[str] = set()
 
-    for relative, path in _covered_files(docs_dir):
+    for relative, path in files:
         seen.add(relative)
         try:
             digest = _content_digest(path)
@@ -315,7 +382,7 @@ def build_index(
 
     build.removed = len(set(known) - seen)
     if build.changed or not known:
-        _store_persisted(docs_dir, project, entries)
+        _store_persisted(docs_dir, project, entries, build.dir_stamps)
     return build
 
 
@@ -353,18 +420,24 @@ def _cache_key(docs_dir: Path, project: str, with_git: bool) -> tuple[str, str, 
     return (project, str(Path(docs_dir).resolve()), with_git)
 
 
-def _covered_files(docs_dir: Path) -> list[tuple[str, Path]]:
-    """Return (docs-relative posix path, path) for every file the index covers.
+def _walk_covered(
+    docs_dir: Path,
+) -> tuple[list[tuple[str, Path]], list[tuple[str, Path]]]:
+    """Return the covered files and every visited directory, from one walk.
 
-    Every HTML file anywhere in the tree, plus figure images under the
-    top-level figures directory. Directory symlinks are not followed. This is
-    the single docs-tree walk: the discovery change signature sweeps the same
-    function, so the index's covered set and discovery's counted set cannot
-    drift into two implementations.
+    The files are ``(docs-relative posix path, path)`` for every HTML file
+    anywhere in the tree plus figure images under the top-level figures
+    directory. The directories are ``(docs-relative posix path, path)`` for
+    every directory the walk reached, including ones that held no covered
+    file: a directory's stat identity moves when an entry is added to or
+    removed from it, so recording the set lets a later read tell whether the
+    tree's shape changed without walking it again. Directory symlinks are not
+    followed.
     """
 
     figures_root = os.path.join(os.fspath(docs_dir), _FIGURE_DIR)
     found: dict[str, Path] = {}
+    directories: dict[str, Path] = {}
     pending = [os.fspath(docs_dir)]
     while pending:
         directory = pending.pop()
@@ -372,6 +445,11 @@ def _covered_files(docs_dir: Path) -> list[tuple[str, Path]]:
             entries = os.scandir(directory)
         except OSError:
             continue
+        try:
+            relative_dir = Path(directory).relative_to(docs_dir).as_posix()
+        except ValueError:
+            continue
+        directories[relative_dir] = Path(directory)
         with entries:
             for entry in entries:
                 try:
@@ -393,7 +471,42 @@ def _covered_files(docs_dir: Path) -> list[tuple[str, Path]]:
                 except ValueError:
                     continue
                 found[relative] = path
-    return sorted(found.items())
+    return sorted(found.items()), sorted(directories.items())
+
+
+def _covered_files(docs_dir: Path) -> list[tuple[str, Path]]:
+    """Return (docs-relative posix path, path) for every file the index covers.
+
+    Every HTML file anywhere in the tree, plus figure images under the
+    top-level figures directory. Directory symlinks are not followed. This is
+    the single docs-tree walk: the discovery change signature sweeps the same
+    function, so the index's covered set and discovery's counted set cannot
+    drift into two implementations.
+    """
+
+    return _walk_covered(docs_dir)[0]
+
+
+def _dir_identity(path: Path) -> list[int] | None:
+    """Return the stat identity a directory's entry set changes with.
+
+    mtime and ctime move when an entry is added to or removed from the
+    directory, and the inode and size distinguish a replaced directory from a
+    reused name. A reader that finds every recorded directory unchanged knows
+    the file set is unchanged too and can skip the walk that would rediscover
+    it; any difference falls back to the walk.
+    """
+
+    try:
+        stat = path.stat()
+    except OSError:
+        return None
+    return [
+        int(stat.st_mtime_ns),
+        int(stat.st_ctime_ns),
+        int(stat.st_ino),
+        int(stat.st_size),
+    ]
 
 
 def _row_for(
@@ -632,13 +745,50 @@ def _load_persisted(docs_dir: Path, project: str) -> dict[str, dict]:
     return entries
 
 
-def _store_persisted(docs_dir: Path, project: str, entries: list[dict]) -> None:
+def _load_dir_stamps(docs_dir: Path, project: str) -> dict[str, list[int]]:
+    """Return the persisted directories' stat identities, or none when absent."""
+
+    path = _index_path(docs_dir, project)
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return {}
+    except (OSError, json.JSONDecodeError) as exc:
+        LOGGER.warning("Ignoring unreadable metadata index %s: %s", path, exc)
+        return {}
+    if (
+        not isinstance(raw, dict)
+        or raw.get("schema") != _SCHEMA
+        or raw.get("version") != _VERSION
+        or raw.get("project") != project
+        or raw.get("docs_dir") != str(Path(docs_dir).resolve())
+    ):
+        return {}
+    stamps = raw.get("dirs")
+    if not isinstance(stamps, dict):
+        return {}
+    return {
+        relative: identity
+        for relative, identity in stamps.items()
+        if isinstance(relative, str)
+        and isinstance(identity, list)
+        and all(isinstance(part, int) for part in identity)
+    }
+
+
+def _store_persisted(
+    docs_dir: Path,
+    project: str,
+    entries: list[dict],
+    dir_stamps: Mapping[str, list[int]] | None = None,
+) -> None:
     payload = {
         "schema": _SCHEMA,
         "version": _VERSION,
         "project": project,
         "docs_dir": str(Path(docs_dir).resolve()),
         "entries": entries,
+        "dirs": dict(dir_stamps or {}),
     }
     try:
         write_json_atomically(
