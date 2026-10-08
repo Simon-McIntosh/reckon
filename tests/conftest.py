@@ -397,7 +397,7 @@ def _named_config_home(pid: int) -> Path | None:
     return None
 
 
-def reapable_watch_pids(root: Path, *, include_named_half: bool = True) -> list[int]:
+def reapable_watch_pids(root: Path, *, include_named_half: bool = False) -> list[int]:
     """Pids this run may terminate, from the records under ``root`` and, when
     ``include_named_half``, from live producers whose environment names a home
     under ``root``.
@@ -413,10 +413,10 @@ def reapable_watch_pids(root: Path, *, include_named_half: bool = True) -> list[
 
     The second half reaches a producer that has not written its record yet: a
     test that arms one and ends before the record landed leaves nothing for the
-    record path to find. That half is a scan of every live process, so a caller
-    that does not need it — the session-end reap, which reaps records and reads
-    liveness for the rest — passes ``include_named_half=False`` and pays nothing
-    for it.
+    record path to find. That half is a scan of every live process, so it is
+    off by default: a caller that needs it passes ``include_named_half=True``,
+    and one that does not — the session-end reap, which reaps records and reads
+    liveness for the rest — pays nothing for it.
     """
     recorded = set(_recorded_watch_pids(root))
     if include_named_half:
@@ -803,6 +803,40 @@ def _home_is_test_owned(home: Path, base: Path) -> bool:
     if home.parent == temp:
         return any(home.name.startswith(prefix) for prefix in _TEST_TEMP_HOME_PREFIXES)
     return False
+
+
+def real_store_home() -> Path:
+    """The workstation's real configuration home, as the running code resolves it.
+
+    Resolution goes through ``_config_home`` with the per-test ``RECKON_HOME``
+    override removed, so the caller names the home the code actually reaches —
+    including a legacy ``~/docs-server`` install — rather than a path literal
+    that only matches the XDG layout.
+    """
+    from reckon import _store
+
+    override = os.environ.pop("RECKON_HOME", None)
+    try:
+        return _store._config_home()
+    finally:
+        if override is not None:
+            os.environ["RECKON_HOME"] = override
+
+
+def real_store_is_not_a_fixture_target(store: Path) -> None:
+    """Refuse a fixture whose target IS the workstation's real configuration home.
+
+    Every test runs against a temporary ``RECKON_HOME``; a fixture that names
+    the real store as its target bypasses that isolation and writes where the
+    operator's own state lives. A fixture that must watch the real store (to
+    fire on an escaped write) reads it through ``real_store_home`` and asserts
+    here that its own store is elsewhere.
+    """
+    real = real_store_home().resolve()
+    assert Path(store).resolve() != real, (
+        f"the fixture targets the real configuration home {real}; a test's store "
+        "must be a temporary home, never the workstation's own"
+    )
 
 
 def producers_naming_home(home: Path) -> list[tuple[int, Path]]:
