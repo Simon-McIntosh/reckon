@@ -23,9 +23,9 @@
   <title>Every Reckon Hook Runs Under Reckon's Interpreter | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="4">
+<meta name="plan-version" content="5">
 <meta name="plan-modified" content="2026-10-08">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -76,15 +76,12 @@
       <li>A test seeds from a file that already holds the bound commands and finds the run home identical to it.</li>
     </ul>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-08</span>
     <h2 id="s4">&sect;4 &mdash; A reckon hook started by the wrong interpreter corrects itself</h2>
-<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p>A bare command can still reach a hook script from somewhere reckon does not write: an old settings file, a hand-edited one, another harness. One shared bootstrap, stdlib-only and loaded before any reckon import, checks that the running interpreter meets reckon's floor. When it does not, the bootstrap re-executes the script under its checkout's <code>.venv/bin/python</code> with the same arguments and standard input. The scripts that import a reckon module, the obligations hook, the worker stop hook and the worker git guard, call that one bootstrap rather than each carrying a copy. The two stdlib-only guards are not changed. The worker git guard fails closed: when it cannot load its rules, it denies the command and says why, because a guard that allows what it could not check reports a protection it does not give.</p>
-    <p><strong>Done when:</strong></p>
-    <ul>
-      <li>A test finds every reckon hook script that imports a reckon module by a search over <code>reckon/hooks/</code>, asserts each calls the one shared bootstrap, starts each through a <code>python3</code> on <code>PATH</code> older than reckon's interpreter floor, and finds it re-executed under the checkout's interpreter and deciding exactly as it does when started correctly. The two stdlib-only guards are started the same way and shown to decide unchanged.</li>
-      <li>A test makes the git guard unable to load its rules and finds a banned git command denied with a reason, not allowed.</li>
-      <li>When a script's checkout interpreter is missing, the bootstrap reports that without looping. The worker git guard then emits its deny decision, the <code>permissionDecision: deny</code> it already uses, rather than exiting non-zero, because a non-zero exit is a non-blocking error under which the harness runs the command anyway. The other scripts exit non-zero.</li>
-    </ul>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">Landed <code>reckon/hooks/interpreter_bootstrap.py</code>: the obligations, stop and git-guard hooks load one stdlib-only bootstrap before any reckon import and re-execute under the checkout's <code>.venv</code> interpreter when an older python starts them; the git guard denies with a <code>permissionDecision</code> when that interpreter is missing. Merged gate 147 passed; bootstrap-removal control red. <a href="/reckon/evidence/archive/every-reckon-hook-runs-under-reckons-interpreter-landed.html#s4">full record</a></p>
+</section>
 
     <h2 id="s5">&sect;5 &mdash; Existing installs are healed</h2>
 <section data-reckon="section" data-id="s5" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
@@ -111,6 +108,11 @@
     <pre class="r-fu-prompt">/reckon-build every-reckon-hook-runs-under-reckons-interpreter</pre>
     </article>
 </section>
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s4" data-id="c-20261008T0915-s4" data-who="reckon-build" data-when="2026-10-08T09:15:00+02:00">
+    <div class="r-comment-body">gate merged-focused passed (147); section s4 closed by run one-bootstrap-corrects-a-hooks-interpreter</div>
+</div>
+</section>
+</main>
 </body>
 </html>

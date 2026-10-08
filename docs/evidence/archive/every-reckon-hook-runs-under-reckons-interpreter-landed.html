@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-reckon-hook-runs-under-reckons-interpreter-landed">
+  <meta name="plan-title" content="Every Reckon Hook Runs Under Reckon&#x27;s Interpreter — landed record">
+  <meta name="plan-summary" content="Closure synthesis for Every Reckon Hook Runs Under Reckon&#x27;s Interpreter: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="every-reckon-hook-runs-under-reckons-interpreter">
+  <meta name="plan-verdict" content="qualified">
+  <title>Every Reckon Hook Runs Under Reckon&#x27;s Interpreter — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>Every Reckon Hook Runs Under Reckon&#x27;s Interpreter — landed record</h1>
+  <p>Closure synthesis for Every Reckon Hook Runs Under Reckon&#x27;s Interpreter: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s4">
+    <h2>§4 — one bootstrap corrects a hook&#x27;s interpreter</h2>
+    <p>Run <code>r-20261008T060603749057-one-bootstrap-corrects-a-hooks-interpreter</code>, commits <code>bfd190a15</code>, <code>9630d88b3</code>, <code>6a52e6933</code>, merged to main in <code>be3fbf42b</code>. <code>reckon/hooks/interpreter_bootstrap.py</code> (30 lines, stdlib only) is imported first by <code>coordinator_obligations.py</code>, <code>worker_stop.py</code> and <code>worker_git_guard.py</code>; under Python older than the checkout's it re-executes the script with <code>&lt;checkout&gt;/.venv/bin/python</code>. When that interpreter is absent the git guard prints a deny decision and exits 0, so a missing interpreter refuses rather than letting the command run.</p><p>Gate: <code>tests/test_hook_scripts_correct_their_interpreter.py</code> (new, launches each hook under <code>/usr/bin/python3</code> 3.9) with the guard, stop, obligations and installer suites, 147 passed at the merge; the worker's control deleting the bootstrap import turned the new tests red. Independent review scored 94.</p><p>Follow-on folded into &sect;3: <code>install.interpreter_path()</code> should delegate to the bootstrap's resolver so one function names the interpreter.</p>
+  </section>
+
+</main>
+</body>
+</html>
