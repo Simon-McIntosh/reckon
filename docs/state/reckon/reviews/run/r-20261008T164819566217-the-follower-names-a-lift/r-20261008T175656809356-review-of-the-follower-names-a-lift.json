@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "587168a7690d3d025a2e90e6a7e81180102248aa",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery.py:_sweep_lift_rows",
+    "reckon/crew/recovery.py:watch_ticker"
+  ],
+  "completed_at": "2026-10-08T18:02:00.045Z",
+  "dispatched_at": "2026-10-08T17:57:20Z",
+  "findings": [
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": "2066",
+      "severity": "follow-on",
+      "text": "follow-on: the clause-bearing allow-list CLAUSE_STATES (reckon/crew/ticker.py:271-286) does not carry lift-granted/lift-ended/lift-in-force, so _reason returns an empty string and the naming clause the plan requires the follower to print is never rendered - a coordinator watching the pane sees \"lift-granted\" or \"lift-ended\" with no group, multiple or end cause. ticker.py is outside this node's fence, so the row is correct but its naming is invisible; adding the three lift states to CLAUSE_STATES is the follow-up that makes the clause visible."
+    },
+    {
+      "file": "tests/test_follower_names_a_lift.py",
+      "line": "192",
+      "severity": "follow-on",
+      "text": "follow-on: the durability assertion assert isinstance(format_watch_transition(row), str) (and the Ticker().render(row) line at :193) passes for any rendering that does not raise, so it cannot redden on the regression it exists to catch - a ticker that drops the clause, as current main does, still yields a str. Assert that the rendered line carries the state word and the end-cause clause, or the guard is not a guard."
+    },
+    {
+      "file": "reckon/crew/lift_watch.py",
+      "line": "87",
+      "severity": "follow-on",
+      "text": "follow-on: end_cause re-derives the four-cause ladder rather than calling budget_lift's own end logic, so the producer's account of why a lift ended is a second implementation that can drift from the resolver budget_lift.effective_budget reads; the new cause vocabulary is genuinely new, but the ladder duplicates budget_lift.py:667 and budget_lift.py:649-664."
+    }
+  ],
+  "head_log_revision": "587168a7690d3d025a2e90e6a7e81180102248aa",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "one commit 587168a7690d3d025a2e90e6a7e81180102248aa -> a44b5105fd0482d4a3bed1b20fb31cdfc0c237b1 adds reckon/crew/lift_watch.py (246 lines), a 35-line _sweep_lift_rows helper plus its single call in reckon/crew/recovery.py watch_ticker, tests/test_follower_names_a_lift.py (283 lines) and the 67-line evidence fragment, with no file outside the declared scope.",
+    "done_when": "the done-when names tests/test_follower_names_a_lift.py plus every watch/follow/ticker file at base and head; the two arms are recorded (gate_base.log 13 failed / 494 passed / 2 skipped, gate_head.log 13 failed / 503 passed / 2 skipped, identical 13-id failure sets) and the focused pair closes 47 passed EXIT=0 (focused_after.log); the assertions check the row's own fields and that it renders without raising, not that the naming clause reaches the rendered line.",
+    "goal": "the producer-side deliverable is complete - reckon/crew/lift_watch.py:117-183 writes one lift-granted row naming the group, form, multiple, scope and id and one lift-ended row naming one of reset/at/ceiling/clear - but the goal's \"naming what ended it\" half is invisible to a reader: reckon/crew/ticker.py:2066 returns an empty clause for any state outside CLAUSE_STATES, and none of lift-granted/lift-ended/lift-in-force is in it, so a follower renders the state word only.",
+    "manifest": "read; status complete, it records the commit a44b5105, the changed paths, the two-arm baseline_suite and after_suite with their log paths, the negative-control log, and a landing line, and it discloses the ticker follow-on honestly.",
+    "write_paths": "the dispatch fenced the node to reckon/crew/lift_watch.py, reckon/crew/recovery.py, tests/test_follower_names_a_lift.py and the plan fragment and figures dir; git diff --name-only 587168a7690d3d025a2e90e6a7e81180102248aa a44b5105fd0482d4a3bed1b20fb31cdfc0c237b1 lists exactly the two production modules, the new test and the fragment (docs/evidence/fragments/a-window-paces-the-lane/the-follower-names-a-lift.html), all inside the declared scope."
+  },
+  "justifications": {
+    "durability": "the declared negative control (skip the lift-ended row when ended by clear) is applied on a scratch copy and reddens two cases (tests/test_follower_names_a_lift.py:180 and :242, EXIT=1), so the clear-case guard is load-bearing; docked because tests/test_follower_names_a_lift.py:192-193 asserts only isinstance(..., str), which cannot fail on the clause being dropped.",
+    "evidence": "the gate log pair is two real arms at base 587168a and the head worktree (gate_base.log 13 failed/494 passed, gate_head.log 13 failed/503 passed, identical 13-id failure sets), the focused pair closes 47 passed EXIT=0, and negative_control.log reddens the clear case EXIT=1; docked because the head arm names a working tree rather than the commit, and the follower claim the done-when measures (\"renders without raising\") is weaker than the plan's \"naming\".",
+    "fit": "reckon/crew/lift_watch.py follows the module idiom (from __future__ annotations, __all__, mapping-based helpers) with no plan, stage, ticket or author label in any symbol, docstring or comment.",
+    "goal_fidelity": "reckon/crew/lift_watch.py:117-183 writes both rows and the naming clause, and tests/test_follower_names_a_lift.py drives them, but reckon/crew/ticker.py:2066 suppresses the clause for the lift states so the plan's \"the follower prints ... naming what ended it\" is not reached on current main; the state word still shows the lift's start and end.",
+    "reuse": "reckon/crew/lift_watch.py:87 end_cause reuses budget_lift._parse_stamp, _reset_observed, _in_force, ceilings and published_readings, but re-derives a four-way ladder that duplicates budget_lift's own end logic (budget_lift.py:667 _end_moment already names time/reset, and budget_lift.py:649-664 tests the same cleared/ceiling/at/reset set), and _aware is re-implemented from budget_lift.py:936.",
+    "scope_discipline": "git diff --name-only 587168a7690d3d025a2e90e6a7e81180102248aa a44b5105fd0482d4a3bed1b20fb31cdfc0c237b1 lists only reckon/crew/lift_watch.py, reckon/crew/recovery.py, tests/test_follower_names_a_lift.py and docs/evidence/fragments/a-window-paces-the-lane/the-follower-names-a-lift.html, every one inside the dispatch's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 587168a7690d3d025a2e90e6a7e81180102248aa\nreviewed_head_sha: a44b5105fd0482d4a3bed1b20fb31cdfc0c237b1\nVERDICT goal: the producer-side deliverable is complete - reckon/crew/lift_watch.py:117-183 writes one lift-granted row naming the group, form, multiple, scope and id and one lift-ended row naming one of reset/at/ceiling/clear - but the goal's \"naming what ended it\" half is invisible to a reader: reckon/crew/ticker.py:2066 returns an empty clause for any state outside CLAUSE_STATES, and none of lift-granted/lift-ended/lift-in-force is in it, so a follower renders the state word only.\nVERDICT done_when: the done-when names tests/test_follower_names_a_lift.py plus every watch/follow/ticker file at base and head; the two arms are recorded (gate_base.log 13 failed / 494 passed / 2 skipped, gate_head.log 13 failed / 503 passed / 2 skipped, identical 13-id failure sets) and the focused pair closes 47 passed EXIT=0 (focused_after.log); the assertions check the row's own fields and that it renders without raising, not that the naming clause reaches the rendered line.\nVERDICT write_paths: the dispatch fenced the node to reckon/crew/lift_watch.py, reckon/crew/recovery.py, tests/test_follower_names_a_lift.py and the plan fragment and figures dir; git diff --name-only 587168a7690d3d025a2e90e6a7e81180102248aa a44b5105fd0482d4a3bed1b20fb31cdfc0c237b1 lists exactly the two production modules, the new test and the fragment (docs/evidence/fragments/a-window-paces-the-lane/the-follower-names-a-lift.html), all inside the declared scope.\nVERDICT manifest: read; status complete, it records the commit a44b5105, the changed paths, the two-arm baseline_suite and after_suite with their log paths, the negative-control log, and a landing line, and it discloses the ticker follow-on honestly.\nVERDICT diff: one commit 587168a7690d3d025a2e90e6a7e81180102248aa -> a44b5105fd0482d4a3bed1b20fb31cdfc0c237b1 adds reckon/crew/lift_watch.py (246 lines), a 35-line _sweep_lift_rows helper plus its single call in reckon/crew/recovery.py watch_ticker, tests/test_follower_names_a_lift.py (283 lines) and the 67-line evidence fragment, with no file outside the declared scope.\nCALL_SITES: reckon/crew/recovery.py:_sweep_lift_rows, reckon/crew/recovery.py:watch_ticker\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/lift_watch.py:117-183 writes both rows and the naming clause, and tests/test_follower_names_a_lift.py drives them, but reckon/crew/ticker.py:2066 suppresses the clause for the lift states so the plan's \"the follower prints ... naming what ended it\" is not reached on current main; the state word still shows the lift's start and end.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate log pair is two real arms at base 587168a and the head worktree (gate_base.log 13 failed/494 passed, gate_head.log 13 failed/503 passed, identical 13-id failure sets), the focused pair closes 47 passed EXIT=0, and negative_control.log reddens the clear case EXIT=1; docked because the head arm names a working tree rather than the commit, and the follower claim the done-when measures (\"renders without raising\") is weaker than the plan's \"naming\".\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 587168a7690d3d025a2e90e6a7e81180102248aa a44b5105fd0482d4a3bed1b20fb31cdfc0c237b1 lists only reckon/crew/lift_watch.py, reckon/crew/recovery.py, tests/test_follower_names_a_lift.py and docs/evidence/fragments/a-window-paces-the-lane/the-follower-names-a-lift.html, every one inside the dispatch's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: the declared negative control (skip the lift-ended row when ended by clear) is applied on a scratch copy and reddens two cases (tests/test_follower_names_a_lift.py:180 and :242, EXIT=1), so the clear-case guard is load-bearing; docked because tests/test_follower_names_a_lift.py:192-193 asserts only isinstance(..., str), which cannot fail on the clause being dropped.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/lift_watch.py follows the module idiom (from __future__ annotations, __all__, mapping-based helpers) with no plan, stage, ticket or author label in any symbol, docstring or comment.\nSCORE reuse: 15\nJUSTIFICATION reuse: reckon/crew/lift_watch.py:87 end_cause reuses budget_lift._parse_stamp, _reset_observed, _in_force, ceilings and published_readings, but re-derives a four-way ladder that duplicates budget_lift's own end logic (budget_lift.py:667 _end_moment already names time/reset, and budget_lift.py:649-664 tests the same cleared/ceiling/at/reset set), and _aware is re-implemented from budget_lift.py:936.\nFINDING reckon/crew/ticker.py:2066 follow-on: the clause-bearing allow-list CLAUSE_STATES (reckon/crew/ticker.py:271-286) does not carry lift-granted/lift-ended/lift-in-force, so _reason returns an empty string and the naming clause the plan requires the follower to print is never rendered - a coordinator watching the pane sees \"lift-granted\" or \"lift-ended\" with no group, multiple or end cause. ticker.py is outside this node's fence, so the row is correct but its naming is invisible; adding the three lift states to CLAUSE_STATES is the follow-up that makes the clause visible.\nFINDING tests/test_follower_names_a_lift.py:192 follow-on: the durability assertion assert isinstance(format_watch_transition(row), str) (and the Ticker().render(row) line at :193) passes for any rendering that does not raise, so it cannot redden on the regression it exists to catch - a ticker that drops the clause, as current main does, still yields a str. Assert that the rendered line carries the state word and the end-cause clause, or the guard is not a guard.\nFINDING reckon/crew/lift_watch.py:87 follow-on: end_cause re-derives the four-cause ladder rather than calling budget_lift's own end logic, so the producer's account of why a lift ended is a second implementation that can drift from the resolver budget_lift.effective_budget reads; the new cause vocabulary is genuinely new, but the ladder duplicates budget_lift.py:667 and budget_lift.py:649-664.\n",
+  "review_run_id": "r-20261008T175656809356-review-of-the-follower-names-a-lift",
+  "reviewed_base_sha": "587168a7690d3d025a2e90e6a7e81180102248aa",
+  "reviewed_head_sha": "a44b5105fd0482d4a3bed1b20fb31cdfc0c237b1",
+  "reviewed_run_id": "r-20261008T164819566217-the-follower-names-a-lift",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "reuse": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T18:01:12.603024+00:00",
+  "total": 106
+}
