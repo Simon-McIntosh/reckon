@@ -23,9 +23,9 @@
   <title>Every Reckon Hook Runs Under Reckon's Interpreter | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="11">
+<meta name="plan-version" content="12">
 <meta name="plan-modified" content="2026-10-08">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -79,10 +79,12 @@
   <p class="landed-summary">Landed <code>reckon/hooks/interpreter_bootstrap.py</code>: the obligations, stop and git-guard hooks load one stdlib-only bootstrap before any reckon import and re-execute under the checkout's <code>.venv</code> interpreter when an older python starts them; the git guard denies with a <code>permissionDecision</code> when that interpreter is missing. Merged gate 147 passed; bootstrap-removal control red. <a href="/reckon/evidence/archive/every-reckon-hook-runs-under-reckons-interpreter-landed.html#s4">full record</a></p>
 </section>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-08</span>
     <h2 id="s5">&sect;5 &mdash; Existing installs are healed</h2>
-<section data-reckon="section" data-id="s5" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p>Once &sect;2 is on main, the operator's <code>~/.claude/settings.json</code> on this workstation is upgraded through <code>reckon hooks install --write</code>, and every mounted project is re-synced so its setup writes the bound commands. This is an operational step run by the coordinator, after a dry run shows the change.</p>
-    <p><strong>Done when:</strong> the operator's settings file holds no bare reckon hook command, read back after the write; a worker dispatched through a shell whose first <code>python3</code> is the system 3.9 finishes with its stop hook decided and its git guard active, shown by the guard refusing a banned command in that worker.</p>
+<section data-reckon="section" data-id="s5" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">Healed: the workstation's <code>~/.claude/settings.json</code> now runs every reckon-importing hook (git guard, worker stop, obligations) under the checkout's <code>.venv</code> python, written by <code>reckon hooks install --write</code> and sync's guard writer, with no duplicate entry and every other setting byte-identical. A worker started with the system 3.9 first on PATH had its git guard refuse a mutating commit against a foreign repository, whose commit count stayed 1. <a href="/reckon/evidence/archive/every-reckon-hook-runs-under-reckons-interpreter-landed.html#s5">full record</a></p>
+</section>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -124,7 +126,10 @@
     <div class="r-comment-body"><p>Ported the reviewed sync hook writer onto the split CLI modules: install.py's configure_* composes/recognises/upgrades every reckon-importing hook and the two bare stdlib guards, cli_entry._configure_crew_guards delegates to it, the private recognisers and atomic writer are gone, and the gate is 106 passed (0 failed).</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261008T090041358867-review-of-sync-hooks-through-installer-after-cli-split" data-who="reckon-build" data-when="2026-10-08T09:20:54.574Z">
-    <div class="r-comment-body"><p>Independent review of run r-20261008T084316110579-sync-hooks-through-installer-after-cli-split (commit bcd9ade, base 0090b96b5): all six dimensions scored (goal_fidelity 19, evidence 16, scope_discipline 20, durability 18, fit 18, reuse 20; total 111), one follow-on finding (tests/test_hook_installer.py:565 and tests/test_worker_git_guard.py:401,437 read the real ~/.claude/settings.json, so plan section 2&#x27;s &quot;no test reads or writes&quot; done-when is only partly met); no blocking findings.</p></div>
+    <div class="r-comment-body"><p>Independent review of run r-20261008T084316110579-sync-hooks-through-installer-after-cli-split (commit bcd9ade, base 0090b96b5): all six dimensions scored (goal_fidelity 19, evidence 16, scope_discipline 20, durability 18, fit 18, reuse 20; total 111), one follow-on finding (tests/test_hook_installer.py:565 and tests/test_worker_git_guard.py:401,437 read the real ~/.claude/settings.json, so plan section 2's "no test reads or writes" done-when is only partly met); no blocking findings.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20261008T1150-s5" data-who="reckon-build" data-when="2026-10-08T11:50:00+02:00">
+    <div class="r-comment-body">settings read back bound; guard probe refused under system python 3.9 with the foreign repo unchanged; section s5 closed</div>
 </div>
 </section>
 </main>
