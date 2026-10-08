@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-window-paces-the-lane">
+  <meta name="plan-title" content="A group that cannot serve reviews withholds no bookend reserve">
+  <meta name="plan-summary" content="bookend_reserve_pct is now a declared BudgetConfig slot, and a declared budget group whose every member review_excluded_backends lists withholds no bookend reserve: group_figures reports 0 for an all-excluded wallet and the configured fraction otherwise, and an implement dispatch reaches the group's full ceiling on such a wallet.">
+  <meta name="plan-evidence-for" content="reckon:a-window-paces-the-lane">
+  <meta name="plan-node" content="a-review-excluded-group-withholds-no-reserve">
+  <meta name="plan-recorded-at" content="2026-10-08">
+  <meta name="plan-environment" content="Linux compute node; Python 3.14 venv; pytest; synthesised flight layers and real git worktrees under tmp_path">
+  <title>A group that cannot serve reviews withholds no bookend reserve &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>A group that cannot serve reviews withholds no bookend reserve</h1>
+    <p class="plan-summary">The bookend reserve is lifted for a declared wallet whose every member
+    the configuration removes from review routing, and the key that sets it becomes a declared
+    <code>BudgetConfig</code> slot a flight layer can write.</p>
+  </header>
+
+  <section id="a-review-excluded-group-withholds-no-reserve-landing">
+    <h2>Landing</h2>
+
+    <p><code>bookend_reserve_pct</code> is now declared in <code>BudgetConfig</code>
+    (<code>reckon/schema/flight.yaml</code>, regenerated into <code>reckon/_flight_schema.py</code>),
+    so a flight layer may set it. A declared budget group whose every member appears in
+    <code>review_excluded_backends</code> withholds no bookend reserve:
+    <code>budget_group.group_figures</code> reports <code>reserve_pct == 0</code>, and an implement
+    dispatch judged through <code>dispatch_admission._refuse_against_the_bookend_reserve</code>
+    reaches the group's full ceiling. A group with one review-capable member keeps the configured
+    reserve, read from the configuration at assertion time.</p>
+
+    <p>The negative control forces the all-members-review-excluded predicate to return False; the
+    all-excluded assertions then fail (2 failed, exit 1). The public test suite at head passed 215
+    tests with exit 0; the base arm over the pre-existing gate files passed with exit 0, so the node
+    adds no failure.</p>
+  </section>
+</main>
+</body>
+</html>

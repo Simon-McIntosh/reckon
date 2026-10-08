@@ -670,6 +670,21 @@ slots:
     minimum_value: 0
     maximum_value: 100
 
+  bookend_reserve_pct:
+    description: >-
+      Headroom withheld from implementation work, in percentage points, so the
+      review and verify roles that keep the fleet honest have a floor at the
+      start of every window rather than only near its ceiling. A fresh dispatch
+      outside those roles stops this fraction below the window's ceiling. On a
+      declared budget group whose every member the configuration removes from
+      review routing, the reserve is not withheld: no review can run on that
+      group, so the fraction it was sized for would starve the implementation
+      work the group does serve. A group with one member that can carry a
+      review keeps the reserve.
+    range: float
+    minimum_value: 0
+    maximum_value: 100
+
   exhausted_statuses:
     description: >-
       Threshold-status values that count as exhausted whatever the utilisation
@@ -1218,6 +1233,7 @@ classes:
       - utilisation_ceiling_pct
       - resume_reserve_pct
       - coordinator_reserve_pct
+      - bookend_reserve_pct
       - exhausted_statuses
       - evidence_shelf_life_minutes
       - drain_lead_hours
