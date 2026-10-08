@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/picker/__init__.py:_resolved_plan_path.stamp_of"
+  ],
+  "completed_at": "2026-10-08T16:36:54.917Z",
+  "dispatched_at": "2026-10-08T16:29:13Z",
+  "findings": [
+    {
+      "file": "tests/test_picker_dispatch_pace.py",
+      "line": "334",
+      "severity": "follow-on",
+      "text": "follow-on: pre-existing flake outside this node's write scope, surfaced by the reviewed run's own gate. test_dispatch_marks_old_published_window_stale derives candidate['budget_age_s'] from wall clock rather than the captured moment, so under -n 6 load the age drifts past the approx(7200, abs=1) bound: gate-head.log shows 7203.582902 == 7200 +/- 1, turning the head arm red while the serial rerun (gate-head-2.log) passes. The test should freeze its clock or widen the bound to the load it runs under; it is not this node's file to change."
+    },
+    {
+      "file": "reckon/crew/picker/__init__.py",
+      "line": "121",
+      "severity": "follow-on",
+      "text": "follow-on (observation, not a defect): the stamp helper swap narrows the cache stamp from ledger._file_identity's (mtime_ns, ctime_ns, size, ino) to capabilities.file_stamp's [mtime_ns, size]. Every content edit still moves mtime_ns and a rename still reads None, so the rename case is caught, but a metadata-only change (chmod) no longer invalidates the cached resolution. The plan directs this change, so it is intended; flagging in case the weaker stamp matters elsewhere."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "one production call site: the stamp_of closure inside _resolved_plan_path in reckon/crew/picker/__init__.py, reached from the capability stage's plan resolution. On base the same name was ledger._file_identity.",
+    "diff": "read commit-by-commit against base 8d70f1091: the only functional change is stamp_of calling capabilities.file_stamp(path) instead of ledger._file_identity(Path(path)), replacing a 4-tuple stamp (mtime,ctime,size,ino) with file_stamp's [mtime_ns,size]; the 2-tuple still moves on in-place edit and reads None when the file is gone, which is the rename case. The new test warms the pick, renames probe.html to relocated-probe.html, and asserts the section effort 10.0 is re-resolved rather than the plan default 48.0.",
+    "done_when": "the section's done-when is that the renamed-plan case fails when the cache serves the old resolution and stamp_of calls no private ledger name. I reproduced the red independently: a pytest plugin that makes capabilities.cached_pick_input_stamped match on request key only reddens the new test 48.0==10.0 EXIT=1, and the head arm passes (1 passed, EXIT=0). grep confirms reckon/crew/picker/__init__.py no longer references ledger in any stamp path. The reviewed run's after arm is 171 passed (gate-head-2.log), base 170 passed (gate-base.log), 0 added failures.",
+    "goal": "the node's goal is that the pick's plan-resolution cache is proved against a renamed plan and stamp_of stops naming the ledger's private helper; the diff replaces ledger._file_identity with capabilities.file_stamp inside _resolved_plan_path's stamp_of (reckon/crew/picker/__init__.py:121) and narrows the lazy import to `from reckon import capabilities`, and adds test_a_renamed_plan_file_is_not_served_stale to tests/test_pick_stages_fit_the_bound.py. Both halves of section 24 are present.",
+    "manifest": "read; it records commit debeb5bb7, base 8d70f1091, after_suite 171 passed (gate-head-2.log), baseline_suite 170 passed (gate-base.log), negative_control EXIT=1, and measurement_module/cwd under the run scratch. Its fields reconcile with the four logs on disk, whose first lines name revision, tree and command.",
+    "write_paths": "the diff debeb5bb7 touches three paths: reckon/crew/picker/__init__.py and tests/test_pick_stages_fit_the_bound.py (section 24's declared write paths) plus a stub docs/evidence/fragments/one-typesafe-model-picker/pick-cache-proved-on-a-renamed-plan.html, all four declared in the run's orientation_write_paths. No out-of-grant path is touched."
+  },
+  "justifications": {
+    "durability": "the negative control reddens and the test is fixture-driven, date-free, and isolated (RECKON_HOME and RECKON_PICK_CACHE point at the test tmp tree), so it is a real regression guard for the stamp; nothing guards the removal of the private name beyond reading.",
+    "evidence": "the head arm reproduces (1 passed EXIT=0) and the negative control reproduces independently (ignore-stamp plugin reddens 48.0==10.0, EXIT=1); both arms's gate logs carry a base 170 passed and a head 171 passed with 0 added failures. Weakness: the manifest's failure_attribution is empty while retry_failures records a head-arm-1 suite failure, and the new test passes on base as well as head, so it pins the cache's stamp behaviour but not the helper swap itself.",
+    "fit": "the change uses capabilities.file_stamp, the helper the plan names and the module already imports, and narrows the lazy import to the one module still used \u2014 matching the picker's in-function import idiom.",
+    "goal_fidelity": "both halves of section 24 are implemented exactly as written: the renamed-plan case exists and the private ledger name is gone from stamp_of, replaced with the capabilities.file_stamp the module already imported.",
+    "reuse": "the test reuses the existing repo fixture, PLAN_HTML and _run_pick rather than re-deriving them, and the fix reuses an existing public helper instead of reimplementing the stamp.",
+    "scope_discipline": "only the two declared code paths plus a stub evidence fragment (all declared in orientation_write_paths) are touched; no unrelated file is changed and nothing is retired."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the pick's plan-resolution cache is proved against a renamed plan and stamp_of stops naming the ledger's private helper; the diff replaces ledger._file_identity with capabilities.file_stamp inside _resolved_plan_path's stamp_of (reckon/crew/picker/__init__.py:121) and narrows the lazy import to `from reckon import capabilities`, and adds test_a_renamed_plan_file_is_not_served_stale to tests/test_pick_stages_fit_the_bound.py. Both halves of section 24 are present.\nVERDICT done_when: the section's done-when is that the renamed-plan case fails when the cache serves the old resolution and stamp_of calls no private ledger name. I reproduced the red independently: a pytest plugin that makes capabilities.cached_pick_input_stamped match on request key only reddens the new test 48.0==10.0 EXIT=1, and the head arm passes (1 passed, EXIT=0). grep confirms reckon/crew/picker/__init__.py no longer references ledger in any stamp path. The reviewed run's after arm is 171 passed (gate-head-2.log), base 170 passed (gate-base.log), 0 added failures.\nVERDICT write_paths: the diff debeb5bb7 touches three paths: reckon/crew/picker/__init__.py and tests/test_pick_stages_fit_the_bound.py (section 24's declared write paths) plus a stub docs/evidence/fragments/one-typesafe-model-picker/pick-cache-proved-on-a-renamed-plan.html, all four declared in the run's orientation_write_paths. No out-of-grant path is touched.\nVERDICT manifest: read; it records commit debeb5bb7, base 8d70f1091, after_suite 171 passed (gate-head-2.log), baseline_suite 170 passed (gate-base.log), negative_control EXIT=1, and measurement_module/cwd under the run scratch. Its fields reconcile with the four logs on disk, whose first lines name revision, tree and command.\nVERDICT diff: read commit-by-commit against base 8d70f1091: the only functional change is stamp_of calling capabilities.file_stamp(path) instead of ledger._file_identity(Path(path)), replacing a 4-tuple stamp (mtime,ctime,size,ino) with file_stamp's [mtime_ns,size]; the 2-tuple still moves on in-place edit and reads None when the file is gone, which is the rename case. The new test warms the pick, renames probe.html to relocated-probe.html, and asserts the section effort 10.0 is re-resolved rather than the plan default 48.0.\nCALL_SITES: one production call site: the stamp_of closure inside _resolved_plan_path in reckon/crew/picker/__init__.py, reached from the capability stage's plan resolution. On base the same name was ledger._file_identity.\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: both halves of section 24 are implemented exactly as written: the renamed-plan case exists and the private ledger name is gone from stamp_of, replaced with the capabilities.file_stamp the module already imported.\nSCORE evidence: 19\nJUSTIFICATION evidence: the head arm reproduces (1 passed EXIT=0) and the negative control reproduces independently (ignore-stamp plugin reddens 48.0==10.0, EXIT=1); both arms's gate logs carry a base 170 passed and a head 171 passed with 0 added failures. Weakness: the manifest's failure_attribution is empty while retry_failures records a head-arm-1 suite failure, and the new test passes on base as well as head, so it pins the cache's stamp behaviour but not the helper swap itself.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: only the two declared code paths plus a stub evidence fragment (all declared in orientation_write_paths) are touched; no unrelated file is changed and nothing is retired.\nSCORE durability: 19\nJUSTIFICATION durability: the negative control reddens and the test is fixture-driven, date-free, and isolated (RECKON_HOME and RECKON_PICK_CACHE point at the test tmp tree), so it is a real regression guard for the stamp; nothing guards the removal of the private name beyond reading.\nSCORE fit: 20\nJUSTIFICATION fit: the change uses capabilities.file_stamp, the helper the plan names and the module already imports, and narrows the lazy import to the one module still used \u2014 matching the picker's in-function import idiom.\nSCORE reuse: 20\nJUSTIFICATION reuse: the test reuses the existing repo fixture, PLAN_HTML and _run_pick rather than re-deriving them, and the fix reuses an existing public helper instead of reimplementing the stamp.\nFINDING tests/test_picker_dispatch_pace.py:334 follow-on: follow-on: pre-existing flake outside this node's write scope, surfaced by the reviewed run's own gate. test_dispatch_marks_old_published_window_stale derives candidate['budget_age_s'] from wall clock rather than the captured moment, so under -n 6 load the age drifts past the approx(7200, abs=1) bound: gate-head.log shows 7203.582902 == 7200 +/- 1, turning the head arm red while the serial rerun (gate-head-2.log) passes. The test should freeze its clock or widen the bound to the load it runs under; it is not this node's file to change.\nFINDING reckon/crew/picker/__init__.py:121 follow-on: follow-on (observation, not a defect): the stamp helper swap narrows the cache stamp from ledger._file_identity's (mtime_ns, ctime_ns, size, ino) to capabilities.file_stamp's [mtime_ns, size]. Every content edit still moves mtime_ns and a rename still reads None, so the rename case is caught, but a metadata-only change (chmod) no longer invalidates the cached resolution. The plan directs this change, so it is intended; flagging in case the weaker stamp matters elsewhere.\n",
+  "review_run_id": "r-20261008T162848463570-review-of-pick-cache-proved-on-a-renamed-plan",
+  "reviewed_base_sha": "8d70f1091b94fd0d4f3f891f87976cd38cbf98ae",
+  "reviewed_head_sha": "debeb5bb7019fa2f50818b2fa5cb05b49178b582",
+  "reviewed_run_id": "r-20261008T161243424790-pick-cache-proved-on-a-renamed-plan",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T16:36:00+00:00",
+  "total": 118
+}
