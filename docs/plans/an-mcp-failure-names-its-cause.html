@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.11">
-<meta name="plan-version" content="30">
+<meta name="plan-version" content="31">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -275,7 +275,10 @@
     <div class="r-comment-body">investigation imas-cx-os-error-2-cause recorded (gate not-run, review 116/120); section closed</div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261008T035135484733-review-of-reckon-mcp-read-time-profile" data-who="reckon-build" data-when="2026-10-08T04:15:23.956Z">
-    <div class="r-comment-body"><p>review of r-20261008T015927466111-reckon-mcp-read-time-profile stored as a complete parsed record (6 dimensions, total 108, base=head=ad0b0b611) with 3 follow-on findings on the report&#x27;s results table and positive control; the reviewed run landed no repository change, so the diff is empty and the deliverable is its out-of-tree report directory.</p></div>
+    <div class="r-comment-body"><p>review of r-20261008T015927466111-reckon-mcp-read-time-profile stored as a complete parsed record (6 dimensions, total 108, base=head=ad0b0b611) with 3 follow-on findings on the report's results table and positive control; the reviewed run landed no repository change, so the diff is empty and the deliverable is its out-of-tree report directory.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261008T015927466111-reckon-mcp-read-time-profile" data-who="reckon-build" data-when="2026-10-08T02:51:17.976Z">
+    <div class="r-comment-body"><p>s4 measured on 98dci4-clu-2002 (fleet job 1281970, 8 CPUs, load 13.8-59.2) at revision ad0b0b611: read_plan summary and roadmap summary never answer within the 30 s read deadline (all six calls storage-slow, 7.6-19.3 s CPU burned), crew live (watch lock writable) answers at 28.17 s warm and read_plan discovery at 20.65 s against the shipped claim of 0.98 s for that same call; the 3-plan fixture control answers in 2.03 s for 0.03 s CPU, so it fails its &lt;1 s bound, and a missing plan in the same fixture returns not_found in 7 ms, so that ~2 s is a fixed wait in the success path. Report, logs and profile at the report directory; nothing in the repository changed</p></div>
 </div>
 </section>
 </main>
