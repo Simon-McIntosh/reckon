@@ -1,0 +1,54 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew_run_commands.py:41",
+    "reckon/crew_follow_commands.py:99",
+    "reckon/crew_follow_commands.py:1211",
+    "reckon/mcp.py:5026"
+  ],
+  "completed_at": "2026-10-08T15:15:15.537Z",
+  "dispatched_at": "2026-10-08T15:02:36Z",
+  "findings": [],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against 9dc94bf; 12c6d3d85 adds _lifted_holds and the log check in sweep and the test file, a88e6f09 is docs-only (the evidence fragment and figure), and nothing outside the declared scope changed.",
+    "done_when": "the done-when names tests/test_a_hold_lifts_once.py rewriting a fixture pointer from a pre-stamp snapshot between two sweeps and asserting the second resumes nothing, with the negative control logged; head-hold-lifts-once.log records 2 passed EXIT=0 at revision 12c6d3d85, negative-control.log records 1 failed EXIT=1, and an independent re-run at head returned 2 passed EXIT=0.",
+    "goal": "\u00a73's goal is that a hold lifts once per condition, with the sweep reading its append-only recovery log as the authority and the pointer's auto_resume slot as a cache; reckon/crew/resumption.py:1197 reads _lifted_holds(project) once per sweep and :1290 refuses a lift whose (run_id, signature) the log already recorded, which is that mechanism.",
+    "manifest": "read; it records the gate (2 passed EXIT=0), the importer set (175 passed EXIT=0) and the negative control (EXIT=1), names its test_logs, and declares status complete.",
+    "write_paths": "the manifest declares reckon/crew/resumption.py, tests/test_a_hold_lifts_once.py, the evidence fragment and the figure dir; git diff 9dc94bf..a88e6f09 touches exactly reckon/crew/resumption.py, tests/test_a_hold_lifts_once.py, docs/evidence/fragments/a-run-has-one-live-worker/a-hold-lifts-once.html and docs/figures/a-run-has-one-live-worker/a-hold-lifts-once/sweep-lift-record.svg, all inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_hold_lifts_once.py:147 fails when the log check is removed (negative-control.log, EXIT=1), and test_a_dry_run_preview_does_not_retire_the_hold guards the dry_run skip, so both added guards are shown by reinstating the regression.",
+    "evidence": "head-hold-lifts-once.log records 2 passed EXIT=0 and negative-control.log 1 failed EXIT=1, but the gate log's first line names revision 12c6d3d85 while the head is a88e6f09, so the recorded revision is the code commit rather than the promoted head.",
+    "fit": "_lifted_holds at reckon/crew/resumption.py:341 follows the module's Mapping-guarded json line reading and is named by mechanism, with the module docstring's first bound updated and no plan or ticket identifier in the diff.",
+    "goal_fidelity": "reckon/crew/resumption.py:1290 refuses a lift already named in the recovery log while :1285 keeps the pointer slot as a cache, matching \u00a73's \"the log the sweep already writes becomes the one it reads\".",
+    "reuse": "a search of reckon/ for another reader of the recovery log's resumed (run_id, signature) pairs found none \u2014 sweep_status_path and _status_from_reports read only the count \u2014 so the added helper extends the sweep's own log rather than forking an owned capability.",
+    "scope_discipline": "git diff 9dc94bf..a88e6f09 touches only the four paths the manifest declares, and the code change is the single mechanism \u00a73 names with no unrelated edit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a73's goal is that a hold lifts once per condition, with the sweep reading its append-only recovery log as the authority and the pointer's auto_resume slot as a cache; reckon/crew/resumption.py:1197 reads _lifted_holds(project) once per sweep and :1290 refuses a lift whose (run_id, signature) the log already recorded, which is that mechanism.\nVERDICT done_when: the done-when names tests/test_a_hold_lifts_once.py rewriting a fixture pointer from a pre-stamp snapshot between two sweeps and asserting the second resumes nothing, with the negative control logged; head-hold-lifts-once.log records 2 passed EXIT=0 at revision 12c6d3d85, negative-control.log records 1 failed EXIT=1, and an independent re-run at head returned 2 passed EXIT=0.\nVERDICT write_paths: the manifest declares reckon/crew/resumption.py, tests/test_a_hold_lifts_once.py, the evidence fragment and the figure dir; git diff 9dc94bf..a88e6f09 touches exactly reckon/crew/resumption.py, tests/test_a_hold_lifts_once.py, docs/evidence/fragments/a-run-has-one-live-worker/a-hold-lifts-once.html and docs/figures/a-run-has-one-live-worker/a-hold-lifts-once/sweep-lift-record.svg, all inside them.\nVERDICT manifest: read; it records the gate (2 passed EXIT=0), the importer set (175 passed EXIT=0) and the negative control (EXIT=1), names its test_logs, and declares status complete.\nVERDICT diff: read commit by commit against 9dc94bf; 12c6d3d85 adds _lifted_holds and the log check in sweep and the test file, a88e6f09 is docs-only (the evidence fragment and figure), and nothing outside the declared scope changed.\nCALL_SITES: reckon/crew_run_commands.py:41, reckon/crew_follow_commands.py:99, reckon/crew_follow_commands.py:1211, reckon/mcp.py:5026\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/resumption.py:1290 refuses a lift already named in the recovery log while :1285 keeps the pointer slot as a cache, matching \u00a73's \"the log the sweep already writes becomes the one it reads\".\nSCORE evidence: 19\nJUSTIFICATION evidence: head-hold-lifts-once.log records 2 passed EXIT=0 and negative-control.log 1 failed EXIT=1, but the gate log's first line names revision 12c6d3d85 while the head is a88e6f09, so the recorded revision is the code commit rather than the promoted head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 9dc94bf..a88e6f09 touches only the four paths the manifest declares, and the code change is the single mechanism \u00a73 names with no unrelated edit.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_hold_lifts_once.py:147 fails when the log check is removed (negative-control.log, EXIT=1), and test_a_dry_run_preview_does_not_retire_the_hold guards the dry_run skip, so both added guards are shown by reinstating the regression.\nSCORE fit: 20\nJUSTIFICATION fit: _lifted_holds at reckon/crew/resumption.py:341 follows the module's Mapping-guarded json line reading and is named by mechanism, with the module docstring's first bound updated and no plan or ticket identifier in the diff.\nSCORE reuse: 20\nJUSTIFICATION reuse: a search of reckon/ for another reader of the recovery log's resumed (run_id, signature) pairs found none \u2014 sweep_status_path and _status_from_reports read only the count \u2014 so the added helper extends the sweep's own log rather than forking an owned capability.\nreviewed_base_sha: 9dc94bf23b9b31b25811be8250004f601f8812c9\nreviewed_head_sha: a88e6f09dbad070c53867899f2768948143831a9\n",
+  "review_run_id": "r-20261008T150209422276-review-of-a-hold-lifts-once",
+  "reviewed_base_sha": "9dc94bf23b9b31b25811be8250004f601f8812c9",
+  "reviewed_head_sha": "a88e6f09dbad070c53867899f2768948143831a9",
+  "reviewed_run_id": "r-20261008T143609040510-a-hold-lifts-once",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T15:12:29.707581+00:00",
+  "total": 119
+}
