@@ -27,7 +27,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon import _backends
+from reckon import _backends, _worker_fence
 from reckon.hooks import install
 
 NEGATIVE_CONTROL_MUTATION = (
@@ -77,7 +77,7 @@ def _apply_declared_mutation(monkeypatch):
     if not os.environ.get("RUN_HOME_HOOKS_MUTATION"):
         return
     monkeypatch.setattr(
-        _backends, "_bind_reckon_hook_commands", lambda settings: settings
+        _worker_fence, "_bind_reckon_hook_commands", lambda settings: settings
     )
 
 
