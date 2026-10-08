@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.5">
-<meta name="plan-version" content="8">
+<meta name="plan-version" content="9">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -100,10 +100,21 @@
     <pre class="r-fu-prompt">/reckon-build a-run-has-one-live-worker §2</pre>
     <p class="r-fu-outcome">§2 landed: second launcher named; repair planned as §3</p>
     </article>
-<article class="r-fu" data-id="f-arolw-002" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-build" data-written-at="2026-10-08" data-recommends-skill="/reckon-build a-run-has-one-live-worker §3" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-arolw-002" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-build" data-written-at="2026-10-08" data-recommends-skill="/reckon-build a-run-has-one-live-worker §3" data-resolved-at="2026-10-08T09:16:03+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Make a hold lift once and refuse a second worker on a live session</h4>
     <div class="r-fu-body"><p>§3 repairs the two guards §2 named, with a test reproducing each.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-run-has-one-live-worker §3</pre>
+    <p class="r-fu-outcome">split: §3 repairs the once-only lift and §4 the session claim; each has its own followup</p>
+    </article>
+<article class="r-fu" data-id="f-arolw-003" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-build" data-written-at="2026-10-08" data-recommends-skill="/reckon-build a-run-has-one-live-worker §3" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Make a hold lift once per condition</h4>
+    <div class="r-fu-body"><p>§3 moves the lift stamp to an append-only record a pointer rewrite cannot drop. §4 follows it.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-run-has-one-live-worker §3</pre>
+    </article>
+<article class="r-fu" data-id="f-arolw-004" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-build" data-written-at="2026-10-08" data-recommends-skill="/reckon-build a-run-has-one-live-worker §4" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Refuse a second worker on a live session</h4>
+    <div class="r-fu-body"><p>§4 adds the session claim to both launch guards, <code>resume_plan</code> and its sweep mirror <code>_launcher_refusal</code>, after §3 lands.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-run-has-one-live-worker §4</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
