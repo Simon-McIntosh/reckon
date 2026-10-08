@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.5">
-<meta name="plan-version" content="9">
+<meta name="plan-version" content="11">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -70,27 +70,34 @@
     <p>Second, the launch backstop. <code>_launcher_refusal</code> refuses only when a pid the run's records name is
       alive (<code>record_process_alive</code> in <code>reckon/crew/runs.py</code>). The second worker ran under
       ppid 1 with no attempt record, so nothing named it.</p>
-    <p>A hold is lifted at most once per condition. Each lift appends a line to an append-only record of lifts
-      beside the run, and the sweep reads that record rather than the pointer's <code>auto_resume</code> slot. A whole-pointer
-      rewrite cannot drop a line it never held. A lock held in the sweep cannot serve here, because the write that dropped the
-      stamp came from the launched supervisor, another process, about 38 s after the stamp.</p>
-    <p><strong>Done when</strong> <code>tests/test_a_hold_lifts_once.py</code> rewrites a fixture run's pointer from a
-      snapshot taken before the sweep's stamp, between two sweeps of an unchanged hold, and the second sweep resumes nothing.
-      The negative control is executed and logged: the test fails on the current code. The write paths are
+    <p>A hold is lifted at most once per condition. The sweep already appends one line per lift to its append-only
+      recovery log (<code>recovery_log_path</code> in <code>reckon/crew/resumption.py</code>), carrying each resumed run's id and hold
+      signature. §2 found the two lifts there, lines 7668 and 7669. Before lifting, the sweep checks that log for a line already naming
+      this run and this hold signature, and treats the pointer's <code>auto_resume</code> slot as a cache of it, not as the authority.
+      A whole-pointer rewrite cannot drop a line from the log. No new record is added and nothing is retired: the log the sweep already
+      writes becomes the one it reads.</p>
+    <p><strong>Done when</strong> <code>tests/test_a_hold_lifts_once.py</code> rewrites a fixture run's pointer from a snapshot taken
+      before the sweep's stamp, between two sweeps of an unchanged hold, and the second sweep resumes nothing. The negative control is
+      executed and logged: with the log check removed, the second sweep resumes the run again and the test fails. The write paths are
       <code>reckon/crew/resumption.py</code> and <code>tests/test_a_hold_lifts_once.py</code>.</p>
 
     <h2 id="s4">§4 — A live worker session refuses a second launch</h2>
 <section data-reckon="section" data-id="s4" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
-<p><strong>Deliverable.</strong> <code>_launcher_refusal</code> in <code>reckon/crew/resumption.py</code> refuses only when a
-      pid the run's records name is alive (<code>record_process_alive</code> in <code>reckon/crew/runs.py</code>). §2 found the second
-      worker running under ppid 1 with no attempt record, so nothing named it. A launched worker holds a claim on its worker session
-      for its lifetime, and every launch path reads that claim before starting a worker on the session. A held claim refuses the
-      launch with a live-session reason, whatever pids the records name.</p>
+<p><strong>Deliverable.</strong> The launcher guard is <code>resume_plan</code> in <code>reckon/crew/dispatch_sessions.py</code>, with
+      <code>_launcher_refusal</code> in <code>reckon/crew/resumption.py</code> as the sweep's mirror of it, held word for word by a parity
+      test. Both refuse only when a pid the run's records name is alive (<code>record_process_alive</code> in
+      <code>reckon/crew/runs.py</code>). §2 found the second worker running under ppid 1 with no attempt record, so nothing named it.</p>
+    <p>A launched worker holds a <code>HostLease</code> (<code>reckon/crew/host_lease.py</code>) keyed on its worker session, from launch
+      until it exits. The lease already provides single ownership, an atomic take, release on exit, and a stale claim that cannot block
+      forever. Both guards read that lease. A held lease fires the existing live-process refusal with a reason naming the session, so
+      no new refusal family is added and the parity test still holds the two in step.</p>
     <p><strong>Done when</strong> <code>tests/test_a_live_session_refuses_a_second_worker.py</code> builds a fixture run whose recorded
-      pids are dead while a live process holds its session claim, and a resume is refused with the live-session reason. The same
-      fixture with the claim released admits the resume. The negative control is executed and logged: the first case is admitted on
-      the current code and the test fails. The write paths are <code>reckon/crew/resumption.py</code>, <code>reckon/crew/runs.py</code>
-      and <code>tests/test_a_live_session_refuses_a_second_worker.py</code>; it runs after §3, which edits the same module.</p>
+      pids are dead while a live process holds its session lease. A resume through <code>resume_plan</code>, and the sweep through
+      <code>_launcher_refusal</code>, are both refused with the live-process refusal naming the session. The same fixture with the lease
+      released admits both. The negative control is executed and logged: the first case is admitted on the current code and the test
+      fails. The write paths are <code>reckon/crew/dispatch_sessions.py</code>, <code>reckon/crew/resumption.py</code>,
+      <code>reckon/crew/runs.py</code> and <code>tests/test_a_live_session_refuses_a_second_worker.py</code>; it runs after §3, which
+      edits <code>resumption.py</code> too.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
