@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/cli.py:398",
+    "reckon/crew_follow_commands.py:696",
+    "reckon/crew_follow_commands.py:1833",
+    "reckon/crew_follow_commands.py:2331",
+    "reckon/crew/dispatch.py:1209"
+  ],
+  "completed_at": "2026-10-08T14:54:52.654Z",
+  "dispatched_at": "2026-10-08T14:37:54Z",
+  "findings": [
+    {
+      "file": "tests/test_follower_hands_off_to_host.py",
+      "line": "327",
+      "severity": "follow-on",
+      "text": "follow-on: this case and the one at :505 both drive _arm_listed_by_host over the same census record with the same waiting host, so they are one guard in two copies, and this copy reads the FIFO for only 0.2 seconds, so it can pass on a handoff its bounded partner would catch."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against 72bb6f74c; four commits over six files, all inside scope, and no worktree marker was added.",
+    "done_when": "the done-when names tests/test_follower_hands_off_to_host.py; gate-final.log records 8 passed EXIT=0, negative_control.log records 1 failed EXIT=1, and existing_imports2.log records 267 passed EXIT=0; the gate ran the shipped test body (the bound was edited at 14:32:03Z, before the 14:34:40Z gate log), though that log's header names revision cae52477b rather than the head 25c025d38.",
+    "goal": "the node goal is to bring back the follower hand-off from 3889d7c5d with the host's own follower recognised through the host census; reckon/crew_follow_* returns a censused follower and hands off otherwise, and a project-wide search found no RECKON_SESSION_HOST_CHILD or CHILD_ENV marker anywhere under reckon/ or tests/.",
+    "manifest": "read; it records the gate (8 passed EXIT=0), the negative control (1 failed EXIT=1) and the importer set (267 passed EXIT=0), with test_logs naming the three logs.",
+    "write_paths": "read the manifest's declared paths; every path in git diff 72bb6f74c..25c025d38 -- reckon/crew/dispatch.py, reckon/crew/dispatch_watch.py, reckon/crew_follow_commands.py, tests/test_follower_hands_off_to_host.py, skills/reckon-build/references/coordinator-reference.md and the evidence fragment -- is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_follower_hands_off_to_host.py:505 fails when the census check is replaced by False (negative_control.log, EXIT=1), so the guard is shown by reinstating the regression rather than by watching it pass.",
+    "evidence": "tests/test_follower_hands_off_to_host.py is green in gate-final.log (8 passed EXIT=0) and the negative control fires (EXIT=1), but the gate log's header names cae52477b while the shipped test body was an uncommitted edit, so the recorded revision understates the tree it measured.",
+    "fit": "reckon/crew/dispatch_watch.py:536 _request_host_follower names the mechanism and holds the one spelling of the request line, and no plan, sprint or ticket identifier appears in the diff.",
+    "goal_fidelity": "reckon/crew_follow_commands.py:595 and :613 read whether this follower is the host's own child from the census and hand off otherwise, matching the goal, with no wire marker left in reckon/ or tests/.",
+    "reuse": "reckon/crew_follow_commands.py:595 reuses the pre-existing _session_host_runs_follower census reader instead of adding a second reader, and the hand-off composes the shared _request_host_follower line.",
+    "scope_discipline": "every path in the diff sits inside the manifest's declared write paths, and reckon/crew/session_host.py was declared and correctly left unchanged."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to bring back the follower hand-off from 3889d7c5d with the host's own follower recognised through the host census; reckon/crew_follow_* returns a censused follower and hands off otherwise, and a project-wide search found no RECKON_SESSION_HOST_CHILD or CHILD_ENV marker anywhere under reckon/ or tests/.\nVERDICT done_when: the done-when names tests/test_follower_hands_off_to_host.py; gate-final.log records 8 passed EXIT=0, negative_control.log records 1 failed EXIT=1, and existing_imports2.log records 267 passed EXIT=0; the gate ran the shipped test body (the bound was edited at 14:32:03Z, before the 14:34:40Z gate log), though that log's header names revision cae52477b rather than the head 25c025d38.\nVERDICT write_paths: read the manifest's declared paths; every path in git diff 72bb6f74c..25c025d38 -- reckon/crew/dispatch.py, reckon/crew/dispatch_watch.py, reckon/crew_follow_commands.py, tests/test_follower_hands_off_to_host.py, skills/reckon-build/references/coordinator-reference.md and the evidence fragment -- is inside them.\nVERDICT manifest: read; it records the gate (8 passed EXIT=0), the negative control (1 failed EXIT=1) and the importer set (267 passed EXIT=0), with test_logs naming the three logs.\nVERDICT diff: read commit by commit against 72bb6f74c; four commits over six files, all inside scope, and no worktree marker was added.\nCALL_SITES: reckon/cli.py:398, reckon/crew_follow_commands.py:696, reckon/crew_follow_commands.py:1833, reckon/crew_follow_commands.py:2331, reckon/crew/dispatch.py:1209\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_follow_commands.py:595 and :613 read whether this follower is the host's own child from the census and hand off otherwise, matching the goal, with no wire marker left in reckon/ or tests/.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_follower_hands_off_to_host.py is green in gate-final.log (8 passed EXIT=0) and the negative control fires (EXIT=1), but the gate log's header names cae52477b while the shipped test body was an uncommitted edit, so the recorded revision understates the tree it measured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff sits inside the manifest's declared write paths, and reckon/crew/session_host.py was declared and correctly left unchanged.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_follower_hands_off_to_host.py:505 fails when the census check is replaced by False (negative_control.log, EXIT=1), so the guard is shown by reinstating the regression rather than by watching it pass.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/dispatch_watch.py:536 _request_host_follower names the mechanism and holds the one spelling of the request line, and no plan, sprint or ticket identifier appears in the diff.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew_follow_commands.py:595 reuses the pre-existing _session_host_runs_follower census reader instead of adding a second reader, and the hand-off composes the shared _request_host_follower line.\nreviewed_base_sha: 72bb6f74cb57d6a416588e536f42565dad8ec8d2\nreviewed_head_sha: 25c025d3868aa1de0bb42a520d82d071a4aa58b8\nFINDING tests/test_follower_hands_off_to_host.py:327 follow-on: this case and the one at :505 both drive _arm_listed_by_host over the same census record with the same waiting host, so they are one guard in two copies, and this copy reads the FIFO for only 0.2 seconds, so it can pass on a handoff its bounded partner would catch.\n",
+  "review_run_id": "r-20261008T143730924143-review-of-host-follower-never-hands-off",
+  "reviewed_base_sha": "72bb6f74cb57d6a416588e536f42565dad8ec8d2",
+  "reviewed_head_sha": "25c025d3868aa1de0bb42a520d82d071a4aa58b8",
+  "reviewed_run_id": "r-20261008T132715179954-host-follower-never-hands-off",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T14:51:41.451963+00:00",
+  "total": 114
+}
