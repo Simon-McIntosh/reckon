@@ -802,6 +802,7 @@ def gather_sources(
             moment=now,
             session_backends=session_backends,
             live_run_ids={str(row.get("run_id")) for row in live if row.get("run_id")},
+            wallets=_wallet_map(wanted, _resolved_config(project, root)),
         )
         for account, candidate in rollout_candidates.items():
             by_account.setdefault(account, []).append(candidate)
@@ -812,6 +813,53 @@ ROLLOUT_TAIL_BYTES = 1_048_576
 ROLLOUT_MAX_AGE_SECONDS = 24 * 3600
 
 
+def _resolved_config(project: str | None, root: str | Path | None) -> Mapping[str, Any]:
+    """The flight config the accounts are declared in, or ``{}``.
+
+    The declaration joining a profile to its account's wallet rides the
+    resolved config, so the reader that groups accounts reads the same layers
+    its caller resolved. A config that cannot be read declares no wallet, which
+    leaves every account its own rather than inventing a grouping.
+    """
+    from reckon import flight
+
+    try:
+        return flight.resolve(project, checkout_path=root).config
+    except (flight.FlightConfigError, OSError, ValueError):
+        return {}
+
+
+def _wallet_map(
+    accounts: Iterable[str], config: Mapping[str, Any] | None
+) -> dict[str, str | None]:
+    """Each account's wallet: the quota its name draws on, or ``None``.
+
+    Two names share one wallet when the resolved flight config declares them in
+    one ``budget_group`` — the account quota they draw on — or, failing that,
+    when the model catalogue resolves them to one lane, which is how a profile
+    name and its aliases reach a lane the config carries no entry for. The
+    join is that declaration, never a name prefix: a backend whose name merely
+    begins with another account's name draws on no wallet, so it is never
+    published a position that was measured for an account it does not use.
+    """
+    from reckon import ledger
+    from reckon.crew import budget_group
+
+    wallets: dict[str, str | None] = {}
+    for raw in accounts:
+        backend = str(raw)
+        group = budget_group.declared_group_for(config, backend)
+        if group:
+            wallets[backend] = f"group:{group}"
+            continue
+        try:
+            lane, _key = ledger.resolve_name(backend)
+        except ValueError:
+            lane = None
+        wallets[backend] = f"lane:{lane}" if lane else None
+    return wallets
+
+
 def _codex_rollout_candidates(
     accounts: set[str],
     *,
@@ -820,6 +868,7 @@ def _codex_rollout_candidates(
     moment: datetime,
     session_backends: Mapping[str, str],
     live_run_ids: set[str],
+    wallets: Mapping[str, str | None],
 ) -> dict[str, Candidate]:
     """Read recent Codex rollouts from the main home and per-run harness homes."""
     from reckon import budget
@@ -894,14 +943,23 @@ def _codex_rollout_candidates(
         observed, limits = latest
         account = str(limits.get("limit_id") or "").strip()
         profile = session_backends.get(session_id, "")
-        # Configured Codex profiles share the provider's account window.
-        # Publish the same measured position for every profile in that wallet.
-        matching = (
-            {name for name in accounts if name.startswith("codex")}
-            if account == "codex"
-            else {account}
-        )
-        if profile.startswith("codex") and profile in accounts:
+        # Configured profiles share the provider's account window when the
+        # declaration puts them in one wallet: one declared budget group, or one
+        # lane and its aliases. The account a rollout names is always its own
+        # member, so a profile the config declares but no wallet claims speaks
+        # only for itself rather than for every name that resembles it.
+        wallet = wallets.get(account)
+        matching = {
+            name
+            for name in accounts
+            if wallet is not None and wallets.get(name) == wallet
+        }
+        if account in accounts:
+            matching.add(account)
+        # A rollout names the session it belongs to, so the run's own backend
+        # is always a member: it drew the reading itself, whatever name it
+        # carries. This is the run's identity, not a resemblance to it.
+        if profile in accounts:
             matching.add(profile)
         matching &= accounts
         if not matching:

@@ -10,12 +10,15 @@ figure from one a run recorded.
 
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
 from reckon import flight
+from reckon.crew import paid_lanes
 from reckon.crew.node import TaskNode
 from reckon.crew.picker import lane_context, outcomes
 from reckon.crew.picker.types import Candidate
@@ -182,3 +185,83 @@ def test_document_backed_reading_carries_its_own_provenance():
     assert recorded["codex"]["budget_source"] == "ledger"
     assert document["codex"]["budget_source"] != recorded["codex"]["budget_source"]
     assert document["codex"]["stale"] is False
+
+
+# --- The published document joins profiles to an account by declaration ---
+
+
+def _rollout(root: Path, observed: datetime, used_percent: float) -> None:
+    """One provider rollout reporting the week's used fraction."""
+
+    folder = root / observed.strftime("%Y/%m/%d")
+    folder.mkdir(parents=True, exist_ok=True)
+    path = folder / f"rollout-{observed.strftime('%H%M%S')}-{used_percent}.jsonl"
+    path.write_text(
+        json.dumps(
+            {
+                "timestamp": observed.isoformat(),
+                "type": "event_msg",
+                "payload": {
+                    "rate_limits": {
+                        "limit_id": "codex",
+                        "primary": {
+                            "used_percent": used_percent,
+                            "window_minutes": 10_080,
+                            "resets_at": int(
+                                (observed + timedelta(days=3)).timestamp()
+                            ),
+                        },
+                    }
+                },
+            }
+        )
+        + "\n"
+    )
+
+
+def _published_accounts(tmp_path, monkeypatch, backends: dict) -> dict:
+    """Publish the document from one fresh rollout and a stub config."""
+
+    now = datetime.now(UTC)
+    crew_home = tmp_path / "crew-home"
+    _rollout(crew_home / "codex-home" / "sessions", now - timedelta(minutes=2), 42.0)
+    monkeypatch.setenv("RECKON_HOME", str(crew_home))
+    monkeypatch.setattr(
+        flight,
+        "resolve",
+        lambda *_a, **_k: SimpleNamespace(config={"backends": backends}),
+    )
+    target = tmp_path / "paid-lanes.json"
+    assert paid_lanes.main(["--once", "--path", str(target)]) == 0
+    return json.loads(target.read_text())["accounts"]
+
+
+def test_paid_lanes_joins_profiles_by_catalogue_lane(tmp_path, monkeypatch, catalogue):
+    """Profiles the catalogue resolves to the codex lane share its window."""
+
+    accounts = _published_accounts(
+        tmp_path,
+        monkeypatch,
+        {name: {} for name in [*CODEX_NAMES, *LOOKALIKE_NAMES]},
+    )
+    for name in [*CODEX_NAMES, *LOOKALIKE_NAMES]:
+        assert name in accounts
+    for name in CODEX_NAMES:
+        assert accounts[name]["state"] == "observed"
+        assert accounts[name]["windows"]["seven_day"]["utilisation"] == 0.42
+    for name in LOOKALIKE_NAMES:
+        assert accounts[name]["windows"]["seven_day"]["utilisation"] is None
+
+
+def test_paid_lanes_joins_profiles_by_budget_group(tmp_path, monkeypatch):
+    """A declared budget group joins a profile without a catalogue to read."""
+
+    backends = {
+        "codex": {"budget_group": "codex-sub"},
+        "codex-astra": {"budget_group": "codex-sub"},
+        "codexcli": {},
+    }
+    accounts = _published_accounts(tmp_path, monkeypatch, backends)
+    assert accounts["codex"]["state"] == "observed"
+    assert accounts["codex-astra"]["state"] == "observed"
+    assert accounts["codexcli"]["windows"]["seven_day"]["utilisation"] is None
