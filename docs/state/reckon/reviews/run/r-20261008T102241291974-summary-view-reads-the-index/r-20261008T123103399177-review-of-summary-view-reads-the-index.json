@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest records baseline_suite and after_suite empty (confirmed in its classification.json), so no baseline/after gate-log arm exists to difference; the reviewed run's gate-existing-mcp-tests.log is a partial suite cut at 18% with two failures at 7-11% and no baseline arm to attribute them against.",
+  "base_log_revision": "4f249452c0cefb000c933bfcc428086f5e68fd39",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/mcp.py:1889",
+    "reckon/mcp.py:1804",
+    "reckon/metadata_index.py:215"
+  ],
+  "completed_at": "2026-10-08T12:44:54.620Z",
+  "dispatched_at": "2026-10-08T12:31:29Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/an-mcp-failure-names-its-cause/summary-view-reads-the-index.html",
+      "line": "23",
+      "severity": "follow-on",
+      "text": "follow-on: the evidence fragment asserts 'The existing tests importing reckon.mcp pass unchanged', but the run's own gate-existing-mcp-tests.log was stopped by the harness background limit at 18% of the suite with two failures visible at 7-11%, so the broad-suite pass is claimed but not established by the record."
+    },
+    {
+      "file": "manifest.md",
+      "line": "26",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed run's broad-suite blocker names 'no xdist installed' as a reason the 128-file suite could not be run, but pytest-xdist 3.8.0 is importable in the project venv (pytest 9.1.1), so the suite was parallelisable and the blocker's premise is inaccurate; re-running it on the compute node would settle the two unattributed failures."
+    },
+    {
+      "file": "manifest.md",
+      "line": "22",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest leaves baseline_suite and after_suite empty, so no baseline/after gate-log pair exists to difference; the two partial-suite failures at 7-11% remain unattributed and are not attributable from this record."
+    }
+  ],
+  "head_log_revision": "e52b056fb1f9b94c22704345330b4518c7764730",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/mcp.py:1889 (plan summary/detail view), :1804 (sprint composition), :2173 (_index_discovery); metadata_index.py:215 (_reuse_covered), :423 (_walk_covered), :490 (_dir_identity); the exercised path is the production read_plan summary read.",
+    "diff": "4f249452..e52b056fb is two commits: cff2bbedf changes reckon/mcp.py (+54/-... across three files, 397 insertions), e52b056fb adds the evidence fragment (+26).",
+    "done_when": "tests/test_summary_view_reads_the_index.py counts os.scandir for a warm one-plan summary read in fixtures of 5 and 60 plans, requires the counts equal and the payload equal to the walk path, and requires a logged negative control. At the pinned head the gate passes (1 passed EXIT=0).",
+    "goal": "\u00a712 is a performance node: make a one-plan MCP read_plan summary view answer without walking the corpus. The pinned head takes the plan inventory from the persisted metadata index via _index_discovery and resolves the selected document at its canonical path rather than through the project's whole resource map.",
+    "manifest": "read at the pinned run; names commits cff2bbedf and e52b056fb, the gate tests/test_summary_view_reads_the_index.py (1 passed EXIT=0) and the negative control (EXIT=1), and records baseline_suite and after_suite as empty; its blockers field states the broad 128-file suite was cut at 18% with two unattributed failures.",
+    "write_paths": "the plan declared reckon/mcp.py, reckon/metadata_index.py and tests/test_summary_view_reads_the_index.py; the reviewed delta also adds docs/evidence/fragments/an-mcp-failure-names-its-cause/summary-view-reads-the-index.html, which the node's own orientation_write_paths declared."
+  },
+  "justifications": {
+    "durability": "the assertion fails on the property it names: with RECKON_TEST_REVERT_SUMMARY_INDEX=1 the inventory read is routed back through _discover_project and test_summary_view_reads_the_index.py:187 fails EXIT=1 with 33 vs 198, reproduced independently in a scratch extraction of the head; the test does not pass vacuously because an inner positive control forces the walk and requires forced_large > forced_small > 0 before the equality is asserted, and it also compares the index-backed payload to the walk-backed payload (fast_small == scanned_small).",
+    "evidence": "the node's own gate and negative control independently reproduce at the pinned head (review-gate-head.log 1 passed EXIT=0; review-gate-negative-control.log 1 failed EXIT=1, 33@5 vs 198@60), so the done-when is met and mutation-sensitive; but the evidence fragment asserts 'The existing tests importing reckon.mcp pass unchanged' (summary-view-reads-the-index.html:23) and the run's own gate-existing-mcp-tests.log was cut by the harness limit at 18% with two failures at 7-11%, so the broad claim is not established by the record; the reviewed manifest also leaves baseline_suite and after_suite empty, so no added-failure delta can be derived.",
+    "fit": "reckon/mcp.py:1889 and :1804 call the renamed _index_discovery (mcp.py:2173), the same index-backed helper a sprint read already used, so the summary read joins an existing idiom rather than introducing a parallel path; metadata_index._reuse_covered (:215) and _walk_covered (:423) extend the existing persisted index, and _dir_identity (:490) reuses the module's stat-based revalidation approach.",
+    "goal_fidelity": "\u00a712 asks that a one-plan MCP read_plan summary view take its plan inventory from the persisted metadata index, read when the index is current by the directories' stat identity, and walk the corpus only to rebuild a stale index. The pinned head does exactly that: reckon/mcp.py:1889 replaces the _discover_project corpus walk with _index_discovery for the summary/detail plan view, and the same swap is made for the sprint-composition branch at :1804; no behaviour beyond the \u00a712 deliverable is added.",
+    "reuse": "no duplicated logic is added: the change factors the previous _index_sprint_state into _index_discovery and reuses _load_persisted/_load_dir_stamps rather than a second reader, and the file-set walk is centralised in _walk_covered (metadata_index.py:423) so the index's covered set and discovery's counted set cannot drift.",
+    "scope_discipline": "the pinned delta 4f249452..e52b056fb changes only declared paths plus one evidence fragment: reckon/mcp.py, reckon/metadata_index.py, tests/test_summary_view_reads_the_index.py, and docs/evidence/fragments/an-mcp-failure-names-its-cause/summary-view-reads-the-index.html; the plan's stated write paths were the three code/test files, and the evidence fragment is the normal record artifact named in the node's own orientation_write_paths."
+  },
+  "node": "review-of-summary-view-reads-the-index",
+  "node:reviewed": "summary-view-reads-the-index",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a712 makes a one-plan MCP summary view answer without walking the corpus; the pinned head takes the plan inventory from the persisted metadata index (mcp.py:1889, :1804 via _index_discovery) and resolves the selected document at its canonical path.\nVERDICT done_when: tests/test_summary_view_reads_the_index.py counts os.scandir for warm one-plan reads at 5 and 60 plans and requires equal counts and an equal payload; independently reproduced at the pinned head, 1 passed EXIT=0, and the reverted control fails 1 failed EXIT=1 (33@5 vs 198@60).\nVERDICT write_paths: delta touches reckon/mcp.py, reckon/metadata_index.py, tests/test_summary_view_reads_the_index.py and one declared evidence fragment.\nVERDICT manifest: read; names cff2bbedf, e52b056fb, the gate (1 passed EXIT=0) and negative control (EXIT=1); baseline_suite and after_suite empty; blockers record a broad suite cut at 18% with two unattributed failures.\nVERDICT diff: 4f249452..e52b056fb, two commits: cff2bbedf changes mcp.py and metadata_index.py (397 insertions across three files), e52b056fb adds the evidence fragment (+26).\nCALL_SITES: reckon/mcp.py:1889, reckon/mcp.py:1804, reckon/metadata_index.py:215\nSCORE goal_fidelity: 19\nSCORE evidence: 14\nSCORE scope_discipline: 19\nSCORE durability: 18\nSCORE fit: 18\nSCORE reuse: 19\nJUSTIFICATION goal_fidelity: the summary/detail plan read now calls _index_discovery (index) instead of _discover_project (walk), exactly \u00a712's deliverable.\nJUSTIFICATION evidence: the node's gate and negative control reproduce independently, but the evidence fragment claims the broad mcp-importing suite passes when the run's own log was cut at 18% with two failures, and baseline_suite/after_suite are empty.\nJUSTIFICATION scope_discipline: the delta stays within the declared write paths plus one declared evidence fragment.\nJUSTIFICATION durability: reverting the index read makes the equality assertion fail (33 vs 198), reproduced; an inner positive control prevents a vacuous pair of zeros and the payload equality is asserted.\nJUSTIFICATION fit: it reuses the renamed _index_discovery and the existing persisted metadata index rather than a parallel reader.\nJUSTIFICATION reuse: no production code is duplicated; the walk is centralised in _walk_covered and the rows come from the shared index.\nFINDING docs/evidence/fragments/an-mcp-failure-names-its-cause/summary-view-reads-the-index.html:23 follow-on: fragment claims the broad mcp suite passes unchanged, but the run's suite log was cut at 18% with two failures.\nFINDING manifest.md:26 follow-on: blocker cites 'no xdist installed' though pytest-xdist 3.8.0 is importable in the project venv.\nFINDING manifest.md:22 follow-on: baseline_suite and after_suite empty, so no added-failure delta is derivable.",
+  "review_run_id": "r-20261008T123103399177-review-of-summary-view-reads-the-index",
+  "reviewed_base_sha": "4f249452c0cefb000c933bfcc428086f5e68fd39",
+  "reviewed_head_sha": "e52b056fb1f9b94c22704345330b4518c7764730",
+  "reviewed_run_id": "r-20261008T102241291974-summary-view-reads-the-index",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T12:45:24.955875+00:00",
+  "total": 107
+}
