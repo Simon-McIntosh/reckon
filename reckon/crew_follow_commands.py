@@ -632,10 +632,19 @@ def _hand_off_from_follower(project: str, session: str | None) -> bool:
     takes the pair over once this follower is gone, so the request is written
     here and the caller prints the handoff line rather than a re-arm command.
     """
+    from reckon.crew.dispatch_watch import (
+        _hand_off_to_waiting_host,
+        _session_host_may_be_waiting,
+    )
+
+    # Cheap gate first: with no host FIFO under this Claude process there is
+    # nothing to ask and nothing to read, and resolving the owner to find that
+    # out would delay the first delivered row by a transcript lookup for every
+    # follower. Only a possible host pays for the census read and the wait.
+    if not _session_host_may_be_waiting():
+        return False
     if _session_host_child(project, session):
         return False
-    from reckon.crew.dispatch_watch import _hand_off_to_waiting_host
-
     return _hand_off_to_waiting_host(project, session)
 
 

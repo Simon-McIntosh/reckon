@@ -558,6 +558,33 @@ def _request_host_follower(project: str, session: str | None) -> bool:
     return True
 
 
+def _session_host_may_be_waiting() -> bool:
+    """Whether a host for this Claude process might be waiting, cheaply.
+
+    The follower asks this on its start-up path, before it has delivered
+    anything, and resolving the owner behind ``_session_host_waiting`` costs a
+    transcript lookup that would delay the first delivered row for every
+    follower even when there is no host at all. A host names its FIFO for this
+    Claude process, so a directory scan for a FIFO under this pid is enough to
+    know there is nothing to ask without resolving the owner; only when one is
+    present does the full, owner-resolving check run. This is a gate, not the
+    answer: a FIFO here may still hold no reader, which ``_session_host_waiting``
+    settles.
+    """
+    root = _session_host_runtime_root()
+    if root is None:
+        return False
+    pid = str(os.environ.get("CLAUDE_PID") or "").strip()
+    if not pid:
+        return False
+    try:
+        names = os.listdir(root / SESSION_HOST_DIRECTORY)
+    except OSError:
+        return False
+    prefix = f"{pid}-"
+    return any(name.startswith(prefix) and name.endswith(".fifo") for name in names)
+
+
 def _hand_off_to_waiting_host(project: str, session: str | None) -> bool:
     """Hand a hand-armed follower's session to a waiting host, if one is waiting.
 
