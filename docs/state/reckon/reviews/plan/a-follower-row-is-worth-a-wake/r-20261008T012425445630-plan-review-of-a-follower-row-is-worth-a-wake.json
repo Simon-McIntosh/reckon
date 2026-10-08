@@ -1,0 +1,67 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T01:34:37.982Z",
+  "dispatched_at": "2026-10-08T01:25:32Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-follower-row-is-worth-a-wake.html:85",
+      "id": "reasoning-1",
+      "reason": "a worker implementing \u00a72 as written builds a second policy layer and must silently reconcile it with `RowPolicy` inside `_follow_watch_lines`, or reverts it; the section must instead state whether the new module replaces, extends or wraps the existing policy.",
+      "text": "\u00a72 proposes a new pure module `reckon/crew/row_policy.py` that \"holds a run's change until it has gone a settle window with no further transition\", but `reckon/crew/ticker.py` already ships `RowPolicy` (line 1161) with `NOISE_PAIRS` hold windows, `PaneRowPath`, and `replay_row_policy`, and `reckon/cli.py:3723` already builds it via `follower_row_path`, which `_follow_watch_lines` calls at line 4042; the plan names none of these and so describes work that duplicates a landed, tested mechanism (tests/test_follower_prints_only_policy_rows.py)",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-follower-row-is-worth-a-wake.html:149",
+      "id": "reasoning-2",
+      "reason": "\u00a74 is largely shipped (commit 1d08e629a \"replay the gap a follower missed between armings\"); as written it sends a node to re-implement landed behaviour, and the plan should reduce \u00a74 to verifying it and adding any genuinely missing edge.",
+      "text": "\u00a74's deliverable \u2014 \"when a follower attaches, it draws no row for a run whose current state equals the state the reader last judged\", the first-attach summary line, and withholding the dim history burst under session-host delivery \u2014 is already implemented: `_follow_gap_rows` in `reckon/cli.py` drops a run whose `recorded == current`, `delivered_states`/`read_delivered`/`write_delivered` persist the judged state, and `_follow_replay_visible()` (reckon/cli.py:4878) already hands the history burst only to a terminal, not the host's pipe Monitor; the plan cites none of this and asserts the behaviour as an unmet deliverable",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-follower-row-is-worth-a-wake.html:158",
+      "id": "done_when-1",
+      "reason": "a gate that passes on the unfixed code measures nothing new; \u00a74's measure needs a case the current gap-replay does not already satisfy, or the section should be a verify-and-add-test node, not an implement node.",
+      "text": "\u00a74's done-when asserts a second attach \"draws only the completion, and draws no bare `working` row\", with a negative control that removes \"the judged-state comparison\", but the judged-state comparison is `_follow_gap_rows`'s existing `if recorded == current: continue`, so the test passes on the unmodified tree and its negative control merely restates the existing guard",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-follower-row-is-worth-a-wake.html:77",
+      "id": "wiring-1",
+      "reason": "the relationship is genuinely intended but, being advisory rather than a gate, its absence does not misroute a node; adding the metadata tag would make the advisory edge machine-readable.",
+      "text": "\u00a71 states the active plan `a-follower-keeps-your-work-in-view` \"should weigh this plan's measurement before building that cadence\", but the plan declares no `informs` relationship to it (declare `informs`\u2192`informs`), so the advisory edge exists only in prose",
+      "type": "wiring",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "f3c5234535f7b1e7911426386843fb568d13b36d6c1872b6324fe0d02b5cafa6",
+  "plan_slug": "a-follower-row-is-worth-a-wake",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T012425445630-plan-review-of-a-follower-row-is-worth-a-wake",
+  "reviewed_blob_sha": "45bc796a15b57c2a15c8364d7c7a294ac3111293",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every code symbol named (`NEEDS_ACTION`, `SETTLED_STATES`\u2192 resolves as `SETTLED_STATES`, `_follow_watch_lines`, `_follow_history_burst`, `note_delivered`, `runs.write_delivered`, and the recovery verbs) exists in reckon/crew/ticker.py, reckon/cli.py and reckon/crew/recovery.py, and each href resolves with `.html` appended.",
+    "done_when": "a finding \u2014 \u00a74's gate (`tests/test_follow_attach_is_quiet.py`) asserts behaviour the tree already provides, so it passes on the unfixed code.",
+    "evidence_paths": "pass \u2014 \u00a75 writes to the run directory and the code deliverables gate on repository test files; no session scratchpad or node-local temp path is named.",
+    "naming": "pass \u2014 the proposed `reckon/crew/row_policy.py` and test names carry no plan labels, stage names, ticket numbers or version tags, and no changelog prose appears in comments.",
+    "reasoning": "a finding \u2014 \u00a72/\u00a73/\u00a74 propose a hold-and-judge policy and a quiet attach as new work, but the tree already implements both in `RowPolicy`/`PaneRowPath`/`follower_row_path`/`_follow_gap_rows`, and the plan never names them.",
+    "single_goal": "pass \u2014 \u00a72, \u00a73, \u00a74, \u00a75 each carry one deliverable (the module, the delivery wiring, the quiet attach, the replay measurement).",
+    "wiring": "pass \u2014 plan-depends-on `a-follower-outlives-its-monitor` resolves to a shipped plan, and both hrefs (`a-follower-lives-as-long-as-its-session`, `a-follower-keeps-your-work-in-view`) resolve to files under docs/plans/; no `informs` is declared though \u00a71 addresses another plan's owner (noted, not a defect in what is declared)."
+  },
+  "section_digests": {
+    "_document": "3a26de53f8f85820f474b57bd7f2d9285d3fcd0bbbd9b7815056c2cd2d0d6678",
+    "s1": "1dfc150d86a94e1f50c6f3ff7261c91eb5f668a6a9fd3ef58087f4c112a003ef",
+    "s2": "86cc18fdedb1ecdcfa384aef22f58cae816a43e1dec85ee997b3f6513354dad8",
+    "s3": "4f3931a4dbbc49672b148f73be62771e8359a986ca1f7bf30288d153dbe51c24",
+    "s4": "474f3604fe65fe86af512893114c4195db516f5d662c0f44cb7f55bd1ac356d3",
+    "s5": "94dbdb9e6ca448dfc3e5c9ec204bd1137bb4afcec70ce10bd4837332cb592951"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T01:38:33.181103+00:00"
+}
