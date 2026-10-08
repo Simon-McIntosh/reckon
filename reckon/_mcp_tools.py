@@ -8,6 +8,16 @@ from pydantic import BaseModel, Field
 
 STORAGE_SLOW = "storage-slow"
 
+# The hint a waiting body gets: the storage really is the suspect, so the
+# advice is to retry. A computing body gets its own hint, because the storage
+# is not the suspect and a blind retry is the wrong instruction.
+
+_STORAGE_SLOW_HINT = (
+    "Storage is slow or unresponsive, so the result is unknown, not empty. "
+    "Retry once the storage recovers; a write that reports landed=True must "
+    "not be resubmitted."
+)
+
 
 class ReadPlanArgs(BaseModel):
     project: str | None = Field(None, description="Project key, or * for mounts")
@@ -96,6 +106,23 @@ class CrewRecoverArgs(BaseModel):
     )
 
 
+def _timing_fragment(cpu_seconds: float | None, run_seconds: float | None) -> str:
+    """Name the thread CPU and run-queue seconds a timed-out body spent.
+
+    Both figures are reported because together they are the computing measure:
+    a body busy on the CPU shows in ``cpu_seconds``, one starved runnable on an
+    oversubscribed node shows in ``run_seconds``. Either omitted when the
+    counter was unreadable.
+    """
+
+    parts = []
+    if cpu_seconds is not None:
+        parts.append(f"{cpu_seconds:.1f}s CPU")
+    if run_seconds is not None:
+        parts.append(f"{run_seconds:.1f}s runnable")
+    return f"; {', '.join(parts)}" if parts else ""
+
+
 class StorageSlowResult(BaseModel):
     """Typed result for a tool call whose storage work outlived its deadline.
 
@@ -106,6 +133,15 @@ class StorageSlowResult(BaseModel):
     write that did land is not retried blindly. ``landed`` is ``None`` when the
     filesystem would not answer within the landing check's own deadline, which
     is an unknown state rather than a negative one.
+
+    What the abandoned body was doing when the deadline expired is ``cause``. A
+    body that wanted the CPU reads ``computing``: it either burned thread CPU
+    time (``cpu_seconds``) or sat runnable on the runqueue while an
+    oversubscribed node ran other work first (``run_seconds``). A body blocked
+    on storage reads ``waiting``, burning neither. The ``error`` value stays
+    ``storage-slow`` so no existing caller's branch changes, while the message
+    and hint name the cause and, for a computing body whose tool has one, the
+    CLI command that answers without a deadline.
     """
 
     ok: bool = False
@@ -114,14 +150,14 @@ class StorageSlowResult(BaseModel):
     label: str
     path: str | None = None
     waited_seconds: float
+    cpu_seconds: float | None = None
+    run_seconds: float | None = None
+    cause: Literal["computing", "waiting"] = "waiting"
     deadline_seconds: float
     landed: bool | None = None
+    cli_command: str | None = None
     message: str
-    hint: str = (
-        "Storage is slow or unresponsive, so the result is unknown, not empty. "
-        "Retry once the storage recovers; a write that reports landed=True must "
-        "not be resubmitted."
-    )
+    hint: str = _STORAGE_SLOW_HINT
 
     @classmethod
     def for_call(
@@ -133,6 +169,10 @@ class StorageSlowResult(BaseModel):
         waited: float,
         deadline: float,
         landed: bool | None = None,
+        cpu_seconds: float | None = None,
+        run_seconds: float | None = None,
+        cause: Literal["computing", "waiting"] = "waiting",
+        cli_command: str | None = None,
     ) -> StorageSlowResult:
         where = path or f"{label} (path unresolved)"
         outcome = ""
@@ -145,17 +185,36 @@ class StorageSlowResult(BaseModel):
                     "so its landed state is unknown rather than false."
                 ),
             }[landed]
+        cpu_fragment = _timing_fragment(cpu_seconds, run_seconds)
+        if cause == "computing":
+            activity = "It was still computing when the deadline expired"
+            hint = (
+                "The body was abandoned while it was still computing, not while "
+                "it waited on storage, so this is a reckon work deadline rather "
+                "than a slow filesystem."
+            )
+            if cli_command:
+                hint += f" The same work answers without a deadline from the CLI: {cli_command}."
+        else:
+            activity = "It was waiting on storage when the deadline expired"
+            hint = _STORAGE_SLOW_HINT
         return cls(
             kind=kind,
             label=label,
             path=path,
             waited_seconds=round(waited, 3),
+            cpu_seconds=None if cpu_seconds is None else round(cpu_seconds, 3),
+            run_seconds=None if run_seconds is None else round(run_seconds, 3),
+            cause=cause,
             deadline_seconds=round(deadline, 3),
             landed=landed,
+            cli_command=cli_command,
             message=(
                 f"{kind.capitalize()} of {where} did not finish within "
-                f"{deadline:g}s (waited {waited:.1f}s).{outcome}"
+                f"{deadline:g}s (waited {waited:.1f}s{cpu_fragment}). "
+                f"{activity}.{outcome}"
             ),
+            hint=hint,
         )
 
 
