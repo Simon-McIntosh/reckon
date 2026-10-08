@@ -185,6 +185,9 @@ Remedies, the carrier rules and the `--brief` contract are in
 
 ```text
 reckon crew attach --run <id> --task <task-id>
+reckon crew budget-lift --group <group> (--multiple <m> | --drain-by <time> | --uncapped) [--global | --session <id>] [--from <time>] [--until reset|<iso>|<duration>] [--clock seven_day|five_hour] --reason <why> [--pretty]
+reckon crew budget-lift --clear --group <group> [--session <id>] [--id <lift>]
+reckon crew budget-lifts [--group <group>] [--pretty]
 reckon crew check-manifest --run <id>
 reckon crew complete --run <id> --gate <verdict> --commit <sha> --outcome <text> --tests-added <n> --scope-changed
 reckon crew directory --project <project> --run <id> --node <node>
@@ -433,6 +436,55 @@ recorded, so it spends nothing. Four properties hold: a hold is not a failure
 of a signal is not exhaustion; a hold is never silent. Resuming a held wave
 without a human is a host capability documented in
 `references/orchestrator-harness/<harness>.md`.
+
+#### The pace hold, its reserves and `releases_at`
+
+The hold is a burn test on a declared budget group, an account-wide wallet
+shared by every session. A group is held while its burn — utilisation over
+elapsed fraction of the window — stands above its configured `pace_multiple`.
+The hold names *when it releases* rather than the window's reset: for the
+seven-day clock, `pace_hold` returns `releases_at` = the week start plus
+`utilisation / pace_multiple` of the week, assuming no further spend, and the
+hold's reason prints that instant in place of the reset. So a group reading
+0.21 / 1.1 of its week releases in about ten hours, not in six days. Three
+reserves withhold the rest of the window from a fresh dispatch: the resume
+reserve (5%), the coordinator reserve (3%) and the bookend reserve
+(`bookend_reserve_pct`, default 20%), which stops every role except review and
+verify, and is not withheld on a group whose every member
+`review_excluded_backends` lists, because the review role it is sized for can
+never run there. Read the group's position through `crew(project,
+view="budget")`.
+
+#### A lift raises one group's pace and ends by itself
+
+When the lead has decided to spend a window ahead of pace, grant a lift rather
+than bypassing the picker. A lift raises one declared group's pace multiple or
+removes the hold, is visible to every coordinator, and lowers itself with no
+process to remember it. `reckon crew budget-lift --group <group> --multiple
+<m> --reason "<why>"` raises the multiple; the `--drain-by <time>` form takes a
+target time instead and spreads the remaining budget evenly from the utilisation
+recorded at grant to 100% at the target, clamped to the window's reset;
+`--uncapped` removes the pace hold for the scope. All three release the three
+reserves for the group, so it may spend its whole window, and all three end by
+themselves. Scope is `--global` (the default) or `--session <id>`: a global lift
+applies to every coordinator, a session lift only to dispatches whose
+`--session` matches, and where both apply the session lift governs its own
+session. A lift may start later with `--from <time>`, inert until then. The
+grant is refused inside a fenced worker, whose environment names its run, so a
+worker cannot lift its own budget; the `--reason` is recorded verbatim; and a
+multiple must exceed the configured one and not exceed `budget.lift.max_multiple`.
+`--until` (default `reset`) names the lift's end, `--clock seven_day|five_hour`
+the window it is anchored to, and `--from` uses an ISO time or a duration.
+
+A lift ends on any of four conditions, each read at the moment of use rather than
+run by a process: the clock's reset is observed (the reading's `resets_at` moves,
+or utilisation falls below the figure recorded at grant); the stated end time is
+reached; the hard ceiling `granted_at + budget.lift.max_hours` is passed; or it is
+cleared. `reckon crew budget-lift --clear --group <group>` revokes the group's
+governing lift, `--session <id>` names a session's lift to clear, and `--id
+<lift>` revokes one exact record, refusing an id whose lift belongs to another
+group. `reckon crew budget-lifts [--group <group>]` lists active and recent
+lifts as JSON, newest first; ended lifts are kept as history.
 
 ### 4d. The closure fence — a session does not end into available work
 

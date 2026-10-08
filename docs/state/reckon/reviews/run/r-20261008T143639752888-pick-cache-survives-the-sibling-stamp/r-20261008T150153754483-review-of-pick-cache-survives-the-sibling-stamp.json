@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "223187b5c80131f6ad9c90fe04e6dbac469b1985",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/picker/__init__.py:_resolved_plan_path",
+    "reckon/crew/routing.py:_estimated_hours"
+  ],
+  "completed_at": "2026-10-08T15:22:14.797Z",
+  "dispatched_at": "2026-10-08T15:02:20Z",
+  "findings": [
+    {
+      "file": "tests/test_warm_pick_rescans_no_plan.py",
+      "line": "96",
+      "severity": "follow-on",
+      "text": "follow-on: the new test file ends without a trailing newline, so `ruff format --check tests/test_warm_pick_rescans_no_plan.py` reports \"File would be reformatted\"; the repository requires a commit's staged paths add no lint or format findings."
+    }
+  ],
+  "head_log_revision": "ba4ca787d",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base; the diff splits routing._docs_scan_directories into _docs_scan_inputs (returning the directory-and-file pair the estimate stamps) and _docs_scan_directories (returning the directory list the picker's stamp reads), adds tests/test_warm_pick_rescans_no_plan.py with a shape test and a warm-resolve test, and adds the empty evidence-fragment anchor section.",
+    "done_when": "the section required reproducing tests/test_pick_stages_fit_the_bound.py::test_the_cut_stops_the_repeated_docs_scan failing at base 223187b5c with 2 warm-pick rescans; defect-base.log records FAILED at 223187b5c, defect-head.log records the same test passed at ba4ca787d, and I independently reproduced both in a scratch copy (reviewer-head-newtests.log 2 passed EXIT=0, reviewer-mutation.log 3 failed EXIT=1).",
+    "goal": "the node's goal is to make a warm pick resolve the plan path without re-walking the docs tree while keeping the estimated-hours stamp's sibling-file shape; reckon/crew/routing.py:3684 _docs_scan_directories now returns the docs-relative directory list the picker's stamp iterates and routing.py:3732 _estimated_hours reads the new _docs_scan_inputs pair, so a warm pick resolves 0 plans through a scan where it resolved 2.",
+    "manifest": "read; it names the cause (commit ab5883931 changed routing._docs_scan_directories to return a tuple) with the call path pick()->_declared_difficulty()->picker._resolved_plan_path()->build()/stamp_of, carries baseline_suite (223187b5c, exit 0, completed true) and after_suite (ba4ca787d, exit 0, completed true) with literal commands, a negative_control_log naming the mutation, and changed_paths listing the three files.",
+    "write_paths": "git diff 223187b5c..ba4ca787d touches exactly reckon/crew/routing.py, tests/test_warm_pick_rescans_no_plan.py and docs/evidence/fragments/one-typesafe-model-picker/pick-cache-survives-the-sibling-stamp.html, all inside the node's declared write paths; no figure was created, which the small-node rule permits."
+  },
+  "justifications": {
+    "durability": "in a scratch copy I reverted _docs_scan_directories to return the tuple and reviewer-mutation.log shows tests/test_warm_pick_rescans_no_plan.py:55, :71 and the sibling cut test all fail (3 failed EXIT=1), so the added assertions genuinely fire on the regression.",
+    "evidence": "gate-head.log line 1 names revision ba4ca787d and the tree and ends 207 passed EXIT=0 while gate-base.log ends 205 passed EXIT=0, a 0-added delta, and reviewer-mutation.log independently reddens the guard at 3 failed EXIT=1.",
+    "fit": "reckon/crew/routing.py:3684 carries a stray blank line between its docstring and return, and tests/test_warm_pick_rescans_no_plan.py:96 is not ruff-format clean (FINDING below).",
+    "goal_fidelity": "reckon/crew/routing.py:3692 makes _docs_scan_directories return _docs_scan_inputs(docs)[0], the list[str] reckon/crew/picker/__init__.py:111 stores as \"directories\", so stamp_of no longer raises and the fallback rescan is not taken.",
+    "reuse": "the change makes _docs_scan_directories a one-line delegate over the single walk in routing._docs_scan_inputs rather than forking the scan, and a grep for both helpers finds only the picker stamp and _estimated_hours as consumers.",
+    "scope_discipline": "git diff 223187b5c..ba4ca787d lists exactly reckon/crew/routing.py, tests/test_warm_pick_rescans_no_plan.py and the evidence fragment, the node's declared write paths, and nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 223187b5c80131f6ad9c90fe04e6dbac469b1985\nreviewed_head_sha: ba4ca787d182dffc70511637a9e8ecb859d35e6e\nVERDICT goal: the node's goal is to make a warm pick resolve the plan path without re-walking the docs tree while keeping the estimated-hours stamp's sibling-file shape; reckon/crew/routing.py:3684 _docs_scan_directories now returns the docs-relative directory list the picker's stamp iterates and routing.py:3732 _estimated_hours reads the new _docs_scan_inputs pair, so a warm pick resolves 0 plans through a scan where it resolved 2.\nVERDICT done_when: the section required reproducing tests/test_pick_stages_fit_the_bound.py::test_the_cut_stops_the_repeated_docs_scan failing at base 223187b5c with 2 warm-pick rescans; defect-base.log records FAILED at 223187b5c, defect-head.log records the same test passed at ba4ca787d, and I independently reproduced both in a scratch copy (reviewer-head-newtests.log 2 passed EXIT=0, reviewer-mutation.log 3 failed EXIT=1).\nVERDICT write_paths: git diff 223187b5c..ba4ca787d touches exactly reckon/crew/routing.py, tests/test_warm_pick_rescans_no_plan.py and docs/evidence/fragments/one-typesafe-model-picker/pick-cache-survives-the-sibling-stamp.html, all inside the node's declared write paths; no figure was created, which the small-node rule permits.\nVERDICT manifest: read; it names the cause (commit ab5883931 changed routing._docs_scan_directories to return a tuple) with the call path pick()->_declared_difficulty()->picker._resolved_plan_path()->build()/stamp_of, carries baseline_suite (223187b5c, exit 0, completed true) and after_suite (ba4ca787d, exit 0, completed true) with literal commands, a negative_control_log naming the mutation, and changed_paths listing the three files.\nVERDICT diff: read commit by commit against base; the diff splits routing._docs_scan_directories into _docs_scan_inputs (returning the directory-and-file pair the estimate stamps) and _docs_scan_directories (returning the directory list the picker's stamp reads), adds tests/test_warm_pick_rescans_no_plan.py with a shape test and a warm-resolve test, and adds the empty evidence-fragment anchor section.\nCALL_SITES: reckon/crew/picker/__init__.py:_resolved_plan_path, reckon/crew/routing.py:_estimated_hours\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/routing.py:3692 makes _docs_scan_directories return _docs_scan_inputs(docs)[0], the list[str] reckon/crew/picker/__init__.py:111 stores as \"directories\", so stamp_of no longer raises and the fallback rescan is not taken.\nSCORE evidence: 20\nJUSTIFICATION evidence: gate-head.log line 1 names revision ba4ca787d and the tree and ends 207 passed EXIT=0 while gate-base.log ends 205 passed EXIT=0, a 0-added delta, and reviewer-mutation.log independently reddens the guard at 3 failed EXIT=1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 223187b5c..ba4ca787d lists exactly reckon/crew/routing.py, tests/test_warm_pick_rescans_no_plan.py and the evidence fragment, the node's declared write paths, and nothing else.\nSCORE durability: 20\nJUSTIFICATION durability: in a scratch copy I reverted _docs_scan_directories to return the tuple and reviewer-mutation.log shows tests/test_warm_pick_rescans_no_plan.py:55, :71 and the sibling cut test all fail (3 failed EXIT=1), so the added assertions genuinely fire on the regression.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/routing.py:3684 carries a stray blank line between its docstring and return, and tests/test_warm_pick_rescans_no_plan.py:96 is not ruff-format clean (FINDING below).\nSCORE reuse: 20\nJUSTIFICATION reuse: the change makes _docs_scan_directories a one-line delegate over the single walk in routing._docs_scan_inputs rather than forking the scan, and a grep for both helpers finds only the picker stamp and _estimated_hours as consumers.\nFINDING tests/test_warm_pick_rescans_no_plan.py:96 follow-on: the new test file ends without a trailing newline, so `ruff format --check tests/test_warm_pick_rescans_no_plan.py` reports \"File would be reformatted\"; the repository requires a commit's staged paths add no lint or format findings.",
+  "review_run_id": "r-20261008T150153754483-review-of-pick-cache-survives-the-sibling-stamp",
+  "reviewed_base_sha": "223187b5c80131f6ad9c90fe04e6dbac469b1985",
+  "reviewed_head_sha": "ba4ca787d182dffc70511637a9e8ecb859d35e6e",
+  "reviewed_run_id": "r-20261008T143639752888-pick-cache-survives-the-sibling-stamp",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T15:17:47.544707+00:00",
+  "total": 118
+}

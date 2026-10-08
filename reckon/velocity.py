@@ -1548,50 +1548,65 @@ def _literal_flag(command, flag):
     )
 
 
+def transcript_tool_blocks(path, *, window_start=START, window_end=END):
+    """Yield each tool_use and tool_result block in one transcript's window.
+
+    A transcript is a JSONL file whose records carry a ``message.content`` list
+    of blocks; a tool call and the result it produced are two such blocks, paired
+    by ``tool_use_id``. Sidechain records and records outside the window are
+    skipped, the same window and sidechain rules the session and promotion
+    readers apply. Yielding blocks rather than whole records keeps one walk over
+    the file so the promotion reader and the MCP census read it the same way.
+    """
+    start, end = stamp(window_start), stamp(window_end)
+    with Path(path).open("r", errors="replace") as stream:
+        for line in stream:
+            try:
+                record = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if record.get("isSidechain"):
+                continue
+            when = stamp(record.get("timestamp"))
+            if when is None or not start <= when <= end:
+                continue
+            content = (record.get("message") or {}).get("content")
+            if not isinstance(content, list):
+                continue
+            for block in content:
+                if not isinstance(block, dict):
+                    continue
+                if block.get("type") in ("tool_use", "tool_result"):
+                    yield block
+
+
 def promotion_receipts(paths, *, window_start=START, window_end=END):
     """Run ids a coordinator session's transcript records as successfully promoted.
 
     A call counts only when the token following ``crew`` is a promotion verb, so
-    prose inside a goal or a resume advice never classifies a call. Only a result
-    that reports success counts. The run id is read from the receipt, or from an
-    unquoted ``--run`` flag when the receipt omits it. This is the transcript-side
-    landing source: a node can be promoted without leaving a promote commit, and
-    the receipt is the only record of it.
+    the prose inside a goal or a resume advice never classifies a call. Only a
+    result that reports success counts. The run id is read from the receipt, or
+    from an unquoted ``--run`` flag when the receipt omits it. This is the
+    transcript-side landing source: a node can be promoted without leaving a
+    promote commit, and the receipt is the only record of it.
     """
-    start, end = stamp(window_start), stamp(window_end)
     landed = set()
     for path in paths:
         uses, results = {}, {}
-        with Path(path).open("r", errors="replace") as stream:
-            for line in stream:
-                try:
-                    record = json.loads(line)
-                except json.JSONDecodeError:
-                    continue
-                if record.get("isSidechain"):
-                    continue
-                when = stamp(record.get("timestamp"))
-                if when is None or not start <= when <= end:
-                    continue
-                content = (record.get("message") or {}).get("content")
-                if not isinstance(content, list):
-                    continue
-                for block in content:
-                    if not isinstance(block, dict):
-                        continue
-                    if block.get("type") == "tool_use" and block.get("name") == "Bash":
-                        uses[block["id"]] = str(
-                            (block.get("input") or {}).get("command") or ""
-                        )
-                    elif block.get("type") == "tool_result":
-                        text = block.get("content")
-                        if isinstance(text, list):
-                            text = "\n".join(
-                                str(part.get("text", ""))
-                                for part in text
-                                if isinstance(part, dict)
-                            )
-                        results[block.get("tool_use_id")] = str(text or "")
+        for block in transcript_tool_blocks(
+            path, window_start=window_start, window_end=window_end
+        ):
+            if block.get("type") == "tool_use" and block.get("name") == "Bash":
+                uses[block["id"]] = str((block.get("input") or {}).get("command") or "")
+            elif block.get("type") == "tool_result":
+                text = block.get("content")
+                if isinstance(text, list):
+                    text = "\n".join(
+                        str(part.get("text", ""))
+                        for part in text
+                        if isinstance(part, dict)
+                    )
+                results[block.get("tool_use_id")] = str(text or "")
         for uid, command in uses.items():
             if not _crew_verbs(command) & PROMOTION_VERBS:
                 continue

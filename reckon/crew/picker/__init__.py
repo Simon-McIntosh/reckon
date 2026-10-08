@@ -1,10 +1,11 @@
 """Select a configured backend with hard eligibility checks and typed judgment."""
 
+import hashlib
 import json
 import math
 import os
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -81,6 +82,55 @@ def _section_effort_hours(plan_path: Path, section: str) -> float | None:
     return hours if math.isfinite(hours) and hours > 0 else None
 
 
+def _resolved_plan_path(docs: Path, project: str, plan: str) -> Path | None:
+    """The plan file a node names, resolved through a docs-tree scan, cached.
+
+    Resolving a plan walks the docs tree before it identifies the file. The
+    estimate stage resolves the same plan for the same node, and a pick paid
+    that scan again here for every node it was handed. The resolution is a pure
+    function of the files the scan reads, so it is kept under a stamp of those
+    files and rebuilt when one moves; a warm cache serves the file the scan
+    would have found without walking the tree.
+    """
+
+    from reckon import capabilities
+    from reckon.crew.routing import _docs_scan_directories
+
+    identity = hashlib.sha256(
+        f"{Path(docs).parent.resolve()}:{project}:{plan}".encode()
+    ).hexdigest()
+
+    def build() -> dict[str, Any]:
+        from reckon import resources
+
+        resource = resources.resolve_resource(
+            docs, project, plan, "plan", include_archived=False
+        )
+        return {
+            "path": str(resource.path) if resource is not None else None,
+            "directories": _docs_scan_directories(docs),
+        }
+
+    def stamp_of(value: Mapping[str, Any]) -> list[Any]:
+        stamp: list[Any] = [
+            [relative, capabilities.file_stamp(docs / relative)]
+            for relative in (value.get("directories") or [])
+        ]
+        path = value.get("path")
+        if path:
+            stamp.append([path, capabilities.file_stamp(path)])
+        return stamp
+
+    try:
+        value = capabilities.cached_pick_input_stamped(
+            f"picker-plan-path-{identity}", identity, stamp_of, build
+        )
+    except Exception:  # noqa: BLE001 - the cache is an optimisation, not the authority
+        return None
+    stored = value.get("path")
+    return Path(str(stored)) if stored else None
+
+
 def _declared_difficulty(
     request: PickRequest,
     config: dict[str, Any],
@@ -113,21 +163,28 @@ def _declared_difficulty(
     capability = request.capability or None
     # The plan is resolved once and serves both facts: the section record that
     # carries the effort, and the routing resolver that carries the capability.
+    # The resolution is taken through the cached resolver rather than a fresh
+    # docs-tree scan, so a plan whose file has not moved is served from the
+    # figure the estimate stage's own resolve produced.
     plan_path: Path | None = None
     if node.plan.strip() and node.section.strip():
-        try:
-            from reckon import resources
+        plan_path = _resolved_plan_path(
+            plan_repo() / "docs", request.project, node.plan
+        )
+        if plan_path is None:
+            try:
+                from reckon import resources
 
-            resource = resources.resolve_resource(
-                plan_repo() / "docs",
-                request.project,
-                node.plan,
-                "plan",
-                include_archived=False,
-            )
-            plan_path = resource.path if resource is not None else None
-        except Exception:  # noqa: BLE001 - a missing plan leaves the fields null
-            plan_path = None
+                resource = resources.resolve_resource(
+                    plan_repo() / "docs",
+                    request.project,
+                    node.plan,
+                    "plan",
+                    include_archived=False,
+                )
+                plan_path = resource.path if resource is not None else None
+            except Exception:  # noqa: BLE001 - a missing plan leaves the fields null
+                plan_path = None
 
     hours: float | None = None
     hours_source: str | None = None
@@ -325,7 +382,9 @@ def pick(
                 if choice == "hold":
                     action = "hold"
                 else:
-                    selected = next(c for c in offered if prompts.option_key(c) == choice)
+                    selected = next(
+                        c for c in offered if prompts.option_key(c) == choice
+                    )
             finally:
                 jev_ms = (time.perf_counter() - jev_started) * 1000
                 stages["jev_ms"] = round(jev_ms, 3)

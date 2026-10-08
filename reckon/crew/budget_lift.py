@@ -99,6 +99,7 @@ __all__ = [
     "grant",
     "lifts_path",
     "list_lifts",
+    "published_readings",
     "under_pace_hold",
 ]
 
@@ -146,6 +147,47 @@ def configured_pace_multiple(config: Mapping[str, Any] | None) -> float:
     itself is derived against.
     """
     return float(pace_module.policy(config).pace_multiple)
+
+
+def published_readings(
+    config: Mapping[str, Any] | None,
+    *,
+    group: str,
+    path: str | Path | None = None,
+    now: datetime | None = None,
+) -> list[dict[str, Any]]:
+    """The group's freshest published window reading, in :func:`grant`'s shape.
+
+    A lift is workstation-wide, and so is the headroom document the observer
+    publishes, so the reading a grant projects from is the group's own freshest
+    member reading there rather than a project's recorded evidence. No document,
+    or one reaching none of the group's members, yields an empty list, and the
+    grant then records no projection rather than an invented one.
+    """
+    from reckon.crew import paid_lanes
+
+    members = _declared_group_members(config, group)
+    if not members:
+        return []
+    moment = _aware(now) if now is not None else None
+    document = paid_lanes.read_document(path)
+    windows = paid_lanes.document_windows(document, moment=moment)
+    best = None
+    for member in members:
+        reading = windows.get(member)
+        if reading is None or reading.observed_at is None:
+            continue
+        if best is None or reading.observed_at > best.observed_at:
+            best = reading
+    if best is None:
+        return []
+    payload: dict[str, Any] = {"observed_at": best.observed_at.isoformat()}
+    for figure in best.figures:
+        payload[str(figure.period)] = {
+            "utilisation": float(figure.utilisation),
+            "resets_at": figure.resets_at,
+        }
+    return [payload]
 
 
 def read_document(path: str | Path | None = None) -> dict[str, Any]:
@@ -314,21 +356,35 @@ def clear(
     """Revoke an in-force lift on ``group``, recording who and when.
 
     The lift revoked is named one of two ways. ``lift_id`` revokes that exact
-    record, whatever its scope, so a session-scoped lift can be cleared by the
-    coordinator that sees it in the listing. Otherwise the lift is resolved for
-    ``session``: a session's own lift governs it over a global one, and with no
-    session given only a global lift is a candidate, so a bare clear never
-    revokes a session-scoped lift out from under the session that holds it.
+    record, but only when it belongs to ``group``: an id naming a different
+    group's lift is refused rather than revoked, because the id path may revoke
+    only what the group path could, and the group path never reaches another
+    group's lift. Otherwise the lift is resolved for ``session``: a session's
+    own lift governs it over a global one, and with no session given only a
+    global lift is a candidate, so a bare clear never revokes a session-scoped
+    lift out from under the session that holds it.
 
     Ended lifts are kept as history so the multiple can be tuned against what it
     did; a clear stamps the record rather than removing it. ``None`` is returned
-    when no in-force lift matched, so a caller can tell a revoke from a no-op.
+    when no in-force lift matched -- an id that names no lift, or one past its
+    end, older than the hard ceiling, or already cleared -- so a caller can tell
+    a revoke from a no-op.
     """
     environment = environ if environ is not None else os.environ
     moment = _aware(now) if now is not None else datetime.now(UTC)
     document = read_document(path)
     if lift_id is not None:
-        governing = _lift_by_id(document["lifts"], lift_id=str(lift_id))
+        named = _lift_by_id(document["lifts"], lift_id=str(lift_id))
+        if named is None:
+            return None
+        named_group = str(named.get("group") or "")
+        if named_group != str(group):
+            raise LiftRefusedError(
+                f"lift {lift_id!r} belongs to budget group {named_group!r}, not "
+                f"{str(group)!r}; clearing by id revokes only a lift the group "
+                "path could name, so --group and --id must agree"
+            )
+        governing = named
     else:
         governing = _governing_lift(
             document["lifts"],
@@ -338,7 +394,9 @@ def clear(
             session=session,
             bound=ceilings(config),
         )
-    if governing is None or governing.get("cleared_at"):
+    if governing is None:
+        return None
+    if not _in_force(governing, readings=None, now=moment, bound=ceilings(config)):
         return None
     governing["cleared_by"] = str(cleared_by or environment.get("USER") or "unknown")
     governing["cleared_at"] = _iso(moment)
@@ -819,6 +877,14 @@ def _declared_group_names(config: Mapping[str, Any] | None) -> set[str]:
     """The declared budget group names, read from the group module."""
     budget_group = import_module("reckon.crew.budget_group")
     return set(budget_group.declared_groups(config))
+
+
+def _declared_group_members(
+    config: Mapping[str, Any] | None, group: str
+) -> tuple[str, ...]:
+    """The backend members of one declared budget group, in declaration order."""
+    budget_group = import_module("reckon.crew.budget_group")
+    return tuple(budget_group.declared_groups(config).get(str(group), ()))
 
 
 def _scope(scope: str, session: str | None) -> str:

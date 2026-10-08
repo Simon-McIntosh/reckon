@@ -556,6 +556,73 @@ def test_clear_returns_none_when_only_a_session_lift_exists():
     assert bl.clear(config, group=GROUP, now=NOW) is None
 
 
+def test_clear_by_id_refuses_a_lift_of_a_different_group():
+    """An id path may revoke only what the group path could name. A lift of
+    another wallet is refused rather than revoked, so a mistyped --group cannot
+    clear a lift the group never held."""
+    config = _config()
+    reading = _reading(week_utilisation=0.21, elapsed_hours=22.0)
+    lift = bl.grant(
+        config,
+        group=GROUP,
+        reason="mine",
+        multiple=1.8,
+        readings=[reading],
+        now=NOW,
+    )
+    with pytest.raises(bl.LiftRefusedError):
+        bl.clear(config, group="another-wallet", lift_id=lift["id"], now=NOW)
+    # The refusal left the record in force.
+    assert (
+        bl.effective_budget(config, group=GROUP, readings=[reading], now=NOW)["lift_id"]
+        == lift["id"]
+    )
+
+
+def test_clear_by_id_returns_none_for_a_lift_no_longer_in_force(tmp_path):
+    """The id path revokes only what the group path could, and neither revokes a
+    lift that has already ended: past its own end, past the hour ceiling, or
+    already cleared."""
+    config = _config()
+    reading = _reading(week_utilisation=0.21, elapsed_hours=22.0)
+
+    # Past its stated end.
+    ended = bl.grant(
+        config,
+        group=GROUP,
+        reason="ends soon",
+        multiple=1.8,
+        readings=[reading],
+        ends={"kind": "at", "at": (NOW - timedelta(hours=1)).isoformat()},
+        now=NOW - timedelta(hours=2),
+    )
+    assert bl.clear(config, group=GROUP, lift_id=ended["id"], now=NOW) is None
+
+    # Older than the hard hour ceiling.
+    tight = _resolved_layer(tmp_path, "    max_hours: 24\n")
+    stale = bl.grant(
+        tight,
+        group=GROUP,
+        reason="an old lift",
+        multiple=1.8,
+        readings=[reading],
+        now=NOW - timedelta(hours=30),
+    )
+    assert bl.clear(tight, group=GROUP, lift_id=stale["id"], now=NOW) is None
+
+    # Already cleared.
+    fresh = bl.grant(
+        config,
+        group=GROUP,
+        reason="clear me",
+        multiple=1.8,
+        readings=[reading],
+        now=NOW,
+    )
+    assert bl.clear(config, group=GROUP, lift_id=fresh["id"], now=NOW) is not None
+    assert bl.clear(config, group=GROUP, lift_id=fresh["id"], now=NOW) is None
+
+
 # ── the returned block never carries a None pace multiple ───────────────────
 
 
@@ -749,3 +816,21 @@ def test_a_layer_hour_ceiling_makes_an_old_lift_inert_and_a_loose_one_keeps_it(
         bl.effective_budget(loose, group=GROUP, readings=[reading], now=NOW)
         is not loose["budget"]
     )
+
+
+def test_the_shipped_defaults_carry_the_lift_ceilings(tmp_path):
+    """A fresh flight that declares nothing inherits the lift ceilings from the
+    shipped defaults, so the module's own constants and the resolved config
+    agree without a host or project layer supplying them."""
+    from reckon import flight
+
+    resolved = flight.resolve(
+        host_path=tmp_path / "absent-host.yaml",
+        project_path=tmp_path / "absent-project.yaml",
+    )
+    lift = resolved.config["budget"]["lift"]
+    assert lift["max_multiple"] == pytest.approx(bl.DEFAULT_MAX_MULTIPLE)
+    assert lift["max_hours"] == pytest.approx(bl.DEFAULT_MAX_HOURS)
+    ceilings = bl.ceilings(resolved.config)
+    assert ceilings.max_multiple == pytest.approx(bl.DEFAULT_MAX_MULTIPLE)
+    assert ceilings.max_hours == pytest.approx(bl.DEFAULT_MAX_HOURS)

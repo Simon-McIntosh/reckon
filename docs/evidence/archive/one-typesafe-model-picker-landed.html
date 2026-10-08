@@ -272,6 +272,26 @@
     <p><code>tests/test_member_friction.py</code> computes the guard's expected store from <code>HOME</code> alone, with <code>RECKON_HOME</code> pointing elsewhere, and checks it under two layouts: XDG (<code>&lt;HOME&gt;/.config/reckon</code>) and legacy (<code>&lt;HOME&gt;/docs-server</code>). Returning the XDG literal from <code>_guard_store()</code> fails only the legacy case, the one that separates the resolver from that literal. Keeping <code>RECKON_HOME</code> fails both.</p><p>Run <code>r-20261008T141154824443-member-friction-guard-fails-on-a-wrong-store</code>, commit <code>e12c1e50f</code>, merged at <code>930391d08</code>. The worker's gate passed 200 at base and 201 at head. The merge check over the module and the provider-spawn guard passed 10 at base and 11 at head, both <code>EXIT=0</code>. Review 119 found no added failures.</p>
   </section>
 
+  <section id="s12-tail-is-load">
+    <h2>§12 — the tail is load, and the one code cost is cut (2026-10-08)</h2>
+    <p>Items 1 and 2. A replay of the slowest recorded picks attributes every tail stage to load, not code. Replayed unstressed, the recorded medians fall from 1,805 ms to 19 ms for <code>snapshot_ms</code>, from 5,883 ms to 10 ms for <code>capability_ms</code>, and from 7,146 ms to 33 ms for <code>state_render_ms</code>. The shared fleet node's load accounts for the tail. One per-pick code cost was found and cut: the capability stage re-resolved the plan with a docs-tree scan on every pick. It now takes the resolution through the pick-input cache, under a stamp of the files the scan reads. That took capability from 1,497 ms to 1,084 ms per pick, measured one pick per process with a shared cache. Run <code>r-20261008T124144038643-pick-stages-fit-the-bound</code>, commit <code>4821665f8</code>, review 96. The replay driver dropped one of its ten cases without recording it, and the cut figure has no captured log; both come from that review.</p><p>Stacked with §13, the warm pick still rescanned the plan twice. §13 had changed the shape of the shared docs-scan helper's output, so the cache stamp changed on every pick. The repair <code>r-20261008T143639752888-pick-cache-survives-the-sibling-stamp</code> (commits <code>ba4ca787d</code> and <code>2b1f5388b</code>, review 119) splits the walk. The picker's stamp reads the shape it was built for, and §13's sibling-file stamp is unchanged. A warm pick now does 0 plan scans, against 2 before. Merged at <code>c98d716c1</code>. The other follow-ons from review 96 (a renamed-plan test case and a private ledger helper) are §24.</p>
+  </section>
+
+  <section id="s22">
+    <h2>§22 — §13&#x27;s caches and guards say what they do (2026-10-08)</h2>
+    <p>The identity memo aliases the resolved repository root, so a worktree path followed by its mount costs 1 git probe, against 2 at base. A mount resolved before its worktree, or two linked worktrees, still each pay a probe. Keying by git common directory would need the very probe the memo exists to avoid, so the narrower key stands, and the comment and evidence now state it. The sweep guard runs <code>garbage_collect_orphan_scratch</code> one second inside and outside the stated grace, and fails when the grace is not applied. The driver counts git invocations, and base is separated on the first dispatch's count. Run <code>r-20261008T150415075733-pre-pick-caches-do-what-they-claim</code>, commits <code>f74fda9f2</code> and <code>e0d97794d</code>, reviews 108 and 105, merged at <code>c98d716c1</code>.</p>
+  </section>
+
+  <section id="s12-s22-merge">
+    <h2>§12 repair and §22 — merge check (2026-10-08)</h2>
+    <p>The §12 repair and §22 were stacked onto main and measured over the 254 test files that import the routing, picker, dispatch-section or dispatch modules. Base: 2,556 passed, 6 failed. Head: 2,562 passed, 7 failed. The one head-only failure, <code>test_a_fresh_empty_claim_refuses</code>, was rerun three times per arm: it failed once at base and passed every head run. It is intermittent, not added. A focused gate of 239 tests passed at <code>c98d716c1</code>. Logs are in <code>~/.cache/reckon-suite-logs/merge-picker-s12r-s22-*.log</code>.</p>
+  </section>
+
+  <section id="s24">
+    <h2>§24 — the pick&#x27;s plan cache is proved on a renamed plan (2026-10-08)</h2>
+    <p><code>stamp_of</code> in <code>reckon/crew/picker/__init__.py</code> stamps resolved paths through <code>capabilities.file_stamp</code>, not the private <code>ledger._file_identity</code>. <code>test_a_renamed_plan_file_is_not_served_stale</code> renames the plan and fails when the cache ignores its stamp (<code>48.0 == 10.0</code>). The stamp narrows to modification time and size, which still moves on every content edit and reads none for a renamed file.</p><p>Run <code>r-20261008T161243424790-pick-cache-proved-on-a-renamed-plan</code>, commit <code>debeb5bb7</code>, merged at <code>fd48070b1</code>. The merge check covered the 39 test files that import <code>reckon.crew.picker</code>: base 345 passed and head 346 passed, with the same one failure in each. Review 118 found no added failures. Its other follow-on, the wall-clock flake in <code>test_dispatch_marks_old_published_window_stale</code>, is pre-existing and recorded for a later section.</p>
+  </section>
+
 </main>
 </body>
 </html>

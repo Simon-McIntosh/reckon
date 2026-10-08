@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "60df715ae466bf4751ce7bfef047b1b84114b034",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/routing.py:_budget_verdict",
+    "reckon/crew/budget_group.py:effective_block"
+  ],
+  "completed_at": "2026-10-08T16:16:34.658Z",
+  "dispatched_at": "2026-10-08T16:01:50Z",
+  "findings": [],
+  "head_log_revision": "60df715ae466bf4751ce7bfef047b1b84114b034",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit 03ac347a against base 0eeba7d; +10 lines in tests/test_reserves_read_the_lift.py only: now=NOW added to the node's _budget_verdict call inside _routing_ceiling, plus a docstring.",
+    "done_when": "the routing-ceiling arm is the assertion at tests/test_reserves_read_the_lift.py:320; the run's logs/head-gate-repair.log records 111 passed EXIT=0 and logs/negative-control-round.log reddens it (92 vs 100, EXIT=1), and I re-ran the file green (7 passed).",
+    "goal": "the repair commit's goal is that the routing-ceiling case be judged at the fixture instant rather than the wall clock; tests/test_reserves_read_the_lift.py:300 threads now=NOW into _budget_verdict and I reproduced the fix.",
+    "manifest": "read; it records the repair commit 03ac347a with head-gate-repair 111 passed EXIT=0 and a negative control that reddens the routing ceiling, and its baseline_suite and after_suite arms carry zero failures each.",
+    "write_paths": "the only path in commit 03ac347a is tests/test_reserves_read_the_lift.py, which the manifest lists among the node's declared write paths."
+  },
+  "justifications": {
+    "durability": "the assertion at tests/test_reserves_read_the_lift.py:320 flips 100 to 92 across the clear and reddens under the negative control, so it guards the routing path; it is not itself guarded against a fresh wall-clock read in the helper.",
+    "evidence": "logs/head-gate-repair.log records the repaired gate EXIT=0 (111 passed) and logs/negative-control-round.log reddens exactly the routing-ceiling assertion (92 vs 100, EXIT=1); I re-ran the file (7 passed) and reproduced the fuse independently.",
+    "fit": "the fix uses the same explicit now=NOW the file already passes to bg.group_figures at tests/test_reserves_read_the_lift.py:223, and its docstring states the mechanism.",
+    "goal_fidelity": "tests/test_reserves_read_the_lift.py:300 passes now=NOW so budget_group.py:209 no longer reads the wall clock, and my reproduction read 100 at the fixture instant against 92 with now omitted.",
+    "reuse": "the diff adds no definition; it repairs the existing helper to thread an argument through the owner of the resolution at reckon/crew/budget_group.py:effective_block.",
+    "scope_discipline": "the only path in 03ac347a is tests/test_reserves_read_the_lift.py, inside the node's declared write paths, and it carries nothing beyond the fix."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the repair commit's goal is that the routing-ceiling case be judged at the fixture instant rather than the wall clock; tests/test_reserves_read_the_lift.py:300 threads now=NOW into _budget_verdict and I reproduced the fix.\nVERDICT done_when: the routing-ceiling arm is the assertion at tests/test_reserves_read_the_lift.py:320; the run's logs/head-gate-repair.log records 111 passed EXIT=0 and logs/negative-control-round.log reddens it (92 vs 100, EXIT=1), and I re-ran the file green (7 passed).\nVERDICT write_paths: the only path in commit 03ac347a is tests/test_reserves_read_the_lift.py, which the manifest lists among the node's declared write paths.\nVERDICT manifest: read; it records the repair commit 03ac347a with head-gate-repair 111 passed EXIT=0 and a negative control that reddens the routing ceiling, and its baseline_suite and after_suite arms carry zero failures each.\nVERDICT diff: read commit 03ac347a against base 0eeba7d; +10 lines in tests/test_reserves_read_the_lift.py only: now=NOW added to the node's _budget_verdict call inside _routing_ceiling, plus a docstring.\nCALL_SITES: reckon/crew/routing.py:_budget_verdict, reckon/crew/budget_group.py:effective_block\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_reserves_read_the_lift.py:300 passes now=NOW so budget_group.py:209 no longer reads the wall clock, and my reproduction read 100 at the fixture instant against 92 with now omitted.\nSCORE evidence: 20\nJUSTIFICATION evidence: logs/head-gate-repair.log records the repaired gate EXIT=0 (111 passed) and logs/negative-control-round.log reddens exactly the routing-ceiling assertion (92 vs 100, EXIT=1); I re-ran the file (7 passed) and reproduced the fuse independently.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the only path in 03ac347a is tests/test_reserves_read_the_lift.py, inside the node's declared write paths, and it carries nothing beyond the fix.\nSCORE durability: 19\nJUSTIFICATION durability: the assertion at tests/test_reserves_read_the_lift.py:320 flips 100 to 92 across the clear and reddens under the negative control, so it guards the routing path; it is not itself guarded against a fresh wall-clock read in the helper.\nSCORE fit: 20\nJUSTIFICATION fit: the fix uses the same explicit now=NOW the file already passes to bg.group_figures at tests/test_reserves_read_the_lift.py:223, and its docstring states the mechanism.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition; it repairs the existing helper to thread an argument through the owner of the resolution at reckon/crew/budget_group.py:effective_block.",
+  "review_run_id": "r-20261008T160127279680-review-of-the-reserves-read-the-lift",
+  "reviewed_base_sha": "0eeba7d30716067b46e7e4545511f277120046f8",
+  "reviewed_head_sha": "03ac347a879b70dc42bbd2e4f34c4f5c91361946",
+  "reviewed_run_id": "r-20261008T150526524013-the-reserves-read-the-lift",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T16:12:39.455149+00:00",
+  "total": 119
+}

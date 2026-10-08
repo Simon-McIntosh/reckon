@@ -1,0 +1,84 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "e77182ac9f5d56d3ced1971f114122e60f2ca56c",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/budget.py:1742 preflight -> group_pace",
+    "reckon/budget.py:3237 pace_row -> group_pace",
+    "reckon/budget.py:2631 _lift_resolved_config -> budget_lift.effective_budget"
+  ],
+  "completed_at": "2026-10-08T16:11:44.625Z",
+  "dispatched_at": "2026-10-08T15:49:59Z",
+  "findings": [
+    {
+      "file": "reckon/budget.py",
+      "line": "2827",
+      "severity": "follow-on",
+      "text": "follow-on: `budget.lift` is the same key the budget block declares its own ceilings under, so when a flight layer sets budget.lift.max_multiple (which the plan requires be writable) the ceilings dict is truthy at budget.py:2827 and the group's allowance carries `lift: {max_multiple, max_hours}` with no lift in force; a reader of allowance['lift'] then reports a lift that is not on, against the node's own claim that a group under no lift reports the allowance it always has."
+    },
+    {
+      "file": "reckon/budget.py",
+      "line": "3237",
+      "severity": "follow-on",
+      "text": "follow-on: pace_row at budget.py:3237 calls group_pace without a session, so a session-scoped lift never raises the multiple a dispatch row records, although the plan lists dispatch rows among the readers that compute through the resolver; the row's pace_multiple would report the unlifted multiple for a dispatch admitted under its own session lift."
+    },
+    {
+      "file": "tests/test_pace_reads_the_lift.py",
+      "line": "47",
+      "severity": "follow-on",
+      "text": "follow-on: the fixture _config at tests/test_pace_reads_the_lift.py:47 omits the budget.lift ceilings block, so the key collision at budget.py:2827 is unguarded -- the tests assert allowance['lift'] is None when a lift ends only because their config carries no ceilings key, and a config that does carry one is never exercised."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T150419991564-the-pace-reads-the-lift/gate-after.log",
+      "line": "3",
+      "severity": "follow-on",
+      "text": "follow-on: the head arm's log names its revision as 'e77182ac9... + working tree (head)' rather than the reviewed head commit d10a6771b, so the log alone cannot be pinned to the commit the review is stored against, and the manifest's after_suite carries no revision field to reconcile it."
+    }
+  ],
+  "head_log_revision": "d10a6771b948c5972a4a24f46fde089f3d70f5da",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read against base e77182ac9; the single commit d10a6771 adds _lift_resolved_config, _lift_history, _record_lift_reading, _reading_lift_entry, _lift_order, _banked_reset_factor and _lift_label to reckon/budget.py, threads session through preflight and group_pace, rewrites tests/test_pace_hold_releases_at.py and adds tests/test_pace_reads_the_lift.py, all inside the declared scope.",
+    "done_when": "the done_when names tests/test_pace_reads_the_lift.py asserting each figure from one fixture and a base/head gate with zero added failures; the tests and both logs are present and green, though the fixture omits budget.lift and the after log names the base sha plus a working tree rather than the head commit.",
+    "goal": "the node goal is that budget.group_pace resolves each group's block through budget_lift.effective_budget so pace_hold and the pre-flight judge a lifted multiple, drain-by line or uncapped release; budget.py:2824 resolves it once per group and budget.py:2976 pace_hold reads the marker, but budget.py:2827 also fires on the budget.lift ceilings key even when no lift is in force.",
+    "manifest": "read; status complete; its baseline_suite (152 passed, EXIT=0) and after_suite (162 passed, EXIT=0) reconcile with gate-baseline.log and gate-after.log, and its negative_control_log records EXIT=1 with three failing ids the head arm does not fail.",
+    "write_paths": "read the manifest's five declared paths against the diff of e77182ac9..d10a6771; the four changed paths are all inside them and the docs/figures directory was left unused."
+  },
+  "justifications": {
+    "durability": "tests/test_pace_reads_the_lift.py fails under the declared mutation (negative-control.log: three failed, EXIT=1) and every assertion derives its figure from the resolver's own output at assertion time, but the budget.lift ceilings case at budget.py:2827 is unguarded because the fixture omits it.",
+    "evidence": "the gate is recorded in the manifest and both arms are green with a red negative control; an independent re-run at d10a6771 reproduced 162 passed, EXIT=0, and the declared mutation reproduced EXIT=1 with the same three ids, though the after log's revision line names the base sha plus a working tree rather than the head commit.",
+    "fit": "the private helpers _lift_resolved_config, _lift_history, _banked_reset_factor and _lift_label follow the module's idiom and reuse _parse_stamp and _iso, and no added name carries a plan, sprint or ticket label.",
+    "goal_fidelity": "budget.py:2824 resolves each group's block once and budget.py:2976 pace_hold reads the lift marker, but budget.py:2827 also treats the declared budget.lift ceilings block as a lift in force, so with a flight layer setting budget.lift the entry reports a lift that is not on.",
+    "reuse": "pace_hold reads the banked-reset factor from where _scale_for_banked_reset records it rather than restating 2.0, and the lift resolution reuses budget_lift.effective_budget, but the active-lift marker reuses the key the budget block reserves for its own ceilings.",
+    "scope_discipline": "the diff of e77182ac9..d10a6771 touches only reckon/budget.py, tests/test_pace_reads_the_lift.py, tests/test_pace_hold_releases_at.py and the evidence fragment, all inside the five declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that budget.group_pace resolves each group's block through budget_lift.effective_budget so pace_hold and the pre-flight judge a lifted multiple, drain-by line or uncapped release; budget.py:2824 resolves it once per group and budget.py:2976 pace_hold reads the marker, but budget.py:2827 also fires on the budget.lift ceilings key even when no lift is in force.\nVERDICT done_when: the done_when names tests/test_pace_reads_the_lift.py asserting each figure from one fixture and a base/head gate with zero added failures; the tests and both logs are present and green, though the fixture omits budget.lift and the after log names the base sha plus a working tree rather than the head commit.\nVERDICT write_paths: read the manifest's five declared paths against the diff of e77182ac9..d10a6771; the four changed paths are all inside them and the docs/figures directory was left unused.\nVERDICT manifest: read; status complete; its baseline_suite (152 passed, EXIT=0) and after_suite (162 passed, EXIT=0) reconcile with gate-baseline.log and gate-after.log, and its negative_control_log records EXIT=1 with three failing ids the head arm does not fail.\nVERDICT diff: read against base e77182ac9; the single commit d10a6771 adds _lift_resolved_config, _lift_history, _record_lift_reading, _reading_lift_entry, _lift_order, _banked_reset_factor and _lift_label to reckon/budget.py, threads session through preflight and group_pace, rewrites tests/test_pace_hold_releases_at.py and adds tests/test_pace_reads_the_lift.py, all inside the declared scope.\nCALL_SITES: reckon/budget.py:1742 preflight -> group_pace, reckon/budget.py:3237 pace_row -> group_pace, reckon/budget.py:2631 _lift_resolved_config -> budget_lift.effective_budget\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: budget.py:2824 resolves each group's block once and budget.py:2976 pace_hold reads the lift marker, but budget.py:2827 also treats the declared budget.lift ceilings block as a lift in force, so with a flight layer setting budget.lift the entry reports a lift that is not on.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate is recorded in the manifest and both arms are green with a red negative control; an independent re-run at d10a6771 reproduced 162 passed, EXIT=0, and the declared mutation reproduced EXIT=1 with the same three ids, though the after log's revision line names the base sha plus a working tree rather than the head commit.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff of e77182ac9..d10a6771 touches only reckon/budget.py, tests/test_pace_reads_the_lift.py, tests/test_pace_hold_releases_at.py and the evidence fragment, all inside the five declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_pace_reads_the_lift.py fails under the declared mutation (negative-control.log: three failed, EXIT=1) and every assertion derives its figure from the resolver's own output at assertion time, but the budget.lift ceilings case at budget.py:2827 is unguarded because the fixture omits it.\nSCORE fit: 19\nJUSTIFICATION fit: the private helpers _lift_resolved_config, _lift_history, _banked_reset_factor and _lift_label follow the module's idiom and reuse _parse_stamp and _iso, and no added name carries a plan, sprint or ticket label.\nSCORE reuse: 19\nJUSTIFICATION reuse: pace_hold reads the banked-reset factor from where _scale_for_banked_reset records it rather than restating 2.0, and the lift resolution reuses budget_lift.effective_budget, but the active-lift marker reuses the key the budget block reserves for its own ceilings.\nFINDING reckon/budget.py:2827 follow-on: `budget.lift` is the same key the budget block declares its own ceilings under, so when a flight layer sets budget.lift.max_multiple (which the plan requires be writable) the ceilings dict is truthy at budget.py:2827 and the group's allowance carries `lift: {max_multiple, max_hours}` with no lift in force; a reader of allowance['lift'] then reports a lift that is not on, against the node's own claim that a group under no lift reports the allowance it always has.\nFINDING reckon/budget.py:3237 follow-on: pace_row at budget.py:3237 calls group_pace without a session, so a session-scoped lift never raises the multiple a dispatch row records, although the plan lists dispatch rows among the readers that compute through the resolver; the row's pace_multiple would report the unlifted multiple for a dispatch admitted under its own session lift.\nFINDING tests/test_pace_reads_the_lift.py:47 follow-on: the fixture _config at tests/test_pace_reads_the_lift.py:47 omits the budget.lift ceilings block, so the key collision at budget.py:2827 is unguarded -- the tests assert allowance['lift'] is None when a lift ends only because their config carries no ceilings key, and a config that does carry one is never exercised.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T150419991564-the-pace-reads-the-lift/gate-after.log:3 follow-on: the head arm's log names its revision as 'e77182ac9... + working tree (head)' rather than the reviewed head commit d10a6771b, so the log alone cannot be pinned to the commit the review is stored against.\n",
+  "review_run_id": "r-20261008T154845630620-review-of-the-pace-reads-the-lift",
+  "reviewed_base_sha": "e77182ac9f5d56d3ced1971f114122e60f2ca56c",
+  "reviewed_head_sha": "d10a6771b948c5972a4a24f46fde089f3d70f5da",
+  "reviewed_run_id": "r-20261008T150419991564-the-pace-reads-the-lift",
+  "reviewer": {
+    "backend": "clive",
+    "effort": null,
+    "model": "deepseek-v4.1-flash",
+    "run_id": "r-20261008T154845630620-review-of-the-pace-reads-the-lift"
+  },
+  "reviewer_run_id": "r-20261008T154845630620-review-of-the-pace-reads-the-lift",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T16:07:08.731985+00:00",
+  "total": 111
+}

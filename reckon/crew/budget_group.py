@@ -24,13 +24,15 @@ a reading carrying none yields no figure rather than a plausible one.
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
 from reckon._timestamps import parse_utc
 from reckon.crew import bar as bar_module
+from reckon.crew import budget_lift as budget_lift_module
 from reckon.crew import pace as pace_module
 from reckon.crew import reserve as reserve_module
 from reckon.crew import window_reading
@@ -180,6 +182,68 @@ def reserve_block_for_group(
     return resolved
 
 
+def effective_block(
+    config: Mapping[str, Any] | None,
+    group: str,
+    *,
+    readings: Sequence[Mapping[str, Any]] | None = None,
+    now: datetime | None = None,
+    session: str | None = None,
+    path: str | Path | None = None,
+) -> dict[str, Any]:
+    """The budget block a declared group's reserves are judged through.
+
+    Two rules can zero a wallet's reserves, and they are composed here in one
+    resolution rather than through two parallel paths a reader would have to
+    reconcile. A lift in force releases all three reserves for its group,
+    raising the multiple to the lifted figure; and a wallet whose every member
+    is barred from review routing withholds no bookend reserve. The lift is
+    applied first and the review-exclusion rule then applied to its result, so a
+    wallet under both resolves through the same call, and a wallet under neither
+    is returned with its configured reserve untouched.
+
+    Expiry is read here rather than run anywhere: the block carries the lifted
+    figure only while the lift is in force, judged from the record, the group's
+    readings and the wall clock alone.
+    """
+    moment = _aware(now) if now is not None else datetime.now(UTC)
+    lifted = budget_lift_module.effective_budget(
+        config,
+        group=str(group),
+        readings=readings,
+        now=moment,
+        session=session,
+        path=path,
+    )
+    return reserve_block_for_group(lifted, config, group)
+
+
+def _lift_readings(
+    reading: window_reading.WindowReading | None,
+) -> list[Any] | None:
+    """One window reading, in the shape the lift resolver reads, or ``None``.
+
+    The resolver reads ``{clock: {utilisation, resets_at}}`` rows in observed
+    order, and the group's freshest report already carries both clocks with
+    those two figures. Handing the resolver the same report a figure was drawn
+    from lets one reading both place the group in its week and decide whether a
+    reset-anchored lift has ended, rather than a second reading taken for the
+    lift and a third for the bar.
+    """
+    if reading is None:
+        return None
+    row: dict[str, Any] = {}
+    for clock in (FILL_CLOCK, WEEK_CLOCK):
+        figure = reading.figure(clock)
+        if figure is None:
+            continue
+        row[clock] = {
+            "utilisation": figure.utilisation,
+            "resets_at": figure.resets_at,
+        }
+    return [row] if row else None
+
+
 def group_position(
     group: str,
     config: Mapping[str, Any] | None,
@@ -289,6 +353,7 @@ def group_figures(
     *,
     block: Mapping[str, Any] | None = None,
     now: datetime | None = None,
+    session: str | None = None,
 ) -> GroupFigures:
     """Return one declared wallet's three pacing figures, once for the wallet.
 
@@ -323,7 +388,11 @@ def group_figures(
         )
     moment = _aware(now) if now is not None else datetime.now(UTC)
     supplied = windows if isinstance(windows, Mapping) else {}
-    budget_block = block if isinstance(block, Mapping) else (config or {}).get("budget")
+    base_config = (
+        {**(config or {}), "budget": block}
+        if isinstance(block, Mapping)
+        else config
+    )
 
     freshest = _freshest_member(members, supplied, moment=moment)
     member = None if freshest is None else freshest[0]
@@ -351,7 +420,13 @@ def group_figures(
         # the score is what a node clears it with, so any score returns it.
         bar=None if fill is None else bar_module.recommend(fill, 1.0).bar,
         reserve_pct=reserve_module.reserve_pct(
-            reserve_block_for_group(budget_block, config, group)
+            effective_block(
+                base_config,
+                group,
+                readings=_lift_readings(reading),
+                now=moment,
+                session=session,
+            )
         ),
     )
 

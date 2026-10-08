@@ -1,5 +1,6 @@
 import time
 from collections.abc import Mapping
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -2068,6 +2069,309 @@ def crew_budget_reset(group, mark_available, mark_used, by, pretty):
         }
     _emit_crew_result(result, pretty)
 
+
+
+_LIFT_CLOCKS = ("seven_day", "five_hour")
+
+
+def _lift_moment(text, *, now):
+    """Resolve a lift time expression to an aware instant, or ``None``.
+
+    An ISO-8601 stamp is read directly. Anything else is a duration -- an
+    integer with an ``s``/``m``/``h`` unit, as :func:`reckon.crew.node.parse_duration`
+    reads -- and is taken as an offset from ``now``, so ``--until 12h`` means
+    twelve hours from the grant, and ``--drain-by 6h`` means the same. A text
+    that parses as neither yields ``None`` and the caller refuses it.
+    """
+    from reckon.crew import budget_lift as budget_lift_module
+    from reckon.crew.node import CrewError, parse_duration
+
+    stamp = budget_lift_module._parse_stamp(text)
+    if stamp is not None:
+        return stamp
+    try:
+        seconds = parse_duration(str(text).strip())
+    except CrewError:
+        return None
+    if seconds is None:
+        return None
+    return now + timedelta(seconds=int(seconds))
+
+
+def _lift_ends(*, until, clock, now):
+    """Build ``grant``'s ``ends`` block from ``--until``/``--clock``.
+
+    The default ``reset`` anchors the lift to the clock's own reset, which the
+    record resolves at expiry so the lift ends when the window does whatever
+    that turns out to be. An explicit ISO stamp or duration pins the lift's end
+    instead.
+    """
+    text = str(until or "").strip()
+    if not text or text == "reset":
+        return {"kind": "reset", "clock": clock}
+    moment = _lift_moment(text, now=now)
+    if moment is None:
+        raise click.ClickException(
+            f"--until {text!r} is neither 'reset', an ISO-8601 time nor a duration"
+        )
+    return {"kind": "at", "at": moment.isoformat()}
+
+
+@crew.command(name="budget-lift")
+@click.option(
+    "--group",
+    required=True,
+    help="Declared budget group whose pace is being lifted or cleared.",
+)
+@click.option(
+    "--multiple",
+    type=float,
+    default=None,
+    help=(
+        "Grant a pace multiple above the group's configured rate. One of "
+        "--multiple, --drain-by or --uncapped names the lift's form."
+    ),
+)
+@click.option(
+    "--drain-by",
+    default=None,
+    help=(
+        "Grant a lift that holds the pace until the group's window is drained "
+        "by this time (an ISO-8601 stamp or a duration) and then resumes."
+    ),
+)
+@click.option(
+    "--uncapped",
+    is_flag=True,
+    help="Grant a lift that releases the group to its whole window, no pace cap.",
+)
+@click.option(
+    "--global",
+    "global_scope",
+    is_flag=True,
+    help="Grant a workstation-wide lift (the default scope).",
+)
+@click.option(
+    "--session",
+    default=None,
+    help="Scope the lift to one session id rather than the whole workstation.",
+)
+@click.option(
+    "--from",
+    "starts_at",
+    default=None,
+    help="When the lift begins: an ISO-8601 time or a duration from now.",
+)
+@click.option(
+    "--until",
+    default="reset",
+    show_default=True,
+    help=(
+        "'reset' (track the clock's own reset), an ISO-8601 time, or a duration "
+        "from now, at which the lift ends."
+    ),
+)
+@click.option(
+    "--clock",
+    type=click.Choice(_LIFT_CLOCKS),
+    default="seven_day",
+    show_default=True,
+    help="Which rate-limit window the lift is anchored to.",
+)
+@click.option(
+    "--reason",
+    default=None,
+    help="Why the group's pace is being raised; required for a grant.",
+)
+@click.option(
+    "--clear",
+    "clear_flag",
+    is_flag=True,
+    help="Revoke an in-force lift on the group instead of granting one.",
+)
+@click.option(
+    "--id",
+    "lift_id",
+    default=None,
+    help="With --clear, revoke this exact lift id rather than the group's governing lift.",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_budget_lift(
+    group,
+    multiple,
+    drain_by,
+    uncapped,
+    global_scope,
+    session,
+    starts_at,
+    until,
+    clock,
+    reason,
+    clear_flag,
+    lift_id,
+    pretty,
+):
+    """Grant or clear a lift on a budget group's pace.
+
+    A lift raises one declared group's pace ahead of its configured rate, or
+    releases it from the pace hold entirely, until its end. It is a grant, not
+    a spend, so a run cannot lift its own group's budget; the command is
+    refused while ``RECKON_RUN_ID`` is set. The projection is printed against
+    the group's own reset and the grant is admitted regardless of it. ``--clear``
+    with an optional ``--session`` or ``--id`` revokes a lift in force.
+    """
+    from reckon.crew import budget_lift as budget_lift_module
+
+    form_flags = [multiple is not None, drain_by is not None, uncapped]
+    try:
+        if clear_flag:
+            if any(form_flags):
+                raise click.ClickException(
+                    "--clear takes none of --multiple, --drain-by or --uncapped"
+                )
+            cleared = budget_lift_module.clear(
+                group=group,
+                lift_id=lift_id,
+                session=session,
+                path=None,
+            )
+            if cleared is None:
+                _emit_crew_result(
+                    {
+                        "ok": True,
+                        "action": "clear",
+                        "group": group,
+                        "cleared": None,
+                        "lift_id": lift_id,
+                        "detail": "no in-force lift matched; nothing was revoked",
+                    },
+                    pretty,
+                )
+                return
+            _emit_crew_result(
+                {
+                    "ok": True,
+                    "action": "clear",
+                    "group": group,
+                    "cleared": cleared,
+                    "lift_id": cleared.get("id"),
+                    "detail": f"revoked lift {cleared.get('id')} on {group}",
+                },
+                pretty,
+            )
+            return
+
+        if sum(form_flags) != 1:
+            raise click.ClickException(
+                "name exactly one lift form: --multiple, --drain-by or --uncapped"
+            )
+        if global_scope and session:
+            raise click.ClickException(
+                "--global and --session are mutually exclusive; a session lift is "
+                "not global"
+            )
+        if not (isinstance(reason, str) and reason.strip()):
+            raise click.ClickException("--reason is required to grant a lift")
+
+        _, flight_module = _crew_modules()
+        config = _resolved_flight(flight_module, None, None, ())
+
+        if uncapped:
+            form = budget_lift_module.UNCAPPED
+        elif drain_by is not None:
+            form = budget_lift_module.DRAIN_BY
+        else:
+            form = budget_lift_module.MULTIPLE
+
+        now = datetime.now(UTC)
+        starts = None
+        if starts_at:
+            starts = _lift_moment(starts_at, now=now)
+            if starts is None:
+                raise click.ClickException(
+                    f"--from {starts_at!r} is neither an ISO-8601 time nor a duration"
+                )
+
+        target = None
+        if form == budget_lift_module.DRAIN_BY:
+            target = _lift_moment(drain_by, now=now)
+            if target is None:
+                raise click.ClickException(
+                    f"--drain-by {drain_by!r} is neither an ISO-8601 time nor a "
+                    "duration"
+                )
+
+        ends = _lift_ends(until=until, clock=clock, now=now)
+        readings = budget_lift_module.published_readings(config, group=group, now=now)
+
+        lift = budget_lift_module.grant(
+            config,
+            group=group,
+            reason=reason,
+            form=form,
+            multiple=multiple,
+            target=target,
+            clock=clock,
+            ends=ends,
+            scope=("session" if session else budget_lift_module.GLOBAL),
+            session=session,
+            starts_at=starts,
+            readings=readings,
+            now=now,
+        )
+    except budget_lift_module.LiftRefusedError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    scope = lift.get("scope")
+    _emit_crew_result(
+        {
+            "ok": True,
+            "action": "grant",
+            "group": group,
+            "lift_id": lift.get("id"),
+            "form": lift.get("form"),
+            "multiple": lift.get("pace_multiple"),
+            "scope": scope,
+            "clock": clock,
+            "ends": lift.get("ends"),
+            "projected_exhaustion": lift.get("projected_exhaustion"),
+            "admitted": True,
+            "lift": lift,
+            "detail": (
+                f"granted lift {lift.get('id')} on {group}: the group's budget "
+                "is admitted regardless of when the projection lands"
+            ),
+        },
+        pretty,
+    )
+
+
+@crew.command(name="budget-lifts")
+@click.option(
+    "--group",
+    default=None,
+    help="Only list lifts for this budget group.",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_budget_lifts(group, pretty):
+    """List active and recent budget lifts, newest first.
+
+    Ended lifts are kept as history so a multiple can be tuned against what it
+    did, so this prints every lift on record. A lift still in force carries a
+    null ``cleared_at`` and an ``ends`` block not yet reached.
+    """
+    from reckon.crew import budget_lift as budget_lift_module
+
+    lifts = budget_lift_module.list_lifts(group=group, path=None)
+    _emit_crew_result(
+        {
+            "ok": True,
+            "group": group,
+            "count": len(lifts),
+            "lifts": lifts,
+        },
+        pretty,
+    )
 
 
 @crew.command(name="split-runs")

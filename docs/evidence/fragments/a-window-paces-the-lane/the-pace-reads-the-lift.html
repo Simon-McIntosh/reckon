@@ -1,0 +1,49 @@
+<section id="the-pace-reads-the-lift" data-reckon-fragment="the-pace-reads-the-lift">
+  <h3 id="the-pace-reads-the-lift-heading">The pace reads the lift</h3>
+  <p id="the-pace-reads-the-lift-summary">
+    A group's budget block is resolved through
+    <code>budget_lift.effective_budget</code> once, in
+    <code>budget.group_pace</code>, before the allowance is derived; every reader
+    of a group entry — the hold, the ceiling and the pre-flight report — then
+    reads the resolved figure.
+  </p>
+  <ul id="the-pace-reads-the-lift-facts">
+    <li id="the-pace-reads-the-lift-fact-hold">With no lift the fixture is over
+      pace and an implement dispatch is held; under a 1.8x lift the same reading
+      is admitted.</li>
+    <li id="the-pace-reads-the-lift-fact-reset">A reading whose seven-day reset
+      has moved ends the lift, because the resolver is handed the group's
+      records in observed order rather than only the newest figure.</li>
+    <li id="the-pace-reads-the-lift-fact-forms">A drain-by lift holds above its
+      own line and admits below it; an uncapped lift admits at any burn; a lift
+      whose <code>from</code> is in the future is inert.</li>
+    <li id="the-pace-reads-the-lift-fact-session">A session lift admits its own
+      session's verdict and holds another session's on the same reading.</li>
+    <li id="the-pace-reads-the-lift-fact-report">The pre-flight group entry
+      carries the lifted multiple and the lift id.</li>
+    <li id="the-pace-reads-the-lift-fact-reserves">The three reserves are zeroed
+      by the resolver, so the ceiling a lifted group is measured against is its
+      whole window.</li>
+    <li id="the-pace-reads-the-lift-fact-ceilings">A lift in force is read from
+      the resolver's <code>lift_id</code>, not from the presence of a
+      <code>lift</code> key. Resolved flight config declares the lift ceilings
+      under <code>budget.lift</code>, so that key is present on every
+      configuration that states them; the fixture carries the shipped ceilings
+      and asserts a group under no lift, and a group whose lift has ended,
+      reports no lift at all.</li>
+  </ul>
+  <p id="the-pace-reads-the-lift-releases">
+    In <code>pace_hold</code>, the release instant divides by the banked-reset
+    factor read from where <code>_scale_for_banked_reset</code> records it rather
+    than a restated constant, and an allowance whose window cannot be placed
+    reports no release instant.
+  </p>
+  <p id="the-pace-reads-the-lift-gate">
+    Gate: 11 test files, 162 passed at head against 152 passed at base, EXIT=0
+    both arms, zero added failures. The declared negative control — replacing
+    <code>budget_lift.effective_budget</code> with a function that returns
+    <code>config['budget']</code> unchanged — was applied on a scratch copy and
+    observed red: EXIT=1, three failing ids the head arm does not fail, including
+    the 1.8x-lift admit assertion.
+  </p>
+</section>
