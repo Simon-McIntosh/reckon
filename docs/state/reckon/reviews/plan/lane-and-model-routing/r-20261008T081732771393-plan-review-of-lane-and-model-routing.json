@@ -1,0 +1,67 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T08:30:27.357Z",
+  "dispatched_at": "2026-10-08T08:17:58Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/lane-and-model-routing.html:91",
+      "id": "reasoning-1",
+      "reason": "it would have the author pin which provenance path supplies the synthesised keys' layer, removing a convention the implementer would otherwise invent and that a later project-layer override would resolve differently.",
+      "text": "\u00a79 says the synthesised keys \"take the layer of the `lanes.*` entry they were expanded from\", but `_record_provenance` (reckon/flight.py:1152-1164) recurses into mappings and records only leaf paths, so there is no provenance entry at `lanes.claude` or `lanes.claude.models.opus` for an implementer to read; the layer must be taken from a leaf (or from `lanes.claude.*`), and the two differ the moment a project layer overrides a model leaf without the lane",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "b977bc51b27e67623974310fa038ee49ef339071e08b415ef712d875189c6707",
+  "plan_slug": "lane-and-model-routing",
+  "plan_version": 35,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-08T08:32:00.491935+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-08T08:32:00.491935+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-lane-and-model-routing.v35.json",
+  "review_run_id": "r-20261008T081732771393-plan-review-of-lane-and-model-routing",
+  "reviewed_blob_sha": "36f7a1730086450671837fd5b1234179004e9067",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every anchor resolves: `expand_lanes` (reckon/flight.py:1352), `_lane_entry` (1320), `_apply_catalogue` (1228), `flight_report` (2042), `ResolvedFlight.provenance` (175), `origin()` (180), and `test_default_stdout_parses_as_json_and_exits_zero` (tests/test_flight.py:1356, which does pin the seven-key top-level payload set).",
+    "done_when": "pass \u2014 \u00a79's done-when names two tests that must fail on the current resolver plus the existing `origin()` assertions as the standing control; resolving the live flight on 2026-10-08 reproduces the pre-fix state those tests key on (zero provenance under `backends.claude` and `backends.codex`), so the control can be seen to fire.",
+    "evidence_paths": "pass \u2014 the write paths are repository paths (`reckon/flight.py`, `tests/test_flight.py`, the section's new test module); no gate log or artifact is directed to a session scratchpad or node-local temporary directory.",
+    "naming": "pass \u2014 \u00a79 carries no plan labels, stage names, ticket numbers, version tags or changelog prose; it names mechanisms (`expand_lanes`, `_apply_catalogue`, `provenance_sources`) rather than tracker entries.",
+    "reasoning": "a finding \u2014 \u00a79's root cause matches its evidence (the expansion records no provenance, so lane-built entries carry none) and the mechanism runs on the real path `resolve()` \u2192 `expand_lanes` (reckon/flight.py:1499) \u2192 `flight_report` (2063), but the rule it gives for the synthesised keys names a provenance layer that does not exist as a record.",
+    "single_goal": "pass \u2014 one deliverable: per-key provenance (and its companion source-key map) for every entry `expand_lanes` builds, lane-named or derived.",
+    "wiring": "pass \u2014 \u00a79 declares no depends-on/informs/gates and needs none: it edits the expansion in `reckon/flight.py` and the flight payload, neither of which is gated by the `every-module-fits-a-worker-window` \u00a74 split that gates \u00a74 and \u00a710."
+  },
+  "section_digests": {
+    "_document": "adb9712c097f2b4773082c2c696f40562be8620731a5f5a5b8b01c17a18155ac",
+    "s0": "5970e86b0d53213fecf631cb616a2db8d8f783a8532dc052f3423814906cde4f",
+    "s1": "6760f63ebdb0d0db10c3c004f30d4f4253bfb7582bc7a0e4054fed73e017a02d",
+    "s10": "9d27e940f021242c82017cf503b8e3d3277451ecaef61d1887ae36cecf3eb5a7",
+    "s11": "2e566713b8ee8cbfcf94503cba2640bac78329b96f748ff0334a858e08287755",
+    "s2": "0c6488cdae0f23d0600410d02191390e773858e9bc75008234f71cc66f01889b",
+    "s3": "6cb602347e0232fe459028eff2010884381d987053d550c4565f581c23032095",
+    "s4": "aa5a29a8662005607992ae17fc914d47e8e48c68b7e65395b4865f6d33ea37f4",
+    "s5": "2ffa1a3b1d2b09433f25a83f8a7a59b1774249bac29b945f2c2273ace57cb1ba",
+    "s6": "6c8117bcfdc7d4b0bafdc4fb2185779998c71b1730b07a0d900b543f02c08ec1",
+    "s7": "07952e2e354db24e76860530568500cc2066b69b4255c020db83677e46cb18e2",
+    "s8": "7ca129403c95fcbc111273a2b419b29279191bc54c157bb6f7d8de0d5b160d34",
+    "s9": "8d3bccd3f92a3e058380ce80edbf1a85ce8800f18cc105244f5c7da02268e292"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T08:31:50.701778+00:00"
+}

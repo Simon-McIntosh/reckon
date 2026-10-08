@@ -390,18 +390,70 @@ async def _bounded_landing(path: str, before: tuple[int, int] | None) -> bool | 
         return None
 
 
-async def _run_under_deadline(
+class _InflightBody:
+    """A worker body running on a thread, keepable past its own deadline.
+
+    The thread pool future outlives ``asyncio.wait_for``: a timed-out body is
+    abandoned, not cancelled, so a later call for the same work can await the
+    same future and receive the answer the abandoned body finally produced.
+    ``waiting`` carries the per-thread diagnostics the deadline reads, and
+    ``started`` is the monotonic clock the body began at.
+    """
+
+    __slots__ = ("future", "started", "waiting")
+
+    def __init__(self, future: Any, waiting: dict[str, Any], started: float) -> None:
+        self.future = future
+        self.waiting = waiting
+        self.started = started
+
+
+def _read_join_key(label: str, kwargs: Mapping[str, Any]) -> tuple[str, str]:
+    """A stable identity for one read call: its tool and its arguments.
+
+    Two calls with the same tool and the same arguments share a key, so a retry
+    joins the body still running; a call whose arguments differ gets its own.
+    Arguments are serialised with sorted keys so mapping order never splits a
+    key, falling back to a sorted ``repr`` when a value is not JSON-encodable.
+    """
+
+    try:
+        encoded = json.dumps(kwargs, sort_keys=True, default=str)
+    except (TypeError, ValueError):
+        encoded = repr(sorted((str(key), repr(value)) for key, value in kwargs.items()))
+    return (label, encoded)
+
+
+# Read bodies still running after their deadline, keyed by tool and arguments,
+# so a retry of the same read awaits the body already answering it rather than
+# starting a second copy. A body is registered for as long as it runs and
+# forgotten when it finishes; a write is never registered, so a write always
+# runs its own body under its own deadline. Mutated only on the event loop.
+_INFLIGHT_READS: dict[tuple[str, str], _InflightBody] = {}
+
+
+def _forget_read(key: tuple[str, str], body: _InflightBody) -> None:
+    """Drop a finished read's registration, unless a newer body took its place."""
+
+    if _INFLIGHT_READS.get(key) is body:
+        _INFLIGHT_READS.pop(key, None)
+
+
+def _start_body(
     body: Callable[[], Any],
     *,
     kind: str,
     label: str,
     path: str | None = None,
     path_hint: Callable[[], str | None] | None = None,
-    deadline: float | None = None,
-) -> Any:
-    """Run one synchronous storage body on a worker thread under a deadline."""
+) -> _InflightBody:
+    """Submit one synchronous storage body to the thread pool, undeadlined.
 
-    limit = _deadline_seconds(kind) if deadline is None else deadline
+    The future is the pool's own, so it survives the wait that bounds the call
+    and is available to a later join. Path resolution, the baseline stat and
+    the CPU/run-queue baselines all run on the worker thread.
+    """
+
     waiting: dict[str, Any] = {
         "path": str(path) if path is not None else None,
         "before": _UNSET,
@@ -434,10 +486,30 @@ async def _run_under_deadline(
         waiting["run_base"] = _thread_run_wait_seconds(waiting["tid"])
         return body()
 
+    loop = asyncio.get_running_loop()
+    return _InflightBody(loop.run_in_executor(None, _work), waiting, started)
+
+
+async def _await_body(
+    inflight: _InflightBody,
+    *,
+    kind: str,
+    label: str,
+    limit: float,
+    started: float | None = None,
+) -> Any:
+    """Await one started body under the deadline, naming a timeout's cause."""
+
     try:
-        return await asyncio.wait_for(asyncio.to_thread(_work), limit)
+        # Shield the body's future from this wait's cancellation: a timeout
+        # must abandon the wait, not the body, so a retry that joins it can
+        # still receive the answer it finally produces.
+        return await asyncio.wait_for(
+            asyncio.shield(asyncio.wrap_future(inflight.future)), limit
+        )
     except TimeoutError:
-        waited = time.monotonic() - started
+        waited = time.monotonic() - (inflight.started if started is None else started)
+        waiting = inflight.waiting
         cpu_seconds: float | None = None
         run_wait_seconds: float | None = None
         tid = waiting["tid"]
@@ -472,6 +544,56 @@ async def _run_under_deadline(
             cause=cause,
             cli_command=_CLI_ANSWER_COMMANDS.get(label),
         ).model_dump()
+
+
+async def _run_under_deadline(
+    body: Callable[[], Any],
+    *,
+    kind: str,
+    label: str,
+    path: str | None = None,
+    path_hint: Callable[[], str | None] | None = None,
+    deadline: float | None = None,
+) -> Any:
+    """Run one synchronous storage body on a worker thread under a deadline."""
+
+    limit = _deadline_seconds(kind) if deadline is None else deadline
+    inflight = _start_body(body, kind=kind, label=label, path=path, path_hint=path_hint)
+    return await _await_body(inflight, kind=kind, label=label, limit=limit)
+
+
+async def _read_joining_running(
+    body: Callable[[], Any],
+    *,
+    label: str,
+    kwargs: Mapping[str, Any],
+    path_hint: Callable[[], str | None] | None = None,
+) -> Any:
+    """Run a read under its deadline, joining a body already answering it.
+
+    A read call whose tool and arguments match a body still running awaits that
+    body under this call's own deadline rather than starting a second copy, so
+    a retry after a timeout gets the first body's answer. A body is forgotten
+    when it finishes, so the next identical read after that starts fresh. A
+    read whose arguments differ keys its own body, and a write never reaches
+    here — it always runs its own body under its own deadline.
+    """
+
+    limit = _deadline_seconds("read")
+    key = _read_join_key(label, kwargs)
+    inflight = _INFLIGHT_READS.get(key)
+    join_started: float | None = None
+    if inflight is None:
+        inflight = _start_body(body, kind="read", label=label, path_hint=path_hint)
+        _INFLIGHT_READS[key] = inflight
+        inflight.future.add_done_callback(
+            lambda _future, _key=key, _body=inflight: _forget_read(_key, _body)
+        )
+    else:
+        join_started = time.monotonic()
+    return await _await_body(
+        inflight, kind="read", label=label, limit=limit, started=join_started
+    )
 
 
 def _resolved_signature(function: Callable[..., Any]) -> inspect.Signature:
@@ -509,12 +631,18 @@ def _deadline_tool(
 
     async def tool(**kwargs: Any) -> Any:
         resolved_kind = kind(kwargs) if callable(kind) else kind
-        result = await _run_under_deadline(
-            lambda: body(**kwargs),
-            kind=resolved_kind,
-            label=label,
-            path_hint=(lambda: path_hint(kwargs)) if path_hint is not None else None,
-        )
+        hint = (lambda: path_hint(kwargs)) if path_hint is not None else None
+        if resolved_kind == "read":
+            result = await _read_joining_running(
+                lambda: body(**kwargs), label=label, kwargs=kwargs, path_hint=hint
+            )
+        else:
+            result = await _run_under_deadline(
+                lambda: body(**kwargs),
+                kind=resolved_kind,
+                label=label,
+                path_hint=hint,
+            )
         if response_budget and resolved_kind == "read":
             return bound_response(result, tool=label, arguments=kwargs)
         return result

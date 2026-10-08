@@ -1,0 +1,38 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T08:24:23.673Z",
+  "dispatched_at": "2026-10-08T08:13:36Z",
+  "findings": [],
+  "plan_fingerprint": "a76a936bfd207ba8b93cc9c9a8fba75a8c12e4407311112e52c062e6c70d4623",
+  "plan_slug": "a-plan-is-done-when-every-section-is-ticked",
+  "plan_version": 37,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T081309746113-plan-review-of-a-plan-is-done-when-every-section-is-ticked",
+  "reviewed_blob_sha": "b44bfc18bbe00f07d73b843914d1976c85b5e135",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every symbol \u00a75 cites resolves: `reckon audit-doc` (`reckon/project_maintenance_commands.py:1252`), `_require_heading_for_section_records` (`reckon/_store.py:1631`), `_write_state_locked` (`reckon/_store.py:1212`), `_replace_plan_text` (`reckon/_store.py:1808`), `_require_new_section_contracts` (`reckon/_store.py:1665`).",
+    "done_when": "pass \u2014 \u00a75's done-when (plan.html:128-136) carries a census count plus four tests, three with declared negative controls: the undeclared-heading refusal and its reverse fail on current code, the insert_section accept-case fails when the guard reads `source_text` (verified: `write_state` alone injects `plan-section-declarations`, `_plan_html.py:2016-2020`), and the text-mode removal fails when the guard is wired into `_write_state_locked` alone.",
+    "evidence_paths": "pass \u2014 \u00a75 writes its census count and gate logs into the plan's landed evidence record, the same fragment directory (`/reckon/evidence/fragments/a-plan-is-done-when-every-section-is-ticked/\u2026`) that \u00a73/\u00a74/\u00a76/\u00a77/\u00a79 landed into; nothing routes to a scratchpad.",
+    "naming": "pass \u2014 \u00a75 introduces no plan labels, stage names or ticket numbers; `section-without-todo`/`todo-without-section` are emitted finding codes (output data), not symbols, and the code symbols it names are pre-existing.",
+    "reasoning": "pass \u2014 the amended text-path and source_text clauses match the code: the existing call at `_store.py:1384` reads `source_text` immediately before `write_state` at `1385`, and text-mode writes (`_replace_plan_text`, `_store.py:1808-1878`) render via `write_state` and write atomically without ever entering `_write_state_locked`; the heading-enumeration and declaration map the guard needs both live in `_plan_html`, so the mechanism runs on the real call path, both callers named.",
+    "single_goal": "pass \u2014 \u00a75 carries one deliverable, \"every author section has a todo item\", with one coverage rule producing its two finding codes; audit reporting and write refusal are the same rule's two surfaces.",
+    "wiring": "pass \u2014 \u00a75 (plan.html:116) needs only \u00a76's release of `reckon/_store.py`, and that ordering is declared in followup f-tick-005 (plan.html:231-235), which places \u00a75 in wave three; no depends-on/gates field is misdeclared."
+  },
+  "section_digests": {
+    "_document": "87ef47605cf19c57112c74de2a7a256fd667ecd67525bdf7b95bce41bb8977a9",
+    "s1": "504d22771a3dd608a5f113f45b30b87012723b39ee6319c32160ad40e77b7adb",
+    "s2": "2d0220d0872dd77830193ee143573a19119b3152a998506dd5491a03a0f80500",
+    "s3": "dbf9166463b113d8f8a440402420ab71cecdf477a9019a3e22158b8db6ae5de9",
+    "s4": "f91b4fda0b5185501a0a7264c6ba88dc1586d9b53641cb27676fcd7d6e9a3bdc",
+    "s5": "ebcfbd129b20b05d06c4b0929039cb2f93f58ff854bd8cd0151f70afe72d596d",
+    "s6": "0418ebb7e7cc2b3384ba2f3083c13055aecdc2822cb908d790ca11cde28f29bd",
+    "s7": "d7e441a3d1c0f7f50bbb675a73d8cbff3d2573d8ea49fbaf1befb81e245eab7b",
+    "s8": "2f36255141168e93b0b91e1ed13f26491a53c82783099452394a9c4e5c70a19d",
+    "s9": "f2886be505469c66ee74166fd61eadf445d43f95f996dc8caabe3a0b733e7052"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T08:24:38.755367+00:00"
+}

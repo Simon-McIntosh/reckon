@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "4cd309a0e7ba270b9eaed281cc4a77556df5b974",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/_store.py:297",
+    "reckon/resources.py:768",
+    "reckon/roadmap.py:164",
+    "reckon/roadmap.py:212"
+  ],
+  "completed_at": "2026-10-08T08:30:13.656Z",
+  "dispatched_at": "2026-10-08T08:15:06Z",
+  "findings": [
+    {
+      "file": "reckon/resources.py",
+      "line": "635",
+      "severity": "follow-on",
+      "text": "follow-on: _resolve_canonical returns the first validating canonical candidate without checking for a second claimant, so when include_archived is true the archived route in resolve_route returns the live resource for a slug that has both a live and an archived document and reports it not-found, where the scan raised ResourceCollision for the same pair; the docstring's \"every collision case keep the full scan\" is not what the code does."
+    }
+  ],
+  "head_log_revision": "1500780fa7cf4dbcfaf7ed0309367a862bb07614",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read the single commit 1500780fa against base 4cd309a0e; it adds _declared_north_stars and the file_memo-backed diagnostic in reckon/_store.py, _canonical_resource_at and _resolve_canonical wired into resolve_resource in reckon/resources.py, the new test file and a landing fragment, 331 insertions and 11 deletions across the four paths.",
+    "done_when": "the done-when requires os.scandir parity between 5- and 60-plan fixtures, payload equality with the scan path, a logged negative control where the done-when has a 60-plan count exceeding the 5-plan count, and a warm fleet-node call inside 30 s; tests/test_one_plan_read_is_not_a_corpus_scan.py:161 asserts the parity and :148 asserts payload equality, negative-control.log records 22 vs 132 EXIT=1, and fleet-warm-read.log records warm 0.039 s against a 12.613 s cold read.",
+    "goal": "the node goal is \"make a read_plan summary of one plan resolve that plan without a corpus scan, as plan section 9 specifies\"; the diff adds a canonical-path fast path in reckon/resources.py:646 resolve_resource and drops the whole-state composition behind the north-star diagnostic to a memoised lookup at reckon/_store.py:683, so a one-plan read resolves its document directly and the diagnostic cost is paid once.",
+    "manifest": "read; it records the head test passing EXIT=0, the negative control failing EXIT=1 at 22 vs 132, the fleet warm read at 0.039 s, and the focused 104-test suite green at both the base 4cd309a0e and the head 1500780fa, and it names each of those logs on disk.",
+    "write_paths": "read the manifest's declared paths; the diff's four files (reckon/resources.py, reckon/_store.py, tests/test_one_plan_read_is_not_a_corpus_scan.py, docs/evidence/fragments/an-mcp-failure-names-its-cause/one-plan-read-is-not-a-corpus-scan.html) are all inside the declared scope."
+  },
+  "justifications": {
+    "durability": "tests/test_one_plan_read_is_not_a_corpus_scan.py:157 asserts forced_large > forced_small > 0 and :161 asserts small_count == large_count, both of which redden when resources._resolve_canonical is reverted to None (negative-control.log), and the payload-parity assertion at :148 compares the direct path against the scan path rather than against its own input.",
+    "evidence": "negative-control.log records the scan path diverging 22 vs 132 EXIT=1 and fleet-warm-read.log records 0.039 s, so each done-when clause is measured and logged rather than claimed.",
+    "fit": "reckon/resources.py:613 and reckon/_store.py:683 follow the surrounding private-helper docstring idiom and carry no plan or stage label.",
+    "goal_fidelity": "reckon/resources.py:646 resolve_resource now returns the canonical file for a named plan before scanning, and reckon/_store.py:712 memoises the diagnostic so a warm one-plan read is flat in corpus size.",
+    "reuse": "reckon/resources.py:562 _canonical_resource_at reuses canonical_relative_path, canonical_href and ResourceIdentity rather than re-deriving the canonical path, and reckon/_store.py:712 takes its memo from file_memo.memoized rather than adding a cache of its own.",
+    "scope_discipline": "every path in the diff (reckon/resources.py, reckon/_store.py, tests/test_one_plan_read_is_not_a_corpus_scan.py, docs/evidence/fragments/an-mcp-failure-names-its-cause/one-plan-read-is-not-a-corpus-scan.html) is inside the manifest's declared write paths and no other file is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \"make a read_plan summary of one plan resolve that plan without a corpus scan, as plan section 9 specifies\"; the diff adds a canonical-path fast path in reckon/resources.py:646 resolve_resource and drops the whole-state composition behind the north-star diagnostic to a memoised lookup at reckon/_store.py:683, so a one-plan read resolves its document directly and the diagnostic cost is paid once.\nVERDICT done_when: the done-when requires os.scandir parity between 5- and 60-plan fixtures, payload equality with the scan path, a logged negative control where the done-when has a 60-plan count exceeding the 5-plan count, and a warm fleet-node call inside 30 s; tests/test_one_plan_read_is_not_a_corpus_scan.py:161 asserts the parity and :148 asserts payload equality, negative-control.log records 22 vs 132 EXIT=1, and fleet-warm-read.log records warm 0.039 s against a 12.613 s cold read.\nVERDICT write_paths: read the manifest's declared paths; the diff's four files (reckon/resources.py, reckon/_store.py, tests/test_one_plan_read_is_not_a_corpus_scan.py, docs/evidence/fragments/an-mcp-failure-names-its-cause/one-plan-read-is-not-a-corpus-scan.html) are all inside the declared scope.\nVERDICT manifest: read; it records the head test passing EXIT=0, the negative control failing EXIT=1 at 22 vs 132, the fleet warm read at 0.039 s, and the focused 104-test suite green at both the base 4cd309a0e and the head 1500780fa, and it names each of those logs on disk.\nVERDICT diff: read the single commit 1500780fa against base 4cd309a0e; it adds _declared_north_stars and the file_memo-backed diagnostic in reckon/_store.py, _canonical_resource_at and _resolve_canonical wired into resolve_resource in reckon/resources.py, the new test file and a landing fragment, 331 insertions and 11 deletions across the four paths.\nCALL_SITES: reckon/_store.py:297, reckon/resources.py:768, reckon/roadmap.py:164, reckon/roadmap.py:212\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/resources.py:646 resolve_resource now returns the canonical file for a named plan before scanning, and reckon/_store.py:712 memoises the diagnostic so a warm one-plan read is flat in corpus size.\nSCORE evidence: 18\nJUSTIFICATION evidence: negative-control.log records the scan path diverging 22 vs 132 EXIT=1 and fleet-warm-read.log records 0.039 s, so each done-when clause is measured and logged rather than claimed.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff (reckon/resources.py, reckon/_store.py, tests/test_one_plan_read_is_not_a_corpus_scan.py, docs/evidence/fragments/an-mcp-failure-names-its-cause/one-plan-read-is-not-a-corpus-scan.html) is inside the manifest's declared write paths and no other file is touched.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_one_plan_read_is_not_a_corpus_scan.py:157 asserts forced_large > forced_small > 0 and :161 asserts small_count == large_count, both of which redden when resources._resolve_canonical is reverted to None (negative-control.log), and the payload-parity assertion at :148 compares the direct path against the scan path rather than against its own input.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/resources.py:613 and reckon/_store.py:683 follow the surrounding private-helper docstring idiom and carry no plan or stage label.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/resources.py:562 _canonical_resource_at reuses canonical_relative_path, canonical_href and ResourceIdentity rather than re-deriving the canonical path, and reckon/_store.py:712 takes its memo from file_memo.memoized rather than adding a cache of its own.\nFINDING reckon/resources.py:635 follow-on: _resolve_canonical returns the first validating canonical candidate without checking for a second claimant, so when include_archived is true the archived route in resolve_route returns the live resource for a slug that has both a live and an archived document and reports it not-found, where the scan raised ResourceCollision for the same pair; the docstring's \"every collision case keep the full scan\" is not what the code does.",
+  "review_run_id": "r-20261008T081424948494-review-of-one-plan-read-is-not-a-corpus-scan",
+  "reviewed_base_sha": "4cd309a0e7ba270b9eaed281cc4a77556df5b974",
+  "reviewed_head_sha": "1500780fa7cf4dbcfaf7ed0309367a862bb07614",
+  "reviewed_run_id": "r-20261008T073628406268-one-plan-read-is-not-a-corpus-scan",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T08:29:08.137962+00:00",
+  "total": 108
+}

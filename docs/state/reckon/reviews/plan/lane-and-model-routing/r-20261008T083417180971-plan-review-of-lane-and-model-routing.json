@@ -1,0 +1,130 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T08:44:47.605Z",
+  "dispatched_at": "2026-10-08T08:34:44Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/lane-and-model-routing.html:64",
+      "id": "wiring-1",
+      "reason": "two writers on the same post-split module and test file collide; the plan needs an ordering edge (\u00a710 after \u00a74, or the reverse) to be dispatchable.",
+      "text": "\u00a74 and \u00a710 both name \"the module that holds the dispatch command after `every-module-fits-a-worker-window` \u00a74 has split `reckon/cli.py`\" and its tests as their write path, yet neither `plan-section-depends-on` nor the section bodies or f-lmr-005 order them, so a coordinator can dispatch both concurrently onto one file",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/lane-and-model-routing.html:87",
+      "id": "done_when-1",
+      "reason": "\u00a78/\u00a710/\u00a711 assert behaviour that fails on the current code (collided keys, traceback, prose link), so they already function as controls; naming the mutation would make the guard explicit but does not change the deliverable.",
+      "text": "\u00a78's done-when (\"tests prove both items\") names no negative control, and \u00a79 (\u00a791), \u00a710 (\u00a795) and \u00a711 (\u00a799) each assert only the fixed behaviour; \u00a74 by contrast declares \"dropping the model narrowing makes the claude-opus equivalence test fail\"",
+      "type": "done_when",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/lane-and-model-routing.html:174",
+      "id": "anchors_resolve-1",
+      "reason": "\u00a711 exists to make exactly this prose render as text instead of a link, so the defect is neutralised by a section already in the plan.",
+      "text": "gate `g-lmr-1`'s `href` carries prose (\"jev-prompt-carries-what-it-weighs merged on main at 5b60f4c91 ...\"), so its \"Evidence\" link resolves to nothing while the sibling `required-evidence` field correctly holds `one-typesafe-model-picker#s6`",
+      "type": "anchors_resolve",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/lane-and-model-routing.html:34",
+      "id": "reasoning-1",
+      "reason": "it is orienting context for a reader arriving cold; the operative \u00a74/\u00a78\u2013\u00a711 mechanisms are unaffected and the baseline is still recognisable as the plan's starting point.",
+      "text": "\u00a7s0 states \"Today every model is its own backend name. The host flight declares eight backend blocks: codex, codex-luna, codex-astra, clive, claude, claude-opus, claude-haiku and native\", but \u00a7\u00a71\u20133 and \u00a76 have landed and folded the six per-model blocks into `lanes.claude`/`lanes.codex` (dotfiles `c6590f7`, `6d1f742`), so the \"Today\" baseline describes a state the plan's own landed sections removed",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "0db80435be2722e80c06f5f62880a226117c652454ae0574f28e400ac6355c76",
+  "plan_slug": "lane-and-model-routing",
+  "plan_version": 36,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "reckon/crew_dispatch_commands.py is not on docs/state/reckon/shared-write-paths.json, so dispatch's scope check refuses a second live claim on it; \u00a74 and \u00a710 cannot run concurrently, and either order is correct.",
+      "when": "2026-10-08T08:45:40.766961+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "\u00a78, \u00a710 and \u00a711 assert behaviour that fails on the current code, so their tests are the controls; every node also declares a named negative control at dispatch.",
+      "when": "2026-10-08T08:45:48.592262+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "anchors_resolve-1",
+      "reason": "\u00a711 exists to render this prose as text; the gate is closed and its required-evidence field already holds the anchor.",
+      "when": "2026-10-08T08:45:57.142852+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "\u00a7s0 records the plan's starting point and stays as written; each landed section links its own record of what changed.",
+      "when": "2026-10-08T08:46:05.356821+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "\u00a711 exists to render this prose as text; the gate is closed and its required-evidence field already holds the anchor.",
+      "when": "2026-10-08T08:45:57.142852+00:00"
+    },
+    "done_when-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "\u00a78, \u00a710 and \u00a711 assert behaviour that fails on the current code, so their tests are the controls; every node also declares a named negative control at dispatch.",
+      "when": "2026-10-08T08:45:48.592262+00:00"
+    },
+    "reasoning-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "\u00a7s0 records the plan's starting point and stays as written; each landed section links its own record of what changed.",
+      "when": "2026-10-08T08:46:05.356821+00:00"
+    },
+    "wiring-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "reckon/crew_dispatch_commands.py is not on docs/state/reckon/shared-write-paths.json, so dispatch's scope check refuses a second live claim on it; \u00a74 and \u00a710 cannot run concurrently, and either order is correct.",
+      "when": "2026-10-08T08:45:40.766961+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-lane-and-model-routing.v36.json",
+  "review_run_id": "r-20261008T083417180971-plan-review-of-lane-and-model-routing",
+  "reviewed_blob_sha": "139e380675172c3551dc20ab480f208f483fe7ed",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 every cited file (`reckon/flight.py`, `reckon/crew/picker/prompts.py`, `docs/ui/plan.jsx`, `tests/test_flight.py`, `reckon/ledger.py`, `reckon/cli.py`, `reckon/crew/dispatch.py`), every plan section (`one-typesafe-model-picker#s6/#s12`, `every-module-fits-a-worker-window#s4) and every archive anchor (`lane-and-model-routing-landed#s1..#s7`, extensionless) resolves; the lone defect is the gate's own `href`.",
+    "done_when": "a finding \u2014 \u00a74 declares a negative control; \u00a78, \u00a79, \u00a710 and \u00a711 do not, and rely on the pre-existing defect rather than a named mutation to redden their tests.",
+    "evidence_paths": "pass \u2014 the landed record is `docs/evidence/archive/lane-and-model-routing-landed.html` on a durable repository path; no node-local scratchpad or temporary path is named.",
+    "naming": "pass \u2014 cited symbols (`option_key`, `expand_lanes`, `resolve_name`, `LANE_MODEL_KEYS`, `flight_report`, `provenance_sources`) name mechanism; no plan label, version tag or ticket number reaches code.",
+    "reasoning": "a finding \u2014 the operative sections hold (the \u00a78 `option_key` collision and modelless-fallback defects are confirmed in `reckon/crew/picker/prompts.py:204-214`; the \u00a79 zero-provenance root cause is confirmed by `expand_lanes` running after `_apply_catalogue` at `reckon/flight.py:1494-1499` and writing no provenance; the \u00a711 premise is confirmed at `docs/ui/plan.jsx:152`, where `<a href={gate.evidence}>` renders unconditionally), but the \u00a7s0 baseline is stale.",
+    "single_goal": "pass \u2014 \u00a74 (`--model` on the dispatch surface), \u00a78 (option_key injectivity/naming), \u00a79 (lane-expansion provenance), \u00a710 (foreign `--repo` refusal), \u00a711 (gate-evidence rendering) each name one deliverable in one module and its tests.",
+    "wiring": "a finding \u2014 the section dependency graph is present and each declared edge resolves (`s4`\u2192`every-module-fits-a-worker-window#s4`, `s10`\u2192same; data-links `s5`\u2192`one-typesafe-model-picker#s6`, `s8`\u2192`#s12`), but \u00a74 and \u00a710 name the same post-split module as their write path with no edge between them."
+  },
+  "section_digests": {
+    "_document": "adb9712c097f2b4773082c2c696f40562be8620731a5f5a5b8b01c17a18155ac",
+    "s0": "5970e86b0d53213fecf631cb616a2db8d8f783a8532dc052f3423814906cde4f",
+    "s1": "6760f63ebdb0d0db10c3c004f30d4f4253bfb7582bc7a0e4054fed73e017a02d",
+    "s10": "9d27e940f021242c82017cf503b8e3d3277451ecaef61d1887ae36cecf3eb5a7",
+    "s11": "2e566713b8ee8cbfcf94503cba2640bac78329b96f748ff0334a858e08287755",
+    "s2": "0c6488cdae0f23d0600410d02191390e773858e9bc75008234f71cc66f01889b",
+    "s3": "6cb602347e0232fe459028eff2010884381d987053d550c4565f581c23032095",
+    "s4": "aa5a29a8662005607992ae17fc914d47e8e48c68b7e65395b4865f6d33ea37f4",
+    "s5": "2ffa1a3b1d2b09433f25a83f8a7a59b1774249bac29b945f2c2273ace57cb1ba",
+    "s6": "6c8117bcfdc7d4b0bafdc4fb2185779998c71b1730b07a0d900b543f02c08ec1",
+    "s7": "07952e2e354db24e76860530568500cc2066b69b4255c020db83677e46cb18e2",
+    "s8": "7ca129403c95fcbc111273a2b419b29279191bc54c157bb6f7d8de0d5b160d34",
+    "s9": "0c546f1c0ce99eb4f03333edf6955f597fcb37c49baa31305dfd52c6b03364d8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T08:45:33.772909+00:00"
+}
