@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.11">
-<meta name="plan-version" content="22">
+<meta name="plan-version" content="29">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -91,12 +91,15 @@
       the figures for another window calls the census function. It reads and never writes, and its runtime is
       bounded by naming the log directories it walks.</p>
     <p><strong>Done when</strong> <code>tests/test_mcp_census.py</code> builds a fixture log tree holding one
-      connection per signature in §1 plus one clean connection and one unmatched failure. It asserts that every
+      connection per signature in §1 plus one clean connection and one unmatched failure, and a fixture transcript
+      holding two <code>storage-slow</code> tool results from <code>read_plan</code> and one from <code>roadmap</code>. It asserts that every
       signature lands in its cause with the right count, the unmatched failure is reported as unclassified, the
-      clean connection counts as a success, and the doctor block prints the census function's figures. A negative control is
+      clean connection counts as a success, the transcript count reads two for <code>read_plan</code> and one for
+      <code>roadmap</code>, and the doctor block prints the census function's figures. A negative control is
       executed and logged: with the pattern table emptied, every failure reports as unclassified and the test
-      fails. Run against the real log tree on the fleet node for the window 2026-10-01T01:00:00Z to
-      2026-10-08T01:00:00Z, the census function reproduces §1's imas-cx <code>CONNECTION_CLOSED</code> count within 5%. The write paths are
+      fails; a second, with the tool-result reader returning nothing, fails the transcript count. Run against the real log tree on the fleet node for the window 2026-10-01T01:00:00Z to
+      2026-10-08T01:00:00Z, the census function reproduces §1's imas-cx <code>CONNECTION_CLOSED</code> count within 5%, in a log written to the
+      run directory. The write paths are
       <code>reckon/mcp_census.py</code>, <code>reckon/cli.py</code> and <code>tests/test_mcp_census.py</code>; the
       transcript count calls <code>reckon/velocity.py</code> and changes nothing in it.</p>
 
@@ -149,12 +152,15 @@
       naming each one.</p>
     <p><strong>Done when</strong> <code>tests/test_doctor_mcp_launch.py</code> gives doctor a fixture user
       config and two fixture projects. One project launches with <code>uv run imas-codex serve</code>, one with
-      <code>uv run --no-sync --project ${HOME}/Code/imas-codex imas-codex serve</code>, and the user-scope reckon
+      <code>uv run --no-sync --project ${HOME}/Code/imas-codex imas-codex serve</code> where the test creates that
+      directory under the temporary home, one with <code>uv run --no-sync --project ${HOME}/Code/absent serve</code> naming
+      a directory that does not exist, and the user-scope reckon
       entry launches with <code>uv run --project /home/someone/Code/reckon reckon mcp</code>. Doctor flags the first
-      project, and flags the user-scope entry twice (it syncs, and it names one user's home). It prints a
+      project and the third, the third for its missing directory, and flags the user-scope entry twice (it syncs, and it names one user's home). It prints a
       corrected command for each, passes the second project, and exits non-zero. A
       negative control is executed and logged: with the <code>--no-sync</code> check removed, the user-scope
-      entry is flagged only for its path and the test fails. Every <code>reckon sync</code> and <code>reckon doctor</code> test that
+      entry is flagged only for its path and the test fails; a second, with the missing-directory check removed,
+      passes the third project and the test fails. Every <code>reckon sync</code> and <code>reckon doctor</code> test that
       reads a config resolves it under a temporary home, and the test asserts the real
       <code>~/.claude.json</code> is untouched. The write paths are <code>reckon/cli.py</code> and
       <code>tests/test_doctor_mcp_launch.py</code>.</p>
@@ -216,8 +222,8 @@
       <code>os.scandir</code> calls during a <code>read_plan</code> summary of one plan in fixture projects of 5 and
       of 60 plans. The count is the same for both sizes, and the summary payload equals the one today's code
       returns for the same fixture. A negative control is executed and logged: with the direct path resolution
-      reverted, the 60-plan count exceeds the 5-plan count and the test fails. A logged warm call on the fleet node
-      answers the summary of this plan within the 30 s read deadline. The write paths are
+      reverted, the 60-plan count exceeds the 5-plan count and the test fails. A warm call on the fleet node, logged in the
+      run directory, answers the summary of this plan within the 30 s read deadline. The write paths are
       <code>reckon/resources.py</code>, <code>reckon/_store.py</code> and
       <code>tests/test_one_plan_read_is_not_a_corpus_scan.py</code>; a change needed in
       <code>reckon/project_state.py</code> is named in the manifest before it is made.</p>
