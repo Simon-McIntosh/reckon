@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="docs-project" content="reckon"><meta name="reckon-type" content="evidence">
+<meta name="plan-slug" content="promotion-split-map"><meta name="plan-title" content="Promotion module split map">
+<meta name="plan-summary" content="Statement placement, dependencies, and external references for the promotion module move"><meta name="plan-recorded-at" content="2026-10-08"><meta name="plan-verdict" content="mapped">
+<meta name="plan-evidence-for" content="every-module-fits-a-worker-window"><meta name="plan-verifies" content="every-module-fits-a-worker-window#s6">
+<title>Promotion module split map | reckon</title>
+<link rel="stylesheet" href="/_shared/foundation.css"><link rel="stylesheet" href="/_shared/dashboard.css">
+</head><body><main class="plan-doc"><article data-reckon="landed" data-node="promotion-split-map" id="promotion-split-map">
+<h1>Promotion module split map</h1>
+<p>At base <code>0d925378c9966477a8f8e42bef2584641c0a62cc</code>, <code>reckon/crew/promotion.py</code> holds 411,953 UTF-8 bytes, or 117,701 context-fit tokens. The JSON map assigns every one of its 241 non-import top-level statements exactly once. The largest projected module is <code>reckon/crew/promotion_checks.py</code> at 25,855 estimated tokens. Estimates count each assigned statement's source bytes, the full current import block as a conservative allowance, cross-module local imports, and one-line re-exports in the original.</p>
+<table id="promotion-split-map-modules"><caption>Produced siblings and original import surface</caption><thead><tr><th>Path</th><th>Concern</th><th>Members</th><th>Estimated tokens</th></tr></thead><tbody>
+<tr><td><code>reckon/crew/promotion_evidence.py</code></td><td>Manifest, commits, and recorded gate evidence</td><td>47</td><td>17,944</td></tr>
+<tr><td><code>reckon/crew/promotion_gate.py</code></td><td>Gate command validation and replay at the integrated revision</td><td>27</td><td>12,778</td></tr>
+<tr><td><code>reckon/crew/promotion_scope.py</code></td><td>Repository boundaries and landing writes</td><td>56</td><td>23,501</td></tr>
+<tr><td><code>reckon/crew/promotion_checks.py</code></td><td>Terminal, review, plan, and control readiness checks</td><td>52</td><td>25,855</td></tr>
+<tr><td><code>reckon/crew/promotion_records.py</code></td><td>Run record reconstruction and suite reconciliation</td><td>15</td><td>8,934</td></tr>
+<tr><td><code>reckon/crew/promotion_release.py</code></td><td>Cited arm cleanup, worktree release, receipts, and fleet reading</td><td>34</td><td>12,840</td></tr>
+<tr><td><code>reckon/crew/promotion.py</code></td><td>Promotion, discard, and sweep entry points; compatibility imports</td><td>10</td><td>23,135</td></tr>
+</tbody></table>
+<h2 id="promotion-split-map-seams">Grouping and dependency seams</h2>
+<p>Manifest and commit evidence stay together in <code>promotion_evidence.py</code>. The gate-command parser and integrated-revision replay form <code>promotion_gate.py</code>, matching the existing banner. Repository boundaries, scope exceptions, and landing writes share <code>promotion_scope.py</code>. Terminal observation, review and plan readiness, and the negative-control check share <code>promotion_checks.py</code>; <code>StreamMeasures</code> stays with its terminal-observation readers. Record reconstruction and suite-delta helpers form <code>promotion_records.py</code>. Cited-arm cleanup, release, receipts, and fleet observations form <code>promotion_release.py</code>. The original keeps <code>complete</code>, <code>_complete_locked</code>, <code>discard</code>, and the sweep entry point, so the command-facing operations remain together and the original remains the import surface.</p>
+<p><strong>Module-level edges between produced modules:</strong> none. The JSON records the function-level references between produced siblings. These use function-local imports where both sides refer to one another, so no module-level cycle is created. The original imports the moved names for compatibility. No mutable module-level cache, registry, or lock is declared in this base; <code>StreamMeasures.throughput</code> uses an instance-level default factory.</p>
+<p><strong>Back-references to the original:</strong> all five are function-level and can use a local import after the original module has initialized:</p><ul id="promotion-split-map-back-references">
+<li><code>reckon/crew/promotion_evidence.py</code>: <code>_require_commits_beyond_base → _revision_is_ancestor</code> uses an import inside the function.</li>
+<li><code>reckon/crew/promotion_gate.py</code>: <code>rerun_gate_at_integrated_revision → _revision_is_ancestor</code> uses an import inside the function.</li>
+<li><code>reckon/crew/promotion_scope.py</code>: <code>_descendant_commit → _revision_is_ancestor</code> uses an import inside the function.</li>
+<li><code>reckon/crew/promotion_scope.py</code>: <code>_path_change_reaches_integration_head → _revision_is_ancestor</code> uses an import inside the function.</li>
+<li><code>reckon/crew/promotion_records.py</code>: <code>_resume_worktree_retention → discard</code> uses an import inside the function.</li>
+</ul>
+<h2 id="promotion-split-map-repoints">Move-node test write paths</h2>
+<p>These 40 test files patch a name on <code>promotion</code> or read the module source directly or through a package-wide scan. The JSON census records each patch line and source read. The move must repoint each affected patch to the module where its caller resolves the name. The source-reading tests must inspect the new owner or the whole resulting module set, as appropriate; broad scans already enumerate siblings but their path-specific assertions need review.</p>
+<ul id="promotion-split-map-test-paths">
+<li><code>tests/test_a_promotion_never_reads_unpromoted.py</code> — _capture_member_session</li>
+<li><code>tests/test_a_promotion_reads_only_the_fleet_fields_it_records.py</code> — drain</li>
+<li><code>tests/test_a_worktree_held_row_is_rechecked_at_read.py</code> — _release_after_promotion</li>
+<li><code>tests/test_an_overrun_names_its_cause.py</code> — source read</li>
+<li><code>tests/test_an_unmeasured_fleet_reading_names_its_cause.py</code> — _drain_row, list_live</li>
+<li><code>tests/test_crew_promotion.py</code> — _git, source read</li>
+<li><code>tests/test_derived_figures_reach_a_reader.py</code> — source read</li>
+<li><code>tests/test_discard_releases_a_clean_worktree.py</code> — _remove_discarded_worktree</li>
+<li><code>tests/test_discarded_run_promotes_after_its_commits_land.py</code> — _read_pointer_or_rebuild</li>
+<li><code>tests/test_dispatch_returns_without_worker.py</code> — _repository_tree_snapshot</li>
+<li><code>tests/test_every_removal_path_reads_the_wide_claim.py</code> — source read</li>
+<li><code>tests/test_every_signal_caller_names_its_run_directory.py</code> — process_alive</li>
+<li><code>tests/test_gate_evidence.py</code> — source read</li>
+<li><code>tests/test_manifest_check_command.py</code> — source read</li>
+<li><code>tests/test_one_blob_reader_serves_velocity_and_the_counter.py</code> — source read</li>
+<li><code>tests/test_one_cache_cascade_serves_every_kind.py</code> — source read</li>
+<li><code>tests/test_one_function_resolves_a_citation.py</code> — source read</li>
+<li><code>tests/test_one_raw_text_section_reader.py</code> — source read</li>
+<li><code>tests/test_one_reader_of_remaining_work.py</code> — source read</li>
+<li><code>tests/test_plan_review_prefix_is_one_constant.py</code> — source read</li>
+<li><code>tests/test_promotion_beat_carries_fleet_state.py</code> — _drain_row, _utc_now, list_live</li>
+<li><code>tests/test_promotion_never_amends_its_commit.py</code> — _release_after_promotion</li>
+<li><code>tests/test_promotion_reads_the_terminal_record.py</code> — _STREAM_SETTLE_MAX_SECONDS, _STREAM_SETTLE_POLL_SECONDS, _STREAM_SETTLE_QUIESCENCE_SECONDS, _newest_stream_mtime, _wait_out_stream_tail, process_alive</li>
+<li><code>tests/test_promotion_release.py</code> — _release_run_workspace</li>
+<li><code>tests/test_promotion_releases_its_worktree.py</code> — _live_worktree_claims, _resume_worktree_retention</li>
+<li><code>tests/test_promotion_retires_a_disposable_identity.py</code> — _retire_disposable_identity</li>
+<li><code>tests/test_promotion_timestamps_reuse_the_parser.py</code> — source read</li>
+<li><code>tests/test_receipt_after_release.py</code> — _STREAM_SETTLE_MAX_SECONDS, _STREAM_SETTLE_POLL_SECONDS, _STREAM_SETTLE_QUIESCENCE_SECONDS, _newest_stream_mtime, _signal_process_group, process_alive</li>
+<li><code>tests/test_receipt_names_the_rolled_back_row.py</code> — _git</li>
+<li><code>tests/test_rollback_asks_head.py</code> — _capture_member_session, _git</li>
+<li><code>tests/test_section_spelling_grammars_share_one_core.py</code> — source read</li>
+<li><code>tests/test_skill_contracts.py</code> — source read</li>
+<li><code>tests/test_supervisor_starts_without_a_runpy_warning.py</code> — source read</li>
+<li><code>tests/test_the_fleet_gate_holds_dispatch.py</code> — source read</li>
+<li><code>tests/test_the_invocation_parser_spells_a_section.py</code> — source read</li>
+<li><code>tests/test_the_section_prose_reader_has_one_home.py</code> — source read</li>
+<li><code>tests/test_the_unreconciled_count_has_one_composition.py</code> — source read</li>
+<li><code>tests/test_watch_version_stamp.py</code> — source read</li>
+<li><code>tests/test_watcher_unit_restart.py</code> — source read</li>
+<li><code>tests/test_worker_scratch_lives_with_its_run.py</code> — _worktree_audit, remove_worker_scratch</li>
+</ul>
+<p>The source readers are <code>tests/test_gate_evidence.py</code> for <code>_evaluate_suite_delta</code>, <code>tests/test_the_unreconciled_count_has_one_composition.py</code> for <code>_unreconciled_live_runs</code>, and <code>tests/test_promotion_timestamps_reuse_the_parser.py</code> for a source-wide timestamp-parser check. The last test must cover the resulting module set after the move. <code>tests/test_crew_promotion.py</code> and <code>tests/test_every_removal_path_reads_the_wide_claim.py</code> also assert original source paths for functions mapped to siblings, so their expected owners must change. The review prompt at <code>reckon/crew/prompts/review.md</code> names <code>promotion.py:_require_review_waiver</code>; the move must keep that call-site reference accurate or retain that definition in the original.</p>
+</article></main></body></html>
