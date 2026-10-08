@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:every-module-fits-a-worker-window">
+  <meta name="plan-verifies" content="reckon:every-module-fits-a-worker-window#s9">
+  <meta name="evidence-verdict" content="landed">
+  <meta name="evidence-date" content="2026-10-08">
+  <title>The CLI module set has one owner | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="the-cli-module-set-has-one-owner">
+  <h2>The CLI module set has one owner</h2>
+  <p id="the-cli-module-set-has-one-owner-summary">The seven modules that make up the CLI were named twice, once inside
+  <code>source_code_stamp</code> in <code>reckon/crew/obligation_snapshot.py</code> and again inside
+  <code>follower_code_stamp</code> in <code>reckon/crew/runs.py</code>. A module added to one list and not the other
+  left a running producer or follower on old code with nothing failing. The declaration now lives once, as the
+  module-level tuple <code>CLI_MODULE_FILES</code> in <code>obligation_snapshot.py</code>, and both stamps build their
+  source lists from it.</p>
+
+  <h3 id="the-cli-module-set-has-one-owner-declaration">The one declaration</h3>
+  <p><code>CLI_MODULE_FILES</code> names the seven modules relative to the package directory, in the order the stamps
+  previously listed them: <code>cli.py</code>, <code>cli_entry.py</code>, <code>project_setup_commands.py</code>,
+  <code>crew_dispatch_commands.py</code>, <code>crew_follow_commands.py</code>, <code>crew_run_commands.py</code>,
+  <code>project_maintenance_commands.py</code>. Each stamp appends its unchanged <code>crew/*.py</code> glob after the
+  declared names. The module adds no import at module level, so the prompt hook that loads it by path still pulls no
+  derivation module.</p>
+
+  <h3 id="the-cli-module-set-has-one-owner-stamp-equality">The stamps are unchanged on unchanged bytes</h3>
+  <p>Both source lists were reconstructed over the same extracted base-tree files, the old hardcoded list and the new
+  declared tuple. The three digests agree to the byte, so a stamp over a given tree is identical before and after the
+  change:</p>
+  <table>
+    <thead><tr><th>computation</th><th>sha256</th></tr></thead>
+    <tbody>
+      <tr><td>base <code>source_code_stamp</code></td><td><code>108721a8b90c2ba3…5904bf</code></td></tr>
+      <tr><td>new <code>source_code_stamp</code></td><td><code>108721a8b90c2ba3…5904bf</code></td></tr>
+      <tr><td>new <code>follower_code_stamp</code></td><td><code>108721a8b90c2ba3…5904bf</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="the-cli-module-set-has-one-owner-measure">The measure</h3>
+  <p><code>tests/test_the_cli_module_set_has_one_owner.py</code> walks the click tree from the root group, collects the
+  module of each command's callback, and fails naming any top-level <code>reckon</code> module that carries a command
+  but is absent from <code>CLI_MODULE_FILES</code>. A second case copies the package under the test's temporary
+  directory and proves both stamps move when any one declared module's bytes change and hold when nothing does; the
+  real tree is never written.</p>
+  <p>Gate: the new file plus the fifteen stamp tests named for this node, run serially with <code>--basetemp</code>
+  under the run directory, reported <code>134 passed</code> and <code>EXIT=0</code>.</p>
+  <p>Negative control: removing <code>crew_follow_commands.py</code> from the declared tuple (applied to a scratch copy
+  of the package) makes <code>test_every_command_module_is_declared</code> fail with
+  <code>omits module(s) that carry commands: ['crew_follow_commands.py']</code> and <code>EXIT=1</code>.</p>
+</section>
+</main>
+</body>
+</html>
