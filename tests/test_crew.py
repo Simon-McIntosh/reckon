@@ -25,11 +25,9 @@ from click.testing import CliRunner
 
 import reckon.crew.dispatch_plan as dispatch_plan_module
 import reckon.crew.dispatch_sessions as dispatch_sessions_module
-import reckon.crew.recovery as recovery_module
-from reckon.crew import recovery_stream
 from reckon import cli as cli_module
 from reckon import crew, crew_dispatch_commands, crew_run_commands, flight, ledger
-from reckon.crew import recovery, review, runs
+from reckon.crew import recovery, recovery_stream, review, runs
 from reckon.crew.dispatch import shadow as dispatch_shadow
 from reckon.crew.refusals import format_refusal
 from tests import test_a_live_run_never_reads_dead as liveness

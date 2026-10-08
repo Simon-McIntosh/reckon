@@ -28,8 +28,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import recovery_repair_dispatch
-from reckon.crew import recovery, runs
+from reckon.crew import recovery, recovery_repair_dispatch, runs
 from tests.test_the_reflex_resumes_an_unpromoted_run import (  # noqa: F401
     CONFIG,
     FINDING,

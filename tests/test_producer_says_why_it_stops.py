@@ -15,8 +15,7 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli, crew
-from reckon.crew import recovery_watch
-from reckon.crew import recovery, runs
+from reckon.crew import recovery, recovery_watch, runs
 
 
 def test_expired_lease_writes_stop_reason(tmp_path) -> None:

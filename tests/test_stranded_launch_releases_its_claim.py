@@ -19,8 +19,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import recovery_review_dispatch
-from reckon.crew import recovery, runs
+from reckon.crew import recovery, recovery_review_dispatch, runs
 
 PROJECT = "stranded-fixture"
 SESSION = "coordinator-fixture"

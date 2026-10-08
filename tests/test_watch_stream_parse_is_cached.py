@@ -15,8 +15,7 @@ from pathlib import Path
 import pytest
 
 from reckon import _backends, crew, mcp_views
-from reckon.crew import recovery_classification
-from reckon.crew import promotion, recovery
+from reckon.crew import promotion, recovery, recovery_classification
 
 MOMENT = 1_800_000_000.0
 EVENT_COUNT = 20_000

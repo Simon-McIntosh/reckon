@@ -31,18 +31,20 @@ import signal
 import socket
 import subprocess
 import time
-
 from contextlib import contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 
-from reckon.crew import recovery_classification
-from reckon.crew import recovery_liveness
-from reckon.crew import recovery_repair_dispatch
-from reckon.crew import recovery_watch
-from reckon.crew import recovery, runs
+from reckon.crew import (
+    recovery,
+    recovery_classification,
+    recovery_liveness,
+    recovery_repair_dispatch,
+    recovery_watch,
+    runs,
+)
 
 HOST = socket.gethostname()
 

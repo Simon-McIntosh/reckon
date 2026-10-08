@@ -13,8 +13,7 @@ from click.testing import CliRunner
 
 from reckon import cli as cli_module
 from reckon import crew, crew_follow_commands, ledger
-from reckon.crew import recovery_watch
-from reckon.crew import recovery
+from reckon.crew import recovery, recovery_watch
 from reckon.crew import ticker as ticker_module
 
 

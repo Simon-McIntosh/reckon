@@ -10,10 +10,13 @@ from typing import Any
 import pytest
 
 from reckon import _plan_html, crew, ledger
-from reckon.crew import recovery_review_acceptance
-from reckon.crew import recovery_review_dispatch
-from reckon.crew import recovery_watch
-from reckon.crew import promotion, promotion_release, recovery
+from reckon.crew import (
+    promotion,
+    promotion_release,
+    recovery_review_acceptance,
+    recovery_review_dispatch,
+    recovery_watch,
+)
 from reckon.crew.runs import _write_json, pointer_path
 
 PROJECT = "beat-project"

@@ -19,12 +19,15 @@ from pathlib import Path
 from click.testing import CliRunner
 
 from reckon import cli, review_tiers
-from reckon.crew import recovery_repair_dispatch
-from reckon.crew import recovery_review_acceptance
-from reckon.crew import recovery_review_delivery
-from reckon.crew import recovery_review_dispatch
-from reckon.crew import recovery_watch
-from reckon.crew import plan_review, recovery
+from reckon.crew import (
+    plan_review,
+    recovery,
+    recovery_repair_dispatch,
+    recovery_review_acceptance,
+    recovery_review_delivery,
+    recovery_review_dispatch,
+    recovery_watch,
+)
 from tests.test_review_plan_command import CONFIG
 from tests.test_review_plan_command import project as project  # noqa: PLC0414
 

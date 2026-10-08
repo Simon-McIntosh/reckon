@@ -23,9 +23,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import recovery_liveness
-from reckon.crew import recovery_repair_dispatch
-from reckon.crew import recovery, runs
+from reckon.crew import recovery, recovery_liveness, recovery_repair_dispatch, runs
 
 HOST = socket.gethostname()
 OTHER_HOST = f"{HOST}.foreign-host.invalid"

@@ -20,10 +20,13 @@ from pathlib import Path
 import pytest
 
 from reckon import sprint_liveness as sl
-from reckon.crew import recovery_review_acceptance
-from reckon.crew import recovery_review_dispatch
-from reckon.crew import recovery_watch
-from reckon.crew import recovery, runs
+from reckon.crew import (
+    recovery,
+    recovery_review_acceptance,
+    recovery_review_dispatch,
+    recovery_watch,
+    runs,
+)
 from reckon.crew.runs import list_live
 from reckon.project_state import create_project_state, write_resource
 from reckon.resources import read_sprint_record

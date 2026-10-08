@@ -27,8 +27,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import recovery_watch
-from reckon.crew import recovery, runs
+from reckon.crew import recovery, recovery_watch, runs
 from reckon.crew import review as review_module
 
 PROJECT = "snapshot-stat"

@@ -32,8 +32,7 @@ import pytest
 
 import reckon.crew.dispatch_sessions as dispatch_sessions_module
 from reckon import crew
-from reckon.crew import recovery_repair_dispatch
-from reckon.crew import recovery, resumption, runs
+from reckon.crew import recovery, recovery_repair_dispatch, resumption, runs
 from tests import test_resume_and_lane_change_follow_their_own_attempt as lane
 from tests.test_resume_and_lane_change_follow_their_own_attempt import (  # noqa: F401
     crew_home,

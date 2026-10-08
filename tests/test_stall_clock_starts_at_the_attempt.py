@@ -27,9 +27,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import recovery_liveness
-from reckon.crew import recovery_watch
-from reckon.crew import recovery, runs
+from reckon.crew import recovery, recovery_liveness, recovery_watch, runs
 from tests import test_a_live_run_never_reads_dead as liveness
 
 # The declared mutation, verbatim: the string the promotion audit matches

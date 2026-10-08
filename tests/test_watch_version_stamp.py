@@ -26,8 +26,7 @@ from pathlib import Path
 import pytest
 
 from reckon import __version__
-from reckon.crew import recovery_watch
-from reckon.crew import recovery, runs
+from reckon.crew import recovery, recovery_watch, runs
 
 
 @pytest.fixture()

@@ -8,12 +8,15 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import recovery_classification
-from reckon.crew import recovery_liveness
-from reckon.crew import recovery_stream
-from reckon.crew import recovery_wait
-from reckon.crew import recovery_watch
-from reckon.crew import recovery, resumption
+from reckon.crew import (
+    recovery,
+    recovery_classification,
+    recovery_liveness,
+    recovery_stream,
+    recovery_wait,
+    recovery_watch,
+    resumption,
+)
 from reckon.crew.ticker import Ticker
 
 

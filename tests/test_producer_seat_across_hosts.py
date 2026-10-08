@@ -10,10 +10,7 @@ import time
 import pytest
 
 import reckon.crew.dispatch_watch as dispatch_watch_module
-from reckon.crew import recovery_review_delivery
-from reckon.crew import recovery_stream
-from reckon.crew import recovery_watch
-from reckon.crew import runs
+from reckon.crew import recovery_review_delivery, recovery_stream, recovery_watch, runs
 from reckon.crew.host_lease import LEASE_STALE_SECONDS, HostLease
 from reckon.crew.node import CrewError
 

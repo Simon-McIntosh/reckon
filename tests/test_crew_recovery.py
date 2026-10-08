@@ -19,10 +19,14 @@ from click.testing import CliRunner
 import reckon.crew.dispatch_sessions as dispatch_sessions_module
 from reckon import _backends, _plan_html, crew, ledger
 from reckon import cli as cli_module
-from reckon.crew import recovery_review_delivery
-from reckon.crew import recovery_stream
-from reckon.crew import recovery_watch
-from reckon.crew import recovery, reports, runs
+from reckon.crew import (
+    recovery,
+    recovery_review_delivery,
+    recovery_stream,
+    recovery_watch,
+    reports,
+    runs,
+)
 from reckon.crew import ticker as ticker_module
 
 # Recorded worker event streams, read as repository fixtures so a refusal is

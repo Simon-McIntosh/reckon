@@ -18,11 +18,12 @@ import time
 from pathlib import Path
 
 from reckon import crew, mcp
-from reckon.crew import recovery_classification
-from reckon.crew import recovery_liveness
-from reckon.crew import recovery_stream
-from reckon.crew import recovery_watch
-from reckon.crew import recovery
+from reckon.crew import (
+    recovery_classification,
+    recovery_liveness,
+    recovery_stream,
+    recovery_watch,
+)
 
 PROJECT = "alpha"
 

@@ -17,10 +17,13 @@ from pathlib import Path
 import pytest
 
 from reckon import crew
-from reckon.crew import recovery_classification
-from reckon.crew import recovery_review_delivery
-from reckon.crew import recovery_stream
-from reckon.crew import recovery, review
+from reckon.crew import (
+    recovery,
+    recovery_classification,
+    recovery_review_delivery,
+    recovery_stream,
+    review,
+)
 from reckon.crew.recovery import watch_ticker
 
 PROJECT = "sample"

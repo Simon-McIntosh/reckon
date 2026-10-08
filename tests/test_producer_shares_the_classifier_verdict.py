@@ -10,14 +10,17 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import recovery_review_acceptance
-from reckon.crew import recovery_review_dispatch
-from reckon.crew import recovery_memo
-from reckon.crew import recovery_classification
-from reckon.crew import recovery_repair_dispatch
-from reckon.crew import recovery_liveness
-from reckon.crew import recovery_watch
-from reckon.crew import recovery, runs
+from reckon.crew import (
+    recovery,
+    recovery_classification,
+    recovery_liveness,
+    recovery_memo,
+    recovery_repair_dispatch,
+    recovery_review_acceptance,
+    recovery_review_dispatch,
+    recovery_watch,
+    runs,
+)
 from tests import test_a_live_run_never_reads_dead as liveness
 
 

@@ -28,11 +28,14 @@ from typing import Any
 
 import pytest
 
-from reckon.crew import recovery_classification
-from reckon.crew import recovery_liveness
-from reckon.crew import recovery_stream
-from reckon.crew import recovery_watch
-from reckon.crew import obligation_snapshot, recovery, runs
+from reckon.crew import (
+    obligation_snapshot,
+    recovery_classification,
+    recovery_liveness,
+    recovery_stream,
+    recovery_watch,
+    runs,
+)
 from reckon.crew import review as review_module
 
 obligations_module = importlib.import_module("reckon.crew.obligations")

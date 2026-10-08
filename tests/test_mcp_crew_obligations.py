@@ -28,11 +28,13 @@ import pytest
 
 import reckon.mcp as mcp_module
 from reckon.crew import recovery as recovery_module
-from reckon.crew import recovery_classification
-from reckon.crew import recovery_liveness
-from reckon.crew import recovery_stream
-from reckon.crew import recovery_watch
-from reckon.crew import runs
+from reckon.crew import (
+    recovery_classification,
+    recovery_liveness,
+    recovery_stream,
+    recovery_watch,
+    runs,
+)
 
 # The census module owns the fixture vocabulary and the seeding helpers for one
 # synthetic fleet; reusing them keeps the two fixtures describing the same

@@ -25,9 +25,7 @@ from pathlib import Path
 import pytest
 
 from reckon import _plan_html, crew
-from reckon.crew import recovery_review_acceptance
-from reckon.crew import recovery_watch
-from reckon.crew import recovery, runs
+from reckon.crew import recovery, recovery_review_acceptance, recovery_watch, runs
 
 PROJECT = "sample"
 PLAN = "fixture"

@@ -28,9 +28,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import recovery_liveness
-from reckon.crew import recovery_repair_dispatch
-from reckon.crew import recovery
+from reckon.crew import recovery, recovery_liveness, recovery_repair_dispatch
 
 
 def _pid_max() -> int:

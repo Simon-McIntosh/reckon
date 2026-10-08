@@ -23,8 +23,7 @@ from pathlib import Path
 import pytest
 
 from reckon import _backends
-from reckon.crew import recovery_watch
-from reckon.crew import recovery, runs
+from reckon.crew import recovery, recovery_watch, runs
 
 PROJECT = "producer-reads"
 FOREIGN_HOST = "a-login-node-that-is-not-this-one"

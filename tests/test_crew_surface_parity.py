@@ -10,7 +10,6 @@ from click.testing import CliRunner
 
 from reckon import cli, crew, mcp
 
-
 recovery_module = import_module("reckon.crew.recovery")
 routed_clock_modules = (
     import_module("reckon.crew.recovery_stream"),

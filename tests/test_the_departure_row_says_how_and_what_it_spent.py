@@ -8,8 +8,7 @@ from pathlib import Path
 import pytest
 
 from reckon import ledger
-from reckon.crew import recovery_watch
-from reckon.crew import metering, recovery, ticker
+from reckon.crew import metering, recovery, recovery_watch, ticker
 
 
 @pytest.fixture()

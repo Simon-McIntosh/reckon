@@ -8,14 +8,16 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli
-from reckon.crew import recovery_classification
-from reckon.crew import recovery_repair_dispatch
-from reckon.crew import recovery_review_acceptance
-from reckon.crew import recovery_review_delivery
-from reckon.crew import recovery_review_dispatch
-from reckon.crew import recovery_review_subject
-from reckon.crew import recovery_watch
-from reckon.crew import recovery
+from reckon.crew import (
+    recovery,
+    recovery_classification,
+    recovery_repair_dispatch,
+    recovery_review_acceptance,
+    recovery_review_delivery,
+    recovery_review_dispatch,
+    recovery_review_subject,
+    recovery_watch,
+)
 
 
 @pytest.fixture

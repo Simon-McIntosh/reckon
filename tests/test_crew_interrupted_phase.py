@@ -15,13 +15,16 @@ import pytest
 
 import reckon.crew.dispatch_sessions as dispatch_sessions_module
 from reckon import _backends
-from reckon.crew import recovery_repair_dispatch
-from reckon.crew import recovery_review_acceptance
-from reckon.crew import recovery_review_delivery
-from reckon.crew import recovery_review_dispatch
-from reckon.crew import recovery_watch
 from reckon.crew import node as node_module
-from reckon.crew import recovery, runs
+from reckon.crew import (
+    recovery,
+    recovery_repair_dispatch,
+    recovery_review_acceptance,
+    recovery_review_delivery,
+    recovery_review_dispatch,
+    recovery_watch,
+    runs,
+)
 
 
 def _run(*argv: str, cwd: Path) -> str:

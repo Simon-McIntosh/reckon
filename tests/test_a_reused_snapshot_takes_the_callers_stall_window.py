@@ -33,9 +33,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import recovery_classification
-from reckon.crew import recovery_watch
-from reckon.crew import recovery, runs
+from reckon.crew import recovery, recovery_classification, recovery_watch, runs
 
 PROJECT = "reuse-window"
 FOREIGN_HOST = "a-login-node-that-is-not-this-one"
