@@ -280,6 +280,15 @@ def test_a_window_reading_that_moved_the_reset_returns_the_reserve(
 
 
 def _routing_ceiling(config: dict, home: Path) -> float:
+    """The dispatch-purpose ceiling routing reaches for ``config``'s wallet.
+
+    ``now`` is the fixture instant rather than the wall clock: the lift the
+    gateway reads is in force only inside the window it was granted against, so
+    a clock read at assertion time would make the assertion answer differently
+    once the real date passes the fixture's reset and would redden with no code
+    change. Judging at the fixture's own moment makes the case a fact about the
+    code rather than about when it runs.
+    """
     verdict = _budget_verdict(
         project="sample",
         root=home / "ledger",
@@ -288,6 +297,7 @@ def _routing_ceiling(config: dict, home: Path) -> float:
         backend={"budget_group": GROUP},
         purpose="dispatch",
         budget_state={"backend": LANE, "headroom": "unknown"},
+        now=NOW,
     )
     return float(verdict["effective_ceiling_pct"])
 
