@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.75">
-<meta name="plan-version" content="85">
+<meta name="plan-version" content="87">
 <meta name="plan-modified" content="2026-10-09">
 <meta name="plan-commits" content="cff2bbed,e52b056f,abb84ca7,7057e247">
 </head>
@@ -176,14 +176,15 @@
 <section data-reckon="section" data-id="s13" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
 <p><strong>Deliverable.</strong> §2's census counts a failed connection once for every cause its log carries, so the cause counts
       do not partition <code>failed</code>: imas-cx shows 2,697 cause hits over 1,635 failed connections. Each failed connection is now
-      attributed to one cause, the first in §1's table that its log carries, and the census reports how many failures also carried each later
+      attributed to one cause, the first in the census module's own <code>CAUSES</code> order that its log carries, and the census reports how many failures also carried each later
       signature, so the cause counts sum to <code>failed</code>. <code>directory_kind</code>, which no caller outside the module uses, becomes
       private, so the module keeps the one public function §2 declared. The block takes 50 to 126 s on GPFS, most of it a 21 s walk of the
       log directories: the census skips a working-directory log directory whose modification time predates the window, and opens only log files
       modified inside it. The doctor block states its <code>storage-slow</code> rule, a result whose payload names the error, beside the
       count.</p>
     <p><strong>Done when</strong> <code>tests/test_mcp_census.py</code> also passes three new cases with EXIT=0 in a logged run: a connection
-      whose log carries two signatures counts once, under the earlier, and the cause counts sum to <code>failed</code>; a log directory whose
+      whose log carries both a <code>CONNECT_TIMEOUT</code> and the package-metadata line counts once, under <code>CONNECT_TIMEOUT</code>,
+      which comes first in <code>CAUSES</code>, and the cause counts sum to <code>failed</code>; a log directory whose
       modification time predates the window is never opened; and the doctor block names its <code>storage-slow</code> rule. The census over the
       real log tree for 2026-10-01T01:00:00Z to 2026-10-08T01:00:00Z finishes in under 20 s, timed in a log in the run directory. The negative
       control is executed and logged: with every-cause counting restored, the sum assertion fails. The write paths are
