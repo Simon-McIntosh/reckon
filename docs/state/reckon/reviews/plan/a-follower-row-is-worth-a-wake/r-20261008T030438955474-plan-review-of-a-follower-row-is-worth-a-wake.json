@@ -1,0 +1,51 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T03:19:39.835Z",
+  "dispatched_at": "2026-10-08T03:05:18Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-follower-row-is-worth-a-wake.html#s5",
+      "id": "done_when-1",
+      "reason": "the node's whole measure rests on a threshold the unchanged noise windows make impossible to meet, so it must name the noise-hold window or exclude noise-opener rows.",
+      "text": "\u00a75's gate asserts zero held-back action states and no action row delayed more than two minutes, but the merged policy still holds `working \u2192 blocked` and `working \u2192 stalled` for 300 s (five minutes) before the opener prints, so the gate is unachievable as written",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-follower-row-is-worth-a-wake.html#s2",
+      "id": "reasoning-1",
+      "reason": "the bound is stated unconditionally and \u00a75 inherits it; a builder honouring it must either change the noise windows (undeclared) or restate which rows the two-minute bound governs.",
+      "text": "\u00a72 asserts \"No row is held more than two minutes from its first transition\" immediately after acknowledging \"the existing windows each belong to one named noise pair\", yet `NOISE_PAIRS[(\"working\",\"blocked\")]` and `NOISE_PAIRS[(\"working\",\"stalled\")]` are 300 s and \u00a72 does not change the noise windows",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "21b208c099b661e9428f783a4366498e80c3037fab928b96ffc29e68e75c26fb",
+  "plan_slug": "a-follower-row-is-worth-a-wake",
+  "plan_version": 18,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T030438955474-plan-review-of-a-follower-row-is-worth-a-wake",
+  "reviewed_blob_sha": "ccfd367f33b2ba7f97550d1f13484659e26e2ac0",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited symbol exists in the working tree (`RowPolicy`, `PaneRowPath`, `replay_row_policy`, `transition_class`, `SETTLED_STATES`, `HIDDEN_AT_ATTACH`, `ARRIVAL_WINDOW`, `NOISE_PAIRS` in `reckon/crew/ticker.py`; `ACTIONABLE_RECOVERY_CLASSIFICATIONS` in `reckon/crew/recovery.py`; `follower_row_path` and `_follow_gap_rows` in `reckon/cli.py`), and each extensionless href resolves once `.html` is appended (`/reckon/research/follower-signal-audit`, `/reckon/crew-observability\u2026` targets all present under `docs/...`).",
+    "done_when": "a finding \u2014 \u00a75's gate (\"zero held-back action states ... no action row delayed more than two minutes\") cannot pass, because the pre-existing 300 s noise holds on `working \u2192 blocked` and `working \u2192 stalled` delay exactly those action rows and \u00a72 leaves the noise windows unchanged.",
+    "evidence_paths": "pass \u2014 \u00a73 writes through the run's row path and \u00a75 writes its report to the run directory under `~/.config/reckon/crew/runs/<run>`, a durable path, and reads the producer streams as they are, \"writes nothing beside them\".",
+    "naming": "pass \u2014 \u00a72 and \u00a75 name mechanisms (`observer hold`, `settled action state`, `ARRIVAL_WINDOW`), carry no plan labels, ticket numbers, version tags or changelog prose.",
+    "reasoning": "a finding \u2014 \u00a72 states \"No row is held more than two minutes from its first transition\" while leaving the 300 s `NOISE_PAIRS` holds in place, so the statement is false for the action rows `blocked` and `stalled`.",
+    "single_goal": "pass \u2014 \u00a72 adds one hold to `RowPolicy`; \u00a73 wires the follower to it; \u00a75 is one replay measurement.",
+    "wiring": "pass \u2014 the node table declares `plan-depends-on: a-follower-outlives-its-monitor`, which resolves to `docs/plans/a-follower-outlives-its-monitor.html`; the earlier advisory edge to `a-follower-keeps-your-work-in-view` stays prose because `informs` is research-only (`reckon/_schema.py:1281`), so no node edge is missing or misdirected."
+  },
+  "section_digests": {
+    "_document": "57651ac23d8c226b299a6fb3798c4954e38bfc8b12c6a6ee0afcae03f380f75f",
+    "s1": "bea06a70e5a727324f7f05ddea157674cb647360778af5da9d99b6cb372018e7",
+    "s2": "248ac843397570c95a3dd8bfea40e6f9ab9ab793eaab45853308c34ccebb834a",
+    "s3": "41d4ddd08ef0e265dd9b427e22278337608b4bef109bcc1632efbc0a2b31ec0e",
+    "s4": "2d1b89c737dfa8e215eb5353d9bd4452995d7c371c2446691bb88bd8e5e9f57f",
+    "s5": "01c78347657b8eb65d0d152023bdcddb2312ea05d51c04b375133f9a341ccdba"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T03:19:58.895240+00:00"
+}
