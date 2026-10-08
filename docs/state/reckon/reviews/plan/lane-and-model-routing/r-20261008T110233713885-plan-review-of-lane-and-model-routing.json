@@ -1,0 +1,89 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T11:12:28.509Z",
+  "dispatched_at": "2026-10-08T11:02:58Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/lane-and-model-routing.html:103",
+      "id": "done_when-1",
+      "reason": "as written a worker lands a vacuous test, and \u00a712's whole measure (both maps follow one leaf rule) rests on it; the mutation must actually change the leaf set, e.g. treat an empty mapping as a non-leaf or a list as a mapping.",
+      "text": "\u00a712's done-when names a mutation that cannot fail: \"treating an empty mapping as a leaf\" is already the leaf rule both `_leaf_paths` and `_record_provenance` apply (reckon/flight.py:1184-1189 and :1169-1174; the `_leaf_paths` docstring at :1180-1182 already calls an empty mapping a leaf), so the change is a no-op and the test proves neither consumer follows the rule.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/lane-and-model-routing.html:41",
+      "id": "reasoning-1",
+      "reason": "the document's own roadmap statement and the open followup no longer account for the section the plan declares implementable, so a coordinator reading either gets an incomplete set of remaining work.",
+      "text": "s0 states \"\u00a78\u2013\u00a711 are follow-ons from their reviews\", but `\u00a712` is now a fifth follow-on (from \u00a79's review); the open followup `f-lmr-005` (:167-169) enumerates \"\u00a78\u2013\u00a711\" and likewise omits \u00a712.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "beeea57a9b64187f9cfc847a8530c2a583b0d605e48050e312b0e4ea962c5b94",
+  "plan_slug": "lane-and-model-routing",
+  "plan_version": 41,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-08T11:13:13.955045+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-08T11:13:17.387686+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-08T11:13:13.955045+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-08T11:13:17.387686+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-lane-and-model-routing.v41.json",
+  "review_run_id": "r-20261008T110233713885-plan-review-of-lane-and-model-routing",
+  "reviewed_blob_sha": "5f1e9d9f30d1999ab2d04e241532112032ed2657",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every anchor `\u00a712` names resolves: `_leaf_paths` at `reckon/flight.py:1177`, `_record_provenance` at `reckon/flight.py:1162`, `origin()` at `reckon/flight.py:190`, `provenance_sources` at `reckon/flight.py:185`; its cited \"review of \u00a79 (score 102)\" matches the stored review record `r-20261008T084755147230-lane-entries-carry-provenance.json` (total 102, whose one follow-on finding is the `_leaf_paths` duplication).",
+    "done_when": "a finding \u2014 `\u00a712`'s done-when names a mutation (\"treating an empty mapping as a leaf\") that is already the current leaf rule, so its control cannot fail.",
+    "evidence_paths": "pass \u2014 `\u00a712`'s write paths are in-repo source and tests, and its lineage (`\u00a79`/`\u00a711`) landed records under `docs/evidence/archive/lane-and-model-routing-landed.html`; nothing names a scratchpad or node-local path.",
+    "naming": "pass \u2014 `\u00a712` names mechanisms (`_leaf_paths`, `_record_provenance`, `provenance_sources`) and cites the review that raised the duplication; no plan labels, stage names, ticket numbers or version tags.",
+    "reasoning": "a finding \u2014 the document-level roadmap sentence no longer accounts for `\u00a712`, the section the plan now declares implementable.",
+    "single_goal": "pass \u2014 each section names one deliverable; `\u00a712` is one (the module holds one owner for the leaf rule).",
+    "wiring": "pass \u2014 `plan-section-depends-on` declares `s4` and `s10` against `every-module-fits-a-worker-window#s4`, both of which still name `reckon/cli.py`, and `s12` introduces no dependency it needs (it follows `s9`, which is already done)."
+  },
+  "section_digests": {
+    "_document": "04696bd1f0d92da62b8ba006684a0ecc63946222ab45b6c3ecc7cbf8053a723a",
+    "s0": "5970e86b0d53213fecf631cb616a2db8d8f783a8532dc052f3423814906cde4f",
+    "s1": "6760f63ebdb0d0db10c3c004f30d4f4253bfb7582bc7a0e4054fed73e017a02d",
+    "s10": "9d27e940f021242c82017cf503b8e3d3277451ecaef61d1887ae36cecf3eb5a7",
+    "s11": "2e566713b8ee8cbfcf94503cba2640bac78329b96f748ff0334a858e08287755",
+    "s12": "ed4e27163238d4bfcd92d34c74de696887226005b0d47affa360d0d5bb4da1c6",
+    "s2": "0c6488cdae0f23d0600410d02191390e773858e9bc75008234f71cc66f01889b",
+    "s3": "6cb602347e0232fe459028eff2010884381d987053d550c4565f581c23032095",
+    "s4": "aa5a29a8662005607992ae17fc914d47e8e48c68b7e65395b4865f6d33ea37f4",
+    "s5": "2ffa1a3b1d2b09433f25a83f8a7a59b1774249bac29b945f2c2273ace57cb1ba",
+    "s6": "6c8117bcfdc7d4b0bafdc4fb2185779998c71b1730b07a0d900b543f02c08ec1",
+    "s7": "07952e2e354db24e76860530568500cc2066b69b4255c020db83677e46cb18e2",
+    "s8": "7ca129403c95fcbc111273a2b419b29279191bc54c157bb6f7d8de0d5b160d34",
+    "s9": "0c546f1c0ce99eb4f03333edf6955f597fcb37c49baa31305dfd52c6b03364d8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T11:13:11.857006+00:00"
+}
