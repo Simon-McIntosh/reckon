@@ -5664,6 +5664,7 @@ def complete(
             _runnable_gate_command,
             _executable_gate_command,
             review_waived,
+            _misdelivered_review,
             _standing_suite,
             resume_waived,
             landing,
@@ -5710,6 +5711,14 @@ def complete(
                 lambda: _require_runnable_gate_command(run_id, gate_check),
                 lambda: _require_executable_gate_command(run_id, gate_check),
                 _review_gate,
+                # A plan review that wrote its report outside its assigned
+                # directory leaves the delivery read by neither the store nor
+                # promotion, so the review is lost silently. Refuse it, naming
+                # both directories, rather than promote a run whose report sits
+                # where nothing joins it.
+                lambda: _require_plan_review_delivered_in_its_directory(
+                    landing_project, run_id, record
+                ),
                 # The project's declared suite is the gate that sees the whole
                 # tree, and the lighter promotions wait on it. The tier is the
                 # one just resolved, so a full review -- which reads the run for
@@ -8061,6 +8070,84 @@ def _plan_review_record_for_promoting_run(
         project, str(matched.get("review_run_id") or "")
     )
     return found[1] if found is not None else None
+
+
+def _misdelivered_plan_review_directories(
+    project: str, run_id: str, record: Mapping[str, Any]
+) -> tuple[Path, Path] | None:
+    """The assigned and misdelivered report directories of an off-path delivery.
+
+    A plan-review run is composed a report directory whose ``dispatch.json``
+    names the crew run that runs it, and the run is told to write ``report.md``
+    there. A run that writes it into a directory named for its own id instead
+    leaves the composed directory holding its dispatch and sidecar but no
+    report, so the delivery sits beside no sidecar and is read by neither
+    promotion nor the store — the review is lost silently.
+
+    Returns ``(assigned, misdelivered)`` when both conditions hold: the composed
+    directory naming the run exists and carries no report, and a sibling
+    directory under the same report root, named for the run's own id, carries
+    one. Every other case yields ``None`` — a delivered report, a run that
+    delivered no report anywhere, a run whose composed directory cannot be
+    found, and any run that is not a plan review — so those promote as before.
+    The composed directory is found by the same ``dispatch.json`` join the
+    record lookup uses, applied across the plan's whole report root rather than
+    to the delivered subset.
+    """
+    from reckon.crew import recovery
+
+    node_id = str((record.get("node") or {}).get("id") or "")
+    prefix = recovery.PLAN_REVIEW_NODE_PREFIX
+    if not node_id.startswith(prefix):
+        return None
+    plan_slug = node_id[len(prefix) :]
+    if not plan_slug:
+        return None
+    root = plan_review._plan_review_report_root(project, plan_slug)
+    if not root.is_dir():
+        return None
+    assigned: Path | None = None
+    for directory in sorted(root.iterdir()):
+        if not directory.is_dir():
+            continue
+        if (
+            review_module._plan_review_crew_run_id(project, plan_slug, directory.name)
+            == run_id
+        ):
+            assigned = directory
+            break
+    if assigned is None:
+        return None
+    if (assigned / plan_review._REVIEW_REPORT_NAME).is_file():
+        return None
+    misdelivered = root / run_id
+    if not (misdelivered / plan_review._REVIEW_REPORT_NAME).is_file():
+        return None
+    return assigned, misdelivered
+
+
+def _require_plan_review_delivered_in_its_directory(
+    project: str, run_id: str, record: Mapping[str, Any]
+) -> None:
+    """Refuse a plan review that wrote its report outside its assigned directory.
+
+    The composed directory is where a plan-review run is told to write
+    ``report.md``; a report delivered anywhere else is lost, because the store
+    and promotion both join the delivery through the composed directory's
+    sidecar. The refusal names both directories so the coordinator moves the
+    report into place and promotes again.
+    """
+    directories = _misdelivered_plan_review_directories(project, run_id, record)
+    if directories is None:
+        return
+    assigned, misdelivered = directories
+    raise CrewError(
+        f"plan-review run {run_id} was assigned the report directory {assigned} "
+        f"but delivered its report.md into {misdelivered}, a directory named for "
+        "the run itself, so the review sits beside no sidecar and cannot be "
+        f"stored; move {misdelivered / plan_review._REVIEW_REPORT_NAME} into "
+        f"{assigned} and promote again"
+    )
 
 
 def _delivered_review_payloads_for_commit(
