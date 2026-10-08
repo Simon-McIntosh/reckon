@@ -80,6 +80,14 @@ dispatch_module = importlib.import_module("reckon.crew.dispatch")
 # left it alone.
 REAL_LIVE_DIR = _config_home() / "crew" / "live"
 
+
+@pytest.fixture()
+def writable_marker_dir() -> Path:
+    with tempfile.TemporaryDirectory(
+        prefix="reckon-worker-marker-", dir=os.environ.get("TMPDIR")
+    ) as directory:
+        yield Path(directory)
+
 PYTHON = Path(sys.executable)
 
 PROJECT = "sample"
@@ -261,7 +269,7 @@ if _FLAG:
     try:
         import importlib
 
-        _dispatch = importlib.import_module("reckon.crew.dispatch")
+        _dispatch = importlib.import_module("reckon.crew.dispatch_launch")
         _spawn = _dispatch._spawn_detached_supervisor
 
         def _holding(argv, stderr_path):
@@ -863,7 +871,8 @@ def _dispatch_exit_bound(reference_seconds: float) -> float:
 
 
 def test_dispatch_returns_once_its_supervisor_runs(
-    host: dict[str, Any], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    host: dict[str, Any], tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    writable_marker_dir: Path,
 ) -> None:
     """Case one: a return bounded from a reference measured on this host, and a
     scan held open across it.
@@ -878,8 +887,7 @@ def test_dispatch_returns_once_its_supervisor_runs(
     REFERENCE_UNITS of those units, so a loaded host widens the bound with the
     load instead of failing on a constant chosen on a quiet day.
     """
-    marker_dir = tmp_path / "markers"
-    marker_dir.mkdir()
+    marker_dir = writable_marker_dir
     real_before = _snapshot(REAL_LIVE_DIR)
     reference_seconds = _measured_reference_seconds(host)
     run = _start_dispatch(
@@ -1095,7 +1103,7 @@ def test_dispatch_returns_once_its_supervisor_runs(
 
 
 def test_sigkill_to_dispatch_leaves_the_worker_marker(
-    host: dict[str, Any], tmp_path: Path
+    host: dict[str, Any], tmp_path: Path, writable_marker_dir: Path
 ) -> None:
     """Case two: the dispatch process dies mid-run; its worker does not.
 
@@ -1103,8 +1111,7 @@ def test_sigkill_to_dispatch_leaves_the_worker_marker(
     moment its supervisor exists, so the kill lands while dispatch is still in
     its own launch path rather than after it returned.
     """
-    marker_dir = tmp_path / "markers"
-    marker_dir.mkdir()
+    marker_dir = writable_marker_dir
     run = _start_dispatch(
         host, tag="killed-dispatch", marker_dir=marker_dir, stub_sleep=0, hold=True
     )
@@ -1157,11 +1164,10 @@ def test_sigkill_to_dispatch_leaves_the_worker_marker(
 
 
 def test_sigkill_to_the_worker_is_recorded(
-    host: dict[str, Any], tmp_path: Path
+    host: dict[str, Any], tmp_path: Path, writable_marker_dir: Path
 ) -> None:
     """Case three: a worker killed by signal has its signal recorded."""
-    marker_dir = tmp_path / "markers"
-    marker_dir.mkdir()
+    marker_dir = writable_marker_dir
     run = _start_dispatch(
         host, tag="killed-worker", marker_dir=marker_dir, stub_sleep=90, hold=False
     )
@@ -1213,14 +1219,14 @@ def test_sigkill_to_the_worker_is_recorded(
 
 
 def test_a_discarded_run_is_not_recreated(
-    host: dict[str, Any], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    host: dict[str, Any], tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    writable_marker_dir: Path,
 ) -> None:
     """Case four: a discard during a live worker leaves nothing behind."""
     _assert_phase_publish_cannot_restore_released_claim(
         tmp_path / "release-race", monkeypatch
     )
-    marker_dir = tmp_path / "markers"
-    marker_dir.mkdir()
+    marker_dir = writable_marker_dir
     run = _start_dispatch(
         host,
         tag=f"discarded-{uuid.uuid4().hex[:8]}",
@@ -1321,7 +1327,8 @@ def _assert_phase_publish_cannot_restore_released_claim(
         pointer = dispatch_module.pointer_path(run_id)
         pointer.parent.mkdir(parents=True)
         pointer.write_text(json.dumps({"run_id": run_id, "phase": "starting"}))
-        original_write = dispatch_module._write_json
+        dispatch_picker_module = importlib.import_module("reckon.crew.dispatch_picker")
+        original_write = dispatch_picker_module._write_json
         original_remove = dispatch_module.shutil.rmtree
         write_started = Event()
         allow_write = Event()
@@ -1338,7 +1345,7 @@ def _assert_phase_publish_cannot_restore_released_claim(
             assert allow_removal.wait(10)
             original_remove(path, *args, **kwargs)
 
-        isolated.setattr(dispatch_module, "_write_json", delayed_write)
+        isolated.setattr(dispatch_picker_module, "_write_json", delayed_write)
         isolated.setattr(dispatch_module.shutil, "rmtree", delayed_remove)
         with ThreadPoolExecutor(max_workers=2) as pool:
             publish = pool.submit(
@@ -1361,7 +1368,8 @@ def _assert_phase_publish_cannot_restore_released_claim(
 
 
 def test_a_delegated_launch_records_a_boundary_snapshot(
-    host: dict[str, Any], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    host: dict[str, Any], tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    writable_marker_dir: Path,
 ) -> None:
     """Case five: a lane that spawns nothing still takes the boundary baseline.
 
@@ -1373,8 +1381,7 @@ def test_a_delegated_launch_records_a_boundary_snapshot(
     """
     tag = "delegated"
     declared = f"src/{tag}.txt"
-    marker_dir = tmp_path / "markers"
-    marker_dir.mkdir()
+    marker_dir = writable_marker_dir
     run = _start_dispatch(
         host,
         tag=tag,
@@ -1483,7 +1490,7 @@ def test_a_delegated_launch_records_a_boundary_snapshot(
 
 
 def test_dispatch_returns_when_its_supervisor_finished_the_launch(
-    host: dict[str, Any], tmp_path: Path
+    host: dict[str, Any], tmp_path: Path, writable_marker_dir: Path
 ) -> None:
     """A supervisor that completed its launch is not read as a refusal.
 
@@ -1493,8 +1500,7 @@ def test_dispatch_returns_when_its_supervisor_finished_the_launch(
     run rather than refuse it: a dispatch that launched a worker is never a
     refusal, whatever the worker then did.
     """
-    marker_dir = tmp_path / "markers"
-    marker_dir.mkdir()
+    marker_dir = writable_marker_dir
     run = _start_dispatch(
         host, tag="finished", marker_dir=marker_dir, stub_sleep=0, hold=False
     )

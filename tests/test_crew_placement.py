@@ -17,6 +17,7 @@ from pathlib import Path
 
 import pytest
 
+import reckon.crew.dispatch_launch as dispatch_launch_module
 from reckon import flight
 from reckon._backends import LaunchPlan
 from reckon.host import HostFacts
@@ -71,7 +72,7 @@ def _placed(**placement) -> dict:
 def test_a_declared_placement_prefixes_the_resolved_launch(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(dispatch_module, "_current_host_facts", _inside_allocation)
+    monkeypatch.setattr(dispatch_launch_module, "_current_host_facts", _inside_allocation)
     backend = _placed(options=["--partition=all", "--job-name=node"])
     plan = dispatch_module.apply_backend_placement(_plan(), backend)
 
@@ -112,7 +113,7 @@ def test_a_backend_declaring_no_placement_launches_as_before() -> None:
 def test_an_unresolvable_scheduler_is_refused_before_launch(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(dispatch_module, "_current_host_facts", _inside_allocation)
+    monkeypatch.setattr(dispatch_launch_module, "_current_host_facts", _inside_allocation)
     backend = {
         "launch": "cli",
         "command": "codex",

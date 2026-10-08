@@ -32,6 +32,7 @@ from types import SimpleNamespace
 import pytest
 from click.testing import CliRunner
 
+import reckon.crew.dispatch_sessions as dispatch_sessions_module
 from reckon import cli as cli_module
 from reckon.crew import lane_document, runs
 from reckon.crew.dispatch import change_lane
@@ -473,12 +474,12 @@ def test_a_lane_change_resolves_under_the_runs_coordinator_session(
         captured.update(kwargs)
         return resolution
 
-    monkeypatch.setattr(dispatch_module, "plan_dispatch", destination)
+    monkeypatch.setattr(dispatch_sessions_module, "plan_dispatch", destination)
     monkeypatch.setattr(
-        dispatch_module, "_budget_verdict", lambda **kwargs: {"held": False}
+        dispatch_sessions_module, "_budget_verdict", lambda **kwargs: {"held": False}
     )
     monkeypatch.setattr(
-        dispatch_module, "resolve_dispatch_ledger_root", lambda authority: authority
+        dispatch_sessions_module, "resolve_dispatch_ledger_root", lambda authority: authority
     )
     record = _stopped_run(tmp_path, "r-lane-change-session")
 

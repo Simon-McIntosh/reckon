@@ -29,6 +29,7 @@ from typing import Any
 
 import pytest
 
+import reckon.crew.dispatch_launch as dispatch_launch_module
 from reckon.crew import runs
 
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
@@ -72,7 +73,7 @@ def _control(monkeypatch: pytest.MonkeyPatch) -> None:
         # Write the exit record as soon as the immediate child exits, exactly
         # as before the worker wait: the record appears while the worker lives.
         monkeypatch.setattr(
-            dispatch_module,
+            dispatch_launch_module,
             "_reap_the_launched_worker",
             lambda pid, status, **_kwargs: (pid, status),
         )

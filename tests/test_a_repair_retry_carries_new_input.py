@@ -30,6 +30,7 @@ from types import SimpleNamespace
 
 import pytest
 
+import reckon.crew.dispatch_sessions as dispatch_sessions_module
 from reckon import crew
 from reckon.crew import recovery, resumption, runs
 from tests import test_resume_and_lane_change_follow_their_own_attempt as lane
@@ -93,7 +94,7 @@ def _declared_negative_controls(monkeypatch: pytest.MonkeyPatch) -> None:
     """Apply a declared mutation when its environment variable is set."""
     if os.environ.get(LANE_MUTATION_ENV) == "1":
         monkeypatch.setattr(
-            lane.dispatch_module,
+            dispatch_sessions_module,
             "_restate_time_fence",
             lambda prompt, record, *, attempt_started_at: prompt,
         )
@@ -291,11 +292,11 @@ def test_a_lane_change_prompt_carries_the_attempt_its_own_fence(
     reads the first attempt's clock, exactly the three nova-49 refusals. The
     prompt written for the lane change must carry a resumed-attempt fence.
     """
-    monkeypatch.setattr(lane.dispatch_module, "FENCE_WORKERS", True)
+    monkeypatch.setattr(dispatch_sessions_module, "FENCE_WORKERS", True)
     run_id = "r-lane-fence"
     record = lane._stopped_pointer(tmp_path, repo, run_id, backend="alpha")
     monkeypatch.setattr(
-        lane.dispatch_module, "plan_dispatch", lambda **kwargs: lane._cli_resolution("beta")
+        dispatch_sessions_module, "plan_dispatch", lambda **kwargs: lane._cli_resolution("beta")
     )
     lane._stub_move_gates(monkeypatch)
 

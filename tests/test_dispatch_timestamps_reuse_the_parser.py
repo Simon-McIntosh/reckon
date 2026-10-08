@@ -31,6 +31,7 @@ from pathlib import Path
 import pytest
 
 from reckon import _timestamps
+from reckon.crew import dispatch_admission as dispatch_admission_module
 
 dispatch = importlib.import_module("reckon.crew.dispatch")
 
@@ -78,27 +79,27 @@ def canon(value: object) -> dict[str, object]:
 
 
 def _budget_evidence_observed_at(value: object) -> object:
-    original = dispatch._utc_now
-    dispatch._utc_now = lambda: FIXED_NOW
+    original = dispatch_admission_module._utc_now
+    dispatch_admission_module._utc_now = lambda: FIXED_NOW
     try:
         return dispatch._actionable_budget_hold(
             {"backend": "b", "reason": "held", "state": {"observed_at": value}},
             config=CONFIG,
         ).verdict["reason"]
     finally:
-        dispatch._utc_now = original
+        dispatch_admission_module._utc_now = original
 
 
 def _budget_evidence_now(value: object) -> object:
-    original = dispatch._utc_now
-    dispatch._utc_now = lambda: value
+    original = dispatch_admission_module._utc_now
+    dispatch_admission_module._utc_now = lambda: value
     try:
         return dispatch._actionable_budget_hold(
             {"backend": "b", "reason": "held", "state": {"observed_at": FIXED_OBSERVED}},
             config=CONFIG,
         ).verdict["reason"]
     finally:
-        dispatch._utc_now = original
+        dispatch_admission_module._utc_now = original
 
 
 def _lane_advisory_instant(value: object) -> object:
@@ -160,7 +161,7 @@ def test_recorded_table_covers_every_reader_and_input() -> None:
 
 
 def _fromisoformat_enclosing_functions() -> list[str]:
-    tree = ast.parse(Path(dispatch.__file__).read_text())
+    tree = ast.parse(Path(dispatch_admission_module.__file__).read_text())
     found: list[str] = []
     for node in ast.walk(tree):
         if isinstance(node, ast.FunctionDef):
@@ -179,7 +180,7 @@ def test_only_the_lane_reading_retains_fromisoformat() -> None:
 
 
 def test_migrated_dispatch_binds_both_shared_parsers() -> None:
-    tree = ast.parse(Path(dispatch.__file__).read_text())
+    tree = ast.parse(Path(dispatch_admission_module.__file__).read_text())
     imported: set[str] = set()
     for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom) and node.module == _timestamps.__name__:

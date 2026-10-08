@@ -13,6 +13,7 @@ from pathlib import Path
 
 import pytest
 
+import reckon.crew.dispatch_watch as dispatch_watch_module
 from reckon.crew import runs
 
 PROJECT = "arm-lock-sample"
@@ -41,8 +42,9 @@ with runs._project_watch_claim("arm-lock-sample", "30s") as (held, record):
 ARM = """import importlib, json, os
 from pathlib import Path
 m = importlib.import_module("reckon.crew.dispatch")
-m._watch_executable = lambda: os.environ["WATCH_DRIVER"]
-m.WATCHER_LOAD_BOUND_SECONDS = float(os.environ.get("ARM_BOUND", "15"))
+w = importlib.import_module("reckon.crew.dispatch_watch")
+w._watch_executable = lambda: os.environ["WATCH_DRIVER"]
+w.WATCHER_LOAD_BOUND_SECONDS = float(os.environ.get("ARM_BOUND", "15"))
 gate = Path(os.environ["RECKON_HOME"], "go")
 while not gate.exists():
     m.time.sleep(.01)
@@ -89,7 +91,7 @@ def processes(tmp_path, monkeypatch):
     driver = tmp_path / "watch_driver.py"
     driver.write_text(f"#!{sys.executable}\n" + PRODUCER)
     driver.chmod(0o755)
-    monkeypatch.setattr(dispatch, "_watch_executable", lambda: str(driver))
+    monkeypatch.setattr(dispatch_watch_module, "_watch_executable", lambda: str(driver))
     env = {k: v for k, v in os.environ.items() if not k.startswith("RECKON_")}
     env.update(
         RECKON_HOME=str(home),
@@ -107,7 +109,7 @@ def processes(tmp_path, monkeypatch):
         supervisors.append(process)
         return process
 
-    monkeypatch.setattr(dispatch, "_start_watch_producer", start)
+    monkeypatch.setattr(dispatch_watch_module, "_start_watch_producer", start)
 
     def spawn(source, *, extra=None, stdout=subprocess.PIPE):
         process = subprocess.Popen(
@@ -235,6 +237,6 @@ def test_delivery_checks_do_not_hold_the_arm_lock(processes, monkeypatch):
             observed.append(_probe(lock))
         return original(project, session=session)
 
-    monkeypatch.setattr(dispatch, "watch_state", state)
+    monkeypatch.setattr(dispatch_watch_module, "watch_state", state)
     dispatch._ensure_watch_producer(PROJECT, session=SESSION)
     assert observed == [0], "delivery resolution kept the arming mutex"

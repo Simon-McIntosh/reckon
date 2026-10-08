@@ -31,6 +31,7 @@ from pathlib import Path
 
 import pytest
 
+import reckon.crew.dispatch_watch as dispatch_watch_module
 from reckon import service
 from reckon.crew import runs
 from tests.test_crew_watch_ensure import FakeWatchService, _backend_bin, _config
@@ -290,7 +291,7 @@ def test_the_dispatch_admission_route_writes_the_log_its_seat_names(
     """
     dispatch_module = importlib.import_module("reckon.crew.dispatch")
     driver = _write_watch_driver(tmp_path)
-    monkeypatch.setattr(dispatch_module, "_watch_executable", lambda: str(driver))
+    monkeypatch.setattr(dispatch_watch_module, "_watch_executable", lambda: str(driver))
     monkeypatch.setenv(dispatch_module.WATCH_ARMING_ENV, "on")
 
     state = dispatch_module._ensure_watch_producer(PROJECT)
@@ -319,7 +320,7 @@ def test_the_fleet_delegated_spawn_carries_the_log_without_the_arming_environmen
     """
     dispatch_module = importlib.import_module("reckon.crew.dispatch")
     driver = _write_watch_driver(tmp_path, hold="0")
-    monkeypatch.setattr(dispatch_module, "_watch_executable", lambda: str(driver))
+    monkeypatch.setattr(dispatch_watch_module, "_watch_executable", lambda: str(driver))
     monkeypatch.setenv(dispatch_module.WATCH_ARMING_ENV, "on")
 
     runtime = tmp_path / "runtime"
@@ -332,7 +333,7 @@ def test_the_fleet_delegated_spawn_carries_the_log_without_the_arming_environmen
     monkeypatch.setenv(dispatch_module.FLEET_SPAWN_ENV, "on")
     monkeypatch.setenv("XDG_RUNTIME_DIR", str(runtime))
     # The fake spawn starts nothing, so bound the poll that waits for a seat.
-    monkeypatch.setattr(dispatch_module, "WATCHER_LOAD_BOUND_SECONDS", 0.3)
+    monkeypatch.setattr(dispatch_watch_module, "WATCHER_LOAD_BOUND_SECONDS", 0.3)
 
     captured: dict = {}
 
@@ -340,7 +341,7 @@ def test_the_fleet_delegated_spawn_carries_the_log_without_the_arming_environmen
         captured["spec"] = json.loads(Path(spec_path).read_text(encoding="utf-8"))
         return 4321
 
-    monkeypatch.setattr(dispatch_module, "_spawn_through_fleet", fake_spawn)
+    monkeypatch.setattr(dispatch_watch_module, "_spawn_through_fleet", fake_spawn)
     dispatch_module._ensure_watch_producer(PROJECT)
     assert captured, "the fleet route was not taken"
 

@@ -20,6 +20,7 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
+import reckon.crew.dispatch_plan as dispatch_plan_module
 from reckon import cli as cli_module
 from reckon import crew
 
@@ -229,7 +230,7 @@ def test_nothing_is_written_before_the_stop(
         order.append("worktree")
         return real_worktree(*args, **kwargs)
 
-    monkeypatch.setattr(dispatch_module, "_dispatch_orchestrator_lane_stop", spy_stop)
+    monkeypatch.setattr(dispatch_plan_module, "_dispatch_orchestrator_lane_stop", spy_stop)
     monkeypatch.setattr(dispatch_module, "_publish_launch_claim", spy_claim)
     monkeypatch.setattr(dispatch_module, "_create_worktree", spy_worktree)
 

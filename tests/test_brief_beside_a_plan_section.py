@@ -25,6 +25,7 @@ from typing import Any
 import pytest
 from click.testing import CliRunner
 
+import reckon.crew.dispatch_plan as dispatch_plan_module
 from reckon import cli as cli_module
 from reckon import crew
 from reckon.crew.prompts import (
@@ -183,13 +184,13 @@ def test_plan_dispatch_on_the_pair_reaches_both_plan_gates(
         calls.append("review")
 
     monkeypatch.setattr(
-        dispatch_module, "require_plan_section_visible", _section_gate, raising=True
+        dispatch_plan_module, "require_plan_section_visible", _section_gate, raising=True
     )
     monkeypatch.setattr(
-        dispatch_module, "require_plan_reviewed", _review_gate, raising=True
+        dispatch_plan_module, "require_plan_reviewed", _review_gate, raising=True
     )
     monkeypatch.setattr(
-        dispatch_module,
+        dispatch_plan_module,
         "_done_when_plan_overlap_warning",
         lambda **kwargs: None,
         raising=True,

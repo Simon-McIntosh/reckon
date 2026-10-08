@@ -12,6 +12,7 @@ from types import SimpleNamespace
 import pytest
 from click.testing import CliRunner
 
+import reckon.crew.dispatch_picker as dispatch_picker_module
 from reckon import cli, ledger
 from reckon.crew import picker
 from reckon.crew.picker import Candidate
@@ -187,7 +188,7 @@ def test_dispatch_survives_a_raising_picker(repo, monkeypatch):
 
 
 def test_dispatch_survives_a_picker_past_the_bound(repo, monkeypatch):
-    monkeypatch.setattr(dispatch, "PICKER_DISPATCH_TIMEOUT_SECONDS", 0.02)
+    monkeypatch.setattr(dispatch_picker_module, "PICKER_DISPATCH_TIMEOUT_SECONDS", 0.02)
     monkeypatch.setattr(picker, "pick", lambda *_a, **_k: time.sleep(0.2))
     started = time.monotonic()
     direct = dispatch.dispatch_picker_selection(

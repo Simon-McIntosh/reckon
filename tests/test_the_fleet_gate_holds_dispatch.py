@@ -13,6 +13,9 @@ from types import SimpleNamespace
 import pytest
 from click.testing import CliRunner
 
+import reckon.crew.dispatch_launch as dispatch_launch_module
+import reckon.crew.dispatch_peer as dispatch_peer_module
+import reckon.crew.dispatch_sessions as dispatch_sessions_module
 from reckon import cli, crew, mcp
 from tests import test_a_repair_hold_names_its_cause as repair_tests
 from tests import test_dispatch_holds_while_the_lane_is_paused as lane_tests
@@ -142,16 +145,16 @@ def test_resume_checks_the_shared_gate_before_building_a_launch(
 ) -> None:
     monkeypatch.setenv("RECKON_HOME", str(tmp_path))
     _pause()
-    monkeypatch.setattr(dispatch, "read_pointer", lambda _run: {"launch": "cli"})
-    monkeypatch.setattr(dispatch, "record_process_alive", lambda *_a: False)
+    monkeypatch.setattr(dispatch_sessions_module, "read_pointer", lambda _run: {"launch": "cli"})
+    monkeypatch.setattr(dispatch_sessions_module, "record_process_alive", lambda *_a: False)
     monkeypatch.setattr(
-        dispatch,
+        dispatch_sessions_module,
         "_current_harness_session",
         lambda *_a, **_k: {"resolved": True, "session_id": "s"},
     )
-    monkeypatch.setattr(dispatch, "_backend_settings", lambda *_a: {})
-    monkeypatch.setattr(dispatch, "_carry_declared_placement", lambda *_a: None)
-    monkeypatch.setattr(dispatch, "project_mount_repository", lambda *_a: None)
+    monkeypatch.setattr(dispatch_sessions_module, "_backend_settings", lambda *_a: {})
+    monkeypatch.setattr(dispatch_sessions_module, "_carry_declared_placement", lambda *_a: None)
+    monkeypatch.setattr(dispatch_sessions_module, "project_mount_repository", lambda *_a: None)
     with pytest.raises(dispatch.LanePaused) as held:
         dispatch.resume_plan("run", "continue", config={})
     assert held.value.gate["reason"] == REASON
@@ -164,16 +167,16 @@ def test_resume_keeps_the_backend_gate_declaration(
     monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
     backend_gate = lane_tests._gate_file(tmp_path)
     record = {"launch": "cli", "backend": "alpha"}
-    monkeypatch.setattr(dispatch, "read_pointer", lambda _run: record)
-    monkeypatch.setattr(dispatch, "record_process_alive", lambda *_a: False)
+    monkeypatch.setattr(dispatch_sessions_module, "read_pointer", lambda _run: record)
+    monkeypatch.setattr(dispatch_sessions_module, "record_process_alive", lambda *_a: False)
     monkeypatch.setattr(
-        dispatch,
+        dispatch_sessions_module,
         "_current_harness_session",
         lambda *_a, **_k: {"resolved": True, "session_id": "s"},
     )
-    monkeypatch.setattr(dispatch, "_backend_settings", lambda *_a: {})
-    monkeypatch.setattr(dispatch, "_carry_declared_placement", lambda *_a: None)
-    monkeypatch.setattr(dispatch, "project_mount_repository", lambda *_a: None)
+    monkeypatch.setattr(dispatch_sessions_module, "_backend_settings", lambda *_a: {})
+    monkeypatch.setattr(dispatch_sessions_module, "_carry_declared_placement", lambda *_a: None)
+    monkeypatch.setattr(dispatch_sessions_module, "project_mount_repository", lambda *_a: None)
     with pytest.raises(dispatch.LanePaused) as held:
         dispatch.resume_plan(
             "run",
@@ -190,17 +193,17 @@ def test_redispatch_checks_the_shared_gate_before_stopping_the_source(
     monkeypatch.setenv("RECKON_HOME", str(tmp_path))
     _pause()
     monkeypatch.setattr(
-        dispatch,
+        dispatch_sessions_module,
         "read_pointer",
         lambda _run: {"backend": "source", "repo": str(tmp_path), "node": {}},
     )
     monkeypatch.setattr(
-        dispatch,
+        dispatch_sessions_module,
         "_recorded_task_node",
         lambda _record: SimpleNamespace(requires_decisions=[]),
     )
     monkeypatch.setattr(
-        dispatch,
+        dispatch_sessions_module,
         "plan_dispatch",
         lambda **_kwargs: SimpleNamespace(
             validation=SimpleNamespace(ok=True),
@@ -225,7 +228,7 @@ def test_worker_spawn_boundaries_hold_and_admit(
     plan = object()
     if starter == "detached":
         monkeypatch.setattr(
-            dispatch,
+            dispatch_launch_module,
             "_spawn_detached_worker",
             lambda *_a, **_k: calls.append("spawn") or 42,
         )
@@ -238,14 +241,14 @@ def test_worker_spawn_boundaries_hold_and_admit(
                 prompt_path=directory / "prompt.txt",
             )
     elif starter == "supervisor":
-        monkeypatch.setattr(dispatch, "_read_fleet_record", lambda: None)
-        monkeypatch.setattr(dispatch, "_supervisor_argv", lambda **_k: ["worker"])
+        monkeypatch.setattr(dispatch_launch_module, "_read_fleet_record", lambda: None)
+        monkeypatch.setattr(dispatch_launch_module, "_supervisor_argv", lambda **_k: ["worker"])
         monkeypatch.setattr(
-            dispatch,
+            dispatch_launch_module,
             "_spawn_detached_supervisor",
             lambda *_a: calls.append("spawn") or 42,
         )
-        monkeypatch.setattr(dispatch, "_confirm_supervisor_survived", lambda *_a: None)
+        monkeypatch.setattr(dispatch_launch_module, "_confirm_supervisor_survived", lambda *_a: None)
 
         def start():
             return dispatch._start_supervisor(directory / "spec.json", directory, "run")
@@ -264,7 +267,7 @@ def test_worker_spawn_boundaries_hold_and_admit(
             )
     else:
         monkeypatch.setattr(
-            dispatch, "_supervisor_command", lambda *_a: calls.append("spawn") or 42
+            dispatch_peer_module, "_supervisor_command", lambda *_a: calls.append("spawn") or 42
         )
 
         def start():
@@ -640,8 +643,8 @@ def _assert_primitive_launch_paths_reach_gate(root: Path) -> None:
     # The supervisor is a fresh interpreter. Its normal entry is the argv
     # written into the worker spec and launched by _start_supervisor; the
     # direct module command remains a separately checked caller.
-    supervisor_argv = functions[("reckon/crew/dispatch.py", "_supervisor_argv")]
-    supervisor_spec = functions[("reckon/crew/dispatch.py", "_supervisor_spec")]
+    supervisor_argv = functions[("reckon/crew/dispatch_launch.py", "_supervisor_argv")]
+    supervisor_spec = functions[("reckon/crew/dispatch_launch.py", "_supervisor_spec")]
     assert any(
         isinstance(node, ast.Constant) and node.value == "reckon.crew.supervisor_main"
         for node in ast.walk(supervisor_argv)
@@ -651,7 +654,7 @@ def _assert_primitive_launch_paths_reach_gate(root: Path) -> None:
         for call in ast.walk(supervisor_spec)
         if isinstance(call, ast.Call)
     )
-    launcher = ("reckon/crew/dispatch.py", "_start_supervisor")
+    launcher = ("reckon/crew/dispatch_launch.py", "_start_supervisor")
     launch_calls = [
         call
         for call in ast.walk(functions[launcher])
@@ -681,11 +684,11 @@ def _assert_primitive_launch_paths_reach_gate(root: Path) -> None:
         if (calls := _worker_popen_calls(function))
     }
     assert worker_popens.keys() >= {
-        ("reckon/crew/dispatch.py", "_spawn_detached_worker"),
-        ("reckon/crew/dispatch.py", "_supervisor_spawn_worker"),
+        ("reckon/crew/dispatch_launch.py", "_spawn_detached_worker"),
+        ("reckon/crew/dispatch_launch.py", "_supervisor_spawn_worker"),
     }
     assert (
-        "reckon/crew/dispatch.py",
+        "reckon/crew/dispatch_picker.py",
         "_start_shadow_picker_selection",
     ) not in worker_popens
     assert (
@@ -706,8 +709,8 @@ def _assert_primitive_launch_paths_reach_gate(root: Path) -> None:
         for call in popens:
             if not gate_precedes(functions[key], call):
                 require_guard(key, ())
-    require_guard(("reckon/crew/dispatch.py", "_spawn_detached_supervisor"), ())
-    fleet_gateway = ("reckon/crew/dispatch.py", "_spawn_through_fleet")
+    require_guard(("reckon/crew/dispatch_launch.py", "_spawn_detached_supervisor"), ())
+    fleet_gateway = ("reckon/crew/dispatch_launch.py", "_spawn_through_fleet")
     fleet_calls = callers.get(fleet_gateway, [])
     assert fleet_calls
     watcher_calls = 0
@@ -750,8 +753,8 @@ def test_launch_callers_reach_the_shared_gate() -> None:
             }
             relative = path.relative_to(root).as_posix()
             if (relative, function.name) in {
-                ("reckon/crew/dispatch.py", "_spawn"),
-                ("reckon/crew/dispatch.py", "_start_supervisor"),
+                ("reckon/crew/dispatch_launch.py", "_spawn"),
+                ("reckon/crew/dispatch_launch.py", "_start_supervisor"),
                 ("reckon/crew/resumption.py", "_spawn"),
             }:
                 guarded_spawns.add((relative, function.name))
@@ -776,13 +779,13 @@ def test_launch_callers_reach_the_shared_gate() -> None:
                 launchers.add((relative, function.name))
                 assert "_require_fleet_gate_open" in names, (relative, function.name)
     assert guarded_spawns == {
-        ("reckon/crew/dispatch.py", "_spawn"),
-        ("reckon/crew/dispatch.py", "_start_supervisor"),
+        ("reckon/crew/dispatch_launch.py", "_spawn"),
+        ("reckon/crew/dispatch_launch.py", "_start_supervisor"),
         ("reckon/crew/resumption.py", "_spawn"),
     }
     assert launchers >= {
         ("reckon/crew/dispatch.py", "dispatch"),
-        ("reckon/crew/dispatch.py", "supervised_launch"),
+        ("reckon/crew/dispatch_launch.py", "supervised_launch"),
         ("reckon/crew/resumption.py", "_resume"),
         ("reckon/cli.py", "crew_resume"),
         ("reckon/mcp.py", "_crew_recover"),

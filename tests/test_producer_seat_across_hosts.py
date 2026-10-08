@@ -9,6 +9,7 @@ import time
 
 import pytest
 
+import reckon.crew.dispatch_watch as dispatch_watch_module
 from reckon.crew import runs
 from reckon.crew.host_lease import LEASE_STALE_SECONDS, HostLease
 from reckon.crew.node import CrewError
@@ -40,11 +41,11 @@ def test_second_host_defers_to_fresh_producer_even_with_quiet_stream(
         starts.append(project)
         return Started()
 
-    monkeypatch.setattr(dispatch, "_start_watch_producer", start)
+    monkeypatch.setattr(dispatch_watch_module, "_start_watch_producer", start)
     monkeypatch.setattr(
-        dispatch, "_stop_watch_producer_within", lambda *args: stops.append(args)
+        dispatch_watch_module, "_stop_watch_producer_within", lambda *args: stops.append(args)
     )
-    monkeypatch.setattr(dispatch, "WATCHER_LOAD_BOUND_SECONDS", 0.1)
+    monkeypatch.setattr(dispatch_watch_module, "WATCHER_LOAD_BOUND_SECONDS", 0.1)
 
     with runs._project_watch_claim("example", "30s") as (acquired, _record):
         assert acquired

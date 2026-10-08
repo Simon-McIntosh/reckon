@@ -11,6 +11,8 @@ from types import SimpleNamespace
 
 import pytest
 
+from reckon.crew import dispatch_launch as dispatch_launch_module
+from reckon.crew import dispatch_watch as dispatch_watch_module
 from reckon.crew import fleet_migrate, fleet_supervisor
 
 
@@ -238,7 +240,8 @@ def test_shared_fifo_writer_retries_until_the_fifo_exists(tmp_path, monkeypatch)
         write=lambda descriptor, line: written.append((descriptor, line)),
         close=lambda descriptor: written.append((descriptor, b"closed")),
     )
-    monkeypatch.setattr(dispatch_module, "os", fake_os)
+    monkeypatch.setattr(dispatch_launch_module, "os", fake_os)
+    monkeypatch.setattr(dispatch_watch_module, "os", fake_os)
     fifo = tmp_path / "requests"
     dispatch_module._write_fleet_request(fifo, b"ready token\n", time.monotonic() + 1)
     assert len(opened) == 2

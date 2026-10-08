@@ -35,6 +35,7 @@ from types import SimpleNamespace
 
 import pytest
 
+import reckon.crew.dispatch_sessions as dispatch_sessions_module
 from reckon import crew
 from reckon.crew.runs import pointer_path
 from tests import test_a_live_run_never_reads_dead as liveness
@@ -269,10 +270,10 @@ def _in_harness_resolution() -> SimpleNamespace:
 def _stub_move_gates(monkeypatch: pytest.MonkeyPatch) -> None:
     """Stub the budget and ledger gates a lane change runs before composing."""
     monkeypatch.setattr(
-        dispatch_module, "_budget_verdict", lambda **kwargs: {"held": False}
+        dispatch_sessions_module, "_budget_verdict", lambda **kwargs: {"held": False}
     )
     monkeypatch.setattr(
-        dispatch_module, "resolve_dispatch_ledger_root", lambda authority: authority
+        dispatch_sessions_module, "resolve_dispatch_ledger_root", lambda authority: authority
     )
 
 
@@ -284,7 +285,7 @@ def test_case_1_a_resumed_run_binds_its_run_directory(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A resume binds the run directory and the manifest's directory."""
-    monkeypatch.setattr(dispatch_module, "FENCE_WORKERS", True)
+    monkeypatch.setattr(dispatch_sessions_module, "FENCE_WORKERS", True)
     run_id = "r-resume-binds"
     record = _stopped_pointer(tmp_path, repo, run_id, backend="alpha")
 
@@ -307,11 +308,11 @@ def test_case_2_a_lane_changed_run_binds_its_run_directory(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A lane change to a cli backend binds both the run and manifest dirs."""
-    monkeypatch.setattr(dispatch_module, "FENCE_WORKERS", True)
+    monkeypatch.setattr(dispatch_sessions_module, "FENCE_WORKERS", True)
     run_id = "r-lane-binds"
     record = _stopped_pointer(tmp_path, repo, run_id, backend="alpha")
     resolution = _cli_resolution("beta")
-    monkeypatch.setattr(dispatch_module, "plan_dispatch", lambda **kwargs: resolution)
+    monkeypatch.setattr(dispatch_sessions_module, "plan_dispatch", lambda **kwargs: resolution)
     _stub_move_gates(monkeypatch)
 
     moved = dispatch_module.change_lane(
@@ -340,12 +341,12 @@ def test_case_3_a_lane_change_to_in_harness_clears_fenced(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A fenced CLI run moved to an in-harness backend reads fenced false."""
-    monkeypatch.setattr(dispatch_module, "FENCE_WORKERS", True)
+    monkeypatch.setattr(dispatch_sessions_module, "FENCE_WORKERS", True)
     run_id = "r-lane-in-harness"
     _stopped_pointer(tmp_path, repo, run_id, backend="alpha")
     assert crew.read_pointer(run_id)["fenced"] is True
     resolution = _in_harness_resolution()
-    monkeypatch.setattr(dispatch_module, "plan_dispatch", lambda **kwargs: resolution)
+    monkeypatch.setattr(dispatch_sessions_module, "plan_dispatch", lambda **kwargs: resolution)
     _stub_move_gates(monkeypatch)
 
     moved = dispatch_module.change_lane(

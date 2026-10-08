@@ -13,6 +13,7 @@ from typing import Any
 
 import pytest
 
+import reckon.crew.dispatch_sessions as dispatch_sessions_module
 from reckon import _backends
 from reckon.crew import node as node_module
 from reckon.crew import recovery, runs
@@ -208,7 +209,7 @@ def test_recover_counts_an_interrupted_run(
     dispatch_module = importlib.import_module("reckon.crew.dispatch")
     monkeypatch.setattr(recovery, "list_live", lambda: [pointer])
     monkeypatch.setattr(
-        dispatch_module,
+        dispatch_sessions_module,
         "observe",
         lambda run_id, config=None: pointer,
     )

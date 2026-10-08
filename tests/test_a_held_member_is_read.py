@@ -33,6 +33,7 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
+import reckon.crew.dispatch_sessions as dispatch_sessions_module
 from reckon import cli as cli_module
 from reckon import crew
 from reckon.crew import runs
@@ -351,7 +352,7 @@ def test_the_member_guard_and_the_session_guard_agree(
     assert verdict.blocks is True
 
     monkeypatch.setattr(
-        dispatch_module,
+        dispatch_sessions_module,
         "member_in_flight_verdict",
         lambda _pointer: verdict,
     )
@@ -359,7 +360,7 @@ def test_the_member_guard_and_the_session_guard_agree(
     assert held is not None and "proven stopped" in held
 
     monkeypatch.setattr(
-        dispatch_module,
+        dispatch_sessions_module,
         "member_in_flight_verdict",
         lambda _pointer: node_module.MemberInFlightVerdict(
             blocks=False, liveness="gone", reason="its worker process is gone"

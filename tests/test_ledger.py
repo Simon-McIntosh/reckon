@@ -27,7 +27,6 @@ from reckon import _store, calibration, capabilities, crew, flight, ledger
 from reckon.cli import main as cli_main
 from reckon.crew import review as review_module
 
-
 CONFIG = {
     "default_backend": "alpha",
     "backends": {

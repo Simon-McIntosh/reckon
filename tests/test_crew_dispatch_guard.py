@@ -14,7 +14,6 @@ import pytest
 from reckon import crew
 from reckon.crew import plan_review, runs
 
-
 CONFIG = {
     "default_backend": "alpha",
     "backends": {

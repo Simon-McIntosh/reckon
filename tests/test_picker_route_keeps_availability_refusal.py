@@ -26,6 +26,7 @@ from types import SimpleNamespace
 import pytest
 from click.testing import CliRunner
 
+import reckon.crew.dispatch_picker as dispatch_picker_module
 from reckon import cli as cli_module
 from reckon import crew
 
@@ -371,7 +372,7 @@ def test_an_input_build_failure_falls_back_naming_the_input(
     def boom(*_args, **_kwargs):
         raise RuntimeError("verdict store unavailable")
 
-    monkeypatch.setattr(dispatch_module, "_picker_verdict_inputs", boom)
+    monkeypatch.setattr(dispatch_picker_module, "_picker_verdict_inputs", boom)
 
     result = CliRunner().invoke(cli_module.main, _arguments(repo, dry_run=True))
 

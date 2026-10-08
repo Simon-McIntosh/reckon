@@ -13,6 +13,7 @@ from typing import Any
 import pytest
 from click.testing import CliRunner
 
+import reckon.crew.dispatch_plan as dispatch_plan_module
 from reckon import _plan_html, crew, ledger
 from reckon import cli as cli_module
 from reckon.crew.runs import _write_json, pointer_path
@@ -116,7 +117,7 @@ def _observation(
             calls.append(state)
         return state
 
-    monkeypatch.setattr(dispatch_module, "_dispatch_lane_observation", _read)
+    monkeypatch.setattr(dispatch_plan_module, "_dispatch_lane_observation", _read)
 
 
 def _invoke(
@@ -136,7 +137,7 @@ def _invoke(
         cli_module, "_model_availability_refusal", lambda *_args, **_kwargs: None
     )
     monkeypatch.setattr(
-        dispatch_module,
+        dispatch_plan_module,
         "_lane_advisory_ledger_runs",
         lambda *_args, **_kwargs: list(runs or []),
     )

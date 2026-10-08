@@ -30,6 +30,7 @@ from types import SimpleNamespace
 import pytest
 from click.testing import CliRunner
 
+import reckon.crew.dispatch_sessions as dispatch_sessions_module
 import reckon.mcp as mcp_module
 from reckon import cli as cli_module
 from reckon import crew
@@ -79,6 +80,7 @@ def _pinned_clock(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         lane.dispatch_module, "_utc_now", lambda: ATTEMPT_LAUNCH
     )
+    monkeypatch.setattr(dispatch_sessions_module, "_utc_now", lambda: ATTEMPT_LAUNCH)
 
 
 class _CapturingSpawn:

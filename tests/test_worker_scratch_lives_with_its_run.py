@@ -38,6 +38,7 @@ from pathlib import Path
 
 import pytest
 
+import reckon.crew.dispatch_launch as dispatch_launch_module
 from reckon import _plan_html, crew
 from reckon.crew import promotion
 from reckon.crew.runs import _write_json, pointer_path
@@ -426,7 +427,7 @@ def test_the_discard_release_fallback_reports_the_scratch(
 def _trust_recorded(monkeypatch: pytest.MonkeyPatch) -> None:
     """The declared mutation: remove whatever path the record names."""
     monkeypatch.setattr(
-        dispatch,
+        dispatch_launch_module,
         "_removable_scratch_target",
         lambda run_id, recorded_path: (
             Path(recorded_path)
@@ -462,7 +463,7 @@ def _accept_moved_root(monkeypatch: pytest.MonkeyPatch) -> None:
             return None, "scratch directory is no longer present"
         return path, ""
 
-    monkeypatch.setattr(dispatch, "_removable_scratch_target", _accept)
+    monkeypatch.setattr(dispatch_launch_module, "_removable_scratch_target", _accept)
 
 
 def test_a_recorded_path_naming_a_sibling_is_withheld(
