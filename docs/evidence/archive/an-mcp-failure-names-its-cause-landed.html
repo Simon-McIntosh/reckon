@@ -45,6 +45,11 @@
     <p>Landed at merge <code>ae2caf8d0</code>. A call to the reckon MCP server with the same tool and arguments as a body <code>_run_under_deadline</code> abandoned, while that body still runs, now waits on it and is answered from it, instead of starting a second copy that competes for the interpreter. A read with different arguments starts its own body, and a write is never joined. Gate: 4 passed, and the declared control with the join removed fails. 190 of 191 MCP tests pass. The one failure, <code>test_mcp_views</code>'s schema-size bound, fails at the base too: its payload embeds the temporary checkout path, so it reddens on long pytest basetemps. Review 114/120, 0 added failures.</p>
   </section>
 
+  <section id="s9-one-plan-read">
+    <h2>§9 — a one-plan read stops walking the corpus</h2>
+    <p>A one-plan read now resolves the named plan at its canonical typed path (<code>resources._resolve_canonical</code>) with no corpus scan, and takes its north-star diagnostic from a result memoised on the project state directory. Its <code>scandir</code> count is 0 for fixtures of 5 and 60 plans, and the payload equals the scan path's. The declared control reverts the direct resolution and reproduces 22 against 132. On the fleet node a warm one-plan read took 0.039 s, against a read that had not finished in 180 s; cold it took 12.6 s. A repair round made the fast path defer to the scan when a slug has both a live and an archived document, where the scan raises <code>ResourceCollision</code> and the first build returned the live resource (logged reproduction). 104 suite tests pass before and after. Reviews 108/120 and 113/120, 0 added failures. The MCP summary view still walks the corpus for its inventory, which is §12.</p>
+  </section>
+
 </main>
 </body>
 </html>
