@@ -185,7 +185,8 @@ Remedies, the carrier rules and the `--brief` contract are in
 
 ```text
 reckon crew attach --run <id> --task <task-id>
-reckon crew budget-lift --group <group> (--multiple <m> | --drain-by <time> | --uncapped) [--global | --session <id>] [--from <time>] [--until reset|<iso>|<duration>] [--clock seven_day|five_hour] --reason <why> [--pretty]    reckon crew budget-lift --clear --group <group> [--session <id>] [--id <lift>]
+reckon crew budget-lift --group <group> (--multiple <m> | --drain-by <time> | --uncapped) [--global | --session <id>] [--from <time>] [--until reset|<iso>|<duration>] [--clock seven_day|five_hour] --reason <why> [--pretty]
+reckon crew budget-lift --clear --group <group> [--session <id>] [--id <lift>]
 reckon crew budget-lifts [--group <group>] [--pretty]
 reckon crew check-manifest --run <id>
 reckon crew complete --run <id> --gate <verdict> --commit <sha> --outcome <text> --tests-added <n> --scope-changed
@@ -449,9 +450,10 @@ hold's reason prints that instant in place of the reset. So a group reading
 reserves withhold the rest of the window from a fresh dispatch: the resume
 reserve (5%), the coordinator reserve (3%) and the bookend reserve
 (`bookend_reserve_pct`, default 20%), which stops every role except review and
-verify, and is withheld on a group whose every member `review_excluded_backends`
-lists because no review can run there. Read the group's position through
-`crew(project, view="budget")`.
+verify, and is not withheld on a group whose every member
+`review_excluded_backends` lists, because the review role it is sized for can
+never run there. Read the group's position through `crew(project,
+view="budget")`.
 
 #### A lift raises one group's pace and ends by itself
 
