@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-follower-row-is-worth-a-wake">
+  <meta name="plan-evidence-for" content="a-follower-row-is-worth-a-wake">
+  <title>RowPolicy holds observer-context rows back on the coordinator pane | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <section id="row-policy-holds-observer-context">
+      <header>
+        <p class="eyebrow">Execution evidence &middot; fragment</p>
+        <h2>RowPolicy holds observer-context rows back on the coordinator pane</h2>
+      </header>
+      <p id="row-policy-holds-observer-context-landing">
+        <code>RowPolicy</code> in <code>reckon/crew/ticker.py</code> now withholds
+        the follower-pane rows that ask the coordinator for nothing. A launch whose
+        arrival resolves into an observer kind prints no row, so a launch that
+        settles into <code>working</code> reaches the pane only as its completion; a
+        baseline arrival for a run the pane already shows is held back; a coordinator
+        row is held under a twenty-second settle window with a two-minute cap so a
+        chain written seconds apart prints once as its latest row. Three exceptions
+        still print: a recovery from a duty already shown, an unexplained end, and the
+        actionable resolution of a held noise pair. The <code>show_observer</code>
+        keyword restores today's behaviour, and a row is a coordinator when its kind
+        is listed, its recovery classification is actionable, or it lands in an action
+        state the watch surface names. Gate
+        <code>tests/test_row_policy_holds_observer_context.py</code>,
+        <code>tests/test_a_dispatch_is_one_row.py</code> and
+        <code>tests/test_follower_prints_only_policy_rows.py</code>: 36 passed,
+        <code>EXIT=0</code>. The declared negative control — remove the
+        observer-context hold so observer kinds print as before — fails
+        <code>test_a_launch_prints_only_its_completion</code> on the
+        arrival, <code>dispatched&nbsp;&rarr;&nbsp;working</code>,
+        <code>working&nbsp;&rarr;&nbsp;complete</code>,
+        <code>complete&nbsp;&rarr;&nbsp;recorded</code> case, which then prints
+        three rows instead of one, <code>EXIT=1</code>.
+      </p>
+    </section>
+  </main>
+</body>
+</html>
