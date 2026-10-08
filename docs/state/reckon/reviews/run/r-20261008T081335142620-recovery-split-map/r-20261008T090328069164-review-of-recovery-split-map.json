@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest carries empty baseline_suite and after_suite fields and names no gate-log pair, so the added-failure count was not derived from the reviewed run's own arms",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-08T09:17:28.351Z",
+  "dispatched_at": "2026-10-08T09:04:00Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/every-module-fits-a-worker-window/recovery-split-map.json",
+      "line": "8113",
+      "severity": "follow-on",
+      "text": "follow-on: the census-completeness guarantee rests on a run-scratch checker (check_patch_census.py under the run directory) that no landed test invokes, so a later edit dropping patch sites would pass the suite unnoticed; a landed assertion over the fragment would make the guarantee durable."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit; 7d06af35 adds the eight mp.setattr rows (_observed_phase 64 and 83, _worker_record_liveness 71/74/77, _carries_orientation_write 80, _ledger_run_id_reader 86, FLEET_BLOCKED_STATES 89) in tests/test_a_live_run_never_reads_dead.py, reorders existing rows with no row lost, and adds a receiver-wide setattr search command and a census_method note.",
+    "done_when": "the delta's measure is census completeness; the run's check_patch_census.py reports RECORDED=98 MISSING=0 at 7d06af35 (repair-head.log) and RECORDED=90 MISSING=8 at 60eafa7e (repair-negative-control.log).",
+    "goal": "commit 7d06af35 completes the recovery map's patch census at docs/evidence/fragments/every-module-fits-a-worker-window/recovery-split-map.json; the census now records 47 patched names across 8 more sites, and an independent AST scan of tests/ finds 98 static setattr sites and records every one.",
+    "manifest": "read; it reports the census repaired to 47 patched names and 103 sites including all 98 static recovery setattr sites, with placement 353/353 and no cycle (map-check.log EXIT=0), and empty baseline_suite and after_suite fields because the node ran no pytest arm.",
+    "write_paths": "commit 7d06af35 changes only docs/evidence/fragments/every-module-fits-a-worker-window/recovery-split-map.json and .html, both inside the map node's two declared fragment write paths."
+  },
+  "justifications": {
+    "durability": "the census guard is real and fires, since deleting the repair reddens it (repair-negative-control.log EXIT=1), but it lives only in the run directory and no landed test reads the map fragment, so a later edit that drops sites would leave the suite green.",
+    "evidence": "the gate check_patch_census.py asserts the census against a positive control of 98 sites and reddens at the parent (repair-negative-control.log EXIT=1, 8 missing) while passing at head (repair-head.log EXIT=0), so it measures the artifact rather than claiming it.",
+    "fit": "the added rows use the census's existing {file,line,kind} shape and sit in the modules and repoint tables of recovery-split-map.html, and no added name carries a part number, a version or the word core.",
+    "goal_fidelity": "the delta closes the census gap the prior review named; my independent AST scan over tests/ finds 98 static setattr sites and every one is recorded at docs/evidence/fragments/every-module-fits-a-worker-window/recovery-split-map.json, where the parent map at 60eafa7e missed eight.",
+    "reuse": "the delta is docs-only and adds no production mechanism, so it forks no capability the repository owns; the run-scratch checker duplicates no landed guard because none exists.",
+    "scope_discipline": "commit 7d06af35 touches only docs/evidence/fragments/every-module-fits-a-worker-window/recovery-split-map.json and .html, both declared write paths, editing no source or test file."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: commit 7d06af35 completes the recovery map's patch census at docs/evidence/fragments/every-module-fits-a-worker-window/recovery-split-map.json; the census now records 47 patched names across 8 more sites, and an independent AST scan of tests/ finds 98 static setattr sites and records every one.\nVERDICT done_when: the delta's measure is census completeness; the run's check_patch_census.py reports RECORDED=98 MISSING=0 at 7d06af35 (repair-head.log) and RECORDED=90 MISSING=8 at 60eafa7e (repair-negative-control.log).\nVERDICT write_paths: commit 7d06af35 changes only docs/evidence/fragments/every-module-fits-a-worker-window/recovery-split-map.json and .html, both inside the map node's two declared fragment write paths.\nVERDICT manifest: read; it reports the census repaired to 47 patched names and 103 sites including all 98 static recovery setattr sites, with placement 353/353 and no cycle (map-check.log EXIT0), and empty baseline_suite and after_suite fields because the node ran no pytest arm.\nVERDICT diff: read commit by commit; 7d06af35 adds the eight mp.setattr rows (_observed_phase 64 and 83, _worker_record_liveness 71/74/77, _carries_orientation_write 80, _ledger_run_id_reader 86, FLEET_BLOCKED_STATES 89) in tests/test_a_live_run_never_reads_dead.py, reorders existing rows with no row lost, and adds a receiver-wide setattr search command and a census_method note.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the delta closes the census gap the prior review named; my independent AST scan over tests/ finds 98 static setattr sites and every one is recorded at docs/evidence/fragments/every-module-fits-a-worker-window/recovery-split-map.json, where the parent map at 60eafa7e missed eight.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate check_patch_census.py asserts the census against a positive control of 98 sites and reddens at the parent (repair-negative-control.log EXIT=1, 8 missing) while passing at head (repair-head.log EXIT=0), so it measures the artifact rather than claiming it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: commit 7d06af35 touches only docs/evidence/fragments/every-module-fits-a-worker-window/recovery-split-map.json and .html, both declared write paths, editing no source or test file.\nSCORE durability: 16\nJUSTIFICATION durability: the census guard is real and fires, since deleting the repair reddens it (repair-negative-control.log EXIT=1), but it lives only in the run directory and no landed test reads the map fragment, so a later edit that drops sites would leave the suite green.\nSCORE fit: 18\nJUSTIFICATION fit: the added rows use the census's existing {file,line,kind} shape and sit in the modules and repoint tables of recovery-split-map.html, and no added name carries a part number, a version or the word core.\nSCORE reuse: 19\nJUSTIFICATION reuse: the delta is docs-only and adds no production mechanism, so it forks no capability the repository owns; the run-scratch checker duplicates no landed guard because none exists.\nFINDING docs/evidence/fragments/every-module-fits-a-worker-window/recovery-split-map.json:8113 follow-on: the census-completeness guarantee rests on a run-scratch checker (check_patch_census.py under the run directory) that no landed test invokes, so a later edit dropping patch sites would pass the suite unnoticed; a landed assertion over the fragment would make the guarantee durable.",
+  "review_run_id": "r-20261008T090328069164-review-of-recovery-split-map",
+  "reviewed_base_sha": "60eafa7e44d28631e6261ca03be9c3f1ff88e86e",
+  "reviewed_head_sha": "7d06af355fd1d4600ddf7ab3395a0290480915dd",
+  "reviewed_run_id": "r-20261008T081335142620-recovery-split-map",
+  "reviewer": {
+    "backend": "clive",
+    "effort": null,
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261008T090328069164-review-of-recovery-split-map",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T09:16:09.098138+00:00",
+  "total": 110
+}
