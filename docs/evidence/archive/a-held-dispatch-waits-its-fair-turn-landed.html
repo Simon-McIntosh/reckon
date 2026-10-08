@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-held-dispatch-waits-its-fair-turn-landed">
+  <meta name="plan-title" content="A Held Dispatch Waits Its Fair Turn — landed record">
+  <meta name="plan-summary" content="Closure synthesis for A Held Dispatch Waits Its Fair Turn: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="a-held-dispatch-waits-its-fair-turn">
+  <meta name="plan-verdict" content="qualified">
+  <title>A Held Dispatch Waits Its Fair Turn — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A Held Dispatch Waits Its Fair Turn — landed record</h1>
+  <p>Closure synthesis for A Held Dispatch Waits Its Fair Turn: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s3">
+    <h2>§3 — queued runs are ranked by fair share</h2>
+    <p>Run <code>r-20261008T060840301936-the-queue-orders-by-fair-share</code>, commit <code>ed634134e</code>, merged in <code>db719bb9e</code>. <code>admission_order</code> recounts each session's live runs after every admission so one session cannot take consecutive slots while another waits, breaks ties by join order, and promotes a run older than the separate 30-minute starvation constant. The worker's control that dropped the recount failed the alternation test. The merge gate ran <code>tests/test_queue_order.py</code> with its importers: 13 passed.</p><p>The review's follow-on, a test named for queued runs holding no lane slot that cannot fail on that property, is &sect;7.</p>
+  </section>
+
+  <section id="s2">
+    <h2>§2 — a held dispatch becomes a queued run</h2>
+    <p>Run <code>r-20261008T085254553686-a-held-dispatch-becomes-a-queued-run</code>, commits <code>cf71f7ee5</code> and <code>4481955e5</code>, merged in <code>c8547c7b7</code>. It ran on the codex lane because the local lane refused the 2.0 worker-hour node on competence. After the CLI split it handles the hold in <code>reckon/crew_dispatch_commands.py</code> and writes through <code>runs.queue_dispatch</code>.</p><p>The first merge gate, every test file importing runs, dispatch, recovery or the dispatch commands (488 files) on a debug node with a refusing scheduler shim on PATH, found three added failures: the fleet counters and the ticker grid did not know the new <code>queued</code> state. The review (100/120) found the dedup ignored the section and the pointer was written under the queue lock rather than the per-run lock. One repair round fixed all five: <code>queued</code> joined <code>WAITING_STATES</code> and the ticker's hues, the dedup includes the section, and the write takes <code>_pointer_lock</code>. The re-gate added no failures; one xdist worker crash in a producer-reload test passed three times out of three at both base and merge when run alone.</p><p>The delta review's follow-on, a re-dispatch racing the discard of its own queued entry erroring instead of queueing afresh, is &sect;6.</p>
+  </section>
+
+</main>
+</body>
+</html>

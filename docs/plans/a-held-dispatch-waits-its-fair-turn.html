@@ -24,9 +24,9 @@
   <title>A Held Dispatch Waits Its Fair Turn | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="7">
+<meta name="plan-version" content="8">
 <meta name="plan-modified" content="2026-10-08">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -47,25 +47,19 @@
     <p>The local lane's router already publishes a fair share for each coordinator session: <code>admission.sessions[&lt;session&gt;].worker_slots</code> in the lane document, beside <code>new_session_worker_slots</code> and the lane-wide <code>worker_slots</code>. <code>_lane_worker_allowance</code> in <code>reckon/crew/dispatch.py</code> reads that share, most specific first. When the share is zero or less, dispatch raises <code>LaneHeld</code>, a kind of <code>LanePaused</code>: nothing is created, the node stays ready, and the caller is expected to retry.</p>
     <p>So the fairness exists at the moment of admission, but not across the wait. Each held coordinator polls on its own. When a slot frees, the next coordinator to retry takes it, whatever the shares say, and a busy session that retries often keeps taking freed slots. Held work is also invisible: the follower's <code>q</code> column counts the router gate's waiting requests, not reckon's held dispatches, and no view lists them.</p>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-08</span>
     <h2 id="s2">&sect;2 &mdash; A held dispatch is queued</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p>When a dispatch on the local lane is held for want of a slot, <code>reckon crew dispatch</code> records it where held work already lives. It becomes a live run pointer in a new <code>queued</code> phase, written through the live-pointer store in <code>reckon/crew/runs.py</code>. The pointer carries the complete request (project, plan, section, node, session and every dispatch option), the hold's reason, and when it joined. No worktree is created and no worker is launched. This follows the review reflex, which records its held dispatch on the run it is for (<code>review_dispatch</code> on the pointer, in <code>reckon/crew/recovery.py</code>), so a queued dispatch and the run it becomes are one object. Dispatch answers with the run id and its position, and exits as held rather than refused. Dispatching the same node again from the same session updates its queued pointer rather than adding a second. A paused fleet gate admits nothing from the queue. No option, command or view is added: a queued run is listed by <code>crew(view="live")</code> and <code>reckon crew list</code>, and withdrawn with <code>reckon crew discard</code>.</p>
-    <p><strong>Done when:</strong></p>
-    <ul>
-      <li>A held dispatch, under a lane document granting the session no slot, leaves one live pointer in the <code>queued</code> phase carrying everything a later admission needs, creates no worktree, launches no worker, and prints the run id and its position.</li>
-      <li>Dispatching the same node twice from one session leaves one queued pointer, and <code>reckon crew discard</code> of a queued run removes it so it is never launched.</li>
-      <li>No test reads or writes the real crew state: the pointer directory and the lane document are temporary.</li>
-    </ul>
+<section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">Landed: a dispatch the local lane holds is written as one live run pointer in a <code>queued</code> phase with the full request, the hold's reason and its position, and no worktree or worker; a repeat dispatch of the same node and section updates it under the run's pointer lock, discard removes it, holds on a metered lane or the fleet gate write nothing, and the fleet counts and ticker treat it as waiting. Merged gate over 488 importer files: 0 added; review 100 then 109/120. <a href="/reckon/evidence/archive/a-held-dispatch-waits-its-fair-turn-landed.html#s2">full record</a></p>
+</section>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-08</span>
     <h2 id="s3">&sect;3 &mdash; Freed slots go to the sessions using least of the lane</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p>The queue's order is one function over the queued pointers. It reads each session's runs in flight on the lane from the live-pointer store (<code>runs.list_live</code>) and counts them again after every admission. So the session with fewer runs goes first, and once two sessions reach the same count, admissions alternate between them; ties are broken by how long the entry has waited. Entries within one session keep the order they joined. The starvation age is its own named constant beside the order function, 30 minutes. It is deliberately not the obligations view's <code>REVIEW_QUEUED_BOUND_SECONDS</code>, because that bound means the opposite: past it, a review dispatch stops being read as queued, whereas past the starvation age a queued run becomes the queue's first priority. An entry that has waited longer than the starvation age is admitted ahead of every entry that has not, so a busy session's work is delayed but never starved.</p>
-    <p><strong>Done when:</strong></p>
-    <ul>
-      <li>With session A holding four runs and session B none, and both holding queued entries, the next four admissions go to B and the admissions after that alternate between A and B, asserted on the order the function returns with run counts updated after each admission.</li>
-      <li>Within one session, entries are admitted in the order they joined.</li>
-      <li>An entry that has waited longer than the starvation age is admitted ahead of a lighter session's newer entry, tested with the age patched to a few seconds.</li>
-    </ul>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">Landed: <code>reckon/crew/queue_order.py</code> ranks queued dispatches by the session's runs in flight, recounted after each admission, then join order, with a 30-minute starvation age that lifts a long-waiting run ahead. Merged at <code>db719bb9e</code>; 13 passed at the merge; review 112/120. <a href="/reckon/evidence/archive/a-held-dispatch-waits-its-fair-turn-landed.html#s3">full record</a></p>
+</section>
 
     <h2 id="s4">&sect;4 &mdash; One drainer launches queued work</h2>
 <section data-reckon="section" data-id="s4" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
@@ -82,6 +76,14 @@
 <section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
     <p>A queued run is read by the surfaces that already report held work. The obligations view reads a run in the <code>queued</code> phase as waiting, not missing, for as long as the pointer exists, beside its existing <code>review-queued</code> reading, whose 30-minute bound is unchanged. The follower's <code>q</code> column counts the session's queued runs beside the router's waiting requests. <code>crew(view="live")</code> and <code>reckon crew list</code> show each queued run with its position and rank.</p>
     <p><strong>Done when:</strong> a test finds one queued run reported as queued by the obligations view, counted in the follower's <code>q</code> column, and shown with its position and rank by <code>crew(view="live")</code> and <code>reckon crew list</code>, all three reading the same pointer, so the surfaces cannot disagree.</p>
+
+    <h2 id="s6">§6 — A re-queue racing its own discard queues afresh</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p>On the re-queue path <code>runs.queue_dispatch</code> selects the existing queued pointer, then takes its pointer lock and reads it again. A discard that removes the pointer in between makes that read raise <code>no live run</code>, so a dispatch racing the discard of its own queued entry errors instead of queueing afresh.</p><p><strong>Done when:</strong> a pointer that vanished between the scan and the lock is treated as absent and a fresh queued pointer is written; a test removes the pointer between the two steps and finds one fresh queued pointer and no error; <code>tests/test_held_dispatch_is_queued.py</code> passes.</p>
+
+    <h2 id="s7">§7 — The order test fails when a queued run holds a slot</h2>
+<section data-reckon="section" data-id="s7" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p><code>tests/test_queue_order.py</code> carries a case named for queued runs holding no lane slot, but the review found it cannot fail on that property: counting a queued run as in flight would leave it green.</p><p><strong>Done when:</strong> the case builds a session whose only live pointer is queued and asserts that session ranks as holding no slot; a control that counts queued pointers as in flight makes it fail; <code>tests/test_queue_order.py</code> passes.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -132,8 +134,14 @@
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261008T063358014598-review-of-the-queue-orders-by-fair-share" data-who="reckon-build" data-when="2026-10-08T06:53:03.632Z">
     <div class="r-comment-body"><p>Independent review of run r-20261008T060840301936 (queue_order admission ordering) stored as a parsed six-dimension record (goal_fidelity 19, evidence 18, scope_discipline 20, durability 17, fit 19, reuse 19; total 112) naming the reviewed pair f411aa1a..ed634134, with one follow-on finding and no blocking findings.</p></div>
 </div>
+<div class="r-comment" data-section="s3" data-id="c-20261008T1240-s3" data-who="reckon-build" data-when="2026-10-08T12:40:00+02:00">
+    <div class="r-comment-body">gate merged-focused passed (13); section s3 closed by run the-queue-orders-by-fair-share; landing recorded late, the run was promoted at 08:47Z</div>
+</div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261008T092815871132-review-of-a-held-dispatch-becomes-a-queued-run" data-who="reckon-build" data-when="2026-10-08T09:43:34.157Z">
-    <div class="r-comment-body"><p>Independent review of cf71f7ee stored at the two declared review paths, scoring goal_fidelity 19, evidence 16, scope_discipline 19, durability 17, fit 16, reuse 13 (total 100), with reviewed_base_sha 07620d34 and reviewed_head_sha cf71f7ee and added_failure_count 0 derived from the reviewed run&#x27;s baseline-queue.log and gate-committed.log arms.</p></div>
+    <div class="r-comment-body"><p>Independent review of cf71f7ee stored at the two declared review paths, scoring goal_fidelity 19, evidence 16, scope_discipline 19, durability 17, fit 16, reuse 13 (total 100), with reviewed_base_sha 07620d34 and reviewed_head_sha cf71f7ee and added_failure_count 0 derived from the reviewed run's baseline-queue.log and gate-committed.log arms.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20261008T1240-s2" data-who="reckon-build" data-when="2026-10-08T12:40:00+02:00">
+    <div class="r-comment-body">gate merged-population passed (488 files, 0 added) after one repair round; section s2 closed by run a-held-dispatch-becomes-a-queued-run</div>
 </div>
 </section>
 </main>
