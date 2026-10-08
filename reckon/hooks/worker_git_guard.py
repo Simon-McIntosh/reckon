@@ -36,6 +36,7 @@ Behavior, in order:
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import os
 import re
@@ -43,6 +44,27 @@ import shlex
 import sys
 from pathlib import Path
 from typing import Any
+
+_bootstrap_path = Path(__file__).with_name("interpreter_bootstrap.py")
+_bootstrap_spec = importlib.util.spec_from_file_location(
+    "interpreter_bootstrap", _bootstrap_path
+)
+_bootstrap = importlib.util.module_from_spec(_bootstrap_spec)
+_bootstrap_spec.loader.exec_module(_bootstrap)
+_bootstrap_error = _bootstrap.ensure_interpreter(__file__)
+if _bootstrap_error:
+    print(
+        json.dumps(
+            {
+                "hookSpecificOutput": {
+                    "hookEventName": "PreToolUse",
+                    "permissionDecision": "deny",
+                    "permissionDecisionReason": _bootstrap_error,
+                }
+            }
+        )
+    )
+    raise SystemExit(0)
 
 # The guard runs as a bare script under whatever interpreter the harness picks,
 # so this checkout is not on ``sys.path``. Adding it lets the read-form
@@ -528,17 +550,20 @@ def decide(payload: dict[str, Any]) -> tuple[bool, str | None]:
     except OSError:
         return True, None
 
-    for body in _nested_bodies(command):
-        message = _scan_text(body, cwd, worktree, run_id, 1)
-        if message is not None:
-            return False, message
+    try:
+        for body in _nested_bodies(command):
+            message = _scan_text(body, cwd, worktree, run_id, 1)
+            if message is not None:
+                return False, message
 
-    tokens = _tokenize(command)
-    if tokens is None:
-        message = _unparsable_refusal(command, run_id=run_id, worktree=worktree)
-        return (True, None) if message is None else (False, message)
+        tokens = _tokenize(command)
+        if tokens is None:
+            message = _unparsable_refusal(command, run_id=run_id, worktree=worktree)
+            return (True, None) if message is None else (False, message)
 
-    message = _scan_segments(tokens, cwd, worktree, run_id, 0)
+        message = _scan_segments(tokens, cwd, worktree, run_id, 0)
+    except Exception as exc:  # noqa: BLE001 - an unread guard must deny
+        return False, f"worker git guard could not load its rules: {exc}"
     return (True, None) if message is None else (False, message)
 
 

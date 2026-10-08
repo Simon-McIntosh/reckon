@@ -46,6 +46,7 @@ dirty and unnamed.
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import os
 import subprocess
@@ -54,6 +55,16 @@ import time
 from collections.abc import Iterator, Sequence
 from pathlib import Path
 from typing import Any
+
+_bootstrap_path = Path(__file__).with_name("interpreter_bootstrap.py")
+_bootstrap_spec = importlib.util.spec_from_file_location(
+    "interpreter_bootstrap", _bootstrap_path
+)
+_bootstrap = importlib.util.module_from_spec(_bootstrap_spec)
+_bootstrap_spec.loader.exec_module(_bootstrap)
+_bootstrap_error = _bootstrap.ensure_interpreter(__file__)
+if _bootstrap_error:
+    raise SystemExit(_bootstrap_error)
 
 TERMINAL_STATUSES = frozenset({"complete", "blocked", "failed"})
 DIRTY_END_STATUSES = frozenset({"blocked", "failed"})

@@ -80,6 +80,7 @@ session after itself reads back.
 
 from __future__ import annotations
 
+import datetime as _datetime
 import hashlib
 import importlib.util
 import json
@@ -90,12 +91,24 @@ import signal
 import sys
 import time
 from collections.abc import Mapping, Sequence
-from datetime import UTC, datetime
 from functools import cache
 from pathlib import Path
 from typing import Any
 
-# The checklist's framing, wording fixed by the plan section this hook serves.
+_bootstrap_path = Path(__file__).with_name("interpreter_bootstrap.py")
+_bootstrap_spec = importlib.util.spec_from_file_location(
+    "interpreter_bootstrap", _bootstrap_path
+)
+_bootstrap = importlib.util.module_from_spec(_bootstrap_spec)
+_bootstrap_spec.loader.exec_module(_bootstrap)
+_bootstrap_error = _bootstrap.ensure_interpreter(__file__)
+if _bootstrap_error:
+    raise SystemExit(_bootstrap_error)
+
+UTC = _datetime.UTC
+datetime = _datetime.datetime
+
+# The checklist's framing is fixed by the hook's external contract.
 # It is repeated verbatim in the tests, so a change here is a contract change.
 AUTHORITY_LINE = "mirror these into your task list; reckon's list is the authority"
 
