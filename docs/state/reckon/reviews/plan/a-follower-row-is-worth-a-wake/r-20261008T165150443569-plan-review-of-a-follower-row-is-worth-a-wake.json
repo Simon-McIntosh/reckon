@@ -1,0 +1,49 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T16:58:38.246Z",
+  "dispatched_at": "2026-10-08T16:52:20Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-follower-row-is-worth-a-wake.html:88",
+      "id": "reuse_search-1",
+      "reason": "an author or worker that follows \u00a71 or the followup body edits `reckon/cli.py` and changes nothing; the pointer must be corrected to `reckon/crew_follow_commands.py`.",
+      "text": "the plan states \"`crew_follow`'s docstring in `reckon/cli.py`\", but `crew_follow` and the docstring \u00a73 rewrites live in `reckon/crew_follow_commands.py:2226`; `reckon/cli.py` contains no `crew_follow` definition and only re-exports `follower_row_path` at `reckon/cli.py:407`. Census of the same defect: the same wrong file is given in the followup body at docs/plans/a-follower-row-is-worth-a-wake.html:152 (\"\u00a73 and \u00a74 both edit the follower in `reckon/cli.py`\"), and that sentence is doubly stale because \u00a74 is a landed investigation that changes no repository source. Section \u00a73's own write paths name the correct file, so the plan is internally inconsistent about where the follower lives",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/ticker.py:1633",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a75's done-when should name the follower's own path object as the measurement driver and require the delay accessor be added to the owner (`RowPolicy`/`PaneRowPath` in `reckon/crew/ticker.py`) rather than read out of a private, so the number the plan reports is the owner's answer and not a fork's.",
+      "text": "\u00a75 (\"replay the measured week through the policy\") needed a quantity its owner does not expose \u2014 the longest hold delay before release \u2014 and the measurement instrument forked its own driver and read the private hold map to get it: `pane_path._policy._held.values()` at reports/reckon/follower-row/week-replay/replay_week.py:117 and again at :124, with the instrument's own hand-built `PaneRowPath(...)` at :278\u2013280 instead of the owner's measurement entry point. The owner is `replay_row_policy` (`reckon/crew/ticker.py:1633`), whose docstring says explicitly that \"the measurement is taken through `PaneRowPath` \u2026 rather than through the policy alone\", and the follower-side owner is `follower_row_path` (`reckon/crew_follow_commands.py:775`); `replay_row_policy` is used by the instrument only as a count cross-check (:167\u2013168, :405), not as the driver. This is the type \u00a71 itself warns of, said of `_follow_gap_rows` and the re-announce path: a second reader of the same state. Census: the only repository-wide reach into a policy private is this one file (repo grep for `._policy` / `._held` finds none in `reckon/` or `tests/`), so the defect is confined to the \u00a75 instrument \u2014 but it is the instrument this plan's headline \"54% fewer rows, longest delay 300 s\" number rests on",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "16dc3371c2585624d901abe9aebb73ceea8d339ff393c14f930d0a64f87dc012",
+  "plan_slug": "a-follower-row-is-worth-a-wake",
+  "plan_version": 44,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T165150443569-plan-review-of-a-follower-row-is-worth-a-wake",
+  "reviewed_blob_sha": "864c3a996fd618086b2e63243a56310105e2227d",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the plan adds no module; the remaining work routes through the existing `PaneRowPath`, which already hides selection, hold policy and pane memory behind one object at `reckon/crew/ticker.py:1530`.",
+    "duplicate_owner": "a finding \u2014 the \u00a75 week-replay measured the hold delay by reaching into `PaneRowPath._policy._held`, a private the owner does not expose, instead of extending the owner or driving through `replay_row_policy`.",
+    "interface_budget": "pass \u2014 public_definitions 1623, cli_options 351, mcp_views 33, refusal_families 23, all unchanged by this plan; \u00a73 adds no CLI option, no public definition, mcp view or refusal family, and says in its own text why (the producer's log already prints every row), which is the required accounting for added surface even when the surface added is none.",
+    "reuse_search": "a finding \u2014 the plan searched the codebase and cites the mechanisms it extends, but its account of prior art names the wrong file for `crew_follow`'s docstring.",
+    "thin_wrapper": "pass \u2014 the plan adds no wrapper; \u00a73 changes a decision inside `RowPolicy` and rewrote a docstring, and explicitly declines to add a `crew follow` option rather than layering one."
+  },
+  "section_digests": {
+    "_document": "57651ac23d8c226b299a6fb3798c4954e38bfc8b12c6a6ee0afcae03f380f75f",
+    "s1": "bea06a70e5a727324f7f05ddea157674cb647360778af5da9d99b6cb372018e7",
+    "s2": "739c40946e0eaf2b98a723a42940d66d3411a07c228b69e52407545f36e0ad2d",
+    "s3": "633a32cd36a07dfe2b35fc15b65f741f242a09756bc0c42fcec919d49d70a0c9",
+    "s4": "de2aa9f5977b57bf9a0e566534e0a792ce0ec6d246a7e43be40842fc31db28f5",
+    "s5": "5cee48fc0b5f4a6a01e957fe0c5ec7884d01314fe208644ee78e42d52d35e2a1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T16:59:16.975154+00:00"
+}
