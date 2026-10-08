@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="reckon-reads-answer-in-seconds">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
   <title>An MCP Failure Names Its Cause | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-impl" content="0.4">
-<meta name="plan-version" content="51">
+<meta name="plan-impl" content="0.45">
+<meta name="plan-version" content="52">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -166,19 +166,12 @@
   <p class="landed-summary">Landed at d6196143e: a configured worker launch seeds settings disabling project MCP servers except those worker_mcp_servers names. Reviews 93 and 106/120; opt-in waits on §11. <a href="/reckon/evidence/archive/an-mcp-failure-names-its-cause-landed.html#s7-worker-mcp-servers">full record</a></p>
 </section>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-08</span>
     <h2 id="s8">§8 — A retried reckon read waits for the copy already running</h2>
-<section data-reckon="section" data-id="s8" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-<p><strong>Deliverable.</strong> A call to the reckon MCP server with the same tool and arguments as a
-      body <code>_run_under_deadline</code> has abandoned but which is still running waits on that body rather than
-      starting a second one. A coordinator that retries a <code>roadmap</code> after a timeout then gets the first
-      body's answer when it finishes, instead of two copies competing for the interpreter. A call with different
-      arguments is not affected. A write is never joined: it always runs its own body under its own deadline.</p>
-    <p><strong>Done when</strong> a test in <code>tests/test_mcp_retry_joins_running_read.py</code> issues a spinning
-      read twice, the second after the first's deadline expired, and observes one body execution and both calls
-      answered from it. A read with different arguments starts its own body, and a write is never joined. A
-      negative control is executed and logged: with the join removed, two body executions are observed and the test
-      fails. The write paths are <code>reckon/mcp.py</code> and <code>tests/test_mcp_retry_joins_running_read.py</code>,
-      and this section runs after §3, which edits the same file.</p>
+<section data-reckon="section" data-id="s8" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">Landed at ae2caf8d0: a retried read with the same tool and arguments joins the abandoned body still running; writes are never joined. Review 114/120, 0 added failures. <a href="/reckon/evidence/archive/an-mcp-failure-names-its-cause-landed.html#s8-retried-read-joins">full record</a></p>
+</section>
 
     <h2 id="s9">§9 — A one-plan read stops walking the corpus</h2>
 <section data-reckon="section" data-id="s9" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>

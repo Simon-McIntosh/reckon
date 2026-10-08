@@ -40,6 +40,11 @@
     <p>Landed at merge <code>d6196143e</code>. A fenced claude worker launched with a project configuration seeds <code>enableAllProjectMcpServers</code> false and <code>enabledMcpjsonServers</code> from the project's <code>worker_mcp_servers</code> into the run home's <code>settings.json</code> it creates (<code>reckon/_backends.py</code>). A bare composition with no project layer seeds nothing. A repair round, started by the review reflex on a scope finding, narrowed the record to configured launches, so the operator-config test kept its assertion. Gate at the repaired head: 21 passed, and the declared mutation fails 4. 105 launch and seed tests pass. Reviews 93/120 and 106/120. The flight schema still refuses a top-level <code>worker_mcp_servers</code>, so a project cannot yet name a server, and §11 follows.</p>
   </section>
 
+  <section id="s8-retried-read-joins">
+    <h2>§8 — a retried read joins the copy already running</h2>
+    <p>Landed at merge <code>ae2caf8d0</code>. A call to the reckon MCP server with the same tool and arguments as a body <code>_run_under_deadline</code> abandoned, while that body still runs, now waits on it and is answered from it, instead of starting a second copy that competes for the interpreter. A read with different arguments starts its own body, and a write is never joined. Gate: 4 passed, and the declared control with the join removed fails. 190 of 191 MCP tests pass. The one failure, <code>test_mcp_views</code>'s schema-size bound, fails at the base too: its payload embeds the temporary checkout path, so it reddens on long pytest basetemps. Review 114/120, 0 added failures.</p>
+  </section>
+
 </main>
 </body>
 </html>
