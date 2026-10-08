@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite and after_suite gate logs (logs/base-gate.log, logs/head-gate.log) with reckon.crew.review.added_failures_from_gate_logs: both arms are the focused tests/test_skill_contracts.py, both completed with 63 passed EXIT=0 and no FAILED id, so head minus base = 0 added.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-08T04:27:39.517Z",
+  "dispatched_at": "2026-10-08T03:57:40Z",
+  "findings": [
+    {
+      "file": "docs/plans/agent-plan-authoring.html",
+      "line": "165",
+      "severity": "follow-on",
+      "text": "follow-on: this plan's authored body still presents Collapse-on-landing (closure) as the landing beat (also line 200), which the three skill docs no longer describe after this change; it is outside this node's declared write scope, so it is a follow-on for the evidence-and-plan owner rather than a defect of this node."
+    },
+    {
+      "file": "tests/test_skill_contracts.py",
+      "line": "1773",
+      "severity": "follow-on",
+      "text": "follow-on: the declared negative control restores collapse_section in place of the set, so the assertion that fires is the op-vocabulary set at line 1760 rather than the body-unchanged assertion at 1773; the body-unchanged and c-close guards are therefore shown only in the positive direction, and a reviewer must read the failure text to see which check caught the regression."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "two commits over six files, e06c9f81f (the skills, coordinator-reference and contract test) and 170260df5 (the evidence fragment), 139 insertions against 113 deletions.",
+    "done_when": "test_each_skills_documented_examples_apply asserts the body stays as authored (Second body. present), the declaration s2 reads done, a c-close-s2 comment is present and plan_fingerprint is unchanged; an independent re-run at head 170260df5 gives 63 passed EXIT=0, and restoring collapse_section in the documented examples reddens it (1 failed EXIT=1).",
+    "goal": "the landing beat in skills/reckon-build/SKILL.md, its coordinator reference and skills/reckon-edit/SKILL.md becomes append_evidence, a set of section_declarations.<id> to done, and an append of a c-close-<id> comment carrying the result and a project-absolute evidence href, all in one call, with the section body left as authored and collapse_section retained in the op vocabulary though no skill uses it; the two review_lifecycle.py docstrings are reworded to the declaration.",
+    "manifest": "arms baseline_suite and after_suite (both the focused tests/test_skill_contracts.py, both 63 passed EXIT=0), names the negative control (1 failed EXIT=1) and records both commits; the arms are the focused file alone, so a change whose skill docs are read by roughly twenty other test files is verified on one of them.",
+    "write_paths": "git diff --name-only 14efdb8a 170260df5 returns exactly skills/reckon-build/SKILL.md, its references/coordinator-reference.md, skills/reckon-edit/SKILL.md, reckon/crew/review_lifecycle.py and tests/test_skill_contracts.py plus the evidence fragment; docs/figures was declared and correctly left unused; no plan-state or shared index mutation."
+  },
+  "justifications": {
+    "durability": "the guard is shown to fire, restoring collapse_section in the documented examples reddens the test (1 failed EXIT=1) and renaming the c-close comment id reddens its own assertion (both independently reproduced), and the test reads required keys from _OP_VOCAB so the skills stay pinned to the code; deducted because the reworded review_lifecycle docstrings carry no covering assertion, so a drift back to collapsed prose is unguarded.",
+    "evidence": "the run's own base-gate.log and head-gate.log each head with revision, tree and command and record 63 passed EXIT=0, and added_failures_from_gate_logs over the manifest's baseline_suite/after_suite yields 0 added; the negative control reddens the guard and I reproduced it. Deducted because the arms are the focused file alone while the change rewrites skill docs read by about twenty other test files (an independent run of four of those found one failure, in a file the diff does not touch, so it is pre-existing), and the declared negative control trips the op-vocabulary assertion rather than the body-unchanged one.",
+    "fit": "the beat is expressed through the existing append_evidence/set/append vocabulary with _OP_VOCAB named as the source of required keys, and the _OP_SIGNATURE change reads required fields only up to the first optional group so a generic op's optional tail is the only part not pinned; no plan, stage or version label appears in any name or comment.",
+    "goal_fidelity": "all three skills carry the tick beat (append_evidence, set section_declarations.<id> done, append the c-close-<id> comment with the project-absolute href), collapse_section is retained and marked unused by any skill, the body stays authored, and the two review_lifecycle.py docstrings are reworded; independently re-ran tests/test_skill_contracts.py at head 170260df5: 63 passed EXIT=0.",
+    "reuse": "no new op is introduced, the beat reuses append_evidence, set and append, and the test reuses _edit_plan_tool, read_state and plan_fingerprint, extending the existing documented-examples test rather than adding a parallel one.",
+    "scope_discipline": "git diff --name-only 14efdb8a 170260df5 lists exactly the six declared paths plus the evidence fragment, every one inside the manifest's declared scope, with no write to plan state or the shared index."
+  },
+  "model": "deepseek-v4.1-flash",
+  "node": "review-of-the-landing-beat-ticks-instead-of-collapsing",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the landing beat in skills/reckon-build/SKILL.md, its coordinator reference and skills/reckon-edit/SKILL.md becomes append_evidence, a set of section_declarations.<id> to done, and an append of a c-close-<id> comment carrying the result and a project-absolute evidence href, all in one call, with the section body left as authored and collapse_section retained in the op vocabulary though no skill uses it; the two review_lifecycle.py docstrings are reworded to the declaration.\nVERDICT done_when: test_each_skills_documented_examples_apply asserts the body stays as authored (Second body. present), the declaration s2 reads done, a c-close-s2 comment is present and plan_fingerprint is unchanged; an independent re-run at head 170260df5 gives 63 passed EXIT=0, and restoring collapse_section in the documented examples reddens it (1 failed EXIT=1).\nVERDICT write_paths: git diff --name-only 14efdb8a 170260df5 returns exactly skills/reckon-build/SKILL.md, its references/coordinator-reference.md, skills/reckon-edit/SKILL.md, reckon/crew/review_lifecycle.py and tests/test_skill_contracts.py plus the evidence fragment; docs/figures was declared and correctly left unused; no plan-state or shared index mutation.\nVERDICT manifest: arms baseline_suite and after_suite (both the focused tests/test_skill_contracts.py, both 63 passed EXIT=0), names the negative control (1 failed EXIT=1) and records both commits; the arms are the focused file alone, so a change whose skill docs are read by roughly twenty other test files is verified on one of them.\nVERDICT diff: two commits over six files, e06c9f81f (the skills, coordinator-reference and contract test) and 170260df5 (the evidence fragment), 139 insertions against 113 deletions.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: all three skills carry the tick beat (append_evidence, set section_declarations.<id> done, append the c-close-<id> comment with the project-absolute href), collapse_section is retained and marked unused by any skill, the body stays authored, and the two review_lifecycle.py docstrings are reworded; independently re-ran tests/test_skill_contracts.py at head 170260df5: 63 passed EXIT=0.\nSCORE evidence: 16\nJUSTIFICATION evidence: the run's own base-gate.log and head-gate.log each head with revision, tree and command and record 63 passed EXIT=0, and added_failures_from_gate_logs over the manifest's baseline_suite/after_suite yields 0 added; the negative control reddens the guard and I reproduced it. Deducted because the arms are the focused file alone while the change rewrites skill docs read by about twenty other test files (an independent run of four of those found one failure, in a file the diff does not touch, so it is pre-existing), and the declared negative control trips the op-vocabulary assertion rather than the body-unchanged one.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 14efdb8a 170260df5 lists exactly the six declared paths plus the evidence fragment, every one inside the manifest's declared scope, with no write to plan state or the shared index.\nSCORE durability: 18\nJUSTIFICATION durability: the guard is shown to fire, restoring collapse_section in the documented examples reddens the test (1 failed EXIT=1) and renaming the c-close comment id reddens its own assertion (both independently reproduced), and the test reads required keys from _OP_VOCAB so the skills stay pinned to the code; deducted because the reworded review_lifecycle docstrings carry no covering assertion, so a drift back to collapsed prose is unguarded.\nSCORE fit: 19\nJUSTIFICATION fit: the beat is expressed through the existing append_evidence/set/append vocabulary with _OP_VOCAB named as the source of required keys, and the _OP_SIGNATURE change reads required fields only up to the first optional group so a generic op's optional tail is the only part not pinned; no plan, stage or version label appears in any name or comment.\nSCORE reuse: 19\nJUSTIFICATION reuse: no new op is introduced, the beat reuses append_evidence, set and append, and the test reuses _edit_plan_tool, read_state and plan_fingerprint, extending the existing documented-examples test rather than adding a parallel one.\nFINDING docs/plans/agent-plan-authoring.html:165 follow-on: this plan's authored body still presents Collapse-on-landing (closure) as the landing beat (also line 200), which the three skill docs no longer describe after this change; it is outside this node's declared write scope, so it is a follow-on for the evidence-and-plan owner rather than a defect of this node.\nFINDING tests/test_skill_contracts.py:1773 follow-on: the declared negative control restores collapse_section in place of the set, so the assertion that fires is the op-vocabulary set at line 1760 rather than the body-unchanged assertion at 1773; the body-unchanged and c-close guards are therefore shown only in the positive direction, and a reviewer must read the failure text to see which check caught the regression.\nreviewed_base_sha: 14efdb8a64c81f8e0246e7f3446071cc0cf789ba\nreviewed_head_sha: 170260df54ddaea9b7882c5fa5ecb81e9d6b84c5\n",
+  "review_run_id": "r-20261008T035639797746-review-of-the-landing-beat-ticks-instead-of-collapsing",
+  "reviewed_base_sha": "14efdb8a64c81f8e0246e7f3446071cc0cf789ba",
+  "reviewed_head_sha": "170260df54ddaea9b7882c5fa5ecb81e9d6b84c5",
+  "reviewed_run_id": "r-20261008T030205304478-the-landing-beat-ticks-instead-of-collapsing",
+  "role": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T04:15:00+00:00",
+  "total": 111
+}
