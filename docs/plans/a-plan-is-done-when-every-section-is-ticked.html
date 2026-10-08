@@ -19,12 +19,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,plan-format">
   <meta name="plan-blocks" content="plan-lifecycle-hygiene">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
   <title>A Plan Is Done When Every Section Is Ticked | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-impl" content="0.33">
-<meta name="plan-version" content="22">
+<meta name="plan-impl" content="0.5">
+<meta name="plan-version" content="23">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -105,7 +105,7 @@
       third test reads the open-section predicate on the first fixture and finds the implementable and deferred
       sections.</p>
 
-    <h2 id="s4" data-reckon="section" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links="">§4 — The SPA shows the todo list at the top of the plan</h2>
+    <h2 id="s4" data-reckon="section" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links="">§4 — The SPA shows the todo list at the top of the plan</h2>
     <p><strong>Deliverable.</strong> The plan view renders the <code>todos</code> field from §3 above the first
       section, as a checklist. Each item links to its section's heading, a ticked item shows its closing comment, and
       a deferred item reads as deferred rather than open. The SPA renders the field and derives nothing.</p>
@@ -253,6 +253,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261008T034550273239-review-of-the-plan-view-shows-its-section-checklist" data-who="reckon-build" data-when="2026-10-08T04:10:57.519Z">
     <div class="r-comment-body"><p>The plan view's section checklist (run r-20261008T030334920284) is reviewed: the record scores goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 20, reuse 19 (total 114/120) over reviewed_base_sha 4d7e6caa, reviewed_head_sha 568502e0, with one follow-on finding on the evidence fragment's revision provenance; no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-10-08T05:05:00Z">
+    <div class="r-comment-body"><p>Landed at merge <code>cff18dc7</code>. The plan view renders the payload's <code>todos</code> as one linked row per section above the plan body: checked with its closing comment when done, otherwise marked deferred or open. A repair round sent back by the coordinator made each row's click scroll to its section with <code>scrollIntoView</code>. The plain <code>#sN</code> link would have changed the SPA's hash route and dropped the reader on the home view. Gate: 6 passed; removing the render or the click handler fails its assertions. 26 UI test files: 0 added. Review 114/120. <a href="/reckon/evidence/fragments/a-plan-is-done-when-every-section-is-ticked/the-plan-view-shows-its-section-checklist.html">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261008T035521257087-review-of-a-deferred-section-blocks-only-its-dependents" data-who="reckon-build" data-when="2026-10-08T04:23:35.687Z">
     <div class="r-comment-body"><p>review of r-20261008T025754782357-a-deferred-section-blocks-only-its-dependents (section 9 of reckon:a-plan-is-done-when-every-section-is-ticked): parsed record, 6 dimensions scored goal_fidelity 13 / evidence 14 / scope_discipline 15 / durability 19 / fit 19 / reuse 20, total 100; reviewed_base_sha 9f0d75a3, reviewed_head_sha c5c3fbd0; added_failure_count 0, added_failure_ids []; one blocking finding and one follow-on</p></div>
