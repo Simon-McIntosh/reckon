@@ -1,0 +1,55 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest carries empty baseline_suite and after_suite fields and names no gate-log pair, so the added-failure count was not derived from the reviewed run's own arms",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-08T08:55:40.607Z",
+  "dispatched_at": "2026-10-08T08:36:54Z",
+  "findings": [
+    {
+      "file": "tests/test_a_live_run_never_reads_dead.py",
+      "line": "64",
+      "severity": "blocking",
+      "text": "blocking: the census patches field is incomplete for this file; I independently found nine setattr(recovery, \"<name>\", ...) sites here and the map records only line 566, so eight sites (lines 64/71/74/77/80/83/86/89 naming _observed_phase, _worker_record_liveness, _carries_orientation_write, _ledger_run_id_reader and FLEET_BLOCKED_STATES) are unrecorded even though the map moves those names to recovery_liveness.py and recovery_watch.py; a move node repointing by this census would leave these mutations bound to the original module rather than the moved owner, and the map's own recorded commands search monkeypatch\\.setattr and so never match the mp.setattr receiver used here, so rerunning them reproduces the omission."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found"
+  },
+  "justifications": {
+    "durability": "check_map.py is a real guard for statement placement, since deleting classify_pointer from the map reddens it (map-negative-control.log EXIT=1), but nothing asserts the census is complete, so the eight missing patch sites leave the gate green.",
+    "evidence": "the gate docs/evidence/fragments/every-module-fits-a-worker-window/recovery-split-map.json is measured by check_map.py, whose output records 353/353 placed, max 30,554 tokens and no cycle (map-check.log EXIT=0), but it asserts only that the census keys exist and never that they are complete, so its green does not cover the census gap it should have caught.",
+    "fit": "the fragment follows the shape of docs/evidence/fragments/every-module-fits-a-worker-window/dispatch-split-map.html and the module names each describe one concern, none carrying a part number, a version or the word core.",
+    "goal_fidelity": "the goal is the map at docs/evidence/fragments/every-module-fits-a-worker-window/recovery-split-map.json; I re-derived the base at 0d925378c and every statement, size and edge matches, but the census patches field omits eight patch sites, so one of the four required census fields is incomplete.",
+    "reuse": "the landing adds no production mechanism, because the two artifacts are docs and the checker is a run-scratch script under the run directory rather than landed code, so there is no capability for it to fork.",
+    "scope_discipline": "commit 60eafa7e changes only docs/evidence/fragments/every-module-fits-a-worker-window/recovery-split-map.json and .html, both inside the two declared write paths; no source, test or plan file is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node maps the split of reckon/crew/recovery.py (527,046 bytes at base 0d925378c) into eleven sibling modules plus the original; I re-parsed the base at 0d925378c and confirmed all 353 non-import top-level statements are assigned exactly once, so the placement goal is met.\nVERDICT done_when: the measure is the two artifacts docs/evidence/fragments/every-module-fits-a-worker-window/recovery-split-map.json and .html; the run's check_map.py records EXIT=0 for placement, size and cycles and EXIT=1 when a member is deleted, but it never measures census completeness.\nVERDICT write_paths: the manifest declares the two fragment files plus a figures directory; commit 60eafa7e touches only the two fragment files, all inside the declared scope.\nVERDICT manifest: read; it reports 353 statements placed once, a 30,554-token maximum, three module-level edges, and empty baseline_suite and after_suite fields (the node ran no suite).\nVERDICT diff: read commit by commit; 60eafa7e adds docs/evidence/fragments/every-module-fits-a-worker-window/recovery-split-map.json (8,906 lines) and recovery-split-map.html (4 lines of head) and changes nothing else.\nCALL_SITES: none\nreviewed_base_sha: 0d925378c9966477a8f8e42bef2584641c0a62cc\nreviewed_head_sha: 60eafa7e44d28631e6261ca03be9c3f1ff88e86e\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: the goal is the map at docs/evidence/fragments/every-module-fits-a-worker-window/recovery-split-map.json; I re-derived the base at 0d925378c and every statement, size and edge matches, but the census patches field omits eight patch sites, so one of the four required census fields is incomplete.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate docs/evidence/fragments/every-module-fits-a-worker-window/recovery-split-map.json is measured by check_map.py, whose output records 353/353 placed, max 30,554 tokens and no cycle (map-check.log EXIT=0), but it asserts only that the census keys exist and never that they are complete, so its green does not cover the census gap it should have caught.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: commit 60eafa7e changes only docs/evidence/fragments/every-module-fits-a-worker-window/recovery-split-map.json and .html, both inside the two declared write paths; no source, test or plan file is touched.\nSCORE durability: 15\nJUSTIFICATION durability: check_map.py is a real guard for statement placement, since deleting classify_pointer from the map reddens it (map-negative-control.log EXIT=1), but nothing asserts the census is complete, so the eight missing patch sites leave the gate green.\nSCORE fit: 19\nJUSTIFICATION fit: the fragment follows the shape of docs/evidence/fragments/every-module-fits-a-worker-window/dispatch-split-map.html and the module names each describe one concern, none carrying a part number, a version or the word core.\nSCORE reuse: 19\nJUSTIFICATION reuse: the landing adds no production mechanism, because the two artifacts are docs and the checker is a run-scratch script under the run directory rather than landed code, so there is no capability for it to fork.\nFINDING tests/test_a_live_run_never_reads_dead.py:64 blocking: the census patches field is incomplete for this file; I independently found nine setattr(recovery, \"<name>\", ...) sites here and the map records only line 566, so eight sites (lines 64/71/74/77/80/83/86/89 naming _observed_phase, _worker_record_liveness, _carries_orientation_write, _ledger_run_id_reader and FLEET_BLOCKED_STATES) are unrecorded even though the map moves those names to recovery_liveness.py and recovery_watch.py; a move node repointing by this census would leave these mutations bound to the original module rather than the moved owner, and the map's own recorded commands search monkeypatch\\.setattr and so never match the mp.setattr receiver used here, so rerunning them reproduces the omission.\n",
+  "review_run_id": "r-20261008T083616826245-review-of-recovery-split-map",
+  "reviewed_base_sha": "0d925378c9966477a8f8e42bef2584641c0a62cc",
+  "reviewed_head_sha": "60eafa7e44d28631e6261ca03be9c3f1ff88e86e",
+  "reviewed_run_id": "r-20261008T081335142620-recovery-split-map",
+  "reviewer": {
+    "backend": "clive",
+    "effort": null,
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261008T083616826245-review-of-recovery-split-map",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 16,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T08:51:58.863789+00:00",
+  "total": 104
+}
