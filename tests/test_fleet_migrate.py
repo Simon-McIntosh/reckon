@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import json
+import os
 import subprocess
 from pathlib import Path
 
@@ -14,6 +15,86 @@ from reckon.cli import main
 from reckon.crew import fleet_migrate
 
 FIXTURE = Path(__file__).parent / "fixtures" / "fleet_migrate"
+
+
+def test_session_listing_ignores_callers_zellij_context(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    for key in ("ZELLIJ", "ZELLIJ_SESSION_NAME", "ZELLIJ_PANE_ID"):
+        monkeypatch.setenv(key, "caller-session")
+    observed_env = []
+
+    def invoke(argv, **kwargs):
+        observed_env.append(kwargs["env"])
+        inherited = any(
+            key in kwargs["env"]
+            for key in ("ZELLIJ", "ZELLIJ_SESSION_NAME", "ZELLIJ_PANE_ID")
+        )
+        output = "caller-session (current)\n" if inherited else ""
+        return subprocess.CompletedProcess(argv, 0, output, "")
+
+    assert fleet_migrate._active_sessions(invoke=invoke) == []
+    assert len(observed_env) == 1
+    assert all(
+        key not in observed_env[0]
+        for key in ("ZELLIJ", "ZELLIJ_SESSION_NAME", "ZELLIJ_PANE_ID")
+    )
+    assert os.environ["ZELLIJ_SESSION_NAME"] == "caller-session"
+
+
+def test_rehearsal_end_lists_without_callers_zellij_context(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    keys = ("ZELLIJ", "ZELLIJ_SESSION_NAME", "ZELLIJ_PANE_ID")
+    for key in keys:
+        monkeypatch.setenv(key, "probe-trial")
+    state = tmp_path / "state"
+    ledger_path = state / "migration" / "rehearsals" / "probe-trial" / "ledger.json"
+    ledger_path.parent.mkdir(parents=True)
+    layout = tmp_path / "probe.kdl"
+    layout.write_text("layout {}\n")
+    ledger_path.write_text(
+        json.dumps(
+            {
+                "next_step": "end",
+                "completed": ["census", "layout"],
+                "layout": str(layout),
+            }
+        )
+    )
+    commands = tmp_path / "commands"
+    commands.mkdir()
+    zellij = commands / "zellij"
+    zellij.write_text(
+        "#!/bin/sh\n"
+        'if [ "$1" = "list-sessions" ]; then\n'
+        '  if [ -n "$ZELLIJ" ] || [ -n "$ZELLIJ_SESSION_NAME" ] || '
+        '[ -n "$ZELLIJ_PANE_ID" ]; then\n'
+        '    printf "probe-trial (current)\\n"\n'
+        "  fi\n"
+        "  exit 0\n"
+        "fi\n"
+        "exit 98\n"
+    )
+    zellij.chmod(0o755)
+    monkeypatch.setenv("PATH", str(commands))
+    control = subprocess.run(
+        ["zellij", "list-sessions", "--no-formatting"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert control.stdout == "probe-trial (current)\n"
+
+    answer = fleet_migrate.migrate(
+        rehearse=True,
+        session="probe-trial",
+        state=state,
+        layouts_dir=tmp_path,
+    )
+    assert "next step: start" in answer
+    assert json.loads(ledger_path.read_text())["old_end"]["was_running"] is False
+    assert all(os.environ[key] == "probe-trial" for key in keys)
 
 
 def _source(tmp_path: Path) -> dict:

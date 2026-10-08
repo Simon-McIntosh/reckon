@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -62,6 +64,8 @@ class Actions:
         self.old_sessions = {"first-fleet", "second-fleet"}
         self.steps: list[str] = []
         self.processes_ready = True
+        self.relay_fails = False
+        self.ready_response = True
 
     def step(self, argv: list[str]) -> subprocess.CompletedProcess[str]:
         self.calls.append(("step", tuple(argv)))
@@ -79,9 +83,19 @@ class Actions:
 
     def send(self, job: dict[str, str], line: str) -> None:
         self.calls.append(("send", job["jobid"], line))
+        if self.relay_fails:
+            raise fleet_migrate.MigrationError("supervisor request failed")
         assert job["jobid"] == "5678"
+        if line.startswith("ready "):
+            if self.ready_response:
+                token = line.split()[1]
+                (self.path.parents[1] / f"ready-{token}.json").write_text(
+                    json.dumps({"job_id": "5678", "node": "new-node", "standby": False})
+                )
+            return
         name = line.split()[1]
         assert line == f"session {name} migrate-{name}"
+        assert name not in self.old_sessions
 
     def inspect(self, job: dict[str, str], name: str) -> dict:
         self.calls.append(("inspect", job["jobid"], name))
@@ -159,8 +173,10 @@ def test_cutover_ends_old_session_starts_layout_and_verifies_each_pane(
     assert actions.calls == []
     answer = actions.migrate(session="first-fleet")
     assert "1 Claude panes" in answer
-    assert [call[0] for call in actions.calls] == ["step", "send", "inspect"]
-    assert actions.calls[0][1][-2:] == ("end-session", "first-fleet")
+    assert [call[0] for call in actions.calls] == ["send", "step", "send", "inspect"]
+    assert actions.calls[0][2].startswith("ready ")
+    assert actions.calls[1][1][-2:] == ("end-session", "first-fleet")
+    assert actions.calls[2][2] == "session first-fleet migrate-first-fleet"
     ledger = json.loads(actions.path.read_text())
     assert ledger["cutovers"]["first-fleet"]["status"] == "complete"
     assert ledger["cutovers"]["first-fleet"]["panes"][0]["conversation"] == (
@@ -168,7 +184,7 @@ def test_cutover_ends_old_session_starts_layout_and_verifies_each_pane(
     )
     assert ledger["next_step"] == "cutover"
     assert actions.migrate(session="first-fleet").endswith("skipped")
-    assert len(actions.calls) == 3
+    assert len(actions.calls) == 4
     assert actions.migrate() == "cutover: sessions still to move: second-fleet"
     actions.migrate(session="second-fleet")
     ledger = json.loads(actions.path.read_text())
@@ -189,6 +205,152 @@ def test_cutover_requires_live_claude_and_preserves_retry_checkpoint(actions: Ac
     actions.processes_ready = True
     assert "1 Claude panes" in actions.migrate(session="first-fleet")
     assert sum(call[0] == "step" for call in actions.calls) == 1
+    assert sum(call[0] == "send" for call in actions.calls) == 2
+
+
+def test_cutover_resumes_prior_end_checkpoint(actions: Actions):
+    ledger = json.loads(actions.path.read_text())
+    ledger["cutovers"] = {"first-fleet": {"phase": "old-ended"}}
+    actions.path.write_text(json.dumps(ledger))
+    actions.old_sessions.remove("first-fleet")
+    assert "1 Claude panes" in actions.migrate(session="first-fleet")
+    assert [call[0] for call in actions.calls] == ["send", "inspect"]
+    assert actions.calls[0][2] == "session first-fleet migrate-first-fleet"
+
+
+def test_cutover_retries_end_without_starting_early(actions: Actions):
+    original_step = actions.step
+
+    def refused_end(argv: list[str]) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(
+            argv, 1, json.dumps({"session": "first-fleet", "ended": False}), "refused"
+        )
+
+    actions.step = refused_end
+    with pytest.raises(fleet_migrate.MigrationError, match="did not confirm"):
+        actions.migrate(session="first-fleet")
+    assert not any(
+        call[0] == "send" and call[2].startswith("session ") for call in actions.calls
+    )
+    assert "first-fleet" in actions.old_sessions
+    actions.step = original_step
+    assert "1 Claude panes" in actions.migrate(session="first-fleet")
+    assert (
+        sum(
+            call[0] == "send" and call[2].startswith("session ")
+            for call in actions.calls
+        )
+        == 1
+    )
+
+
+def test_cutover_relay_failure_keeps_old_session(actions: Actions):
+    actions.relay_fails = True
+    before = actions.path.read_bytes()
+    with pytest.raises(fleet_migrate.MigrationError, match="supervisor request failed"):
+        actions.migrate(session="first-fleet")
+    assert actions.old_sessions == {"first-fleet", "second-fleet"}
+    assert not any(call[0] == "step" for call in actions.calls)
+    assert not any(
+        call[0] == "send" and call[2].startswith("session ") for call in actions.calls
+    )
+    assert actions.path.read_bytes() == before
+
+
+def test_cutover_requires_written_ready_response(actions: Actions):
+    actions.ready_response = False
+    with pytest.raises(fleet_migrate.MigrationError, match="readiness"):
+        actions.migrate(session="first-fleet")
+    assert actions.old_sessions == {"first-fleet", "second-fleet"}
+    assert not any(call[0] == "step" for call in actions.calls)
+    assert not any(
+        call[0] == "send" and call[2].startswith("session ") for call in actions.calls
+    )
+
+
+def test_cutover_sends_request_through_its_step_argv(
+    actions: Actions, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    runtime = tmp_path / "runtime"
+    runtime.mkdir()
+    fifo = runtime / fleet_migrate.REQUEST_FIFO_NAME
+    os.mkfifo(fifo)
+    reader = os.open(fifo, os.O_RDWR | os.O_NONBLOCK)
+    monkeypatch.setenv("FLEET_RUNTIME_DIR", str(runtime))
+    relays = []
+
+    def relay(argv: list[str]) -> subprocess.CompletedProcess[str]:
+        relays.append(argv)
+        result = subprocess.run(
+            argv[3:],
+            capture_output=True,
+            text=True,
+            check=False,
+            env={**os.environ, "PYTHONPATH": str(Path(__file__).resolve().parents[1])},
+        )
+        if result.returncode == 0 and argv[7] == "ready":
+            (actions.path.parents[1] / f"ready-{argv[8]}.json").write_text(
+                json.dumps({"job_id": "5678", "node": "new-node", "standby": False})
+            )
+        return result
+
+    monkeypatch.setattr(fleet_migrate, "_run_step", relay)
+    actions.send = fleet_migrate._send_supervisor
+    try:
+        assert "1 Claude panes" in actions.migrate(session="first-fleet")
+        lines = os.read(reader, 4096).splitlines()
+        assert lines[0].startswith(b"ready ")
+        assert lines[1] == b"session first-fleet migrate-first-fleet"
+    finally:
+        os.close(reader)
+    assert relays[0][:8] == [
+        "srun",
+        "--overlap",
+        "--jobid=5678",
+        sys.executable,
+        "-m",
+        "reckon.crew.fleet_migrate",
+        "request",
+        "ready",
+    ]
+    assert relays[1:] == [
+        [
+            "srun",
+            "--overlap",
+            "--jobid=5678",
+            sys.executable,
+            "-m",
+            "reckon.crew.fleet_migrate",
+            "request",
+            "session",
+            "first-fleet",
+            "migrate-first-fleet",
+        ]
+    ]
+
+
+def test_request_entry_point_relays_all_arguments(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    runtime = tmp_path / "runtime"
+    runtime.mkdir()
+    fifo = runtime / fleet_migrate.REQUEST_FIFO_NAME
+    os.mkfifo(fifo)
+    reader = os.open(fifo, os.O_RDWR | os.O_NONBLOCK)
+    monkeypatch.setenv("FLEET_RUNTIME_DIR", str(runtime))
+    words = ["ready", *(f"word{index}" for index in range(30))]
+    try:
+        result = subprocess.run(
+            [sys.executable, "-m", "reckon.crew.fleet_migrate", "request", *words],
+            capture_output=True,
+            text=True,
+            check=False,
+            env={**os.environ, "PYTHONPATH": str(Path(__file__).resolve().parents[1])},
+        )
+        assert result.returncode == 0, result.stderr
+        assert os.read(reader, 4096) == (" ".join(words) + "\n").encode()
+    finally:
+        os.close(reader)
 
 
 def test_retire_refuses_steps_and_sessions_then_requires_confirmation(actions: Actions):

@@ -100,7 +100,15 @@ def _listed_sessions(
     timeout: float | None = None,
 ) -> list[tuple[str, bool]]:
     """Read zellij's session list with each server's exited state."""
-    options: dict[str, Any] = {"capture_output": True, "text": True, "check": check}
+    environment = os.environ.copy()
+    for key in ("ZELLIJ", "ZELLIJ_SESSION_NAME", "ZELLIJ_PANE_ID"):
+        environment.pop(key, None)
+    options: dict[str, Any] = {
+        "capture_output": True,
+        "text": True,
+        "check": check,
+        "env": environment,
+    }
     if timeout is not None:
         options["timeout"] = timeout
     result = invoke(["zellij", "list-sessions", "--no-formatting"], **options)
@@ -419,8 +427,23 @@ def _fleet_record(state: Path) -> dict[str, Any]:
     return record
 
 
+class _EnvironmentBoundArgv(list[str]):
+    """Carry subprocess environment through a one-argument step runner."""
+
+    def __init__(self, argv: list[str], env: Mapping[str, str]) -> None:
+        super().__init__(argv)
+        self.env = dict(env)
+
+
 def _run_step(argv: list[str]) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(argv, capture_output=True, text=True, check=False, timeout=30)
+    return subprocess.run(
+        argv,
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=30,
+        env=argv.env if isinstance(argv, _EnvironmentBoundArgv) else None,
+    )
 
 
 def _active_sessions(
@@ -732,7 +755,11 @@ def _rehearse(
             raise MigrationError(f"rehearsal layout is missing: {ledger['layout']}")
 
         def local_sessions() -> list[str]:
-            return _active_sessions(invoke=lambda argv, **_options: run_step(argv))
+            return _active_sessions(
+                invoke=lambda argv, **options: run_step(
+                    _EnvironmentBoundArgv(argv, options["env"])
+                )
+            )
 
         ledger["old_end"] = _end_local_session(
             name, run_step=run_step, active_sessions=local_sessions
@@ -870,7 +897,8 @@ def migrate(
         if session and session not in known:
             raise MigrationError(f"{session} is absent from the recorded census")
         description = (
-            f"cutover: end {session} on the old job, start it on the new job "
+            f"cutover: probe the new job, end {session} on the old job, "
+            "then start it on the new job "
             f"from migrate-{session}.kdl, and verify each Claude pane"
             if session
             else "cutover: sessions still to move: " + (", ".join(remaining) or "none")
@@ -1054,6 +1082,18 @@ def migrate(
         old_job = {"jobid": old_job_id}
         new_job = {"jobid": new_job_id}
         if outcome.get("phase") != "old-ended":
+            token = secrets.token_hex(16)
+            send_supervisor(new_job, f"ready {token}")
+            ready = _wait_for_record(
+                state / "migration" / f"ready-{token}.json",
+                matches=lambda answer: (
+                    answer.get("job_id") == new_job_id
+                    and answer.get("node") == ledger["stand_up"]["node"]
+                    and answer.get("standby") is False
+                ),
+                pause=pause,
+                description="cutover supervisor readiness",
+            )
             argv = fleet_node.placement_argv(
                 old_job,
                 [
@@ -1080,9 +1120,14 @@ def migrate(
                     f"old-node end did not confirm {session}: {result.stderr.strip()}"
                 )
             outcome["phase"] = "old-ended"
+            outcome["relay_ready"] = ready
             outcome["old_end"] = ended
             path.write_text(json.dumps(ledger, indent=2) + "\n")
-        send_supervisor(new_job, f"session {session} migrate-{session}")
+        if not outcome.get("start_request"):
+            request = f"session {session} migrate-{session}"
+            send_supervisor(new_job, request)
+            outcome["start_request"] = request
+            path.write_text(json.dumps(ledger, indent=2) + "\n")
         recorded = next(
             item for item in ledger["census"]["sessions"] if item["name"] == session
         )
@@ -1183,7 +1228,7 @@ def migrate(
 if __name__ == "__main__":
     if sys.argv[1:] == ["collect-local"]:
         print(json.dumps(collect_local()))
-    elif len(sys.argv) in {3, 4} and sys.argv[1] == "request":
+    elif len(sys.argv) >= 3 and sys.argv[1] == "request":
         _local_request(" ".join(sys.argv[2:]))
     elif len(sys.argv) == 3 and sys.argv[1] == "end-session":
         print(json.dumps(_end_local_session(sys.argv[2])))
