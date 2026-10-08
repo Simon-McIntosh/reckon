@@ -245,14 +245,17 @@ def _landing_grace_seconds() -> float:
     return WRITE_LANDING_GRACE_SECONDS if override is None else override
 
 
-# A timed-out body that was computing burns thread CPU time comparable to the
-# wall time it held; one that was waiting on storage burns almost none. The
+# A timed-out body that was computing is one that wanted the CPU: it either
+# burned thread CPU time, or sat runnable on the runqueue while an oversubscribed
+# node ran other work first. A body waiting on storage does neither — it is
+# blocked, so it burns no CPU and spends no time runnable. These two together
+# are the computing measure, compared against the wall time the body held. The
 # fraction separates the two for a wait long enough to time, and the floor keeps
-# the kernel's CPU-accounting granularity from reading a very short wait as
-# computing. These decide only the reported cause; the ``error`` value stays
-# ``storage-slow`` so no existing caller's branch changes.
-_COMPUTING_CPU_FRACTION = 0.5
-_COMPUTING_CPU_FLOOR_SECONDS = 0.02
+# counter granularity from reading a very short wait as computing. They decide
+# only the reported cause; the ``error`` value stays ``storage-slow`` so no
+# existing caller's branch changes.
+_COMPUTING_WORK_FRACTION = 0.5
+_COMPUTING_WORK_FLOOR_SECONDS = 0.02
 
 
 def _thread_cpu_seconds(tid: int) -> float | None:
@@ -287,20 +290,48 @@ def _thread_cpu_seconds(tid: int) -> float | None:
     return (utime + stime) / ticks
 
 
-def _cause_of_timeout(cpu_seconds: float | None, waited: float) -> str:
+def _thread_run_wait_seconds(tid: int) -> float | None:
+    """Seconds one thread has spent runnable but not running, or None.
+
+    The second field of ``/proc/self/task/<tid>/schedstat`` counts the time the
+    thread was on a runqueue waiting for a CPU, which is the other half of
+    "this body wanted the CPU". It is read beside the CPU counter so a body
+    starved by an oversubscribed node — almost no CPU, most of the wall spent
+    runnable — is not mistaken for one blocked on storage. A blocked thread is
+    not runnable, so that time does not grow for it.
+    """
+
+    try:
+        with open(f"/proc/self/task/{tid}/schedstat", "rb") as handle:
+            fields = handle.read().split()
+    except OSError:
+        return None
+    if len(fields) < 2:
+        return None
+    try:
+        return int(fields[1]) / 1e9
+    except ValueError:
+        return None
+
+
+def _cause_of_timeout(
+    cpu_seconds: float | None,
+    run_wait_seconds: float | None,
+    waited: float,
+) -> str:
     """Name whether the abandoned body was computing or waiting on storage."""
 
-    if cpu_seconds is None:
+    if cpu_seconds is None and run_wait_seconds is None:
         return "waiting"
-    threshold = max(_COMPUTING_CPU_FLOOR_SECONDS, _COMPUTING_CPU_FRACTION * waited)
-    return "computing" if cpu_seconds >= threshold else "waiting"
+    measure = (cpu_seconds or 0.0) + (run_wait_seconds or 0.0)
+    threshold = max(_COMPUTING_WORK_FLOOR_SECONDS, _COMPUTING_WORK_FRACTION * waited)
+    return "computing" if measure >= threshold else "waiting"
 
 
 # The CLI command that answers each registered tool's work without the MCP
 # deadline, keyed by the tool's label. A tool with no CLI counterpart, such as
 # the plan writer, names nothing here rather than inventing a command.
 _CLI_ANSWER_COMMANDS = {
-    "read_plan": "reckon roadmap --project <project>",
     "roadmap": "reckon roadmap --project <project>",
     "audit": "reckon audit --project <project>",
     "crew": "reckon crew list --project <project>",
@@ -376,6 +407,7 @@ async def _run_under_deadline(
         "before": _UNSET,
         "tid": None,
         "cpu_base": None,
+        "run_base": None,
     }
     started = time.monotonic()
 
@@ -393,10 +425,13 @@ async def _run_under_deadline(
         # must never execute on the event loop.
         if kind == "write" and waiting["path"] is not None:
             waiting["before"] = _file_fingerprint(waiting["path"])
-        # The CPU baseline is read here too, so the deadline can subtract it
-        # from the worker thread's counter and report what the abandoned body
-        # itself spent rather than what the whole process did.
+        # The CPU and run-queue baselines are read here too, so the deadline
+        # can subtract them from the worker thread's counters and report what
+        # the abandoned body itself spent rather than what the whole process
+        # did. Run-queue time is the second half of wanting the CPU: a body
+        # starved on an oversubscribed node burns little CPU but sits runnable.
         waiting["cpu_base"] = _thread_cpu_seconds(waiting["tid"])
+        waiting["run_base"] = _thread_run_wait_seconds(waiting["tid"])
         return body()
 
     try:
@@ -404,13 +439,19 @@ async def _run_under_deadline(
     except TimeoutError:
         waited = time.monotonic() - started
         cpu_seconds: float | None = None
+        run_wait_seconds: float | None = None
         tid = waiting["tid"]
         cpu_base = waiting["cpu_base"]
         if tid is not None and cpu_base is not None:
             current = _thread_cpu_seconds(tid)
             if current is not None:
                 cpu_seconds = max(0.0, current - cpu_base)
-        cause = _cause_of_timeout(cpu_seconds, waited)
+        run_base = waiting["run_base"]
+        if tid is not None and run_base is not None:
+            current_run = _thread_run_wait_seconds(tid)
+            if current_run is not None:
+                run_wait_seconds = max(0.0, current_run - run_base)
+        cause = _cause_of_timeout(cpu_seconds, run_wait_seconds, waited)
         landed: bool | None = None
         if kind == "write" and waiting["path"] is not None:
             before = waiting["before"]
@@ -427,6 +468,7 @@ async def _run_under_deadline(
             deadline=limit,
             landed=landed,
             cpu_seconds=cpu_seconds,
+            run_seconds=run_wait_seconds,
             cause=cause,
             cli_command=_CLI_ANSWER_COMMANDS.get(label),
         ).model_dump()

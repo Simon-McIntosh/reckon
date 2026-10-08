@@ -106,6 +106,23 @@ class CrewRecoverArgs(BaseModel):
     )
 
 
+def _timing_fragment(cpu_seconds: float | None, run_seconds: float | None) -> str:
+    """Name the thread CPU and run-queue seconds a timed-out body spent.
+
+    Both figures are reported because together they are the computing measure:
+    a body busy on the CPU shows in ``cpu_seconds``, one starved runnable on an
+    oversubscribed node shows in ``run_seconds``. Either omitted when the
+    counter was unreadable.
+    """
+
+    parts = []
+    if cpu_seconds is not None:
+        parts.append(f"{cpu_seconds:.1f}s CPU")
+    if run_seconds is not None:
+        parts.append(f"{run_seconds:.1f}s runnable")
+    return f"; {', '.join(parts)}" if parts else ""
+
+
 class StorageSlowResult(BaseModel):
     """Typed result for a tool call whose storage work outlived its deadline.
 
@@ -116,6 +133,15 @@ class StorageSlowResult(BaseModel):
     write that did land is not retried blindly. ``landed`` is ``None`` when the
     filesystem would not answer within the landing check's own deadline, which
     is an unknown state rather than a negative one.
+
+    What the abandoned body was doing when the deadline expired is ``cause``. A
+    body that wanted the CPU reads ``computing``: it either burned thread CPU
+    time (``cpu_seconds``) or sat runnable on the runqueue while an
+    oversubscribed node ran other work first (``run_seconds``). A body blocked
+    on storage reads ``waiting``, burning neither. The ``error`` value stays
+    ``storage-slow`` so no existing caller's branch changes, while the message
+    and hint name the cause and, for a computing body whose tool has one, the
+    CLI command that answers without a deadline.
     """
 
     ok: bool = False
@@ -125,6 +151,7 @@ class StorageSlowResult(BaseModel):
     path: str | None = None
     waited_seconds: float
     cpu_seconds: float | None = None
+    run_seconds: float | None = None
     cause: Literal["computing", "waiting"] = "waiting"
     deadline_seconds: float
     landed: bool | None = None
@@ -143,6 +170,7 @@ class StorageSlowResult(BaseModel):
         deadline: float,
         landed: bool | None = None,
         cpu_seconds: float | None = None,
+        run_seconds: float | None = None,
         cause: Literal["computing", "waiting"] = "waiting",
         cli_command: str | None = None,
     ) -> StorageSlowResult:
@@ -157,7 +185,7 @@ class StorageSlowResult(BaseModel):
                     "so its landed state is unknown rather than false."
                 ),
             }[landed]
-        cpu_fragment = f"; {cpu_seconds:.1f}s CPU" if cpu_seconds is not None else ""
+        cpu_fragment = _timing_fragment(cpu_seconds, run_seconds)
         if cause == "computing":
             activity = "It was still computing when the deadline expired"
             hint = (
@@ -176,6 +204,7 @@ class StorageSlowResult(BaseModel):
             path=path,
             waited_seconds=round(waited, 3),
             cpu_seconds=None if cpu_seconds is None else round(cpu_seconds, 3),
+            run_seconds=None if run_seconds is None else round(run_seconds, 3),
             cause=cause,
             deadline_seconds=round(deadline, 3),
             landed=landed,
