@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.45">
-<meta name="plan-version" content="52">
+<meta name="plan-version" content="53">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -303,6 +303,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261008T081424948494-review-of-one-plan-read-is-not-a-corpus-scan" data-who="reckon-build" data-when="2026-10-08T08:30:13.656Z">
     <div class="r-comment-body"><p>review of r-20261008T073628406268-one-plan-read-is-not-a-corpus-scan stored as a parsed record at the .at-1500780fa7cf4dbcfaf7ed0309367a862bb07614 path, scoring goal_fidelity 17, evidence 18, scope_discipline 19, durability 18, fit 18, reuse 18 (total 108) for diff 4cd309a0e..1500780fa, added_failure_count 0, with one follow-on finding (resources.py:635 canonical collision short-circuit).</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261008T073524710933-retried-read-joins-running-copy" data-who="reckon-build" data-when="2026-10-08T08:10:08.972Z">
+    <div class="r-comment-body"><p>A retried reckon MCP read with the same tool and arguments now awaits the body still running under asyncio.shield rather than submitting a second copy, keyed by tool+args in _INFLIGHT_READS; a read with different arguments and every write still run their own body — tests/test_mcp_retry_joins_running_read.py 4 passed EXIT=0, negative control (join removed) EXIT=1.</p></div>
 </div>
 </section>
 </main>
