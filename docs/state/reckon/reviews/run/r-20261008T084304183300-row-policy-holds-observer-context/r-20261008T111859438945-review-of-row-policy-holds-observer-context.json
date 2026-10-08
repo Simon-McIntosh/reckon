@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured: the reviewed run's base arm logs/base-wide.txt and after arm logs/gate.txt both read 65 passed EXIT=0, so no failing id was added; derived from those two gate logs the run's manifest names under baseline_suite and after_suite",
+  "backend": "clive",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-08T11:35:12.303Z",
+  "dispatched_at": "2026-10-08T11:19:20Z",
+  "findings": [
+    {
+      "file": "tests/test_crew_session_delivery.py",
+      "line": "717",
+      "severity": "follow-on",
+      "text": "follow-on: test_a_followers_owner_is_readable_without_reaching_for_ps asserts row[\"consumer_pid\"] == os.getppid(), reading real process parentage; it fails (1 failed, 64 passed) whenever the runner's parent differs and also fails at base 6d28c3f50, so it is environment-dependent and unrelated to this diff"
+    },
+    {
+      "file": "logs/base-wide.txt",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: neither the base arm nor the after arm logs a revision on its first line, so the 65-passed base at 6d28c3f50 rests on the manifest's prose rather than the log's own header, and a reader cannot tie the arms to a commit without trusting the manifest"
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call site reaches this diff; the four test files and the evidence fragment are not runtime code",
+    "diff": "read commit by commit (bae78a6df, 2b8795a08, e24ab7e2d, 48eafa9d2, 8dbf1da9b); all five files are inside the declared scope",
+    "done_when": "the done_when names tests/test_row_policy_holds_observer_context.py plus two updated files and a negative control; the manifest records 39 passed EXIT=0, 65 passed against a 65-passed base, and the negative control 3 failed EXIT=1",
+    "goal": "the goal is to hold observer-context rows back on the coordinator pane; the covered repair commits update four wide-gate test files to that behaviour",
+    "manifest": "read; status complete, tests 39/65/65/3-failed, baseline_suite and after_suite naming logs/base-wide.txt and logs/gate.txt",
+    "write_paths": "read the manifest's declared paths; every path in the diff is inside them"
+  },
+  "justifications": {
+    "durability": "tests/test_attach_shows_each_live_run.py:225 asserts drawn == [] for a working fleet, which reddens if the observer hold is removed, though several cases now build their fleet in an action state and no longer exercise the withhold",
+    "evidence": "logs/base-wide.txt and logs/gate.txt both read 65 passed EXIT=0, but neither log's first line names its revision, so the base arm's commit rests on the manifest's prose, and my own head run reproduced 64 passed with one environment-dependent failure",
+    "fit": "the repair reuses the existing _deliver helper at tests/test_crew_session_delivery.py:63 and follows the surrounding docstring idiom",
+    "goal_fidelity": "tests/test_attach_shows_each_live_run.py:224 and tests/test_follow_replays_the_gap.py:270 now assert a progress-state run draws no row, matching the observer hold the node landed",
+    "reuse": "every edit extends an existing test helper or the file's own cases, so no added definition duplicates a capability the repository already owns",
+    "scope_discipline": "git diff --stat afe8932f0..8dbf1da9b lists only the four granted test files and the evidence fragment, every one inside the manifest's declared paths"
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to hold observer-context rows back on the coordinator pane; this review covers only the five repair commits afe8932f0..8dbf1da9b that update four wide-gate test files to the held-back behaviour and record the measurement in docs/evidence/fragments/a-follower-row-is-worth-a-wake/row-policy-holds-observer-context.html\nVERDICT done_when: the source done_when names tests/test_row_policy_holds_observer_context.py plus the two updated files and a negative control; the manifest records 39 passed EXIT=0 in scope, a 65-passed wide gate against a 65-passed base arm, and the declared negative control at 3 failed EXIT=1\nVERDICT write_paths: the diff afe8932f0..8dbf1da9b touches the four test files granted at promotion plus docs/evidence/fragments/a-follower-row-is-worth-a-wake/row-policy-holds-observer-context.html, all inside the manifest's declared paths\nVERDICT manifest: read; status complete, the run's eight commits, tests 39/65/65/3-failed, baseline_suite and after_suite naming logs/base-wide.txt and logs/gate.txt\nVERDICT diff: read commit by commit (bae78a6df attach, 2b8795a08 gap, e24ab7e2d delivery, 48eafa9d2 rearm, 8dbf1da9b evidence); each holds progress-state rows back and rebuilds replay and recorded-time cases in an action state\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_attach_shows_each_live_run.py:224 and tests/test_follow_replays_the_gap.py:270 now assert a progress-state run draws no row, matching the observer hold the node landed\nSCORE evidence: 16\nJUSTIFICATION evidence: the manifest's logs/base-wide.txt and logs/gate.txt both read 65 passed EXIT=0, but neither log's first line names its revision, so the base arm's commit rests on the manifest's prose, and my own head run reproduced 64 passed with one environment-dependent failure\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat afe8932f0..8dbf1da9b lists only the four granted test files and the evidence fragment, every one inside the manifest's declared paths\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_attach_shows_each_live_run.py:225 asserts drawn == [] for a working fleet, which reddens if the observer hold is removed, though several cases now build their fleet in an action state and no longer exercise the withhold\nSCORE fit: 19\nJUSTIFICATION fit: the repair reuses the existing _deliver helper at tests/test_crew_session_delivery.py:63 and follows the surrounding docstring idiom\nSCORE reuse: 20\nJUSTIFICATION reuse: every edit extends an existing test helper or the file's own cases, so no added definition duplicates a capability the repository already owns\nFINDING tests/test_crew_session_delivery.py:717 follow-on: test_a_followers_owner_is_readable_without_reaching_for_ps asserts row[\"consumer_pid\"] == os.getppid(), reading real process parentage; it fails 1 failed/64 passed in a runner whose parent differs and also fails at base 6d28c3f50, so it is environment-dependent and unrelated to this diff\nFINDING logs/base-wide.txt:1 follow-on: neither arm log names a revision on its first line, so the 65-passed base at 6d28c3f50 rests on the manifest's prose rather than the log's own header, and a reader cannot tie the arms to a commit without trusting the manifest",
+  "review_run_id": "r-20261008T111859438945-review-of-row-policy-holds-observer-context",
+  "reviewed_base_sha": "afe8932f0a50f47bbc923b2292aa6ab164cc9ed8",
+  "reviewed_head_sha": "8dbf1da9b1f71afa8e436e66ffca128bcb683f14",
+  "reviewed_run_id": "r-20261008T084304183300-row-policy-holds-observer-context",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T11:33:20.255035+00:00",
+  "total": 110
+}
