@@ -93,8 +93,10 @@ def test_every_reckon_importing_hook_uses_the_shared_bootstrap():
 def test_importing_hooks_reexecute_under_old_python(tmp_path: Path):
     scripts = _reckon_importing_hooks()
     old_python, env = _old_python_on_path(tmp_path)
-    manifest = tmp_path / "missing-manifest.md"
+    manifest = tmp_path / "run-manifest.md"
+    manifest.write_text("status: in-progress\n")
     env["RECKON_MANIFEST"] = str(manifest)
+    env["RECKON_ATTEMPT_STARTED_AT"] = "2026-10-08T00:00:00Z"
     live_dir = Path(env["RECKON_HOME"]) / "crew" / "live"
     live_dir.mkdir(parents=True)
     worktree = tmp_path / "worktree"
