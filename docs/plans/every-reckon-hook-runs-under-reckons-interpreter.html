@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="every-reckon-hook-runs-under-reckons-interpreter">
   <meta name="plan-title" content="Every Reckon Hook Runs Under Reckon&#x27;s Interpreter">
   <meta name="plan-summary" content="Every reckon hook command, however it is installed, seeded or started, runs under the checkout&#x27;s own interpreter, so no guard fails open on an old system python">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="4.0">
   <meta name="plan-capability-version" content="1.0">
@@ -23,9 +23,9 @@
   <title>Every Reckon Hook Runs Under Reckon's Interpreter | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="17">
+<meta name="plan-version" content="19">
 <meta name="plan-modified" content="2026-10-08">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -84,9 +84,12 @@
   <p class="landed-summary">Healed: the workstation's <code>~/.claude/settings.json</code> now runs every reckon-importing hook (git guard, worker stop, obligations) under the checkout's <code>.venv</code> python, written by <code>reckon hooks install --write</code> and sync's guard writer, with no duplicate entry and every other setting byte-identical. A worker started with the system 3.9 first on PATH had its git guard refuse a mutating commit against a foreign repository, whose commit count stayed 1. <a href="/reckon/evidence/archive/every-reckon-hook-runs-under-reckons-interpreter-landed.html#s5">full record</a></p>
 </section>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-08</span>
     <h2 id="s6">§6 — One function names the checkout interpreter</h2>
-<section data-reckon="section" data-id="s6" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-status="implementable" data-links=""></section>
-<p><code>reckon/hooks/interpreter_bootstrap.py</code> computes the checkout interpreter as <code>script_path.parents[2] / '.venv' / 'bin' / 'python'</code> because it runs before any reckon import and cannot call the installer. <code>reckon/hooks/install.py</code> owns the same fact in <code>interpreter_path()</code> and re-derives it inline once more. The bootstrap is stdlib-only and importable from the installer, so the installer delegates to it and the venv layout is named in one function.</p><p><strong>Done when:</strong> <code>install.interpreter_path()</code> and the installer's inline derivation both call the bootstrap's resolver, and no other file under <code>reckon/hooks</code> composes the <code>.venv/bin/python</code> path; a test builds a temporary checkout layout and asserts the installer and the bootstrap name the same interpreter; the hook installer, bootstrap and command tests pass.</p>
+<section data-reckon="section" data-id="s6" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">Landed: <code>interpreter_bootstrap.checkout_interpreter()</code> names a checkout's venv interpreter, and the installer's <code>interpreter_path()</code> and git-guard recogniser delegate to it, so the layout is stated once. Merged gate over 23 files: 302 passed, 0 added; review 117/120. <a href="/reckon/evidence/archive/every-reckon-hook-runs-under-reckons-interpreter-landed.html#s6">full record</a></p>
+</section>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -102,10 +105,11 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-ehr-build" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-08" data-recommends-skill="/reckon-build every-reckon-hook-runs-under-reckons-interpreter" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-ehr-build" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-08" data-recommends-skill="/reckon-build every-reckon-hook-runs-under-reckons-interpreter" data-resolved-at="2026-10-08T10:42:44+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Build the composer, the seeding and the self-correcting scripts, then heal this workstation</h4>
     <div class="r-fu-body"><p>§2 and §4 touch separate files and can run together; §3 reuses §2's recogniser and composer and follows it; §5 is operational and follows §2.</p></div>
     <pre class="r-fu-prompt">/reckon-build every-reckon-hook-runs-under-reckons-interpreter</pre>
+    <p class="r-fu-outcome">done — no followup. All six sections landed: sync and the installer share one composer, run homes and the operator settings carry interpreter-bound hooks, the hook scripts re-execute under the checkout interpreter, and one function names it.</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -147,6 +151,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261008T095928940762-review-of-run-home-hooks-are-interpreter-bound" data-who="reckon-build" data-when="2026-10-08T10:08:54.666Z">
     <div class="r-comment-body"><p>Independent review attached to r-20261008T092441846310-run-home-hooks-are-interpreter-bound covering the delta 7fec3b7dd-&gt;791126405 (tests/test_run_home_hooks_are_interpreter_bound.py): all 6 dimensions scored, total 116/120, 0 findings; the repaired operator-bytes guard is falsifiable.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-20261008T1250-s6" data-who="reckon-build" data-when="2026-10-08T12:50:00+02:00">
+    <div class="r-comment-body">gate merged-population passed (302, 0 added); section s6 closed by run one-function-names-the-checkout-interpreter</div>
 </div>
 </section>
 </main>

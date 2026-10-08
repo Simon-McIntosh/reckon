@@ -40,6 +40,11 @@
     <p>Run <code>r-20261008T092441846310-run-home-hooks-are-interpreter-bound</code>, commits <code>7fec3b7dd</code> and <code>791126405</code>, merged in <code>4d2e45cab</code>. <code>reckon/_backends.py</code> gains <code>_bind_reckon_hook_commands</code>, which <code>_seed_harness_entry</code> applies to the filtered settings before writing them; it reuses <code>reckon.hooks.install.upgrade_registered_commands</code> rather than a second recogniser.</p><p>The review found the operator-file guard vacuous: the test read the operator's bytes after seeding, so it compared the file with itself. The repair captures them before seeding; a control that made seeding write the operator file back then failed on that assertion. The base-named gate log the review noted is covered by the coordinator's merge gate: 30 test files touching run-home seeding, settings files or the installer, 327 passed at base and 329 at the merge, 0 added.</p><p>The &sect;4 review's follow-on, a second copy of the venv interpreter path in <code>interpreter_bootstrap.py</code>, was not in this node's measure and is now &sect;6.</p>
   </section>
 
+  <section id="s6">
+    <h2>§6 — one function names the checkout interpreter</h2>
+    <p>Run <code>r-20261008T101004011088-one-function-names-the-checkout-interpreter</code>, merged in <code>2565897e3</code>. The stdlib-only bootstrap gains <code>checkout_interpreter</code> and <code>is_checkout_interpreter</code>; <code>install.interpreter_path()</code> and <code>is_worker_git_guard_group</code> call them. The worker's control, a diverging <code>interpreter_path()</code>, failed the new test. The coordinator's merge gate ran the 23 test files touching the installer, the bootstrap, run-home seeding or sync: 298 passed at base, 302 at the merge, 0 added.</p><p>The worker's two commits ended with an AI attribution trailer, which this workstation's rules ban. Before merging, the coordinator re-created them with identical trees, the original author and date, and the message without the trailer (<code>b4b1836bc</code>, <code>18fbf9b62</code>); the merge tree equals the gated one. The review's other note, a redundant cross-side equality beside the real guard on line 48, is left as is.</p>
+  </section>
+
 </main>
 </body>
 </html>
