@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite/after_suite gate log (it records its two arms under tests/test_logs), so the added-failure count was not taken; supplemental: the reviewed run's arm logs gate-head.log (7 passed) and gate-existing.log (58 passed) each report no FAILED id, so no test regressed -- the only FAILED line in the run directory is the intentional negative control, reproduced independently in this review.",
+  "base_log_revision": null,
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/mcp.py:_deadline_tool"
+  ],
+  "completed_at": "2026-10-08T06:52:48.576Z",
+  "dispatched_at": "2026-10-08T06:20:07Z",
+  "findings": [
+    {
+      "file": "reckon/mcp.py",
+      "line": 293,
+      "severity": "follow-on",
+      "text": "follow-on: the run-queue reader's scale and its 'a blocked thread accrues no run-queue time' premise are not asserted against reality -- test_starved_runnable_body_reports_computing replaces _thread_run_wait_seconds with a stub, and the spin case asserts only that run_seconds is not None (a real read that is about 0 either way), so a unit error in reading /proc/self/task/<tid>/schedstat field 1 would leave all seven tests green; the value is correct as written: schedstat field 1 read as 94349988 on the main thread and the reader returned 0.094 s, and a spinning thread showed a +0.28 s CPU delta against a +0.008 s run-queue delta, confirming a running thread accrues almost no run-queue time."
+    },
+    {
+      "file": "reckon/mcp.py",
+      "line": 334,
+      "severity": "follow-on",
+      "text": "follow-on: plan section 3's deliverable says a computing timeout gives the CLI command that answers without a deadline, but the repair removes read_plan from _CLI_ANSWER_COMMANDS, so read_plan and edit_plan name no command; the intent -- never point at a command that answers a different read -- is satisfied, and a coordinator may wish to tighten the section's wording to 'for tools that have a CLI counterpart' so the deliverable and the code agree."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site: reckon/mcp.py:_deadline_tool.",
+    "diff": "read the delta commit by commit: the fix adds _thread_run_wait_seconds (schedstat field 1, nanoseconds divided by 1e9), sums it with thread CPU in _cause_of_timeout, threads run_seconds and the run_base baseline through _run_under_deadline and StorageSlowResult, and drops read_plan from _CLI_ANSWER_COMMANDS; the docs commit records the fragment.",
+    "done_when": "the done_when names tests/test_mcp_deadline_names_its_cause.py; re-ran it at head f31113525 -- 7 passed EXIT=0 (review-gate-head.log) -- and reproduced the negative control in a scratch tree at that head with _thread_cpu_seconds forced to 0.0, which keeps the spinning case red (1 failed, 6 passed, EXIT=1; review-negative-control.log).",
+    "goal": "the node's goal is that a reckon MCP timeout names whether its abandoned body was computing or waiting; reckon/mcp.py:317 _cause_of_timeout and reckon/mcp.py:393 _run_under_deadline report it from the worker thread's CPU seconds (reckon/mcp.py:261) and run-queue wait (reckon/mcp.py:293) read beside the wall time.",
+    "manifest": "read; it names the four commits (570b7c40c, 4ecc70307, d620e8394, f31113525), the three gate logs and the negative control; its follow_on that read_plan has no CLI counterpart now matches the diff, which dropped read_plan from the map.",
+    "write_paths": "git diff --name-only 4ecc703 f311135 lists reckon/mcp.py, reckon/_mcp_tools.py, tests/test_mcp_deadline_names_its_cause.py and the evidence fragment, every one inside the reviewed manifest's declared paths."
+  },
+  "justifications": {
+    "durability": "the spinning case pins the exact mapped command in field and hint (tests/test_mcp_deadline_names_its_cause.py:61-62), the sleeping case pins read_plan carrying none (:76-77), the starved case pins the run-queue verdict and figure (:100-103), and the two readers and _cause_of_timeout are unit-reachable through the module; the sole seam is the starved case replacing _thread_run_wait_seconds with a stub, which is the only way to force deterministic starvation.",
+    "evidence": "the gate tests/test_mcp_deadline_names_its_cause.py:48,:65,:80,:119 measures what the done_when asserts; re-ran it at head f31113525 (7 passed EXIT=0, review-gate-head.log) with the six existing reckon.mcp files (58 passed EXIT=0), and reproduced the negative control in a scratch tree with _thread_cpu_seconds forced to 0.0 (review-negative-control.log, 1 failed 6 passed EXIT=1); the run-queue reader's real scale is not asserted anywhere (see the finding on reckon/mcp.py:293).",
+    "fit": "the new helpers follow the module's private-reader idiom (reckon/mcp.py:261,293) with no plan or version label; the measure constants are renamed to _COMPUTING_WORK_* to name the combined measure rather than CPU alone; the message builder in reckon/_mcp_tools.py:188 routes both figures through one _timing_fragment helper.",
+    "goal_fidelity": "reckon/mcp.py:317 _cause_of_timeout decides computing when the thread's CPU seconds plus its run-queue seconds reach half the wall time (reckon/mcp.py:327), and _run_under_deadline:454 reports it beside waited_seconds, cpu_seconds and run_seconds, leaving the error value storage-slow so no caller's branch changes; the deliverable is met, but a computing timeout now names a CLI command only for roadmap/audit/crew, so that clause holds for only the labels that have a counterpart (see the finding on reckon/mcp.py:334).",
+    "reuse": "no existing owner of a thread run-queue reading was found in reckon/ (a search for schedstat finds only this reader), and _timing_fragment replaces the inline CPU fragment rather than sitting beside it; the change reuses the existing baseline/deadline plumbing rather than adding a parallel path.",
+    "scope_discipline": "git diff --name-only 4ecc703 f311135 lists exactly reckon/mcp.py, reckon/_mcp_tools.py, tests/test_mcp_deadline_names_its_cause.py and the evidence fragment, every one inside the manifest's declared write paths, with no plan or shared-index write."
+  },
+  "model": "deepseek-v4.1-flash",
+  "node": "review-of-mcp-timeout-names-its-cause",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a reckon MCP timeout names whether its abandoned body was computing or waiting; reckon/mcp.py:317 _cause_of_timeout and reckon/mcp.py:393 _run_under_deadline report it from the worker thread's CPU seconds (reckon/mcp.py:261) and run-queue wait (reckon/mcp.py:293) read beside the wall time.\nVERDICT done_when: the done_when names tests/test_mcp_deadline_names_its_cause.py; I re-ran it at head f31113525 -- 7 passed EXIT=0; the negative control was reproduced in a scratch tree at that head with _thread_cpu_seconds forced to 0.0, which keeps the spinning case red (1 failed, 6 passed, EXIT=1; review-negative-control.log).\nVERDICT write_paths: git diff --name-only 4ecc703 f311135 lists reckon/mcp.py, reckon/_mcp_tools.py, tests/test_mcp_deadline_names_its_cause.py and the inside the reviewed manifest's declared paths.\nVERDICT manifest: read; it names the four commits (570b7c40c, 4ecc70307, d620e8394, f31113525), the three gate logs and the negative control; its follow_on that read_plan has no CLI counterpart now matches the diff, which dropped read_plan from the map.\nVERDICT diff: read the delta commit by commit: the fix adds _thread_run_wait_seconds (schedstat field 1, nanoseconds divided by 1e9), sums it with thread CPU in _cause_of_timeout, threads run_seconds and the run_base baseline through _run_under_deadline and StorageSlowResult, and drops read_plan from _CLI_ANSWER_COMMANDS; the docs commit records the fragment.\nCALL_SITES: reckon/mcp.py:_deadline_tool\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/mcp.py:317 _cause_of_timeout decides computing when the thread's CPU seconds plus its run-queue seconds reach half the wall time (reckon/mcp.py:327), and _run_under_deadline:454 reports it beside waited_seconds, cpu_seconds and run_seconds, leaving the error value storage-slow so no caller's branch changes; the deliverable is met, but a computing timeout now names a CLI command only for roadmap/audit/crew, so that clause holds for only the labels that have a counterpart (see the finding on reckon/mcp.py:334).\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate tests/test_mcp_deadline_names_its_cause.py:48,:65,:80,:119 measures what the done_when asserts; I re-ran it at head f31113525 (7 passed EXIT=0, review-gate-head.log) with the six existing reckon.mcp files (58 passed EXIT=0), and reproduced the negative control in a scratch tree (review-negative-control.log, 1 failed 6 passed EXIT=1); the run-queue reader's real scale is not asserted anywhere (see the finding on reckon/mcp.py:293).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 4ecc703 f311135 lists exactly reckon/mcp.py, reckon/_mcp_tools.py, tests/test_mcp_deadline_names_its_cause.py and the evidence fragment, every one inside the manifest's declared write paths, with no plan or shared-index write.\nSCORE durability: 19\nJUSTIFICATION durability: the spinning case pins the exact mapped command in field and hint (tests/test_mcp_deadline_names_its_cause.py:61-62), the sleeping case pins read_plan carrying none (:76-77), the starved case pins the run-queue verdict and figure (:100-103), and the two readers and _cause_of_timeout are unit-reachable through the module; the sole seam is the starved case replacing _thread_run_wait_seconds with a stub, which is the only way to force deterministic starvation.\nSCORE fit: 19\nJUSTIFICATION fit: the new helpers follow the module's private-reader idiom (reckon/mcp.py:261,293) with no plan or version label; the measure constants are renamed to _COMPUTING_WORK_* to name the combined measure rather than CPU alone; the message builder in reckon/_mcp_tools.py:188 routes both figures through one _timing_fragment helper.\nSCORE reuse: 19\nJUSTIFICATION reuse: no existing owner of a thread run-queue reading was found in reckon/ (a search for schedstat finds only this reader), and _timing_fragment replaces the inline CPU fragment rather than sitting beside it; the change reuses the existing baseline/deadline plumbing rather than adding a parallel path.\nFINDING reckon/mcp.py:293 follow-on: the run-queue reader's scale and its 'a blocked thread accrues no run-queue time' premise are not asserted against reality -- the starved-runable case replaces _thread_run_wait_seconds with a stub, and the spin case asserts only that run_seconds is not None (a real read that is about 0 either way), so a unit error in reading /proc/self/task/<tid>/schedstat field 1 would leave all seven tests green; the value is correct as written: schedstat field 1 read as 94349988 on the main thread and the reader returned 0.094 s, and a spinning thread showed a +0.28 s CPU delta against a +0.008 s run-queue delta.\nFINDING reckon/mcp.py:334 follow-on: plan section 3's deliverable says a computing timeout gives the CLI command that answers without a deadline, but the repair removes read_plan from _CLI_ANSWER_COMMANDS, so read_plan and edit_plan name no command; the intent -- never point at a command that answers a different read -- is satisfied, and a coordinator may wish to tighten the section's wording to 'for tools that have a CLI counterpart' so the deliverable and the code agree.\nreviewed_base_sha: 4ecc70307c1ffd8c13214743576a576035c4855c\nreviewed_head_sha: f31113525ea3fe233734d3ebadba8fcdcf5fc7a1",
+  "review_run_id": "r-20261008T061916743714-review-of-mcp-timeout-names-its-cause",
+  "reviewed_base_sha": "4ecc70307c1ffd8c13214743576a576035c4855c",
+  "reviewed_head_sha": "f31113525ea3fe233734d3ebadba8fcdcf5fc7a1",
+  "reviewed_run_id": "r-20261008T044126072479-mcp-timeout-names-its-cause",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T06:42:00Z",
+  "total": 115
+}
