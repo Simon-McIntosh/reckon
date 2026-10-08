@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="a-follower-outlives-its-monitor">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;}">
   <title>A Follower Row Is Worth A Wake | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-impl" content="0.5">
-<meta name="plan-version" content="42">
+<meta name="plan-impl" content="0.75">
+<meta name="plan-version" content="43">
 <meta name="plan-modified" content="2026-10-08">
 <meta name="plan-commits" content="ed3d6ffc">
 </head>
@@ -126,24 +126,12 @@
   <p class="landed-summary">Named: _fleet_replay's baseline loop on a continue-mode arming draws 397 of the 446 bare rows, because that arming never seeds the pane from its checkpoint; reproduced with a one-variable control. Review 108/120. <a href="/reckon/evidence/archive/a-follower-row-is-worth-a-wake-landed.html#s4-reannounce-path">full record</a></p>
 </section>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-08</span>
     <h2 id="s5">§5 — Replay the measured week through the policy</h2>
-<section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> A measurement that feeds every producer stream under
-      <code>~/.config/reckon/crew/watch/*.events</code> from 2026-10-05 to 2026-10-08 through the merged
-      policy with <code>replay_row_policy</code>, one session at a time, and reports, per session and in total:</p>
-    <ul>
-      <li>the rows today's follower would deliver and the rows the policy delivers;</li>
-      <li>every settled action state the policy held back, which must be none;</li>
-      <li>the longest delay between a transition into an action state and its delivery.</li>
-    </ul>
-    <p>The report is written to the run directory and summarised in the landing record. It reads the
-      streams and writes nothing beside them.</p>
-    <p><strong>Done when</strong> the report shows at least half of today's rows removed, zero held-back
-      action states, and no action row delayed by more than two minutes
-      beyond the <code>NOISE_PAIRS</code> window its opener carries, which is zero for an opener outside those pairs. As a positive control, the same replay with
-      observer context shown, the pane <code>replay_row_policy</code> builds for today's behaviour, reproduces today's
-      row count within 2% once the rows the two resolution rules restore, which the report counts separately, are
-      subtracted.</p>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">Over the week's 35 panes the policy delivers 4,154 rows against 9,038 (54% fewer), holds back no action state, and delays an action row by at most 300 s. Review 97. <a href="/reckon/evidence/archive/a-follower-row-is-worth-a-wake-landed.html#s5-week-replay">full record</a></p>
+</section>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -191,7 +179,10 @@
     <div class="r-comment-body"><p>RowPolicy holds observer-context rows back on the coordinator pane. The in-scope gate is 39 passed EXIT=0; the 55-file population that reaches the ticker or the follower is 874 passed EXIT=0 (base 865); the declared negative control prints three rows against one (EXIT=1).</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261008T152824368842-review-of-replay-the-week-through-the-policy" data-who="reckon-build" data-when="2026-10-08T15:39:39.131Z">
-    <div class="r-comment-body"><p>The review for r-20261008T143744525473-replay-the-week-through-the-policy is stored as a parsed record (scores goal_fidelity 17, evidence 18, scope_discipline 19, durability 12, fit 15, reuse 16; total 97/120), read at base 9dc94bf = head 9dc94bf (report-only node, no repository diff), with added_failure_count null and added_failure_ids [] derived from the reviewed manifest (its baseline_suite and after_suite are &quot;not applicable&quot;: no repository code was modified, so no gate-log pair exists and the count is unmeasured rather than a measured zero); three follow-on findings, all in the report script replay_week.py (positive control subtracts 53 memory-advance rows the done-when does not name at :430; a dead branch naming the absent ticker.NOISE_WINDOW at :225; drive() reaching into RowPolicy._policy._held at :117).</p></div>
+    <div class="r-comment-body"><p>The review for r-20261008T143744525473-replay-the-week-through-the-policy is stored as a parsed record (scores goal_fidelity 17, evidence 18, scope_discipline 19, durability 12, fit 15, reuse 16; total 97/120), read at base 9dc94bf = head 9dc94bf (report-only node, no repository diff), with added_failure_count null and added_failure_ids [] derived from the reviewed manifest (its baseline_suite and after_suite are "not applicable": no repository code was modified, so no gate-log pair exists and the count is unmeasured rather than a measured zero); three follow-on findings, all in the report script replay_week.py (positive control subtracts 53 memory-advance rows the done-when does not name at :430; a dead branch naming the absent ticker.NOISE_WINDOW at :225; drive() reaching into RowPolicy._policy._held at :117).</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-s5-landed" data-who="reckon-build" data-when="2026-10-08T15:42:00Z">
+    <div class="r-comment-body"><p>measure met (54.0% removed, 0 held back, longest delay 300 s of a 420 s allowance, control within 0.3%; review 97/120); section 5 closed. The 300 s blocked-row delay is the stall-flap window's cost and is for the lead to weigh.</p></div>
 </div>
 </section>
 </main>
