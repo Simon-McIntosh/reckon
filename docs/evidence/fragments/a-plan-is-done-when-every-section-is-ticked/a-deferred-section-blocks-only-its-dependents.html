@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:a-plan-is-done-when-every-section-is-ticked">
+  <meta name="plan-verifies" content="reckon:a-plan-is-done-when-every-section-is-ticked#s9">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-08">
+  <meta name="evidence-commit" content="6d72fec58">
+</head>
+<body>
+<main class="plan-doc">
+<section id="a-deferred-section-blocks-only-its-dependents">
+  <h2>A deferred section blocks only its dependents</h2>
+  <p>Roadmap readiness judges a dependency on a whole plan by that plan's sections.
+  <code>_whole_plan_dependency</code> in <code>reckon/roadmap.py</code> is the one entry point.
+  The declared <code>depends_on</code> edge, a gate reference, a soft <code>after</code> edge and
+  the graph closure all call it. It treats a dependency as satisfied in two cases: the target plan
+  is complete, or at least one of its sections is <code>done</code> and none is still
+  <code>implementable</code>. A dependency on one section is satisfied only by a <code>done</code>
+  declaration. Deferred and implementable sections never satisfy it.</p>
+
+  <h3>Held for the orchestrator's judgment</h3>
+  <p>The lead locked <code>uncertain-dependency = judgment-required</code>. Under it, two cases
+  have no fixed rule. Both are held by default, and both are reported so the orchestrator can
+  weigh them rather than have a rule decide:</p>
+  <ul>
+    <li><code>deferred-only</code>: every open section of the target is deferred, and none is
+    done.</li>
+    <li><code>undeclared-heading</code>: the target has an authored section heading that its
+    declaration map does not name.</li>
+  </ul>
+  <p>Every edge path carries a <code>judgment_required</code> block,
+  <code>{required, count, members}</code>, beside <code>schedule_override</code>. Each member
+  names the dependent project and the target project on its own side, so a judgment that crosses
+  projects says which plan is which. <code>skills/reckon-build/SKILL.md</code> names the block, so
+  a coordinator reads it before scheduling.</p>
+
+  <h3>Measures</h3>
+  <table>
+    <tr><th>Check</th><th>Revision</th><th>Result</th></tr>
+    <tr><td><code>tests/test_roadmap_deferred_blocks_only_its_dependents.py</code></td>
+      <td>integrated <code>6d72fec58</code></td><td>9 passed, EXIT=0</td></tr>
+    <tr><td>Store and roadmap importer population, 152 files at base and 154 with both sections
+      stacked</td><td><code>7d13a420a</code> and <code>0114a4957</code></td>
+      <td>4497 passed at base, 4513 with both stacked; 0 added</td></tr>
+    <tr><td>Run reviews at <code>c5c3fbd0e</code>, <code>e4f26bea7</code> and
+      <code>28e81ae6c</code> scored 100, 107 and 98 of 120. A delta review then covered only
+      <code>8bad67bf2</code>, which qualifies each side of a judgment with its own project</td>
+      <td><code>28e81ae6c</code> to <code>8bad67bf2</code></td>
+      <td>113/120, 0 added, no blocking finding</td></tr>
+  </table>
+  <p>The population run added one failing id,
+  <code>test_landing_append_is_commutative.py::test_an_append_meeting_a_landing_write_is_not_lost</code>.
+  Five repeats failed three times on each arm, base included, with the same message. It is a
+  failure already present on main, not one this section caused.</p>
+
+  <h3>Follow-ons accepted at landing</h3>
+  <ul>
+    <li>The block counts its members as <code>count</code>, not <code>deferred</code>. The member
+    count covers every uncertain hold, not only deferred members, so the key names what it
+    counts.</li>
+    <li>The run's own suite arms were not like-for-like: the head log was cut off by a later
+    killed re-run. The coordinator's population run above is the record this landing rests
+    on.</li>
+  </ul>
+</section>
+</main>
+</body>
+</html>
