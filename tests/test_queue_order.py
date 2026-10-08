@@ -94,3 +94,22 @@ def test_queued_run_holds_no_lane_slot() -> None:
     order = queue_order.admission_order(queued, live, now=now)
 
     assert order[0]["run_id"] == "A-0"
+
+
+def test_other_backend_and_terminal_runs_hold_no_local_slot() -> None:
+    now = datetime(2026, 10, 8, tzinfo=UTC)
+    queued = [
+        _queued("A", 0, now - timedelta(seconds=10)),
+        _queued("B", 0, now - timedelta(seconds=20)),
+    ]
+    # B's only live pointers are one run on another backend and one terminal
+    # local run; neither holds a local lane slot, so B ranks ahead of A on its
+    # longer wait.
+    live = [
+        {"session": "B", "backend": "other", "phase": "working"},
+        {"session": "B", "backend": "local", "phase": "complete"},
+    ]
+
+    order = queue_order.admission_order(queued, live, now=now)
+
+    assert order[0]["run_id"] == "B-0"
