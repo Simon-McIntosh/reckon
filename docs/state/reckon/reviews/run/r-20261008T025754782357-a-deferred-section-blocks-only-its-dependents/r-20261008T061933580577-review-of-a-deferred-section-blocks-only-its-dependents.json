@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own two suite gate logs it names under test_logs, roadmap-suite-base.log (4 failed, 1 passed; FAILED ids: test_mcp_views.py::test_raw_and_schema_are_explicit_layers, test_section_edge_summary_and_malformed_mapping.py::{3 ids}) and its head arm recorded in its own manifest and resume-4 stream (4 failed, 388 passed, the same 4 FAILED ids). The set difference of head minus base failing ids is empty, so 0 added. The reviewed run's on-disk roadmap-suite-head.log was overwritten at 08:10 local by a later killed re-run and is now truncated, so the head arm was read from the run's own recorded result rather than the clobbered file; the base arm ran 5 tests rather than the head's 392, but every head failure id appears in the base log, so the subtraction is well defined.",
+  "backend": "local",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/roadmap.py:401",
+    "reckon/roadmap.py:1056",
+    "reckon/roadmap.py:2140",
+    "reckon/roadmap.py:2750"
+  ],
+  "completed_at": "2026-10-08T06:57:09.414Z",
+  "dispatched_at": "2026-10-08T06:20:36Z",
+  "findings": [
+    {
+      "file": "reckon/roadmap.py",
+      "line": "2140",
+      "severity": "blocking",
+      "text": "blocking: the graph-closure judgment member is built by _judgment_member(graph_project, graph_slug, dependency[1], judgment), which qualifies BOTH the dependent and the target with graph_project. When the blocking dependency is in another mounted project - the case resolve_graph_target exists to serve - the target ref names the dependent's project, not the dependency's, so the member names a plan that does not exist. Reproduced: alpha's endpoint depends_on beta:base, beta:base all-deferred -> judgment_required.members[0].target == \"alpha:base\" where the dependency's own ref is \"beta:base\"; the same-project control reports the correct \"proj:G\". _qualified_plan(target_project, dependency[1]) is needed, and _judgment_member's single-project signature cannot express it."
+    },
+    {
+      "file": "reckon/roadmap.py",
+      "line": "2189",
+      "severity": "follow-on",
+      "text": "follow-on: judgment_required carries its count under the key count where the schedule_override block section 9 says it mirrors carries it under deferred, so the two blocks are not the identical shape the plan names; the run declined the rename with a rationale, so this is the coordinator's call, not a defect this review resolves."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read against the prior reviewed head e4f26bea - the graph closure's all() becomes an explicit loop that records a judgment per unsatisfied uncertain dependency, gate and after rows carry a popped judgment member, and one new test drives an after edge.",
+    "done_when": "the gained commit routes one helper _whole_plan_dependency (roadmap.py:745) through all four whole-plan sites - declared depends_on (roadmap.py:2744), gate ref (roadmap.py:394), soft after edge (roadmap.py:1046), graph closure (roadmap.py:2129) - and adds test_an_after_edge_to_an_all_deferred_plan_is_reported; the node's own gate tests/test_roadmap_deferred_blocks_only_its_dependents.py 8 passed EXIT=0 at head, independently re-run by this review.",
+    "goal": "review the one commit r-20261008T025754782357 gained since it was last reviewed (28e81ae6 \"report a judgment a whole-plan dependency reaches by any edge\"), against the prior review's head e4f26bea; section 9 of reckon:a-plan-is-done-when-every-section-is-ticked requires an uncertain whole-plan dependency to be held and reported in judgment_required on every route a dependent can be reached.",
+    "manifest": "read; it records the 8/8 gate, negative controls each EXIT=1, the after-edge control as negative_control_log, and follow-ons naming the SKILL.md write-path gap and two pre-existing suite failures.",
+    "write_paths": "the commit changes reckon/roadmap.py and tests/test_roadmap_deferred_blocks_only_its_dependents.py only, both inside the node's granted paths; skills/reckon-build/SKILL.md was touched by an earlier commit in the range and its grant gap is carried from the prior review."
+  },
+  "justifications": {
+    "durability": "the after-edge guard is falsifiable and shown to fire, but the graph-closure judgment has no test at all - the new call site is unverified, which is where the cross-project target misnaming survives.",
+    "evidence": "this review's independent gate run at head 28e81ae6 is 8 passed EXIT=0, and its independent negative control (after-edge recording dropped) fails exactly the after-edge test, 1 failed 7 passed EXIT=1; but the reviewed run's own after-suite log roadmap-suite-head.log was overwritten by a later killed re-run and is now truncated, and its base arm roadmap-suite-base.log ran only 5 tests, so neither reviewed arm is like-for-like.",
+    "fit": "the helper reuses the module's own vocabulary and one entry point returns verdict and judgment together; no plan label, stage name or ticket id appears in any added symbol or comment.",
+    "goal_fidelity": "three of the four routes reach the judgment correctly, but the graph-closure route (roadmap.py:2140)",
+    "reuse": "_whole_plan_dependency composes _plan_dependency_satisfied and _plan_dependency_judgment rather than re-reading authored state at each site, and _judgment_member is the one member composer, replacing the inline dict that existed before.",
+    "scope_discipline": "the commit writes only reckon/roadmap.py and the node's test file, both granted; the run's recorded node.write_paths still omits skills/reckon-build/SKILL.md, carried from the prior review as a coordinator action."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: review the one commit r-20261008T025754782357 gained since it was last reviewed (28e81ae6 \"report a judgment a whole-plan dependency reaches by any edge\"), against the prior review's head e4f26bea; section 9 of reckon:a-plan-is-done-when-every-section-is-ticked requires an uncertain whole-plan dependency to be held and reported in judgment_required on every route a dependent can be reached.\nVERDICT done_when: the gained commit routes one helper _whole_plan_dependency (roadmap.py:745) through all four whole-plan sites - declared depends_on (roadmap.py:2744), gate ref (roadmap.py:394), soft after edge (roadmap.py:1046), graph closure (roadmap.py:2129) - and adds test_an_after_edge_to_an_all_deferred_plan_is_reported; the node's own gate tests/test_roadmap_deferred_blocks_only_its_dependents.py 8 passed EXIT=0 at head, independently re-run by this review.\nVERDICT write_paths: the commit changes reckon/roadmap.py and tests/test_roadmap_deferred_blocks_only_its_dependents.py only, both inside the node's granted paths; skills/reckon-build/SKILL.md was touched by an earlier commit in the range and its grant gap is carried from the prior review.\nVERDICT manifest: read; it records the 8/8 gate, negative controls each EXIT=1, the after-edge control as negative_control_log, and follow-ons naming the SKILL.md write-path gap and two pre-existing suite failures.\nVERDICT diff: read against the prior reviewed head e4f26bea - the graph closure's all() becomes an explicit loop that records a judgment per unsatisfied uncertain dependency, gate and after rows carry a popped judgment member, and one new test drives an after edge.\nCALL_SITES: reckon/roadmap.py:401, reckon/roadmap.py:1056, reckon/roadmap.py:2140, reckon/roadmap.py:2750\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: three of the four routes reach the judgment correctly, but the graph-closure route (roadmap.py:2140)\n names the target with the dependent's own project, so a cross-project dependency is reported under a ref that names no plan.\nSCORE evidence: 15\nJUSTIFICATION evidence: this review's independent gate run at head 28e81ae6 is 8 passed EXIT=0, and its independent negative control (after-edge recording dropped) fails exactly the after-edge test, 1 failed 7 passed EXIT=1; but the reviewed run's own after-suite log roadmap-suite-head.log was overwritten by a later killed re-run and is now truncated, and its base arm roadmap-suite-base.log ran only 5 tests, so neither reviewed arm is like-for-like.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the commit writes only reckon/roadmap.py and the node's test file, both granted; the run's recorded node.write_paths still omits skills/reckon-build/SKILL.md, carried from the prior review as a coordinator action.\nSCORE durability: 13\nJUSTIFICATION durability: the after-edge guard is falsifiable and shown to fire, but the graph-closure judgment has no test at all - the new call site is unverified, which is where the cross-project target misnaming survives.\nSCORE fit: 18\nJUSTIFICATION fit: the helper reuses the module's own vocabulary and one entry point returns verdict and judgment together; no plan label, stage name or ticket id appears in any added symbol or comment.\nSCORE reuse: 18\nJUSTIFICATION reuse: _whole_plan_dependency composes _plan_dependency_satisfied and _plan_dependency_judgment rather than re-reading authored state at each site, and _judgment_member is the one member composer, replacing the inline dict that existed before.\nFINDING reckon/roadmap.py:2140 blocking: the graph-closure judgment member is built by _judgment_member(graph_project, graph_slug, dependency[1], judgment), which qualifies BOTH the dependent and the target with graph_project. When the blocking dependency is in another mounted project - the case resolve_graph_target exists to serve - the target ref names the dependent's project, not the dependency's, so the member names a plan that does not exist. Reproduced: alpha's endpoint depends_on beta:base, beta:base all-deferred -> judgment_required.members[0].target == \"alpha:base\" where the dependency's own ref is \"beta:base\"; the same-project control reports the correct \"proj:G\". _qualified_plan(target_project, dependency[1]) is needed, and _judgment_member's single-project signature cannot express it.\nFINDING reckon/roadmap.py:2189 follow-on: judgment_required carries its count under the key count where the schedule_override block section 9 says it mirrors carries it under deferred, so the two blocks are not the identical shape the plan names; the run declined the rename with a rationale, so this is the coordinator's call, not a defect this review resolves.\nreviewed_base_sha: e4f26bea7f164d931556b81f690a56e4d8091757\nreviewed_head_sha: 28e81ae6cf55cdf1a613885f2350d4a296f70fff\n",
+  "review_run_id": "r-20261008T061933580577-review-of-a-deferred-section-blocks-only-its-dependents",
+  "reviewed_base_sha": "e4f26bea7f164d931556b81f690a56e4d8091757",
+  "reviewed_head_sha": "28e81ae6cf55cdf1a613885f2350d4a296f70fff",
+  "reviewed_run_id": "r-20261008T025754782357-a-deferred-section-blocks-only-its-dependents",
+  "scores": {
+    "durability": 13,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T06:50:56.726674+00:00",
+  "total": 98
+}
