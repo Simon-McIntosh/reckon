@@ -24,6 +24,13 @@
     <li id="the-pace-reads-the-lift-fact-reserves">The three reserves are zeroed
       by the resolver, so the ceiling a lifted group is measured against is its
       whole window.</li>
+    <li id="the-pace-reads-the-lift-fact-ceilings">A lift in force is read from
+      the resolver's <code>lift_id</code>, not from the presence of a
+      <code>lift</code> key. Resolved flight config declares the lift ceilings
+      under <code>budget.lift</code>, so that key is present on every
+      configuration that states them; the fixture carries the shipped ceilings
+      and asserts a group under no lift, and a group whose lift has ended,
+      reports no lift at all.</li>
   </ul>
   <p id="the-pace-reads-the-lift-releases">
     In <code>pace_hold</code>, the release instant divides by the banked-reset
