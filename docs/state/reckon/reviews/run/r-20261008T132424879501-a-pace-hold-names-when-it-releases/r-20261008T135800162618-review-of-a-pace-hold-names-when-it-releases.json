@@ -1,0 +1,82 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "e759fb41fd9fa8695b78cf7bed1bceb8d686c81f",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/budget.py:1769 group_pace"
+  ],
+  "completed_at": "2026-10-08T14:08:40.244Z",
+  "dispatched_at": "2026-10-08T13:58:21Z",
+  "findings": [
+    {
+      "file": "reckon/budget.py",
+      "line": "2784",
+      "severity": "follow-on",
+      "text": "follow-on: `factor = 2.0 if allowance.get(\"reset_available\") else 1.0` re-derives the credit-to-factor mapping that budget._scale_for_banked_reset owns internally as `factor = 1.0 + credit`; a future grant of a partial credit would silently desync the named release instant from the burn the hold compares."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T132424879501-a-pace-hold-names-when-it-releases/logs/gate-head-3.log",
+      "line": "3",
+      "severity": "follow-on",
+      "text": "follow-on: the head arm's recorded command names tests/test_pace_dispatch_pace.py, which does not exist, instead of the actual tests/test_picker_dispatch_pace.py, so a reader cannot replay the recorded command and the log is not self-consistent with the manifest's tests field."
+    },
+    {
+      "file": "tests/test_pace_hold_releases_at.py",
+      "line": "150",
+      "severity": "follow-on",
+      "text": "follow-on: the tests exercise only the held path with a placeable window; the releases_at None return at reckon/budget.py:2708 for a window or reset that cannot be read is never asserted, so the docstring's promised absence is unguarded."
+    },
+    {
+      "file": "tests/test_picker_dispatch_pace.py",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: test_dispatch_marks_old_published_window_stale is wall-clock flaky (logs/gate-head.log EXIT=1, 1 failed; test asserts budget_age_s == 7200 +/- 1 and observed 7201.59), a pre-existing flake outside this node's change, which passed at both base and the committed head."
+    }
+  ],
+  "head_log_revision": "7727e23ae1e7e75ce5f8b176d858e6350f0f8095",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against base e759fb41f; fd1c0c605 adds _pace_releases_at and the reason change, 7727e23ae adds the pinned arithmetic tests, and nothing falls outside the declared scope.",
+    "done_when": "the done_when names tests/test_pace_hold_releases_at.py and a base/head gate with zero added failures; the manifest records both logs and the negative control against them, but the head log's own command line names a test file that does not exist.",
+    "goal": "the node goal is that budget.pace_hold returns releases_at and the held reason prints it; reckon/budget.py:2685 _pace_releases_at derives the instant and budget.py:2805 prints it in the hold reason, though the window reset is retained as trailing context rather than dropped as the goal says.",
+    "manifest": "read; status complete; its baseline_suite (86 passed, EXIT=0) and after_suite (92 passed, EXIT=0) reconcile with logs/gate-base.log and logs/gate-head-3.log, and its negative_control_log records EXIT=1 with 4 failing test ids the head arm does not fail.",
+    "write_paths": "read the manifest's four declared paths against the diff of e759fb41f..7727e23ae; the three changed paths are all inside them, and the figures directory was left unused."
+  },
+  "justifications": {
+    "durability": "tests/test_pace_hold_releases_at.py fails under the declared mutation (logs/negative-control.log:4 failed, EXIT=1) and each assertion derives its expectation from the fixture rather than the value under test, but the releases_at None branch of budget.py:2708 for an unplaceable window is untested.",
+    "evidence": "the gate at reckon/budget.py is recorded in the manifest and both arms are green with a red negative control, but logs/gate-head-3.log:3 records the command as tests/test_pace_dispatch_pace.py, a file that does not exist, so the head log cannot be replayed verbatim and the base log records no command at all.",
+    "fit": "_pace_releases_at at reckon/budget.py:2685 follows the module's private-helper idiom and reuses _parse_stamp and _iso, and no added name carries a plan, sprint or ticket label.",
+    "goal_fidelity": "reckon/budget.py:2805 prints releases_at as the hold's own release instant so a ten-hour hold reads as ten hours, but it keeps the window reset as trailing context, a shortfall against the goal's \"in place of the window reset\" forced by the out-of-scope assertion at tests/test_budget_window_length.py:289.",
+    "reuse": "no owner of a burn-release instant exists in reckon/budget.py, so the helper is the first, but budget.py:2784 re-derives the credit-to-factor mapping that budget._scale_for_banked_reset at budget.py:2000 owns.",
+    "scope_discipline": "the diff of e759fb41f..7727e23ae touches only reckon/budget.py, tests/test_pace_hold_releases_at.py and the evidence fragment, all inside the four declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that budget.pace_hold returns releases_at and the held reason prints it; reckon/budget.py:2685 _pace_releases_at derives the instant and budget.py:2805 prints it in the hold reason, though the window reset is retained as trailing context rather than dropped as the goal says.\nVERDICT done_when: the done_when names tests/test_pace_hold_releases_at.py and a base/head gate with zero added failures; the manifest records both logs and the negative control against them, but the head log's own command line names a test file that does not exist.\nVERDICT write_paths: read the manifest's four declared paths against the diff of e759fb41f..7727e23ae; the three changed paths are all inside them, and the figures directory was left unused.\nVERDICT manifest: read; status complete; its baseline_suite (86 passed, EXIT=0) and after_suite (92 passed, EXIT=0) reconcile with logs/gate-base.log and logs/gate-head-3.log, and its negative_control_log records EXIT=1 with 4 failing test ids the head arm does not fail.\nVERDICT diff: read commit by commit against base e759fb41f; fd1c0c605 adds _pace_releases_at and the reason change, 7727e23ae adds the pinned arithmetic tests, and nothing falls outside the declared scope.\nCALL_SITES: reckon/budget.py:1769 group_pace\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/budget.py:2805 prints releases_at as the hold's own release instant so a ten-hour hold reads as ten hours, but it keeps the window reset as trailing context, a shortfall against the goal's \"in place of the window reset\" forced by the out-of-scope assertion at tests/test_budget_window_length.py:289.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate at reckon/budget.py is recorded in the manifest and both arms are green with a red negative control, but logs/gate-head-3.log:3 records the command as tests/test_pace_dispatch_pace.py, a file that does not exist, so the head log cannot be replayed verbatim and the base log records no command at all.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff of e759fb41f..7727e23ae touches only reckon/budget.py, tests/test_pace_hold_releases_at.py and the evidence fragment, all inside the four declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_pace_hold_releases_at.py fails under the declared mutation (logs/negative-control.log:4 failed, EXIT=1) and each assertion derives its expectation from the fixture rather than the value under test, but the releases_at None branch of budget.py:2708 for an unplaceable window is untested.\nSCORE fit: 19\nJUSTIFICATION fit: _pace_releases_at at reckon/budget.py:2685 follows the module's private-helper idiom and reuses _parse_stamp and _iso, and no added name carries a plan, sprint or ticket label.\nSCORE reuse: 18\nJUSTIFICATION reuse: no owner of a burn-release instant exists in reckon/budget.py, so the helper is the first, but budget.py:2784 re-derives the credit-to-factor mapping that budget._scale_for_banked_reset at budget.py:2000 owns.\nFINDING reckon/budget.py:2784 follow-on: `factor = 2.0 if allowance.get(\"reset_available\") else 1.0` re-derives the credit-to-factor mapping that budget._scale_for_banked_reset owns internally as `factor = 1.0 + credit`; a future grant of a partial credit would silently desync the named release instant from the burn the hold compares.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T132424879501-a-pace-hold-names-when-it-releases/logs/gate-head-3.log:3 follow-on: the head arm's recorded command names tests/test_pace_dispatch_pace.py, which does not exist, instead of the actual tests/test_picker_dispatch_pace.py, so a reader cannot replay the recorded command and the log is not self-consistent with the manifest's tests field.\nFINDING tests/test_pace_hold_releases_at.py:150 follow-on: the tests exercise only the held path with a placeable window; the releases_at None return at reckon/budget.py:2708 for a window or reset that cannot be read is never asserted, so the docstring's promised absence is unguarded.\nFINDING tests/test_picker_dispatch_pace.py:1 follow-on: test_dispatch_marks_old_published_window_stale is wall-clock flaky (logs/gate-head.log EXIT=1, 1 failed; test asserts budget_age_s == 7200 +/- 1 and observed 7201.59), a pre-existing flake outside this node's change, which passed at both base and the committed head.",
+  "review_run_id": "r-20261008T135800162618-review-of-a-pace-hold-names-when-it-releases",
+  "reviewed_base_sha": "e759fb41fd9fa8695b78cf7bed1bceb8d686c81f",
+  "reviewed_head_sha": "7727e23ae1e7e75ce5f8b176d858e6350f0f8095",
+  "reviewed_run_id": "r-20261008T132424879501-a-pace-hold-names-when-it-releases",
+  "reviewer": {
+    "backend": "clive",
+    "effort": null,
+    "model": "deepseek-v4.1-flash",
+    "run_id": "r-20261008T135800162618-review-of-a-pace-hold-names-when-it-releases"
+  },
+  "reviewer_run_id": "r-20261008T135800162618-review-of-a-pace-hold-names-when-it-releases",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T14:06:58.545842+00:00",
+  "total": 108
+}
