@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-08T04:15:23.956Z",
+  "dispatched_at": "2026-10-08T03:52:49Z",
+  "findings": [
+    {
+      "file": "report.md",
+      "line": "38",
+      "severity": "follow-on",
+      "text": "follow-on: the discovery call 2 and warm wall times are written as 30.054 s and 30.046 s, the roadmap rows copied across, while the raw records give 28.92 s and 20.647 s (results/read-plan-discovery-default.json) and the report's own prose says 20.65 s (report.md:61,114); the claim's key row is misstated and its answered verdict carries a wall beyond the 30 s deadline it answered inside."
+    },
+    {
+      "file": "report.md",
+      "line": "52",
+      "severity": "follow-on",
+      "text": "follow-on: logs/summary-table.md, cited as the rendered table, omits the read-plan-discovery-default, fixture-control-repeat and fixture-missing-plan runs the report leans on, so the rendered table is not a rendering of the results directory."
+    },
+    {
+      "file": "report.md",
+      "line": "136",
+      "severity": "follow-on",
+      "text": "follow-on: the done_when's positive-control clause (a three-plan fixture answers in under a second) is unmet on this node at 2.03 s, reproduced at 2.046 s and 2.039 s at load 13.8, and the node localised it to a fixed ~2 s success-path wait rather than retuning the bound; the clause is a repair candidate for the read path, not a defect this node could repair."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read against base ad0b0b611; the run made no repository change and the worktree is clean, so the diff is empty and the deliverable is the out-of-tree report directory named in changed_paths.",
+    "done_when": "the done_when asks for cold and warm wall and CPU for all three reads, the functions dominating the slowest, the deadline verdict, and a sub-second three-plan positive control; report.md gives the first three (lines 29-66) and records the control failing its bound (report.md:129-152).",
+    "goal": "the node goal is to measure cold and warm wall and CPU seconds for read_plan, roadmap and crew as a reckon MCP server answers them on the fleet node; report.md:29-49 gives all three reads at cold/call 2/warm with their per-call load on node 98dci4-clu-2002.",
+    "manifest": "read; it reports status complete with the gate command and its result, the top cumulative functions, the claim comparison and the unmet control; its commits field records that no repository work landed.",
+    "write_paths": "the node's one declared write path is its report directory; report.md, drive_mcp_read.py, profile_mcp_server.py, build_fixture.py, results/ and logs/ all sit inside it, and git status in the worktree is empty."
+  },
+  "justifications": {
+    "durability": "no repository file changed so there is no regression to guard; the node ships a reproducible driver (report.md:199-210) and raw records under results/, the only durable evidence a measurement can carry.",
+    "evidence": "the gate ran drive_mcp_read.py and its per-call figures are recorded in results/*.json, but report.md:38-39 misstates two wall times and logs/summary-table.md omits three runs the report relies on.",
+    "fit": "the report follows the plan's documentation idiom and the scripts are named by mechanism (drive_mcp_read.py, build_fixture.py), touching no repository source and introducing no forbidden name.",
+    "goal_fidelity": "report.md:31-49 gives cold, call 2 and warm wall and CPU seconds for read_plan summary, roadmap summary, crew live and read_plan discovery, each with its per-call 1-minute load.",
+    "reuse": "the run added no repository definition; its harness scripts live outside every checkout (manifest changed_paths) and fork no capability the repository owns.",
+    "scope_discipline": "every artifact the manifest lists lies inside the declared report directory and the tree at /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-quiet-mcp/reckon-mcp-read-time-profile is unmodified."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to measure cold and warm wall and CPU seconds for read_plan, roadmap and crew as a reckon MCP server answers them on the fleet node; report.md:29-49 gives all three reads at cold/call 2/warm with their per-call load on node 98dci4-clu-2002.\nVERDICT done_when: the done_when asks for cold and warm wall and CPU for all three reads, the functions dominating the slowest, the deadline verdict, and a sub-second three-plan positive control; report.md gives the first three (lines 29-66) and records the control failing its bound (report.md:129-152).\nVERDICT write_paths: the node's one declared write path is its report directory; report.md, drive_mcp_read.py, profile_mcp_server.py, build_fixture.py, results/ and logs/ all sit inside it, and git status in the worktree is empty.\nVERDICT manifest: read; it reports status complete with the gate command and its result, the top cumulative functions, the claim comparison and the unmet control; its commits field records that no repository work landed.\nVERDICT diff: read against base ad0b0b611; the run made no repository change and the worktree is clean, so the diff is empty and the deliverable is the out-of-tree report directory named in changed_paths.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: report.md:31-49 gives cold, call 2 and warm wall and CPU seconds for read_plan summary, roadmap summary, crew live and read_plan discovery, each with its per-call 1-minute load.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate ran drive_mcp_read.py and its per-call figures are recorded in results/*.json, but report.md:38-39 misstates two wall times and logs/summary-table.md omits three runs the report relies on.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every artifact the manifest lists lies inside the declared report directory and the tree at /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-quiet-mcp/reckon-mcp-read-time-profile is unmodified.\nSCORE durability: 16\nJUSTIFICATION durability: no repository file changed so there is no regression to guard; the node ships a reproducible driver (report.md:199-210) and raw records under results/, the only durable evidence a measurement can carry.\nSCORE fit: 19\nJUSTIFICATION fit: the report follows the plan's documentation idiom and the scripts are named by mechanism (drive_mcp_read.py, build_fixture.py), touching no repository source and introducing no forbidden name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the run added no repository definition; its harness scripts live outside every checkout (manifest changed_paths) and fork no capability the repository owns.\nFINDING report.md:38 follow-on: the discovery call 2 and warm wall times are written as 30.054 s and 30.046 s, the roadmap rows copied across, while the raw records give 28.92 s and 20.647 s (results/read-plan-discovery-default.json) and the report's own prose says 20.65 s (report.md:61,114); the claim's key row is misstated and its answered verdict carries a wall beyond the 30 s deadline it answered inside.\nFINDING report.md:52 follow-on: logs/summary-table.md, cited as the rendered table, omits the read-plan-discovery-default, fixture-control-repeat and fixture-missing-plan runs the report leans on, so the rendered table is not a rendering of the results directory.\nFINDING report.md:136 follow-on: the done_when's positive-control clause (a three-plan fixture answers in under a second) is unmet on this node at 2.03 s, reproduced at 2.046 s and 2.039 s at load 13.8, and the node localised it to a fixed ~2 s success-path wait rather than retuning the bound; the clause is a repair candidate for the read path, not a defect this node could repair.\n",
+  "review_run_id": "r-20261008T035135484733-review-of-reckon-mcp-read-time-profile",
+  "reviewed_base_sha": "ad0b0b611dc0bcfb90c8e60c123b2ef792c65854",
+  "reviewed_head_sha": "ad0b0b611dc0bcfb90c8e60c123b2ef792c65854",
+  "reviewed_run_id": "r-20261008T015927466111-reckon-mcp-read-time-profile",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T04:10:56.215532+00:00",
+  "total": 108
+}
