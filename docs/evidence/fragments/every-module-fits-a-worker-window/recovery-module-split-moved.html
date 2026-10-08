@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-module-fits-a-worker-window">
+  <meta name="plan-title" content="Recovery module split">
+  <meta name="plan-evidence-for" content="reckon:every-module-fits-a-worker-window">
+  <meta name="plan-verifies" content="reckon:every-module-fits-a-worker-window#s5">
+  <meta name="plan-recorded-at" content="2026-10-08">
+  <meta name="plan-verdict" content="passed">
+  <title>Recovery module split — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="recovery-module-split-moved-landing" data-node="recovery-module-split-moved" data-reckon="landed" data-when="2026-10-08">
+  <h2 id="recovery-module-split-moved-title">Recovery module split</h2>
+  <table id="recovery-module-split-moved-measures">
+    <tbody>
+      <tr><th scope="row">Pure move</th><td>353/353 statements; zero altered, lost or duplicated; EXIT=0</td></tr>
+      <tr><th scope="row">Largest resulting module</th><td><code>recovery_watch.py</code>: 31,356 estimated tokens; original import surface: 6,231</td></tr>
+      <tr><th scope="row">Map departures</th><td>Thirteen unchanged constants, including the two built from <code>RECOVERY_VERBS</code>, moved to <code>recovery_vocabulary.py</code>. <code>process_alive</code> moved unchanged to <code>recovery_liveness.py</code>. The original re-exports these names; no produced module imports the original.</td></tr>
+      <tr><th scope="row">Process lookup patches</th><td>Each affected test patches <code>recovery_liveness</code> and <code>recovery_repair_dispatch</code>, the modules whose code reads <code>process_alive</code>.</td></tr>
+      <tr><th scope="row">Source lint</th><td>9 findings across the resulting modules, down from 11 in base <code>recovery.py</code>; all changed Python paths: 29 versus 33 at base.</td></tr>
+      <tr><th scope="row">Module-size guard</th><td>4 passed; EXIT=0. Declared size mutation: 1 failed, 3 passed; EXIT=1 at 60,518 estimated tokens.</td></tr>
+      <tr><th scope="row">Import and CLI</th><td>Import resolves to this worktree; <code>reckon crew --help</code> exits 0.</td></tr>
+      <tr><th scope="row">Mapped census</th><td>711 passed, 2 failed in the completed final-head run. Both failure IDs and their assertions match the coordinator's base run; zero added failures.</td></tr>
+    </tbody>
+  </table>
+</article>
+</body>
+</html>

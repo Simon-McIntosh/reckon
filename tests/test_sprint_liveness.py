@@ -20,7 +20,13 @@ from pathlib import Path
 import pytest
 
 from reckon import sprint_liveness as sl
-from reckon.crew import recovery, runs
+from reckon.crew import (
+    recovery,
+    recovery_review_acceptance,
+    recovery_review_dispatch,
+    recovery_watch,
+    runs,
+)
 from reckon.crew.runs import list_live
 from reckon.project_state import create_project_state, write_resource
 from reckon.resources import read_sprint_record
@@ -323,8 +329,8 @@ def test_recorded_stream_state_wins_over_pointer_files(
     def no_reclassification(*_args, **_kwargs):
         pytest.fail("recorded state should not re-classify a pointer")
 
-    monkeypatch.setattr(recovery, "_watch_snapshot", no_reclassification)
-    monkeypatch.setattr(recovery, "classify_pointer", no_reclassification)
+    monkeypatch.setattr(recovery_watch, "_watch_snapshot", no_reclassification)
+    (monkeypatch.setattr(recovery_review_dispatch, "classify_pointer", no_reclassification), monkeypatch.setattr(recovery_review_acceptance, "classify_pointer", no_reclassification), monkeypatch.setattr(recovery_watch, "classify_pointer", no_reclassification))
 
     result = sl.sprint_liveness(PROJECT, docs, [pointer])
 
@@ -353,8 +359,8 @@ def test_unrecorded_pointer_uses_bounded_fallback(
     def no_reclassification(*_args, **_kwargs):
         pytest.fail("fallback should not re-classify a pointer")
 
-    monkeypatch.setattr(recovery, "_watch_snapshot", no_reclassification)
-    monkeypatch.setattr(recovery, "classify_pointer", no_reclassification)
+    monkeypatch.setattr(recovery_watch, "_watch_snapshot", no_reclassification)
+    (monkeypatch.setattr(recovery_review_dispatch, "classify_pointer", no_reclassification), monkeypatch.setattr(recovery_review_acceptance, "classify_pointer", no_reclassification), monkeypatch.setattr(recovery_watch, "classify_pointer", no_reclassification))
 
     result = sl.sprint_liveness(PROJECT, docs, [pointer])
 

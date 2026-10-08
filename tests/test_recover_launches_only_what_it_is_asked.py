@@ -8,7 +8,16 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli
-from reckon.crew import recovery
+from reckon.crew import (
+    recovery,
+    recovery_classification,
+    recovery_repair_dispatch,
+    recovery_review_acceptance,
+    recovery_review_delivery,
+    recovery_review_dispatch,
+    recovery_review_subject,
+    recovery_watch,
+)
 
 
 @pytest.fixture
@@ -18,18 +27,26 @@ def scoring_runs(tmp_path, monkeypatch):
         {"run_id": "r-named", "project": "named", "session": "active"},
         {"run_id": "r-foreign", "project": "foreign", "session": "active"},
     ]
-    monkeypatch.setattr(recovery, "list_live", lambda: pointers)
+    (monkeypatch.setattr(recovery_review_delivery, "list_live", lambda: pointers), monkeypatch.setattr(recovery_review_dispatch, "list_live", lambda: pointers), monkeypatch.setattr(recovery_repair_dispatch, "list_live", lambda: pointers), monkeypatch.setattr(recovery_review_acceptance, "list_live", lambda: pointers), monkeypatch.setattr(recovery_watch, "list_live", lambda: pointers))
     monkeypatch.setattr(
         importlib.import_module("reckon.crew.dispatch"),
         "observe",
         lambda run_id, config=None: next(p for p in pointers if p["run_id"] == run_id),
     )
-    monkeypatch.setattr(recovery, "_derive_missing_manifest", lambda p, config=None: p)
-    monkeypatch.setattr(
-        recovery,
+    monkeypatch.setattr(recovery_watch, "_derive_missing_manifest", lambda p, config=None: p)
+    (monkeypatch.setattr(
+        recovery_review_dispatch,
         "classify_pointer",
         lambda p: {"run_id": p["run_id"], "classification": "scoring"},
-    )
+    ), monkeypatch.setattr(
+        recovery_review_acceptance,
+        "classify_pointer",
+        lambda p: {"run_id": p["run_id"], "classification": "scoring"},
+    ), monkeypatch.setattr(
+        recovery_watch,
+        "classify_pointer",
+        lambda p: {"run_id": p["run_id"], "classification": "scoring"},
+    ))
     launches = []
 
     def launch(record, **_kwargs):
@@ -41,7 +58,7 @@ def scoring_runs(tmp_path, monkeypatch):
             "review_run_id": "review",
         }
 
-    monkeypatch.setattr(recovery, "dispatch_review_for_run", launch)
+    (monkeypatch.setattr(recovery_review_acceptance, "dispatch_review_for_run", launch), monkeypatch.setattr(recovery_watch, "dispatch_review_for_run", launch))
     monkeypatch.setattr(
         recovery.runs,
         "follower_state",
@@ -118,18 +135,22 @@ def test_sweep_review_lane_uses_local_unless_node_declares_one(
         "node": {"lane_declaration": {"backend": declared}} if declared else {},
     }
     config = {"local_backend": "local", "backends": {"local": {}, "codex": {}}}
-    monkeypatch.setattr(
-        recovery, "classify_pointer", lambda _: {"classification": "scoring"}
-    )
-    monkeypatch.setattr(recovery, "_stored_review", lambda _: (None, ""))
-    monkeypatch.setattr(recovery, "_review_in_flight", lambda _: "")
-    monkeypatch.setattr(recovery, "carry_review_forward", lambda *_a, **_k: None)
-    monkeypatch.setattr(recovery, "_worktree_reclaimed", lambda _: False)
-    monkeypatch.setattr(recovery, "_failed_review_backend", lambda _: "")
-    monkeypatch.setattr(recovery, "_record_review_dispatch", lambda *_a, **_k: None)
-    monkeypatch.setattr(recovery, "_resolved_review_config", lambda *_a: config)
-    monkeypatch.setattr(
-        recovery,
+    (monkeypatch.setattr(
+        recovery_review_dispatch, "classify_pointer", lambda _: {"classification": "scoring"}
+    ), monkeypatch.setattr(
+        recovery_review_acceptance, "classify_pointer", lambda _: {"classification": "scoring"}
+    ), monkeypatch.setattr(
+        recovery_watch, "classify_pointer", lambda _: {"classification": "scoring"}
+    ))
+    (monkeypatch.setattr(recovery_review_dispatch, "_stored_review", lambda _: (None, "")), monkeypatch.setattr(recovery_repair_dispatch, "_stored_review", lambda _: (None, "")), monkeypatch.setattr(recovery_classification, "_stored_review", lambda _: (None, "")))
+    monkeypatch.setattr(recovery_review_dispatch, "_review_in_flight", lambda _: "")
+    monkeypatch.setattr(recovery_review_dispatch, "carry_review_forward", lambda *_a, **_k: None)
+    (monkeypatch.setattr(recovery_review_subject, "_worktree_reclaimed", lambda _: False), monkeypatch.setattr(recovery_review_dispatch, "_worktree_reclaimed", lambda _: False))
+    (monkeypatch.setattr(recovery_review_subject, "_failed_review_backend", lambda _: ""), monkeypatch.setattr(recovery_review_dispatch, "_failed_review_backend", lambda _: ""))
+    (monkeypatch.setattr(recovery_review_dispatch, "_record_review_dispatch", lambda *_a, **_k: None), monkeypatch.setattr(recovery_review_acceptance, "_record_review_dispatch", lambda *_a, **_k: None))
+    (monkeypatch.setattr(recovery_review_subject, "_resolved_review_config", lambda *_a: config), monkeypatch.setattr(recovery_review_dispatch, "_resolved_review_config", lambda *_a: config), monkeypatch.setattr(recovery_repair_dispatch, "_resolved_review_config", lambda *_a: config), monkeypatch.setattr(recovery_watch, "_resolved_review_config", lambda *_a: config))
+    (monkeypatch.setattr(
+        recovery_review_subject,
         "_review_dispatch_fields",
         lambda *_a, **_k: {
             "run_id": "r-source",
@@ -145,7 +166,41 @@ def test_sweep_review_lane_uses_local_unless_node_declares_one(
             "time_budget": "20m",
             "session": "active",
         },
-    )
+    ), monkeypatch.setattr(
+        recovery_review_dispatch,
+        "_review_dispatch_fields",
+        lambda *_a, **_k: {
+            "run_id": "r-source",
+            "project": "named",
+            "repo": "/unused/repository",
+            "head": "abc123",
+            "node_id": "review-of-source",
+            "goal": "review source",
+            "done_when": "review is stored",
+            "plan": "sample",
+            "section": "review",
+            "write_paths": ["review.json"],
+            "time_budget": "20m",
+            "session": "active",
+        },
+    ), monkeypatch.setattr(
+        recovery_repair_dispatch,
+        "_review_dispatch_fields",
+        lambda *_a, **_k: {
+            "run_id": "r-source",
+            "project": "named",
+            "repo": "/unused/repository",
+            "head": "abc123",
+            "node_id": "review-of-source",
+            "goal": "review source",
+            "done_when": "review is stored",
+            "plan": "sample",
+            "section": "review",
+            "write_paths": ["review.json"],
+            "time_budget": "20m",
+            "session": "active",
+        },
+    ))
     monkeypatch.setattr(
         importlib.import_module("reckon.flight"),
         "select_local_backend",

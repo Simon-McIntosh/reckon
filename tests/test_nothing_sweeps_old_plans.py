@@ -19,7 +19,15 @@ from pathlib import Path
 from click.testing import CliRunner
 
 from reckon import cli, review_tiers
-from reckon.crew import plan_review, recovery
+from reckon.crew import (
+    plan_review,
+    recovery,
+    recovery_repair_dispatch,
+    recovery_review_acceptance,
+    recovery_review_delivery,
+    recovery_review_dispatch,
+    recovery_watch,
+)
 from tests.test_review_plan_command import CONFIG
 from tests.test_review_plan_command import project as project  # noqa: PLC0414
 
@@ -48,15 +56,15 @@ def _record_calls(monkeypatch) -> list:
             "review_run_id": "review-of-" + str(record.get("run_id") or ""),
         }
 
-    monkeypatch.setattr(recovery, "dispatch_review_for_run", record)
-    monkeypatch.setattr(recovery, "dispatch_repair_for_run", lambda *a, **k: {})
+    (monkeypatch.setattr(recovery_review_acceptance, "dispatch_review_for_run", record), monkeypatch.setattr(recovery_watch, "dispatch_review_for_run", record))
+    monkeypatch.setattr(recovery_review_acceptance, "dispatch_repair_for_run", lambda *a, **k: {})
     return calls
 
 
 def test_a_follower_pass_composes_no_plan_review(project, monkeypatch):
     _, _, path = project
     _backdate(path)
-    monkeypatch.setattr(recovery, "list_live", lambda **kwargs: [])
+    (monkeypatch.setattr(recovery_review_delivery, "list_live", lambda **kwargs: []), monkeypatch.setattr(recovery_review_dispatch, "list_live", lambda **kwargs: []), monkeypatch.setattr(recovery_repair_dispatch, "list_live", lambda **kwargs: []), monkeypatch.setattr(recovery_review_acceptance, "list_live", lambda **kwargs: []), monkeypatch.setattr(recovery_watch, "list_live", lambda **kwargs: []))
     calls = _record_calls(monkeypatch)
     before = _report_listing()
 
@@ -77,14 +85,22 @@ def test_a_finished_run_still_gets_its_review_in_the_same_pass(project, monkeypa
         "node": {"id": "r-awaiting-review", "plan": "fixture", "section": "delivery"},
         "phase": "complete",
     }
-    monkeypatch.setattr(recovery, "list_live", lambda **kwargs: [pointer])
-    monkeypatch.setattr(
-        recovery,
+    (monkeypatch.setattr(recovery_review_delivery, "list_live", lambda **kwargs: [pointer]), monkeypatch.setattr(recovery_review_dispatch, "list_live", lambda **kwargs: [pointer]), monkeypatch.setattr(recovery_repair_dispatch, "list_live", lambda **kwargs: [pointer]), monkeypatch.setattr(recovery_review_acceptance, "list_live", lambda **kwargs: [pointer]), monkeypatch.setattr(recovery_watch, "list_live", lambda **kwargs: [pointer]))
+    (monkeypatch.setattr(
+        recovery_review_dispatch,
         "classify_pointer",
         lambda record, **kwargs: {"classification": "scoring", "manifest_commits": []},
-    )
+    ), monkeypatch.setattr(
+        recovery_review_acceptance,
+        "classify_pointer",
+        lambda record, **kwargs: {"classification": "scoring", "manifest_commits": []},
+    ), monkeypatch.setattr(
+        recovery_watch,
+        "classify_pointer",
+        lambda record, **kwargs: {"classification": "scoring", "manifest_commits": []},
+    ))
     monkeypatch.setattr(
-        recovery, "_sweep_review_tier", lambda record, commits: review_tiers.FULL
+        recovery_review_acceptance, "_sweep_review_tier", lambda record, commits: review_tiers.FULL
     )
     calls = _record_calls(monkeypatch)
 

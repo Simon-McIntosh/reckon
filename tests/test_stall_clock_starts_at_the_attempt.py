@@ -27,7 +27,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import recovery, runs
+from reckon.crew import recovery, recovery_liveness, recovery_watch, runs
 from tests import test_a_live_run_never_reads_dead as liveness
 
 # The declared mutation, verbatim: the string the promotion audit matches
@@ -55,7 +55,7 @@ def isolated_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     if os.environ.get(MUTATION_ENV) == "1":
         # The declared mutation: the attempt start is dropped, so quiet time
         # reads the stream alone exactly as it did before this change.
-        monkeypatch.setattr(recovery, "_attempt_started_seconds", lambda record: None)
+        (monkeypatch.setattr(recovery_liveness, "_attempt_started_seconds", lambda record: None), monkeypatch.setattr(recovery_watch, "_attempt_started_seconds", lambda record: None))
 
 
 def _stub_pointer(

@@ -168,7 +168,7 @@ VERDICT done_when: the done_when names tests/test_review_scoring.py; the manifes
 VERDICT write_paths: read the manifest's declared paths; every path in the diff is inside them.
 VERDICT manifest: read; it states tests/test_review_scoring.py passed and names its log.
 VERDICT diff: read commit by commit against the base; three files changed, all inside the declared scope.
-CALL_SITES: reckon/crew/promotion_checks.py:_require_review_waiver, reckon/crew/recovery.py:_review_is_complete
+CALL_SITES: reckon/crew/promotion_checks.py:_require_review_waiver, reckon/crew/recovery_review_subject.py:_review_is_complete
 SCORE goal_fidelity: 18
 JUSTIFICATION goal_fidelity: reckon/crew/review.py:41 stores the review under the configuration directory, outside any run directory and any worktree.
 SCORE evidence: 15

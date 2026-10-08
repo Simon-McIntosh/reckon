@@ -6,7 +6,13 @@ from pathlib import Path
 import pytest
 
 from reckon import mcp_views
-from reckon.crew import recovery, runs
+from reckon.crew import (
+    recovery,
+    recovery_review_acceptance,
+    recovery_review_dispatch,
+    recovery_watch,
+    runs,
+)
 
 PROJECT = "recorded-runs-sample"
 
@@ -50,7 +56,7 @@ def test_recorded_classification_is_used_without_observing_logs(
     def no_observation(*_args, **_kwargs):
         pytest.fail("a recorded run must not be observed again")
 
-    monkeypatch.setattr(recovery, "classify_pointer", no_observation)
+    (monkeypatch.setattr(recovery_review_dispatch, "classify_pointer", no_observation), monkeypatch.setattr(recovery_review_acceptance, "classify_pointer", no_observation), monkeypatch.setattr(recovery_watch, "classify_pointer", no_observation), monkeypatch.setattr(recovery, "classify_pointer", no_observation))
 
     in_flight, interrupted = mcp_views.partition_live_runs(PROJECT, [pointer])
 
@@ -95,7 +101,7 @@ def test_only_unrecorded_runs_use_the_live_fallback(
             "next_action": "redispatch",
         }
 
-    monkeypatch.setattr(recovery, "classify_pointer", classify)
+    (monkeypatch.setattr(recovery_review_dispatch, "classify_pointer", classify), monkeypatch.setattr(recovery_review_acceptance, "classify_pointer", classify), monkeypatch.setattr(recovery_watch, "classify_pointer", classify), monkeypatch.setattr(recovery, "classify_pointer", classify))
 
     in_flight, interrupted = mcp_views.partition_live_runs(
         PROJECT, [recorded, unrecorded]

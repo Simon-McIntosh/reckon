@@ -15,7 +15,8 @@ from pathlib import Path
 ROOT = Path(__file__).parents[1]
 
 PROTOCOL = ROOT / "skills" / "reckon-build" / "references" / "worker-protocol.md"
-RECOVERY = ROOT / "reckon" / "crew" / "recovery.py"
+RECOVERY = ROOT / "reckon" / "crew" / "recovery_liveness.py"
+VOCABULARY = ROOT / "reckon" / "crew" / "recovery_vocabulary.py"
 
 # The fields a declared external wait must name, plus the one the parser treats
 # as optional. These are the strings `_manifest_wait` in recovery.py actually
@@ -41,7 +42,7 @@ def test_worker_protocol_documents_the_declared_external_wait() -> None:
     # The status value that turns a manifest into a declared wait is documented
     # in the reference and is the exact value the classifier requires.
     assert "status: waiting | complete | blocked | failed" in protocol
-    assert 'WAITING_STATUS = "waiting"' in recovery
+    assert 'WAITING_STATUS = "waiting"' in VOCABULARY.read_text()
 
     # Every field the parser reads is documented, and every documented field is
     # the string the parser looks up — asserted in both directions so a rename

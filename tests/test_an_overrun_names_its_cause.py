@@ -9,7 +9,14 @@ from pathlib import Path
 import yaml
 
 from reckon import ledger
-from reckon.crew import recovery
+from reckon.crew import (
+    recovery,
+    recovery_classification,
+    recovery_liveness,
+    recovery_review_delivery,
+    recovery_stream,
+    recovery_watch,
+)
 from reckon.crew.query import project_live_rows
 
 
@@ -34,7 +41,7 @@ def _run(*, tokens: int = 41_434, rate: float | None = 11.53) -> dict:
 
 def _cause(record: dict, monkeypatch, *, reference: float | None = 49.0) -> dict:
     monkeypatch.setattr(
-        recovery, "_historical_reference_rate", lambda *args: (reference, 12)
+        recovery_stream, "_historical_reference_rate", lambda *args: (reference, 12)
     )
     started = datetime.fromisoformat(record["created_at"])
     now = (started + timedelta(seconds=3600)).timestamp()
@@ -67,14 +74,14 @@ def test_missing_run_rate_or_reference_is_unknown(monkeypatch) -> None:
 def test_live_view_carries_the_cause(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setenv("RECKON_HOME", str(tmp_path / "crew-home"))
     monkeypatch.setattr(
-        recovery, "_historical_reference_rate", lambda *args: (49.0, 12)
+        recovery_stream, "_historical_reference_rate", lambda *args: (49.0, 12)
     )
     record = _run()
     record["manifest_path"] = str(tmp_path / "absent-manifest.md")
     record["log_path"] = str(tmp_path / "absent-stream.jsonl")
     started = datetime.fromisoformat(record["created_at"])
     observation_time = (started + timedelta(seconds=3600)).timestamp()
-    monkeypatch.setattr(recovery, "_utc_seconds", lambda: observation_time)
+    (monkeypatch.setattr(recovery_stream, "_utc_seconds", lambda: observation_time), monkeypatch.setattr(recovery_liveness, "_utc_seconds", lambda: observation_time), monkeypatch.setattr(recovery_classification, "_utc_seconds", lambda: observation_time), monkeypatch.setattr(recovery_watch, "_utc_seconds", lambda: observation_time))
 
     row = project_live_rows([record], fields=["budget_overrun_cause"])[0]
 
@@ -132,7 +139,7 @@ def _budget_signal_calls(source_root: Path) -> list[tuple[tuple[str, ...], str, 
                 functions[f"{module}.{node.name}"] = node
         imports[module] = imported
 
-    root = "reckon.crew.recovery"
+    root = "reckon.crew.recovery_stream"
     starts = (
         f"{root}._budget_timing",
         f"{root}._token_budget_timing",
@@ -183,10 +190,10 @@ def test_budget_call_graph_has_only_the_guarded_watchdog_signal() -> None:
     root = Path(__file__).resolve().parents[1]
     signals = _budget_signal_calls(root / "reckon")
     assert [(chain, called) for chain, called, _ in signals] == [
-        (("reckon.crew.recovery._apply_budget_watchdog",), "_signal_process_group")
+        (("reckon.crew.recovery_stream._apply_budget_watchdog",), "_signal_process_group")
     ]
 
-    tree = ast.parse((root / "reckon/crew/recovery.py").read_text())
+    tree = ast.parse((root / "reckon/crew/recovery_stream.py").read_text())
     watchdog = next(
         node
         for node in tree.body
@@ -208,9 +215,13 @@ def test_shipped_soft_limit_never_signals(monkeypatch) -> None:
     defaults = yaml.safe_load((root / "reckon/schema/flight-defaults.yaml").read_text())
     assert defaults["fences"]["enforce_budget_watchdog"] is False
     signalled = []
-    monkeypatch.setattr(
-        recovery, "_signal_process_group", lambda *a, **k: signalled.append(a)
-    )
+    (monkeypatch.setattr(
+        recovery_review_delivery, "_signal_process_group", lambda *a, **k: signalled.append(a)
+    ), monkeypatch.setattr(
+        recovery_stream, "_signal_process_group", lambda *a, **k: signalled.append(a)
+    ), monkeypatch.setattr(
+        recovery_watch, "_signal_process_group", lambda *a, **k: signalled.append(a)
+    ))
     record = _run()
     record.update({"launch": "cli", "pid": 4242})
 

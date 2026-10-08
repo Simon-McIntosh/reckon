@@ -30,6 +30,10 @@ import pytest
 from reckon import _timestamps
 
 recovery = importlib.import_module("reckon.crew.recovery")
+READING_MODULES = (
+    Path(recovery.__file__).with_name("recovery_liveness.py"),
+    Path(recovery.__file__).with_name("recovery_stream.py"),
+)
 
 FIXED_MOMENT = datetime(2026, 9, 30, tzinfo=UTC).timestamp()
 MANIFEST_MTIME = datetime(2026, 9, 29, tzinfo=UTC).timestamp()
@@ -156,10 +160,10 @@ def test_recorded_table_covers_every_reader_and_input() -> None:
 
 
 def _fromisoformat_enclosing_functions() -> list[str]:
-    tree = ast.parse(Path(recovery.__file__).read_text())
     return [
         node.name
-        for node in ast.walk(tree)
+        for path in READING_MODULES
+        for node in ast.walk(ast.parse(path.read_text()))
         if isinstance(node, ast.FunctionDef)
         and any(_calls_fromisoformat(sub) for sub in ast.walk(node))
     ]
@@ -178,12 +182,13 @@ def test_no_fromisoformat_call_remains() -> None:
 
 
 def test_recovery_binds_the_shared_parser() -> None:
-    tree = ast.parse(Path(recovery.__file__).read_text())
-    imported: set[str] = set()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.ImportFrom) and node.module == _timestamps.__name__:
-            imported.update(alias.name for alias in node.names)
-    assert "parse_utc" in imported
+    for path in READING_MODULES:
+        tree = ast.parse(path.read_text())
+        imported: set[str] = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom) and node.module == _timestamps.__name__:
+                imported.update(alias.name for alias in node.names)
+        assert "parse_utc" in imported, path
 
 
 EXPECTED: dict[str, dict[str, dict[str, object]]] = json.loads(

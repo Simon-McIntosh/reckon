@@ -25,7 +25,7 @@ from pathlib import Path
 import pytest
 
 from reckon import _plan_html, crew
-from reckon.crew import recovery, runs
+from reckon.crew import recovery, recovery_review_acceptance, recovery_watch, runs
 
 PROJECT = "sample"
 PLAN = "fixture"
@@ -195,7 +195,7 @@ def test_the_sweep_skips_a_tier_none_run_and_dispatches_a_source_run(
             "reason": "stub: the composed review was launched",
         }
 
-    monkeypatch.setattr(recovery, "dispatch_review_for_run", stub_dispatch)
+    (monkeypatch.setattr(recovery_review_acceptance, "dispatch_review_for_run", stub_dispatch), monkeypatch.setattr(recovery_watch, "dispatch_review_for_run", stub_dispatch))
 
     result = recovery.dispatch_awaiting_reviews(
         project=PROJECT,

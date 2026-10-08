@@ -18,7 +18,17 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import promotion, promotion_checks, recovery, routing, runs
+from reckon.crew import (
+    promotion,
+    promotion_checks,
+    recovery,
+    recovery_classification,
+    recovery_liveness,
+    recovery_review_delivery,
+    recovery_stream,
+    routing,
+    runs,
+)
 from reckon.crew.dispatch import terminate
 
 # The kernel start tick a run record carries is a positive integer, so this
@@ -205,11 +215,15 @@ def test_recovery_watchdog_names_the_run_directory(
         "pid": live_run.process.pid,
         "pid_start_time": STALE_START_TIME,
     }
-    monkeypatch.setattr(
-        recovery,
+    (monkeypatch.setattr(
+        recovery_stream,
         "_budget_timing",
         lambda record: {"budget_seconds": 10, "elapsed_seconds": 100},
-    )
+    ), monkeypatch.setattr(
+        recovery_classification,
+        "_budget_timing",
+        lambda record: {"budget_seconds": 10, "elapsed_seconds": 100},
+    ))
     config = {"fences": {"enforce_budget_watchdog": True, "budget_grace_multiple": 1.0}}
 
     recovery._apply_budget_watchdog(record, config)
@@ -229,11 +243,15 @@ def test_recovery_watchdog_leaves_one_attribution_and_one_outcome(
         "pid": live_run.process.pid,
         "pid_start_time": live_run.start_time(),
     }
-    monkeypatch.setattr(
-        recovery,
+    (monkeypatch.setattr(
+        recovery_stream,
         "_budget_timing",
         lambda record: {"budget_seconds": 10, "elapsed_seconds": 100},
-    )
+    ), monkeypatch.setattr(
+        recovery_classification,
+        "_budget_timing",
+        lambda record: {"budget_seconds": 10, "elapsed_seconds": 100},
+    ))
     config = {"fences": {"enforce_budget_watchdog": True, "budget_grace_multiple": 1.0}}
 
     recovery._apply_budget_watchdog(record, config)
@@ -254,11 +272,11 @@ def test_recovery_delivered_review_stop_names_the_run_directory(
         "manifest_path": str(live_run.run_dir / "manifest.md"),
     }
     monkeypatch.setattr(
-        recovery,
+        recovery_review_delivery,
         "review_delivered",
         lambda record: {"delivered_at": 0.0, "record_path": "", "manifest_path": ""},
     )
-    monkeypatch.setattr(recovery, "_run_stream_mtime", lambda record: 1000.0)
+    (monkeypatch.setattr(recovery_review_delivery, "_run_stream_mtime", lambda record: 1000.0), monkeypatch.setattr(recovery_liveness, "_run_stream_mtime", lambda record: 1000.0), monkeypatch.setattr(recovery_classification, "_run_stream_mtime", lambda record: 1000.0))
 
     stopped = recovery._stop_delivered_reviews([pointer], grace_seconds=1.0)
 

@@ -26,7 +26,7 @@ from pathlib import Path
 import pytest
 
 from reckon import crew, ledger
-from reckon.crew import recovery, repair, resumption, runs
+from reckon.crew import recovery, recovery_repair_dispatch, repair, resumption, runs
 from reckon.crew import review as review_module
 from reckon.crew.dispatch import WATCHER_LOAD_BOUND_SECONDS
 
@@ -419,7 +419,7 @@ def test_a_new_round_starts_its_attempt_count_at_one(
     _stub_dispatch(monkeypatch)
     # The run-wide one-round cap would hand this round back; stub it open so
     # the round in hand is reached and its own attempt count is measured.
-    monkeypatch.setattr(recovery, "_opened_repair_rounds", lambda _record: {})
+    monkeypatch.setattr(recovery_repair_dispatch, "_opened_repair_rounds", lambda _record: {})
 
     _sweep()
 
