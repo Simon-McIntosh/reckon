@@ -3248,6 +3248,28 @@ def _refuse_appended_hiding_followups(
         _refuse_hiding_followup(state, followup, project=project)
 
 
+def _status_before_the_patch(state: dict[str, Any]) -> str:
+    """The plan's stored status, read before the patch is written.
+
+    The patch writer merges the patch into the state before calling its
+    validators, so the status the state carries is the requested one and the
+    transition cannot be read from it alone. The status that preceded the write
+    survives in the stored plan; where none is readable — an in-memory state
+    with no plan on disk — the state's own status is the best available answer.
+    """
+    project = str(state.get("project") or "")
+    slug = str(state.get("slug") or "")
+    if project and slug:
+        try:
+            stored, _version = read_plan(project, slug)
+        except (OSError, CorruptEnvelopeError, ValueError):
+            stored = {}
+        status = str(stored.get("status") or "").strip().lower()
+        if status:
+            return status
+    return str(state.get("status") or "").strip().lower()
+
+
 def _require_every_section_ticked(state: dict[str, Any]) -> None:
     """Refuse a landing while any section is still declared open.
 
@@ -3281,7 +3303,9 @@ def validate_landing_patch(state: dict[str, Any], patch: dict[str, Any]) -> None
         return
     _refuse_appended_hiding_followups(state, patch)
     requested_status = str(patch.get("status", "")).lower()
-    if requested_status in _LANDED_STATUSES:
+    if requested_status in _LANDED_STATUSES and (
+        _status_before_the_patch(state) not in TERMINAL_STATUSES
+    ):
         _require_every_section_ticked(state)
     if requested_status in TERMINAL_STATUSES:
         _require_transition_verdict(state, "plan-terminal")

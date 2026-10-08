@@ -112,3 +112,39 @@ def test_an_already_terminal_plan_is_not_rejudged() -> None:
     _store.apply_ops(state, [LAND], False)
 
     assert state["status"] == "done"
+
+
+def test_the_patch_writer_does_not_rejudge_an_already_terminal_plan() -> None:
+    # The patch path keys on the transition too: a plan already at done, holding
+    # an open section, is not re-judged when a patch re-asserts done. The state
+    # carries the requested status after the merge, so the transition is read
+    # from the stored plan; no plan is stored for this fixture, so the state's
+    # own status stands as the status that preceded the write. The state names
+    # no project so the pre-existing terminal-evidence guard — which still runs
+    # on a named project, deliberately — does not mask the section guard here.
+    state = _open_state(SECTION_DECLARATION_IMPLEMENTABLE)
+    state["status"] = SECTION_DECLARATION_DONE
+    state.pop("project")
+    state.pop("slug")
+
+    _store.validate_landing_patch(state, {"status": "done"})
+
+    assert state["status"] == "done"
+
+
+def test_the_patch_writer_detects_the_transition_from_the_stored_status(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # A landing patch arrives with the state already carrying the requested
+    # status, so the transition is invisible in the state and is read from the
+    # stored plan instead. A stored plan still ``active`` behind a patch that
+    # asks for ``done`` is a genuine landing, and the open section is refused.
+    state = _open_state(SECTION_DECLARATION_IMPLEMENTABLE)
+    state["status"] = SECTION_DECLARATION_DONE
+    stored = {**_open_state(SECTION_DECLARATION_IMPLEMENTABLE), "status": "active"}
+    monkeypatch.setattr(_store, "read_plan", lambda *_a, **_k: (stored, 1))
+
+    with pytest.raises(_store.OpError) as refusal:
+        _store.validate_landing_patch(state, {"status": "done"})
+
+    assert "s2" in str(refusal.value)
