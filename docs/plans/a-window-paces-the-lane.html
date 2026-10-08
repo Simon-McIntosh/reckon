@@ -26,7 +26,7 @@
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="e302ad39,04a479ef,4ef8356f,e219aa99,b2594d65,bacd8e17,6a915fd7,4d043fd0,fd4a158f,95ba8ea7,cb69a87f,768a9285,e5cf008e,6001f577,e6dd0dc4,c011b6f9,82095575,87c98418,8e70585c,b7ba4786,3f0e9621,798f87f8,e37ac897,d34eaf27">
 <meta name="plan-impl" content="0.9">
-<meta name="plan-version" content="121">
+<meta name="plan-version" content="126">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -1916,14 +1916,15 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
 
 <p><strong>It ends by itself: expiry at read time, not by a process</strong></p>
 <p>A lift is in force only when all of these hold: it is not cleared; <code>now</code> is before its end time; <code>now</code> is before <code>granted_at + budget.lift.max_hours</code>; and, for a reset-anchored lift, the group's current reading still reports the <code>resets_at</code> the lift was granted against. When the provider rolls the window, on schedule or by an early reset, the reading's <code>resets_at</code> moves and the lift ends at that observation, so a lift never carries into a fresh window. Expiry is a pure function of the record, the reading and the clock. A restarted server, a dead producer or an ended session therefore cannot leave a lift on, and nothing has to run at the moment it ends. The <code>max_hours</code> ceiling covers the one case the reading cannot: a stale reading that never shows the reset.</p>
+<p><strong>A reset is detected two ways, and either one ends a reset-anchored lift.</strong> Either the clock's <code>resets_at</code> moves, or the clock's utilisation goes backwards. Usage can only fall across a reset, and a limit reset the lead applies early, or one the provider grants, may leave <code>resets_at</code> where it was. A lift records the clock's utilisation at grant. A current reading below that figure is a reset, which catches the common case without any history. Readings can also climb back past the grant figure between two observations. So the detection also reads the group's readings since <code>granted_at</code> in observed order, as pace replay already does, and treats a fall between any two consecutive readings as a reset.</p>
 <p>That is what makes a token reset usable. Whatever a window still holds at its reset is lost, so a lift anchored to <code>reset</code> spends ahead into the window and stops, by itself, the moment the window turns over. <code>--clock five_hour</code> makes a lift ride a single five-hour window.</p>
 
 <p><strong>One seam, and what a lift does not touch</strong></p>
-<p>Every consumer already reads the multiple through <code>pace.allowance_for_group</code>, which reads <code>pace.policy(config)</code>. The lift is applied there, given the group, the reading and the time, so preflight, the picker's offered rows, <code>budget.pace_hold</code>, the dispatch lane advisory, dispatch rows and pace replay all see one value and none computes its own. A lift moves the pace bias and nothing else. The provider's own five-hour ceiling, <code>utilisation_ceiling_pct</code>, the resume reserve and the coordinator reserve all stand, because those protect resumes and reviews, which are what a spent window is kept for.</p>
+<p>Every consumer already reads the multiple through <code>pace.allowance_for_group</code>, which reads <code>pace.policy(config)</code>. The lift is applied there, given the group, the reading and the time, so preflight, the picker's offered rows, <code>budget.pace_hold</code>, the dispatch lane advisory, dispatch rows and pace replay all see one value and none computes its own. A lift raises the pace multiple and releases the reserves, so the group can spend 100% of its window. <code>utilisation_ceiling_pct</code> is already configured at 100. The last 8% is withheld by the resume reserve (5%) and the coordinator reserve (3%), which together hold the effective ceiling at 92%. Under a lift that remainder would expire unspent at the reset, so while a lift is in force both reserves read zero for its group. The provider's own five-hour ceiling still applies: that refusal comes from the provider, not from reckon.</p>
 
 <p><strong>Surface and authority</strong></p>
 <ul>
-<li><code>reckon crew budget lift --group &lt;group&gt; --multiple &lt;m&gt; --until reset|&lt;iso&gt;|&lt;duration&gt; [--clock seven_day|five_hour] --reason "&lt;why&gt;"</code> grants a lift and prints the group's projected exhaustion at the lifted multiple against its reset. <code>--clear --group &lt;group&gt;</code> revokes one. <code>reckon crew budget lifts</code> lists active and recent lifts.</li>
+<li><code>reckon crew budget lift --group &lt;group&gt; --multiple &lt;m&gt; --until reset|&lt;iso&gt;|&lt;duration&gt; [--clock seven_day|five_hour] --reason "&lt;why&gt;"</code> grants a lift and prints the group's projected exhaustion at the lifted multiple against its reset, then admits regardless. The pattern a lift targets is spending a window in a day and then resetting it with a limit reset the lead already holds. A projected early exhaustion is the expected outcome, not a reason to refuse, and the projection is recorded on the lift for later tuning. <code>--clear --group &lt;group&gt;</code> revokes one. <code>reckon crew budget lifts</code> lists active and recent lifts.</li>
 <li><code>crew(view="budget")</code> carries <code>lift: {id, multiple, ends_at, ends_on, remaining_seconds}</code> per group. Every dispatch row records <code>pace.lift_id</code> beside the multiple in force, which §9's burn log already requires.</li>
 <li>The follower prints one transition line when a lift is granted and one when it ends, naming what ended it: the reset observed, the time, the ceiling, or a clear.</li>
 <li>A lift is spend, so only the lead grants it. The grant is refused inside a fenced worker, whose environment names its run, so a worker cannot lift its own budget. The <code>--reason</code> is recorded verbatim.</li>
@@ -1933,6 +1934,7 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
 <p><strong>Done when</strong></p>
 <ul>
 <li>With the configured multiple at 1.1 and a <code>codex-sub</code> reading of utilisation 0.21 at 22.0 h elapsed, <code>pace_hold</code> holds an implement dispatch. A lift of 1.8 anchored to the seven-day reset admits it. A reading whose seven-day <code>resets_at</code> has moved ends the lift. A lift past its <code>at</code>, a cleared lift, and a lift older than <code>max_hours</code> with an unchanged <code>resets_at</code> are all inert. A lift above <code>max_multiple</code>, and one granted from inside a fenced run, are refused at grant.</li>
+<li>Under a reset-anchored lift, a reading whose utilisation falls below the figure recorded at grant ends the lift with <code>resets_at</code> unchanged. So does a fall between two consecutive readings that both stand above the grant figure. While a lift is in force the group's effective ceiling reads 100% with both reserves at zero, and when the lift ends it reads 92% again, derived from the configured reserves rather than written down. A projected early exhaustion is printed and recorded, and the grant is admitted.</li>
 <li>The negative control deletes the lift lookup from <code>pace.policy</code> alone, and the admit assertion must fail against it.</li>
 <li>For the same reading, <code>pace_hold</code> returns <code>releases_at</code> equal to the week start plus 0.21 / 1.1 × 168 h, derived from the fixture at assertion time rather than written down.</li>
 <li>Preflight and the picker's offered rows show the lifted multiple and its lift id. A dispatch row made under a lift carries <code>pace.lift_id</code>.</li>
@@ -1957,32 +1959,32 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
       </p>
     <p class="r-dec-rat">Continuous in the window figure, so there is no cliff at which one node routes metered and the next local. The lead&#x27;s requirement that comes with it changes what the bar is for, and it is not a detail of shape: the bar must leave room for orchestrator judgement rather than resolve a lane by itself. Three outcomes, not two. A node may be hard enough that it is better left undispatched than sent to the free lane; a node may be close enough to the bar that the right move is to split it into two smaller nodes and dispatch both now; and the orchestrator must be able to decide against the bar in either direction. So the bar reports a position and a recommendation and never a routing, which is the same advisory-never-force contract this project already holds for lanes. Continuity also has a cost that must be paid rather than ignored: there is no tier name for a pre-flight line to print and no natural transition to assert, so section 6&#x27;s pre-flight prints the figure and the recommendation, and section 3&#x27;s tests assert monotonicity over the window domain and the three outcomes at their boundaries, rather than asserting transitions that a continuous bar does not have.</p>
     </div>
-<div class="r-dec" data-key="lift-scope" data-choice="" data-by="" data-when="" data-sections="s10" data-recommended="multiple-only" data-recommended-by="reckon-edit">
+<div class="r-dec" data-key="lift-scope" data-choice="multiple-and-ceiling" data-by="Simon McIntosh" data-when="2026-10-08T04:38:57+00:00" data-sections="s10" data-recommended="multiple-only" data-recommended-by="reckon-edit">
     <p class="r-dec-q">What may a lift raise?</p>
     <p class="r-dec-ctx">A lift exists to spend ahead of pace. The reserves and the utilisation ceiling protect resumes and reviews.</p>
     <p class="r-dec-opts">
       <button class="r-opt" data-value="multiple-only">the pace multiple only; ceiling and reserves stand</button>
-      <button class="r-opt" data-value="multiple-and-ceiling">the pace multiple and the utilisation ceiling</button>
+      <button class="r-opt chosen" data-value="multiple-and-ceiling">the pace multiple and the utilisation ceiling</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">The lead ruled that a ceiling below 100% always leaves an amount unspent. utilisation_ceiling_pct is already configured at 100. The unspent 8% comes from the resume reserve (5%) and the coordinator reserve (3%), which hold the effective ceiling at 92%. So a lift raises the multiple and releases both reserves for its group while it is in force. The provider&#x27;s own five-hour ceiling remains, because that refusal is the provider&#x27;s. Accepted cost: a resume or review late in a lifted window may find nothing left.</p>
     </div>
-<div class="r-dec" data-key="lift-default-end" data-choice="" data-by="" data-when="" data-sections="s10" data-recommended="next-reset" data-recommended-by="reckon-edit">
+<div class="r-dec" data-key="lift-default-end" data-choice="next-reset" data-by="Simon McIntosh" data-when="2026-10-08T04:38:57+00:00" data-sections="s10" data-recommended="next-reset" data-recommended-by="reckon-edit">
     <p class="r-dec-q">When does a lift end if the grant names no end?</p>
     <p class="r-dec-ctx">A lift anchored to a reset stops when the window turns over, which is the point at which any budget left in it would be lost.</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="next-reset">at the next reset of the clock the hold rests on</button>
+      <button class="r-opt chosen" data-value="next-reset">at the next reset of the clock the hold rests on</button>
       <button class="r-opt" data-value="fixed-hours">after a fixed duration, such as 12 h</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">A lift exists to spend what a window would otherwise lose at reset, so by default it ends when the window turns over. The lead requires the reset to be detectable as usage going backwards as well as resets_at moving, because an early limit reset can leave resets_at unchanged. The 168 h ceiling backs a stale reading that never shows the reset. Rejected: a fixed duration, which can run past a reset into a fresh window or end long before it.</p>
     </div>
-<div class="r-dec" data-key="lift-exhaustion-guard" data-choice="" data-by="" data-when="" data-sections="s10">
+<div class="r-dec" data-key="lift-exhaustion-guard" data-choice="advisory" data-by="Simon McIntosh" data-when="2026-10-08T04:38:57+00:00" data-sections="s10">
     <p class="r-dec-q">Is a lift refused when its projection exhausts the group before its reset?</p>
     <p class="r-dec-ctx">At 1.8x from 21% used, codex-sub projects exhaustion three days before its reset. Exhausting early leaves no metered lane for the rest of the week; the local lane remains.</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="advisory">print the projection at grant and admit</button>
+      <button class="r-opt chosen" data-value="advisory">print the projection at grant and admit</button>
       <button class="r-opt" data-value="refuse-unless-allowed">refuse unless the grant passes --allow-early-exhaustion</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">The lead lifts the pace when they hold limit resets: spend the window in about a day, then reset it. Projected exhaustion before the scheduled reset is therefore the pattern a lift targets, not a hazard to refuse. The grant prints and records the projection for later tuning, and admits.</p>
     </div>
 </section>
 
