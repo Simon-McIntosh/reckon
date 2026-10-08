@@ -167,15 +167,16 @@ def test_the_loser_refuses_when_the_bound_expires(
     repo.mkdir()
     clock = _Clock()
     _stub_wait(monkeypatch, clock, lambda _run_id: _peer_claim(repo))
+    derived_wait = dispatch_claims_module.recent_claim_grace_seconds()
 
     with pytest.raises(crew.ScopeConflict) as refusal:
         _check(repo, _peer_claim(repo))
 
     assert refusal.value.run_id == PEER_RUN_ID
     assert "not launched" in str(refusal.value)
-    assert f"{dispatch_module.RACING_WINNER_WAIT_SECONDS:g}s" in str(refusal.value)
+    assert f"{derived_wait:g}s" in str(refusal.value)
     # The wait really ran to its bound rather than refusing on sight.
-    assert clock.now >= dispatch_module.RACING_WINNER_WAIT_SECONDS
+    assert clock.now >= derived_wait
 
 
 def test_a_launched_peer_is_never_waited_on(
