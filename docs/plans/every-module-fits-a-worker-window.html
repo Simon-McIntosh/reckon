@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.43">
-<meta name="plan-version" content="15">
+<meta name="plan-version" content="16">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -204,6 +204,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-20261007-cli-map" data-who="reckon-build" data-when="2026-10-07T09:45:00Z">
     <div class="r-comment-body"><p>Map node <code>cli-split-map</code> landed (head <code>4ba1e93fb</code>, reviewed 103/120): <code>docs/evidence/fragments/every-module-fits-a-worker-window/cli-split-map.json</code>. It places all 218 statements across six sibling modules, plus <code>cli.py</code> as the import surface. The largest module is 32,748 tokens. The <code>crew</code> Click group stays in <code>crew_dispatch_commands.py</code> and the follower and run commands register on import. The move must also extend the code-stamp readers in <code>reckon/crew/obligation_snapshot.py</code> and <code>reckon/crew/runs.py</code> to the new sources, and repoint 69 test files. It shares 21 of those with the <code>dispatch.py</code> move, so the two moves run in sequence. The review's follow-ons go to the move brief: re-derive the census at the move's base, and confirm the help text byte for byte.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261008T044620659058-cli-module-split-moved" data-who="reckon-build" data-when="2026-10-08T06:34:57Z">
+    <div class="r-comment-body"><p>CLI split complete locally: 220/220 statements moved unchanged, largest sibling 32684 estimated tokens, 84/84 help paths identical, six sibling edits advance both stamps, and the final focused gate passed 10/10 tests with move-check EXIT=0.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261007T085632171178-module-size-guard-and-move-check" data-who="reckon-build" data-when="2026-10-07T09:15:33.129Z">
     <div class="r-comment-body"><p>added tests/test_every_module_fits_a_worker_window.py (ratchet: 1,130 files scanned, exactly 7 allowlisted over 50,000 estimated tokens) and scripts/check_pure_move.py + tests/test_check_pure_move.py (receipt proves each non-import statement moved byte-identically; three dirty fixtures exit 1); gate 57 passed EXIT=0.</p></div>
