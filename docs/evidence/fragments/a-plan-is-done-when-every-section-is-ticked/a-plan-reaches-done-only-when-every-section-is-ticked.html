@@ -10,7 +10,7 @@
   <meta name="plan-verifies" content="reckon:a-plan-is-done-when-every-section-is-ticked#s6">
   <meta name="evidence-verdict" content="pass">
   <meta name="evidence-date" content="2026-10-08">
-  <meta name="evidence-commit" content="b70f47ee3">
+  <meta name="evidence-commit" content="4fa2d6004">
 </head>
 <body>
 <main class="plan-doc">
@@ -57,16 +57,18 @@
 
   <h3>Measure</h3>
   <p>Gate: <code>tests/test_terminal_status_needs_every_section_ticked.py</code> at head —
-  <strong>7 passed</strong>, <code>EXIT=0</code>. The two refusal tests set a plan with one
+  <strong>8 passed</strong>, <code>EXIT=0</code>. The two refusal tests set a plan with one
   implementable, then one deferred, section to <code>done</code> and find the refusal naming
   <code>s2</code>; a third ticks the section and the same write succeeds; a fourth exercises the
   patch writer; a fifth shows an already-terminal plan is not re-judged by the ops writer; a
-  sixth shows the patch writer does not re-judge an already-terminal plan; a seventh shows the
-  patch writer still detects a genuine transition from the stored status.</p>
+  sixth shows the patch writer does not re-judge a plan stored at done holding an open section; a
+  seventh shows the patch writer refuses when the stored plan cannot be read, so the guard fails
+  closed; an eighth shows the patch writer still detects a genuine transition from the stored
+  status.</p>
   <ul>
     <li>Head arm log: <code>head_arm.log</code>.</li>
     <li>Negative control (guard absent, base <code>786c5ba8</code>): the refusal tests fail
-      <code>DID NOT RAISE</code> — <code>base_arm.log</code>, <code>EXIT=1</code>, 4 failed.</li>
+      <code>DID NOT RAISE</code> — <code>base_arm.log</code>, <code>EXIT=1</code>, 5 failed.</li>
   </ul>
 
   <h3>The patch path keys on the transition too</h3>
@@ -81,14 +83,27 @@
   the requested one and the transition is invisible there. The fix reads the status that preceded
   the write from the stored plan — the same technique
   <code>_followups_before_the_patch</code> already uses for the followup rule — and skips the
-  section guard when that status is already terminal, matching the other two sites. The existing
-  terminal-evidence and transition-verdict checks beside it are unchanged.</p>
+  section guard when that status is already terminal, matching the other two sites.</p>
+  <p>The pre-write status read fails closed. When the stored plan cannot be read — no project or
+  slug to resolve, a read error, or an empty record — the helper returns the empty string, which
+  is not a terminal status, so the guard runs rather than being silently switched off. Falling
+  back to the state's own status would disable the guard on the patch path precisely, because
+  against a landing patch that status is already the requested terminal one. This matches the
+  followup rule beside it, which refuses rather than permits on the same failures. The
+  terminal-evidence and transition-verdict checks beside the guard are unchanged.</p>
   <ul>
-    <li>Negative control for the repair (requested-status-only keying restored): the
-      already-terminal patch test fails, <code>1 failed, 6 passed</code> —
-      <code>patch_keying_negative_control.log</code>, <code>EXIT=1</code>.</li>
+    <li>Negative control, requested-status-only keying restored: the stored-terminal
+      grandfathering test fails (<code>1 failed, 7 passed</code>) —
+      <code>nc_requested.log</code>, <code>EXIT=1</code>.</li>
+    <li>Negative control, fallback-to-state-status restored: the unreadable-store test fails
+      (<code>1 failed, 7 passed</code>) — <code>nc_fallback.log</code>, <code>EXIT=1</code>.</li>
   </ul>
-  <p>Regression search: the gate plus the tests that write a terminal status or call
+  <p>Regression search at head over the five files that exercise the patch path —
+  the gate plus <code>test_closure_gates</code>, <code>test_continuation</code>,
+  <code>test_landing_patch_refuses_a_hiding_followup</code> and
+  <code>test_crew_promotion</code> — gave <strong>115 passed</strong>, <code>EXIT=0</code>
+  (<code>head_regression2.log</code>). The wider search: the gate plus the tests that write a
+  terminal status or call
   <code>validate_landing_patch</code> at head — <code>test_closure_gates</code>,
   <code>test_crew_promotion</code>, <code>test_continuation</code>,
   <code>test_landing_patch_refuses_a_hiding_followup</code>, <code>test_archive</code>,
