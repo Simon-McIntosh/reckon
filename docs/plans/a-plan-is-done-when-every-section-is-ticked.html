@@ -19,12 +19,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,plan-format">
   <meta name="plan-blocks" content="plan-lifecycle-hygiene">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
   <title>A Plan Is Done When Every Section Is Ticked | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-impl" content="0.0">
-<meta name="plan-version" content="12">
+<meta name="plan-impl" content="0.17">
+<meta name="plan-version" content="13">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -78,7 +78,7 @@
       <code>plan_review._fingerprint_forms</code> keeps a pre-collapse digest form so that a collapse alone owes no
       review. §8 owns it.</p>
 
-    <h2 id="s3" data-reckon="section" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links="">§3 — The plan read carries its todo list</h2>
+    <h2 id="s3" data-reckon="section" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links="">§3 — The plan read carries its todo list</h2>
     <p><strong>Deliverable.</strong> One derivation function in <code>reckon/_plan_html.py</code>, called by both
       readers at their own boundary. One reader is the typed read (<code>read_plan</code> summary and detail), which
       reaches the plan through <code>_store.read_plan</code> and <code>read_state_and_text_file</code>, never
@@ -224,6 +224,9 @@
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261008T015150050726-review-of-the-plan-read-carries-its-section-checklist" data-who="reckon-build" data-when="2026-10-08T02:12:08.314Z">
     <div class="r-comment-body"><p>review of r-20261008T011254596374-the-plan-read-carries-its-section-checklist (section 3 of reckon:a-plan-is-done-when-every-section-is-ticked): parsed record with 6 dimensions scored 19/16/20/18/18/19, total 110; reviewed_base_sha 62db795e, reviewed_head_sha 7dfff29d; added_failure_count 0, added_failure_ids []; two follow-on findings, no blocker</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-08T02:50:00Z">
+    <div class="r-comment-body"><p>Landed at merge <code>9e334092</code>. <code>_plan_html.derive_section_todos(html_text, state)</code> gives both plan readers a <code>todos</code> list: <code>parse_plan</code> for the SPA's plan endpoint, and the store's state read for the typed read. Each entry is one authored section, with its heading, link, declaration and <code>c-close-</code> closing record. <code>open_sections</code> is the one open-section predicate, and the declaration vocabulary is named once. Nothing is stored: a state-mode tick writes no <code>todos</code> text, and a read-write round trip leaves the HTML byte-identical. Gate: 5 passed, and the checklist tests fail on the base code; the fingerprint test fails under <code>keep_declarations=True</code>. Whole suite at the merged head: 0 added failures. The 13 failures there are 8 pre-existing at base and 5 load flakes that pass alone at both arms. Review 110/120; its ordering follow-on (<code>open_sections</code> follows declaration order) is carried to §6 and §9. <a href="/reckon/evidence/fragments/a-plan-is-done-when-every-section-is-ticked/the-plan-read-carries-its-section-checklist.html">evidence</a></p></div>
 </div>
 </section>
 </main>
