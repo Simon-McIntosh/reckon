@@ -115,7 +115,7 @@ WAITING_STATUS = "waiting"
 # fleet counts it here, never in the blocked tally. Its age is the news, and
 # the news is carried by the action marker on its row, so the wait-aged state
 # also sits in the action set while remaining a member of this family.
-WAITING_STATES = frozenset({"waiting", "wait-aged", "paused"})
+WAITING_STATES = frozenset({"waiting", "wait-aged", "paused", "queued"})
 # The manifest status vocabulary — TERMINAL_MANIFEST_STATUSES,
 # NON_TERMINAL_MANIFEST_STATUSES and manifest_status_is_template — is imported
 # from reckon.crew.reports, which owns the single statement of it so the reader

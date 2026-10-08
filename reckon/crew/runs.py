@@ -575,7 +575,7 @@ def _mutate_pointer(
 
 
 def queue_dispatch(record: dict[str, Any]) -> tuple[dict[str, Any], int]:
-    """Store a held local request once per project, session and node."""
+    """Store a held local request once per project, session, section and node."""
     lock = crew_home() / "locks" / "queued-dispatch.lock"
     lock.parent.mkdir(parents=True, exist_ok=True)
     with lock.open("a+b") as handle:
@@ -591,14 +591,25 @@ def queue_dispatch(record: dict[str, Any]) -> tuple[dict[str, Any], int]:
                     and (pointer.get("node") or {}).get("id") == record["node"]["id"]
                     and (pointer.get("node") or {}).get("plan")
                     == record["node"]["plan"]
+                    and (pointer.get("node") or {}).get("section")
+                    == record["node"]["section"]
                 ),
                 None,
             )
-            if existing is not None:
-                record["run_id"] = existing["run_id"]
-                record["queued_at"] = existing["queued_at"]
-                record["created_at"] = existing["created_at"]
-            _write_json(pointer_path(str(record["run_id"])), record)
+            run_id = str(
+                existing["run_id"] if existing is not None else record["run_id"]
+            )
+            with _pointer_lock(run_id):
+                if existing is not None:
+                    current = read_pointer(run_id)
+                    if current.get("phase") != "queued":
+                        raise CrewError(
+                            f"queued run {run_id!r} changed phase; retry dispatch"
+                        )
+                    record["run_id"] = run_id
+                    record["queued_at"] = current["queued_at"]
+                    record["created_at"] = current["created_at"]
+                _write_json(pointer_path(run_id), record)
             from reckon.crew.queue_order import admission_order
 
             live = _list_live_records(project=str(record["project"]))

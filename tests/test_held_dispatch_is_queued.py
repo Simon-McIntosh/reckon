@@ -5,13 +5,16 @@ from __future__ import annotations
 import copy
 import json
 import subprocess
+from concurrent.futures import ThreadPoolExecutor
+from datetime import UTC, datetime
 from pathlib import Path
+from threading import Event
 
 import pytest
 from click.testing import CliRunner
 
 from reckon import cli, crew_dispatch_commands
-from reckon.crew import runs
+from reckon.crew import recovery, runs
 from tests import test_dispatch_names_its_backend as backend_tests
 
 
@@ -183,3 +186,74 @@ def test_fleet_gate_hold_has_no_queued_pointer(
     assert result.exit_code == 75
     assert backend_tests._payload(result)["lane_gate"]["gate"] == "fleet"
     assert runs.list_live(project="proj") == []
+
+
+def _queued_request(section: str, run_id: str) -> dict:
+    joined = datetime.now(UTC).isoformat()
+    return {
+        "run_id": run_id,
+        "project": "proj",
+        "session": "session",
+        "node": {"id": "shared-node", "plan": "plan-a", "section": section},
+        "phase": "queued",
+        "backend": "clive",
+        "queued_at": joined,
+        "created_at": joined,
+    }
+
+
+def test_queued_identity_includes_the_section(dispatch_repo: Path) -> None:
+    first, _ = runs.queue_dispatch(_queued_request("first", "r-first"))
+    second, _ = runs.queue_dispatch(_queued_request("second", "r-second"))
+
+    assert first["run_id"] == "r-first"
+    assert second["run_id"] == "r-second"
+    assert {row["node"]["section"] for row in runs.list_live(project="proj")} == {
+        "first",
+        "second",
+    }
+
+
+def test_queued_write_obeys_the_per_run_pointer_lock(
+    dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    run_id = "r-locked"
+    runs.queue_dispatch(_queued_request("first", run_id))
+    original_lock = runs._pointer_lock
+    original_write = runs._write_json
+    attempting = Event()
+    written = Event()
+
+    def announced_lock(target: str):
+        attempting.set()
+        return original_lock(target)
+
+    def marked_write(path: Path, payload: dict) -> None:
+        if path == runs.pointer_path(run_id):
+            written.set()
+        original_write(path, payload)
+
+    monkeypatch.setattr(runs, "_pointer_lock", announced_lock)
+    monkeypatch.setattr(runs, "_write_json", marked_write)
+    updated = _queued_request("first", "r-new-request")
+    updated["reason"] = "router still full"
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        with original_lock(run_id):
+            future = pool.submit(runs.queue_dispatch, updated)
+            reached_lock = attempting.wait(3)
+            wrote_while_locked = written.wait(0.1)
+        assert reached_lock
+        assert not wrote_while_locked
+        queued, _ = future.result(timeout=3)
+
+    assert queued["run_id"] == run_id
+    assert runs.read_pointer(run_id)["reason"] == "router still full"
+
+
+def test_queued_counter_is_waiting_and_never_working() -> None:
+    assert recovery._fleet_counts({"run": {"state": "queued"}}) == {
+        "working": 0,
+        "blocked": 0,
+        "unpromoted": 0,
+        "waiting": 1,
+    }
