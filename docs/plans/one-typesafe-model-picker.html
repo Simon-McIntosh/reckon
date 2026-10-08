@@ -25,7 +25,7 @@
   <title>One Typesafe Model Picker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="228">
+<meta name="plan-version" content="229">
 <meta name="plan-modified" content="2026-10-08">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;implementable&quot;,&quot;s19&quot;:&quot;implementable&quot;,&quot;s20&quot;:&quot;implementable&quot;,&quot;s21&quot;:&quot;implementable&quot;}">
 </head>
@@ -744,6 +744,9 @@
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261003T032115043790-model-catalogue-in-reckon" data-who="reckon-build" data-when="2026-10-03T11:07:55.976Z">
     <div class="r-comment-body"><p>Moved the reckon-owned model catalogue out of the package into docs/state/reckon/model-catalogue.yaml — versioned repository data read by every project's flight resolution — so no model or provider identifier remains under reckon/ or skills/. model_catalogue_path() now locates the file from the running package's own checkout root (the repository root above the reckon package directory) with a RECKON_MODEL_CATALOGUE override, and a missing file means no catalogue layer so the host values stand (a wheel without docs/ resolves as before). The catalogue still fills model/alias/effort/budget_group/rates for every backend another layer defines, never creating one, and reckon flight plus the crew flight view report host values shadowing it (32 shadows naming key/backend/file). Re-proved value stability: resolved --project reckon config identical across no-catalogue, host-as-is and host-emptied captures; 32 provenance leaves move host-&gt;catalogue; shadows 32-&gt;0.</p></div>
+</div>
+<div class="r-comment" data-section="s16" data-id="c-run-r-20261008T101343872035-review-of-picker-tests-read-their-own-state" data-who="reckon-build" data-when="2026-10-08T10:26:52.061Z">
+    <div class="r-comment-body"><p>Independent review attached to r-20261008T093552471977-picker-tests-read-their-own-state covering the delta 3f7a2f71f -&gt; df9199216 (tests/conftest.py, tests/test_picker_dispatch_pace.py, tests/test_member_friction.py, tests/test_no_test_spawns_a_provider.py, tests/test_reaper_catches_unrecorded_producer.py): all 6 dimensions scored, total 99/120, 2 follow-on findings, 0 added failures.</p></div>
 </div>
 </section>
 <section data-reckon="followups" id="followups" class="r-followups">

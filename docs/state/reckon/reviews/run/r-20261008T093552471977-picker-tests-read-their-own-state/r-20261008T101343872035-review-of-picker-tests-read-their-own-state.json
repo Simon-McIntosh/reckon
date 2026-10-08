@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "sonnet",
+  "call_site_count": 4,
+  "call_sites": [
+    "tests/conftest.py:480 per_test_reap_pids",
+    "tests/conftest.py:502 reaped_watch_producers",
+    "tests/conftest.py:558 reap_watch_producers_armed_by_this_test",
+    "tests/test_reaper_catches_unrecorded_producer.py:126"
+  ],
+  "completed_at": "2026-10-08T10:26:52.061Z",
+  "dispatched_at": "2026-10-08T10:14:09Z",
+  "findings": [
+    {
+      "file": "tests/test_member_friction.py",
+      "line": "178",
+      "severity": "follow-on",
+      "text": "follow-on: the assertion compares _guard_store() against the same real_store_home() helper the guarded code itself calls, so on the standard XDG layout reverting _guard_store() to its old literal leaves both sides equal and the test passes; the escape-destination check no longer guards the resolution it was changed to protect."
+    },
+    {
+      "file": "tests/test_reaper_catches_unrecorded_producer.py",
+      "line": "126",
+      "severity": "follow-on",
+      "text": "follow-on: the file is edited outside the node's declared write paths; the change is required by \u00a716 item 3 but the coordinator must accept the wider scope."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read both commits against 3f7a2f71f; test-tree only, no product code changed; the isolated-store helpers are new in tests/conftest.py and the new module is a 184-line AST scan.",
+    "done_when": "the head gate logs/head-gate.log at df9199216 records 22 passed 1 skipped EXIT=0, reproduced by this review (5 passed EXIT=0 over the new module and the stale case); the provider check fires on a planted codex spawn (logs/negative-control.log, 1 failed EXIT=1) and passes on the suite; the record-path callers no longer run the /proc scan.",
+    "goal": "the goal is four test-isolation repairs (stale-window clock, member-friction store path, reap-seam default, suite-wide provider-binary scan); tests/test_picker_dispatch_pace.py, tests/test_member_friction.py, tests/conftest.py and the new tests/test_no_test_spawns_a_provider.py carry all four.",
+    "manifest": "read; it states commits 1df24400f and df9199216 from base 3f7a2f71f, the 22-passed gate, the codex negative control, and discloses the out-of-scope edit to test_reaper_catches_unrecorded_producer.py.",
+    "write_paths": "the delta touches tests/conftest.py, tests/test_reaper_catches_unrecorded_producer.py, tests/test_member_friction.py, tests/test_picker_dispatch_pace.py, tests/test_no_test_spawns_a_provider.py and the evidence fragment; every path but test_reaper_catches_unrecorded_producer.py is a declared write path."
+  },
+  "justifications": {
+    "durability": "the provider scan is strongly falsifiable (positive control at tests/test_no_test_spawns_a_provider.py:169), but the member-friction guard is asserted against the helper the code itself calls, so the assertion at tests/test_member_friction.py:178 cannot fail on the regression it was written to catch.",
+    "evidence": "the head gate logs/head-gate.log self-names df9199216 and records 22 passed EXIT=0, which I reproduced at head; the codex control fires EXIT=1 (logs/negative-control.log), but the done-when's clock clause is shown only by a decoupling mutation, not by a pass under an advanced clock.",
+    "fit": "the helpers and module follow the surrounding test idiom (frozen-clock helper beside _candidates, seam exemptions beside the scan), though the fragment's \"Provider-banner check\" misnames the provider-binary check.",
+    "goal_fidelity": "all four \u00a716 items land in the diff (clock freeze at tests/test_picker_dispatch_pace.py:78, the store-path derivation at tests/test_member_friction.py:73, the reap default at tests/conftest.py:400, the provider scan at tests/test_no_test_spawns_a_provider.py:158).",
+    "reuse": "the new tests/conftest.py helpers consolidate the per-module real-store fixture-target checks into one shared check rather than forking them, and no owner of a suite-wide spawn scan precedes the new module.",
+    "scope_discipline": "tests/test_reaper_catches_unrecorded_producer.py:126 is edited though it is not a declared write path (disclosed in follow_ons), and the fragment carries evidence prose the dispatch contract forbade."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is four test-isolation repairs (stale-window clock, member-friction store path, reap-seam default, suite-wide provider-binary scan); tests/test_picker_dispatch_pace.py, tests/test_member_friction.py, tests/conftest.py and the new tests/test_no_test_spawns_a_provider.py carry all four.\nVERDICT done_when: the head gate logs/head-gate.log at df9199216 records 22 passed 1 skipped EXIT=0, reproduced by this review (5 passed EXIT=0 over the new module and the stale case); the provider check fires on a planted codex spawn (logs/negative-control.log, 1 failed EXIT=1) and passes on the suite; the record-path callers no longer run the /proc scan.\nVERDICT write_paths: the delta touches tests/conftest.py, tests/test_reaper_catches_unrecorded_producer.py, tests/test_member_friction.py, tests/test_picker_dispatch_pace.py, tests/test_no_test_spawns_a_provider.py and the evidence fragment; every path but test_reaper_catches_unrecorded_producer.py is a declared write path.\nVERDICT manifest: read; it states commits 1df24400f and df9199216 from base 3f7a2f71f, the 22-passed gate, the codex negative control, and discloses the out-of-scope edit to test_reaper_catches_unrecorded_producer.py.\nVERDICT diff: read both commits against 3f7a2f71f; test-tree only, no product code changed; the isolated-store helpers are new in tests/conftest.py and the new module is a 184-line AST scan.\nCALL_SITES: tests/conftest.py:480 per_test_reap_pids, tests/conftest.py:502 reaped_watch_producers, tests/conftest.py:558 reap_watch_producers_armed_by_this_test, tests/test_reaper_catches_unrecorded_producer.py:126\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: all four \u00a716 items land in the diff (clock freeze at tests/test_picker_dispatch_pace.py:78, the store-path derivation at tests/test_member_friction.py:73, the reap default at tests/conftest.py:400, the provider scan at tests/test_no_test_spawns_a_provider.py:158).\nSCORE evidence: 16\nJUSTIFICATION evidence: the head gate logs/head-gate.log self-names df9199216 and records 22 passed EXIT=0, which I reproduced at head; the codex control fires EXIT=1 (logs/negative-control.log), but the done-when's clock clause is shown only by a decoupling mutation, not by a pass under an advanced clock.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: tests/test_reaper_catches_unrecorded_producer.py:126 is edited though it is not a declared write path (disclosed in follow_ons), and the fragment carries evidence prose the dispatch contract forbade.\nSCORE durability: 14\nJUSTIFICATION durability: the provider scan is strongly falsifiable (positive control at tests/test_no_test_spawns_a_provider.py:169), but the member-friction guard is asserted against the helper the code itself calls, so the assertion at tests/test_member_friction.py:178 cannot fail on the regression it was written to catch.\nSCORE fit: 18\nJUSTIFICATION fit: the helpers and module follow the surrounding test idiom (frozen-clock helper beside _candidates, seam exemptions beside the scan), though the fragment's \"Provider-banner check\" misnames the provider-binary check.\nSCORE reuse: 18\nJUSTIFICATION reuse: the new tests/conftest.py helpers consolidate the per-module real-store fixture-target checks into one shared check rather than forking them, and no owner of a suite-wide spawn scan precedes the new module.\nFINDING tests/test_member_friction.py:178 follow-on: the assertion compares _guard_store() against the same real_store_home() helper the guarded code itself calls, so on the standard XDG layout reverting _guard_store() to its old literal leaves both sides equal and the test passes; the escape-destination check no longer guards the resolution it was changed to protect.\nFINDING tests/test_reaper_catches_unrecorded_producer.py:126 follow-on: the file is edited outside the node's declared write paths; the change is required by \u00a716 item 3 but the coordinator must accept the wider scope.\n",
+  "review_run_id": "r-20261008T101343872035-review-of-picker-tests-read-their-own-state",
+  "reviewed_base_sha": "3f7a2f71ff433c778659e93e870207d3752c748f",
+  "reviewed_head_sha": "df9199216f40330b9f88548d4713582c72fd7eed",
+  "reviewed_run_id": "r-20261008T093552471977-picker-tests-read-their-own-state",
+  "scores": {
+    "durability": 14,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T10:24:00+00:00",
+  "total": 99
+}
