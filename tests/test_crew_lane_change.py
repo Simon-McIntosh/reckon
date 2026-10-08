@@ -307,7 +307,7 @@ def test_a_held_destination_lane_is_named_and_changes_nothing(
             }
         return original_verdict(backend_name=backend_name, **kwargs)
 
-    monkeypatch.setattr(dispatch_module, "_budget_verdict", held_beta)
+    monkeypatch.setattr(dispatch_sessions_module, "_budget_verdict", held_beta)
     _resolve_config(monkeypatch)
 
     result = CliRunner().invoke(
@@ -349,7 +349,7 @@ def test_both_commands_call_the_shared_lane_change_operation(monkeypatch) -> Non
         }
 
     dispatch_module = importlib.import_module("reckon.crew.dispatch")
-    monkeypatch.setattr(dispatch_sessions_module, "change_lane", change)
+    monkeypatch.setattr(dispatch_module, "change_lane", change)
     monkeypatch.setattr(crew, "read_pointer", lambda run_id: {"project": "sample"})
     _resolve_config(monkeypatch)
     runner = CliRunner()

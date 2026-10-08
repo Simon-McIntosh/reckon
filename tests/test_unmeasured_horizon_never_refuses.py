@@ -27,7 +27,6 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-import reckon.crew.dispatch_sessions as dispatch_sessions_module
 from reckon import cli as cli_module
 from reckon import crew, ledger
 
@@ -354,7 +353,7 @@ def test_redispatch_cli_accepts_estimated_hours(
         return {"run_id": run_id, "backend": backend}
 
     dispatch_module = importlib.import_module("reckon.crew.dispatch")
-    monkeypatch.setattr(dispatch_sessions_module, "change_lane", _fake_change_lane)
+    monkeypatch.setattr(dispatch_module, "change_lane", _fake_change_lane)
 
     result = CliRunner().invoke(
         cli_module.main,

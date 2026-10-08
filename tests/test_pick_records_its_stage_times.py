@@ -19,7 +19,6 @@ from pathlib import Path
 
 import pytest
 
-import reckon.crew.dispatch_picker as dispatch_picker_module
 from reckon.crew.node import TaskNode
 
 picker = importlib.import_module("reckon.crew.picker")
@@ -167,7 +166,7 @@ def test_a_pick_past_the_bound_records_when_it_completes(tmp_path, monkeypatch):
     pick records its line only once that stage returns.
     """
     home = tmp_path / "home"
-    monkeypatch.setattr(dispatch_picker_module, "PICKER_DISPATCH_TIMEOUT_SECONDS", 0.05)
+    monkeypatch.setattr(dispatch, "PICKER_DISPATCH_TIMEOUT_SECONDS", 0.05)
 
     def slow_caller(*args, **kwargs):
         time.sleep(0.25)

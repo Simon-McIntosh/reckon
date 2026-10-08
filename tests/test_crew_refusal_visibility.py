@@ -19,6 +19,7 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
+import reckon.crew.dispatch_admission as dispatch_admission_module
 from reckon import _backends, crew, ledger
 from reckon import cli as cli_module
 from reckon.crew import plan_review
@@ -35,6 +36,16 @@ REFUSAL_SOURCE_PATHS = (
     "reckon/cli.py",
     "reckon/budget.py",
     "reckon/crew/dispatch.py",
+    "reckon/crew/dispatch_accounting.py",
+    "reckon/crew/dispatch_admission.py",
+    "reckon/crew/dispatch_claims.py",
+    "reckon/crew/dispatch_launch.py",
+    "reckon/crew/dispatch_peer.py",
+    "reckon/crew/dispatch_picker.py",
+    "reckon/crew/dispatch_plan.py",
+    "reckon/crew/dispatch_sections.py",
+    "reckon/crew/dispatch_sessions.py",
+    "reckon/crew/dispatch_watch.py",
     "reckon/crew/node.py",
     "reckon/crew/routing.py",
 )
@@ -250,7 +261,8 @@ def test_a_missing_fleet_script_is_refused_identically_on_both_paths(
     def missing() -> Path:
         raise crew.CrewError("the reckon installation is missing its fleet script")
 
-    monkeypatch.setattr(crew, "_fleet_script", missing)
+    dispatch_plan_module = importlib.import_module("reckon.crew.dispatch_plan")
+    monkeypatch.setattr(dispatch_plan_module, "_fleet_script", missing)
 
     result = CliRunner().invoke(
         cli_module.main, _arguments(repo, "--no-watch", dry_run=dry_run)
@@ -355,7 +367,7 @@ def _budget_refusal(
 ) -> tuple[dict, str]:
     dispatch_module = importlib.import_module("reckon.crew.dispatch")
     now_stamp = now.isoformat(timespec="seconds").replace("+00:00", "Z")
-    monkeypatch.setattr(dispatch_module, "_utc_now", lambda: now_stamp)
+    monkeypatch.setattr(dispatch_admission_module, "_utc_now", lambda: now_stamp)
     result = CliRunner().invoke(
         cli_module.main,
         _arguments(repo, "--no-watch"),

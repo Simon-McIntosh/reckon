@@ -295,7 +295,7 @@ def test_an_unreadable_section_cannot_break_dispatch(
 def test_a_report_changes_no_other_dry_run_field(
     dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setattr(dispatch_module, "new_run_id", lambda _node: "r-fixed")
+    monkeypatch.setattr(dispatch_plan_module, "new_run_id", lambda _node: "r-fixed")
     done_when = "pytest reports one stable dry-run result"
     monkeypatch.setattr(
         dispatch_plan_module,

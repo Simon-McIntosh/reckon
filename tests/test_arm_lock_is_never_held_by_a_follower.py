@@ -42,8 +42,9 @@ with runs._project_watch_claim("arm-lock-sample", "30s") as (held, record):
 ARM = """import importlib, json, os
 from pathlib import Path
 m = importlib.import_module("reckon.crew.dispatch")
-m._watch_executable = lambda: os.environ["WATCH_DRIVER"]
-m.WATCHER_LOAD_BOUND_SECONDS = float(os.environ.get("ARM_BOUND", "15"))
+w = importlib.import_module("reckon.crew.dispatch_watch")
+w._watch_executable = lambda: os.environ["WATCH_DRIVER"]
+w.WATCHER_LOAD_BOUND_SECONDS = float(os.environ.get("ARM_BOUND", "15"))
 gate = Path(os.environ["RECKON_HOME"], "go")
 while not gate.exists():
     m.time.sleep(.01)
@@ -236,6 +237,6 @@ def test_delivery_checks_do_not_hold_the_arm_lock(processes, monkeypatch):
             observed.append(_probe(lock))
         return original(project, session=session)
 
-    monkeypatch.setattr(dispatch, "watch_state", state)
+    monkeypatch.setattr(dispatch_watch_module, "watch_state", state)
     dispatch._ensure_watch_producer(PROJECT, session=SESSION)
     assert observed == [0], "delivery resolution kept the arming mutex"

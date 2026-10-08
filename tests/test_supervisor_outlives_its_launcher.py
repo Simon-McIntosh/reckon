@@ -40,8 +40,9 @@ import time
 from pathlib import Path
 
 d = importlib.import_module("reckon.crew.dispatch")
+launch = importlib.import_module("reckon.crew.dispatch_launch")
 
-d._supervisor_argv = lambda *, spec_path: [
+launch._supervisor_argv = lambda *, spec_path: [
     sys.executable,
     "-c",
     "import time; time.sleep(120)",
@@ -64,8 +65,9 @@ import time
 from pathlib import Path
 
 d = importlib.import_module("reckon.crew.dispatch")
+launch = importlib.import_module("reckon.crew.dispatch_launch")
 
-d._supervisor_argv = lambda *, spec_path: [
+launch._supervisor_argv = lambda *, spec_path: [
     sys.executable,
     "-c",
     "import time; time.sleep(120)",

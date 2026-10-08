@@ -29,6 +29,7 @@ from types import SimpleNamespace
 import pytest
 
 from reckon import _backends
+from reckon.crew import dispatch_launch as dispatch_launch_module
 from reckon.crew import runs
 from tests.test_fence_protects_the_worktree_pool import (
     Pool,
@@ -183,7 +184,7 @@ def _recording_spawn(
 ) -> _RecordingSpawn:
     """Stand in for ``Popen`` in dispatch's own namespace, and nowhere else."""
     recorder = _RecordingSpawn(commands)
-    monkeypatch.setattr(dispatch_module, "subprocess", SimpleNamespace(Popen=recorder))
+    monkeypatch.setattr(dispatch_launch_module, "subprocess", SimpleNamespace(Popen=recorder))
     return recorder
 
 

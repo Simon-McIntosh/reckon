@@ -25,6 +25,7 @@ from click.testing import CliRunner
 
 import reckon.crew.dispatch_plan as dispatch_plan_module
 import reckon.crew.dispatch_sessions as dispatch_sessions_module
+import reckon.crew.recovery as recovery_module
 from reckon import cli as cli_module
 from reckon import crew, flight, ledger
 from reckon.crew import recovery, review, runs
@@ -2681,11 +2682,12 @@ def test_pointer_write_failure_terminates_process_and_removes_dispatch_artifacts
     run_id = "r-pointer-write-failure"
     spawned: dict[str, subprocess.Popen] = {}
     events: list[str] = []
-    original_signal = crew._signal_process_group
-    original_remove = crew._remove_worktree
-    original_write = crew._write_json
+    dispatch_module = importlib.import_module("reckon.crew.dispatch")
+    original_signal = dispatch_module._signal_process_group
+    original_remove = dispatch_module._remove_worktree
+    original_write = runs._write_json
 
-    monkeypatch.setattr(crew, "new_run_id", lambda node_id, now=None: run_id)
+    monkeypatch.setattr(dispatch_plan_module, "new_run_id", lambda node_id, now=None: run_id)
 
     def launcher(plan, *, log_path, stderr_path, prompt_path):
         process = subprocess.Popen(
@@ -2712,9 +2714,10 @@ def test_pointer_write_failure_terminates_process_and_removes_dispatch_artifacts
         events.append("remove")
         original_remove(root, path)
 
-    monkeypatch.setattr(crew, "_write_json", fail_pointer_write)
-    monkeypatch.setattr(crew, "_signal_process_group", record_signal)
-    monkeypatch.setattr(crew, "_remove_worktree", record_remove)
+    monkeypatch.setattr(dispatch_module, "_write_json", fail_pointer_write)
+    monkeypatch.setattr(runs, "_write_json", fail_pointer_write)
+    monkeypatch.setattr(dispatch_module, "_signal_process_group", record_signal)
+    monkeypatch.setattr(dispatch_module, "_remove_worktree", record_remove)
 
     with pytest.raises(OSError, match="forced pointer write failure"):
         crew.dispatch(
@@ -3729,9 +3732,9 @@ def test_opt_in_budget_watchdog_stops_and_records_the_run_phase(
         },
     )
     signalled = []
-    monkeypatch.setattr(crew, "process_alive", lambda pid: True)
+    monkeypatch.setattr(dispatch_sessions_module, "process_alive", lambda pid: True)
     monkeypatch.setattr(
-        crew,
+        recovery_module,
         "_signal_process_group",
         lambda pid, started_at, *, reason="", **kwargs: signalled.append((pid, reason)),
     )

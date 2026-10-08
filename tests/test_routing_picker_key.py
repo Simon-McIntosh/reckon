@@ -11,6 +11,7 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import _store, cli, crew, flight
+from reckon.crew import dispatch_plan as dispatch_plan_module
 from reckon.crew import picker
 from reckon.crew.dispatch import change_lane
 from reckon.crew.dispatch import shadow as dispatch_shadow
@@ -162,7 +163,7 @@ def test_a_dry_run_report_is_comparable_across_picker_modes(repo, monkeypatch, m
     config = deepcopy(CONFIG)
     config["routing"] = {"picker": mode}
     monkeypatch.setattr(cli, "_resolved_flight", lambda *_a, **_k: config)
-    monkeypatch.setattr(dispatch_module, "new_run_id", lambda _node: "r-fixed")
+    monkeypatch.setattr(dispatch_plan_module, "new_run_id", lambda _node: "r-fixed")
     latencies = iter([1.0, 999.0])
 
     def pick(*_a, **_k):

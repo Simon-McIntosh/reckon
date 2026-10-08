@@ -33,6 +33,7 @@ from reckon._plan_html import (
     section_id_candidates,
     section_prose,
 )
+from reckon.crew import dispatch_sections as dispatch_sections_module
 
 # ``reckon.crew.dispatch`` names both the module and a function re-exported from
 # ``reckon.crew``, so bind the module by import rather than attribute lookup.
@@ -146,7 +147,7 @@ def test_the_dispatch_section_text_reads_through_the_one_reader(monkeypatch):
     def _sentinel(_document: str):
         yield "s2", "prose from the one reader"
 
-    monkeypatch.setattr(dispatch, "section_prose", _sentinel)
+    monkeypatch.setattr(dispatch_sections_module, "section_prose", _sentinel)
     document = (
         "<html><body><main>"
         '<h2 id="s2">&#167;2 &#8212; A section</h2>'
