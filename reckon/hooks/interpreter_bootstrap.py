@@ -10,12 +10,33 @@ MINIMUM_PYTHON = (3, 12)
 _ATTEMPT_ENV = "RECKON_HOOK_REEXEC_ATTEMPT"
 
 
+def checkout_interpreter(script: str | os.PathLike[str]) -> Path:
+    """Return the checkout interpreter that runs a hook script.
+
+    The venv layout is a hook script's grandparent directory, and it is named
+    only here: the installer and this bootstrap both call this function, so
+    they cannot name different interpreters for the same checkout. The module
+    stays stdlib-only, so this is importable before any reckon import.
+    """
+    return Path(script).resolve().parents[2] / ".venv" / "bin" / "python"
+
+
+def is_checkout_interpreter(path: str | os.PathLike[str]) -> bool:
+    """Return whether a path has the layout this module resolves for a checkout."""
+    candidate = Path(path)
+    return (
+        candidate.name == "python"
+        and candidate.parent.name == "bin"
+        and candidate.parent.parent.name == ".venv"
+    )
+
+
 def ensure_interpreter(script: str) -> str | None:
     """Re-execute an old interpreter, or return why that was impossible."""
     if sys.version_info >= MINIMUM_PYTHON:
         return None
     script_path = Path(script).resolve()
-    interpreter = script_path.parents[2] / ".venv" / "bin" / "python"
+    interpreter = checkout_interpreter(script_path)
     if os.environ.get(_ATTEMPT_ENV) == str(script_path):
         return f"reckon hook: {interpreter} is below Python 3.12; cannot re-execute"
     if not interpreter.is_file():

@@ -52,6 +52,7 @@ from pathlib import Path
 from typing import IO, Any
 
 from reckon._store import write_json_atomically
+from reckon.hooks import interpreter_bootstrap
 
 # The two hook scripts the fragment binds. Both ship beside this module, which
 # is how the fragment resolves each absolute path: the snippet names the scripts
@@ -133,16 +134,17 @@ def interpreter_path(script_path: Path | str | None = None) -> Path:
     """Return the interpreter the coordinator hook commands run under.
 
     Resolved from the checkout that carries this module, so the command names
-    the environment of the same repository as the script it launches: the
-    obligations hook imports this package, and no other interpreter resolves
-    that import.
+    the environment of the same repository as the obligations hook imports it
+    from: no other interpreter resolves that import. The layout itself is named
+    once, in the bootstrap resolver this delegates to, so the installer and a
+    bare hook script cannot name different interpreters for one checkout.
     """
     source = (
         Path(script_path).resolve()
         if script_path is not None
         else Path(__file__).resolve()
     )
-    return source.parents[2] / ".venv" / "bin" / "python"
+    return interpreter_bootstrap.checkout_interpreter(source)
 
 
 def user_settings_path() -> Path:
@@ -386,12 +388,7 @@ def is_worker_git_guard_group(group: Any) -> bool:
     except ValueError:
         return False
     if len(command) == 2:
-        interpreter = Path(command[0])
-        if (
-            interpreter.name != "python"
-            or interpreter.parent.name != "bin"
-            or interpreter.parent.parent.name != ".venv"
-        ):
+        if not interpreter_bootstrap.is_checkout_interpreter(command[0]):
             return False
         path = Path(command[1])
     elif len(command) == 1:
