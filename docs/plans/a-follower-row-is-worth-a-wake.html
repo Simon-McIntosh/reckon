@@ -25,7 +25,7 @@
   <title>A Follower Row Is Worth A Wake | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="18">
+<meta name="plan-version" content="20">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -119,8 +119,9 @@
       measured chains (<code>working → exited-unfinished → blocked</code> in 2 s,
       <code>blocked → wait-aged → blocked</code> in 3 to 8 s) print once. The settle window is one module
       constant beside <code>ARRIVAL_WINDOW</code>; it is the only definition §2 adds, because a hold needs a
-      length and the existing windows each belong to one named noise pair. No row is held more than two minutes
-      from its first transition. A pane built with observer context shown keeps today's behaviour exactly, which
+      length and the existing windows each belong to one named noise pair. The settle hold never keeps a row more than two minutes
+      from its first transition. The three <code>NOISE_PAIRS</code> holds keep their own measured windows (90 s for
+      the launch flicker, 300 s for the exit phantom and the stall flap), which §2 does not change. A pane built with observer context shown keeps today's behaviour exactly, which
       <code>replay_row_policy</code> uses for §5's comparison. <code>PaneRowPath</code> writes its memory only for printed rows, as it does today,
       and a held-back observer row is held back again when a re-arm re-derives it.</p>
     <p><strong>Done when</strong> <code>tests/test_row_policy_holds_observer_context.py</code> feeds
@@ -195,7 +196,8 @@
     <p>The report is written to the run directory and summarised in the landing record. It reads the
       streams and writes nothing beside them.</p>
     <p><strong>Done when</strong> the report shows at least half of today's rows removed, zero held-back
-      action states, and no action row delayed more than two minutes. As a positive control, the same replay with
+      action states, and no action row delayed by more than two minutes
+      beyond the <code>NOISE_PAIRS</code> window its opener carries, which is zero for an opener outside those pairs. As a positive control, the same replay with
       observer context shown, the pane <code>replay_row_policy</code> builds for today's behaviour, reproduces today's row count within 2%.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
