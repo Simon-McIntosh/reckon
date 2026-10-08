@@ -66,6 +66,8 @@ WORKER_STOP_SCRIPT_NAME = "worker_stop.py"
 # a separate decision from installing the obligations and stop hooks, so it is
 # opt-in here and the fragment is unchanged when the caller does not ask.
 WORKER_GIT_GUARD_SCRIPT_NAME = "worker_git_guard.py"
+NATIVE_AGENT_GUARD_SCRIPT_NAME = "native_agent_guard.py"
+WORKER_MESSAGE_GUARD_SCRIPT_NAME = "worker_message_guard.py"
 
 # The obligations hook's two modes and the harness events each one serves.
 # Prompt mode opens every turn with the current duties; stop mode holds the turn
@@ -83,8 +85,14 @@ HOOK_SCRIPT_NAMES = (
     COORDINATOR_HOOK_SCRIPT_NAME,
     WORKER_STOP_SCRIPT_NAME,
     WORKER_GIT_GUARD_SCRIPT_NAME,
+    NATIVE_AGENT_GUARD_SCRIPT_NAME,
+    WORKER_MESSAGE_GUARD_SCRIPT_NAME,
 )
-WORKER_SCRIPT_NAMES = (WORKER_STOP_SCRIPT_NAME, WORKER_GIT_GUARD_SCRIPT_NAME)
+RECKON_IMPORTING_SCRIPT_NAMES = (
+    COORDINATOR_HOOK_SCRIPT_NAME,
+    WORKER_STOP_SCRIPT_NAME,
+    WORKER_GIT_GUARD_SCRIPT_NAME,
+)
 
 
 class HookInstallError(RuntimeError):
@@ -121,7 +129,7 @@ def worker_git_guard_script_path() -> Path:
     return Path(__file__).resolve().with_name(WORKER_GIT_GUARD_SCRIPT_NAME)
 
 
-def interpreter_path() -> Path:
+def interpreter_path(script_path: Path | str | None = None) -> Path:
     """Return the interpreter the coordinator hook commands run under.
 
     Resolved from the checkout that carries this module, so the command names
@@ -129,7 +137,12 @@ def interpreter_path() -> Path:
     obligations hook imports this package, and no other interpreter resolves
     that import.
     """
-    return Path(__file__).resolve().parents[2] / ".venv" / "bin" / "python"
+    source = (
+        Path(script_path).resolve()
+        if script_path is not None
+        else Path(__file__).resolve()
+    )
+    return source.parents[2] / ".venv" / "bin" / "python"
 
 
 def user_settings_path() -> Path:
@@ -138,7 +151,11 @@ def user_settings_path() -> Path:
 
 
 def build_hook_snippet(
-    script_path: Path | str | None = None, *, include_git_guard: bool = False
+    script_path: Path | str | None = None,
+    *,
+    include_git_guard: bool = False,
+    include_core_hooks: bool = True,
+    crew_guard_paths: tuple[Path, Path, Path] | None = None,
 ) -> dict[str, Any]:
     """Return the settings fragment, as it would be merged, for every hook script.
 
@@ -152,15 +169,22 @@ def build_hook_snippet(
     prompt_command = shlex.join([interpreter, str(script), "--hook", PROMPT_MODE])
     stop_command = shlex.join([interpreter, str(script), "--hook", STOP_MODE])
     worker_stop_command = shlex.join([interpreter, str(worker_stop_script_path())])
-    entries: dict[str, Any] = {
-        event: [_command_group(prompt_command)] for event in PROMPT_EVENTS
-    }
-    entries[STOP_EVENT] = [
-        _command_group(stop_command),
-        _command_group(worker_stop_command),
-    ]
+    entries: dict[str, Any] = {}
+    if include_core_hooks:
+        entries = {event: [_command_group(prompt_command)] for event in PROMPT_EVENTS}
+        entries[STOP_EVENT] = [
+            _command_group(stop_command),
+            _command_group(worker_stop_command),
+        ]
+    if crew_guard_paths is not None:
+        native, message, _ = crew_guard_paths
+        entries["PreToolUse"] = [
+            _command_group(shlex.join([str(native)])) | {"matcher": "Agent"},
+            _command_group(shlex.join([str(message)])) | {"matcher": "SendMessage"},
+        ]
     if include_git_guard:
-        entries["PreToolUse"] = [worker_git_guard_group()]
+        git_path = crew_guard_paths[2] if crew_guard_paths is not None else None
+        entries.setdefault("PreToolUse", []).append(worker_git_guard_group(git_path))
     return {"hooks": entries}
 
 
@@ -206,6 +230,111 @@ def install_hook_settings(
     )
 
 
+def configure_crew_guards(
+    settings_path: Path,
+    *,
+    remove: bool,
+    include_git_guard: bool = False,
+    guard_paths: tuple[Path, Path, Path],
+) -> bool:
+    """Merge or remove sync's guard entries using the installer's settings writer."""
+    target = _settings_target(settings_path)
+    original = _read_bytes(target)
+    settings, _ = upgrade_registered_commands(_parse_settings(original, target))
+    hooks = settings.get("hooks")
+    if hooks is None:
+        hooks = {}
+    if not isinstance(hooks, dict):
+        raise HookInstallError(
+            f"cannot update harness settings {target}: hooks must be an object"
+        )
+    current = hooks.get("PreToolUse")
+    if current is None:
+        current = []
+    if not isinstance(current, list):
+        raise HookInstallError(
+            f"cannot update harness settings {target}: PreToolUse must be a list"
+        )
+
+    retained = [group for group in current if not _is_crew_guard_group(group)]
+    updated = dict(settings)
+    updated_hooks = dict(hooks)
+    if retained:
+        updated_hooks["PreToolUse"] = retained
+    else:
+        updated_hooks.pop("PreToolUse", None)
+    if updated_hooks:
+        updated["hooks"] = updated_hooks
+    else:
+        updated.pop("hooks", None)
+
+    if not remove:
+        snippet = build_hook_snippet(
+            include_core_hooks=False,
+            include_git_guard=include_git_guard,
+            crew_guard_paths=guard_paths,
+        )
+        updated, _, _, _ = _merge_settings(updated, snippet, target)
+    encoded = (_render(updated) + "\n").encode()
+    if encoded == original or (original is None and remove):
+        return False
+    _write_settings(target, updated, original)
+    return True
+
+
+def upgrade_registered_commands(
+    settings: dict[str, Any],
+) -> tuple[dict[str, Any], bool]:
+    """Bind existing reckon-importing entries without adding absent hooks."""
+    hooks = settings.get("hooks")
+    if not isinstance(hooks, dict):
+        return settings, False
+    updated_hooks = dict(hooks)
+    changed = False
+    snippet = build_hook_snippet(include_git_guard=True)
+    for event, groups in snippet["hooks"].items():
+        current = hooks.get(event)
+        if not isinstance(current, list):
+            continue
+        replacements = {
+            _command_identity(command): command
+            for group in groups
+            for command in _group_commands(group)
+            if _script_name(command) in RECKON_IMPORTING_SCRIPT_NAMES
+        }
+        updated_hooks[event], upgraded = _upgrade_worker_commands(current, replacements)
+        changed |= upgraded
+    return ({**settings, "hooks": updated_hooks} if changed else settings), changed
+
+
+def _is_crew_guard_group(group: Any) -> bool:
+    if not isinstance(group, dict):
+        return False
+    expected = {
+        "Agent": NATIVE_AGENT_GUARD_SCRIPT_NAME,
+        "SendMessage": WORKER_MESSAGE_GUARD_SCRIPT_NAME,
+        "Bash": WORKER_GIT_GUARD_SCRIPT_NAME,
+    }.get(group.get("matcher"))
+    if expected is None:
+        return False
+    hooks = group.get("hooks")
+    if not isinstance(hooks, list) or len(hooks) != 1:
+        return False
+    hook = hooks[0]
+    if not isinstance(hook, dict) or hook.get("type") != "command":
+        return False
+    try:
+        tokens = shlex.split(str(hook.get("command") or ""))
+    except ValueError:
+        return False
+    if len(tokens) == 2 and Path(tokens[0]).name.startswith("python"):
+        tokens = tokens[1:]
+    if len(tokens) != 1:
+        return False
+    script = Path(tokens[0])
+    return script.name == expected and script.parent.name == "hooks"
+
+
 def _settings_target(settings_path: Path | str | None) -> Path:
     source = user_settings_path() if settings_path is None else Path(settings_path)
     return source.expanduser()
@@ -230,7 +359,7 @@ def worker_git_guard_group(script_path: Path | str | None = None) -> dict[str, A
     script = (
         worker_git_guard_script_path() if script_path is None else Path(script_path)
     ).resolve()
-    interpreter = script.parents[2] / ".venv" / "bin" / "python"
+    interpreter = interpreter_path(script)
     return {
         "matcher": "Bash",
         "hooks": [
@@ -336,7 +465,7 @@ def _merge_settings(
             _command_identity(command): command
             for group in groups
             for command in _group_commands(group)
-            if _script_name(command) in WORKER_SCRIPT_NAMES
+            if _script_name(command) in RECKON_IMPORTING_SCRIPT_NAMES
         }
         kept, changed = _upgrade_worker_commands(current, replacements)
         upgraded |= changed
@@ -426,6 +555,12 @@ def _command_identity(command: str) -> str:
         return command
     if len(tokens) >= 2 and Path(tokens[1]).name in HOOK_SCRIPT_NAMES:
         tokens = tokens[1:]
+    if (
+        tokens
+        and Path(tokens[0]).parent.name == "hooks"
+        and Path(tokens[0]).name in HOOK_SCRIPT_NAMES
+    ):
+        tokens[0] = f"reckon/hooks/{Path(tokens[0]).name}"
     return shlex.join(tokens) if tokens else command
 
 

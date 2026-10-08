@@ -315,49 +315,9 @@ def _native_agent_guard_path() -> Path:
     return _crew_guard_path("native_agent_guard.py")
 
 
-def _is_native_agent_guard_group(group: Any) -> bool:
-    """Return whether one harness hook group is managed by reckon."""
-    if not isinstance(group, dict) or group.get("matcher") != "Agent":
-        return False
-    hooks = group.get("hooks")
-    if not isinstance(hooks, list) or len(hooks) != 1:
-        return False
-    hook = hooks[0]
-    if not isinstance(hook, dict) or hook.get("type") != "command":
-        return False
-    try:
-        command = shlex.split(str(hook.get("command") or ""))
-    except ValueError:
-        return False
-    if len(command) != 1:
-        return False
-    path = Path(command[0])
-    return path.name == "native_agent_guard.py" and path.parent.name == "hooks"
-
-
 def _worker_message_guard_path() -> Path:
     """Resolve the worker-message guard shipped with the installed package."""
     return _crew_guard_path("worker_message_guard.py")
-
-
-def _is_worker_message_guard_group(group: Any) -> bool:
-    """Return whether one harness hook group manages the peer-send guard."""
-    if not isinstance(group, dict) or group.get("matcher") != "SendMessage":
-        return False
-    hooks = group.get("hooks")
-    if not isinstance(hooks, list) or len(hooks) != 1:
-        return False
-    hook = hooks[0]
-    if not isinstance(hook, dict) or hook.get("type") != "command":
-        return False
-    try:
-        command = shlex.split(str(hook.get("command") or ""))
-    except ValueError:
-        return False
-    if len(command) != 1:
-        return False
-    path = Path(command[0])
-    return path.name == "worker_message_guard.py" and path.parent.name == "hooks"
 
 
 def _worker_git_guard_path() -> Path:
@@ -365,145 +325,23 @@ def _worker_git_guard_path() -> Path:
     return _crew_guard_path("worker_git_guard.py")
 
 
-def _is_worker_git_guard_group(group: Any) -> bool:
-    """Return whether one harness hook group manages the worker git guard."""
-    return hook_installer.is_worker_git_guard_group(group)
-
-
-def _write_json_atomically(path: Path, payload: dict, original: bytes | None) -> None:
-    """Write JSON without exposing a partial file or overwriting a concurrent edit."""
-    encoded = (json.dumps(payload, indent=2, ensure_ascii=False) + "\n").encode()
-    if encoded == original:
-        return
-    if original is None:
-        if path.exists():
-            raise click.ClickException(
-                f"harness settings changed while being updated: {path}"
-            )
-        mode = None
-    else:
-        try:
-            current = path.read_bytes()
-        except OSError as exc:
-            raise click.ClickException(
-                f"cannot re-read harness settings {path}: {exc}"
-            ) from exc
-        if current != original:
-            raise click.ClickException(
-                f"harness settings changed while being updated: {path}"
-            )
-        mode = path.stat().st_mode
-
-    try:
-        write_json_atomically(
-            path,
-            payload,
-            fsync=False,
-            indent=2,
-            sort_keys=False,
-            mode=mode,
-            ensure_ascii=False,
-        )
-    except OSError as exc:
-        raise click.ClickException(
-            f"cannot write harness settings {path}: {exc}"
-        ) from exc
-
-
 def _configure_crew_guards(
     settings_path: Path, *, remove: bool, include_git_guard: bool = False
 ) -> bool:
-    """Install or remove the reckon-owned harness hook groups.
-
-    ``include_git_guard`` adds the ``Bash`` group that binds the worker git
-    guard, which see every Bash call to refuse a mutating git verb a crew
-    worker aims at another checkout. It is off by default, matching the
-    installer fragment's own opt-in: the native-agent and worker-message guards
-    are benign to install unasked, while a guard that can refuse a command is
-    the operator's decision.
-    """
-    settings_path = settings_path.expanduser().resolve()
-    original: bytes | None = None
-    settings: dict[str, Any] = {}
-    if settings_path.exists():
-        try:
-            original = settings_path.read_bytes()
-            loaded = json.loads(original)
-        except (OSError, json.JSONDecodeError) as exc:
-            raise click.ClickException(
-                f"cannot parse harness settings {settings_path}: {exc}"
-            ) from exc
-        if not isinstance(loaded, dict):
-            raise click.ClickException(
-                f"cannot parse harness settings {settings_path}: root must be an object"
-            )
-        settings = loaded
-
-    hooks = settings.get("hooks")
-    if hooks is None:
-        hooks = {}
-    elif not isinstance(hooks, dict):
-        raise click.ClickException(
-            f"cannot update harness settings {settings_path}: hooks must be an object"
+    """Install or remove sync's guard groups through the hook installer."""
+    try:
+        return hook_installer.configure_crew_guards(
+            settings_path.expanduser().resolve(),
+            remove=remove,
+            include_git_guard=include_git_guard,
+            guard_paths=(
+                _native_agent_guard_path(),
+                _worker_message_guard_path(),
+                _worker_git_guard_path(),
+            ),
         )
-
-    pre_tool_use = hooks.get("PreToolUse")
-    if pre_tool_use is None:
-        pre_tool_use = []
-    elif not isinstance(pre_tool_use, list):
-        raise click.ClickException(
-            f"cannot update harness settings {settings_path}: PreToolUse must be a list"
-        )
-
-    retained = [
-        group
-        for group in pre_tool_use
-        if not _is_native_agent_guard_group(group)
-        and not _is_worker_message_guard_group(group)
-        and not _is_worker_git_guard_group(group)
-    ]
-    if not remove:
-        retained.append(
-            {
-                "matcher": "Agent",
-                "hooks": [
-                    {
-                        "type": "command",
-                        "command": shlex.join([str(_native_agent_guard_path())]),
-                    }
-                ],
-            }
-        )
-        retained.append(
-            {
-                "matcher": "SendMessage",
-                "hooks": [
-                    {
-                        "type": "command",
-                        "command": shlex.join([str(_worker_message_guard_path())]),
-                    }
-                ],
-            }
-        )
-        if include_git_guard:
-            retained.append(
-                hook_installer.worker_git_guard_group(_worker_git_guard_path())
-            )
-
-    updated_hooks = dict(hooks)
-    if retained:
-        updated_hooks["PreToolUse"] = retained
-    else:
-        updated_hooks.pop("PreToolUse", None)
-    if updated_hooks:
-        settings["hooks"] = updated_hooks
-    else:
-        settings.pop("hooks", None)
-
-    encoded = (json.dumps(settings, indent=2, ensure_ascii=False) + "\n").encode()
-    changed = encoded != original
-    _write_json_atomically(settings_path, settings, original)
-    return changed
+    except hook_installer.HookInstallError as exc:
+        raise click.ClickException(str(exc)) from exc
 
 
 def _crew_state_exists(docs_dir: Path, project: str) -> bool:
