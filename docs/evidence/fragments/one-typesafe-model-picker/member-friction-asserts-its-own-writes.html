@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="docs-project" content="reckon"><meta name="reckon-type" content="evidence">
+<meta name="plan-slug" content="member-friction-asserts-its-own-writes"><meta name="plan-title" content="The member-friction guard asserts its own writes, not peer activity">
+<meta name="plan-evidence-for" content="one-typesafe-model-picker"><meta name="plan-verifies" content="one-typesafe-model-picker#s6">
+<meta name="plan-recorded-at" content="2026-10-08"><meta name="plan-verdict" content="measurement">
+<title>The member-friction guard asserts its own writes, not peer activity | reckon</title>
+<link rel="stylesheet" href="/_shared/foundation.css"><link rel="stylesheet" href="/_shared/dashboard.css">
+</head><body><main class="plan-doc"><article data-reckon="landed" data-node="member-friction-asserts-its-own-writes" id="member-friction-asserts-its-own-writes">
+<h1>The member-friction guard asserts its own writes, not peer activity</h1>
+
+<p id="member-friction-asserts-its-own-writes-record">The teardown of <code>tests/test_member_friction.py</code> compared the whole real crew store before and after each test (<code>assert _real_stores() == before</code>), so a peer session dispatching or committing during a suite run made it error in both arms of a merge check. The guard now watches a temporary crew home that stands in for the machine's real one and asserts only that <em>this fixture's</em> ids never reach it, so peer activity around it is ignored while a genuine leak is still caught.</p>
+
+<h2 id="member-friction-asserts-its-own-writes-reproduction">The defect reproduced</h2>
+<p id="member-friction-asserts-its-own-writes-repro-body">Recorded at the base revision in <code>~/.cache/reckon-suite-logs/merge-subscription-lanes-base.log</code>: <code>ERROR tests/test_member_friction.py::test_unnamed_dispatch_is_admitted_while_a_review_worker_is_alive</code> at <code>assert _real_stores() == before</code>, the pointer list differing because entries appeared in the live directory while the 16-minute suite ran, in a run reporting <code>2731 passed, 3 skipped, 4 warnings, 1 error</code>. The whole-store comparison names no fixture identity, so it cannot tell a leak from a peer's arrival.</p>
+
+<h2 id="member-friction-asserts-its-own-writes-change">What changed</h2>
+<ul id="member-friction-asserts-its-own-writes-change-list">
+<li>A <code>real_store</code> fixture makes a temporary crew home the guard target and installs it as <code>RECKON_HOME</code>; the operator's real home is neither read nor written.</li>
+<li><code>_fixture_writes_under(store)</code> returns every live pointer or roster row under that home naming the fixture's project (<code>sample</code>), member (<code>fixture-member</code>) or run ids (<code>r-first</code>, <code>r-second</code>). <code>_assert_isolation</code> refuses when any is present.</li>
+<li>A <code>peer_dispatch</code> fixture plants an unrelated pointer for the duration of a test and removes it after the guard has looked, standing in for a concurrent dispatch.</li>
+</ul>
+
+<h2 id="member-friction-asserts-its-own-writes-measure">Measure</h2>
+<table id="member-friction-asserts-its-own-writes-gate">
+<thead><tr><th>arm</th><th>command</th><th>result</th></tr></thead>
+<tbody>
+<tr><td>base</td><td><code>pytest -n 6 tests/test_member_friction.py tests/test_dispatch*.py</code></td><td>205 passed, 1 skipped — EXIT=0</td></tr>
+<tr><td>head</td><td><code>pytest -n 6 tests/test_member_friction.py tests/test_dispatch*.py</code></td><td>207 passed, 1 skipped — EXIT=0</td></tr>
+</tbody>
+</table>
+<p id="member-friction-asserts-its-own-writes-delta">Added failures: <strong>0</strong>; the two extra passing tests are the leak guard and the peer-tolerance check.</p>
+
+<h2 id="member-friction-asserts-its-own-writes-control">Negative control</h2>
+<p id="member-friction-asserts-its-own-writes-control-body">Restoring the whole-store equality in the teardown makes <code>test_isolation_guard_tolerates_a_peer_dispatch</code> fail: the peer's planted pointer is present at teardown and absent from the snapshot taken at setup, giving <code>['r-20260901T000000000000-peer-node.json'] != []</code> and <code>EXIT=1</code>. A variant that plants a fixture-named pointer in the guarded home makes <code>test_isolation_guard_refuses_a_fixture_named_write</code> assert the guard refuses it, so the guard still fires on a real leak.</p>
+</article></main></body></html>
