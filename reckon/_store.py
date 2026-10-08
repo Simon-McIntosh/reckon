@@ -1341,6 +1341,8 @@ def _write_state_locked(
         and requested_status in TERMINAL_STATUSES
     ):
         _require_transition_verdict(new_data, "plan-terminal")
+        if requested_status in _LANDED_STATUSES:
+            _require_every_section_ticked(new_data)
         _require_terminal_evidence(project, slug, requested_status, root)
     if state_type == "plan":
         _validate_decision_transitions(new_data, cur_state)
@@ -3246,6 +3248,50 @@ def _refuse_appended_hiding_followups(
         _refuse_hiding_followup(state, followup, project=project)
 
 
+def _status_before_the_patch(state: dict[str, Any]) -> str:
+    """The plan's stored status, read before the patch is written.
+
+    The patch writer merges the patch into the state before calling its
+    validators, so the status the state carries is the requested one and the
+    transition cannot be read from it alone. The status that preceded the write
+    survives only in the stored plan. When that cannot be read — no project or
+    slug to resolve, a read error, or an empty record — the answer is the empty
+    string, which is not a terminal status, so the section guard runs rather
+    than being silently switched off. This fails closed exactly as the followup
+    rule beside it does.
+    """
+    project = str(state.get("project") or "")
+    slug = str(state.get("slug") or "")
+    if not project or not slug:
+        return ""
+    try:
+        stored, _version = read_plan(project, slug)
+    except (OSError, CorruptEnvelopeError, ValueError):
+        return ""
+    return str(stored.get("status") or "").strip().lower()
+
+
+def _require_every_section_ticked(state: dict[str, Any]) -> None:
+    """Refuse a landing while any section is still declared open.
+
+    A plan reaches ``shipped`` or ``done`` only when every section's
+    declaration is ``done``. An ``implementable`` or ``deferred`` section leaves
+    the plan open, so the refusal names the sections still open, in the order
+    their declarations were written.
+    """
+    from reckon import _plan_html
+
+    open_ids = _plan_html.open_sections(state)
+    if not open_ids:
+        return
+    named = ", ".join(open_ids)
+    raise OpError(
+        f"terminal status refused: {len(open_ids)} section(s) still open "
+        f"({named}) — tick each open section's declaration to 'done' before "
+        "the plan can land"
+    )
+
+
 def validate_landing_patch(state: dict[str, Any], patch: dict[str, Any]) -> None:
     """Refuse a merge patch that lands a plan without naming a continuation.
 
@@ -3258,6 +3304,10 @@ def validate_landing_patch(state: dict[str, Any], patch: dict[str, Any]) -> None
         return
     _refuse_appended_hiding_followups(state, patch)
     requested_status = str(patch.get("status", "")).lower()
+    if requested_status in _LANDED_STATUSES and (
+        _status_before_the_patch(state) not in TERMINAL_STATUSES
+    ):
+        _require_every_section_ticked(state)
     if requested_status in TERMINAL_STATUSES:
         _require_transition_verdict(state, "plan-terminal")
         project = str(state.get("project") or "")
@@ -3354,6 +3404,7 @@ def apply_ops(working: dict, ops: list[dict], is_index: bool) -> list[str]:
     from copy import deepcopy
 
     previous_decisions = deepcopy(working.get("decisions") or {})
+    previous_status = str(working.get("status") or "").strip().lower()
     warnings: list[str] = []
     _begin_write_effects(working)
     for n, op in enumerate(ops):
@@ -3365,6 +3416,16 @@ def apply_ops(working: dict, ops: list[dict], is_index: bool) -> list[str]:
             raise OpError(f"op #{n}: unknown verb {verb!r}")
         handler(working, op, is_index, warnings)
     if not is_index and str(working.get("type", "plan") or "plan") == "plan":
+        landing = any(
+            op.get("op") == "set"
+            and op.get("path") == "status"
+            and str(op.get("value") or "").strip().lower() in _LANDED_STATUSES
+            for op in ops
+        )
+        # An already-terminal plan is not re-judged: the guard keys on the
+        # transition into a terminal status, not on a terminal status itself.
+        if landing and previous_status not in TERMINAL_STATUSES:
+            _require_every_section_ticked(working)
         if any(
             op.get("op") == "set"
             and op.get("path") == "status"
