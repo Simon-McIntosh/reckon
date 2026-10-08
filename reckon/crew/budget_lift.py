@@ -56,6 +56,7 @@ from typing import Any
 
 from reckon import _store as store
 from reckon._timestamps import parse_utc
+from reckon.crew import pace as pace_module
 
 LIFTS_LEAF = "budget-lifts.json"
 
@@ -75,10 +76,8 @@ SESSION_PREFIX = "session:"
 
 DEFAULT_MAX_MULTIPLE = 3.0
 DEFAULT_MAX_HOURS = 168.0
-DEFAULT_PACE_MULTIPLE = 1.1
 
 RUN_ID_ENV = "RECKON_RUN_ID"
-SESSION_ENV = "RECKON_SESSION"
 
 __all__ = [
     "CLOCKS",
@@ -139,10 +138,14 @@ def ceilings(config: Mapping[str, Any] | None) -> LiftCeilings:
 
 
 def configured_pace_multiple(config: Mapping[str, Any] | None) -> float:
-    """Return the configured pace multiple, the floor a lift must exceed."""
-    block = (config or {}).get("budget") or {}
-    value = block.get("pace_multiple")
-    return DEFAULT_PACE_MULTIPLE if value is None else float(value)
+    """Return the configured pace multiple, the floor a lift must exceed.
+
+    Read through the pace policy so the figure a configuration with no
+    ``pace_multiple`` resolves to is the pace module's own default rather than a
+    second copy of it kept here, which could drift from the one the allowance
+    itself is derived against.
+    """
+    return float(pace_module.policy(config).pace_multiple)
 
 
 def read_document(path: str | Path | None = None) -> dict[str, Any]:
@@ -301,30 +304,41 @@ def clear(
     config: Mapping[str, Any] | None = None,
     *,
     group: str,
+    lift_id: str | None = None,
+    session: str | None = None,
     cleared_by: str | None = None,
     now: datetime | None = None,
     environ: Mapping[str, str] | None = None,
     path: str | Path | None = None,
 ) -> dict[str, Any] | None:
-    """Revoke the newest in-force lift on ``group``, recording who and when.
+    """Revoke an in-force lift on ``group``, recording who and when.
+
+    The lift revoked is named one of two ways. ``lift_id`` revokes that exact
+    record, whatever its scope, so a session-scoped lift can be cleared by the
+    coordinator that sees it in the listing. Otherwise the lift is resolved for
+    ``session``: a session's own lift governs it over a global one, and with no
+    session given only a global lift is a candidate, so a bare clear never
+    revokes a session-scoped lift out from under the session that holds it.
 
     Ended lifts are kept as history so the multiple can be tuned against what it
     did; a clear stamps the record rather than removing it. ``None`` is returned
-    when no lift on the group was in force, so a caller can tell a revoke from a
-    no-op.
+    when no in-force lift matched, so a caller can tell a revoke from a no-op.
     """
     environment = environ if environ is not None else os.environ
     moment = _aware(now) if now is not None else datetime.now(UTC)
     document = read_document(path)
-    governing = _governing_lift(
-        document["lifts"],
-        group=str(group),
-        readings=None,
-        now=moment,
-        session=None,
-        bound=ceilings(config),
-    )
-    if governing is None:
+    if lift_id is not None:
+        governing = _lift_by_id(document["lifts"], lift_id=str(lift_id))
+    else:
+        governing = _governing_lift(
+            document["lifts"],
+            group=str(group),
+            readings=None,
+            now=moment,
+            session=session,
+            bound=ceilings(config),
+        )
+    if governing is None or governing.get("cleared_at"):
         return None
     governing["cleared_by"] = str(cleared_by or environment.get("USER") or "unknown")
     governing["cleared_at"] = _iso(moment)
@@ -372,12 +386,17 @@ def effective_budget(
     does.
 
     A session lift applies only to the session it names, a global one to every
-    session, and where both apply the session lift governs its own session.
+    session, and where both apply the session lift governs its own session. The
+    session is taken only from the argument: a resolver that reached for the
+    environment would answer a different question from the one its caller asked.
+
+    The returned block never carries ``pace_multiple`` as ``None``. Only the
+    multiple form raises the multiple, so it carries the lifted figure; the
+    drain-by and uncapped forms keep the configured multiple and mark their own
+    hold in ``pace_hold``, which is what a reader consults for those forms.
     """
     block = (config or {}).get("budget") or {}
     moment = _aware(now)
-    if session is None:
-        session = os.environ.get(SESSION_ENV)
     document = read_document(path)
     lift = _governing_lift(
         document["lifts"],
@@ -396,7 +415,9 @@ def effective_budget(
     released["bookend_reserve_pct"] = 0.0
     released["lift_id"] = lift["id"]
     released["pace_multiple"] = (
-        float(lift["pace_multiple"]) if lift.get("form") == MULTIPLE else None
+        float(lift["pace_multiple"])
+        if lift.get("form") == MULTIPLE
+        else configured_pace_multiple(config)
     )
     released["lift"] = _lift_summary(lift, readings=readings, now=moment)
     released["pace_hold"] = _hold_marker(lift, readings=readings, now=moment)
@@ -490,6 +511,23 @@ def _lift_clock(lift: Mapping[str, Any]) -> str:
     ends = lift.get("ends") or {}
     clock = str(ends.get("clock") or SEVEN_DAY)
     return clock if clock in CLOCKS else SEVEN_DAY
+
+
+def _lift_by_id(
+    lifts: Sequence[Mapping[str, Any]],
+    *,
+    lift_id: str,
+) -> Mapping[str, Any] | None:
+    """Return the recorded lift with ``lift_id``, or ``None``.
+
+    ``cleared_at`` and expiry are not consulted here: a caller clearing by id
+    has named the exact record, and whether it is still in force is settled by
+    the same check every clear applies to whatever it resolves.
+    """
+    for lift in lifts:
+        if str(lift.get("id")) == str(lift_id):
+            return lift
+    return None
 
 
 def _governing_lift(

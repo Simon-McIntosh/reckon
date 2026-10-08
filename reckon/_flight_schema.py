@@ -575,6 +575,15 @@ class BudgetConfig(ConfiguredBaseModel):
     evidence_shelf_life_minutes: float | None = Field(default=None, description="""Minutes a refusal that names no reset time keeps describing the present before it is treated as stale and stops holding the wave on its own. Has no effect on a refusal that names a reset, since a stated reset is stronger evidence than an age and already carries its own expiry. A value at or below zero disables ageing and restores an indefinite hold.""")
     drain_lead_hours: float | None = Field(default=None, description="""How long before a group's weekly quota reset its budget should be drained, in hours. The pace deadline is the weekly period less this lead, so the week ends spent rather than exhausted mid-window with work still queued. A longer lead closes the deadline earlier and raises the share each remaining five-hour window is asked for; zero drains exactly at the reset, and a lead at or beyond the weekly period asks the next window for whatever remains.""", ge=0)
     pace_multiple: float | None = Field(default=None, description="""Deliberate lean above the linear share, applied on top of the same derivation for every declared budget group. A group exactly on pace returns this multiple times the nominal share of the weekly budget per five-hour window, rather than the bare nominal share, so the week converges on its deadline slightly ahead of it. A group's returned allowance records the multiple that produced it, because the multiple is retuned over a longer horizon than one week.""", ge=0)
+    lift: LiftConfig | None = Field(default=None, description="""Ceilings a lift grant is checked against, so a layer bounds how far and how long a declared budget group's pace may be raised. A lift raises one group's pace multiple, drains its window by a stated time, or removes its pace hold entirely, and ends by itself at a window reset, a stated time, or the hard ceiling. Declaring the block here is what lets a flight layer set the ceilings; the shipped defaults live in the defaults layer.""")
+
+
+class LiftConfig(ConfiguredBaseModel):
+    """
+    Ceilings a lift grant is checked against, declared so a layer bounds how far and how long a lead may raise one budget group's pace ahead of its configured rate.
+    """
+    max_multiple: float | None = Field(default=None, description="""Hard ceiling, as a multiple of the configured pace, that a lift may raise a group to. A lift's multiple must exceed the group's configured pace multiple and must not exceed this, so a layer caps how far ahead of pace a grant may push a group. The uncapped lift form is the explicit exception, since removing the pace hold is what it asks for.""", ge=0)
+    max_hours: float | None = Field(default=None, description="""Hard limit, in hours, on how long a lift stays in force whatever its own stated end. It bounds the one case a reading cannot: a reset-anchored lift whose clock's reset is never observed because the reading went stale, so a dead producer cannot leave a lift on indefinitely.""", ge=0)
 
 
 class FenceConfig(ConfiguredBaseModel):
@@ -678,6 +687,7 @@ CapabilityRaise.model_rebuild()
 RoutingOverlay.model_rebuild()
 GateConfig.model_rebuild()
 BudgetConfig.model_rebuild()
+LiftConfig.model_rebuild()
 FenceConfig.model_rebuild()
 WorktreeConfig.model_rebuild()
 SummaryConfig.model_rebuild()
