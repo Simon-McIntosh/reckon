@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-follower-lives-as-long-as-its-session">
+  <meta name="plan-evidence-for" content="a-follower-lives-as-long-as-its-session">
+  <title>A host's own follower never hands off, read from the host census | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <section id="host-follower-never-hands-off-landing">
+      <header>
+        <p class="eyebrow">Execution evidence &middot; fragment</p>
+        <h2>A host's own follower never hands off, read from the host census</h2>
+        <p class="lead">The hand-off from <code>3889d7c5d</code> is ported onto current main with no new marker: whether a follower is the host's own child is read from the host's census record through the existing <code>_session_host_runs_follower</code>, keyed on the follower's own pid. A follower the census lists never hands off; a follower no census lists hands its project and session to a waiting host and exits.</p>
+      </header>
+      <ul>
+        <li>Gate <code>tests/test_follower_hands_off_to_host.py</code>: 8 passed, <code>EXIT=0</code>, logged at <code>gate2.log</code>. Six ported cases with the marker removed, plus a follower an old-host census lists never handing off and a follower no census lists handing off.</li>
+        <li>Negative control <code>negative_control.log</code>: with the census check removed from the hand-off, <code>test_a_follower_an_old_host_census_lists_never_hands_off</code> writes the request and fails, <code>EXIT=1</code>.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>
