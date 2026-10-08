@@ -10,7 +10,7 @@
   <meta name="plan-verifies" content="reckon:a-plan-is-done-when-every-section-is-ticked#s6">
   <meta name="evidence-verdict" content="pass">
   <meta name="evidence-date" content="2026-10-08">
-  <meta name="evidence-commit" content="958f39384">
+  <meta name="evidence-commit" content="39112e789">
 </head>
 <body>
 <main class="plan-doc">
@@ -66,6 +66,16 @@
     <li>Negative control (guard absent, base <code>786c5ba8</code>): the two refusal tests fail
       <code>DID NOT RAISE</code> — <code>base_arm.log</code>, <code>EXIT=1</code>.</li>
   </ul>
+  <p>Regression search: the gate plus the tests that write a terminal status at head —
+  <code>test_archive</code>, <code>test_edit_plan_section_writes</code>,
+  <code>test_closure_gates</code>, <code>test_project_state</code> —
+  <strong>119 passed</strong>, <code>EXIT=0</code>. A wider run over fifteen such files
+  (<code>test_mcp_tools</code>, <code>test_review_lifecycle</code>, <code>test_crew_promotion</code>, …)
+  gave <strong>377 passed</strong> with one load-flaky error in
+  <code>test_impl_is_computed</code> that passes alone at both arms; no failure was attributed to the
+  guard. The guard refusing only <code>shipped</code> and <code>done</code> means supersede and
+  archive keep their existing scope.</p>
+</section>
 </section>
 </main>
 </body>
