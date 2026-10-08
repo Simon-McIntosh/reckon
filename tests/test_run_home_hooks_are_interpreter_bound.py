@@ -46,17 +46,21 @@ def _commands(document: dict) -> list[str]:
     ]
 
 
-def _seed(tmp_path: Path, settings: dict) -> tuple[Path, Path]:
+def _seed(tmp_path: Path, settings: dict) -> tuple[Path, Path, bytes]:
     """Seed a run home from a temporary ``.claude/settings.json``.
 
-    Returns the run home and the operator's source file, so a case can prove the
-    operator's bytes are unchanged after the seed.
+    Returns the run home, the operator's source file, and the operator file's
+    bytes captured BEFORE the seed. Capturing first is the point: a case that
+    compared the file after the seed with a read taken after the seed would be
+    comparing the file with itself, so a seeding regression that wrote the
+    operator's own file would not redden it.
     """
     operator = tmp_path / "operator"
     claude = operator / ".claude"
     claude.mkdir(parents=True)
     source = claude / "settings.json"
     source.write_text(json.dumps(settings, indent=2, sort_keys=True) + "\n")
+    operator_bytes = source.read_bytes()
     home = tmp_path / "run" / "harness"
     _backends.seed_harness_home(
         home,
@@ -64,7 +68,7 @@ def _seed(tmp_path: Path, settings: dict) -> tuple[Path, Path]:
         operator_home=operator,
         declaration=[{"path": "settings.json", "keys": ["hooks"]}],
     )
-    return home, source
+    return home, source, operator_bytes
 
 
 @pytest.fixture(autouse=True)
@@ -100,8 +104,7 @@ def test_bare_reckon_hooks_are_bound_and_others_are_left_alone(tmp_path: Path):
         },
         "env": {"ANTHROPIC_AUTH_TOKEN": "operator-secret"},
     }
-    home, source = _seed(tmp_path, settings)
-    operator_bytes = source.read_bytes()
+    home, source, operator_bytes = _seed(tmp_path, settings)
 
     seeded = json.loads((home / "settings.json").read_text())
     # The filtered copy carries only the hooks key, never the operator's secret.
@@ -124,11 +127,12 @@ def test_bare_reckon_hooks_are_bound_and_others_are_left_alone(tmp_path: Path):
 def test_a_run_home_seeded_from_a_bound_file_is_identical(tmp_path: Path):
     """Seeding from a file already holding the bound commands changes nothing."""
     bound = install.build_hook_snippet(include_git_guard=True)["hooks"]
-    home, source = _seed(tmp_path, {"hooks": bound})
+    home, source, operator_bytes = _seed(tmp_path, {"hooks": bound})
 
     seeded = (home / "settings.json").read_bytes()
     assert json.loads(seeded) == {"hooks": bound}
-    assert seeded == source.read_bytes()
+    assert seeded == operator_bytes
+    assert source.read_bytes() == operator_bytes
 
 
 if __name__ == "__main__":  # pragma: no cover - reproduces the red log
