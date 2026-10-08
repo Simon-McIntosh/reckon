@@ -47,6 +47,10 @@ def _week_reset(*, elapsed_hours: float = ELAPSED_HOURS, observed_at: datetime =
 def _config(**budget_block: object) -> dict:
     block = {
         "pace_multiple": MULTIPLE,
+        # Resolved flight config declares the lift ceilings under ``budget.lift``,
+        # so that key is present on every configuration that states them. It is
+        # not a lift: a group under no lift must still report none.
+        "lift": {"max_multiple": 3.0, "max_hours": 168.0},
         "utilisation_ceiling_pct": 100.0,
         "resume_reserve_pct": 5.0,
         "coordinator_reserve_pct": 3.0,
@@ -166,10 +170,15 @@ def _isolated_home(tmp_path, monkeypatch):
 
 def test_the_configured_pace_holds_the_implement_dispatch() -> None:
     """With no lift, the fixture is over pace and an implement dispatch holds."""
-    verdict = budget.pace_hold(_entry(_config()), "implement")
+    entry = _entry(_config())
+    verdict = budget.pace_hold(entry, "implement")
 
     assert verdict["held"] is True
     assert verdict["bookend"] is False
+    # The fixture declares the lift ceilings under ``budget.lift``; that key is
+    # not a lift in force, so the allowance reports none.
+    assert entry["allowance"].get("lift") is None
+    assert entry["allowance"].get("lift_hold") is None
 
 
 def test_a_lift_raises_the_multiple_the_allowance_is_derived_against() -> None:

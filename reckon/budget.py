@@ -2824,14 +2824,19 @@ def group_pace(
         effective_block = effective.get("budget") or {}
         runway = _group_runway(group, members, clocks, records, effective, moment=moment)
         allowance = _group_allowance(group, reading, clocks, effective, moment=moment)
-        lift = effective_block.get("lift")
-        if lift is not None:
+        lift_id = effective_block.get("lift_id")
+        if lift_id:
+            # ``lift_id`` is set only by the resolver, and only when a lift
+            # governs. The block's ``lift`` key is not that signal: resolved
+            # flight config declares the lift ceilings under ``budget.lift``, so
+            # that key is present whenever a configuration states them and a
+            # group under no lift would otherwise report the ceilings as a lift.
             # The lift rides inside the allowance the entry already carries, so
             # the group block's own key set does not grow a case per lift form;
-            # a group under no lift keeps the allowance it has always had.
+            # a group under no lift keeps the allowance it always has.
             allowance = {
                 **allowance,
-                "lift": lift,
+                "lift": effective_block.get("lift"),
                 "lift_hold": effective_block.get("pace_hold"),
             }
         report.append(
