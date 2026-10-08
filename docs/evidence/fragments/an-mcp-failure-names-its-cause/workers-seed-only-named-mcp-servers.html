@@ -1,0 +1,35 @@
+<section id="workers-seed-only-named-mcp-servers" class="evidence-fragment">
+  <h3>§7 — A worker starts only the MCP servers its work uses</h3>
+  <p>The run's harness home is seeded by <code>seed_harness_home</code> in
+  <code>reckon/_backends.py</code>, the one writer of that home. The seeder now
+  writes two Claude Code settings keys into the <code>settings.json</code> it
+  creates from the operator copy: <code>enableAllProjectMcpServers</code> false,
+  which disables the project's <code>.mcp.json</code> servers as a group, and
+  <code>enabledMcpjsonServers</code> naming the servers the project lists under
+  its flight configuration's <code>worker_mcp_servers</code> key. reckon is a
+  user-scope server carried in the run home's <code>.claude.json</code> and stays
+  enabled. A run's own settings file, written by a run that already owned its
+  home, is never overwritten.</p>
+  <p><strong>Measure.</strong> <code>tests/test_worker_mcp_servers.py</code>
+  passes at EXIT=0 (7 passed): a project with no <code>worker_mcp_servers</code>
+  seeds a settings file with the project's servers off and reckon carried in
+  <code>.claude.json</code>; a project listing <code>imas-cx</code> seeds
+  <code>enabledMcpjsonServers == ["imas-cx"]</code>. The declared negative
+  control — removing the seeded settings write — fails at EXIT=1 with 4 failing
+  test ids the head arm does not fail, and the project server then reads enabled
+  (repro log <code>gate_negative_repro.log</code>). Existing tests over
+  <code>reckon._backends</code>' launch/seed surface pass at EXIT=0 (167 passed,
+ 1 assertion in <code>test_fence_is_on_again.py</code> updated in this round).</p>
+  <p><strong>Scope note.</strong> The record is written only when the launch
+  carries a resolved flight configuration: a bare composition with no project
+  layer governs no project, so the existing operator-harness-home test that
+  asserted the seeded <code>settings.json</code> held only the
+  <code>hooks</code> key passes unchanged. The dispatch path does carry a
+  configuration, so <code>test_fence_is_on_again.py</code> — granted to this
+  round's write scope — was updated to expect the record.</p>
+  <p><strong>Follow-on.</strong>
+  The flight-config key <code>worker_mcp_servers</code> is read from the resolved
+  configuration, but flight's schema (<code>reckon/flight.py</code>) forbids
+  unknown top-level keys, so a project cannot yet declare it without a one-line
+  exclusion there — outside this node's write scope.</p>
+</section>
