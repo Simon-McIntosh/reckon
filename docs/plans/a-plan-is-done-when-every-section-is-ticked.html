@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.17">
-<meta name="plan-version" content="13">
+<meta name="plan-version" content="14">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -227,6 +227,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-08T02:50:00Z">
     <div class="r-comment-body"><p>Landed at merge <code>9e334092</code>. <code>_plan_html.derive_section_todos(html_text, state)</code> gives both plan readers a <code>todos</code> list: <code>parse_plan</code> for the SPA's plan endpoint, and the store's state read for the typed read. Each entry is one authored section, with its heading, link, declaration and <code>c-close-</code> closing record. <code>open_sections</code> is the one open-section predicate, and the declaration vocabulary is named once. Nothing is stored: a state-mode tick writes no <code>todos</code> text, and a read-write round trip leaves the HTML byte-identical. Gate: 5 passed, and the checklist tests fail on the base code; the fingerprint test fails under <code>keep_declarations=True</code>. Whole suite at the merged head: 0 added failures. The 13 failures there are 8 pre-existing at base and 5 load flakes that pass alone at both arms. Review 110/120; its ordering follow-on (<code>open_sections</code> follows declaration order) is carried to §6 and §9. <a href="/reckon/evidence/fragments/a-plan-is-done-when-every-section-is-ticked/the-plan-read-carries-its-section-checklist.html">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261008T011254596374-the-plan-read-carries-its-section-checklist" data-who="reckon-build" data-when="2026-10-08T01:52:43.343Z">
+    <div class="r-comment-body"><p>§3 landed: both plan reads carry a derived checklist — tests/test_plan_todos.py at head 5 passed EXIT=0; negative control base 62db795e fails 4 checklist ids and keep_declarations=True fails test_ticking_a_section_leaves_the_review_fingerprint_unchanged (EXIT=1)</p></div>
 </div>
 </section>
 </main>
