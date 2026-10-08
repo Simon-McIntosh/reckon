@@ -1,10 +1,14 @@
-"""A deferred section blocks only the dependency that names it.
+"""A deferred section blocks only the target work that names it.
 
-A plan holding a deferred section stays open, so a whole-plan dependency on it
-must clear once no section is left implementable — a deferred section is not
-impediment, it is a section the author chose not to build here. A dependency on
-the deferred section itself stays blocked. A plan declaring no sections withholds
-today's answer: only completion satisfies it until its sections are declared.
+A whole-plan dependency on a plan clears once that plan is complete, or once at
+least one of its sections is done and none is left implementable — a deferred
+section blocks only the work that names that section. Two cases are uncertain
+and no fixed rule settles them: a target whose every section is deferred, so
+nothing in it was built, and a target with an authored heading carrying no
+declaration. Both hold the dependent by default and are reported in the
+roadmap's ``judgment_required`` block, where the orchestrator decides. A
+dependency naming the deferred section itself stays blocked, and a plan
+declaring no sections keeps the completion-only rule.
 """
 
 from __future__ import annotations
@@ -46,9 +50,11 @@ class _Env:
 
     def __init__(self, docs_dir: Path) -> None:
         self.docs_dir = docs_dir
+        self.report: dict = {}
 
     def __call__(self, inventory: list[dict]) -> dict:
         report = build_roadmap("proj", inventory, [], docs_dir=self.docs_dir, review={})
+        self.report = report
         return {str(row["slug"]): row for row in report["pending_work"]}
 
     def write(
@@ -96,8 +102,9 @@ def roadmap_rows(tmp_path: Path) -> _Env:
 def test_a_deferred_section_leaves_a_whole_plan_dependency_ready(roadmap_rows) -> None:
     """A depends on nothing; B waits on A, whose only open section is deferred.
 
-    A is active with s1 done and s2 deferred, so no section is left
-    implementable and the whole-plan dependency clears without A being complete.
+    A is active with s1 done and s2 deferred, so at least one section is done and
+    none is left implementable: the whole-plan dependency clears without A being
+    complete, and no judgment is required.
     """
     rows = roadmap_rows(
         [
@@ -110,6 +117,7 @@ def test_a_deferred_section_leaves_a_whole_plan_dependency_ready(roadmap_rows) -
     assert dependency["ref"] == "A"
     assert dependency["satisfied"] is True
     assert rows["B"]["ready"] is True
+    assert rows["B"]["judgment_required"]["required"] is False
 
 
 def test_a_done_section_satisfies_a_section_dependency(roadmap_rows) -> None:
@@ -158,6 +166,8 @@ def test_an_implementable_section_blocks_a_whole_plan_dependency(roadmap_rows) -
     (dependency,) = rows["D"]["depends_on"]
     assert dependency["satisfied"] is False
     assert rows["D"]["ready"] is False
+    # An implementable section is plainly incomplete, so no judgment is asked.
+    assert rows["D"]["judgment_required"]["required"] is False
 
 
 def test_a_plan_without_declarations_blocks_until_complete(roadmap_rows) -> None:
@@ -171,6 +181,8 @@ def test_a_plan_without_declarations_blocks_until_complete(roadmap_rows) -> None
     (dependency,) = active["F"]["depends_on"]
     assert dependency["satisfied"] is False
     assert active["F"]["ready"] is False
+    # No declarations keeps the completion-only rule: not a judgment case.
+    assert active["F"]["judgment_required"]["required"] is False
 
     complete = roadmap_rows(
         [
@@ -183,12 +195,13 @@ def test_a_plan_without_declarations_blocks_until_complete(roadmap_rows) -> None
     assert complete["F"]["ready"] is True
 
 
-def test_an_all_deferred_plan_leaves_its_dependent_ready(roadmap_rows) -> None:
-    """Every section done or deferred clears the whole-plan dependency.
+def test_an_all_deferred_plan_reports_deferred_only(roadmap_rows) -> None:
+    """A target whose every section is deferred holds its dependent by default.
 
-    A plan whose every section is deferred has left no section implementable, so
-    §9's rule reads the dependency satisfied — a deferred section blocks only
-    the work that names it, never the plan's dependents.
+    No fixed rule settles a whole-plan dependency on a plan that built nothing,
+    so it reads blocked and is reported in ``judgment_required`` with the reason
+    ``deferred-only``; the orchestrator decides to build or un-defer the
+    section, or to narrow or remove the dependency.
     """
     roadmap_rows.write(
         "G",
@@ -198,15 +211,39 @@ def test_an_all_deferred_plan_leaves_its_dependent_ready(roadmap_rows) -> None:
     rows = roadmap_rows([_row("G"), _row("H", depends_on=["G"])])
 
     (dependency,) = rows["H"]["depends_on"]
-    assert dependency["satisfied"] is True
-    assert rows["H"]["ready"] is True
+    assert dependency["satisfied"] is False
+    assert rows["H"]["ready"] is False
+    block = rows["H"]["judgment_required"]
+    assert block["required"] is True
+    assert block["count"] == 1
+    (member,) = block["members"]
+    assert member["dependent"] == "proj:H"
+    assert member["target"] == "proj:G"
+    assert member["reason"] == "deferred-only"
+    assert member["sections"] == ["s1", "s2"]
+    # The report carries the same member, so a reader without the row sees it.
+    assert roadmap_rows.report["judgment_required"] == {
+        "required": True,
+        "count": 1,
+        "members": block["members"],
+    }
 
 
-def test_an_undeclared_heading_keeps_the_dependent_blocked(roadmap_rows) -> None:
-    """A heading with no declaration is outstanding work the dependency needs."""
+def test_an_undeclared_heading_reports_undeclared_heading(roadmap_rows) -> None:
+    """A heading with no declaration holds the dependency and is reported.
+
+    The heading could be work the dependency still needs, so no fixed rule
+    settles it: the dependency reads blocked and is reported in
+    ``judgment_required`` with the reason ``undeclared-heading``.
+    """
     roadmap_rows.write("I", headings=["s1", "s2"], declarations={"s1": "done"})
     rows = roadmap_rows([_row("I"), _row("J", depends_on=["I"])])
 
     (dependency,) = rows["J"]["depends_on"]
     assert dependency["satisfied"] is False
     assert rows["J"]["ready"] is False
+    (member,) = rows["J"]["judgment_required"]["members"]
+    assert member["dependent"] == "proj:J"
+    assert member["target"] == "proj:I"
+    assert member["reason"] == "undeclared-heading"
+    assert member["sections"] == ["s2"]

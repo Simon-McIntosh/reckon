@@ -648,18 +648,15 @@ def _plan_dependency_satisfied(
 ) -> bool:
     """Return whether a whole-plan dependency on ``slug`` is satisfied.
 
-    A completed plan satisfies it. Otherwise the dependency clears once no
-    section is left implementable, read through the same open-section predicate
-    the terminal guard uses: every section is then done or deferred, and a
-    deferred section blocks only the work that names it rather than the plan's
-    dependents.
-
-    Two conditions keep that from clearing a dependency on work that was never
-    built. Every authored section heading must carry a declaration — a legacy
-    plan may declare only some of its sections, and an undeclared heading is
-    outstanding work the dependency still needs. And a plan that declares no
-    section at all declares no work, so only completion satisfies a dependency
-    on it.
+    A completed plan satisfies it. Otherwise the dependency clears once at least
+    one section is done and none is left implementable, read through the same
+    open-section predicate the terminal guard uses: every section is then done
+    or deferred, and a deferred section blocks only the work that names it
+    rather than the plan's dependents. Requiring at least one done section keeps
+    a dependency on unbuilt work from clearing: a plan whose sections are all
+    deferred built nothing, and a plan that declares no section at all declares
+    no work, so only completion satisfies a dependency on it. A heading with no
+    declaration is outstanding work the dependency still needs.
     """
 
     if _status(plan) in COMPLETED_STATUSES:
@@ -667,6 +664,11 @@ def _plan_dependency_satisfied(
     view = _plan_authored_state(plan, docs_dir, project, slug)
     declarations = view.get("section_declarations")
     if not isinstance(declarations, Mapping) or not declarations:
+        return False
+    if not any(
+        str(value).strip() == SECTION_DECLARATION_DONE
+        for value in declarations.values()
+    ):
         return False
     for section in open_sections(view):
         if (
@@ -681,6 +683,62 @@ def _plan_dependency_satisfied(
         if identity not in declared:
             return False
     return True
+
+
+#: Reasons a whole-plan dependency holds without a fixed rule settling it. The
+#: roadmap reports these so the orchestrator decides, rather than the code
+#: silently clearing a dependency on work that was never built.
+JUDGMENT_REASON_DEFERRED_ONLY = "deferred-only"
+JUDGMENT_REASON_UNDECLARED_HEADING = "undeclared-heading"
+
+
+def _plan_dependency_judgment(
+    plan: dict[str, Any],
+    docs_dir: Path | None,
+    project: str,
+    slug: str,
+) -> tuple[str, list[str]] | None:
+    """Return the judgment reason holding a whole-plan dependency, if any.
+
+    A whole-plan dependency is uncertain only where no fixed rule applies: the
+    target has no section left implementable, yet the dependency does not clear.
+    That is a target whose every declared section is deferred (nothing was
+    built) or a target carrying an authored heading with no declaration. Both
+    hold the dependent by default and are reported, so the orchestrator decides
+    to build or un-defer the section, or to narrow or remove the dependency. A
+    target with a section still implementable is plainly incomplete and is not
+    uncertain, and a target that declares no sections keeps the completion-only
+    rule — neither is a judgment case.
+    """
+
+    if _status(plan) in COMPLETED_STATUSES:
+        return None
+    view = _plan_authored_state(plan, docs_dir, project, slug)
+    declarations = view.get("section_declarations")
+    if not isinstance(declarations, Mapping) or not declarations:
+        return None
+    if any(
+        str(declarations.get(section) or "").strip()
+        != SECTION_DECLARATION_DEFERRED
+        for section in open_sections(view)
+    ):
+        return None
+    declared = {str(section).strip() for section in declarations}
+    undeclared = [
+        identity
+        for identity, _heading in authored_section_headings(
+            _plan_authored_html(plan, docs_dir, project, slug)
+        )
+        if identity not in declared
+    ]
+    if undeclared:
+        return JUDGMENT_REASON_UNDECLARED_HEADING, undeclared
+    if not any(
+        str(value).strip() == SECTION_DECLARATION_DONE
+        for value in declarations.values()
+    ):
+        return JUDGMENT_REASON_DEFERRED_ONLY, sorted(open_sections(view))
+    return None
 
 
 def execution_gates(plan: dict[str, Any]) -> list[dict[str, Any]]:
@@ -2415,6 +2473,7 @@ def _build_roadmap(
     )
     findings: list[dict[str, Any]] = []
     dependency_rows: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    judgment_required_rows: dict[str, list[dict[str, Any]]] = defaultdict(list)
     after_rows: dict[str, list[dict[str, Any]]] = defaultdict(list)
     local_graph: dict[str, list[str]] = defaultdict(list)
     dependents: dict[str, set[str]] = defaultdict(set)
@@ -2616,6 +2675,20 @@ def _build_roadmap(
                 satisfied = _plan_dependency_satisfied(
                     target, docs_dir, project, parsed.slug
                 )
+                if not satisfied:
+                    judgment = _plan_dependency_judgment(
+                        target, docs_dir, project, parsed.slug
+                    )
+                    if judgment is not None:
+                        reason, concerned = judgment
+                        judgment_required_rows[slug].append(
+                            {
+                                "dependent": _qualified_plan(project, slug),
+                                "target": _qualified_plan(project, parsed.slug),
+                                "reason": reason,
+                                "sections": concerned,
+                            }
+                        )
             dependency_row = {
                 "ref": ref,
                 "scope": "local",
@@ -3112,6 +3185,11 @@ def _build_roadmap(
             "schedule_behind_sprint": schedule_boundary
             if is_schedule_deferred
             else None,
+            "judgment_required": {
+                "required": bool(judgment_required_rows.get(slug)),
+                "count": len(judgment_required_rows.get(slug, [])),
+                "members": list(judgment_required_rows.get(slug, [])),
+            },
         }
         mapped_edges = [
             row for row in dependency_rows.get(slug, []) if row.get("source_section")
@@ -3467,6 +3545,14 @@ def _build_roadmap(
         liveness=liveness,
         resolved_items=resolved_sprint_items,
     )
+    judgment_members = sorted(
+        (member for members in judgment_required_rows.values() for member in members),
+        key=lambda member: (
+            str(member.get("dependent") or ""),
+            str(member.get("target") or ""),
+            str(member.get("reason") or ""),
+        ),
+    )
     return {
         "project": project,
         "scope": {"sprint": sprint_id, "plans": len(plan_values)},
@@ -3530,6 +3616,11 @@ def _build_roadmap(
         },
         "schedule_deferred": schedule_deferred,
         "decision_blockers": decision_blockers_report,
+        "judgment_required": {
+            "required": bool(judgment_members),
+            "count": len(judgment_members),
+            "members": judgment_members,
+        },
         "deferred_decisions": deferred_decisions_report,
         "decision_readiness": {
             "ready": not decision_blockers_report,
