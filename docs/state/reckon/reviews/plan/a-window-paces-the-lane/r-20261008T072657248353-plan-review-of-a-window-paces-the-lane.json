@@ -1,0 +1,67 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T07:37:37.116Z",
+  "dispatched_at": "2026-10-08T07:27:27Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-window-paces-the-lane.html:1924",
+      "id": "reasoning-1",
+      "reason": "the section's whole claim is \"one function resolves a lift\"; if the function's inputs cannot express the condition it resolves, the node either invents an interface or leaves the reset-anchored path unbuilt.",
+      "text": "the seam is declared as `effective_budget(config, *, group, reading, now, session)` and the same paragraph says it \"takes ... the group's window reading ..., **the clock** and the dispatching session\", but no parameter carries the clock; the reset-anchored expiry rule this function must implement is defined per clock (a lift's `ends` names `seven_day`|`five_hour`, `--clock` selects one, and `resets_at` is compared within that clock), and the \"fall between two consecutive readings\" rule needs the group's reading history since `granted_at`, which a single `reading` input also does not carry \u2014 so a node implementing the signature verbatim cannot evaluate the reset-anchored lift the section's done-when requires",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-window-paces-the-lane.html:1924",
+      "id": "reasoning-2",
+      "reason": "`budget.policy` is named as the second reader of the seam, and a config-only function that reads `config[\"budget\"]` directly is exactly the pattern the section says must not remain; the plan must state how the effective block reaches it (a changed signature or a substituted config) or drop it from the reader list.",
+      "text": "the claim \"`budget.policy` and `budget.decide` read it for the resume and coordinator reserves, on routing's path\" is only half-true: `budget.decide(state, policy_block, ...)` does take the budget block as an argument, but `budget.policy(config)` takes `config` alone and reads `config[\"budget\"]` internally (`reckon/budget.py:173`), and its routing call site is `budget_module.decide(state, budget_module.policy(config), ...)` (`reckon/crew/routing.py:407`) \u2014 so `budget.policy`, like `pace.policy` which the section already concedes \"sees only the configuration\", has no group, reading, clock or clock to resolve a lift from",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-window-paces-the-lane.html:1902",
+      "id": "reasoning-3",
+      "reason": "the figure is hedged (\"about nine hours\") and the arithmetic slip below is on the motivating narrative and touches no mechanism, threshold or done-when.",
+      "text": "the corrected hold length is stated as \"about 2026-10-08T13:20Z, nine hours away\" from \"around 03:12Z\", but the section's own figures give ~10 h 08 m between those two stamps (and the releases_at formula at :1944, derived in the same section as \"week start plus 0.21/1.1 \u00d7 168 h\" against a 2026-10-14T05:14:59Z reset, places the release at ~13:20Z)",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "388559fdd08b33d3609e0bb8889915071700ad96dbb243d1c3a49aa139f4e412",
+  "plan_slug": "a-window-paces-the-lane",
+  "plan_version": 154,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T072657248353-plan-review-of-a-window-paces-the-lane",
+  "reviewed_blob_sha": "7d23b33e57f6f32c8c1b86ed7e92b84d20ab5e78",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited target resolves: `reckon/schema/flight.yaml` (BudgetConfig, no `bookend_reserve_pct`/`lift` slot today), `reckon/crew/reserve.py` (`bookend_reserve_pct` default 20.0), `reckon/crew/pace.py` (`policy`, `allowance_for_group`), `reserve.admit_windows` (called at `reckon/crew/dispatch_admission.py:308`), `budget.policy`/`budget.decide` (`reckon/budget.py`), `reckon/crew/pace_replay.py`, and `skills/reckon-build/SKILL.md` \u00a74c.",
+    "done_when": "pass \u2014 \u00a710 and \u00a711 each state falsifiable measures and a negative control that can fail (replacing `effective_budget` with the identity must redden both the admit and the 100%-ceiling assertions; forcing the all-review-excluded test false must redden the \u00a711 assertion), and the \u00a710 doors (\"derived at assertion time rather than written down\") avoid a frozen literal.",
+    "evidence_paths": "pass \u2014 \u00a710 writes the lift record to `<config-home>/budget-lifts.json` and reads it back through `crew(view=\"budget\")`, both durable paths outside any session scratchpad.",
+    "naming": "pass \u2014 the new names (`effective_budget`, `budget.lift.max_multiple`, `budget.lift.max_hours`, `bookend_reserve_pct`, `pace.lift_id`, `releases_at`) name mechanisms and carry no plan labels, stage names, ticket numbers or changelog prose.",
+    "reasoning": "a finding \u2014 the one-seam function `effective_budget` is declared with a signature that omits the clock its own reset-anchored expiry rule is evaluated per, and `budget.policy` is named as a reader of a result its config-only signature cannot reach.",
+    "single_goal": "pass \u2014 the bookend-reserve change moved out of \u00a710 into \u00a711 at the prior review's request, so \u00a710 is the lift alone and \u00a711 is one change to the bookend reserve.",
+    "wiring": "pass \u2014 the plan declares its cross-plan relationship (`plan-informs: background-agent-fitness-and-dispatch-scope`) and both changed sections name the modules and sections they build on (\u00a74's landed reserve, \u00a79's pace row), with no dangling dependency."
+  },
+  "section_digests": {
+    "_document": "230973a4fbb0214aafc28baeae98d434b5d9f1f78d6df6eb145c8d6d1631b938",
+    "s1": "fd232b0e9e301983eea254fa355a00f9cfdad5e4ba397415c196946997e8b78a",
+    "s10": "dc9416b559489857bae27941a63a81da3764c2f42cc4e566e6378e42024c7c7a",
+    "s11": "4f344761a1c7f9eeda684c28b5399f6cc6c50a6961808244c50f4f385a8dfb83",
+    "s2": "0c4f642bff7cb6b87908ea9e036cb3161c15e31cb3285273e06bb2ac1f5c368c",
+    "s3": "ae3d7625321a46e7fa6a9ee3bac0272ee77d236811612140ef03b79670883261",
+    "s4": "8f3ac850d09e4745435c5274237c26be090ce2db03ac422e941c3329841d8563",
+    "s5": "3bc104a16d90fb6279e9ab8c70555e1041253ad31f6376c64b455da33489c6b0",
+    "s5b": "1be686d2a1165f13c4f4e81a29ca56c362c3b069dfc80759cf370cca59440d41",
+    "s6": "8e4ab80a317b73fb60010fe92858cbe3b073511ce10c4547c6eb8952a89829f0",
+    "s6-the-probe-reader-and-the-undeclared-dialect": "c463be6993bc79b07591a01d9e1a1d92d699a48d4c322b2cc395a0e78a2d097d",
+    "s7": "39b7111a3bfa256531f953bd33de123967e24fa4ffc75e6d1cbeca26a45c565d",
+    "s8": "9d68431496117798ca30bbebd6828adc5853e02df969ac62de3bb2dcd41512a4",
+    "s9": "5f72c27f2288b837b6513304ec92d0bf2e8950d169b0389c4c3ffeba27c23b6b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T07:37:58.482161+00:00"
+}
