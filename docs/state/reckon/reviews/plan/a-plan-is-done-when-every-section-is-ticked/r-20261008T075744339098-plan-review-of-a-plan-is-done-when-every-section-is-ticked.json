@@ -1,0 +1,64 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T08:11:04.061Z",
+  "dispatched_at": "2026-10-08T07:58:15Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-plan-is-done-when-every-section-is-ticked.html:128",
+      "id": "done_when-1",
+      "reason": "it would add a text-mode test (a replacement that removes an authored heading while its declaration remains, refused) so the \"called on both write paths\" requirement cannot be met with the state path alone.",
+      "text": "the done-when proves only the state-mode path: all three tests (undeclared-heading refusal, declaration-without-heading refusal, and the insert_section acceptance) run through state-mode writes, yet the deliverable (lines 122-124) requires the same check on the text path, and the text path is the one that runs today with no such check \u2014 `_replace_plan_text` (`reckon/_store.py:1808`) never calls `_require_heading_for_section_records`. A build that wires the widened check into `_write_state_locked` only satisfies every stated test while the text path stays unguarded, so the requirement it names is unverified.",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "b3233163a6bc5ef1e04dac5d6aaaab23bd8f214269176cd8fbf8f2bfd82e0088",
+  "plan_slug": "a-plan-is-done-when-every-section-is-ticked",
+  "plan_version": 36,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-08T08:12:12.949617+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-08T08:12:12.949617+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-plan-is-done-when-every-section-is-ticked.v36.json",
+  "review_run_id": "r-20261008T075744339098-plan-review-of-a-plan-is-done-when-every-section-is-ticked",
+  "reviewed_blob_sha": "271e4277f0e7e32ded9e20d254d26171fc8f3ebe",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every anchor resolves in the worktree at HEAD: `_require_heading_for_section_records` (`reckon/_store.py:1631`), `_require_new_section_contracts` (`:1665`), `_write_state_locked` (`:1212`), `_replace_plan_text` (`:1808`), `write_state` (`reckon/_plan_html.py:1950`), and `reckon audit-doc` (`reckon/project_maintenance_commands.py:1252`).",
+    "done_when": "a finding \u2014 the deliverable requires the coverage check on both write paths (state via `_write_state_locked`, text via `_replace_plan_text`), but all three tests exercise only a state-mode write, so a build that wires the state path alone passes.",
+    "evidence_paths": "pass \u2014 \u00a75 names no temporary or session-scratch path; its census is recorded in the plan's committed evidence, consistent with the other sections.",
+    "naming": "pass \u2014 the two new audit codes (`section-without-todo`, `todo-without-section`) are mechanism-named kebab slugs matching the existing audit vocabulary (`reckon/doccheck.py:124-127`); no plan labels, ticket numbers or version tags appear in \u00a75.",
+    "reasoning": "pass \u2014 the stated root cause matches the code: the existing call site reads `source_text` (`reckon/_store.py:1384`), the authored HTML before `write_state` renders (`:1385`), so widening the check there would test new headings against the file's previous `plan-section-declarations`. Reading `write_state`'s output is the fix, and the amendment to line 125 says exactly that. The mechanism runs on the named real callers, and the third test's negative control is falsifiable: reading `source_text`'s (stale) declarations would flag the newly-inserted heading, failing the acceptance assertion. \u00a75's record\u2194heading direction is subsumed by the declaration direction, because every record write also writes a declaration (`reckon/_store.py:2701`, `:3030`).",
+    "single_goal": "pass \u2014 \u00a75 has one deliverable: one coverage check (widened from `_require_heading_for_section_records`, `reckon/_store.py:1631`) plus its audit surface, refused in both directions.",
+    "wiring": "pass \u2014 \u00a75 declares no new depends-on edge; it reads \u00a73's predicate and \u00a76 releases `reckon/_store.py`, both consistent with the node table and followup f-tick-005. The section's `data-status=\"implementable\"` matches the declaration meta (`s5: implementable`)."
+  },
+  "section_digests": {
+    "_document": "87ef47605cf19c57112c74de2a7a256fd667ecd67525bdf7b95bce41bb8977a9",
+    "s1": "504d22771a3dd608a5f113f45b30b87012723b39ee6319c32160ad40e77b7adb",
+    "s2": "2d0220d0872dd77830193ee143573a19119b3152a998506dd5491a03a0f80500",
+    "s3": "dbf9166463b113d8f8a440402420ab71cecdf477a9019a3e22158b8db6ae5de9",
+    "s4": "f91b4fda0b5185501a0a7264c6ba88dc1586d9b53641cb27676fcd7d6e9a3bdc",
+    "s5": "19afc88c43104d2f9827934abcdabce5a13252b50fefd2e9a4a7566e78279538",
+    "s6": "0418ebb7e7cc2b3384ba2f3083c13055aecdc2822cb908d790ca11cde28f29bd",
+    "s7": "d7e441a3d1c0f7f50bbb675a73d8cbff3d2573d8ea49fbaf1befb81e245eab7b",
+    "s8": "2f36255141168e93b0b91e1ed13f26491a53c82783099452394a9c4e5c70a19d",
+    "s9": "f2886be505469c66ee74166fd61eadf445d43f95f996dc8caabe3a0b733e7052"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T08:12:04.937304+00:00"
+}
