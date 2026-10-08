@@ -680,6 +680,38 @@ def _read_state(
     return state, version
 
 
+def _declared_north_stars(project: str, docs_dir: Path) -> set[str] | None:
+    """Return the project's declared north-star ids, reused while they hold.
+
+    The diagnostic needs only the north-star declarations, not the whole
+    composed project state, and re-deriving that state on every plan read walks
+    the corpus once per read. The result is memoised against the stat identity
+    of the directory that carries the declarations, so a read about one plan
+    takes its answer from a result the store already holds rather than from a
+    fresh recursive glob. ``None`` means the project state could not be read, so
+    the caller adds no diagnostic.
+    """
+    from reckon import file_memo
+
+    state_dir = docs_dir / "state" / project
+    key_path = state_dir if state_dir.is_dir() else docs_dir
+
+    def compute() -> set[str] | None:
+        from reckon.project_state import ProjectStateError, compose_project_state
+
+        try:
+            project_state = compose_project_state(docs_dir, project)
+        except ProjectStateError:
+            return None
+        return {
+            str(item.get("id") or "")
+            for item in project_state.get("north_stars", [])
+            if isinstance(item, dict)
+        }
+
+    return file_memo.memoized("north_stars", key_path, compute)
+
+
 def _add_north_star_diagnostic(
     project: str,
     state: dict,
@@ -692,17 +724,9 @@ def _add_north_star_diagnostic(
     docs_dir = _docs_dir_for_project(project, root)
     if docs_dir is None:
         return
-    from reckon.project_state import ProjectStateError, compose_project_state
-
-    try:
-        project_state = compose_project_state(docs_dir, project)
-    except ProjectStateError:
+    declared = _declared_north_stars(project, docs_dir)
+    if declared is None:
         return
-    declared = {
-        str(item.get("id") or "")
-        for item in project_state.get("north_stars", [])
-        if isinstance(item, dict)
-    }
     if north_star in declared:
         return
     state["validation_diagnostics"] = [

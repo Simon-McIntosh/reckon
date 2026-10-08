@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="an-mcp-failure-names-its-cause">
+  <meta name="plan-title" content="An MCP Failure Names Its Cause">
+  <meta name="plan-evidence-for" content="reckon:an-mcp-failure-names-its-cause">
+  <meta name="plan-verifies" content="reckon:an-mcp-failure-names-its-cause#s9">
+  <meta name="plan-recorded-at" content="2026-10-08">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-node" content="one-plan-read-is-not-a-corpus-scan">
+  <title>A one-plan read stops walking the corpus — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="one-plan-read-is-not-a-corpus-scan-landed" data-node="one-plan-read-is-not-a-corpus-scan" data-reckon="landed" data-when="2026-10-08">
+  <h2 id="one-plan-read-is-not-a-corpus-scan-heading">A one-plan read stops walking the corpus</h2>
+  <p id="one-plan-read-is-not-a-corpus-scan-summary"><code>reckon.resources.resolve_resource</code> resolves a named slug at its canonical path through <code>_resolve_canonical</code> and <code>_canonical_resource_at</code> before falling through to the whole-tree scan, so <code>_store._resolve_html_file</code> no longer globs the docs tree to find one plan. <code>_store._add_north_star_diagnostic</code> reads the project's declared north-star ids from a <code>file_memo.memoized</code> result keyed on the project's state directory instead of composing the whole project state on every read. Every read answers the payload it answered before.</p>
+  <p id="one-plan-read-is-not-a-corpus-scan-evidence">Gate: <code>tests/test_one_plan_read_is_not_a_corpus_scan.py</code> 1 passed, EXIT=0. Counting <code>os.scandir</code> during a warm one-plan <code>read_plan</code> in fixtures of 5 and 60 plans (each plan owning an evidence-fragment directory), the count is equal at both sizes (0), and the direct-path payload equals the scan-path payload. The counter's own positive control, with direct resolution reverted, reads 22 (5 plans) and 132 (60 plans). Negative control: with the direct path resolution reverted so the read scans the corpus, the equality assertion fails EXIT=1, counts 22 vs 132. Warm fleet-node read of this plan: 0.039 s, within the 30 s deadline.</p>
+</article>
+</body>
+</html>
