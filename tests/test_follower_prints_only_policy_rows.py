@@ -144,6 +144,26 @@ def _live_runs(home: Path, *run_ids: str) -> None:
         _write_pointer(home, run_id, f"node-{run_id}", phase="working")
 
 
+@pytest.fixture()
+def observer_pane(monkeypatch):
+    """Build the follower's pane with observer context shown.
+
+    The coordinator's pane holds observer rows back, and a resume re-derives a
+    bare baseline — observer context — so a test of the resume's own baseline
+    path builds the pane the ``show_observer`` flag exists for, exactly as the
+    comparison and the negative control do.
+    """
+    original = ticker.PaneRowPath
+
+    class _Showing(original):
+        def __init__(self, **kwargs):
+            kwargs["show_observer"] = True
+            super().__init__(**kwargs)
+
+    monkeypatch.setattr(ticker, "PaneRowPath", _Showing)
+    return _Showing
+
+
 # --- the held pairs print nothing -----------------------------------------
 
 
@@ -155,13 +175,20 @@ def test_launch_flicker_pair_prints_nothing():
     assert policy.flush(now=1e12) == []
 
 
-def test_exit_phantom_pair_prints_nothing():
+def test_exit_phantom_pair_prints_the_net_change():
+    """A run that finished behind a held block reaches the pane as one row.
+
+    The pair's resolution lands in the action state ``completed_unpromoted``, so
+    it prints the net change under the opener's left side rather than dropping
+    the promotion the coordinator owes the run.
+    """
     policy = ticker.RowPolicy()
     policy.seed("run-b", "working")
     assert policy.feed(_row("run-b", "working", "blocked"), now=2000.0) == []
-    assert (
-        policy.feed(_row("run-b", "blocked", "completed_unpromoted"), now=2010.0) == []
-    )
+    printed = policy.feed(_row("run-b", "blocked", "completed_unpromoted"), now=2010.0)
+    assert [(row["from_state"], row["to_state"]) for row in printed] == [
+        ("working", "completed_unpromoted")
+    ], printed
     assert policy.flush(now=1e12) == []
 
 
@@ -202,13 +229,17 @@ def test_blocked_run_whose_worker_did_not_survive_prints_after_its_window():
 
 
 def test_unresolved_opener_prints_when_a_later_row_needs_the_pane():
-    """A held opener cannot be silently swallowed by a rule applied after it."""
+    """A held opener cannot be silently swallowed by a rule applied after it.
+
+    The later coordinator row is itself held for the settle window, so it
+    reaches the pane on its own release rather than in the same call.
+    """
     policy = ticker.RowPolicy()
     opener = _row("run-g", "working", "blocked")
     assert policy.feed(opener, now=1000.0) == []
     late = _row("run-g", "blocked", "complete")
-    printed = policy.feed(late, now=1005.0)
-    assert printed == [opener, late]
+    assert policy.feed(late, now=1005.0) == [opener]
+    assert policy.flush(now=1e12) == [late]
 
 
 # --- the three kept classes -----------------------------------------------
@@ -219,9 +250,11 @@ def test_same_state_rewrite_moves_only_the_counter():
     policy = ticker.RowPolicy()
     assert policy.feed(_row("run-h", "working", "working"), now=1.0) == []
     # The counter path still advances the memory, so a real move afterwards is
-    # news rather than a repeat of what the counter was counting.
+    # news rather than a repeat of what the counter was counting. The move is a
+    # coordinator row, so it reaches the pane on its settle window's release.
     move = _row("run-h", "working", "complete")
-    assert policy.feed(move, now=2.0) == [move]
+    assert policy.feed(move, now=2.0) == []
+    assert policy.flush(now=2.0 + ticker.SETTLE_WINDOW) == [move]
 
 
 # The kinds the audit's census table classes coordinator, plus the three kinds
@@ -272,18 +305,20 @@ def test_every_coordinator_kind_prints_with_its_plain_reason():
         assert ticker.transition_class(kind[0], kind[1]) == ticker.ROW_COORDINATOR
         policy = ticker.RowPolicy()
         row = _row("run-i", kind[0], kind[1], reason="landed clean")
-        printed = policy.feed(row, now=1.0)
-        if not printed:
-            # This kind also opens a noise pair, so the hold takes it first and
-            # it prints for real once the pair's window closes without it.
-            printed = policy.flush(now=1.0 + _window(kind))
+        assert policy.feed(row, now=1.0) == []
+        # The kind is either a noise opener, held for its own window, or a
+        # coordinator row, held for the settle window; either way it prints on
+        # its release, carrying its plain reason.
+        printed = policy.flush(now=1e12)
         assert printed == [row], kind
         assert printed[0]["reason"] == "landed clean"
 
 
 def test_observer_rows_print_unmarked():
     assert ticker.transition_class("unreadable", "working") == ticker.ROW_OBSERVER
-    policy = ticker.RowPolicy()
+    # A pane that shows observer context prints the row as it always did; the
+    # coordinator's default pane holds it back.
+    policy = ticker.RowPolicy(show_observer=True)
     row = _row("run-j", "unreadable", "working")
     printed = policy.feed(row, now=1.0)
     assert printed == [row]
@@ -306,7 +341,10 @@ def test_declared_wait_prints_even_when_its_state_word_repeats():
         wait_condition_state="pending",
         wait_overdue=False,
     )
-    assert policy.feed(row, now=1.0) == [row]
+    # The exemption keeps the row off the re-derivation rule, so it is held for
+    # its settle window and prints on release, not suppressed.
+    assert policy.feed(row, now=1.0) == []
+    assert policy.flush(now=1.0 + ticker.SETTLE_WINDOW) == [row]
 
 
 # --- the replay answers through the same path the pane uses ---------------
@@ -343,7 +381,12 @@ def test_the_replay_path_is_the_path_the_follower_builds():
     # leaves no trace a later arming could mistake for a delivered row.
     assert path.feed(_row(RUN_A, "working", "stalled"), now=1.0) == []
     assert path.reported == {}
+    # The stall opener prints late when its pair does not complete, so that row
+    # is the one the memory records; the coordinator row that displaced the
+    # hold is itself held for the settle window and reaches the pane later.
     assert path.feed(_row(RUN_A, "working", "complete"), now=2.0) != []
+    assert path.reported == {RUN_A: "stalled"}
+    assert path.flush(now=1e12) != []
     assert path.reported == {RUN_A: "complete"}
     assert path.feed(_row("r-someone-else", "working", "complete"), now=3.0) == []
 
@@ -387,7 +430,9 @@ def test_a_noise_pair_prints_nothing_through_the_followers_own_rows(home) -> Non
         stream_path = Path(seat["stream_path"])
         crew.list_live(project=PROJECT)
         first = _arm()
-        assert {event["run_id"] for event in first} == {RUN_A, RUN_B}, first
+        # A fresh attach of working runs is a bare re-announcement, which the
+        # coordinator's pane holds back, so the attach wakes nobody.
+        assert first == [], first
 
         now = _iso(time.time())
         _append_stream(
@@ -439,7 +484,8 @@ def test_a_row_the_policy_held_is_not_remembered_as_delivered(home) -> None:
         stream_path = Path(seat["stream_path"])
         crew.list_live(project=PROJECT)
         first = _arm()
-        assert {event["run_id"] for event in first} == {RUN_A}, first
+        # A fresh attach of a working run is a bare re-announcement, held back.
+        assert first == [], first
 
         opener = _event(
             RUN_A,
@@ -464,7 +510,9 @@ def test_a_row_the_policy_held_is_not_remembered_as_delivered(home) -> None:
         ], rearmed
 
 
-def test_a_resume_baseline_stays_quiet_for_a_row_the_pane_already_shows(home) -> None:
+def test_a_resume_baseline_stays_quiet_for_a_row_the_pane_already_shows(
+    home, observer_pane
+) -> None:
     """A re-derived baseline is fed through the row path, so a known row is silent.
 
     A resume carries the states the pane last drew. When its checkpoint no longer
@@ -474,6 +522,10 @@ def test_a_resume_baseline_stays_quiet_for_a_row_the_pane_already_shows(home) ->
     shows at its current state must not be announced a second time. The run the
     resume does not name is genuinely new, so it reaches the pane: an arming
     that printed nothing at all cannot pass this.
+
+    The baseline is observer context, so the pane is built with
+    ``show_observer`` true — the coordinator's own pane holds it back, and this
+    test is about the resume's baseline routing rather than the hold.
     """
     _live_runs(home, RUN_A, RUN_B)
     with runs._project_watch_claim(PROJECT, "1h") as (acquired, seat):
@@ -507,6 +559,7 @@ def test_a_resume_baseline_stays_quiet_for_a_row_the_pane_already_shows(home) ->
 
 def test_a_resume_that_names_a_replaced_stream_owes_its_rows_on_its_first_pass(
     home,
+    observer_pane,
 ) -> None:
     """A replaced-stream resume derives the baseline on one pass, budget or none.
 
@@ -518,6 +571,9 @@ def test_a_resume_that_names_a_replaced_stream_owes_its_rows_on_its_first_pass(
     lifetime, and an arming whose lifetime is already spent never reaches it.
     This drives the same case with no budget left and requires the row anyway,
     so the owed row cannot depend on how much of the arming's time remains.
+
+    The baseline is observer context, so the pane is built with
+    ``show_observer`` true, as above.
     """
     _live_runs(home, RUN_A, RUN_B)
     with runs._project_watch_claim(PROJECT, "1h") as (acquired, seat):
