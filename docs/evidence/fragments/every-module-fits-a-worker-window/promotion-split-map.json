@@ -1,0 +1,975 @@
+{
+  "base": "0d925378c9966477a8f8e42bef2584641c0a62cc",
+  "module": "reckon/crew/promotion.py",
+  "modules": [
+    {
+      "path": "reckon/crew/promotion_evidence.py",
+      "concern": "Manifest, commits, and recorded gate evidence",
+      "members": [
+        "_COORDINATOR_LANDING_AUTHOR",
+        "_WORKER_RECORD_NAME",
+        "_ATTEMPT_RECORD_NAME",
+        "scoped_diff_stat",
+        "_CumulativeDiff",
+        "_committed_scope",
+        "_uncommitted_paths",
+        "_declared_repository_roots",
+        "_require_commits_beyond_base",
+        "_registered_repository_roots",
+        "_run_commit_directory",
+        "_commit_canonical_id",
+        "_commit_resolves_in",
+        "_declares_absent_commits",
+        "_COMMITLESS_ROLES",
+        "_ABSENCE_BOUNDARY",
+        "_FIELD_LINE",
+        "_raw_manifest_field",
+        "_opens_with_an_absence_word",
+        "_commitless_changed_paths_declares_absence",
+        "_worktree_git_paths",
+        "_PROVISIONED_WORKTREE_ENTRIES",
+        "_worktree_repository_changes",
+        "_manifest_declares_no_change",
+        "_worktree_untracked_paths",
+        "_worktree_unchanged_since_base",
+        "_run_changed_nothing",
+        "_commitless_raw_field",
+        "_commits_field_declares_absence",
+        "_manifest_text",
+        "_presented_commits_without_a_declaration",
+        "_unresolved_citations",
+        "_foreign_repository",
+        "_require_gate_evidence",
+        "_EXIT_RECORD",
+        "_RUNNER_SUMMARY",
+        "_UNEXECUTED_EXIT_CODES",
+        "_log_shows_the_command_ran",
+        "_first_command_not_found_line",
+        "_recorded_exit_status",
+        "_require_gate_log_agrees",
+        "_head_arm_log_failure_ids",
+        "_zero_added_against_a_red_base",
+        "_arm_without_completion",
+        "_require_verdict_matches_exit_status",
+        "_promoted_worker_exit",
+        "_recorded_disposition"
+      ],
+      "estimated_tokens": 17944
+    },
+    {
+      "path": "reckon/crew/promotion_gate.py",
+      "concern": "Gate command validation and replay at the integrated revision",
+      "members": [
+        "_PRESERVED_GATE_LOG_NAME",
+        "_REPLAY_GATE_LOG_NAME",
+        "_REPLAY_BOUND_DEFAULT_SECONDS",
+        "_REPLAY_BOUND_HEADROOM",
+        "_REPLAY_BOUND_CEILING_SECONDS",
+        "_GATE_LOG_DURATION",
+        "_replay_log_header",
+        "_write_replay_log",
+        "_preserve_cited_gate_log",
+        "_GATE_COMMAND_PLACEHOLDER",
+        "_GATE_COMMAND_ELLIPSIS",
+        "_GATE_COMMAND_PARENTHETICAL",
+        "_GATE_COMMAND_SHELL_OPERATORS",
+        "gate_command_prose",
+        "_require_runnable_gate_command",
+        "_SHELL_ASSIGNMENT",
+        "_require_executable_gate_command",
+        "_paths_differing_between",
+        "_cited_changed_paths",
+        "_merged_gate_finding",
+        "_recorded_worktree_roots",
+        "_rewrite_worktree_roots",
+        "_recorded_gate_seconds",
+        "_replay_bound",
+        "_replay_cut_short_reason",
+        "rerun_gate_at_integrated_revision",
+        "record_gate_rerun_at_integrated_revision"
+      ],
+      "estimated_tokens": 12778
+    },
+    {
+      "path": "reckon/crew/promotion_scope.py",
+      "concern": "Repository boundaries and landing writes",
+      "members": [
+        "_ZERO_COUNT",
+        "_manifest_cites_a_commit",
+        "_prose_changed_paths_name_no_paths",
+        "_changed_paths_declare_no_paths",
+        "_changed_paths_inside_repository",
+        "_require_commit_for_changed_manifest",
+        "_resolve_commits",
+        "_promoted_revision",
+        "_descendant_commit",
+        "_repository_scope_paths",
+        "_merge_revisions",
+        "_scope_worktree",
+        "_outside_declared_scope",
+        "_path_change_reaches_integration_head",
+        "_accepted_scope_exceptions",
+        "_snapshot_entries",
+        "_run_directory_tree_snapshot",
+        "_repository_tree_boundary_violations",
+        "BOUNDARY_REFERENT_MAX_AGE_SECONDS",
+        "_boundary_has_no_referent",
+        "_require_repository_tree_boundary",
+        "_is_shadow",
+        "_write_shadow_patch",
+        "_shadow_patch_stat",
+        "_elapsed_seconds",
+        "_assume_utc_if_naive",
+        "_wall_exceeded_budget",
+        "_run_streams",
+        "_record_stream_paths",
+        "_primary_read_targets",
+        "_shadow_stream_contamination",
+        "_declared_manifest_commits",
+        "_declared_manifest_landing",
+        "_worker_authored_landing_record",
+        "_record_landing_comment",
+        "_OPEN_OPERATION_MARKERS",
+        "_open_operation_state",
+        "_require_committable_checkout",
+        "_path_differs_from_head",
+        "_plan_differs_only_by_the_stores_own_writes",
+        "_RECORD_ATTRIBUTES",
+        "_strip_store_owned_content",
+        "_collapse_inter_tag",
+        "_refuse_unrelated_plan_edit",
+        "_plan_comment_store_path",
+        "_restore_landing_writes",
+        "_restore_one_landing_write",
+        "_path_has_a_staged_change",
+        "LANDING_ROLLBACK_ATTRIBUTE",
+        "_report_written_ledger_row",
+        "_ledger_row_was_rolled_back",
+        "_resolved_path_key",
+        "_landing_refusal",
+        "_ledger_holds_row",
+        "_discard_run_store_row",
+        "_commit_landing_writes"
+      ],
+      "estimated_tokens": 23501
+    },
+    {
+      "path": "reckon/crew/promotion_checks.py",
+      "concern": "Terminal, review, plan, and control readiness checks",
+      "members": [
+        "StreamMeasures",
+        "_zone_aware_stream_timestamp",
+        "_terminal_stream_data",
+        "_STREAM_SETTLE_POLL_SECONDS",
+        "_STREAM_SETTLE_QUIESCENCE_SECONDS",
+        "_STREAM_SETTLE_MAX_SECONDS",
+        "_newest_stream_mtime",
+        "_wait_out_stream_tail",
+        "_end_live_writer_for_settle",
+        "_promotion_terminal_observation",
+        "_recoverable_session",
+        "_require_resume_waiver",
+        "_fresh_manifest",
+        "_manifest_repository_paths",
+        "_require_recognised_manifest_status",
+        "_require_worker_stopped_before_promotion",
+        "_capability_risk_of",
+        "_run_capability_risk",
+        "_light_changed_line_ceiling",
+        "_review_changed_scope",
+        "_run_review_tier",
+        "_require_review_waiver",
+        "_require_standing_suite",
+        "_PromotionRefusalError",
+        "_combined_refusal_text",
+        "_require_independently",
+        "_require_gate_check_precondition",
+        "_unreviewed_refusal",
+        "_review_outcome_summary",
+        "_resolve_promotion_outcome",
+        "plan_impl_at",
+        "_plan_impl_from_state",
+        "_plan_state_for_run",
+        "_landed_sections",
+        "_plan_remaining_sections",
+        "_IMPL_MOVE_EXEMPT_CLASSIFICATIONS",
+        "_IMPL_MOVE_CORRECTIVE_ATTEMPT_KINDS",
+        "_require_brief_owner",
+        "_require_impl_moved",
+        "_negative_control_log_text",
+        "_control_failure_ids",
+        "_baseline_suite_failure_ids",
+        "_head_suite_failure_ids",
+        "_require_declared_negative_control",
+        "_refuse_commits_for_a_shadow",
+        "_landing_scope_products",
+        "_landing_preconditions",
+        "_staging_review_record_by_run",
+        "_plan_review_record_for_promoting_run",
+        "_misdelivered_plan_review_directories",
+        "_require_plan_review_delivered_in_its_directory",
+        "_delivered_review_payloads_for_commit"
+      ],
+      "estimated_tokens": 25855
+    },
+    {
+      "path": "reckon/crew/promotion_records.py",
+      "concern": "Run record reconstruction and suite reconciliation",
+      "members": [
+        "_read_json_object",
+        "_project_for_repository",
+        "_rebuild_record_from_run_directory",
+        "_read_pointer_or_rebuild",
+        "_complete_withdrawn_run",
+        "_manifest_relative_path",
+        "_default_gate_evidence_from_manifest",
+        "_normalized_command",
+        "_evaluate_suite_delta",
+        "_release_terminal_manifest",
+        "_resume_worktree_retention",
+        "_worktree_audit",
+        "_release_scratch_when_release_raised",
+        "_manifest_reads_blocked",
+        "_retire_disposable_identity"
+      ],
+      "estimated_tokens": 8934
+    },
+    {
+      "path": "reckon/crew/promotion_release.py",
+      "concern": "Cited arm cleanup, worktree release, receipts, and fleet reading",
+      "members": [
+        "_CITED_ABSOLUTE_PATH",
+        "_CITED_PATH_EDGE_PUNCTUATION",
+        "_BASETEMP_IN_COMMAND",
+        "_ARM_LOG_FIELDS",
+        "_ARM_SUITE_FIELDS",
+        "_ARM_ARTIFACT_FIELD",
+        "_string_leaves",
+        "_absolute_paths_in",
+        "_suite_record",
+        "_artifact_candidates",
+        "_declared_arm_paths",
+        "_declared_manifest",
+        "_arm_citations_of",
+        "_other_live_run_citations",
+        "remove_cited_arms",
+        "_release_run_workspace",
+        "_release_after_promotion",
+        "_update_run_record",
+        "_record_release_on_ledger",
+        "_coordinator_supplied_predecessor",
+        "_receipt_unmeasured_reason",
+        "_agent_model_identifier",
+        "_serialize_notional_figure",
+        "_serialize_rate_basis",
+        "_harvest_lane_receipt",
+        "_unreconciled_live_runs",
+        "_FLEET_UNMEASURED_CAUSE_LIMIT",
+        "_fleet_state_reading",
+        "_unavailable_fleet_reading",
+        "_review_for_promotion",
+        "_record_tree",
+        "_record_worktree",
+        "_tree_for_measurement",
+        "_run_promoted_revision"
+      ],
+      "estimated_tokens": 12840
+    },
+    {
+      "path": "reckon/crew/promotion.py",
+      "concern": "Promotion, discard, and sweep entry points; compatibility imports",
+      "members": [
+        "complete",
+        "_complete_locked",
+        "DISCARD_RECORD_NAME",
+        "discard_record_path",
+        "discard",
+        "_remove_discarded_worktree",
+        "_write_discard_record",
+        "sweep_promoted_revisions",
+        "_revision_is_ancestor",
+        "_marker_present_in"
+      ],
+      "estimated_tokens": 23135
+    }
+  ],
+  "edges": {
+    "reckon/crew/promotion_evidence.py": {
+      "module_level": {},
+      "function_level": {
+        "reckon/crew/promotion_scope.py": [
+          "_committed_scope -> _merge_revisions",
+          "_declared_repository_roots -> _changed_paths_inside_repository",
+          "_declared_repository_roots -> _repository_scope_paths",
+          "_declared_repository_roots -> _scope_worktree",
+          "_manifest_declares_no_change -> _changed_paths_declare_no_paths"
+        ],
+        "reckon/crew/promotion_release.py": [
+          "_manifest_declares_no_change -> _record_worktree",
+          "_require_commits_beyond_base -> _record_tree",
+          "_require_gate_evidence -> _record_worktree",
+          "_run_commit_directory -> _record_tree",
+          "_worktree_repository_changes -> _record_worktree",
+          "_worktree_unchanged_since_base -> _record_worktree"
+        ],
+        "reckon/crew/promotion_checks.py": [
+          "_head_arm_log_failure_ids -> _control_failure_ids",
+          "_require_verdict_matches_exit_status -> _fresh_manifest",
+          "_zero_added_against_a_red_base -> _fresh_manifest"
+        ]
+      }
+    },
+    "reckon/crew/promotion_gate.py": {
+      "module_level": {},
+      "function_level": {
+        "reckon/crew/promotion_evidence.py": [
+          "rerun_gate_at_integrated_revision -> _commit_canonical_id"
+        ],
+        "reckon/crew/promotion_checks.py": [
+          "rerun_gate_at_integrated_revision -> _control_failure_ids"
+        ],
+        "reckon/crew/promotion_scope.py": [
+          "record_gate_rerun_at_integrated_revision -> _commit_landing_writes"
+        ],
+        "reckon/crew/promotion_release.py": [
+          "record_gate_rerun_at_integrated_revision -> _update_run_record"
+        ]
+      }
+    },
+    "reckon/crew/promotion_scope.py": {
+      "module_level": {},
+      "function_level": {
+        "reckon/crew/promotion_evidence.py": [
+          "_changed_paths_declare_no_paths -> _commitless_changed_paths_declares_absence",
+          "_descendant_commit -> _commit_canonical_id",
+          "_manifest_cites_a_commit -> _commits_field_declares_absence",
+          "_manifest_cites_a_commit -> _declares_absent_commits",
+          "_open_operation_state -> _worktree_git_paths",
+          "_promoted_revision -> _commit_canonical_id",
+          "_require_commit_for_changed_manifest -> _COMMITLESS_ROLES",
+          "_require_commit_for_changed_manifest -> _worktree_repository_changes",
+          "_resolve_commits -> _foreign_repository"
+        ],
+        "reckon/crew/promotion_release.py": [
+          "_repository_tree_boundary_violations -> _record_worktree",
+          "_write_shadow_patch -> _record_worktree"
+        ]
+      }
+    },
+    "reckon/crew/promotion_checks.py": {
+      "module_level": {},
+      "function_level": {
+        "reckon/crew/promotion_scope.py": [
+          "_landing_preconditions -> _is_shadow",
+          "_landing_preconditions -> _require_committable_checkout",
+          "_landing_preconditions -> _require_repository_tree_boundary",
+          "_landing_preconditions -> _resolve_commits",
+          "_landing_scope_products -> _accepted_scope_exceptions",
+          "_landing_scope_products -> _outside_declared_scope",
+          "_landing_scope_products -> _shadow_patch_stat",
+          "_landing_scope_products -> _write_shadow_patch",
+          "_manifest_repository_paths -> _changed_paths_declare_no_paths",
+          "_manifest_repository_paths -> _changed_paths_inside_repository",
+          "_promotion_terminal_observation -> _run_streams",
+          "_refuse_commits_for_a_shadow -> _is_shadow",
+          "_review_changed_scope -> _changed_paths_declare_no_paths",
+          "_review_changed_scope -> _resolve_commits",
+          "_terminal_stream_data -> _run_streams"
+        ],
+        "reckon/crew/promotion_records.py": [
+          "_delivered_review_payloads_for_commit -> _read_json_object",
+          "_end_live_writer_for_settle -> _release_terminal_manifest",
+          "_require_review_waiver -> _release_terminal_manifest"
+        ],
+        "reckon/crew/promotion_evidence.py": [
+          "_landing_preconditions -> _presented_commits_without_a_declaration",
+          "_landing_scope_products -> _committed_scope",
+          "_manifest_repository_paths -> _manifest_text",
+          "_require_declared_negative_control -> _recorded_exit_status",
+          "_review_changed_scope -> _committed_scope",
+          "_review_changed_scope -> _manifest_text"
+        ],
+        "reckon/crew/promotion_release.py": [
+          "_landing_preconditions -> _tree_for_measurement",
+          "_landing_scope_products -> _tree_for_measurement",
+          "_review_changed_scope -> _record_tree"
+        ]
+      }
+    },
+    "reckon/crew/promotion_records.py": {
+      "module_level": {},
+      "function_level": {
+        "reckon/crew/promotion_evidence.py": [
+          "_default_gate_evidence_from_manifest -> _recorded_exit_status",
+          "_evaluate_suite_delta -> _run_changed_nothing",
+          "_rebuild_record_from_run_directory -> _ATTEMPT_RECORD_NAME",
+          "_rebuild_record_from_run_directory -> _WORKER_RECORD_NAME"
+        ],
+        "reckon/crew/promotion_scope.py": [
+          "_rebuild_record_from_run_directory -> _changed_paths_inside_repository",
+          "_worktree_audit -> _is_shadow"
+        ],
+        "reckon/crew/promotion_release.py": [
+          "_complete_withdrawn_run -> _release_after_promotion"
+        ],
+        "reckon/crew/promotion_checks.py": [
+          "_default_gate_evidence_from_manifest -> _fresh_manifest",
+          "_manifest_reads_blocked -> _fresh_manifest",
+          "_resume_worktree_retention -> _fresh_manifest"
+        ]
+      }
+    },
+    "reckon/crew/promotion_release.py": {
+      "module_level": {},
+      "function_level": {
+        "reckon/crew/promotion_evidence.py": [
+          "_declared_manifest -> _manifest_text"
+        ],
+        "reckon/crew/promotion_scope.py": [
+          "_record_release_on_ledger -> _landing_refusal",
+          "_record_release_on_ledger -> _restore_landing_writes",
+          "_release_run_workspace -> _is_shadow",
+          "_run_promoted_revision -> _promoted_revision"
+        ],
+        "reckon/crew/promotion_records.py": [
+          "_release_after_promotion -> _manifest_reads_blocked",
+          "_release_after_promotion -> _release_scratch_when_release_raised",
+          "_release_run_workspace -> _release_terminal_manifest",
+          "_release_run_workspace -> _worktree_audit"
+        ]
+      }
+    }
+  },
+  "back_references": {
+    "reckon/crew/promotion_evidence.py": [
+      {
+        "caller": "_require_commits_beyond_base",
+        "name": "_revision_is_ancestor",
+        "level": "function_level"
+      }
+    ],
+    "reckon/crew/promotion_gate.py": [
+      {
+        "caller": "rerun_gate_at_integrated_revision",
+        "name": "_revision_is_ancestor",
+        "level": "function_level"
+      }
+    ],
+    "reckon/crew/promotion_scope.py": [
+      {
+        "caller": "_descendant_commit",
+        "name": "_revision_is_ancestor",
+        "level": "function_level"
+      },
+      {
+        "caller": "_path_change_reaches_integration_head",
+        "name": "_revision_is_ancestor",
+        "level": "function_level"
+      }
+    ],
+    "reckon/crew/promotion_records.py": [
+      {
+        "caller": "_resume_worktree_retention",
+        "name": "discard",
+        "level": "function_level"
+      }
+    ]
+  },
+  "census": {
+    "imports": {
+      "BOUNDARY_REFERENT_MAX_AGE_SECONDS": [
+        "tests/test_crew_boundary_waiver.py"
+      ],
+      "CrewError": [
+        "tests/test_discarded_run_promotes_after_its_commits_land.py",
+        "tests/test_failed_landing_leaves_nothing_behind.py",
+        "tests/test_landing_comment_authorship.py",
+        "tests/test_receipt_names_the_rolled_back_row.py",
+        "tests/test_rollback_asks_head.py"
+      ],
+      "LANDING_ROLLBACK_ATTRIBUTE": [
+        "tests/test_receipt_names_the_rolled_back_row.py"
+      ],
+      "_COMMITLESS_ROLES": [
+        "reckon/crew/reports.py"
+      ],
+      "_FLEET_UNMEASURED_CAUSE_LIMIT": [
+        "tests/test_an_unmeasured_fleet_reading_names_its_cause.py"
+      ],
+      "_REPLAY_BOUND_CEILING_SECONDS": [
+        "tests/test_replay_bound_follows_the_gate.py"
+      ],
+      "_RUNNER_SUMMARY": [
+        "reckon/crew/standing_suite.py"
+      ],
+      "__file__": [
+        "tests/test_promotion_timestamps_reuse_the_parser.py"
+      ],
+      "_assume_utc_if_naive": [
+        "tests/test_promotion_timestamps_reuse_the_parser.py"
+      ],
+      "_baseline_suite_failure_ids": [
+        "tests/test_brief_prompt.py"
+      ],
+      "_capture_member_session": [
+        "tests/test_a_promotion_never_reads_unpromoted.py"
+      ],
+      "_commit_canonical_id": [
+        "tests/test_one_function_resolves_a_citation.py"
+      ],
+      "_commit_landing_writes": [
+        "tests/test_rollback_asks_head.py"
+      ],
+      "_commit_resolves_in": [
+        "tests/test_one_function_resolves_a_citation.py"
+      ],
+      "_complete_locked": [
+        "tests/test_failed_landing_leaves_nothing_behind.py",
+        "tests/test_receipt_names_the_rolled_back_row.py",
+        "tests/test_rollback_asks_head.py"
+      ],
+      "_declared_manifest_landing": [
+        "tests/test_promotion_writes_the_landing_line.py"
+      ],
+      "_default_gate_evidence_from_manifest": [
+        "reckon/crew/recovery.py"
+      ],
+      "_disposable_member_id": [
+        "tests/test_promotion_retires_a_disposable_identity.py"
+      ],
+      "_drain_row": [
+        "tests/test_the_unreconciled_count_has_one_composition.py"
+      ],
+      "_elapsed_seconds": [
+        "tests/test_promotion_timestamps_reuse_the_parser.py"
+      ],
+      "_end_live_writer_for_settle": [
+        "tests/test_every_signal_caller_names_its_run_directory.py",
+        "tests/test_receipt_after_release.py"
+      ],
+      "_evaluate_suite_delta": [
+        "tests/test_gate_evidence.py"
+      ],
+      "_fleet_state_reading": [
+        "tests/test_a_promotion_reads_only_the_fleet_fields_it_records.py",
+        "tests/test_an_unmeasured_fleet_reading_names_its_cause.py",
+        "tests/test_crew_launch_failure.py",
+        "tests/test_promotion_beat_carries_fleet_state.py",
+        "tests/test_the_unreconciled_count_has_one_composition.py"
+      ],
+      "_git": [
+        "tests/test_crew_promotion.py",
+        "tests/test_receipt_names_the_rolled_back_row.py",
+        "tests/test_rollback_asks_head.py"
+      ],
+      "_head_suite_failure_ids": [
+        "tests/test_brief_prompt.py"
+      ],
+      "_landed_sections": [
+        "tests/test_one_reader_of_remaining_work.py"
+      ],
+      "_landing_preconditions": [
+        "tests/test_promotion_readers_name_their_tree.py"
+      ],
+      "_ledger_holds_row": [
+        "tests/test_receipt_names_the_rolled_back_row.py"
+      ],
+      "_ledger_row_was_rolled_back": [
+        "tests/test_receipt_names_the_rolled_back_row.py"
+      ],
+      "_manifest_cites_a_commit": [
+        "reckon/crew/reports.py",
+        "tests/test_one_commit_citation_predicate.py"
+      ],
+      "_manifest_declares_no_change": [
+        "tests/test_promotion_blank_worktree_sites.py"
+      ],
+      "_merge_revisions": [
+        "tests/test_crew_promotion_scope.py"
+      ],
+      "_newest_stream_mtime": [
+        "tests/test_promotion_reads_the_terminal_record.py",
+        "tests/test_receipt_after_release.py"
+      ],
+      "_outside_declared_scope": [
+        "tests/test_a_review_promotes_what_it_passed.py",
+        "tests/test_crew_test_role.py",
+        "tests/test_write_scope_agreement.py"
+      ],
+      "_plan_remaining_sections": [
+        "tests/test_one_reader_of_remaining_work.py"
+      ],
+      "_primary_read_targets": [
+        "tests/test_crew_shadow_contamination.py"
+      ],
+      "_promotion_terminal_observation": [
+        "tests/test_promotion_reads_the_terminal_record.py"
+      ],
+      "_record_landing_comment": [
+        "tests/test_a_run_can_always_be_reconciled.py",
+        "tests/test_a_run_comment_earns_no_plan_review.py",
+        "tests/test_first_landing_marks_plan_in_progress.py",
+        "tests/test_landing_comment_authorship.py"
+      ],
+      "_record_release_on_ledger": [
+        "tests/test_promotion_never_amends_its_commit.py"
+      ],
+      "_recoverable_session": [
+        "tests/test_dispatch_reads_the_resolved_session.py"
+      ],
+      "_release_after_promotion": [
+        "tests/test_a_worktree_held_row_is_rechecked_at_read.py",
+        "tests/test_promotion_never_amends_its_commit.py",
+        "tests/test_worker_scratch_lives_with_its_run.py"
+      ],
+      "_release_run_workspace": [
+        "tests/test_every_removal_path_reads_the_wide_claim.py",
+        "tests/test_worker_scratch_lives_with_its_run.py"
+      ],
+      "_repository_scope_paths": [
+        "reckon/crew/reports.py"
+      ],
+      "_repository_tree_boundary_violations": [
+        "tests/test_boundary_check_reads_two_trees.py",
+        "tests/test_dispatch_returns_without_worker.py",
+        "tests/test_promotion_blank_worktree_sites.py",
+        "tests/test_promotion_last_blank_worktree_site.py"
+      ],
+      "_require_commit_for_changed_manifest": [
+        "tests/test_one_commit_citation_predicate.py"
+      ],
+      "_require_commits_beyond_base": [
+        "tests/test_promotion_readers_name_their_tree.py"
+      ],
+      "_require_declared_negative_control": [
+        "tests/test_control_gate_checks_facts.py",
+        "tests/test_control_is_compared_with_the_head_arm.py"
+      ],
+      "_require_gate_evidence": [
+        "tests/test_a_short_commit_list_is_reported.py",
+        "tests/test_control_gate_repairs.py",
+        "tests/test_crew_promotion_scope.py",
+        "tests/test_promotion_blank_worktree_sites.py"
+      ],
+      "_require_impl_moved": [
+        "tests/test_the_executable_role_set_is_one_constant.py"
+      ],
+      "_require_repository_tree_boundary": [
+        "tests/test_dispatch_returns_without_worker.py"
+      ],
+      "_require_review_waiver": [
+        "tests/test_review_role_is_not_reviewed.py"
+      ],
+      "_resolve_commits": [
+        "tests/test_crew_promotion.py",
+        "tests/test_crew_shadow_contamination.py"
+      ],
+      "_restore_landing_writes": [
+        "tests/test_failed_landing_leaves_nothing_behind.py",
+        "tests/test_rollback_asks_head.py"
+      ],
+      "_resume_worktree_retention": [
+        "tests/test_promotion_releases_its_worktree.py"
+      ],
+      "_review_changed_scope": [
+        "tests/test_promotion_readers_name_their_tree.py"
+      ],
+      "_run_capability_risk": [
+        "tests/test_section_routing_reaches_dispatch.py"
+      ],
+      "_run_commit_directory": [
+        "tests/test_promotion_blank_worktree_sites.py"
+      ],
+      "_run_promoted_revision": [
+        "tests/test_empty_worktree_field_is_absent.py"
+      ],
+      "_run_review_tier": [
+        "reckon/crew/recovery.py"
+      ],
+      "_run_streams": [
+        "tests/test_stream_enumeration_reuses_metering.py"
+      ],
+      "_staging_review_record_by_run": [
+        "tests/test_reviews_read_the_committed_store_first.py"
+      ],
+      "_store": [
+        "tests/test_landing_comment_authorship.py",
+        "tests/test_promotion_writes_the_landing_line.py"
+      ],
+      "_terminal_stream_data": [
+        "reckon/crew/recovery.py",
+        "tests/test_backend_reconstruction_settings.py",
+        "tests/test_promotion_reads_the_terminal_record.py"
+      ],
+      "_unreconciled_live_runs": [
+        "tests/test_the_unreconciled_count_has_one_composition.py"
+      ],
+      "_wait_out_stream_tail": [
+        "tests/test_promotion_reads_the_terminal_record.py"
+      ],
+      "_worktree_repository_changes": [
+        "tests/test_an_unchanged_run_needs_no_suite_pair.py",
+        "tests/test_promotion_blank_worktree_sites.py"
+      ],
+      "_worktree_unchanged_since_base": [
+        "tests/test_promotion_blank_worktree_sites.py"
+      ],
+      "_worktree_untracked_paths": [
+        "tests/test_an_unchanged_run_needs_no_suite_pair.py"
+      ],
+      "_write_shadow_patch": [
+        "tests/test_promotion_blank_worktree_sites.py"
+      ],
+      "_zone_aware_stream_timestamp": [
+        "tests/test_promotion_timestamps_reuse_the_parser.py",
+        "tests/test_watch_stream_parse_is_cached.py"
+      ],
+      "complete": [
+        "reckon/crew/recovery.py",
+        "tests/test_crew_repository_from_the_project.py",
+        "tests/test_failure_classification.py"
+      ],
+      "discard": [
+        "reckon/crew/recovery.py"
+      ],
+      "discard_record_path": [
+        "reckon/crew/recovery.py",
+        "reckon/crew/routing.py",
+        "tests/test_a_live_run_never_reads_dead.py",
+        "tests/test_a_runs_scratch_ends_with_the_run.py",
+        "tests/test_crew_discard_reads_discarded.py",
+        "tests/test_discard_releases_a_clean_worktree.py"
+      ],
+      "gate_command_prose": [
+        "tests/test_crew_gate_command_is_runnable.py"
+      ],
+      "plan_impl_at": [
+        "reckon/crew/dispatch_plan.py"
+      ],
+      "read_pointer": [
+        "tests/test_discarded_run_promotes_after_its_commits_land.py"
+      ],
+      "remove_worker_scratch": [
+        "tests/test_worker_scratch_lives_with_its_run.py"
+      ],
+      "rerun_gate_at_integrated_revision": [
+        "reckon/crew/recovery.py",
+        "tests/test_bookkeeping_follows_the_run.py",
+        "tests/test_crew_gate_command_is_runnable.py",
+        "tests/test_crew_promotion.py"
+      ],
+      "sweep_promoted_revisions": [
+        "tests/test_promotion_landed_sweep.py"
+      ]
+    },
+    "patches": {
+      "_STREAM_SETTLE_MAX_SECONDS": [
+        "tests/test_promotion_reads_the_terminal_record.py:213",
+        "tests/test_promotion_reads_the_terminal_record.py:429",
+        "tests/test_receipt_after_release.py:220",
+        "tests/test_receipt_after_release.py:402"
+      ],
+      "_STREAM_SETTLE_POLL_SECONDS": [
+        "tests/test_promotion_reads_the_terminal_record.py:211",
+        "tests/test_promotion_reads_the_terminal_record.py:427",
+        "tests/test_receipt_after_release.py:218",
+        "tests/test_receipt_after_release.py:400"
+      ],
+      "_STREAM_SETTLE_QUIESCENCE_SECONDS": [
+        "tests/test_promotion_reads_the_terminal_record.py:212",
+        "tests/test_promotion_reads_the_terminal_record.py:428",
+        "tests/test_receipt_after_release.py:219",
+        "tests/test_receipt_after_release.py:401"
+      ],
+      "_capture_member_session": [
+        "tests/test_a_promotion_never_reads_unpromoted.py:198",
+        "tests/test_rollback_asks_head.py:274"
+      ],
+      "_drain_row": [
+        "tests/test_an_unmeasured_fleet_reading_names_its_cause.py:142",
+        "tests/test_promotion_beat_carries_fleet_state.py:221"
+      ],
+      "_git": [
+        "tests/test_crew_promotion.py:1738",
+        "tests/test_receipt_names_the_rolled_back_row.py:157",
+        "tests/test_rollback_asks_head.py:104",
+        "tests/test_rollback_asks_head.py:178",
+        "tests/test_rollback_asks_head.py:48",
+        "tests/test_rollback_asks_head.py:70"
+      ],
+      "_live_worktree_claims": [
+        "tests/test_promotion_releases_its_worktree.py:295"
+      ],
+      "_newest_stream_mtime": [
+        "tests/test_promotion_reads_the_terminal_record.py:255",
+        "tests/test_promotion_reads_the_terminal_record.py:307",
+        "tests/test_receipt_after_release.py:352"
+      ],
+      "_read_pointer_or_rebuild": [
+        "tests/test_discarded_run_promotes_after_its_commits_land.py:155"
+      ],
+      "_release_after_promotion": [
+        "tests/test_a_worktree_held_row_is_rechecked_at_read.py:275",
+        "tests/test_promotion_never_amends_its_commit.py:111"
+      ],
+      "_release_run_workspace": [
+        "tests/test_promotion_release.py:315"
+      ],
+      "_remove_discarded_worktree": [
+        "tests/test_discard_releases_a_clean_worktree.py:115"
+      ],
+      "_repository_tree_snapshot": [
+        "tests/test_dispatch_returns_without_worker.py:1063"
+      ],
+      "_resume_worktree_retention": [
+        "tests/test_promotion_releases_its_worktree.py:177"
+      ],
+      "_retire_disposable_identity": [
+        "tests/test_promotion_retires_a_disposable_identity.py:169"
+      ],
+      "_signal_process_group": [
+        "tests/test_receipt_after_release.py:254",
+        "tests/test_receipt_after_release.py:306",
+        "tests/test_receipt_after_release.py:399",
+        "tests/test_receipt_after_release.py:458",
+        "tests/test_receipt_after_release.py:486"
+      ],
+      "_utc_now": [
+        "tests/test_promotion_beat_carries_fleet_state.py:169"
+      ],
+      "_wait_out_stream_tail": [
+        "tests/test_promotion_reads_the_terminal_record.py:374",
+        "tests/test_promotion_reads_the_terminal_record.py:404"
+      ],
+      "_worktree_audit": [
+        "tests/test_worker_scratch_lives_with_its_run.py:395",
+        "tests/test_worker_scratch_lives_with_its_run.py:417"
+      ],
+      "drain": [
+        "tests/test_a_promotion_reads_only_the_fleet_fields_it_records.py:124"
+      ],
+      "list_live": [
+        "tests/test_an_unmeasured_fleet_reading_names_its_cause.py:121",
+        "tests/test_an_unmeasured_fleet_reading_names_its_cause.py:160",
+        "tests/test_promotion_beat_carries_fleet_state.py:216",
+        "tests/test_promotion_beat_carries_fleet_state.py:252"
+      ],
+      "process_alive": [
+        "tests/test_every_signal_caller_names_its_run_directory.py:167",
+        "tests/test_every_signal_caller_names_its_run_directory.py:188",
+        "tests/test_promotion_reads_the_terminal_record.py:258",
+        "tests/test_promotion_reads_the_terminal_record.py:308",
+        "tests/test_promotion_reads_the_terminal_record.py:332",
+        "tests/test_promotion_reads_the_terminal_record.py:373",
+        "tests/test_promotion_reads_the_terminal_record.py:403",
+        "tests/test_receipt_after_release.py:253",
+        "tests/test_receipt_after_release.py:305",
+        "tests/test_receipt_after_release.py:353",
+        "tests/test_receipt_after_release.py:398",
+        "tests/test_receipt_after_release.py:457",
+        "tests/test_receipt_after_release.py:502",
+        "tests/test_receipt_after_release.py:506",
+        "tests/test_receipt_after_release.py:510"
+      ],
+      "remove_worker_scratch": [
+        "tests/test_worker_scratch_lives_with_its_run.py:196",
+        "tests/test_worker_scratch_lives_with_its_run.py:576",
+        "tests/test_worker_scratch_lives_with_its_run.py:609"
+      ]
+    },
+    "source_reads": {
+      "reckon/crew/dispatch_peer.py": [
+        "55: package-wide Python source scan includes promotion.py"
+      ],
+      "reckon/crew/obligation_snapshot.py": [
+        "330: package-wide Python source scan includes promotion.py"
+      ],
+      "reckon/crew/runs.py": [
+        "228: package-wide Python source scan includes promotion.py"
+      ],
+      "reckon/served_code.py": [
+        "85: package-wide Python source scan includes promotion.py"
+      ],
+      "tests/test_an_overrun_names_its_cause.py": [
+        "120: package-wide Python source scan includes promotion.py"
+      ],
+      "tests/test_crew_promotion.py": [
+        "2168: package-wide Python source scan includes promotion.py"
+      ],
+      "tests/test_derived_figures_reach_a_reader.py": [
+        "265: package-wide Python source scan includes promotion.py",
+        "282: package-wide Python source scan includes promotion.py"
+      ],
+      "tests/test_every_removal_path_reads_the_wide_claim.py": [
+        "164: package-wide Python source scan includes promotion.py"
+      ],
+      "tests/test_gate_evidence.py": [
+        "1074: inspect.getsource(promotion._evaluate_suite_delta)"
+      ],
+      "tests/test_manifest_check_command.py": [
+        "381: package-wide Python source scan includes promotion.py"
+      ],
+      "tests/test_one_blob_reader_serves_velocity_and_the_counter.py": [
+        "175: package-wide Python source scan includes promotion.py"
+      ],
+      "tests/test_one_cache_cascade_serves_every_kind.py": [
+        "137: package-wide Python source scan includes promotion.py"
+      ],
+      "tests/test_one_function_resolves_a_citation.py": [
+        "26: package-wide Python source scan includes promotion.py"
+      ],
+      "tests/test_one_raw_text_section_reader.py": [
+        "221: package-wide Python source scan includes promotion.py",
+        "316: package-wide Python source scan includes promotion.py",
+        "333: package-wide Python source scan includes promotion.py"
+      ],
+      "tests/test_one_reader_of_remaining_work.py": [
+        "172: package-wide Python source scan includes promotion.py"
+      ],
+      "tests/test_plan_review_prefix_is_one_constant.py": [
+        "14: package-wide Python source scan includes promotion.py"
+      ],
+      "tests/test_promotion_timestamps_reuse_the_parser.py": [
+        "124: Path(promotion.__file__).read_text()"
+      ],
+      "tests/test_section_spelling_grammars_share_one_core.py": [
+        "149: package-wide Python source scan includes promotion.py",
+        "265: package-wide Python source scan includes promotion.py"
+      ],
+      "tests/test_skill_contracts.py": [
+        "1501: package-wide Python source scan includes promotion.py"
+      ],
+      "tests/test_supervisor_starts_without_a_runpy_warning.py": [
+        "198: package-wide Python source scan includes promotion.py"
+      ],
+      "tests/test_the_fleet_gate_holds_dispatch.py": [
+        "596: package-wide Python source scan includes promotion.py",
+        "738: package-wide Python source scan includes promotion.py"
+      ],
+      "tests/test_the_invocation_parser_spells_a_section.py": [
+        "119: package-wide Python source scan includes promotion.py"
+      ],
+      "tests/test_the_section_prose_reader_has_one_home.py": [
+        "242: package-wide Python source scan includes promotion.py"
+      ],
+      "tests/test_the_unreconciled_count_has_one_composition.py": [
+        "151: inspect.getsource(promotion._unreconciled_live_runs)"
+      ],
+      "tests/test_watch_version_stamp.py": [
+        "320: package-wide Python source scan includes promotion.py"
+      ],
+      "tests/test_watcher_unit_restart.py": [
+        "69: package-wide Python source scan includes promotion.py"
+      ]
+    },
+    "module_state": {}
+  },
+  "commands": [
+    "git ls-files -- reckon tests scripts",
+    "git grep -n -E 'from reckon\\.crew\\.promotion import|from reckon\\.crew import promotion|import reckon\\.crew\\.promotion|from \\.promotion import' -- reckon tests scripts",
+    "git grep -n -E 'monkeypatch\\.setattr|mock\\.patch|patch\\.object|patch\\(' -- reckon tests scripts",
+    "git grep -n -E 'promotion\\.py|promotion\\.__file__|inspect\\.getsource' -- reckon tests scripts",
+    "git grep -n -F 'importlib.import_module(\"reckon.crew.promotion\")' -- reckon tests scripts",
+    "git grep -n -E 'rglob\\(\"\\*\\.py\"\\)|glob\\(\"\\*\\.py\"\\)' -- reckon tests scripts"
+  ]
+}
