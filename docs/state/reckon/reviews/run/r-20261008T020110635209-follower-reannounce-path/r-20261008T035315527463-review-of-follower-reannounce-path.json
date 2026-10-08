@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed run landed no repository change and its manifest names no baseline_suite or after_suite gate log, so no added-failure count was taken",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:_fleet_replay",
+    "reckon/cli.py:_follow_watch_lines",
+    "reckon/cli.py:_follow_resume_plan"
+  ],
+  "completed_at": "2026-10-08T04:15:59.557Z",
+  "dispatched_at": "2026-10-08T03:54:32Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/follower-quiet/reannounce-path/count_bare_rows_by_delivery.py",
+      "line": "37",
+      "severity": "follow-on",
+      "text": "follow-on: the 446-row count reads its input from a session-scratchpad path under /tmp (panes.json) that has since been overwritten by other sessions, so the count and its positive control cannot be re-run and only the captured logs remain."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/follower-quiet/reannounce-path/report.md",
+      "line": "136",
+      "severity": "follow-on",
+      "text": "follow-on: the done-when's count \"by delivery kind\" is only partly delivered \u2014 in-place reloads are excluded by construction and host-restart is evidenced for 1 of 397 rows, while the host-restart versus Monitor re-arm split is stated as unrecoverable, so the 397 are attributed by resume mode rather than by spawner."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "there is no code diff; the reviewed worktree head ad0b0b611dc0bcfb90c8e60c123b2ef792c65854 equals the reviewed run's base, so the node landed no repository change and its deliverable is the report and its captured logs.",
+    "done_when": "the done-when asks for the named function and branch, a logged reproduction against a fixture follower whose delivered record holds the run at working, and the count of the 446 bare rows the branch explains; report.md gives all three, logs/repro.txt records the reproduction, and logs/count.txt records the 446-row split.",
+    "goal": "the node goal names the function and branch that drew a bare working row for a delivered run after a session host restarted its follower child; report.md:10 names `_fleet_replay()` at reckon/cli.py:3841 and its baseline loop at 3888-3900, reached from reckon/cli.py:4640-4656, all confirmed by reading the source at ad0b0b611.",
+    "manifest": "read at manifest.md; it reports the reproduction, the 446-row classification by delivery signature, the unrecoverable host-vs-Monitor sub-split, and states no repository file changed.",
+    "write_paths": "the node was fenced to the report directory under reports/reckon/follower-quiet/reannounce-path; every path named in its manifest is inside it and no repository file was written."
+  },
+  "justifications": {
+    "durability": "reproduce_bare_reannounce.py:113-130 is a genuine causal control that reddens on the continue-mode re-arm and greens with the checkpoint removed, but no repository test guards the defect and report.md:150 flags the 17-row sub-split as a signature rather than a measurement.",
+    "evidence": "logs/repro.txt records the arm-2/control split (arm 2 one bare row, control none) and I re-ran reproduce_bare_reannounce.py green, while logs/count.txt records 446 and logs/classify-replay.txt reproduces the plan author's 446 as a positive control.",
+    "fit": "reproduce_bare_reannounce.py:55 drives the real crew follow through the existing harness tests/test_follower_rearm_shows_nothing_twice.py rather than a bespoke re-implementation, and no forbidden name appears in the landed artifacts.",
+    "goal_fidelity": "report.md:10 names `_fleet_replay()` at reckon/cli.py:3841 and the loop at 3888-3900, and I read the reaching branch at cli.py:4640-4656 and the mode=\"continue\" cause at cli.py:4585-4589 in the tree at ad0b0b611.",
+    "reuse": "the node re-ran the plan author's classify.py as its positive control and reused the existing follower test harness instead of forking a classifier or a follower of its own.",
+    "scope_discipline": "the reviewed worktree head ad0b0b611 equals its base, no repository file was touched, and every artifact in the manifest sits under the declared report write path."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal names the function and branch that drew a bare working row for a delivered run after a session host restarted its follower child; report.md:10 names `_fleet_replay()` at reckon/cli.py:3841 and its baseline loop at 3888-3900, reached from reckon/cli.py:4640-4656, all confirmed by reading the source at ad0b0b611.\nVERDICT done_when: the done-when asks for the named function and branch, a logged reproduction against a fixture follower whose delivered record holds the run at working, and the count of the 446 bare rows the branch explains; report.md gives all three, logs/repro.txt records the reproduction, and logs/count.txt records the 446-row split.\nVERDICT write_paths: the node was fenced to the report directory under reports/reckon/follower-quiet/reannounce-path; every path named in its manifest is inside it and no repository file was written.\nVERDICT manifest: read at manifest.md; it reports the reproduction, the 446-row classification by delivery signature, the unrecoverable host-vs-Monitor sub-split, and states no repository file changed.\nVERDICT diff: there is no code diff; the reviewed worktree head ad0b0b611dc0bcfb90c8e60c123b2ef792c65854 equals the reviewed run's base, so the node landed no repository change and its deliverable is the report and its captured logs.\nCALL_SITES: reckon/cli.py:_fleet_replay, reckon/cli.py:_follow_watch_lines, reckon/cli.py:_follow_resume_plan\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: report.md:10 names `_fleet_replay()` at reckon/cli.py:3841 and the loop at 3888-3900, and I read the reaching branch at cli.py:4640-4656 and the mode=\"continue\" cause at cli.py:4585-4589 in the tree at ad0b0b611.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/repro.txt records the arm-2/control split (arm 2 one bare row, control none) and I re-ran reproduce_bare_reannounce.py green, while logs/count.txt records 446 and logs/classify-replay.txt reproduces the plan author's 446 as a positive control.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the reviewed worktree head ad0b0b611 equals its base, no repository file was touched, and every artifact in the manifest sits under the declared report write path.\nSCORE durability: 15\nJUSTIFICATION durability: reproduce_bare_reannounce.py:113-130 is a genuine causal control that reddens on the continue-mode re-arm and greens with the checkpoint removed, but no repository test guards the defect and report.md:150 flags the 17-row sub-split as a signature rather than a measurement.\nSCORE fit: 18\nJUSTIFICATION fit: reproduce_bare_reannounce.py:55 drives the real crew follow through the existing harness tests/test_follower_rearm_shows_nothing_twice.py rather than a bespoke re-implementation, and no forbidden name appears in the landed artifacts.\nSCORE reuse: 19\nJUSTIFICATION reuse: the node re-ran the plan author's classify.py as its positive control and reused the existing follower test harness instead of forking a classifier or a follower of its own.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/follower-quiet/reannounce-path/count_bare_rows_by_delivery.py:37 follow-on: the 446-row count reads its input from a session-scratchpad path under /tmp (panes.json) that has since been overwritten by other sessions, so the count and its positive control cannot be re-run and only the captured logs remain.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/follower-quiet/reannounce-path/report.md:136 follow-on: the done-when's count \"by delivery kind\" is only partly delivered \u2014 in-place reloads are excluded by construction and host-restart is evidenced for 1 of 397 rows, while the host-restart versus Monitor re-arm split is stated as unrecoverable, so the 397 are attributed by resume mode rather than by spawner.",
+  "review_run_id": "r-20261008T035315527463-review-of-follower-reannounce-path",
+  "reviewed_base_sha": "ad0b0b611dc0bcfb90c8e60c123b2ef792c65854",
+  "reviewed_head_sha": "ad0b0b611dc0bcfb90c8e60c123b2ef792c65854",
+  "reviewed_run_id": "r-20261008T020110635209-follower-reannounce-path",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T04:09:22.964706+00:00",
+  "total": 108
+}
