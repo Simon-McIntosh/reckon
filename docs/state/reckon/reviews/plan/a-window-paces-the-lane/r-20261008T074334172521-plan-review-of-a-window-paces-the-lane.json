@@ -1,0 +1,51 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T08:00:19.051Z",
+  "dispatched_at": "2026-10-08T07:44:02Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-window-paces-the-lane.html:1924",
+      "id": "reasoning-1",
+      "reason": "the four-parameter signature is itself unambiguous and the lift lookup it enables is already described (an undeclared group is refused, as group_position does), so an implementer copies the signature as written; the \"three inputs\" wording is a slip, not a mechanism the node would build wrongly.",
+      "text": "`effective_budget(config, *, group, readings, now, session)` is introduced as taking \"three inputs\" and the three named are readings, now and session; `group` is in the signature but never explained, so the declaration and its own prose disagree on the resolver's arity",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "a0bc1fa6c3f0c4af0e24e1ecc62d1c96ceb92725b76a6c8a3a115052c88d954b",
+  "plan_slug": "a-window-paces-the-lane",
+  "plan_version": 159,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T074334172521-plan-review-of-a-window-paces-the-lane",
+  "reviewed_blob_sha": "b8d2928fbdf9b78fe12cc71099f5e7e5a62582f2",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 check_dd-style resolution of each \u00a710 citation: reckon/crew/reserve.py (:42, default 20), reckon/schema/flight.yaml BudgetConfig (extra=\"forbid\" enforced at reckon/_flight_schema.py:43), skills/reckon-build/SETTINGS \u00a74c exists at skills/reckon-build/SKILL.md:424, group_position at reckon/crew/budget_group.py:136, pace.policy at reckon/crew/pace.py:128, pace.allowance_for_group at pace.py:167, reserve.admit_windows at reserve.py:225 and reached from dispatch_admission.py:308 and dispatch.py:954, budget.policy/decide/pace_hold at reckon/budget.py:173/1260/2685.",
+    "done_when": "pass \u2014 every \u00a710 done-when item is measurable (a lift of 1.8 against a 1.60 burn admits; moved resets_at, past-at, cleared, over-max_hours all inert) and line 1951 declares a negative control that replaces effective_budget with the identity and requires both the admit and the 100%-ceiling assertions to redden.",
+    "evidence_paths": "pass \u2014 the lift record is a durable <config-home>/budget-lifts.json written atomically, and every test points config home at a temporary directory and asserts the real file is untouched; no session scratchpad or node-local path is used.",
+    "naming": "pass \u2014 effective_budget, budget.lift, pace.lift_id, releases_at, bookend_reserve_pct are mechanism names; no plan labels, phase names, ticket numbers or version tags reach a symbol or comment.",
+    "reasoning": "a finding \u2014 the signature declared at line 1924 lists four keyword-only inputs (group, readings, now, session) while the same sentence says the function \"takes three inputs\" and enumerates only readings, now and session, never stating group's role.",
+    "single_goal": "pass \u2014 \u00a710 carries one deliverable, the self-expiring pace lift (the bookend-reserve change was split out to \u00a711 in an earlier edit, leaving \u00a710 the lift and its budget.lift ceilings).",
+    "wiring": "pass \u2014 the plan declares plan-informs=\"background-agent-fitness-and-dispatch-scope\" (that plan file exists) and \u00a710 declares no depends-on/gates it needs beyond the landed \u00a7\u00a72/4/9 it names and reads."
+  },
+  "section_digests": {
+    "_document": "230973a4fbb0214aafc28baeae98d434b5d9f1f78d6df6eb145c8d6d1631b938",
+    "s1": "fd232b0e9e301983eea254fa355a00f9cfdad5e4ba397415c196946997e8b78a",
+    "s10": "cff30d466dd7580b4623ab4ba85a967692183d1c1fbf0a887b817140c3fe2bf9",
+    "s11": "4f344761a1c7f9eeda684c28b5399f6cc6c50a6961808244c50f4f385a8dfb83",
+    "s2": "0c4f642bff7cb6b87908ea9e036cb3161c15e31cb3285273e06bb2ac1f5c368c",
+    "s3": "ae3d7625321a46e7fa6a9ee3bac0272ee77d236811612140ef03b79670883261",
+    "s4": "8f3ac850d09e4745435c5274237c26be090ce2db03ac422e941c3329841d8563",
+    "s5": "3bc104a16d90fb6279e9ab8c70555e1041253ad31f6376c64b455da33489c6b0",
+    "s5b": "1be686d2a1165f13c4f4e81a29ca56c362c3b069dfc80759cf370cca59440d41",
+    "s6": "8e4ab80a317b73fb60010fe92858cbe3b073511ce10c4547c6eb8952a89829f0",
+    "s6-the-probe-reader-and-the-undeclared-dialect": "c463be6993bc79b07591a01d9e1a1d92d699a48d4c322b2cc395a0e78a2d097d",
+    "s7": "39b7111a3bfa256531f953bd33de123967e24fa4ffc75e6d1cbeca26a45c565d",
+    "s8": "9d68431496117798ca30bbebd6828adc5853e02df969ac62de3bb2dcd41512a4",
+    "s9": "5f72c27f2288b837b6513304ec92d0bf2e8950d169b0389c4c3ffeba27c23b6b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T08:00:36.728396+00:00"
+}
