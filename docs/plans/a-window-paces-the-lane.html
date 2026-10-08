@@ -26,7 +26,7 @@
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s6-the-probe-reader-and-the-undeclared-dialect&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="e302ad39,04a479ef,4ef8356f,e219aa99,b2594d65,bacd8e17,6a915fd7,4d043fd0,fd4a158f,95ba8ea7,cb69a87f,768a9285,e5cf008e,6001f577,e6dd0dc4,c011b6f9,82095575,87c98418,8e70585c,b7ba4786,3f0e9621,798f87f8,e37ac897,d34eaf27">
 <meta name="plan-impl" content="0.87">
-<meta name="plan-version" content="168">
+<meta name="plan-version" content="169">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -2392,6 +2392,9 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-20261008T1430-s10-lift-resolver" data-who="reckon-build" data-when="2026-10-08T14:30:00Z">
     <div class="r-comment-body"><p>Node 2 landed: the lift record and the pure <code>effective_budget</code> resolver (merged <code>585a9432f</code>, reviewed head <code>181f998c</code>). The gate went from 35 passed at base to 58 at head, with no added failure. Review: 111/120. <a href="/reckon/evidence/archive/a-window-paces-the-lane-landed.html#s10-lift-resolver">evidence</a></p><p><strong>Re-plan: §10 grows from five nodes to six.</strong> Its review found that a session lift cannot be cleared. It also found the drain-by and uncapped blocks carry a <code>None</code> multiple, which <code>pace.policy</code> reads as the shipped default. So a node now answers the record's review before anything reads it. It owns <code>budget_lift.py</code> and the <code>budget.lift</code> schema declaration. The reader wiring and the CLI verbs then run side by side, and the surfaces follow the wiring. <code>impl</code> is 27 of 31, 0.87.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261008T132610418827-a-lift-resolves-the-effective-budget" data-who="reckon-build" data-when="2026-10-08T14:01:36.323Z">
+    <div class="r-comment-body"><p>The lift record and its resolver land in reckon/crew/budget_lift.py: a workstation control document at &lt;config-home&gt;/budget-lifts.json written atomically under a monotonic version, grant/clear/list beside the pure resolver effective_budget(config, *, group, readings, now, session), which returns the lifted block — lifted multiple or drain-by hold or uncapped release, all three reserves released — while a lift is in force and config[&quot;budget&quot;] unchanged otherwise; expiry is a pure function of the record, the readings and the clock, so nothing runs at the moment a lift ends.</p></div>
 </div>
 </section>
 </main>
