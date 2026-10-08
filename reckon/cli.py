@@ -83,15 +83,6 @@ from reckon.cli_entry import (
     _in_linked_worktree as _in_linked_worktree,
 )
 from reckon.cli_entry import (
-    _is_native_agent_guard_group as _is_native_agent_guard_group,
-)
-from reckon.cli_entry import (
-    _is_worker_git_guard_group as _is_worker_git_guard_group,
-)
-from reckon.cli_entry import (
-    _is_worker_message_guard_group as _is_worker_message_guard_group,
-)
-from reckon.cli_entry import (
     _main_checkout as _main_checkout,
 )
 from reckon.cli_entry import (
@@ -120,9 +111,6 @@ from reckon.cli_entry import (
 )
 from reckon.cli_entry import (
     _worker_message_guard_path as _worker_message_guard_path,
-)
-from reckon.cli_entry import (
-    _write_json_atomically as _write_json_atomically,
 )
 from reckon.cli_entry import (
     crew_host_link_state as crew_host_link_state,

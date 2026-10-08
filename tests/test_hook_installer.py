@@ -449,7 +449,7 @@ def test_an_entry_registered_under_another_event_is_still_added(
 def test_an_entry_written_before_the_interpreter_was_added_is_recognised(
     tmp_path: Path,
 ) -> None:
-    """A registered bare-form command suppresses the interpreter form of itself."""
+    """A registered bare command is upgraded without adding a second entry."""
     settings = tmp_path / "settings.json"
     existing = _group(_bare_prompt_command())
     _write_settings_file(settings, {"hooks": {"UserPromptSubmit": [existing]}})
@@ -462,10 +462,8 @@ def test_an_entry_written_before_the_interpreter_was_added_is_recognised(
         f"Stop: {_stop_command()}",
         f"Stop: {_worker_stop_command()}",
     )
-    # The registered group keeps its bytes: it is recognised as this entry
-    # rather than rewritten into the interpreter form or duplicated beside it.
-    assert result.document["hooks"]["UserPromptSubmit"][0] == existing
-    assert _commands(result.document, "UserPromptSubmit") == [_bare_prompt_command()]
+    assert result.document["hooks"]["UserPromptSubmit"][0] != existing
+    assert _commands(result.document, "UserPromptSubmit") == [_prompt_command()]
 
 
 def test_a_settings_file_holding_bare_worker_commands_is_upgraded_in_place(
@@ -507,7 +505,7 @@ def test_a_settings_file_holding_bare_worker_commands_is_upgraded_in_place(
     )
     assert settings.read_bytes() != original
     assert _commands(result.document, "Stop") == [
-        _bare_stop_command(),
+        _stop_command(),
         _worker_stop_command(),
     ]
     assert _commands(result.document, "PreToolUse") == [_git_guard_command()]
