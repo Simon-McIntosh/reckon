@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: its head arm gate.log reports 42 passed EXIT=0 at HEAD 7fec3b7dd with no FAILED or ERROR id (independently reproduced by this review, 42 passed EXIT=0), so head minus base yields no added failing test; the reviewed manifest names no baseline_suite/after_suite pair, so the store's read-time annotation reports the count unmeasured, and the 0 is the head-arm derivation. The declared negative-control.log carries one FAILED id, showing the instrument reads ids when present.",
+  "backend": "clive",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/_backends.py:_seed_harness_entry",
+    "reckon/_backends.py:seed_harness_home"
+  ],
+  "completed_at": "2026-10-08T09:53:34.087Z",
+  "dispatched_at": "2026-10-08T09:34:37Z",
+  "findings": [
+    {
+      "file": "tests/test_run_home_hooks_are_interpreter_bound.py",
+      "line": "121",
+      "severity": "follow-on",
+      "text": "follow-on: the operator-file guard asserts source.read_bytes() == operator_bytes, but operator_bytes is captured at line 104 after _seed() has already run, so both sides are the same file separated by no write and the assertion cannot fail; a regression in which seeding wrote the source file would not redden it, so capture operator_bytes before _seed() to test the property the comment claims."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T092441846310-run-home-hooks-are-interpreter-bound/gate.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the head gate log's first line records revision 732c8ea92, the pre-change base, so the 42 passed cannot be tied to the reviewed head from the log alone; re-run the head arm after committing or record the head revision in the header so the after_suite log self-names its tree."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read the single commit 7fec3b7dd against 732c8ea92; it adds _bind_reckon_hook_commands to reckon/_backends.py and calls it in _seed_harness_entry, adds the seeding test with its declared mutation, and adds a one-line evidence fragment, with no deletions.",
+    "done_when": "the section's two items are the two cases in tests/test_run_home_hooks_are_interpreter_bound.py; the manifest records the five-file gate at 42 passed EXIT=0, and I independently reproduced 42 passed EXIT=0 at the reviewed head 7fec3b7dd.",
+    "goal": "the node goal is that a run's harness home, seeded from the operator's settings.json, carries interpreter-bound reckon hooks; reckon/_backends.py:_bind_reckon_hook_commands is called from _seed_harness_entry before the copy is written, so a bare \"python3 worker_stop.py\" becomes checkout-bound while a hook that is not reckon's is copied unchanged.",
+    "manifest": "read; it records commit 7fec3b7dd from base 732c8ea92, the 42-passed gate, the 1-failed declared negative control and the changed paths, but names no baseline_suite/after_suite pair, so the store's read-time annotation reports the added-failure count unmeasured.",
+    "write_paths": "commit 7fec3b7dd touches reckon/_backends.py, tests/test_run_home_hooks_are_interpreter_bound.py and a one-line evidence fragment, all inside the declared write paths; docs/figures/ was declared but not written, which the section does not require."
+  },
+  "justifications": {
+    "durability": "the binding assertion at tests/test_run_home_hooks_are_interpreter_bound.py:117 reddens under the declared mutation, but the operator-file guard at line 121 compares the source against a snapshot taken after the seed and cannot fail.",
+    "evidence": "the 42-passed gate and the fired negative control are recorded, but the reviewed gate.log's first line names the base revision 732c8ea92 rather than the head 7fec3b7dd it measured, so the log cannot self-name the tree that produced the 42 passed; I reproduced 42 passed EXIT=0 at 7fec3b7dd to settle it.",
+    "fit": "_bind_reckon_hook_commands at reckon/_backends.py:2383 is a private helper that delegates like configure_crew_guards and carries no name the repository naming rules forbid.",
+    "goal_fidelity": "the change routes the filtered hooks through reckon/hooks/install.py:upgrade_registered_commands from reckon/_backends.py:_bind_reckon_hook_commands, so the goal's binding is met by reusing the section 2 recogniser rather than writing a new one.",
+    "reuse": "the addition extends the owner of hook-command binding, reckon/hooks/install.py:upgrade_registered_commands, instead of forking a second recogniser.",
+    "scope_discipline": "every path in commit 7fec3b7dd is inside the declared write paths (reckon/_backends.py, tests/test_run_home_hooks_are_interpreter_bound.py and the named evidence fragment); docs/figures/ was declared but not written."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a run's harness home, seeded from the operator's settings.json, carries interpreter-bound reckon hooks; reckon/_backends.py:_bind_reckon_hook_commands is called from _seed_harness_entry before the copy is written, so a bare \"python3 worker_stop.py\" becomes checkout-bound while a hook that is not reckon's is copied unchanged.\nVERDICT done_when: the section's two items are the two cases in tests/test_run_home_hooks_are_interpreter_bound.py; the manifest records the five-file gate at 42 passed EXIT=0, and I independently reproduced 42 passed EXIT=0 at the reviewed head 7fec3b7dd.\nVERDICT write_paths: commit 7fec3b7dd touches reckon/_backends.py, tests/test_run_home_hooks_are_interpreter_bound.py and a one-line evidence fragment, all inside the declared write paths; docs/figures/ was declared but not written, which the section does not require.\nVERDICT manifest: read; it records commit 7fec3b7dd from base 732c8ea92, the 42-passed gate, the 1-failed declared negative control and the changed paths, but names no baseline_suite/after_suite pair, so the store's read-time annotation reports the added-failure count unmeasured.\nVERDICT diff: read the single commit 7fec3b7dd against 732c8ea92; it adds _bind_reckon_hook_commands to reckon/_backends.py and calls it in _seed_harness_entry, adds the seeding test with its declared mutation, and adds a one-line evidence fragment, with no deletions.\nCALL_SITES: reckon/_backends.py:_seed_harness_entry, reckon/_backends.py:seed_harness_home\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the change routes the filtered hooks through reckon/hooks/install.py:upgrade_registered_commands from reckon/_backends.py:_bind_reckon_hook_commands, so the goal's binding is met by reusing the section 2 recogniser rather than writing a new one.\nSCORE evidence: 15\nJUSTIFICATION evidence: the 42-passed gate and the fired negative control are recorded, but the reviewed gate.log's first line names the base revision 732c8ea92 rather than the head 7fec3b7dd it measured, so the log cannot self-name the tree that produced the 42 passed; I reproduced 42 passed EXIT=0 at 7fec3b7dd to settle it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in commit 7fec3b7dd is inside the declared write paths (reckon/_backends.py, tests/test_run_home_hooks_are_interpreter_bound.py and the named evidence fragment); docs/figures/ was declared but not written.\nSCORE durability: 16\nJUSTIFICATION durability: the binding assertion at tests/test_run_home_hooks_are_interpreter_bound.py:117 reddens under the declared mutation, but the operator-file guard at line 121 compares the source against a snapshot taken after the seed and cannot fail.\nSCORE fit: 18\nJUSTIFICATION fit: _bind_reckon_hook_commands at reckon/_backends.py:2383 is a private helper that delegates like configure_crew_guards and carries no name the repository naming rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: the addition extends the owner of hook-command binding, reckon/hooks/install.py:upgrade_registered_commands, instead of forking a second recogniser.\nFINDING tests/test_run_home_hooks_are_interpreter_bound.py:121 follow-on: the operator-file guard asserts source.read_bytes() == operator_bytes, but operator_bytes is captured at line 104 after _seed() has already run, so both sides are the same file separated by no write and the assertion cannot fail; a regression in which seeding wrote the source file would not redden it, so capture operator_bytes before _seed() to test the property the comment claims.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T092441846310-run-home-hooks-are-interpreter-bound/gate.log:1 follow-on: the head gate log's first line records revision 732c8ea92, the pre-change base, so the 42 passed cannot be tied to the reviewed head from the log alone; re-run the head arm after committing or record the head revision in the header so the after_suite log self-names its tree.",
+  "review_run_id": "r-20261008T093416111336-review-of-run-home-hooks-are-interpreter-bound",
+  "reviewed_base_sha": "732c8ea92b36264b958c043b18109f6361231327",
+  "reviewed_head_sha": "7fec3b7dd454e359e891084abe845e6994086170",
+  "reviewed_run_id": "r-20261008T092441846310-run-home-hooks-are-interpreter-bound",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T09:51:11.323604+00:00",
+  "total": 107
+}
