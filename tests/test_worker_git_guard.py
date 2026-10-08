@@ -9,6 +9,7 @@ the dry run leaves it byte-identical.
 
 from __future__ import annotations
 
+import builtins
 import io
 import json
 import os
@@ -84,6 +85,24 @@ def test_a_mutating_verb_against_another_checkout_is_denied(
         assert RUN_ID in message
         assert str(worktree) in message
         assert str(other) in message
+
+
+def test_unavailable_rule_module_denies_with_reason(
+    tmp_path: Path, monkeypatch
+) -> None:
+    worktree, _ = _fenced(tmp_path, monkeypatch)
+    original_import = builtins.__import__
+
+    def unavailable(name, *args, **kwargs):
+        if name == "reckon.worker_git_shim":
+            raise ImportError("synthetic rule failure")
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", unavailable)
+    allowed, reason = guard.decide(_payload("git reset --hard", worktree))
+    assert allowed is False
+    assert "could not load its rules" in reason
+    assert "synthetic rule failure" in reason
 
 
 # ── The same verb inside the run's own worktree is allowed ──────────────────
