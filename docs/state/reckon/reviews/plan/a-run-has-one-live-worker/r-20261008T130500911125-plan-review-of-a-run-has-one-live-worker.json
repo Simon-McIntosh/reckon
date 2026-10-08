@@ -1,0 +1,48 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T13:15:32.023Z",
+  "dispatched_at": "2026-10-08T13:05:33Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/resumption.py:601",
+      "id": "reuse_search-1",
+      "reason": "the wiring description is wrong but the design's conclusion (extending `record_process_alive` covers both doors, since both call it directly) still holds, so only the section's prose would change.",
+      "text": "\u00a74 says \"_launcher_refusal reaches it through local_liveness in recovery.py\", but `_launcher_refusal` calls `record_process_alive` directly (resumption.py:601), exactly as `resume_plan` does (dispatch_sessions.py:995); `local_liveness` (recovery.py:7146) is the read used by the *other* guard, `_observed_end_refusal` (resumption.py:644), which is a different function with different refusal text. A claim about prior art that does not survive opening the code",
+      "type": "reuse_search",
+      "would_change": false
+    },
+    {
+      "anchor": "reckon/crew/dispatch_accounting.py:97",
+      "id": "duplicate_owner-1",
+      "reason": "the predicates are short, and the design already extends the right owner (`record_process_alive`), so naming the neighbours is a documentation improvement rather than a placement change the section must make.",
+      "text": "\u00a74's new `/proc` walk needs two predicates it proposes to write fresh and cites only `_pipe_reader_pids` for: matching a session id against a process's argv as a whole element, and excluding the caller and its ancestors. Both already have owners in the tree: `_ancestor_processes` (reckon/crew/dispatch_accounting.py:97) bounds the ancestry from `os.getppid()`, and argv-token matching lives in `_launched_prior_session` (reckon/crew/dispatch_launch.py:496, the `str(session) not in [str(token) for token in plan.argv]` test at :511) and `_current_and_ancestor_argvs` (reckon/crew/dispatch_watch.py:89). The census of un-cited owners is these three; the plan names none of them",
+      "type": "duplicate_owner",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "e5fd6882d2d06a25076ddecd122cc87b4dd87e681557b82d04eefbfa88ce9c60",
+  "plan_slug": "a-run-has-one-live-worker",
+  "plan_version": 14,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T130500911125-plan-review-of-a-run-has-one-live-worker",
+  "reviewed_blob_sha": "2568f60e68da0edc98c4d378828f213a33582316",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a74 adds one private helper inside the existing liveness owner; the public interface stays the same size while the behaviour behind it grows, which is the depth the item asks for.",
+    "duplicate_owner": "a finding \u2014 the walk's two predicates re-implement helpers the codebase already owns and does not cite.",
+    "interface_budget": "pass \u2014 public_definitions 1597, cli_options 336, mcp_views 33, refusal_families 23; \u00a74 adds no public definition, no CLI option, no view and no refusal, and states that in its own text (\"No public definition is added and no refusal changes\").",
+    "reuse_search": "a finding \u2014 \u00a74 reuses the single liveness owner `record_process_alive` (`reckon/crew/runs.py:4541`) and cites the `/proc`-walk precedent `_pipe_reader_pids` (`reckon/crew/runs.py:344`), but its account of how the two guards reach that owner is wrong in a way that understates the walk's blast radius.",
+    "thin_wrapper": "pass \u2014 \u00a74 adds no layer over existing machinery; it extends the owner rather than forking it, and the earlier session-claim/lease wrapper has been removed."
+  },
+  "section_digests": {
+    "_document": "02170e104cddeaa30cf41a05bd1a49a7b5ff97780df20792448999435f6144a6",
+    "s1": "db92d3a2d223ac6e6cf721b1e5e7990ca9812048f438ce684697638fe0fc3dc3",
+    "s2": "c9e4ff48584d8ce0112c025c8dad40e4cb43826d16eb632e296e12b13a78a3d5",
+    "s3": "00e5904288b325a87d416a0de5356c779e8e1a630a084b58a753bbbcd9fe71f4",
+    "s4": "968ee982db5f3ab55f22c3745157c852e3bc61fa1ff83bd1cc8a60e744dc442e"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T13:21:27.504276+00:00"
+}
