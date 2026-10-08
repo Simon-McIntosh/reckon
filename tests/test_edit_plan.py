@@ -73,7 +73,12 @@ def _make_plan_html(
         '<meta charset="utf-8">'
         '<meta name="docs-project" content="proj">'
         f"<title>{slug}</title></head>\n"
-        '<body><main class="plan-doc"></main></body>\n</html>\n'
+        '<body><main class="plan-doc">'
+        '<h2 id="s1">&sect;1 &mdash; One</h2>'
+        '<h2 id="s2">&sect;2 &mdash; Two</h2>'
+        '<h2 id="s3">&sect;3 &mdash; Three</h2>'
+        '<h2 id="s4">&sect;4 &mdash; Four</h2>'
+        "</main></body>\n</html>\n"
     )
     html = write_state(bare, base)
     path = docs_dir / (relative or f"{slug}.html")
@@ -1565,6 +1570,15 @@ def test_reject_preexisting_empty_followup_prompt_via_validate(setup):
             "version": 0,
             "title": "Plan A",
             "status": "active",
+            # Every authored heading is declared, so the landing reaches the
+            # schema boundary this test is about rather than being refused
+            # earlier for an undeclared section.
+            "section_declarations": {
+                "s1": "done",
+                "s2": "done",
+                "s3": "done",
+                "s4": "done",
+            },
             "followups": [
                 {
                     "id": "f1",
