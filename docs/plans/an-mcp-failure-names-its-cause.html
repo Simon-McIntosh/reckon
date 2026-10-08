@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.55">
-<meta name="plan-version" content="56">
+<meta name="plan-version" content="57">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -290,6 +290,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261008T084725141816-review-of-one-plan-read-is-not-a-corpus-scan" data-who="reckon-build" data-when="2026-10-08T09:02:49.508Z">
     <div class="r-comment-body"><p>review of r-20261008T073628406268-one-plan-read-is-not-a-corpus-scan stored at both assigned store paths — parsed record, six dimensions scored, total 113 (goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 19, reuse 19), one follow-on finding on the gained test's negative-control coverage; reviewed_base_sha 1500780fa7cf4dbcfaf7ed0309367a862bb07614, reviewed_head_sha 6bc95ab743bf9713319fc8e21d20b3aa7878c6ae, added_failure_count 0.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261008T073628406268-one-plan-read-is-not-a-corpus-scan" data-who="reckon-build" data-when="2026-10-08T08:46:52.920Z">
+    <div class="r-comment-body"><p>§9 — a one-plan read resolves the named plan at its canonical typed path (resources._resolve_canonical and _canonical_resource_at, no corpus scan) and takes its north-star diagnostic from a memoised result keyed on the project state directory. The fast path decides only where the canonical location is unambiguous: it counts the canonical candidates for the slug and, when a live and an archived document both claim it, returns None so the scan resolves the duplicate with its own collision rule. Warm one-plan read_plan scandir is equal for 5 and 60 plans (0) with payload equal to the scan path, and the negative control with the direct resolution reverted fails EXIT=1 at 22 vs 132.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261008T073524710933-retried-read-joins-running-copy" data-who="reckon-build" data-when="2026-10-08T08:10:08.972Z">
     <div class="r-comment-body"><p>A retried reckon MCP read with the same tool and arguments now awaits the body still running under asyncio.shield rather than submitting a second copy, keyed by tool+args in _INFLIGHT_READS; a read with different arguments and every write still run their own body — tests/test_mcp_retry_joins_running_read.py 4 passed EXIT=0, negative control (join removed) EXIT=1.</p></div>
