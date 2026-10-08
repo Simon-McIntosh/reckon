@@ -1,0 +1,67 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T07:58:03.844Z",
+  "dispatched_at": "2026-10-08T07:39:45Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/lane-and-model-routing.html:91",
+      "id": "reasoning-1",
+      "reason": "without a clause requiring the source-key mapping to be carried by `flight_report`, the node can ship it unrendered and the plan's own stated purpose (\"`reckon flight` reports per-key provenance \u2026 but not for the backend entries `expand_lanes` builds\") stays unmet; the fix is a plan edit, either requiring the report to surface the mapping or stating that it is test-only.",
+      "text": "\u00a79's separate source-key mapping has no required consumer: `flight_report` builds the served payload with `\"provenance\": resolved.provenance` (reckon/flight.py:2085) and the flight prompt'd view spreads that dict (reckon/mcp.py:4719), so a second mapping on `ResolvedFlight` reaches no reader unless flight_report is also changed; a node can pass the done-when's test and still leave `reckon flight` unable to say which `lanes.*` fact matters; a node that reads the write-path note \"the command already renders whatever provenance the resolution returns\" is told no rendering change is needed, yet that note is true only for the layer mapping and false for the new one",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "5a13b4e67235feb98e4ae2c6f4a4aa7edae352152e02fe759a801184c15f23bc",
+  "plan_slug": "lane-and-model-routing",
+  "plan_version": 33,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-08T07:59:34.921802+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-08T07:59:34.921802+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-lane-and-model-routing.v33.json",
+  "review_run_id": "r-20261008T073915999869-plan-review-of-lane-and-model-routing",
+  "reviewed_blob_sha": "a19b90f7c176b1653d501d50446d6b179527e38c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 \u00a79's sibling refs (`one-typesafe-model-picker#s12`, `every-module-fits-a-worker-window#s4`) resolve to existing section ids, and the plan's landed-links (`/reckon/evidence/archive/lane-and-model-routing-landed.html#sN`) resolve to a file that exists; the extensionless `\u2026#s1` outcome link reads as `.html` under the house convention.",
+    "done_when": "pass \u2014 \u00a79's done-when can fail (the named test fails on the current resolver, which carries zero provenance keys under `backends.claude`/`backends.codex`) and adds a regression guard that every existing `origin()` assertion still passes.",
+    "evidence_paths": "pass \u2014 \u00a79 declares code and test write paths only, so its evidence is the run's own gate log on the run record; nothing points at a scratchpad or node-local temp path.",
+    "naming": "pass \u2014 \u00a79's new prose carries no ticket, plan-label or version tag into a code symbol, and no changelog prose; the section label and the \u00a7N heading are plan content, not code.",
+    "reasoning": "a finding \u2014 \u00a79 records a second mapping for the source `lanes.*` key but requires no consumer to surface it, and `reckon flight` renders only `resolved.provenance`, so the deliverable can satisfy the done-when while the surface \u00a79 names still shows no source key.",
+    "single_goal": "pass \u2014 \u00a79 delivers one thing: a layer record plus a `lanes.*` source-key record for every key `expand_lanes` builds.",
+    "wiring": "pass \u2014 the two declared dependencies (`s4`, `s10` \u2192 `every-module-fits-a-worker-window#s4`) both resolve to a node that exists, and \u00a79 correctly declares no cross-plan input (`data-links=\"\"`) because it edits only `reckon/flight.py`."
+  },
+  "section_digests": {
+    "_document": "adb9712c097f2b4773082c2c696f40562be8620731a5f5a5b8b01c17a18155ac",
+    "s0": "5970e86b0d53213fecf631cb616a2db8d8f783a8532dc052f3423814906cde4f",
+    "s1": "6760f63ebdb0d0db10c3c004f30d4f4253bfb7582bc7a0e4054fed73e017a02d",
+    "s10": "9d27e940f021242c82017cf503b8e3d3277451ecaef61d1887ae36cecf3eb5a7",
+    "s11": "2e566713b8ee8cbfcf94503cba2640bac78329b96f748ff0334a858e08287755",
+    "s2": "0c6488cdae0f23d0600410d02191390e773858e9bc75008234f71cc66f01889b",
+    "s3": "6cb602347e0232fe459028eff2010884381d987053d550c4565f581c23032095",
+    "s4": "aa5a29a8662005607992ae17fc914d47e8e48c68b7e65395b4865f6d33ea37f4",
+    "s5": "2ffa1a3b1d2b09433f25a83f8a7a59b1774249bac29b945f2c2273ace57cb1ba",
+    "s6": "6c8117bcfdc7d4b0bafdc4fb2185779998c71b1730b07a0d900b543f02c08ec1",
+    "s7": "07952e2e354db24e76860530568500cc2066b69b4255c020db83677e46cb18e2",
+    "s8": "7ca129403c95fcbc111273a2b419b29279191bc54c157bb6f7d8de0d5b160d34",
+    "s9": "1f5dfcc46e5203f88214d1dca0d27fba413b89bd5878b77caf0ee35ccf56fc59"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T07:59:26.856372+00:00"
+}
