@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured from a structured base arm: the reviewed manifest left baseline_suite/after_suite null; both derived here from its own gate logs",
+  "base_log_revision": "4cd309a0e7ba270b9eaed281cc4a77556df5b974",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/mcp.py:636",
+    "reckon/mcp.py:442",
+    "reckon/mcp.py:493",
+    "reckon/mcp.py:565"
+  ],
+  "completed_at": "2026-10-08T08:37:47.400Z",
+  "dispatched_at": "2026-10-08T08:14:09Z",
+  "findings": [
+    {
+      "file": "tests/test_mcp_views.py",
+      "line": "735",
+      "severity": "follow-on",
+      "text": "follow-on: the schema-size assertion compact_size(schema) <= 24*1024 embeds the temp checkout path in the response, so it is path-length dependent - it fails 24638 with the reviewed run's long basetemp and passes 24527 with a short one; a knife-edge test that reddens on long pytest basetemps, outside this node's write scope."
+    },
+    {
+      "file": "tests/test_mcp_views.py",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed after-suite log records 191 collected tests while the tree at head cf0177918 collects 187 under the same tests/test_mcp_*.py glob; the 4-test gap is unexplained by the reviewed run's record."
+    }
+  ],
+  "head_log_revision": "cf0177918921c3fbf93a47f6e66d52bd1607cd43",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "4 anchors read at head: _read_joining_running register/join (reckon/mcp.py:565,584-588), _forget_read callback (reckon/mcp.py:435), _await_body shield (reckon/mcp.py:493) and the _deadline_tool read routing (reckon/mcp.py:636).",
+    "diff": "read commit by commit from 4cd309a0 to cf0177918: 598da8fbf adds the inflight-read join to reckon/mcp.py plus four tests; cf0177918 adds the evidence fragment. Reads route through _read_joining_running; writes stay on _run_under_deadline.",
+    "done_when": "the section's three conditions are met: a spinning read issued twice after the first's deadline shows one body answering both; a different-argument read starts its own body; a write is never joined; the negative control (join removed) is logged EXIT=1 and recomputes to 2 body executions.",
+    "goal": "a retried reckon read with the same tool and arguments waits on the body still running instead of starting a second copy; a different-argument read and every write still run their own body - independently reproduced.",
+    "manifest": "read; records the gate (4 passed EXIT=0), the negative control, the base arm and the ruff delta, but leaves baseline_suite/after_suite null so the added-failure figures are derived from its own gate logs.",
+    "write_paths": "the diff 4cd309a0..cf0177918 touches three paths, all inside the declared grant; the granted figures directory was not needed and the done-when names no figure."
+  },
+  "justifications": {
+    "durability": "Four tests pin the join, the different-argument body, the write-never-joined rule and the registry draining when a body finishes; removing the join reddens test_a_retried_read_joins_the_body_still_running (EXIT=1, recomputed). The join's own timeout cause and a body that never finishes leaving a registration are not directly asserted, but the registry-drain and same-key join cover the substantive paths.",
+    "evidence": "Gate tests/test_mcp_retry_joins_running_read.py recomputes 4 passed EXIT=0 at head cf0177918. Negative control recomputed independently (join adapter replaced by one that always starts a fresh body) -> 2 body executions. added_failure_count 0 is derived from the reviewed run's own logs: base-arm-preexisting.log fails [tests/test_mcp_views.py::test_raw_and_schema_are_explicit_layers] and gate-mcp-suite.log fails the same single id over 190 passed, so added = 0. Two gaps: the reviewed manifest left baseline_suite/after_suite null (derived here from raw logs), and the after-suite log records 191 collected tests where the tree at head collects 187 under the same glob - an unexplained 4-test gap; the head arm was re-run independently to 187 passed EXIT=0.",
+    "fit": "Symbols are named for mechanism (_InflightBody, _read_join_key, _INFLIGHT_READS, _forget_read, _start_body, _await_body, _read_joining_running); no plan label, stage name, ticket number or author attribution reaches a filename, symbol, comment or commit message, and there is no AI trailer. The adapter keeps the module's existing _deadline_tool/_run_under_deadline idiom, splitting body-start from body-await rather than forking a second deadline path.",
+    "goal_fidelity": "A retried read with the same tool and arguments joins the body still running: _deadline_tool routes kind=='read' through _read_joining_running (reckon/mcp.py:636), which keys a running body's future by (label, json(kwargs)) in _INFLIGHT_READS (reckon/mcp.py:432,565,584-588) and awaits it under asyncio.shield (reckon/mcp.py:493). Independently reproduced: a spinning read issued twice, the second after the first's 0.2 s deadline, executes one body that answers both calls (first storage-slow, retry ok), and a read with different arguments keys its own body while a write (kind!='read') still runs _run_under_deadline and is never registered.",
+    "reuse": "The change reuses _deadline_seconds, the thread CPU/run-queue diagnostics, bound_response and the module's single-default-executor model; _run_under_deadline is refactored into _start_body + _await_body with no behavioural fork for writes. No capability is duplicated and no new dependency is introduced.",
+    "scope_discipline": "git diff 4cd309a0..cf0177918 touches exactly three paths - reckon/mcp.py, tests/test_mcp_retry_joins_running_read.py and docs/evidence/fragments/an-mcp-failure-names-its-cause/retried-read-joins-running-copy.html - all inside the node's declared write paths; the granted docs/figures/... directory was not written and the done-when names no figure; no plan HTML, project index or sprint state changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: a retried read with the same tool and arguments joins the body still running (reckon/mcp.py:565 routes via _deadline_tool:636; registry _INFLIGHT_READS at :432; shield await at :493); independently reproduced one body answering both calls, different arguments key their own body, and a write is never registered.\nVERDICT done_when: tests/test_mcp_retry_joins_running_read.py recomputes 4 passed EXIT=0 at head cf0177918; the negative control (join replaced by an always-fresh adapter) recomputes 2 body executions.\nVERDICT write_paths: the diff 4cd309a0..cf0177918 touches only the two declared source paths and the declared evidence fragment.\nVERDICT manifest: read; the reviewed run recorded the two gate logs, the negative-control log and the base arm, but left baseline_suite/after_suite null, so added_failure_count/added_failure_ids are derived here from those logs.\nVERDICT diff: read commit by commit - 598da8fbf adds the join (reckon/mcp.py) and four tests; cf0177918 adds the evidence fragment.\nCALL_SITES: reckon/mcp.py:636, reckon/mcp.py:442, reckon/mcp.py:493, reckon/mcp.py:565\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: A retried read with the same tool and arguments joins the body still running: _deadline_tool routes kind=='read' through _read_joining_running (reckon/mcp.py:636), which keys a running body's future by (label, json(kwargs)) in _INFLIGHT_READS (reckon/mcp.py:432,565,584-588) and awaits it under asyncio.shield (reckon/mcp.py:493). Independently reproduced: a spinning read issued twice, the second after the first's 0.2 s deadline, executes one body that answers both calls (first storage-slow, retry ok), and a read with different arguments keys its own body while a write (kind!='read') still runs _run_under_deadline and is never registered.\nSCORE evidence: 17\nJUSTIFICATION evidence: Gate tests/test_mcp_retry_joins_running_read.py recomputes 4 passed EXIT=0 at head cf0177918. Negative control recomputed independently (join adapter replaced by one that always starts a fresh body) -> 2 body executions. added_failure_count 0 is derived from the reviewed run's own logs: base-arm-preexisting.log fails [tests/test_mcp_views.py::test_raw_and_schema_are_explicit_layers] and gate-mcp-suite.log fails the same single id over 190 passed, so added = 0. Two gaps: the reviewed manifest left baseline_suite/after_suite null (derived here from raw logs), and the after-suite log records 191 collected tests where the tree at head collects 187 under the same glob - an unexplained 4-test gap; the head arm was re-run independently to 187 passed EXIT=0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 4cd309a0..cf0177918 touches exactly three paths - reckon/mcp.py, tests/test_mcp_retry_joins_running_read.py and docs/evidence/fragments/an-mcp-failure-names-its-cause/retried-read-joins-running-copy.html - all inside the node's declared write paths; the granted docs/figures/... directory was not written and the done-when names no figure; no plan HTML, project index or sprint state changed.\nSCORE durability: 19\nJUSTIFICATION durability: Four tests pin the join, the different-argument body, the write-never-joined rule and the registry draining when a body finishes; removing the join reddens test_a_retried_read_joins_the_body_still_running (EXIT=1, recomputed). The join's own timeout cause and a body that never finishes leaving a registration are not directly asserted, but the registry-drain and same-key join cover the substantive paths.\nSCORE fit: 19\nJUSTIFICATION fit: Symbols are named for mechanism (_InflightBody, _read_join_key, _INFLIGHT_READS, _forget_read, _start_body, _await_body, _read_joining_running); no plan label, stage name, ticket number or author attribution reaches a filename, symbol, comment or commit message, and there is no AI trailer. The adapter keeps the module's existing _deadline_tool/_run_under_deadline idiom, splitting body-start from body-await rather than forking a second deadline path.\nSCORE reuse: 19\nJUSTIFICATION reuse: The change reuses _deadline_seconds, the thread CPU/run-queue diagnostics, bound_response and the module's single-default-executor model; _run_under_deadline is refactored into _start_body + _await_body with no behavioural fork for writes. No capability is duplicated and no new dependency is introduced.\nFINDING tests/test_mcp_views.py:735 follow-on: the schema-size assertion compact_size(schema) <= 24*1024 embeds the temp checkout path in the response, so it is path-length dependent: recomputed to fail 24638 with the reviewed run's long basetemp and pass 24527 with a short one. A knife-edge test that reddens on long pytest basetemps and is outside this node's write scope.\nFINDING tests/test_mcp_views.py:1 follow-on: the reviewed after-suite log records 191 collected tests while the tree at head cf0177918 collects 187 under the same tests/test_mcp_*.py glob; the 4-test gap is unexplained by the reviewed run's record.\nreviewed_base_sha: 4cd309a0e7ba270b9eaed281cc4a77556df5b974\nreviewed_head_sha: cf0177918921c3fbf93a47f6e66d52bd1607cd43",
+  "review_run_id": "r-20261008T081327070513-review-of-retried-read-joins-running-copy",
+  "reviewed_base_sha": "4cd309a0e7ba270b9eaed281cc4a77556df5b974",
+  "reviewed_head_sha": "cf0177918921c3fbf93a47f6e66d52bd1607cd43",
+  "reviewed_run_id": "r-20261008T073524710933-retried-read-joins-running-copy",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T08:33:20.342777+00:00",
+  "total": 114
+}

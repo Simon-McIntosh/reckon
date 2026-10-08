@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.45">
-<meta name="plan-version" content="53">
+<meta name="plan-version" content="54">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -306,6 +306,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261008T073524710933-retried-read-joins-running-copy" data-who="reckon-build" data-when="2026-10-08T08:10:08.972Z">
     <div class="r-comment-body"><p>A retried reckon MCP read with the same tool and arguments now awaits the body still running under asyncio.shield rather than submitting a second copy, keyed by tool+args in _INFLIGHT_READS; a read with different arguments and every write still run their own body — tests/test_mcp_retry_joins_running_read.py 4 passed EXIT=0, negative control (join removed) EXIT=1.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261008T081327070513-review-of-retried-read-joins-running-copy" data-who="reckon-build" data-when="2026-10-08T08:37:47.400Z">
+    <div class="r-comment-body"><p>Attached an independent review of run r-20261008T073524710933-retried-read-joins-running-copy at base 4cd309a0e7ba270b9eaed281cc4a77556df5b974 / head cf0177918921c3fbf93a47f6e66d52bd1607cd43: the join of a retried read is verified working (independent gate 4 passed EXIT=0; one body answering both calls; join removed recomputes to two bodies), total 114/120, added_failure_count 0 with added_failure_ids [] derived from the run&#x27;s own gate logs, two follow-on findings.</p></div>
 </div>
 </section>
 </main>
