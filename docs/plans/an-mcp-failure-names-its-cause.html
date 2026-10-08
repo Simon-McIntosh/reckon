@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.64">
-<meta name="plan-version" content="76">
+<meta name="plan-version" content="77">
 <meta name="plan-modified" content="2026-10-08">
 <meta name="plan-commits" content="cff2bbed,e52b056f">
 </head>
@@ -102,7 +102,8 @@
       tool-result blocks. That walk is inline in <code>promotion_receipts</code> in <code>reckon/velocity.py</code>, the loop over
       <code>record["message"]["content"]</code>, so it is extracted into one helper there that <code>promotion_receipts</code> and the
       census both call, rather than copied. <code>promotion_receipts</code> behaves as before, held by its existing tests. The census
-      adds only the <code>storage-slow</code> count, which no reader has. The section adds one module, <code>reckon/mcp_census.py</code>, and one public function in it, the census; nothing
+      adds only the <code>storage-slow</code> count, which no reader has, matching the sentinel through
+      <code>STORAGE_SLOW</code> in <code>reckon/_mcp_tools.py</code>, its one definition, rather than a second spelling. The section adds one module, <code>reckon/mcp_census.py</code>, and one public function in it, the census; nothing
       is retired, because no existing reader counts MCP connections or <code>storage-slow</code> results, and the doctor block and an
       agent asking for another window both call that one function. The check adds no command and
       no option: it is one more block in <code>reckon doctor</code>'s existing report, and an agent that wants
