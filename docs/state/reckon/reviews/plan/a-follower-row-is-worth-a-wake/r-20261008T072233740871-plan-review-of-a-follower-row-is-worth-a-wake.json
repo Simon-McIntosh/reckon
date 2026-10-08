@@ -1,0 +1,43 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T07:29:27.409Z",
+  "dispatched_at": "2026-10-08T07:22:59Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-follower-row-is-worth-a-wake.html:141",
+      "id": "reasoning-1",
+      "reason": "the plan must either state that the settle hold is inactive when `show_observer` is true, or add the settle-collapsed rows to \u00a75's subtraction and correct \u00a72's three-row control; until it does, \u00a75's control and \u00a72's negative control assert a row count the declared mechanism cannot produce.",
+      "text": "\u00a72 declares `show_observer` (line 138) as controlling only whether observer context prints and claims a pane built with it true \"keeps today's behaviour for every row except those the two resolution rules above restore\", but the settle hold (lines 128-136) is a separate new suppression of coordinator rows, and \u00a72 never says it is inactive on the shown pane: on that pane the \u00a72 done-when sequence `dispatched \u2192 working`, `working \u2192 complete`, `complete \u2192 recorded` has its `working \u2192 complete` superseded by the later printing `complete \u2192 recorded` (both within the twenty-second window), so it prints two rows where today prints three, contradicting \u00a72's own negative control (\"with the observer hold removed, the first case prints three rows\", line 162) and \u00a75's positive control (line 209-212), which reproduces today's row count subtracting only the two resolution rules' restored rows",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "cbd3556c572e505e8a8aeedd10b56d37a26df971bb9ea33a11fccb33756eeba5",
+  "plan_slug": "a-follower-row-is-worth-a-wake",
+  "plan_version": 34,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T072233740871-plan-review-of-a-follower-row-is-worth-a-wake",
+  "reviewed_blob_sha": "95fa12041d1cecc6cef4402d48015c5e0608698c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 reckon/crew/ticker.py (RowPolicy, PaneRowPath, replay_row_policy, ARRIVAL_WINDOW, NOISE_PAIRS, NOISE_RESOLUTIONS), reckon/crew/recovery.py (ACTIONABLE_RECOVERY_CLASSIFICATIONS), the cited test paths and the landed archive file all resolve; extensionless /reckon/... and /reckon/evidence/... hrefs resolve once `.html` is appended.",
+    "done_when": "pass \u2014 \u00a72 (tests/test_row_policy_holds_observer_context.py, four-row sequence plus a logged negative control), \u00a73 (tests/test_follow_settled_rows.py) and \u00a75 (replay row count, held-back action states, longest delay) each name a measurable value and a control.",
+    "evidence_paths": "pass \u2014 gate logs land in tests/ and the replay report in the run directory; no session scratchpad or node-local path is named.",
+    "naming": "pass \u2014 the new `show_observer` keyword and the two settle constants name the mechanism; \u00a72 carries no plan label, stage name, ticket id or changelog prose.",
+    "reasoning": "a finding \u2014 \u00a72's mechanism does not produce the observer-shown pane its own controls depend on, because the settle hold's applicability to that pane is left undeclared.",
+    "single_goal": "pass \u2014 \u00a72 carries one deliverable (the observer-context hold plus its one keyword), \u00a73 the follower path, \u00a75 the replay measurement.",
+    "wiring": "pass \u2014 \u00a72's only relationship is the inherited `plan-depends-on a-follower-outlives-its-monitor` (docs/plans/a-follower-outlives-its-monitor.html), which resolves; the advisory note to a-follower-keeps-your-work-in-view stays prose under the prior review's decline."
+  },
+  "section_digests": {
+    "_document": "57651ac23d8c226b299a6fb3798c4954e38bfc8b12c6a6ee0afcae03f380f75f",
+    "s1": "bea06a70e5a727324f7f05ddea157674cb647360778af5da9d99b6cb372018e7",
+    "s2": "fc7524fbf001a713a4376d27f5d0ca08502a32e801a9bcc230b93d93033326af",
+    "s3": "41d4ddd08ef0e265dd9b427e22278337608b4bef109bcc1632efbc0a2b31ec0e",
+    "s4": "de2aa9f5977b57bf9a0e566534e0a792ce0ec6d246a7e43be40842fc31db28f5",
+    "s5": "828e58fc5baf0bc0f9a8c30b8428b8d1effc82e4edf54e707a834360e363c973"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T07:30:33.772568+00:00"
+}
