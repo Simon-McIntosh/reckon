@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.73">
-<meta name="plan-version" content="42">
+<meta name="plan-version" content="43">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -118,10 +118,12 @@
       authored section heading with no declaration, and <code>todo-without-section</code> for a declaration naming no
       heading. A plan write that would introduce either gap, one the plan did not carry before the write, is refused by one coverage check over the resulting plan HTML,
       widened from <code>_require_heading_for_section_records</code> in <code>reckon/_store.py</code> to cover the
-      declarations in both directions. It is called on both write paths. State-mode writes reach it through
+      declarations in both directions. It is called on all three plan write paths. State-mode writes reach it through
       <code>_write_state_locked</code>, where it runs today. Text-mode writes (<code>edit_plan</code> mode text, through
       <code>_replace_plan_text</code>) never enter <code>_write_state_locked</code>, so the same function is called
-      there before the write. <code>_require_new_section_contracts</code>, which that text path runs for newly
+      there before the write. The server's patch path, <code>POST /plan/&lt;project&gt;/&lt;slug&gt;</code> in
+      <code>reckon/serve.py</code>, which the plan view writes through, patches the state and renders the file itself,
+      so it calls the same function on the HTML it renders before writing. <code>_require_new_section_contracts</code>, which that text path runs for newly
       added headings only, keeps its narrower job. The check compares headings with the declarations the write produces. On the state path that is the HTML <code>write_state</code> renders, carrying the new <code>plan-section-declarations</code>, not the authored <code>source_text</code> the existing call site reads. Otherwise a write that adds a heading and its declaration together would be refused against the old declarations. The census comes first:
       count the live plans that carry a gap today, and state the count in the evidence. It found 109 of 214 live
       plans across ten projects, mostly older plans with no declarations at all. A gap a plan already carries
@@ -141,7 +143,9 @@
       accepted, while a write adding a second undeclared heading to the same plan is refused. It fails when the guard
       treats the plan as carrying no gaps before the write, which is the strict form. A sixth test sets to
       <code>done</code> a plan whose declared sections are all done but which carries one undeclared heading, and finds
-      the refusal naming that heading. It fails when the terminal guard reads the declaration map alone.</p>
+      the refusal naming that heading. It fails when the terminal guard reads the declaration map alone. A seventh
+      test posts a patch to the server's plan endpoint that drops the declaration of an existing heading, and finds
+      it refused with the plan file unchanged. It fails when the patch path skips the check.</p>
 
     <h2 id="s6" data-reckon="section" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links="">§6 — A plan reaches done only when every todo is ticked</h2>
     <p><strong>Deliverable.</strong> A write that sets a plan's status to <code>shipped</code> or <code>done</code> is
