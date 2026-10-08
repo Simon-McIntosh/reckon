@@ -1,0 +1,69 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T01:37:23.223Z",
+  "dispatched_at": "2026-10-08T01:26:28Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/an-mcp-failure-names-its-cause.html:103",
+      "id": "single_goal-1",
+      "reason": "splitting the dedup into its own node changes \u00a73's scope, its brief and the followup's parallel plan.",
+      "text": "\u00a73's title and stated goal are the honest timeout cause, but its deliverable and done-when also require an in-flight single-flight dedup (\"A second call ... waits on that body rather than starting another\"), a mechanism that can be built and can fail independently of the cause field, so the node cannot be closed on one verdict and its gate proves neither behaviour independently",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/an-mcp-failure-names-its-cause.html:159",
+      "id": "evidence_paths-1",
+      "reason": "naming the destination costs one line and without it the investigation's evidence can land in a path no later reader opens, which is the durable-path failure the item exists to prevent.",
+      "text": "\u00a76's done-when requires a report (\"the report names the file uv failed to open\") but the section names no destination for it, unlike \u00a74 which writes to the run directory, so a later reader cannot open \u00a76's gate log or report and the write path is left to the worker to invent",
+      "type": "evidence_paths",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/an-mcp-failure-names-its-cause.html:178",
+      "id": "anchors_resolve-1",
+      "reason": "a public write path that resolves to no artifact forces the worker to guess or stop and ask, which is exactly the node-brief failure this review exists to catch.",
+      "text": "\u00a77 declares its write path as \"the dispatch module that writes the harness home, which the design review names\", but no design review for this plan exists in the plan or in docs/ (grep finds \"design review\" only in unrelated archive evidence), so the module the node must edit is named nowhere a worker can resolve \u2014 the module is discoverable at reckon/crew/dispatch.py:207",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/an-mcp-failure-names-its-cause.html:129",
+      "id": "reasoning-1",
+      "reason": "if the decision resolves to the venv-script option, \u00a75's flag rule (a launch with no absolute --project), its printed correction and its negative control are all wrong, so \u00a75 must either wait on the decision or leave the correction open.",
+      "text": "\u00a75's deliverable hard-codes the corrected command as `uv run --no-sync --project <absolute checkout> \u2026` and its fixture/negative control test that form, while the plan's `launch-form` decision (line 183, data-choice=\"\") is unresolved between that form and \"the checkout's own .venv/bin/<script>, with no uv in the cited launch\", and the followup says only \u00a77 waits on that decision",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "b4b5562e5574e39845191005e599c1a7b976a3c513f491b416f655fbcda26d8d",
+  "plan_slug": "an-mcp-failure-names-its-cause",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T012552674609-plan-review-of-an-mcp-failure-names-its-cause",
+  "reviewed_blob_sha": "00b9cbfc86a5f8954068e2fea4896ad24440fa2c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a77's write path is deferred to \"the design review\", which resolves to no artifact.",
+    "done_when": "pass \u2014 each node's measure can fail and the four code nodes (\u00a72, \u00a73, \u00a75, \u00a77) each declare an executed negative control with a logged red result; \u00a74 is a measurement node whose declared control is a positive one (a fixture project answers sub-second), which is the correct instrument check where the node holds no guard to falsify.",
+    "evidence_paths": "a finding \u2014 \u00a76 requires a report and names no durable destination for it.",
+    "naming": "pass \u2014 the plan proposes no plan labels, stage names, ticket numbers or version tags in code; the new module `reckon/mcp_census.py` and the new test filenames are named by behaviour.",
+    "reasoning": "a finding \u2014 \u00a75's mechanism bakes in the launch form that the plan's own open `launch-form` decision has not chosen.",
+    "single_goal": "a finding \u2014 \u00a73 carries two independent deliverables under a title naming one.",
+    "wiring": "pass \u2014 the plan's sole relationship, `plan-depends-on=reckon...`/`reckon-reads-answer-in-seconds`, resolves to a shipped plan (docs/plans/reckon-reads-answer-in-seconds.html, plan-status=shipped, plan-impl=1.0), and the \u00a72\u2192\u00a75 serialization of the shared write path `reckon/cli.py` is recorded in the driving followup."
+  },
+  "section_digests": {
+    "_document": "f81d16c8611f69db7f4237b5e43704c7edc149cb3231abdf425dcb7cdc38cf68",
+    "s1": "d0ea88c8e7e70627417eeb698c89b91962c8e03f4f18bbdc2e310ceeb8b0f1f5",
+    "s2": "a96908d804ed615f305aa48d666da95845f8cff18907f77fad577fd144249a7f",
+    "s3": "ff4e6f98f8b3738bd9d3be907abef807a89cb57be5ed47a079cd299798747fdc",
+    "s4": "e8ab475d56abc119c369298b36a1fedb5af7d6342681af684858d6c50c994663",
+    "s5": "6848f174b32fca22260cfc47846872afdccff15065301a2aaf5616da4a0e6e2f",
+    "s6": "3844e368e7e6daf5df33d3b5a521ba573d7dfbf2bf6ffba35f6c04b79bf6aa2b",
+    "s7": "792d037d0805761ed62f0a7b56b274a80b04fa7becfb42d7d6d8717298f99f91"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T01:40:02.318900+00:00"
+}
