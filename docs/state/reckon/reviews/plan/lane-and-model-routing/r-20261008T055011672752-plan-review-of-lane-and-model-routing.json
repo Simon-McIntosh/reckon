@@ -1,0 +1,130 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T06:05:47.432Z",
+  "dispatched_at": "2026-10-08T05:50:59Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/lane-and-model-routing.html:64",
+      "id": "wiring-1",
+      "reason": "after the split \u00a74 must edit the module the split moved the command to, so a worker dispatched to \u00a74 is pointed at a module that no longer holds it.",
+      "text": "\u00a74 now declares `depends-on: every-module-fits-a-worker-window#s4` (which splits `reckon/cli.py`), but its write paths still name `reckon/cli.py` as an edit target, whereas \u00a710 \u2014 sharing the same dependency \u2014 names \"the module that holds the dispatch command after the split\".",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/lane-and-model-routing.html:93",
+      "id": "anchors_resolve-1",
+      "reason": "every reader of the plan sees raw markup in the section title, and correcting the heading changes the plan.",
+      "text": "the \u00a710 heading escapes its code tags (`&lt;code&gt;--repo&lt;/code&gt;`), so the section title renders the literal text `<code>--repo</code>`; \u00a78, \u00a79 and \u00a711 headings do not.",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/lane-and-model-routing.html:41",
+      "id": "reasoning-1",
+      "reason": "the document's own count contradicts the sections it introduces; correcting it (or dropping the count) is a change to the document.",
+      "text": "\"The seven sections below\" now introduces eleven sections; `plan-section-declarations` declares `s1`\u2013`s11`.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/lane-and-model-routing.html:91",
+      "id": "reasoning-2",
+      "reason": "the section's stated contrast is false, so a fix scoped to derived entries leaves the lane's own entry with the same gap and does not reach the goal the section states.",
+      "text": "\u00a79's premise \"The entry's keys carry no per-key provenance ... Every other entry can\" is not what the resolver returns: resolving the live flight, `reckon flight` reports zero provenance keys under `backends.claude` and `backends.codex` (the lane-named entries `expand_lanes` builds), because their layer wrote the keys under `lanes.*`; and derived `backends.claude-opus` carries the four catalogued keys only. So the gap is neither confined to derived entries nor total on them.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "a0e376b4cfb4ef4d4d7226350f80269dfa247cfa1b44c5dc92bd84c975ca5eae",
+  "plan_slug": "lane-and-model-routing",
+  "plan_version": 31,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-08T06:11:54.497796+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "anchors_resolve-1",
+      "reason": "",
+      "when": "2026-10-08T06:12:05.851361+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-08T06:12:21.918475+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "",
+      "when": "2026-10-08T06:12:35.634048+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-08T06:12:05.851361+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-08T06:12:21.918475+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-08T06:12:35.634048+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-08T06:11:54.497796+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-lane-and-model-routing.v31.json",
+  "review_run_id": "r-20261008T055011672752-plan-review-of-lane-and-model-routing",
+  "reviewed_blob_sha": "0942cae8162030902fad53313a8205d2a0e683e8",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a710's section heading renders its code tags literally, so the title shows raw markup.",
+    "done_when": "pass \u2014 each of \u00a78\u2013\u00a711 asserts an outcome that fails on the unfixed code (the colliding key, the absent per-key provenance, the traceback on a foreign `--repo`, the prose evidence rendered as a link), so no changed-unit done-when is unfalsifiable.",
+    "evidence_paths": "pass \u2014 no evidence or gate path named in the changed units points at a session scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 no plan label, stage name or ticket number reaches a code symbol, file name or comment; `anchors_resolve-1` occurs in \u00a711's prose only, as the record of the review that first raised it.",
+    "reasoning": "two findings \u2014 the document's section count no longer matches its contents. No finding: the \u00a79 mechanism (record per-key provenance for a derived entry) runs on the real path (`expand_lanes` builds the derived entry in `reckon/flight.py` at resolve time, consumed by `reckon flight`); \u00a78's mechanism runs on the production `option_key` caller `build_questions`; \u00a710's waits for the `cli.py` split its dependency names; \u00a711's targets `docs/ui/plan.jsx:152`.",
+    "single_goal": "pass \u2014 \u00a78 fixes one function's key contract, \u00a79 one provenance gap, \u00a710 one refusal, \u00a711 one render rule; each closes on one verdict.",
+    "wiring": "a finding \u2014 the new `plan-section-depends-on` holds \u00a74 on the `reckon/cli.py` split, but \u00a74's write paths still name `reckon/cli.py`."
+  },
+  "section_digests": {
+    "_document": "adb9712c097f2b4773082c2c696f40562be8620731a5f5a5b8b01c17a18155ac",
+    "s0": "b5d63387ffd64f95a18edf11d7ea37dfa445cd4813908d577f25210d053a6e3d",
+    "s1": "6760f63ebdb0d0db10c3c004f30d4f4253bfb7582bc7a0e4054fed73e017a02d",
+    "s10": "786bba7b0064812fca149c70f0b51660ac876c45a536d806987edc678f82f615",
+    "s11": "2e566713b8ee8cbfcf94503cba2640bac78329b96f748ff0334a858e08287755",
+    "s2": "0c6488cdae0f23d0600410d02191390e773858e9bc75008234f71cc66f01889b",
+    "s3": "6cb602347e0232fe459028eff2010884381d987053d550c4565f581c23032095",
+    "s4": "a9149501a3d5192976bf2036a74780936250f3edc562efa9c5ae06f1927e955c",
+    "s5": "2ffa1a3b1d2b09433f25a83f8a7a59b1774249bac29b945f2c2273ace57cb1ba",
+    "s6": "6c8117bcfdc7d4b0bafdc4fb2185779998c71b1730b07a0d900b543f02c08ec1",
+    "s7": "07952e2e354db24e76860530568500cc2066b69b4255c020db83677e46cb18e2",
+    "s8": "7ca129403c95fcbc111273a2b419b29279191bc54c157bb6f7d8de0d5b160d34",
+    "s9": "230eeda2dadf536b58fa046a759e47758bced9325f5db9b5a6fe9c08bc132adb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T06:10:41.945200+00:00"
+}
