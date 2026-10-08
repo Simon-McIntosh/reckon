@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T12:42:07.384Z",
+  "dispatched_at": "2026-10-08T12:34:09Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/query.py:164",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a75 asserts the surfaces \"cannot disagree\" while providing no single reader, so the author must name the shared reader or the parity test hides three independent computations of one derived value.",
+      "text": "\u00a75 says `crew(view=\"live\")` and `reckon crew list` show each queued run's \"position and rank\", but a queued pointer stores neither: `queue_dispatch` computes `position` and returns it to the caller only (`reckon/crew/runs.py:618-623`), and the pointer written by dispatch carries no position key (`reckon/crew/dispatch.py:913-935`); the two live surfaces build rows independently \u2014 `project_live_rows` (`reckon/crew/query.py:164`) and `crew_list` (`reckon/crew_run_commands.py:187-227`) \u2014 so \u00a75 either recomputes the ranking in both places or adds a third unnamed reader, and the obligations view likewise gains a second queued reading beside `REVIEW_QUEUED_DUTY_KIND` (`reckon/crew/obligations.py:60`, keyed on the review-dispatch record, not on `phase==\"queued\"`); every instance is query.py:164, crew_run_commands.py:187 and obligations.py:60, and the owner to extend is `admission_order` (`reckon/crew/queue_order.py:16`), exposed once for all three",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-held-dispatch-waits-its-fair-turn.html#s4",
+      "id": "interface_budget-1",
+      "reason": "the section must account for the CLI surface the declared service invokes, and choosing the name matters because \"drain\" is already taken by an unrelated command.",
+      "text": "\u00a74 introduces a standing drainer and says only that it is \"declared in the fleet services configuration\"; the services file maps a name to an argv (`reckon/crew/fleet_supervisor.py:456`, `services.json`), so the section depends on a new CLI entry point it never names, and it names nothing it retires or merges \u2014 the existing `reckon crew drain` (`reckon/crew_run_commands.py:853`) is a session-closure report and `reckon crew recover --dispatch-reviews` launches reviews, neither of which launches a queued dispatch, so no existing command absorbs it",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "51c86b04dc2a996fd1a74fd6445fce4b4c7d954d070eb3be93abf0e17164f570",
+  "plan_slug": "a-held-dispatch-waits-its-fair-turn",
+  "plan_version": 11,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T123340876643-plan-review-of-a-held-dispatch-waits-its-fair-turn",
+  "reviewed_blob_sha": "0abfbe643fd22ba6d6400e5e5674b8b71e657696",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the queue is one deep module: `queue_order.admission_order` (reckon/crew/queue_order.py:16) hides join-order, occupancy and starvation behind one call, and \u00a74 adds a single cadence loop that reads the lane document and reuses that ordering rather than spreading wrappers.",
+    "duplicate_owner": "a finding \u2014 \u00a75 requires two independent surface builders to each derive a queued run's position and rank, a value no pointer stores, and names no shared reader; the owner to extend is `queue_order.admission_order`.",
+    "interface_budget": "a finding \u2014 public_definitions 1597, cli_options 336, mcp_views 33, refusal_families 23; \u00a74 adds a standing drainer declared as a fleet service, whose argv resolves to a CLI entry the section neither names nor accounts for, and names nothing it retires or merges.",
+    "reuse_search": "pass \u2014 \u00a71, \u00a74, \u00a75 and \u00a78 name the mechanisms they extend (`_lane_worker_allowance` in `reckon/crew/dispatch.py:890`, the supervisor's declared-service lease and backoff in `reckon/crew/fleet_supervisor.py:456`/`:_lease`, `REVIEW_QUEUED_DUTY_KIND` at `reckon/crew/obligations.py:60`, and `fold` at `reckon/crew/dispatch_sessions.py:149`), and \u00a74's \"same dispatch path a coordinator uses\" is real: `plan_dispatch` accepts a caller-supplied `run_id` (`reckon/crew/dispatch_plan.py:209`, `resolved_run_id = run_id or new_run_id(node.id)` at `:432`), so a queued pointer can be launched under its own id rather than a launcher being rebuilt.",
+    "thin_wrapper": "pass \u2014 the remaining sections extend existing surfaces (the obligations view, `crew(view=\"live\")`, `reckon crew list`, `fold`) instead of adding a parallel layer, and \u00a74's loop carries real behaviour (lane read, selection, launch) rather than forwarding."
+  },
+  "section_digests": {
+    "_document": "398ad37c8fa14bcc673d4343a2d721bb121e0748a3d62bb65eaa40208d76d93e",
+    "s1": "e09f72c38fa12dd06b1fede9137b6a8731c7f42dad95ea4d7873e48b6bcebc93",
+    "s2": "c37ed4ecb2dad1331b0b031fb8351608243790308312236d375bede3594285b7",
+    "s3": "ef687123318fac196bded366330cf2e92b586c4991b5c1cc8670f228182f916c",
+    "s4": "3d097a9cc375f0996b958032c66c81e0f4056b228b5372e083b0bb767728175d",
+    "s5": "4b674f96924c3dbfde217945d16c606df376d034dc060f02360a4336412e74f8",
+    "s6": "9e35fc2341a06de64fed9ff7f176a0e83b22c1482c1b5a04a5539b6e4c07aab4",
+    "s7": "764a72dad2d59bddd4d3b1209f07c0c210ff6c46cd14147d4bcc7ffe9fa9426d",
+    "s8": "8be5ebf90d285872bb80494d973f405f8b1e2b3d50553a9e2bd559059376f3a2"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T12:42:18.360233+00:00"
+}
