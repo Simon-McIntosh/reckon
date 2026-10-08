@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "7c882130dec0027ba473f12e96eb3a9e8b10b6e5",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/picker/__init__.py:_declared_difficulty",
+    "reckon/crew/picker/__init__.py:pick",
+    "reckon/crew/picker/prompts.py:build_state"
+  ],
+  "completed_at": "2026-10-08T01:58:02.898Z",
+  "dispatched_at": "2026-10-08T01:33:13Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T005532265699-jev-sees-declared-difficulty/logs/head-gate.log:1",
+      "id": "evidence-head-log-names-base",
+      "text": "the head-arm gate log's first line records revision 7c882130dec0027ba473f12e96eb3a9e8b10b6e5, the base sha, not the reviewed head 23f64fb234e918478098f19d7e79b6cfd2d0506e: the head gate ran with the change uncommitted, so the log cannot tell a later reader which tree produced 185 passed. Mitigated: the tree was clean at 23f64fb23, and an independent re-run of the same head gate at 23f64fb23 reproduced 185 passed EXIT=0.",
+      "type": "evidence",
+      "would_change": false
+    },
+    {
+      "anchor": "reckon/crew/picker/__init__.py:104",
+      "id": "estimate-reads-the-plan-not-the-section",
+      "text": "the resolution fills estimated_hours from routing._estimated_hours, which returns the node's own figure when it carries one and otherwise the plan's plan-effort-hours meta; it never reads the section's data-effort-hours. For the reported node the routed state therefore carries 48.0 (the plan total) where the section declares 10.0. The implementation follows the SPEC as written, which named routing._estimated_hours as the estimate source, so this is an observation for the coordinator rather than a deviation.",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "head_log_revision": "23f64fb234e918478098f19d7e79b6cfd2d0506e",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read the single commit 23f64fb23 against base 7c882130; it adds reckon/crew/picker/__init__.py:_declared_difficulty and calls it from pick(), threads the resolved capability and estimate (plus a source label) through prompts.build_state into state.jinja, and adds tests/test_jev_sees_declared_difficulty.py. No other file changes.",
+    "done_when": "the SPEC's four items are present: repro_render.py shows the pre-change render (capability {} / estimated_hours null) for the reported node; _declared_difficulty resolves the section capability through routing.resolve_section_routing and the estimate through routing._estimated_hours, guarded so a failure leaves the field null; test_jev_sees_declared_difficulty.py covers the declared class/reasoning/risk via a synthetic plan, the request-carried capability, the node-carried estimate, no-plan and no-section null, and the timing stage; the negative control skips the resolution and the declared-capability test fails. Independently re-ran the head gate at 23f64fb23.",
+    "goal": "GOAL is 'Jev's state carries the node's declared capability and effort from its plan section' and the commit does exactly that: the section capability reaches the rendered state and the estimate is filled and labelled (node or plan) without overriding a request capability or a node estimate.",
+    "manifest": "read; it records the commit, the base/head counts (179 vs 185, both EXIT 0), the negative control (1 failed EXIT 1) and the live-node before/after, but carries no armed baseline_suite/after_suite JSON blocks. added_failure_count/ids were derived from the reviewed run's own logs/base-gate.log and logs/head-gate.log.",
+    "write_paths": "the four paths the commit touches (reckon/crew/picker/__init__.py, reckon/crew/picker/prompts.py, tests/test_jev_sees_declared_difficulty.py, docs/evidence/fragments/one-typesafe-model-picker/jev-sees-declared-difficulty.html) all sit inside the declared scope; docs/figures/ was declared but not written, which the SPEC permitted (no figure named)."
+  },
+  "justifications": {
+    "durability": "Independently disabling the capability resolution (a runtime monkeypatch of picker._declared_difficulty in a scratch plugin) fails 4 tests including test_the_declared_capability_and_estimate_reach_jev, so the guard is shown to fire rather than merely to sit green, and the tests fail at the base revision.",
+    "evidence": "base-gate.log (179 passed EXIT=0) and head-gate.log (185 passed EXIT=0) are on disk under the run directory, negative-control.log records 1 failed EXIT=1, and live-node-verification.log shows the reported node moving from capability null / hours None to orchestrator/deep/strict/critical and 48.0 source plan. Deducted for the head-arm log naming the base revision (finding evidence-head-log-names-base) and for the live check calling the helper directly rather than pick().",
+    "fit": "the change extends pick() and build_state in the module's own idiom and reuses the routing resolver, but imports the private routing._estimated_hours across modules and renders estimated_hours_source only when a figure resolves, leaving the node key set variable; both were named options but the conditional key is an unusual shape.",
+    "goal_fidelity": "all four SPEC done-when items are implemented and evidenced; the one live figure (48.0) follows the SPEC's named function routing._estimated_hours for the reported node.",
+    "reuse": "the picker now calls the same routing.resolve_section_routing the dispatcher uses and the cached routing._estimated_hours rather than reimplementing difficulty resolution; no duplicated resolver or estimate logic was introduced.",
+    "scope_discipline": "every path in commit 23f64fb23 is inside the three declared write paths plus the SPEC-named evidence fragment; nothing outside the goal was added, and dispatch.py/cli.py/picker sibling modules the SPEC forbade were untouched."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: GOAL is 'Jev's state carries the node's declared capability and effort from its plan section' and the commit does exactly that: the section capability reaches the rendered state and the estimate is filled and labelled (node or plan) without overriding a request capability or a node estimate.\nVERDICT done_when: the SPEC's four items are present: repro_render.py shows the pre-change render (capability {} / estimated_hours null) for the reported node; _declared_difficulty resolves the section capability through routing.resolve_section_routing and the estimate through routing._estimated_hours, guarded so a failure leaves the field null; test_jev_sees_declared_difficulty.py covers the declared class/reasoning/risk via a synthetic plan, the request-carried capability, the node-carried estimate, no-plan and no-section null, and the timing stage; the negative control skips the resolution and the declared-capability test fails. Independently re-ran the head gate at 23f64fb23: 185 passed EXIT=0.\nVERDICT write_paths: the four paths the commit touches all sit inside the declared scope; docs/figures/ was declared but not written, which the SPEC permitted.\nVERDICT manifest: read; it records the commit, the base/head counts (179 vs 185, both EXIT 0), the negative control (1 failed EXIT 1) and the live-node before/after, but carries no armed baseline_suite/after_suite JSON blocks. added_failure_count/ids were derived from the reviewed run's own logs/base-gate.log and logs/head-gate.log.\nVERDICT diff: read the single commit 23f64fb23 against base 7c882130; it adds _declared_difficulty and calls it from pick(), threads capability and estimate (with a source label) through prompts.build_state into state.jinja, and adds tests/test_jev_sees_declared_difficulty.py.\nCALL_SITES: reckon/crew/picker/__init__.py:_declared_difficulty, reckon/crew/picker/__init__.py:pick, reckon/crew/picker/prompts.py:build_state\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: all four SPEC done-when items are implemented and evidenced; the one live figure (48.0) follows the SPEC's named function routing._estimated_hours for the reported node.\nSCORE evidence: 16\nJUSTIFICATION evidence: base-gate.log (179 passed EXIT=0) and head-gate.log (185 passed EXIT=0) are on disk, negative-control.log records 1 failed EXIT=1, and live-node-verification.log shows the reported node moving from capability null / hours None to orchestrator/deep/strict/critical and 48.0 source plan. Deducted for the head-arm log naming the base revision (finding evidence-head-log-names-base) and for the live check calling the helper directly rather than pick().\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in commit 23f64fb23 is inside the three declared write paths plus the SPEC-named evidence fragment; nothing outside the goal was added.\nSCORE durability: 19\nJUSTIFICATION durability: Independently disabling the capability resolution fails 4 tests including test_the_declared_capability_and_estimate_reach_jev, so the guard is shown to fire rather than merely to sit green, and the tests fail at the base revision.\nSCORE fit: 17\nJUSTIFICATION fit: the change extends pick() and build_state in the module's own idiom and reuses the routing resolver, but imports the private routing._estimated_hours across modules and renders estimated_hours_source only when a figure resolves, leaving the node key set variable.\nSCORE reuse: 19\nJUSTIFICATION reuse: the picker now calls the same routing.resolve_section_routing the dispatcher uses and the cached routing._estimated_hours rather than reimplementing difficulty resolution; no duplicated resolver or estimate logic was introduced.\nreviewed_base_sha: 7c882130dec0027ba473f12e96eb3a9e8b10b6e5\nreviewed_head_sha: 23f64fb234e918478098f19d7e79b6cfd2d0506e\n",
+  "review_run_id": "r-20261008T013203848371-review-of-jev-sees-declared-difficulty",
+  "reviewed_base_sha": "7c882130dec0027ba473f12e96eb3a9e8b10b6e5",
+  "reviewed_head_sha": "23f64fb234e918478098f19d7e79b6cfd2d0506e",
+  "reviewed_run_id": "r-20261008T005532265699-jev-sees-declared-difficulty",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T01:48:00.000000+00:00",
+  "total": 110
+}
