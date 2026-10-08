@@ -1,0 +1,66 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T06:13:38.790Z",
+  "dispatched_at": "2026-10-08T05:56:44Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-window-paces-the-lane.html:1932",
+      "id": "reasoning-1",
+      "reason": "the builder cannot implement both the plain line and the multiple-leaned line, so the hold boundary the section asserts is undetermined until the prose and the done-when agree.",
+      "text": "the `--drain-by` form applies \"the configured multiple ... as the usual lean on the increment\" yet concludes \"The remaining budget is therefore spread evenly so it lands at 100% at the target\" \u2014 a lean above 1 on the increment reaches 100% before the target, so the two clauses cannot both hold, and the done-when at :1954 specifies the hold boundary as the plain \"straight line to 100% at its target\" without the multiple, disagreeing with the mechanism table.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-window-paces-the-lane.html:1910",
+      "id": "anchors_resolve-1",
+      "reason": "without declaring the `budget.lift` block (or stating the two ceilings as code constants rather than config) the section enforces limits no operator can set, which is exactly the defect the bookend-reserve paragraph was added to close.",
+      "text": "the lift record's `pace_multiple` \"must not exceed `budget.lift.max_multiple`\" (:1910) and a lift is in force only when \"now is before `granted_at + budget.lift.max_hours`\" (:1919), but `reckon/schema/flight.yaml`'s `BudgetConfig` declares no `lift` block, so with `extra=\"forbid\"` neither key can be set by any layer \u2014 the same undeclared-key defect \u00a710 fixes one paragraph later for `bookend_reserve_pct`.",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-window-paces-the-lane.html:1985",
+      "id": "reasoning-2",
+      "reason": "the decision rationale is the record of what the lead locked and now misstates the withheld amount and the number of reserves a lift releases, so the plan states two different rules for the same lift.",
+      "text": "the locked decision `lift-scope`'s rationale says \"the unspent 8% comes from the locked resume reserve (5%) and the coordinator reserve (3%) ... releases both reserves\", but \u00a710 now names a third reserve and says \"all three reserves read zero\" (:1937) with \"Up to a fifth of each metered window therefore expires unspent\" (:1924) \u2014 the decision rationale names two reserves and an 8% remainder where the section body names three and a fifth.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "b0f208a5c2a2bfee5ad9675e9bcc19fcd2344266364381a8bb4ac4e8f30515e5",
+  "plan_slug": "a-window-paces-the-lane",
+  "plan_version": 141,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T055532159829-plan-review-of-a-window-paces-the-lane",
+  "reviewed_blob_sha": "39899784500650cbb65c62a116d318d004622344",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a710 reads `budget.lift.max_multiple` and `budget.lift.max_hours ... max_hours` as configured ceilings, but no such keys are declared, so they do not resolve.",
+    "done_when": "pass \u2014 \u00a710 states measurable outcomes and names a declared negative control (\"deletes the lift lookup from `pace.policy` alone, and the admit assertion must fail against it\"), so the section's guard is a specific refused string, not generic clean.",
+    "evidence_paths": "pass \u2014 no gate log or evidence path is required by \u00a710 yet (it is an unimplemented proposal), and the document's existing evidence pointers all sit under `docs/evidence/archive/`.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach \u00a710's symbols, and the prose states mechanisms rather than tracker references.",
+    "reasoning": "two findings \u2014 the `--drain-by` mechanism contradicts its own conclusion and its done-when, and the locked `lift-scope` decision rationale names two reserves where \u00a710 names three.",
+    "single_goal": "pass \u2014 \u00a710 carries one deliverable, the self-expiring pace lift; the `bookend_reserve_pct` declaration named in its done-when is a slot the lift's reserve release requires, not a second independent goal.",
+    "wiring": "pass \u2014 the addition is wired: `s10` is dispatched and declared `implementable` in `plan-section-declarations`, the open followup `f-20261008T0700-pace-lift` routes `/reckon-build a-window-paces-the-lane \u00a710`, and `plan-informs` still names `background-agent-fitness-and-dispatch-scope`, which exists."
+  },
+  "section_digests": {
+    "_document": "f97d90eaf987009a1bcf84ffeb45f5bd2feb39c2286746976fd0187a3c84ba50",
+    "s1": "fd232b0e9e301983eea254fa355a00f9cfdad5e4ba397415c196946997e8b78a",
+    "s10": "6c00d456c62b7c499e4667fef99cde8df032335e463fd7adf3ee104cc93437ee",
+    "s2": "0c4f642bff7cb6b87908ea9e036cb3161c15e31cb3285273e06bb2ac1f5c368c",
+    "s3": "ae3d7625321a46e7fa6a9ee3bac0272ee77d236811612140ef03b79670883261",
+    "s4": "8f3ac850d09e4745435c5274237c26be090ce2db03ac422e941c3329841d8563",
+    "s5": "3bc104a16d90fb6279e9ab8c70555e1041253ad31f6376c64b455da33489c6b0",
+    "s5b": "1be686d2a1165f13c4f4e81a29ca56c362c3b069dfc80759cf370cca59440d41",
+    "s6": "8e4ab80a317b73fb60010fe92858cbe3b073511ce10c4547c6eb8952a89829f0",
+    "s6-the-probe-reader-and-the-undeclared-dialect": "c463be6993bc79b07591a01d9e1a1d92d699a48d4c322b2cc395a0e78a2d097d",
+    "s7": "39b7111a3bfa256531f953bd33de123967e24fa4ffc75e6d1cbeca26a45c565d",
+    "s8": "9d68431496117798ca30bbebd6828adc5853e02df969ac62de3bb2dcd41512a4",
+    "s9": "5f72c27f2288b837b6513304ec92d0bf2e8950d169b0389c4c3ffeba27c23b6b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T06:14:46.652498+00:00"
+}
