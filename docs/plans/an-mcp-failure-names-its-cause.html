@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="reckon-reads-answer-in-seconds">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
   <title>An MCP Failure Names Its Cause | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="13">
+<meta name="plan-version" content="14">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -203,6 +203,45 @@
       negative control is executed and logged: with the join removed, two body executions are observed and the test
       fails. The write paths are <code>reckon/mcp.py</code> and <code>tests/test_mcp_retry_joins_running_read.py</code>,
       and this section runs after §3, which edits the same file.</p>
+
+    <h2 id="s9">§9 — A one-plan read stops walking the corpus</h2>
+<section data-reckon="section" data-id="s9" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Deliverable.</strong> §4's profile found a <code>read_plan</code> summary of one 13 kB plan
+      still running at 180 s, on 2026-10-08 on the fleet node at load 31 to 59. Its 90 s profile shows 26,858
+      <code>posix.scandir</code> calls (32.8 s of self time) driven by recursive globs. These come from
+      <code>resources._scan_resources</code> and <code>iter_resources</code> (seven scans of 7.5 s each), from
+      <code>_store._resolve_html_file</code> through <code>resources.resolve_resource</code> (41.7 s), and from
+      <code>_store._add_north_star_diagnostic</code> through <code>project_state.compose_project_state</code>
+      (34.4 s, run twice). A read about one named plan resolves that plan's path without a corpus scan. Whatever
+      it needs from the rest of the corpus, such as the north-star diagnostic, it takes from a result memoised on
+      the scanned directories' own stat identity, which <code>reckon/file_memo.py</code> already provides for
+      file reads, rather than from a fresh recursive glob per call. Every read that changes keeps the answer it
+      gives today.</p>
+    <p><strong>Done when</strong> <code>tests/test_one_plan_read_is_not_a_corpus_scan.py</code> counts
+      <code>os.scandir</code> calls during a <code>read_plan</code> summary of one plan in fixture projects of 5 and
+      of 60 plans. The count is the same for both sizes, and the summary payload equals the one today's code
+      returns for the same fixture. A negative control is executed and logged: with the direct path resolution
+      reverted, the 60-plan count exceeds the 5-plan count and the test fails. A logged warm call on the fleet node
+      answers the summary of this plan within the 30 s read deadline. The write paths are
+      <code>reckon/resources.py</code>, <code>reckon/_store.py</code> and
+      <code>tests/test_one_plan_read_is_not_a_corpus_scan.py</code>; a change needed in
+      <code>reckon/project_state.py</code> is named in the manifest before it is made.</p>
+
+    <h2 id="s10">§10 — A fenced worker can read the crew live view</h2>
+<section data-reckon="section" data-id="s10" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Deliverable.</strong> §4 found that <code>crew(view="live")</code> fails inside a worker's fence
+      after about 20 s with <code>[Errno 30] Read-only file system</code> on
+      <code>~/.config/reckon/crew/watch/&lt;project&gt;-&lt;hash&gt;.lock</code>. The live view takes an advisory
+      lock under <code>crew/watch</code> before reading, and the fence mounts the config home read-only. A read of
+      the live view takes no lock it would need to create or write. Where it must order itself against a writer,
+      it opens the lock read-only, or reads without it and reports the snapshot's age. The read-only fence is
+      unchanged.</p>
+    <p><strong>Done when</strong> a test in <code>tests/test_live_view_reads_under_a_read_only_home.py</code> builds
+      a fixture crew home, makes its <code>watch</code> directory read-only, and calls the live view, which returns
+      the fixture's runs with no error. A negative control is executed and logged: with the read path's lock
+      acquisition restored to its current form, the call raises the read-only error and the test fails. The write
+      paths are the module that takes the lock for the live read, which the node names in its manifest before
+      editing, and <code>tests/test_live_view_reads_under_a_read_only_home.py</code>.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
