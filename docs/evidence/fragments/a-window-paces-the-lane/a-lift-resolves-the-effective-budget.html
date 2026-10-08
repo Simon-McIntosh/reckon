@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-window-paces-the-lane">
+  <meta name="plan-title" content="A lift resolves the effective budget">
+  <meta name="plan-summary" content="reckon/crew/budget_lift.py holds the workstation lift record at <config-home>/budget-lifts.json with grant, clear and list, and the pure resolver effective_budget returns the lifted budget block while a lift is in force and config['budget'] unchanged otherwise. A lift ends by itself: uncleared, before its stated end, before budget.lift.max_hours, and while a reset-anchored lift's clock still reports the reset it was granted against; a reset is detected by a moved resets_at, a reading below the grant figure, or a fall between consecutive readings.">
+  <meta name="plan-evidence-for" content="reckon:a-window-paces-the-lane">
+  <meta name="plan-node" content="a-lift-resolves-the-effective-budget">
+  <meta name="plan-recorded-at" content="2026-10-08">
+  <meta name="plan-environment" content="Linux compute node 98dci4-clu-2002; Python venv at /home/ITER/mcintos/Code/reckon/.venv; pytest with an isolated RECKON_HOME under tmp_path">
+  <title>A lift resolves the effective budget &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>A lift resolves the effective budget</h1>
+    <p class="plan-summary">One function resolves a lift, and the resolver returns the lifted
+    block with the multiple in force and all three reserves released, or the configured budget
+    unchanged when no lift covers the group. Expiry is a pure function of the record, the
+    readings and the clock, so nothing runs at the moment a lift ends.</p>
+  </header>
+
+  <section aria-labelledby="a-lift-resolves-the-effective-budget-what">
+    <h2 id="a-lift-resolves-the-effective-budget-what">What landed</h2>
+    <p><code>reckon/crew/budget_lift.py</code> records one control document per workstation at
+    <code>&lt;config-home&gt;/budget-lifts.json</code>, written with
+    <code>reckon._store.write_json_atomically</code> under a monotonically increasing
+    <code>version</code>. Each lift carries the &sect;10 record fields &mdash; <code>id</code>,
+    <code>group</code>, <code>pace_multiple</code>, <code>ends</code>, <code>granted_by</code>,
+    <code>granted_at</code>, <code>reason</code>, <code>form</code>, <code>scope</code>,
+    <code>starts_at</code>, <code>cleared_by</code>, <code>cleared_at</code> &mdash; plus the
+    drain-by <code>target</code>/<code>u0</code>/<code>t0</code> and the projected exhaustion.
+    <code>effective_budget(config, *, group, readings, now, session)</code> returns the budget
+    block with the lifted multiple (or the drain-by hold, or the uncapped release) and
+    <code>resume_reserve_pct</code>, <code>coordinator_reserve_pct</code> and
+    <code>bookend_reserve_pct</code> all zero, or <code>config["budget"]</code> unchanged.</p>
+  </section>
+
+  <section aria-labelledby="a-lift-resolves-the-effective-budget-measure">
+    <h2 id="a-lift-resolves-the-effective-budget-measure">Measure</h2>
+    <p>The gate is <code>tests/test_budget_lift.py tests/test_budget_group.py tests/test_pace.py</code>.</p>
+    <ul>
+      <li><strong>Head</strong> (revision <code>d789bf5f8</code>, the lint-and-format
+      commit on top of the module): <code>58 passed</code>, exit 0.</li>
+      <li><strong>Base</strong> (revision <code>baca1446c</code>): the two pre-existing files
+      <code>35 passed</code>, exit 0. <code>reckon/crew/budget_lift.py</code> and its test are
+      head-only additions, so the base arm covers the two files that pre-date this node.</li>
+      <li><strong>Delta:</strong> zero added failures.</li>
+    </ul>
+    <p>With the configured multiple at 1.1 and a <code>codex-sub</code> reading of utilisation
+    <code>0.21</code> at <code>22.0 h</code> of 168, the burn is <code>0.21 / (22 / 168) &asymp; 1.60</code>:
+    above the configured <code>1.1</code> (held) and at or below the lifted <code>1.8</code>
+    (admitted). The lifted block's implementation ceiling, read through
+    <code>reserve.role_ceiling_pct(block, "implement")</code>, is <code>100%</code>.</p>
+  </section>
+
+  <section aria-labelledby="a-lift-resolves-the-effective-budget-negative">
+    <h2 id="a-lift-resolves-the-effective-budget-negative">Negative control</h2>
+    <p>Declared mutation: <em>make <code>effective_budget</code> return
+    <code>config["budget"]</code> unchanged whatever lifts are recorded</em>. Applied on a scratch
+    copy of <code>reckon/crew/budget_lift.py</code>, the head gate turns red:
+    <code>5 failed, 18 passed</code>, exit 1, including the 1.8-multiple assertion and the
+    100%-ceiling assertion, which proves both the multiple and the reserve release pass through the
+    one function.</p>
+  </section>
+</main>
+</body>
+</html>
