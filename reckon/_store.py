@@ -722,6 +722,13 @@ def _add_north_star_diagnostic(
 #: comparable at all.
 _STATE_STAMPS = frozenset(["version", "modified"])
 
+#: Keys a read derives from the rest of the state and the authored HTML, and a
+#: write drops. A comment append moves them (a closing comment ticks its
+#: section's checklist row), and the writer's own re-parse does not derive
+#: them, so they must not decide whether two writers disagree: the fields they
+#: are derived from are compared already.
+_DERIVED_STATE_FIELDS = frozenset(["todos"])
+
 # Authored HTML insertions are write effects, not plan state. ``apply_ops`` and
 # ``write_plan`` run in the same request context, while ContextVar keeps
 # concurrent requests isolated. Holding the working dict by identity also means
@@ -1164,8 +1171,9 @@ def _comment_append_onto_current(data: dict, current: dict) -> dict | None:
     """
     from reckon import _plan_html
 
-    incoming = {k: v for k, v in dict(data).items() if k not in _STATE_STAMPS}
-    held = {k: v for k, v in dict(current).items() if k not in _STATE_STAMPS}
+    ignored = _STATE_STAMPS | _DERIVED_STATE_FIELDS
+    incoming = {k: v for k, v in dict(data).items() if k not in ignored}
+    held = {k: v for k, v in dict(current).items() if k not in ignored}
     incoming_comments = incoming.pop("comments", None)
     held_comments = held.pop("comments", None)
     if incoming != held:

@@ -22,14 +22,14 @@ PLAN = "append-target"
 ANCHOR = "s5"
 
 
-def _seed(root: Path) -> Path:
+def _seed(root: Path, *, body: str = "", declarations: dict | None = None) -> Path:
     path = root / "docs" / "plans" / f"{PLAN}.html"
     path.parent.mkdir(parents=True, exist_ok=True)
     bare = (
         "<!doctype html><html><head>"
         f'<meta name="docs-project" content="{PROJECT}">'
         f"<title>{PLAN}</title></head>"
-        '<body><main class="plan-doc"></main></body></html>\n'
+        f'<body><main class="plan-doc">{body}</main></body></html>\n'
     )
     state = {
         "type": "plan",
@@ -39,6 +39,8 @@ def _seed(root: Path) -> Path:
         "version": 0,
         "comments": {},
     }
+    if declarations:
+        state["section_declarations"] = declarations
     path.write_text(_plan_html.write_state(bare, state), encoding="utf-8")
     return path
 
@@ -182,3 +184,63 @@ def test_a_stale_append_that_disagrees_about_the_document_is_refused(
 
     identifiers, _version = _identifiers(repository)
     assert "c-late" not in identifiers
+
+
+def _write_stale_append(root: Path, stale: dict, version: int, ident: str) -> int:
+    """Append onto a state read before another writer moved the file."""
+    comments = {
+        key: list(items) for key, items in (stale.get("comments") or {}).items()
+    }
+    comments.setdefault(ANCHOR, []).append(_comment(ident))
+    return _store.write_plan(
+        PROJECT,
+        PLAN,
+        {**stale, "comments": comments},
+        version,
+        root,
+        artifact_type="plan",
+    )
+
+
+def test_a_stale_append_merges_onto_the_append_that_moved_it(
+    repository: Path,
+) -> None:
+    # The threaded meeting above is decided by scheduling. This is its losing
+    # order stated directly: the writer without a retry arrives second, so it
+    # fails on every run where the merge refuses rather than on about half.
+    stale, stale_version = _store.read_plan(
+        PROJECT, PLAN, repository, artifact_type="plan"
+    )
+    _append(repository, "c-landing")
+
+    assert _write_stale_append(repository, stale, stale_version, "c-edit") == 2
+    identifiers, version = _identifiers(repository)
+    assert set(identifiers) == {"c-landing", "c-edit"}
+    assert version == 2
+
+
+def test_a_closing_comment_meeting_an_append_merges(repository: Path) -> None:
+    # A read derives one checklist row per authored section, and a closing
+    # comment fills that row's close record. The derived row therefore moves
+    # under a pure comment append, which must not make the two writers
+    # disagree about the document.
+    _seed(
+        repository,
+        body=f'<h2 id="{ANCHOR}">Five</h2><p>Body.</p>',
+        declarations={ANCHOR: "done"},
+    )
+    close = f"c-close-{ANCHOR}"
+    stale, stale_version = _store.read_plan(
+        PROJECT, PLAN, repository, artifact_type="plan"
+    )
+    assert [row["close"] for row in stale["todos"]] == [None]
+
+    _append(repository, close)
+    closed, _version = _store.read_plan(PROJECT, PLAN, repository, artifact_type="plan")
+    # The append moved the derived row, so this meeting exercises the field.
+    assert closed["todos"][0]["close"]["id"] == close
+
+    _write_stale_append(repository, stale, stale_version, "c-edit")
+    identifiers, version = _identifiers(repository)
+    assert set(identifiers) == {close, "c-edit"}
+    assert version == 2
