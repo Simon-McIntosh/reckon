@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived (0 added, []) from the reviewed run's own baseline and after gate logs roadmap-suite-base.log and roadmap-suite-head.log via reckon.crew.review.added_failures_from_gate_logs; the reviewed manifest names those logs under test_logs rather than the canonical baseline_suite/after_suite fields, and its head log was measured at 2c5adbfa4, one commit behind the reviewed head e4f26bea.",
+  "backend": "local",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/roadmap.py:2679",
+    "reckon/roadmap.py:3188",
+    "reckon/roadmap.py:3619"
+  ],
+  "completed_at": "2026-10-08T05:45:55.463Z",
+  "dispatched_at": "2026-10-08T05:21:55Z",
+  "findings": [
+    {
+      "file": "reckon/roadmap.py",
+      "line": "2679",
+      "severity": "follow-on",
+      "text": "follow-on: the judgment_required member is appended only inside the depends_on loop, so the same uncertain whole-plan hold reached through an after-edge (_after_edges, roadmap.py:1007) or the graph closure (longest_path, roadmap.py:2078) leaves the dependent blocked with no judgment_required member \u2014 a coordinator reading the block alone would not see it."
+    },
+    {
+      "file": "reckon/roadmap.py",
+      "line": "3619",
+      "severity": "follow-on",
+      "text": "follow-on: judgment_required carries its count under the key count where the schedule_override block \u00a79 says it mirrors carries it under deferred, so the two blocks are not the identical shape \u00a79 names."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against the prior reviewed head c5c3fbd0 \u2014 2c5adbfa removes the at-least-one-done guard and adds the all-deferred test case; e4f26bea restores the guard under the amended \u00a79, adds _plan_dependency_judgment and the JUDGMENT_REASON_* vocabulary, wires the judgment_required block onto the dependent row and the report, and renames/extend the two judgment tests; SKILL.md names the block beside schedule_override.",
+    "done_when": "\u00a79's fixture cases are asserted in tests/test_roadmap_deferred_blocks_only_its_dependents.py \u2014 A{s1 done,s2 deferred} whole-plan dep ready, A#s1 ready, A#s2 blocked naming A#s2, an all-deferred target blocked and reported deferred-only, an undeclared heading blocked and reported undeclared-heading, an implementable section blocked with no judgment, and a sectionless plan blocked until complete; 7 passed EXIT=0 at the reviewed head.",
+    "goal": "the node is \u00a79 of reckon:a-plan-is-done-when-every-section-is-ticked, reviewed at plan version 24 \u2014 judge a whole-plan roadmap dependency by the target's sections, hold the two cases no fixed rule settles (all-deferred, undeclared-heading) and report them in a judgment_required block; the two commits since the last review (2c5adbfa4 drops the at-least-one-done guard, e4f26bea restores it under the amended \u00a79 and adds the judgment_required report at reckon/roadmap.py:695 and rows/report at :3188 and :3619).",
+    "manifest": "read; it records the gate (7 passed EXIT=0), commits eb455d7b/c5c3fbd0/2c5adbfa/e4f26bea, three negative controls each EXIT=1, and follow-ons naming pre-existing failures identical at base and the SKILL.md write-path grant gap.",
+    "write_paths": "the two commits change reckon/roadmap.py, tests/test_roadmap_deferred_blocks_only_its_dependents.py and skills/reckon-build/SKILL.md; the first two are the dispatch's original grant, and SKILL.md was granted by this node's brief."
+  },
+  "justifications": {
+    "durability": "removing the judgment_required report reddens exactly the two judgment tests at the reviewed head (2 failed EXIT=1), and the base mutation reddens the two original control tests (2 failed EXIT=1); the undeclared-heading control log is stale against a since-renamed test but the report control covers that case at head.",
+    "evidence": "my independent gate run at the reviewed head e4f26bea records tests/test_roadmap_deferred_blocks_only_its_dependents.py 7 passed EXIT=0, but the reviewed run's own head suite log is at 2c5adbfa4 (one commit behind the reviewed head) and its base arm carries no revision header and ran only 5 tests.",
+    "fit": "the helper reuses \u00a73's vocabulary (SECTION_DECLARATION_DEFERRED, open_sections, authored_section_headings) and reads authored state the same way the rest of the module does; no plan label, stage name or ticket id appears in any added symbol.",
+    "goal_fidelity": "at the amended \u00a79 (version 24) the head matches the deliverable \u2014 complete-or-at-least-one-done-with-none-implementable, both uncertain cases held and reported on the row and the report, skill updated \u2014 but the judgment is emitted only where a whole-plan dependency is read through depends_on, so an equivalent uncertain hold via an after-edge or the graph closure is unreported.",
+    "reuse": "one _plan_dependency_judgment helper mirrors _plan_dependency_satisfied's own view read rather than sharing it, re-reading the authored state and HTML a few lines apart; the open-section and heading walks are the single existing owners, extended rather than forked.",
+    "scope_discipline": "both commits stay inside the granted paths, yet the record's own write_paths omits skills/reckon-build/SKILL.md, the grant the reviewed manifest already flags."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node is \u00a79 of reckon:a-plan-is-done-when-every-section-is-ticked, reviewed at plan version 24 \u2014 judge a whole-plan roadmap dependency by the target's sections, hold the two cases no fixed rule settles (all-deferred, undeclared-heading) and report them in a judgment_required block; the two commits since the last review (2c5adbfa4 drops the at-least-one-done guard, e4f26bea restores it under the amended \u00a79 and adds the judgment_required report at reckon/roadmap.py:695 and rows/report at :3188 and :3619).\nVERDICT done_when: \u00a79's fixture cases are asserted in tests/test_roadmap_deferred_blocks_only_its_dependents.py \u2014 A{s1 done,s2 deferred} whole-plan dep ready, A#s1 ready, A#s2 blocked naming A#s2, an all-deferred target blocked and reported deferred-only, an undeclared heading blocked and reported undeclared-heading, an implementable section blocked with no judgment, and a sectionless plan blocked until complete; 7 passed EXIT=0 at the reviewed head.\nVERDICT write_paths: the two commits change reckon/roadmap.py, tests/test_roadmap_deferred_blocks_only_its_dependents.py and skills/reckon-build/SKILL.md; the first two are the dispatch's original grant, and SKILL.md was granted by this node's brief.\nVERDICT manifest: read; it records the gate (7 passed EXIT=0), commits eb455d7b/c5c3fbd0/2c5adbfa/e4f26bea, three negative controls each EXIT=1, and follow-ons naming pre-existing failures identical at base and the SKILL.md write-path grant gap.\nVERDICT diff: read commit by commit against the prior reviewed head c5c3fbd0 \u2014 2c5adbfa removes the at-least-one-done guard and adds the all-deferred test case; e4f26bea restores the guard under the amended \u00a79, adds _plan_dependency_judgment and the JUDGMENT_REASON_* vocabulary, wires the judgment_required block onto the dependent row and the report, and renames/extend the two judgment tests; SKILL.md names the block beside schedule_override.\nCALL_SITES: reckon/roadmap.py:2679, reckon/roadmap.py:3188, reckon/roadmap.py:3619\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: at the amended \u00a79 (version 24) the head matches the deliverable \u2014 complete-or-at-least-one-done-with-none-implementable, both uncertain cases held and reported on the row and the report, skill updated \u2014 but the judgment is emitted only where a whole-plan dependency is read through depends_on, so an equivalent uncertain hold via an after-edge or the graph closure is unreported.\nSCORE evidence: 16\nJUSTIFICATION evidence: my independent gate run at the reviewed head e4f26bea records tests/test_roadmap_deferred_blocks_only_its_dependents.py 7 passed EXIT=0, but the reviewed run's own head suite log is at 2c5adbfa4 (one commit behind the reviewed head) and its base arm carries no revision header and ran only 5 tests.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: both commits stay inside the granted paths, yet the record's own write_paths omits skills/reckon-build/SKILL.md, the grant the reviewed manifest already flags.\nSCORE durability: 18\nJUSTIFICATION durability: removing the judgment_required report reddens exactly the two judgment tests at the reviewed head (2 failed EXIT=1), and the base mutation reddens the two original control tests (2 failed EXIT=1); the undeclared-heading control log is stale against a since-renamed test but the report control covers that case at head.\nSCORE fit: 19\nJUSTIFICATION fit: the helper reuses \u00a73's vocabulary (SECTION_DECLARATION_DEFERRED, open_sections, authored_section_headings) and reads authored state the same way the rest of the module does; no plan label, stage name or ticket id appears in any added symbol.\nSCORE reuse: 18\nJUSTIFICATION reuse: one _plan_dependency_judgment helper mirrors _plan_dependency_satisfied's own view read rather than sharing it, re-reading the authored state and HTML a few lines apart; the open-section and heading walks are the single existing owners, extended rather than forked.\nFINDING reckon/roadmap.py:2679 follow-on: the judgment_required member is appended only inside the depends_on loop, so the same uncertain whole-plan hold reached through an after-edge (_after_edges, roadmap.py:1007) or the graph closure (longest_path, roadmap.py:2078) leaves the dependent blocked with no judgment_required member \u2014 a coordinator reading the block alone would not see it.\nFINDING reckon/roadmap.py:3619 follow-on: judgment_required carries its count under the key count where the schedule_override block \u00a79 says it mirrors carries it under deferred, so the two blocks are not the identical shape \u00a79 names.\nreviewed_base_sha: c5c3fbd0e63a38e25fb2030a399255542ef94d17\nreviewed_head_sha: e4f26bea7f164d931556b81f690a56e4d8091757\n",
+  "review_run_id": "r-20261008T052120009011-review-of-a-deferred-section-blocks-only-its-dependents",
+  "reviewed_base_sha": "c5c3fbd0e63a38e25fb2030a399255542ef94d17",
+  "reviewed_head_sha": "e4f26bea7f164d931556b81f690a56e4d8091757",
+  "reviewed_run_id": "r-20261008T025754782357-a-deferred-section-blocks-only-its-dependents",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T05:39:55.081975+00:00",
+  "total": 107
+}
