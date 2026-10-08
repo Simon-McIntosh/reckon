@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="an-mcp-failure-names-its-cause">
+  <meta name="plan-title" content="An MCP Failure Names Its Cause">
+  <meta name="plan-summary" content="A reckon MCP timeout now reports whether its abandoned body was computing or waiting, beside the wall time, while the error value stays storage-slow.">
+  <meta name="plan-evidence-for" content="reckon:an-mcp-failure-names-its-cause">
+  <meta name="plan-verifies" content="reckon:an-mcp-failure-names-its-cause#s3">
+  <meta name="plan-commits" content="570b7c40c">
+  <meta name="plan-recorded-at" content="2026-10-08">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="mcp,deadline,timeout">
+  <meta name="plan-node" content="mcp-timeout-names-its-cause">
+  <title>A reckon MCP timeout names its cause — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="mcp-timeout-names-its-cause-landed" data-node="mcp-timeout-names-its-cause" data-reckon="landed" data-when="2026-10-08">
+  <h2 id="mcp-timeout-names-its-cause-heading">A reckon MCP timeout names its cause</h2>
+  <p id="mcp-timeout-names-its-cause-summary"><code>_run_under_deadline</code> reads the worker thread's CPU time at the deadline, through <code>/proc/self/task/&lt;tid&gt;/stat</code>, subtracts the baseline it took before the body ran, and reports a <code>cause</code> of <code>computing</code> when that thread CPU time reaches half the wall time it held (with a small floor for clock granularity), otherwise <code>waiting</code>. The result carries both <code>waited_seconds</code> (wall) and <code>cpu_seconds</code>, and the <code>error</code> value stays <code>storage-slow</code> so no existing caller's branch changes. The message names the cause, and a computing body's hint gives the CLI command that answers without a deadline — <code>reckon roadmap</code>, <code>reckon audit</code> or <code>reckon crew list</code> by tool — instead of sending the reader to retry a storage read that was never the problem.</p>
+  <p id="mcp-timeout-names-its-cause-evidence">Gate: <code>tests/test_mcp_deadline_names_its_cause.py</code> 2 passed, EXIT=0 — a body spinning past a 0.25 s deadline reports <code>computing</code> with 0.2 s CPU against 0.2 s wall, and a sleeping body reports <code>waiting</code> with 0.0 s CPU against 0.2 s wall, both <code>error: storage-slow</code>. Existing tests importing <code>reckon.mcp</code> (six files, 58 tests) pass EXIT=0 at the head. Negative control: with the thread CPU measurement replaced by zero in <code>_run_under_deadline</code>, the spinning case reports <code>waiting</code> and the test fails, EXIT=1.</p>
+</article>
+</body>
+</html>
