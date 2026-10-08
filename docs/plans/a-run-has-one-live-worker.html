@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.5">
-<meta name="plan-version" content="13">
+<meta name="plan-version" content="14">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -89,22 +89,22 @@
       <code>reckon/crew/runs.py</code>). §2 found the second worker running under ppid 1 with no attempt record, so nothing named it.</p>
     <p>The second worker was <code>claude -p --resume 00ba9ff6…</code> under ppid 1. Its supervisor was gone and wrote no attempt
       record, so no pid on the run named it. But its argv carried the run's worker session id, and that is how §1's <code>ps</code>
-      listing found it. Both guards read the same fact. A reader in <code>reckon/crew/runs.py</code>, beside
-      <code>record_process_alive</code>, walks <code>/proc</code> the way <code>_pipe_reader_pids</code> in the same module already
-      does. It returns the live processes owned by this user whose argv carries the run's recorded worker session id as a whole
-      element, excluding the caller and its ancestors. A hit fires the existing live-process refusal with a reason naming the pid and
-      the session. So no new refusal family is added, and the parity test still holds the two guards in step.</p>
-    <p>The read needs no claim, lease or renewal, and no change at the launch site: an orphan is found whatever its parent and
-      whether or not its supervisor wrote a record. Its reach is the host it runs on, the same reach <code>record_process_alive</code>
-      already has, and workers run on the node that runs the guards.</p>
+      listing found it. Both guards already take liveness from one owner, <code>record_process_alive</code> in
+      <code>reckon/crew/runs.py</code>: <code>resume_plan</code> calls it directly, and <code>_launcher_refusal</code> reaches it through
+      <code>local_liveness</code> in <code>reckon/crew/recovery.py</code>. That owner gains one more read, a private helper in the same
+      module. When every pid the record names is dead and the record names a worker session, it walks <code>/proc</code> the way
+      <code>_pipe_reader_pids</code> already does, for a live process owned by this user whose argv carries that session id as a whole
+      element, excluding the caller and its ancestors. A hit reads alive. A live run never reaches the walk, so it costs nothing
+      extra. Its reach is the host it runs on, the same reach the pid probe has.</p>
+    <p>No public definition is added and no refusal changes: both guards fire their existing live-process refusals, whose fixed text
+      reads identically on both doors as <code>tests/test_dry_run_predicts_the_launcher.py</code> requires. No claim, lease or renewal
+      is added, and nothing changes at the launch site.</p>
     <p><strong>Done when</strong> <code>tests/test_a_live_session_refuses_a_second_worker.py</code> builds a fixture run whose recorded
       pids are dead and starts a live child process whose argv carries the run's session id as one element. A resume through
-      <code>resume_plan</code>, and the sweep through <code>_launcher_refusal</code>, are both refused with the live-process refusal
-      naming that pid and the session. Once the child exits, both admit. A live process whose argv carries a different session id
-      refuses neither. The negative control is executed and logged: the first case is admitted on the current code and the test
-      fails. The write paths are <code>reckon/crew/runs.py</code>, <code>reckon/crew/dispatch_sessions.py</code>,
-      <code>reckon/crew/resumption.py</code> and <code>tests/test_a_live_session_refuses_a_second_worker.py</code>. It runs after §3,
-      which edits <code>resumption.py</code> too.</p>
+      <code>resume_plan</code>, and the sweep through <code>_launcher_refusal</code>, are both refused with their existing live-process
+      refusals. Once the child exits, both admit. A live process whose argv carries a different session id refuses neither. The
+      negative control is executed and logged: with the session read removed, the first case is admitted and the test fails. The
+      write paths are <code>reckon/crew/runs.py</code> and <code>tests/test_a_live_session_refuses_a_second_worker.py</code>.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>

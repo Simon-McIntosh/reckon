@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.64">
-<meta name="plan-version" content="67">
+<meta name="plan-version" content="69">
 <meta name="plan-modified" content="2026-10-08">
 <meta name="plan-commits" content="cff2bbed,e52b056f">
 </head>
@@ -81,7 +81,9 @@
       failed, grouped by cause. The census is a function in a new module <code>reckon/mcp_census.py</code> that
       takes an explicit window, a start and an end instant; the doctor block calls it for the seven days ending
       now. Each cause carries its count, newest occurrence, one example log path and the kind of working
-      directory it failed in: main checkout, worker worktree or temporary directory. The causes are the
+      directory it failed in: main checkout, worker worktree or temporary directory. The census reads that kind with
+      <code>_in_linked_worktree</code> in <code>reckon/cli_entry.py</code>, the existing owner of whether a path is a linked
+      worktree, and a directory under the system temporary directory reads as temporary; it re-derives neither. The causes are the
       signatures in §1's table, matched by a table of patterns in the same module. A failure no pattern matches
       is reported as unclassified with its first line rather than dropped, because the next unknown cause is the
       one this check exists to surface. It also counts <code>storage-slow</code> tool results per tool over the
@@ -212,7 +214,9 @@
     <p><strong>Done when</strong> a test in <code>tests/test_worker_mcp_servers.py</code> resolves a flight configuration carrying
       <code>worker_mcp_servers: [imas-cx]</code> without a schema refusal and seeds a run home whose settings enable
       <code>imas-cx</code>, and a configuration whose <code>worker_mcp_servers</code> is a single string is refused with a message naming
-      the key. The negative control is executed and logged: with <code>worker_mcp_servers</code> taken out of the reckon-owned keys, the
+      the key. That refusal reverses a landed assertion: <code>test_an_absent_or_malformed_declaration_names_no_server</code> in the same
+      file asserts that a bare string names no server, and it is revised to expect the refusal, while an absent key still names none.
+      The negative control is executed and logged: with <code>worker_mcp_servers</code> taken out of the reckon-owned keys, the
       resolve raises the schema refusal and the test fails. The write paths are <code>reckon/flight.py</code>,
       <code>reckon/_backends.py</code> and <code>tests/test_worker_mcp_servers.py</code>.</p>
 
@@ -314,7 +318,7 @@
     <div class="r-comment-body"><p>gate passed (96 importer modules, 1,516 passed, EXIT=0 at the merged head; review 107/120); section 12 closed.</p></div>
 </div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261008T102241291974-summary-view-reads-the-index" data-who="reckon-build" data-when="2026-10-08T11:11:00.861Z">
-    <div class="r-comment-body"><p>The summary view of one plan takes its plan inventory from the persisted metadata index — read when the tree&#x27;s shape is unchanged by the directories&#x27; stat identity, and walking the corpus only to rebuild a stale index — and resolves the selected document at its canonical path, so a warm review of one plan scans 0 directories at 5 and at 60 plans against 33 and 198 before the change (§12).</p></div>
+    <div class="r-comment-body"><p>The summary view of one plan takes its plan inventory from the persisted metadata index — read when the tree's shape is unchanged by the directories' stat identity, and walking the corpus only to rebuild a stale index — and resolves the selected document at its canonical path, so a warm review of one plan scans 0 directories at 5 and at 60 plans against 33 and 198 before the change (§12).</p></div>
 </div>
 </section>
 </main>
