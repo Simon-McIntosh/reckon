@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own two suite arms: its roadmap-suite-base.log records 4 failed, 1 passed with FAILED ids test_mcp_views.py::test_raw_and_schema_are_explicit_layers and three in test_section_edge_summary_and_malformed_mapping.py (two parametrised test_a_malformed_mapping_is_named_in_a_finding ids plus test_a_malformed_entry_does_not_drop_the_valid_edge_beside_it). The reviewed run's own after arm, roadmap-suite-head.log, is truncated by a later killed re-run (EXIT=124, no FAILED summary) and roadmap-suite-base.log carries no header naming its revision or command, so the head arm was re-measured by this review at 8bad67bf over the same two files; it reproduces the same 4 FAILED ids (4 failed, 1 passed, EXIT=1). The set difference of head minus base failing ids is empty, so 0 added.",
+  "backend": "local",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/roadmap.py:401",
+    "reckon/roadmap.py:1062",
+    "reckon/roadmap.py:2150",
+    "reckon/roadmap.py:2764"
+  ],
+  "completed_at": "2026-10-08T07:31:25.590Z",
+  "dispatched_at": "2026-10-08T07:13:08Z",
+  "findings": [
+    {
+      "file": "reckon/roadmap.py",
+      "line": "2203",
+      "severity": "follow-on",
+      "text": "follow-on: judgment_required carries its member count under the key count while the schedule_override block section 9 says it mirrors carries it under deferred, so the two blocks are not the identical shape the plan names; the run declined the rename with a rationale (count counts uncertain holds, not only deferred members, and the two coincide only in the deferred-only case), so this is the coordinator's call rather than a defect this review resolves."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T025754782357-a-deferred-section-blocks-only-its-dependents/roadmap-suite-head.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed run's own suite arms are not like-for-like and its head arm is unreadable - the head log is truncated by a later killed re-run (EXIT=124, no FAILED summary) and the base log carries no header naming its revision or command - so added_failure_ids rest on the base arm's four ids checked against this review's own after-arm at head; a reviewer cannot reconstruct the head failing-id list from the reviewed run's own logs."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read against the prior reviewed head 28e81ae6; _judgment_member gains a target_project parameter, all four call sites pass it (project at the three same-project sites, dependency[0] at the graph closure), and one cross-project graph test is added; the prior review's blocking finding - the graph member naming alpha:base for a beta:base dependency - is resolved.",
+    "done_when": "_judgment_member now takes dependent_project and target_project separately, and the graph-closure site passes dependency[0] - the dependency's own project, built at roadmap.py:2065-2068 via parsed.is_external - so a cross-project hold names the dependency's project; the new test test_a_graph_judgment_names_the_dependency_its_own_project drives alpha:dependent depends_on beta:base with beta:base all-deferred and asserts the member target is beta:base; the node gate tests/test_roadmap_deferred_blocks_only_its_dependents.py is 9 passed EXIT=0 at head, independently re-run by this review.",
+    "goal": "review the one commit r-20261008T025754782357 gained since its prior review (8bad67bf, base 28e81ae6), which re-qualifies the graph-closure judgment member so each side carries its own project; section 9 of reckon:a-plan-is-done-when-every-section-is-ticked requires an uncertain whole-plan dependency to be held and reported in judgment_required on every route a dependent can be reached.",
+    "manifest": "read; it records the 9/9 gate, negative controls each EXIT=1, the graph-project control as negative_control_log, and follow-ons naming the SKILL.md write-path gap and two pre-existing suite failures.",
+    "write_paths": "the change writes only reckon/roadmap.py and tests/test_roadmap_deferred_blocks_only_its_dependents.py, both inside the node's granted paths; skills/reckon-build/SKILL.md was written by an earlier change in the range and its grant gap is carried from the prior review as a coordinator action."
+  },
+  "justifications": {
+    "durability": "the graph-closure route - the site the prior review scored 13 for having no test - now has a falsifiable test that fails when the target is qualified with the dependent's project, and I reproduced that failure; the remaining three sites are same-project by construction and covered by the existing judgment tests, so this is well-guarded, short of an end-to-end cross-project roadmap-render test.",
+    "evidence": "this review's independent gate run at head 8bad67bf is 9 passed EXIT=0 and its independent negative control fails exactly the new test (1 failed 8 passed EXIT=1), and an independent after-arm at head reproduces the four pre-existing failures; but the reviewed run's own suite arms are not like-for-like - roadmap-suite-head.log is truncated by a killed re-run (EXIT=124, no FAILED summary) and roadmap-suite-base.log carries no header naming its revision or command - so the head failing-id list is taken from this review's run, not from the reviewed run's own head log.",
+    "fit": "the change reuses _qualified_plan and the module's own vocabulary, the new parameter is named for what it is, and no plan label, stage name or ticket id appears in any added symbol, comment or message.",
+    "goal_fidelity": "the change delivers exactly its stated goal - each side of a graph judgment is qualified with its own project - and closes the prior review's blocking finding at the one site it named (roadmap.py:2150), verified by an independent negative control that restores the misnaming and fails the new test with assert 'alpha:base' == 'beta:base'.",
+    "reuse": "_judgment_member is the one member composer and is extended rather than duplicated, the test reuses a new _graph_row helper beside the existing _row, and resolve_graph_target is imported rather than the graph logic reimplemented.",
+    "scope_discipline": "the change writes only reckon/roadmap.py and the node's test file, both granted; the run's recorded node.write_paths still omits skills/reckon-build/SKILL.md, carried from the prior review as a coordinator action."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: review the one commit r-20261008T025754782357 gained since its prior review (8bad67bf, base 28e81ae6), which re-qualifies the graph-closure judgment member so each side carries its own project; section 9 of reckon:a-plan-is-done-when-every-section-is-ticked requires an uncertain whole-plan dependency to be held and reported in judgment_required on every route a dependent can be reached.\nVERDICT done_when: _judgment_member now takes dependent_project and target_project separately, and the graph-closure site passes dependency[0] - the dependency's own project, built at roadmap.py:2065-2068 via parsed.is_external - so a cross-project hold names the dependency's project; the new test test_a_graph_judgment_names_the_dependency_its_own_project drives alpha:dependent depends_on beta:base with beta:base all-deferred and asserts the member target is beta:base; the node gate tests/test_roadmap_deferred_blocks_only_its_dependents.py is 9 passed EXIT=0 at head, independently re-run by this review.\nVERDICT write_paths: the change writes only reckon/roadmap.py and tests/test_roadmap_deferred_blocks_only_its_dependents.py, both inside the node's granted paths; skills/reckon-build/SKILL.md was written by an earlier change in the range and its grant gap is carried from the prior review as a coordinator action.\nVERDICT manifest: read; it records the 9/9 gate, negative controls each EXIT=1, the graph-project control as negative_control_log, and follow-ons naming the SKILL.md write-path gap and two pre-existing suite failures.\nVERDICT diff: read against the prior reviewed head 28e81ae6; _judgment_member gains a target_project parameter, all four call sites pass it (project at the three same-project sites, dependency[0] at the graph closure), and one cross-project graph test is added; the prior review's blocking finding - the graph member naming alpha:base for a beta:base dependency - is resolved.\nCALL_SITES: reckon/roadmap.py:401, reckon/roadmap.py:1062, reckon/roadmap.py:2150, reckon/roadmap.py:2764\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the change delivers exactly its stated goal - each side of a graph judgment is qualified with its own project - and closes the prior review's blocking finding at the one site it named (roadmap.py:2150), verified by an independent negative control that restores the misnaming and fails the new test with assert 'alpha:base' == 'beta:base'.\nSCORE evidence: 18\nJUSTIFICATION evidence: this review's independent gate run at head 8bad67bf is 9 passed EXIT=0 and its independent negative control fails exactly the new test (1 failed 8 passed EXIT=1), and an independent after-arm at head reproduces the four pre-existing failures; but the reviewed run's own suite arms are not like-for-like - roadmap-suite-head.log is truncated by a killed re-run (EXIT=124, no FAILED summary) and roadmap-suite-base.log carries no header naming its revision or command - so the head failing-id list is taken from this review's run, not from the reviewed run's own head log.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the change writes only reckon/roadmap.py and the node's test file, both granted; the run's recorded node.write_paths still omits skills/reckon-build/SKILL.md, carried from the prior review as a coordinator action.\nSCORE durability: 18\nJUSTIFICATION durability: the graph-closure route - the site the prior review scored 13 for having no test - now has a falsifiable test that fails when the target is qualified with the dependent's project, and I reproduced that failure; the remaining three sites are same-project by construction and covered by the existing judgment tests, so this is well-guarded, short of an end-to-end cross-project roadmap-render test.\nSCORE fit: 19\nJUSTIFICATION fit: the change reuses _qualified_plan and the module's own vocabulary, the new parameter is named for what it is, and no plan label, stage name or ticket id appears in any added symbol, comment or message.\nSCORE reuse: 19\nJUSTIFICATION reuse: _judgment_member is the one member composer and is extended rather than duplicated, the test reuses a new _graph_row helper beside the existing _row, and resolve_graph_target is imported rather than the graph logic reimplemented.\nFINDING reckon/roadmap.py:2203 follow-on: judgment_required carries its member count under the key count while the schedule_override block section 9 says it mirrors carries it under deferred, so the two blocks are not the identical shape the plan names; the run declined the rename with a rationale (count counts uncertain holds, not only deferred members, and the two coincide only in the deferred-only case), so this is the coordinator's call rather than a defect this review resolves.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261008T025754782357-a-deferred-section-blocks-only-its-dependents/roadmap-suite-head.log:1 follow-on: the reviewed run's own suite arms are not like-for-like and its head arm is unreadable - the head log is truncated by a later killed re-run (EXIT=124, no FAILED summary) and the base log carries no header naming its revision or command - so added_failure_ids rest on the base arm's four ids checked against this review's own after-arm at head; a reviewer cannot reconstruct the head failing-id list from the reviewed run's own logs.\nreviewed_base_sha: 28e81ae6cf55cdf1a613885f2350d4a296f70fff\nreviewed_head_sha: 8bad67bf22b2047f93f61726fb74385e07952e68\n",
+  "review_run_id": "r-20261008T071236680418-review-of-a-deferred-section-blocks-only-its-dependents",
+  "reviewed_base_sha": "28e81ae6cf55cdf1a613885f2350d4a296f70fff",
+  "reviewed_head_sha": "8bad67bf22b2047f93f61726fb74385e07952e68",
+  "reviewed_run_id": "r-20261008T025754782357-a-deferred-section-blocks-only-its-dependents",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T07:25:07.416853+00:00",
+  "total": 113
+}
