@@ -21,12 +21,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-standalone" content="No plan waits on this one as a whole: §6 of the-fleet-moves-to-a-new-node is held because its node does not fit the local lane, and it can run either on a larger-window lane or once §3 and §4 here land, so neither a blocks edge nor a gate on that section is true.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
   <title>Every Module Fits A Worker Window | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-impl" content="0.33">
-<meta name="plan-version" content="14">
+<meta name="plan-impl" content="0.43">
+<meta name="plan-version" content="15">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -62,7 +62,7 @@
   <header><span class="badge badge-shipped">&#10003; landed 2026-10-07</span>
     <h2 id="s2">§2 — The bound, its guard, and the move check</h2>
 <section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section></header>
-  <p class="landed-summary">A ratchet test bounds every Python module at 50,000 estimated tokens with the seven oversize modules allowlisted, and scripts/check_pure_move.py proves a split moved every statement unchanged. <a href="s2">full record</a></p>
+  <p class="landed-summary">A ratchet test bounds every Python module at 50,000 estimated tokens with the seven oversize modules allowlisted, and scripts/check_pure_move.py proves a split moved every statement unchanged. <a href="/reckon/evidence/archive/every-module-fits-a-worker-window-landed.html#s2">full record</a></p>
 </section>
 
     <section class="section-landed">
@@ -72,14 +72,12 @@
   <p class="landed-summary">reckon/crew/dispatch.py is split into ten siblings by a verified pure move, stays the import surface at 106 KB, and every test that patched a moved name reaches its new home. <a href="/reckon/evidence/archive/every-module-fits-a-worker-window-landed.html#s3">full record</a></p>
 </section>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-08</span>
     <h2 id="s4">§4 — Split <code>reckon/cli.py</code></h2>
-<section data-reckon="section" data-id="s4" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-context="extended" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> The same two nodes as §3, for <code>reckon/cli.py</code>, with the map at
-      <code>docs/evidence/fragments/every-module-fits-a-worker-window/cli-split-map.html</code>. A command group is the
-      natural unit. The click root and the console-script entry point stay where <code>pyproject.toml</code> names
-      them, and every subcommand stays registered on the same group under the same name.</p>
-    <p><strong>Done when</strong> the §3 conditions hold for <code>cli.py</code>, and the help text of every command,
-      captured by walking the click tree at base and at head, is byte-identical.</p>
+<section data-reckon="section" data-id="s4" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-context="extended" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section></header>
+  <p class="landed-summary"><code>reckon/cli.py</code> went from about 103k estimated tokens to six command modules and a 5.8k-token import surface, the largest module about 32.7k. Every command's help text is unchanged. <a href="/reckon/evidence/archive/every-module-fits-a-worker-window-landed.html#s4">full record</a></p>
+</section>
 
     <h2 id="s5">§5 — Split <code>reckon/crew/recovery.py</code></h2>
 <section data-reckon="section" data-id="s5" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-context="extended" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="implementable" data-links=""></section>
@@ -137,6 +135,10 @@
       together they bring §6 of the fleet move inside the local lane. Then §5 and §6, then §7. Two moves run at the same
       time only when their maps name disjoint test files. The map nodes are read-only and can run ahead of their moves.</p>
 
+    <h2 id="s9">§9 — The code stamps name the CLI&#x27;s modules in one place</h2>
+<section data-reckon="section" data-id="s9" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p><strong>Deliverable.</strong> The set of modules that make up the CLI is declared once, and both code stamps read that declaration. The stamps are <code>source_code_stamp</code> in <code>reckon/crew/obligation_snapshot.py</code> and <code>follower_code_stamp</code> in <code>reckon/crew/runs.py</code>. The §4 split wrote the seven module names into each function by hand. A later change that adds a command module to one list and not the other, or to neither, leaves a running producer or follower on old code after that module is edited, and nothing fails.</p><p><strong>Done when</strong> a test walks the click tree from the root group and collects the module of every command's callback. The test requires that set to be contained in the declared set. It fails, naming the module, when the declared set omits one. Its negative control removes one module from the declaration and the test fails. Both stamps advance when any declared module's bytes change, and stay unchanged when none does.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="module-bound" data-choice="50000" data-by="9cf43820, on the lead&#x27;s direction" data-when="2026-10-07">
@@ -166,10 +168,16 @@
     <pre class="r-fu-prompt">/reckon-build every-module-fits-a-worker-window §2</pre>
     <p class="r-fu-outcome">Section 2 landed (the guard and the move check) and both the dispatch.py and cli.py maps are merged. The two moves wait for a window with no live claim on their module.</p>
     </article>
-<article class="r-fu" data-id="f-emfww-002" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="9cf43820" data-written-at="2026-10-07" data-recommends-skill="reckon-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-emfww-002" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="9cf43820" data-written-at="2026-10-07" data-recommends-skill="reckon-build" data-resolved-at="2026-10-08T07:33:14+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Move dispatch.py, then cli.py, each in a window with no live claim on the module</h4>
     <div class="r-fu-body"><p>Both maps are on main. Dispatch each move only when <code>crew(view="scopes")</code> shows no live claim on the module, then review, merge and push it in one sitting.</p></div>
     <pre class="r-fu-prompt">/reckon-build every-module-fits-a-worker-window §3</pre>
+    <p class="r-fu-outcome">Both moves landed: dispatch.py (§3, f85ba9a60) and cli.py (§4, fa127e3c2 merged at 932357014). §9 is added from the cli review's follow-on; §5–§7 remain.</p>
+    </article>
+<article class="r-fu" data-id="f-emfww-003" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="9cf43820" data-written-at="2026-10-08" data-recommends-skill="/reckon-build every-module-fits-a-worker-window §9" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Give the CLI module set one owner, then split recovery.py, promotion.py and the three modules over the bound</h4>
+    <div class="r-fu-body"><p>§9 is small and protects the §4 split's reload behaviour, so it goes first. Then §5–§7, each moved only when <code>crew(view="scopes")</code> shows no live claim on its module.</p></div>
+    <pre class="r-fu-prompt">/reckon-build every-module-fits-a-worker-window §9</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
