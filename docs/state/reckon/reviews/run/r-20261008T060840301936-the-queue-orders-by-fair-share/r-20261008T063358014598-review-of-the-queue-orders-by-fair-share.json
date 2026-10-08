@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-08T06:53:03.632Z",
+  "dispatched_at": "2026-10-08T06:34:58Z",
+  "findings": [
+    {
+      "file": "tests/test_queue_order.py",
+      "line": "92",
+      "severity": "follow-on",
+      "text": "follow-on: the assertion's name claims to guard that queued runs hold no lane slot, but the case cannot fail on that property."
+    }
+  ],
+  "head_log_revision": "ed634134e443ea0bf4eb06c2cc4710667b9a6db4",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read against base f411aa1a; two new files, +160 lines, both inside the declared write paths and neither importing or touching uninvolved code.",
+    "done_when": "the done-when's three items are asserted directly by tests/test_queue_order.py:18 (occupancy catch-up then alternation), :54 (join order within a session) and :66 (starvation age patched), and the manifest records the run at ed634134 as 4 passed.",
+    "goal": "the node's goal is a pure ordering function for held (queued) dispatches; reckon/crew/queue_order.py:18 `admission_order` ranks queued pointers by per-session lane occupancy, recounting after each admission, with join order, wait tiebreak and a 30-minute starvation priority.",
+    "manifest": "read; it records commit ed634134, the committed-head gate (head-committed.log, 4 passed) and a negative control (negative-control.log, 1 failed) that reinstates the recount regression.",
+    "write_paths": "declared scope was reckon/crew/queue_order.py, tests/test_queue_order.py and two docs/evidence paths; the diff touches only the two python paths, both inside the scope."
+  },
+  "justifications": {
+    "durability": "the assertion at tests/test_queue_order.py:36 fails if the per-admission recount is dropped, as negative-control.log shows, but the assertion at :92 does not isolate the queued-holds-no-slot property it names.",
+    "evidence": "the gate at test_logs head-committed.log ran tests/test_queue_order.py at revision ed634134 and its 4 passed result is recorded, not merely claimed.",
+    "fit": "reckon/crew/queue_order.py:11 follows the module idiom (future annotations, typing) and the private `_TERMINAL_RUN_PHASES` import matches reckon/crew/placement.py:980.",
+    "goal_fidelity": "reckon/crew/queue_order.py:18 implements the ordering exactly as \u00a73 states and adds no behaviour the goal does not imply.",
+    "reuse": "no owner of queued-dispatch ordering exists (searched reckon/crew for order/queued/admission); the router's fair-share allowance (reckon/crew/dispatch_plan.py:1100) reads published figures and is a different capability, and STARVATION_AGE_SECONDS is deliberately distinct from REVIEW_QUEUED_BOUND_SECONDS.",
+    "scope_discipline": "the diff adds only reckon/crew/queue_order.py and tests/test_queue_order.py, both declared write paths, and touches nothing else."
+  },
+  "node": "review-of-the-queue-orders-by-fair-share",
+  "node:reviewed": "the-queue-orders-by-fair-share",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is a pure ordering function for held (queued) dispatches; reckon/crew/queue_order.py:18 `admission_order` ranks queued pointers by per-session lane occupancy, recounting after each admission, with join order, wait tiebreak and a 30-minute starvation priority.\nVERDICT done_when: the done-when's three items are asserted directly by tests/test_queue_order.py:18 (occupancy catch-up then alternation), :54 (join order within a session) and :66 (starvation age patched), and the manifest records the run at ed634134 as 4 passed.\nVERDICT write_paths: declared scope was reckon/crew/queue_order.py, tests/test_queue_order.py and two docs/evidence paths; the diff touches only the two python paths, both inside the scope.\nVERDICT manifest: read; it records commit ed634134, the committed-head gate (head-committed.log, 4 passed) and a negative control (negative-control.log, 1 failed) that reinstates the recount regression.\nVERDICT diff: read against base f411aa1a; two new files, +160 lines, both inside the declared write paths and neither importing or touching uninvolved code.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_order.py:18 implements the ordering exactly as \u00a73 states and adds no behaviour the goal does not imply.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate at test_logs head-committed.log ran tests/test_queue_order.py at revision ed634134 and its 4 passed result is recorded, not merely claimed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff adds only reckon/crew/queue_order.py and tests/test_queue_order.py, both declared write paths, and touches nothing else.\nSCORE durability: 17\nJUSTIFICATION durability: the assertion at tests/test_queue_order.py:36 fails if the per-admission recount is dropped, as negative-control.log shows, but the assertion at :92 does not isolate the queued-holds-no-slot property it names.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/queue_order.py:11 follows the module idiom (future annotations, typing) and the private `_TERMINAL_RUN_PHASES` import matches reckon/crew/placement.py:980.\nSCORE reuse: 19\nJUSTIFICATION reuse: no owner of queued-dispatch ordering exists (searched reckon/crew for order/queued/admission); the router's fair-share allowance (reckon/crew/dispatch_plan.py:1100) reads published figures and is a different capability, and STARVATION_AGE_SECONDS is deliberately distinct from REVIEW_QUEUED_BOUND_SECONDS.\nFINDING tests/test_queue_order.py:92 follow-on: the assertion's name claims to guard that queued runs hold no lane slot, but the case cannot fail on that property.\n",
+  "review_run_id": "r-20261008T063358014598-review-of-the-queue-orders-by-fair-share",
+  "reviewed_base_sha": "f411aa1a035d6368b5fa29c65e652e4781c99ecb",
+  "reviewed_head_sha": "ed634134e443ea0bf4eb06c2cc4710667b9a6db4",
+  "reviewed_run_id": "r-20261008T060840301936-the-queue-orders-by-fair-share",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T07:04:37.356479+00:00",
+  "total": 112
+}
