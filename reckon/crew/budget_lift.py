@@ -50,6 +50,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from importlib import import_module
+from itertools import pairwise
 from pathlib import Path
 from typing import Any
 
@@ -91,7 +92,7 @@ __all__ = [
     "MULTIPLE",
     "SEVEN_DAY",
     "UNCAPPED",
-    "LiftRefused",
+    "LiftRefusedError",
     "ceilings",
     "clear",
     "drain_line",
@@ -103,7 +104,7 @@ __all__ = [
 ]
 
 
-class LiftRefused(ValueError):
+class LiftRefusedError(ValueError):
     """A grant was refused before it was recorded."""
 
 
@@ -113,6 +114,8 @@ class LiftCeilings:
 
     max_multiple: float
     max_hours: float
+
+
 def lifts_path() -> Path:
     """Return the lift document's path, directly under the shared config home."""
     return store._config_home() / LIFTS_LEAF
@@ -140,6 +143,8 @@ def configured_pace_multiple(config: Mapping[str, Any] | None) -> float:
     block = (config or {}).get("budget") or {}
     value = block.get("pace_multiple")
     return DEFAULT_PACE_MULTIPLE if value is None else float(value)
+
+
 def read_document(path: str | Path | None = None) -> dict[str, Any]:
     """Read the lift document, returning an empty one when none is written.
 
@@ -176,6 +181,8 @@ def _write_document(document: Mapping[str, Any], *, path: str | Path | None) -> 
     next_version = int(current.get("version", 0)) + 1
     payload = {"version": next_version, "lifts": list(document.get("lifts", []))}
     return store.write_json_atomically(target, payload)
+
+
 def grant(
     config: Mapping[str, Any] | None,
     *,
@@ -199,23 +206,27 @@ def grant(
     moment = _aware(now) if now is not None else datetime.now(UTC)
 
     if str(form) not in FORMS:
-        raise LiftRefused(f"unknown lift form {form!r} (one of {', '.join(FORMS)})")
+        raise LiftRefusedError(
+            f"unknown lift form {form!r} (one of {', '.join(FORMS)})"
+        )
     if environment.get(RUN_ID_ENV):
-        raise LiftRefused(
+        raise LiftRefusedError(
             "a lift is spend, and this environment names a run "
             f"({RUN_ID_ENV} is set), so a worker cannot lift its own budget"
         )
     group_name = str(group or "").strip()
     if not group_name:
-        raise LiftRefused("a lift names a declared budget group")
+        raise LiftRefusedError("a lift names a declared budget group")
     declared = _declared_group_names(config)
     if group_name not in declared:
         listed = ", ".join(sorted(declared)) or "none"
-        raise LiftRefused(
+        raise LiftRefusedError(
             f"{group_name!r} is not a declared budget group (declared: {listed})"
         )
     if not (isinstance(reason, str) and reason.strip()):
-        raise LiftRefused("a lift without a reason is refused; --reason is required")
+        raise LiftRefusedError(
+            "a lift without a reason is refused; --reason is required"
+        )
 
     selected_scope = _scope(scope, session)
     selected_clock = str(clock) if clock in CLOCKS else SEVEN_DAY
@@ -227,24 +238,24 @@ def grant(
     drain_fields: dict[str, Any] = {}
     if str(form) == MULTIPLE:
         if multiple is None:
-            raise LiftRefused("the multiple form names --multiple")
+            raise LiftRefusedError("the multiple form names --multiple")
         resolved_multiple = float(multiple)
         if resolved_multiple <= configured:
-            raise LiftRefused(
+            raise LiftRefusedError(
                 "a lift must exceed the configured pace multiple "
                 f"{configured:g}; {resolved_multiple:g} does not"
             )
         if resolved_multiple > bound.max_multiple:
-            raise LiftRefused(
+            raise LiftRefusedError(
                 "a lift multiple may not exceed budget.lift.max_multiple "
                 f"{bound.max_multiple:g}; {resolved_multiple:g} does"
             )
     elif str(form) == DRAIN_BY:
         if target is None:
-            raise LiftRefused("the drain-by form names --drain-by")
+            raise LiftRefusedError("the drain-by form names --drain-by")
         target_moment = _parse_stamp(target)
         if target_moment is None:
-            raise LiftRefused(f"the drain-by target {target!r} could not be read")
+            raise LiftRefusedError(f"the drain-by target {target!r} could not be read")
         clamped = _clamp_target(target_moment, newest, selected_clock)
         u0, t0, week_start = _placement(newest, selected_clock, moment)
         drain_fields = {
@@ -552,10 +563,9 @@ def _in_force(
     end, _ = _end_moment(lift, readings=readings)
     if end is not None and not now < end:
         return False
-    if str((lift.get("ends") or {}).get("kind") or "") == "reset":
-        if _reset_observed(lift, readings):
-            return False
-    return True
+    ends = lift.get("ends") or {}
+    reset_kind = str(ends.get("kind") or "") == "reset"
+    return not (reset_kind and _reset_observed(lift, readings))
 
 
 def _end_moment(
@@ -595,21 +605,24 @@ def _reset_observed(
         return False
     newest_utilisation, newest_reset = series[-1]
     recorded_reset = _parse_stamp(ends.get("resets_at"))
-    if recorded_reset is not None and newest_reset is not None:
-        if newest_reset != recorded_reset:
-            return True
+    if (
+        recorded_reset is not None
+        and newest_reset is not None
+        and newest_reset != recorded_reset
+    ):
+        return True
     grant_figure = ends.get("utilisation")
-    if _is_number(grant_figure) and newest_utilisation is not None:
-        if newest_utilisation < float(grant_figure):
+    if not _is_number(grant_figure):
+        return False
+    floor = float(grant_figure)
+    if newest_utilisation is not None and newest_utilisation < floor:
+        return True
+    for earlier, later in pairwise(series):
+        before, after = earlier[0], later[0]
+        if before is None or after is None:
+            continue
+        if before > floor and after > floor and after < before:
             return True
-    if _is_number(grant_figure):
-        floor = float(grant_figure)
-        for earlier, later in zip(series, series[1:]):
-            before, after = earlier[0], later[0]
-            if before is None or after is None:
-                continue
-            if before > floor and after > floor and after < before:
-                return True
     return False
 
 
@@ -666,7 +679,9 @@ def _clock_series(
     for reading in readings or ():
         if not isinstance(reading, Mapping):
             continue
-        series.append((_clock_utilisation(reading, clock), _clock_reset(reading, clock)))
+        series.append(
+            (_clock_utilisation(reading, clock), _clock_reset(reading, clock))
+        )
     return series
 
 
@@ -678,9 +693,11 @@ def _placement(
     """Return ``(u0, t0, week_start)`` for the newest reading on ``clock``."""
     utilisation = _clock_utilisation(reading, clock)
     reset = _clock_reset(reading, clock)
-    observed = _parse_stamp(reading.get("observed_at")) if isinstance(
-        reading, Mapping
-    ) else None
+    observed = (
+        _parse_stamp(reading.get("observed_at"))
+        if isinstance(reading, Mapping)
+        else None
+    )
     t0 = observed or now
     week_start = None
     if reset is not None:
@@ -773,13 +790,13 @@ def _scope(scope: str, session: str | None) -> str:
         return GLOBAL
     if value.rstrip(":") == SESSION_PREFIX.rstrip(":"):
         if not session:
-            raise LiftRefused("a session-scoped lift names --session <id>")
+            raise LiftRefusedError("a session-scoped lift names --session <id>")
         return f"{SESSION_PREFIX}{session}"
     if value.startswith(SESSION_PREFIX):
         if not value[len(SESSION_PREFIX) :]:
-            raise LiftRefused("a session-scoped lift names --session <id>")
+            raise LiftRefusedError("a session-scoped lift names --session <id>")
         return value
-    raise LiftRefused(f"unknown lift scope {scope!r} (global or session:<id>)")
+    raise LiftRefusedError(f"unknown lift scope {scope!r} (global or session:<id>)")
 
 
 def _new_id(group: str, granted_at: datetime) -> str:

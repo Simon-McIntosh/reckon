@@ -50,7 +50,9 @@ def _reading(
         },
         "seven_day": {
             "utilisation": week_utilisation,
-            "resets_at": (week_resets_at or _reset(elapsed_hours=elapsed_hours)).isoformat(),
+            "resets_at": (
+                week_resets_at or _reset(elapsed_hours=elapsed_hours)
+            ).isoformat(),
         },
     }
 
@@ -83,7 +85,9 @@ def test_record_lives_under_the_config_home_at_the_declared_leaf(tmp_path):
     assert bl.lifts_path() == tmp_path / bl.LIFTS_LEAF
 
 
-def test_each_write_raises_the_version_and_uses_the_atomic_writer(tmp_path, monkeypatch):
+def test_each_write_raises_the_version_and_uses_the_atomic_writer(
+    tmp_path, monkeypatch
+):
     calls: list[Path] = []
     original = _store.write_json_atomically
 
@@ -94,8 +98,12 @@ def test_each_write_raises_the_version_and_uses_the_atomic_writer(tmp_path, monk
     monkeypatch.setattr(_store, "write_json_atomically", spy)
     config = _config()
     reading = _reading(week_utilisation=0.21, elapsed_hours=22.0)
-    bl.grant(config, group=GROUP, reason="first", multiple=1.8, readings=[reading], now=NOW)
-    bl.grant(config, group=GROUP, reason="second", multiple=2.0, readings=[reading], now=NOW)
+    bl.grant(
+        config, group=GROUP, reason="first", multiple=1.8, readings=[reading], now=NOW
+    )
+    bl.grant(
+        config, group=GROUP, reason="second", multiple=2.0, readings=[reading], now=NOW
+    )
     assert calls == [tmp_path / bl.LIFTS_LEAF, tmp_path / bl.LIFTS_LEAF]
     document = bl.read_document()
     assert document["version"] == 2
@@ -106,12 +114,27 @@ def test_a_lift_carries_every_recorded_field():
     config = _config()
     reading = _reading(week_utilisation=0.21, elapsed_hours=22.0)
     lift = bl.grant(
-        config, group=GROUP, reason="spend the week", multiple=1.8,
-        readings=[reading], now=NOW, environ=ENV,
+        config,
+        group=GROUP,
+        reason="spend the week",
+        multiple=1.8,
+        readings=[reading],
+        now=NOW,
+        environ=ENV,
     )
     for field in (
-        "id", "group", "pace_multiple", "ends", "granted_by", "granted_at",
-        "reason", "form", "scope", "starts_at", "cleared_by", "cleared_at",
+        "id",
+        "group",
+        "pace_multiple",
+        "ends",
+        "granted_by",
+        "granted_at",
+        "reason",
+        "form",
+        "scope",
+        "starts_at",
+        "cleared_by",
+        "cleared_at",
     ):
         assert field in lift, field
     assert lift["group"] == GROUP
@@ -127,38 +150,45 @@ def test_a_lift_carries_every_recorded_field():
 
 def test_grant_refuses_an_undeclared_group():
     config = _config()
-    with pytest.raises(bl.LiftRefused):
+    with pytest.raises(bl.LiftRefusedError):
         bl.grant(config, group="never-declared", reason="why", multiple=1.8, now=NOW)
 
 
 def test_grant_refuses_a_multiple_at_or_below_the_configured_one():
     config = _config()
     for offered in (1.1, 0.5):
-        with pytest.raises(bl.LiftRefused):
+        with pytest.raises(bl.LiftRefusedError):
             bl.grant(config, group=GROUP, reason="why", multiple=offered, now=NOW)
 
 
 def test_grant_refuses_a_multiple_above_the_declared_ceiling():
     config = _config()
-    with pytest.raises(bl.LiftRefused):
+    with pytest.raises(bl.LiftRefusedError):
         bl.grant(
-            config, group=GROUP, reason="why",
-            multiple=bl.DEFAULT_MAX_MULTIPLE + 0.1, now=NOW,
+            config,
+            group=GROUP,
+            reason="why",
+            multiple=bl.DEFAULT_MAX_MULTIPLE + 0.1,
+            now=NOW,
         )
 
 
 def test_grant_refuses_a_missing_reason():
     config = _config()
     for reason in (None, "", "   "):
-        with pytest.raises(bl.LiftRefused):
+        with pytest.raises(bl.LiftRefusedError):
             bl.grant(config, group=GROUP, reason=reason, multiple=1.8, now=NOW)
 
 
 def test_grant_refuses_inside_a_fenced_run():
     config = _config()
-    with pytest.raises(bl.LiftRefused):
+    with pytest.raises(bl.LiftRefusedError):
         bl.grant(
-            config, group=GROUP, reason="why", multiple=1.8, now=NOW,
+            config,
+            group=GROUP,
+            reason="why",
+            multiple=1.8,
+            now=NOW,
             environ={bl.RUN_ID_ENV: "r-20261008T132610418827-x"},
         )
 
@@ -176,8 +206,13 @@ def test_a_grant_records_its_projected_exhaustion_and_admits_it():
     config = _config()
     reading = _reading(week_utilisation=0.21, elapsed_hours=22.0)
     lift = bl.grant(
-        config, group=GROUP, reason="spend", multiple=1.8,
-        readings=[reading], now=NOW, environ=ENV,
+        config,
+        group=GROUP,
+        reason="spend",
+        multiple=1.8,
+        readings=[reading],
+        now=NOW,
+        environ=ENV,
     )
     assert lift["projected_exhaustion"] is not None
     assert bl._parse_stamp(lift["projected_exhaustion"]) < _reset(elapsed_hours=22.0)
@@ -187,8 +222,13 @@ def test_effective_budget_returns_the_lifted_block_with_reserves_released():
     config = _config()
     reading = _reading(week_utilisation=0.21, elapsed_hours=22.0)
     lift = bl.grant(
-        config, group=GROUP, reason="spend", multiple=1.8,
-        readings=[reading], now=NOW, environ=ENV,
+        config,
+        group=GROUP,
+        reason="spend",
+        multiple=1.8,
+        readings=[reading],
+        now=NOW,
+        environ=ENV,
     )
     block = bl.effective_budget(config, group=GROUP, readings=[reading], now=NOW)
     assert block is not config["budget"]
@@ -209,31 +249,49 @@ def test_effective_budget_returns_the_lifted_block_with_reserves_released():
 def test_effective_budget_is_unchanged_for_a_moved_reset():
     config = _config()
     reading = _reading(week_utilisation=0.21, elapsed_hours=22.0)
-    bl.grant(config, group=GROUP, reason="spend", multiple=1.8, readings=[reading], now=NOW)
+    bl.grant(
+        config, group=GROUP, reason="spend", multiple=1.8, readings=[reading], now=NOW
+    )
     moved = _reading(
         week_utilisation=0.22,
         elapsed_hours=22.0,
         week_resets_at=_reset(elapsed_hours=22.0) + timedelta(hours=1),
     )
-    assert bl.effective_budget(config, group=GROUP, readings=[moved], now=NOW) is config["budget"]
+    assert (
+        bl.effective_budget(config, group=GROUP, readings=[moved], now=NOW)
+        is config["budget"]
+    )
 
 
 def test_effective_budget_is_unchanged_past_its_stated_time():
     config = _config()
     reading = _reading(week_utilisation=0.21, elapsed_hours=22.0)
     bl.grant(
-        config, group=GROUP, reason="spend", multiple=1.8, readings=[reading], now=NOW,
+        config,
+        group=GROUP,
+        reason="spend",
+        multiple=1.8,
+        readings=[reading],
+        now=NOW,
         ends={"kind": "at", "at": (NOW - timedelta(hours=1)).isoformat()},
     )
-    assert bl.effective_budget(config, group=GROUP, readings=[reading], now=NOW) is config["budget"]
+    assert (
+        bl.effective_budget(config, group=GROUP, readings=[reading], now=NOW)
+        is config["budget"]
+    )
 
 
 def test_effective_budget_is_unchanged_for_a_cleared_lift():
     config = _config()
     reading = _reading(week_utilisation=0.21, elapsed_hours=22.0)
-    bl.grant(config, group=GROUP, reason="spend", multiple=1.8, readings=[reading], now=NOW)
+    bl.grant(
+        config, group=GROUP, reason="spend", multiple=1.8, readings=[reading], now=NOW
+    )
     assert bl.clear(config, group=GROUP, now=NOW) is not None
-    assert bl.effective_budget(config, group=GROUP, readings=[reading], now=NOW) is config["budget"]
+    assert (
+        bl.effective_budget(config, group=GROUP, readings=[reading], now=NOW)
+        is config["budget"]
+    )
 
 
 def test_max_hours_bounds_a_lift_whose_reset_never_moves():
@@ -241,46 +299,78 @@ def test_max_hours_bounds_a_lift_whose_reset_never_moves():
     base = NOW - timedelta(hours=30)
     tight = _config(lift={"max_hours": 24.0})
     loose = _config()
-    bl.grant(tight, group=GROUP, reason="spend", multiple=1.8, readings=[reading], now=base)
-    assert bl.effective_budget(tight, group=GROUP, readings=[reading], now=NOW) is tight["budget"]
-    assert bl.effective_budget(loose, group=GROUP, readings=[reading], now=NOW) is not loose["budget"]
+    bl.grant(
+        tight, group=GROUP, reason="spend", multiple=1.8, readings=[reading], now=base
+    )
+    assert (
+        bl.effective_budget(tight, group=GROUP, readings=[reading], now=NOW)
+        is tight["budget"]
+    )
+    assert (
+        bl.effective_budget(loose, group=GROUP, readings=[reading], now=NOW)
+        is not loose["budget"]
+    )
 
 
 def test_effective_budget_is_unchanged_when_utilisation_falls_below_the_grant_figure():
     config = _config()
     reading = _reading(week_utilisation=0.21, elapsed_hours=22.0)
-    bl.grant(config, group=GROUP, reason="spend", multiple=1.8, readings=[reading], now=NOW)
+    bl.grant(
+        config, group=GROUP, reason="spend", multiple=1.8, readings=[reading], now=NOW
+    )
     below = _reading(week_utilisation=0.10, elapsed_hours=22.0)
-    assert bl.effective_budget(config, group=GROUP, readings=[below], now=NOW) is config["budget"]
+    assert (
+        bl.effective_budget(config, group=GROUP, readings=[below], now=NOW)
+        is config["budget"]
+    )
 
 
 def test_effective_budget_is_unchanged_for_a_fall_between_two_readings():
     config = _config()
     reading = _reading(week_utilisation=0.21, elapsed_hours=22.0)
-    bl.grant(config, group=GROUP, reason="spend", multiple=1.8, readings=[reading], now=NOW)
+    bl.grant(
+        config, group=GROUP, reason="spend", multiple=1.8, readings=[reading], now=NOW
+    )
     history = [
         _reading(week_utilisation=0.30, elapsed_hours=22.0),
         _reading(week_utilisation=0.25, elapsed_hours=23.0),
     ]
-    assert bl.effective_budget(config, group=GROUP, readings=history, now=NOW) is config["budget"]
+    assert (
+        bl.effective_budget(config, group=GROUP, readings=history, now=NOW)
+        is config["budget"]
+    )
 
 
 def test_effective_budget_is_unchanged_before_a_future_start():
     config = _config()
     reading = _reading(week_utilisation=0.21, elapsed_hours=22.0)
     bl.grant(
-        config, group=GROUP, reason="spend", multiple=1.8, readings=[reading], now=NOW,
+        config,
+        group=GROUP,
+        reason="spend",
+        multiple=1.8,
+        readings=[reading],
+        now=NOW,
         starts_at=NOW + timedelta(hours=1),
     )
-    assert bl.effective_budget(config, group=GROUP, readings=[reading], now=NOW) is config["budget"]
+    assert (
+        bl.effective_budget(config, group=GROUP, readings=[reading], now=NOW)
+        is config["budget"]
+    )
 
 
 def test_drain_by_holds_above_the_line_and_admits_below_it():
     config = _config()
     reading = _reading(week_utilisation=0.21, elapsed_hours=22.0)
     lift = bl.grant(
-        config, group=GROUP, reason="land at friday", form=bl.DRAIN_BY,
-        target=NOW + timedelta(hours=24), readings=[reading], now=NOW, environ=ENV,
+        config,
+        group=GROUP,
+        reason="land at friday",
+        form=bl.DRAIN_BY,
+        target=NOW + timedelta(hours=24),
+        readings=[reading],
+        now=NOW,
+        environ=ENV,
     )
     halfway = NOW + timedelta(hours=12)
     line = bl.drain_line(lift, now=halfway)
@@ -293,9 +383,14 @@ def test_a_drain_by_target_past_the_reset_is_clamped_to_it():
     config = _config()
     reading = _reading(week_utilisation=0.21, elapsed_hours=22.0)
     lift = bl.grant(
-        config, group=GROUP, reason="later", form=bl.DRAIN_BY,
+        config,
+        group=GROUP,
+        reason="later",
+        form=bl.DRAIN_BY,
         target=_reset(elapsed_hours=22.0) + timedelta(hours=48),
-        readings=[reading], now=NOW, environ=ENV,
+        readings=[reading],
+        now=NOW,
+        environ=ENV,
     )
     assert lift["target"] == _reset(elapsed_hours=22.0).isoformat()
 
@@ -318,11 +413,21 @@ def test_a_session_lift_governs_only_its_own_session():
         config, group=GROUP, reason="all", multiple=1.8, readings=[reading], now=NOW
     )
     session_lift = bl.grant(
-        config, group=GROUP, reason="mine", multiple=2.0, readings=[reading], now=NOW,
-        scope="session", session="s1",
+        config,
+        group=GROUP,
+        reason="mine",
+        multiple=2.0,
+        readings=[reading],
+        now=NOW,
+        scope="session",
+        session="s1",
     )
-    mine = bl.effective_budget(config, group=GROUP, readings=[reading], now=NOW, session="s1")
-    theirs = bl.effective_budget(config, group=GROUP, readings=[reading], now=NOW, session="s2")
+    mine = bl.effective_budget(
+        config, group=GROUP, readings=[reading], now=NOW, session="s1"
+    )
+    theirs = bl.effective_budget(
+        config, group=GROUP, readings=[reading], now=NOW, session="s2"
+    )
     assert mine["lift_id"] == session_lift["id"]
     assert mine["pace_multiple"] == pytest.approx(2.0)
     assert theirs["lift_id"] == global_lift["id"]
@@ -333,12 +438,24 @@ def test_a_session_lift_alone_does_not_cover_another_session():
     config = _config()
     reading = _reading(week_utilisation=0.21, elapsed_hours=22.0)
     bl.grant(
-        config, group=GROUP, reason="mine", multiple=1.8, readings=[reading], now=NOW,
-        scope="session", session="s1",
+        config,
+        group=GROUP,
+        reason="mine",
+        multiple=1.8,
+        readings=[reading],
+        now=NOW,
+        scope="session",
+        session="s1",
     )
-    assert bl.effective_budget(
-        config, group=GROUP, readings=[reading], now=NOW, session="s2"
-    ) is config["budget"]
-    assert bl.effective_budget(
-        config, group=GROUP, readings=[reading], now=NOW, session="s1"
-    ) is not config["budget"]
+    assert (
+        bl.effective_budget(
+            config, group=GROUP, readings=[reading], now=NOW, session="s2"
+        )
+        is config["budget"]
+    )
+    assert (
+        bl.effective_budget(
+            config, group=GROUP, readings=[reading], now=NOW, session="s1"
+        )
+        is not config["budget"]
+    )
