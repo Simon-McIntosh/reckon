@@ -272,7 +272,6 @@ def test_a_killed_resumed_worker_leaves_its_attempt_exit_record(
         _wait_until(
             lambda: _record_names_attempt(directory / "exit.json", 2),
             "the killed resume's current-attempt exit record",
-            timeout=3.0,
         )
     finally:
         _stop_group(launched_pid)
