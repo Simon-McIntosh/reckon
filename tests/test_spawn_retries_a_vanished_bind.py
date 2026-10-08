@@ -28,7 +28,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from reckon import _backends
+from reckon import _backends, _worker_fence
 from reckon.crew import dispatch_launch as dispatch_launch_module
 from reckon.crew import runs
 from tests.test_fence_protects_the_worktree_pool import (
@@ -374,9 +374,9 @@ def test_the_pool_control_driver_mutation_reaches_the_fence(
     # Positive control: the composed launch really does overlay the pool, so a
     # mutated argv that lacks the overlay is the mutation's doing.
     assert _ro_bind_of(pool.argv(), pool.pool) != -1
-    original = _backends.declared_protected_paths
+    original = _worker_fence.declared_protected_paths
     monkeypatch.setattr(
-        _backends,
+        _worker_fence,
         "declared_protected_paths",
         _without_pool(pool.home, original),
     )
