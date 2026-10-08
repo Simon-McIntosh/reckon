@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: after_suite (gate-head.log, revision 1fe678f41) records 403 passed, 0 failed, EXIT=0; baseline_suite (gate-base.log, revision 3f7a2f71f) records 396 passed, 1 failed (tests/test_resume_reaps_its_child.py::test_a_shortlived_launcher_leaves_a_worker_that_survives_and_completes), EXIT=1. Head minus base yields no added failing test; the single base failure is absent at head.",
+  "backend": "sonnet",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch_claims.py:1435 deadline = clock() + RACING_WINNER_WAIT_SECONDS",
+    "reckon/crew/dispatch_claims.py:1536 refusal message naming RACING_WINNER_WAIT_SECONDS",
+    "reckon/crew/dispatch.py:1945 RACING_WINNER_WAIT_SECONDS re-export"
+  ],
+  "completed_at": "2026-10-08T10:33:47.100Z",
+  "dispatched_at": "2026-10-08T10:20:44Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_claims.py",
+      "line": "1303",
+      "severity": "follow-on",
+      "text": "follow-on: the embedded observation _CLAIM_LAUNCH_OBSERVED_SECONDS has median 7.5 s, contradicting the median 10 s in its own comment and in the evidence fragment; the constant does not reproduce the summary it is documented with."
+    },
+    {
+      "file": "reckon/crew/dispatch_claims.py",
+      "line": "1357",
+      "severity": "follow-on",
+      "text": "follow-on: the 397-dispatch measurement is not reproducible from surviving state (the claims store retains no per-run registration time), so the distribution is asserted rather than checkable."
+    },
+    {
+      "file": "docs/evidence/fragments/one-typesafe-model-picker/dispatch-launch-cost.html",
+      "line": null,
+      "severity": "follow-on",
+      "text": "follow-on: the claim \"20 test files reference docs/state or state/reckon\" is not reproducible (union grep over tests/ gives 53); the conclusion holds and is stronger, but the figure is wrong."
+    },
+    {
+      "file": "tests/test_dispatch_launch_cost.py",
+      "line": "60",
+      "severity": "follow-on",
+      "text": "follow-on: the not-a-constant guard only catches the exact prior literal 15.0 (a tuple yielding 14.85 or 15.4 passes), and no test validates the recorded observation against the documented min/median/p90, so a wrong measurement ships silently."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call sites (dispatch_claims.py:1435 deadline, :1536 refusal message, dispatch.py:1945 re-export) plus the racing-loser test",
+    "diff": "1fe678f41 replaces the fixed RACING_WINNER_WAIT_SECONDS = 15.0 with claim_grace_seconds(_CLAIM_LAUNCH_OBSERVED_SECONDS) and adds the derivation function; 50281aef2 adds the evidence fragment; the racing-loser wait moves 15 s -> 33 s.",
+    "done_when": "the manifest carries the measured distribution (min 1, median 10, p90 22, max 41 s) and the checkout size by top-level path; tests/test_dispatch_launch_cost.py proves the grace follows the observed figure; and the manifest states why the size cannot be cut. Reproduced the derivation (33.0) and the head gate (11 passed EXIT=0).",
+    "goal": "section 18 asks for three things: measure the launch-to-claim distribution and the checkout size on the fleet node, derive the claim grace from the observed time with a floor (not a constant), and cut any unread share of the checkout or say why it cannot be derived. The delta measures 397 dispatches plus the checkout size by path, derives the grace (p90 22 s x 1.5 floored at 5 s = 33 s), and declines the docs/state/reckon exclusion because readers depend on it (270 MB, 75%).",
+    "manifest": "read; commits 1fe678f41 and 50281aef2 from base 3f7a2f71f; baseline_suite 1 pre-existing failure, after_suite 0; negative control restores the fixed 15 s and the module assertion fails.",
+    "write_paths": "the delta touches reckon/crew/dispatch_claims.py, tests/test_dispatch_launch_cost.py and the evidence fragment; all three are declared write paths; dispatch_launch.py and the figures directory are declared but untouched."
+  },
+  "justifications": {
+    "durability": "the suite pins scaling, margin, floor, the empty-observation fallback and the tail, and it catches a revert to 15.0; but the not-a-constant guard only fails on the exact literal 15.0 (a tuple yielding 14.85 or 15.4 passes) and no test validates the observation against the documented figures.",
+    "evidence": "the derivation reproduces (33.0), the head gate reproduces (11 passed EXIT=0) and the negative control fires, but the measurement is not checkable \u2014 the claims store retains no per-run registration time, my run-id-anchored reproduction over 4,700 run dirs gives a different shape (median 26 s, p90 54 s), the embedded tuple's median is 7.5 s against a documented 10 s, and the fragment's \"20 test files\" is not reproducible (union grep gives 53).",
+    "fit": "the derivation function and its constants sit beside the wait loop they govern, the private-observation naming is consistent, and the new test file mirrors the racing-loser test's idiom.",
+    "goal_fidelity": "all three section-18 items land and the done-when is met. The clause \"do not use a constant\" is met only nominally: the observation is a frozen literal and nothing feeds claim_grace_seconds at runtime, so the shipped value is a constant (33.0) computed once at import.",
+    "reuse": "reuses the RACING_WINNER_WAIT_SECONDS name and its consumers unchanged and adds one function; no duplicated constant.",
+    "scope_discipline": "the delta touches only declared write paths; no path outside the grant is edited."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: section 18 asks for three things \u2014 measure the launch-to-claim distribution and the checkout size on the fleet node, derive the claim grace from the observed time with a floor (not a constant), and cut any unread share of the checkout or say why it cannot be cut. The delta does all three: a 397-dispatch distribution is measured and embedded, the grace is computed from the observed tail (p90 22 s x 1.5, floored at 5 s) giving 33 s, and the docs/state/reckon share is measured (270 MB, 75%) with the exclusion declined because readers depend on it.\nVERDICT done_when: the manifest carries the measured distribution (min 1, median 10, p90 22, max 41 s) and the checkout size by top-level path; tests/test_dispatch_launch_cost.py proves the grace follows the observed figure (scaling, margin, floor, no-observation, tail, and module-is-the-derivation); and the manifest states why the size cannot be cut. I reproduced the derivation (33.0) and the head gate (11 passed over the new test plus the racing-loser test, EXIT=0).\nVERDICT write_paths: the delta touches reckon/crew/dispatch_claims.py, tests/test_dispatch_launch_cost.py and the evidence fragment; all three are declared write paths. reckon/crew/dispatch_launch.py and the figures directory are declared but untouched.\nVERDICT manifest: read; commits 1fe678f41 and 50281aef2 from base 3f7a2f71f; baseline_suite records 1 pre-existing failure (tests/test_resume_reaps_its_child.py::test_a_shortlived_launcher_leaves_a_worker_that_survives_and_completed) and after_suite records 0 failures; the negative control restores the fixed 15 s and the module assertion fails.\nVERDICT diff: 1fe678f41 replaces the fixed RACING_WINNER_WAIT_SECONDS = 15.0 with claim_grace_seconds(_CLAIM_LAUNCH_OBSERVED_SECONDS) and adds the derivation function; 50281aef2 adds the evidence fragment. No other product behaviour changes; the constant feeds reckon/crew/dispatch_claims.py:1435 (the wait deadline) and :1536 (the refusal message), so the racing-loser wait moves 15 s -> 33 s.\nCALL_SITES: reckon/crew/dispatch_claims.py:1435 (deadline = clock() + RACING_WINNER_WAIT_SECONDS), reckon/crew/dispatch_claims.py:1536 (refusal message), reckon/crew/dispatch.py:1945 (re-export), tests/test_a_racing_loser_outlives_a_withdrawn_winner.py:176\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: all three section-18 items land and the done-when is met. The clause \"do not use a constant\" is met only nominally: the observation is a frozen 20-element literal and nothing feeds claim_grace_seconds at runtime, so the shipped value is a constant (33.0) computed once at import.\nSCORE evidence: 14\nJUSTIFICATION evidence: the derivation reproduces (33.0) and the head gate reproduces (11 passed EXIT=0), and the negative control fires. But the measurement itself is not checkable: the claims store keeps no per-run registration time, so the 397-dispatch distribution is an asserted figure in a source comment \u2014 my run-id-anchored reproduction over 4,700 run dirs gives a different shape (median 26 s, p90 54 s). The embedded tuple's median is also 7.5 s against the documented 10 s, and the fragment's \"20 test files\" is not reproducible (a union grep gives 53).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the delta touches only declared write paths (dispatch_claims.py, tests/test_dispatch_launch_cost.py, the evidence fragment); no path outside the grant is edited.\nSCORE durability: 16\nJUSTIFICATION durability: the suite pins scaling, margin, floor, the empty-observation fallback and the tail, and it does catch a revert to 15.0 (negative control). The guard is narrow, though: test_the_module_grace_is_the_derivation_not_a_constant only fails on the exact literal 15.0 (a tuple yielding 14.85 or 15.4 passes), and no test validates the recorded observation against the documented min/median/p90, so a wrong measurement ships silently.\nSCORE fit: 18\nJUSTIFICATION fit: the derivation function and its constants sit beside the wait loop they govern, the private-observation naming is consistent with the module, and the new test file mirrors the existing racing-loser test's idiom.\nSCORE reuse: 19\nJUSTIFICATION reuse: the change reuses the RACING_WINNER_WAIT_SECONDS name and its existing consumers unchanged and adds one function; no duplicated constant\nFINDING reckon/crew/dispatch_claims.py:1303 follow-on: the embedded observation _CLAIM_LAUNCH_OBSERVED_SECONDS has median 7.5 s, contradicting the median 10 s in its own comment and in the evidence fragment; the constant does not reproduce the summary it is documented with.\nFINDING reckon/crew/dispatch_claims.py:1357 follow-on: the 397-dispatch measurement is not reproducible from surviving state (the claims store retains no per-run registration time), so the distribution is asserted rather than checkable; a reader cannot verify the figure.\nFINDING docs/evidence/fragments/one-typesafe-model-picker/dispatch-launch-cost.html follow-on: the claim \"20 test files reference docs/state or state/reckon\" is not reproducible (union grep over tests/ gives 53); the conclusion that the share is read holds and is stronger, but the figure is wrong.\nFINDING tests/test_dispatch_launch_cost.py:60 follow-on: the not-a-constant guard only catches the exact prior literal 15.0, and no test checks the recorded observation against the documented min/median/p90, so a wrong observation passes the suite.\n",
+  "review_run_id": "r-20261008T102018501789-review-of-dispatch-launch-cost",
+  "reviewed_base_sha": "3f7a2f71ff433c778659e93e870207d3752c748f",
+  "reviewed_head_sha": "50281aef2d2366a2acaf031d9054c6f644719000",
+  "reviewed_run_id": "r-20261008T093629275905-dispatch-launch-cost",
+  "scores": {
+    "durability": 16,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T10:31:55.563229+00:00",
+  "total": 104
+}
