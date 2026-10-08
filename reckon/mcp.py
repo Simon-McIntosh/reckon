@@ -76,6 +76,7 @@ from reckon._schema import (
 )
 from reckon._store import (
     _docs_dir_for_project,
+    _mounts_path as _mounts_path,
     _resolve_html_file,
     _state_root,
     list_followups_across,
