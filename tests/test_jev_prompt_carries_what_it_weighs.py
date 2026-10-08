@@ -29,6 +29,7 @@ NODE_FIELDS = {
     "done_when",
     "estimated_context",
     "estimated_hours",
+    "estimated_hours_source",
     "attempts",
     "write_path_count",
     "negative_control_declared",

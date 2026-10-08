@@ -1,11 +1,13 @@
 """Jev sees the capability and estimate a node's plan section declares.
 
 A pick is handed a node and the section it names, not the difficulty that
-section declares, so a deep, critical, ten-hour node reached Jev as one it never
-saw -- an empty capability and no estimate -- and was routed like an easy node.
-These tests fix that the picker reads the declaration from the plan the node
-names, keeps a value the request or the node already carries, leaves the field
-null when nothing resolves, and pays for the read inside its own timed stage.
+section declares, so a deep, critical node reached Jev as one it never saw -- an
+empty capability and no estimate -- and was routed like an easy node. These
+tests fix that the picker reads the declaration from the plan the node names:
+the section's effective capability, and the node's own estimate else its
+section's declared effort else the plan total. A value the request or the node
+already carries is kept, the source is always rendered (null when nothing
+resolved), and the read is paid for inside its own timed stage.
 """
 
 from __future__ import annotations
@@ -20,18 +22,24 @@ from reckon.crew.node import TaskNode
 
 picker = importlib.import_module("reckon.crew.picker")
 
-#: A minimal live plan: the section declares its capability and its own effort,
-#: and the plan carries effort hours, which is the figure a node without its own
-#: estimate is charged against.
+#: A minimal live plan whose total effort differs from every section's own, so
+#: a test can tell which figure reached the state. Section 2 declares effort
+#: with a capability; section 3 declares a different effort.
 PLAN_HTML = (
     "<!doctype html>\n<html><head>\n"
     '<meta name="docs-project" content="{project}">\n'
     '<meta name="reckon-type" content="plan">\n'
-    '<meta name="plan-slug" content="{slug}">\n'
-    '<meta name="plan-effort-hours" content="{hours}">\n'
+    '<meta name="plan-slug" content="{plan_slug}">\n'
+    '<meta name="plan-effort-hours" content="{plan_hours}">\n'
     "</head><body>\n"
     '<h2 id="s2">&sect;2 &mdash; A deep section</h2>\n'
     '<section data-reckon="section" data-id="s2" data-effort-hours="10"'
+    ' data-status="implementable"'
+    ' data-capability-version="1.0" data-capability-class="orchestrator"'
+    ' data-capability-reasoning="deep" data-capability-verification="strict"'
+    ' data-capability-risk="critical"></section>\n'
+    '<h2 id="s3">&sect;3 &mdash; A lighter section</h2>\n'
+    '<section data-reckon="section" data-id="s3" data-effort-hours="4"'
     ' data-status="implementable"'
     ' data-capability-version="1.0" data-capability-class="orchestrator"'
     ' data-capability-reasoning="deep" data-capability-verification="strict"'
@@ -45,7 +53,7 @@ def repo(tmp_path: Path) -> Path:
     plans = tmp_path / "repo" / "docs" / "plans"
     plans.mkdir(parents=True)
     (plans / "probe.html").write_text(
-        PLAN_HTML.format(project="proj", slug="probe", hours="10")
+        PLAN_HTML.format(project="proj", plan_slug="probe", plan_hours="48")
     )
     return tmp_path / "repo"
 
@@ -71,7 +79,7 @@ def _node(**overrides) -> TaskNode:
         "id": "work",
         "goal": "Implement the parser",
         "plan": "probe",
-        "section": "§2",
+        "section": "s2",
         "role": "implement",
         "spec_level": "guided",
         "done_when": "Parser tests pass",
@@ -118,7 +126,6 @@ def _answer(candidate: picker.Candidate) -> dict:
 def _state_for_jev(
     repo: Path,
     request: picker.PickRequest,
-    *,
     monkeypatch: pytest.MonkeyPatch | None = None,
     home: Path | None = None,
 ) -> dict:
@@ -150,14 +157,17 @@ def _state_for_jev(
     return seen[0]
 
 
-def test_the_declared_capability_and_estimate_reach_jev(repo: Path) -> None:
-    """A node with no capability of its own is judged at its section's."""
+def test_the_declared_capability_and_section_effort_reach_jev(repo: Path) -> None:
+    """A node with no capability of its own is judged at its section's.
 
-    state = _state_for_jev(
+    The plan's total effort is 48 and the section's own is 10; the figure the
+    state carries is the section's, labelled as the section's.
+    """
+
+    node = _state_for_jev(
         repo,
         picker.PickRequest("proj", _node(), estimated_context=1000),
-    )
-    node = state["node"]
+    )["node"]
     assert node["capability"]["class"] == "orchestrator"
     assert node["capability"]["requirements"] == {
         "reasoning": "deep",
@@ -165,6 +175,30 @@ def test_the_declared_capability_and_estimate_reach_jev(repo: Path) -> None:
         "risk": "critical",
     }
     assert node["estimated_hours"] == 10.0
+    assert node["estimated_hours_source"] == "section"
+
+
+def test_the_section_effort_wins_over_the_plan_total(repo: Path) -> None:
+    """A node scoped to a second section carries that section's own effort."""
+
+    node = _state_for_jev(
+        repo,
+        picker.PickRequest("proj", _node(section="s3"), estimated_context=1000),
+    )["node"]
+    assert node["estimated_hours"] == 4.0
+    assert node["estimated_hours_source"] == "section"
+
+
+def test_a_section_the_plan_does_not_record_falls_back_to_the_plan(
+    repo: Path,
+) -> None:
+    """A section the plan does not record leaves the plan's total standing."""
+
+    node = _state_for_jev(
+        repo,
+        picker.PickRequest("proj", _node(section="s9"), estimated_context=1000),
+    )["node"]
+    assert node["estimated_hours"] == 48.0
     assert node["estimated_hours_source"] == "plan"
 
 
@@ -179,7 +213,6 @@ def test_a_capability_the_request_carries_is_kept(repo: Path) -> None:
     )
     node = _state_for_jev(repo, request)["node"]
     assert node["capability"] == {"class": "general", "requirements": {"risk": "low"}}
-    # The node's own estimate wins over the plan's, and is labelled as its own.
     assert node["estimated_hours"] == 2.5
     assert node["estimated_hours_source"] == "node"
 
@@ -197,27 +230,39 @@ def test_a_node_estimate_is_kept_when_the_capability_is_resolved(repo: Path) -> 
 
 
 def test_a_node_with_no_plan_renders_null(repo: Path) -> None:
-    """No plan to read leaves both the capability and the estimate null."""
+    """No plan to read leaves the capability, estimate and source null."""
 
-    state = _state_for_jev(
+    node = _state_for_jev(
         repo,
         picker.PickRequest("proj", _node(plan=""), estimated_context=1000),
     )["node"]
-    assert state["capability"] is None
-    assert state["estimated_hours"] is None
-    assert "estimated_hours_source" not in state
+    assert node["capability"] is None
+    assert node["estimated_hours"] is None
+    assert node["estimated_hours_source"] is None
 
 
 def test_a_node_with_no_section_keeps_its_plan_estimate(repo: Path) -> None:
-    """With no section to read, the capability is null but the plan still estimates."""
+    """With no section to read, the capability is null but the plan still
+    estimates.
+    """
 
-    state = _state_for_jev(
+    node = _state_for_jev(
         repo,
         picker.PickRequest("proj", _node(section=""), estimated_context=1000),
     )["node"]
-    assert state["capability"] is None
-    assert state["estimated_hours"] == 10.0
-    assert state["estimated_hours_source"] == "plan"
+    assert node["capability"] is None
+    assert node["estimated_hours"] == 48.0
+    assert node["estimated_hours_source"] == "plan"
+
+
+def test_the_source_is_present_null_when_nothing_resolves(repo: Path) -> None:
+    """The node's shape does not vary: the source key is always rendered."""
+
+    node = _state_for_jev(
+        repo,
+        picker.PickRequest("proj", _node(section=""), estimated_context=1000),
+    )["node"]
+    assert "estimated_hours_source" in node
 
 
 def test_the_resolution_is_timed_as_its_own_stage(

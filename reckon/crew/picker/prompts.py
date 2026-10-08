@@ -46,8 +46,9 @@ _GLOSSARY: dict[str, str] = {
         "The fraction of a metered lane's window a job of this size may spend."
     ),
     "budget_source": (
-        "Where a budget reading came from: an account-surface reading describes "
-        "now, a ledger reading carries the age of the run behind it."
+        "Where a budget reading came from: a document reading is taken from the "
+        "published paid-lanes document, an account-surface reading describes now, "
+        "and a ledger reading carries the age of the run behind it."
     ),
     "budget_age_s": "Seconds since the budget reading was observed; null when unknown.",
     "stale": (
@@ -167,9 +168,10 @@ def build_state(
     whatever the values are: every candidate is keyed by its backend name and
     every node fact is one field of ``node``. ``estimated_hours`` overrides the
     node's own figure when a caller resolved the plan's declaration, and
-    ``estimated_hours_source`` names where that figure came from -- the node or
-    the plan -- and is present only when a figure is, so a node with no estimate
-    carries neither.
+    ``estimated_hours_source`` names where that figure came from -- the node,
+    the section, or the plan. The source is rendered unconditionally, null when
+    nothing resolved, so the node's shape does not vary with which facts a pick
+    could read.
     """
 
     node_state: dict[str, Any] = {
@@ -182,12 +184,11 @@ def build_state(
         "estimated_hours": (
             node.estimated_hours if estimated_hours is None else estimated_hours
         ),
+        "estimated_hours_source": estimated_hours_source,
         "attempts": attempts,
         "write_path_count": len(node.write_paths or []),
         "negative_control_declared": _negative_control_declared(node),
     }
-    if estimated_hours_source is not None:
-        node_state["estimated_hours_source"] = estimated_hours_source
     return {
         "node": node_state,
         "orchestrator_comment": comment,
