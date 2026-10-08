@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite and after_suite fields, both of which record failure_count 0 and failure_ids []; the two fields name distinct logs (gate-suite-base.log at 2e8c6fa and gate-suite-after.log at 5536407a7), so the delta of 0 rests on two measurements.",
+  "base_log_revision": "2e8c6fa7483d448296df74016b6d02f6b5e27cb7",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-08T22:49:07.541Z",
+  "dispatched_at": "2026-10-08T22:37:26Z",
+  "findings": [
+    {
+      "file": "tests/test_follow_settled_rows.py",
+      "line": "5",
+      "severity": "follow-on",
+      "text": "the docstring states the follower also delivers \"any reversal of an action row it already showed\", but the fixture's transitions (dispatched->working->complete->recorded and working->exited-unfinished->blocked) contain no reversal, so that clause of the stated contract has no assertion behind it in this file."
+    }
+  ],
+  "head_log_revision": "5536407a72f89dde343135035060a6acf484c185",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read change by change against base 778219ba2; 5536407a7 rewrites the module docstring of tests/test_follow_settled_rows.py (5 insertions, 5 deletions, one file) to state the contract itself and drop the plan and section reference; no production module is touched and no assertion changes.",
+    "done_when": "the done-when is that this review stores a parsed six-dimension record naming the revision pair and the added-failure count; the reviewed manifest records the gate at tests/test_follow_settled_rows.py (3 passed EXIT=0), which I reproduced in a scratch tree at 5536407a7 (review-head-gate.log, 3 passed EXIT=0), and its base/after suite arms are gate-suite-base.log (219 passed EXIT=0) and gate-suite-after.log (222 passed EXIT=0).",
+    "goal": "the node's goal is a gate proving the follower delivers only the rows that ask for action, and its gained change makes the test file stand alone; at head 5536407a7 tests/test_follow_settled_rows.py:1-16 states the delivered-row contract in mechanism terms and drives the follower's own generator (cli._follow_watch_lines) over a two-run fixture.",
+    "manifest": "read; status complete, the gate and both suite arms recorded and the manifest holds the negative control quoted; baseline_suite names gate-suite-base.log at 2e8c6fa (219 passed, EXIT=0) and after_suite names gate-suite-after.log at 5536407a7 (222 passed, EXIT=0).",
+    "write_paths": "the gained change 5536407a7 modifies only tests/test_follow_settled_rows.py, inside the node's declared write paths; git diff --name-status 778219ba2 5536407a7 lists exactly that one modified file."
+  },
+  "justifications": {
+    "durability": "the node's hold is proven by the declared observer-shown mutation, which I reproduced in a scratch tree (review-nc-clean.log, 2 failed EXIT=1), so the two-row assertion fails when the hold is removed; docked one because the docstring's reversal clause is not exercised by any transition in this file's fixture.",
+    "evidence": "the reviewed manifest records the gate at tests/test_follow_settled_rows.py (3 passed EXIT=0) and distinct base and after suite arms, and I reproduced the head gate in a scratch tree at 5536407a7 (review-head-gate.log, 3 passed EXIT=0); docked one because the full-suite arms are the worker's recorded runs, which a review reads rather than repeats.",
+    "fit": "tests/test_follow_settled_rows.py:1-16 follows the module's own docstring idiom and carries no plan, stage, ticket or author label.",
+    "goal_fidelity": "tests/test_follow_settled_rows.py:1-16 states the delivered-row contract in mechanism terms and removes the plan and section reference the previous review flagged, so the file stands alone as its own account of the guarantee.",
+    "reuse": "the gained change adds no definition, so it forks no capability; the follower harness the file shares with tests/test_follower_prints_only_policy_rows.py was judged in the prior review and is unchanged here.",
+    "scope_discipline": "git diff --name-status 778219ba2 5536407a7 lists exactly one file, tests/test_follow_settled_rows.py, inside the node's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is a gate proving the follower delivers only the rows that ask for action, and its gained change makes the test file stand alone; at head 5536407a7 tests/test_follow_settled_rows.py:1-16 states the delivered-row contract in mechanism terms and drives the follower's own generator (cli._follow_watch_lines) over a two-run fixture.\nVERDICT done_when: the done-when is that this review stores a parsed six-dimension record naming the revision pair and the added-failure count; the reviewed manifest records the gate at tests/test_follow_settled_rows.py (3 passed EXIT=0), which I reproduced in a scratch tree at 5536407a7 (review-head-gate.log, 3 passed EXIT=0), and its base/after suite arms are gate-suite-base.log (219 passed EXIT=0) and gate-suite-after.log (222 passed EXIT=0).\nVERDICT write_paths: the gained change 5536407a7 modifies only tests/test_follow_settled_rows.py, inside the node's declared write paths; git diff --name-status 778219ba2 5536407a7 lists exactly that one modified file.\nVERDICT manifest: read; status complete, the gate and both suite arms recorded and the manifest holds the negative control quoted; baseline_suite names gate-suite-base.log at 2e8c6fa (219 passed, EXIT=0) and after_suite names gate-suite-after.log at 5536407a7 (222 passed, EXIT=0), so the two arms are distinct logs and the added-failure delta of zero rests on two measurements.\nVERDICT diff: read change by change against base 778219ba2; 5536407a7 rewrites the module docstring of tests/test_follow_settled_rows.py (5 insertions, 5 deletions, one file) to state the contract itself and drop the plan and section reference the prior review flagged; no production module is touched and no assertion changes.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_follow_settled_rows.py:1-16 states the delivered-row contract in mechanism terms and removes the plan and section reference the previous review flagged, so the file stands alone as its own account of the guarantee.\nSCORE evidence: 19\nJUSTIFICATION evidence: the reviewed manifest records the gate at tests/test_follow_settled_rows.py (3 passed EXIT=0) and distinct base and after suite arms, and I reproduced the head gate in a scratch tree at 5536407a7 (review-head-gate.log, 3 passed EXIT=0); docked one because the full-suite arms are the worker's recorded runs, which a review reads rather than repeats.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-status 778219ba2 5536407a7 lists exactly one file, tests/test_follow_settled_rows.py, inside the node's declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: the node's hold is proven by the declared observer-shown mutation, which I reproduced in a scratch tree (review-nc-clean.log, 2 failed EXIT=1), so the two-row assertion fails when the hold is removed; docked one because the docstring's reversal clause is not exercised by any transition in this file's fixture.\nSCORE fit: 20\nJUSTIFICATION fit: tests/test_follow_settled_rows.py:1-16 follows the module's own docstring idiom and carries no plan, stage, ticket or author label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the gained change adds no definition, so it forks no capability; the follower harness the file shares with tests/test_follower_prints_only_policy_rows.py was judged in the prior review and is unchanged here.\nFINDING tests/test_follow_settled_rows.py:5 follow-on: the docstring states the follower also delivers \"any reversal of an action row it already showed\", but the fixture's transitions (dispatched->working->complete->recorded and working->exited-unfinished->blocked) contain no reversal, so that clause of the stated contract has no assertion behind it in this file.\n",
+  "review_run_id": "r-20261008T223703597260-review-of-follower-delivers-settled-rows",
+  "reviewed_base_sha": "778219ba2ec1588d228c687b24084d5f64d666d5",
+  "reviewed_head_sha": "5536407a72f89dde343135035060a6acf484c185",
+  "reviewed_run_id": "r-20261008T170021237082-follower-delivers-settled-rows",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T22:43:20.000000+00:00",
+  "total": 118
+}
