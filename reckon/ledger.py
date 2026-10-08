@@ -954,6 +954,11 @@ def picker_runs(project: str, root: str | Path | None = None) -> list[dict[str, 
         data, _version = _indexed_data(project, root, picker_only=True)
         return data["runs"]
     except (OSError, sqlite3.Error):
+        stale = _last_good_index_data(
+            project, root, headers_only=False, picker_only=True
+        )
+        if stale is not None:
+            return stale[0]["runs"]
         data, _version = load(project, root, use_index=False)
         return [picker_record(row) for row in data["runs"]]
 
@@ -968,6 +973,96 @@ def _read_run(source: Path) -> dict[str, Any]:
     if not isinstance(record, dict) or record.get("run_id") != source.stem:
         raise LedgerError(f"run {source.stem!r} at {source} must hold its own run_id")
     return record
+
+
+def _index_payload(
+    connection: sqlite3.Connection,
+    meta: Mapping[str, str],
+    *,
+    headers_only: bool,
+    picker_only: bool,
+) -> tuple[dict[str, Any], int]:
+    """Decode one index's stored payloads into the union :func:`load` returns.
+
+    Shared by the refreshing read and the last-good read, so a mtime-moved
+    index is decoded by exactly the same rules as a freshly refreshed one.
+    """
+    data = json.loads(meta["header"])
+    if not isinstance(data, dict) or not all(
+        isinstance(data.get(name), list) for name in ("members", "holds")
+    ):
+        raise ValueError("invalid index header")
+    version = int(meta["version"])
+    if headers_only:
+        data["runs"] = [
+            {"run_id": row[0]}
+            for row in connection.execute(
+                "SELECT run_id FROM aggregate_rows WHERE run_id IS NOT NULL "
+                "UNION ALL SELECT name FROM records WHERE name NOT IN "
+                "(SELECT run_id FROM aggregate_rows WHERE run_id IS NOT NULL)"
+            )
+        ]
+        return data, version
+    column = "picker" if picker_only else "payload"
+    data["runs"] = [
+        json.loads(row[0])
+        for row in connection.execute(
+            f"SELECT {column} FROM aggregate_rows ORDER BY ordinal"  # noqa: S608 - fixed column names
+        )
+    ]
+    extra = [
+        json.loads(row[0])
+        for row in connection.execute(
+            f"SELECT {column} FROM records WHERE name NOT IN "  # noqa: S608 - fixed column names
+            "(SELECT run_id FROM aggregate_rows WHERE run_id IS NOT NULL) ORDER BY name"
+        )
+    ]
+    if extra:
+        data["runs"].extend(extra)
+        data["runs"].sort(
+            key=lambda row: (
+                str(row.get("completed_at") or row.get("run_id") or ""),
+                str(row.get("run_id") or ""),
+            )
+        )
+    return data, version
+
+
+def _last_good_index_data(
+    project: str,
+    root: str | Path | None,
+    *,
+    headers_only: bool,
+    picker_only: bool,
+) -> tuple[dict[str, Any], int, float] | None:
+    """Read the last published index without refreshing it, and its age.
+
+    A refresh the writer refused — a concurrent edit, a locked index, an
+    unwritable cache directory — must not make every reader pay a full scan of
+    the aggregate. The index the last successful refresh published is a
+    complete, self-consistent snapshot of the history as of that refresh, so it
+    is read here instead, together with the number of seconds since it was
+    written. Absent or unreadable or malformed, it reads as ``None`` and the
+    caller keeps its existing fallback.
+    """
+    path = _run_index_path(project, root)
+    if not path.is_file():
+        return None
+    try:
+        with contextlib.closing(
+            sqlite3.connect(f"file:{path}?mode=ro", uri=True, timeout=0.2)
+        ) as connection:
+            meta = dict(connection.execute("SELECT name, payload FROM metadata"))
+            refreshed_at = float(meta["refreshed_at"])
+            data, version = _index_payload(
+                connection,
+                meta,
+                headers_only=headers_only,
+                picker_only=picker_only,
+            )
+    except (sqlite3.Error, OSError, ValueError, KeyError, TypeError):
+        return None
+    return data, version, max(0.0, time.time() - refreshed_at)
 
 
 def _indexed_data(
@@ -1089,45 +1184,19 @@ def _indexed_data(
                     f"run {conflict[0]!r} differs between {aggregate} and {source}; "
                     "refusing to read conflicting history"
                 )
-            data = json.loads(meta["header"])
-            if not isinstance(data, dict) or not all(
-                isinstance(data.get(name), list) for name in ("members", "holds")
-            ):
-                raise ValueError("invalid index header")
-            version = int(meta["version"])
-            if headers_only:
-                data["runs"] = [
-                    {"run_id": row[0]}
-                    for row in connection.execute(
-                        "SELECT run_id FROM aggregate_rows WHERE run_id IS NOT NULL "
-                        "UNION ALL SELECT name FROM records WHERE name NOT IN "
-                        "(SELECT run_id FROM aggregate_rows WHERE run_id IS NOT NULL)"
-                    )
-                ]
-            else:
-                column = "picker" if picker_only else "payload"
-                data["runs"] = [
-                    json.loads(row[0])
-                    for row in connection.execute(
-                        f"SELECT {column} FROM aggregate_rows ORDER BY ordinal"  # noqa: S608 - fixed column names
-                    )
-                ]
-                extra = [
-                    json.loads(row[0])
-                    for row in connection.execute(
-                        f"SELECT {column} FROM records WHERE name NOT IN "  # noqa: S608 - fixed column names
-                        "(SELECT run_id FROM aggregate_rows WHERE run_id IS NOT NULL) ORDER BY name"
-                    )
-                ]
-                if extra:
-                    data["runs"].extend(extra)
-                    data["runs"].sort(
-                        key=lambda row: (
-                            str(row.get("completed_at") or row.get("run_id") or ""),
-                            str(row.get("run_id") or ""),
-                        )
-                    )
-            return data, version
+            # The refreshed index carries the time it was published, so a later
+            # reader forced back onto this index can report how old its rows are.
+            if aggregate_changed or changed:
+                connection.execute(
+                    "INSERT OR REPLACE INTO metadata VALUES ('refreshed_at', ?)",
+                    (str(time.time()),),
+                )
+            return _index_payload(
+                connection,
+                meta,
+                headers_only=headers_only,
+                picker_only=picker_only,
+            )
 
     with contextlib.closing(sqlite3.connect(path, timeout=0.2)) as connection:
         try:
@@ -1167,13 +1236,27 @@ def load(
     An interrupted export can leave two copies of a run. They count once only
     when their canonical serialisations agree; disagreement refuses the entire
     read so a caller cannot accidentally count an incomplete history.
+
+    A refresh the index refuses — a concurrent edit, a locked or unwritable
+    index — falls back to the last good index rather than the aggregate: this
+    snapshot is complete as of its own refresh, and returning it with the
+    seconds since that refresh keeps a "rows no newer than" figure on the read
+    instead of charging every reader a full scan of a multi-megabyte aggregate
+    whenever a peer happens to be writing. Only when no good index can be read
+    at all does the read open the aggregate.
     """
     if use_index:
         try:
             return _indexed_data(project, root, headers_only=headers_only)
         except (OSError, sqlite3.Error):
             # A disposable cache cannot make an otherwise readable ledger fail.
-            pass
+            stale = _last_good_index_data(
+                project, root, headers_only=headers_only, picker_only=False
+            )
+            if stale is not None:
+                data, version, age = stale
+                data["index_age_seconds"] = round(age, 3)
+                return data, version
     data, version = _load_aggregate(project, root)
     path = ledger_path(project, root)
     by_id = {

@@ -52,6 +52,25 @@ def project_mount_repository(project: str) -> Path | None:
     return None
 
 
+# The repository a path belongs to is a pure function of the checkout's git
+# common directory, and probing git is the dominant cost of resolving a
+# project's repository (1.7 s median in the 2026-10-07 census). A process that
+# dispatches more than once pays that probe once per path: the identity of a
+# named checkout and of a project's mount is read here rather than on every
+# resolution. Two spellings of one repository — a checkout and its linked
+# worktree — collapse to the same common directory, so the memo also answers
+# the same repository under a second path without a second probe.
+_REPOSITORY_IDENTITIES: dict[str, Path | None] = {}
+
+
+def repository_identity_once(path: Path) -> Path | None:
+    """Return a checkout's repository identity, probing git once per path."""
+    key = str(path)
+    if key not in _REPOSITORY_IDENTITIES:
+        _REPOSITORY_IDENTITIES[key] = repository_identity(path)
+    return _REPOSITORY_IDENTITIES[key]
+
+
 def resolve_project_repository(
     project: str, repo: str | Path | None, *, flag: str = "--repo"
 ) -> Path:
@@ -62,11 +81,15 @@ def resolve_project_repository(
     the mount, because a dispatch run from another checkout otherwise cuts its
     worktree from the wrong repository and the worker then finds none of its
     declared write paths. A named repository is admitted when it resolves to
-    the same repository as the mount — a linked worktree shares the mount's git
-    common directory, so it is one repository under two paths, which is what
-    lets a coordinator dispatch from inside a worktree. Anything else is
-    refused before a worktree, pointer or ledger row exists, naming both
-    resolved roots and the flag so the caller can correct one of them.
+    the project's mount — a linked worktree shares the mount's git common
+    directory, so it is one repository under two paths, which is what lets a
+    coordinator dispatch from inside a worktree. Anything else is refused
+    before a worktree, pointer or ledger row exists, naming both resolved
+    roots and the flag so the caller can correct one of them.
+
+    The git probe behind that comparison is paid once per path per process,
+    keyed by each path's git common directory, so a second resolution in the
+    same process runs no git command.
     """
     mount = project_mount_repository(project)
     if repo is None:
@@ -79,7 +102,7 @@ def resolve_project_repository(
     named = Path(repo).expanduser().resolve()
     if mount is None:
         return named
-    if repository_identity(named) == repository_identity(mount):
+    if repository_identity_once(named) == repository_identity_once(mount):
         # One repository under two paths: the mount is the canonical root, and
         # the caller's worktree names the same repository rather than a second
         # one, so the work is still cut from the mount.

@@ -1900,10 +1900,12 @@ def garbage_collect(
 # marker — licenses removal. A live pointer forbids it whatever the directory's
 # age, because a complete-but-unpromoted run is revisited hours after its worker
 # exits and an age-keyed reaper would delete the scratch a resume needs. A tree
-# the node owns but no run can be attributed to is reported and left alone: it
-# may hold evidence no record points at, so a machine that cannot name its owner
-# must not delete it. This is the same rule promotion's release step already
-# applies to a run's own scratch, exposed as a survey over the whole root.
+# the node owns but no run can be attributed to is reported by the survey and
+# left to the orphan sweep, which removes it by age once its ctime is older than
+# SCRATCH_GRACE_SECONDS and no process holds it: the survey cannot name its
+# owner, so it does not delete it, and the sweep is the one place that decision
+# is made. This is the same rule promotion's release step already applies to a
+# run's own scratch, exposed as a survey over the whole root.
 
 SCRATCH_LIVE = "live"
 SCRATCH_TERMINAL = "terminal"
@@ -2101,13 +2103,18 @@ def garbage_collect_scratch(
 ) -> dict[str, Any]:
     """Survey the node-local scratch directories and remove the terminal ones.
 
-    A run's scratch directory is removed only when the run has no live pointer
-    and its terminal record exists — a ledger row or a discard marker — and the
-    decision is never made by age. Every path and its size are printed before
-    anything is deleted, and the whole survey is a dry run unless ``apply`` is
-    given. A directory no run can be attributed to, whether beneath the scratch
-    root or a stray tree beside it, is reported with its ctime, its size and any
-    process holding it, and is never removed.
+    A run's scratch directory is removed here only when the run has no live
+    pointer and its terminal record exists — a ledger row or a discard marker —
+    and this survey's own decision is never made by age. Every path and its
+    size are printed before anything is deleted, and the whole survey is a dry
+    run unless ``apply`` is given. A directory no run can be attributed to,
+    whether beneath the scratch root or a stray tree beside it, is reported
+    here with its ctime, its size and any process holding it, and is left for
+    the orphan sweep: :func:`garbage_collect_orphan_scratch` removes such a
+    directory by age, once its ctime is older than SCRATCH_GRACE_SECONDS
+    (7200 seconds), after re-checking live pointers and holders. So the two
+    agree — an unattributed directory is removed by age, and only by that
+    sweep.
     """
     from reckon.crew.dispatch import tree_size_bytes, worker_scratch_root
     from reckon.crew.promotion import discard_record_path
@@ -3638,16 +3645,18 @@ def _context_refusal_detail(context_fit: Mapping[str, Any]) -> str:
     )
 
 
-def _docs_scan_directories(docs: Path) -> list[str]:
-    """Return the docs-relative directories a resource scan reads.
+def _docs_scan_directories(docs: Path) -> tuple[list[str], list[str]]:
+    """Return the docs-relative directories and files a resource scan reads.
 
     A scan walks every directory below the docs root before it identifies a
     file, so the listing of each directory a resource can be resolved from is
-    part of the scan's input. The subtrees the resolver never identifies from
-    -- the infra directories and the evidence fragment store -- are pruned
-    rather than tracked, and every remaining directory is returned, so a stamp
-    over them sees a resource added, moved or removed wherever one could be
-    found.
+    part of the scan's input, and the metadata of every candidate file it walks
+    past is read while it decides which file a slug names. Both are returned
+    from the one walk, so a stamp over them sees a resource added, moved or
+    removed wherever one could be found, and a sibling plan's metadata edit --
+    which is an input to the resolution even when the named plan is untouched.
+    The subtrees the resolver never identifies from -- the infra directories
+    and the evidence fragment store -- are pruned rather than tracked.
     """
 
     from pathlib import PurePosixPath
@@ -3655,7 +3664,8 @@ def _docs_scan_directories(docs: Path) -> list[str]:
     from reckon import resources
 
     directories: list[str] = []
-    for current, subdirs, _files in os.walk(docs):
+    files: list[str] = []
+    for current, subdirs, names in os.walk(docs):
         relative = PurePosixPath(Path(current).relative_to(docs).as_posix())
         parts = relative.parts
         if parts[:2] == resources.EVIDENCE_FRAGMENTS_SUBTREE or any(
@@ -3665,7 +3675,10 @@ def _docs_scan_directories(docs: Path) -> list[str]:
             continue
         directories.append(relative.as_posix())
         subdirs[:] = [name for name in subdirs if name not in resources.INFRA_DIRS]
-    return sorted(directories)
+        for name in names:
+            if name.endswith(".html"):
+                files.append(str(relative / name))
+    return sorted(directories), sorted(files)
 
 
 def _estimated_hours(
@@ -3673,14 +3686,18 @@ def _estimated_hours(
 ) -> tuple[float | None, str]:
     """Return neutral hours and whether the node or plan supplied them.
 
-    The figure is a pure function of the node's own estimate and the one plan
-    the node names, so a repeated call for an unchanged plan reads neither the
-    plan's metadata nor the docs tree: the directory listings a resolve would
-    read and the resolved plan file carry the stamps the cached figure was
-    built from, and the resolve runs again only when one of those stamps has
-    moved. A plan named by a node is resolved once however often the pick asks
-    for its estimate, and its source is unchanged whether the node, the plan or
-    neither supplied the figure.
+    The figure is a pure function of the node's own estimate and the plans the
+    resolve reads, so a repeated call for an unchanged tree reads neither the
+    plans' metadata nor the docs tree: the directory listings a resolve would
+    read, every candidate plan file it would stamp and the resolved plan file
+    carry the stamps the cached figure was built from, and the resolve runs
+    again only when one of those stamps has moved. A sibling plan's metadata is
+    part of that input even when the named plan is untouched, because an edited
+    sibling changes which file a slug names; stamping every candidate keeps the
+    cached figure no older than the tree it summarised. A plan named by a node
+    is resolved once however often the pick asks for its estimate, and its
+    source is unchanged whether the node, the plan or neither supplied the
+    figure.
     """
 
     try:
@@ -3701,7 +3718,7 @@ def _estimated_hours(
     ).hexdigest()
 
     def build() -> dict[str, Any]:
-        directories = _docs_scan_directories(docs)
+        directories, files = _docs_scan_directories(docs)
         resource = resources.resolve_resource(
             docs, project, node.plan, "plan", include_archived=False
         )
@@ -3720,6 +3737,7 @@ def _estimated_hours(
             "source": source,
             "path": str(resource.path) if resource is not None else None,
             "directories": directories,
+            "files": files,
         }
 
     def stamp_of(value: Mapping[str, Any]) -> list[Any]:
@@ -3727,6 +3745,16 @@ def _estimated_hours(
             [relative, capabilities.file_stamp(docs / relative)]
             for relative in value["directories"]
         ]
+        # Every candidate plan the resolve walked past is stamped, not only the
+        # one it selected: a sibling's metadata edit changes which file a slug
+        # names and what the selected plan declares, so a stamp that saw only
+        # the resolved file would answer from a cache. The directory listings
+        # already catch a file added, moved or removed; these catch an in-place
+        # edit, which moves no directory stamp.
+        stamp.extend(
+            [relative, capabilities.file_stamp(docs / relative)]
+            for relative in value.get("files") or ()
+        )
         path = value.get("path")
         if path:
             stamp.append([path, ledger._file_identity(Path(path))])
