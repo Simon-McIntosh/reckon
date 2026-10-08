@@ -145,8 +145,9 @@ def _declared_difficulty(
         if hours is not None:
             hours_source = "plan"
         # A section's own declared effort outranks the plan's total, and it is
-        # read whether or not the plan declares a total at all -- most plans do
-        # not, and gating this on the plan's provenance drops their sections.
+        # read whether or not the plan declares a total: gating this on the
+        # plan's provenance would drop the section effort of every plan that
+        # declares none.
         if plan_path is not None:
             section_hours = _section_effort_hours(plan_path, node.section)
             if section_hours is not None:
@@ -204,6 +205,7 @@ def pick(
     budget_snapshot: dict[str, Any] | None = None,
     cached_only: bool = False,
     authority: dict[str, Any] | None = None,
+    estimated_context_ms: float | None = None,
 ) -> Selection:
     """Return one auditable selection; an excluded default cannot bypass gates."""
     started = time.perf_counter()
@@ -230,6 +232,7 @@ def pick(
     )
     # One docs-tree scan serves every candidate's plan lookup in this pick.
     snapshot_started = time.perf_counter()
+    estimate_out: dict[str, Any] = {}
     with resource_scan_scope():
         options = snapshotter(
             request,
@@ -240,6 +243,7 @@ def pick(
             budget_snapshot=view,
             cached_only=cached_only,
             authority=authority,
+            estimate_out=estimate_out,
         )
     stages["snapshot_ms"] = _milliseconds(snapshot_started)
     offered = [candidate for candidate in options if not candidate.reasons]
@@ -278,9 +282,21 @@ def pick(
         )
     finally:
         stages["state_render_ms"] = _milliseconds(state_started)
-    estimate_started = time.perf_counter()
+    # The estimate stage times the context estimate itself, wherever it ran. The
+    # scan reports the duration of a measurement it made; a caller hands in the
+    # duration of one it made before the pick, so the five-second bound Dispatch
+    # watches is the real census rather than the rendered-length division. The
+    # rendered length still produces the token figure, but it carries no stage of
+    # its own. A pick whose snapshotter reported no measurement -- a stub, or a
+    # figure supplied by a caller that timed none -- reads zero rather than a
+    # division's duration.
+    if estimate_out.get("ms") is not None:
+        stages["estimate_ms"] = estimate_out["ms"]
+    elif estimated_context_ms is not None:
+        stages["estimate_ms"] = estimated_context_ms
+    else:
+        stages["estimate_ms"] = 0.0
     token_estimate = math.ceil(len(rendered) / 4)
-    stages["estimate_ms"] = _milliseconds(estimate_started)
     probabilities: dict[str, float] = {}
     confidence = None
     fallback_reason = None

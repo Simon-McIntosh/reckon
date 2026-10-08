@@ -244,21 +244,29 @@ def dispatch_picker_selection(
             # The estimate is the same deterministic measurement the context-fit
             # verdict charges a node against, measured with the same authority
             # and the same harness-independent standing chain, so the request's
-            # figure and every candidate block's are one. It is advisory: a
-            # failure to measure leaves the figure at zero and never aborts the
-            # pick.
+            # figure and every candidate block's are one. It is measured here,
+            # before the pick's own bound, so its duration is a real census and
+            # the pick reuses the figure rather than measuring a second time;
+            # both the figure and its duration travel into the pick. It is
+            # advisory: a failure to measure leaves the figure at zero and never
+            # aborts the pick.
+            estimate_started = time.perf_counter()
             try:
                 estimated_context = picker_snapshot.estimated_context_tokens(
                     node, repo, authority=pick_authority
                 )
             except Exception:  # noqa: BLE001 - the estimate is advisory to the pick
                 estimated_context = 0
+            estimated_context_ms = round(
+                (time.perf_counter() - estimate_started) * 1000, 3
+            )
 
             inputs = {
                 "records": records,
                 "verdict_inputs": verdict_inputs,
                 "budget_snapshot": budget_snapshot,
                 "authority": pick_authority,
+                "estimated_context_ms": estimated_context_ms,
             }
             parameters = inspect.signature(pick).parameters.values()
             if not any(item.kind is item.VAR_KEYWORD for item in parameters):
