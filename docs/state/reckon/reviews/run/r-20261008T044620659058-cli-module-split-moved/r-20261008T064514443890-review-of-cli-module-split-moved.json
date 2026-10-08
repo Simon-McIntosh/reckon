@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "pyproject.toml:49",
+    "reckon/cli.py:134",
+    "reckon/crew_follow_commands.py:294"
+  ],
+  "completed_at": "2026-10-08T07:01:36.714Z",
+  "dispatched_at": "2026-10-08T06:46:01Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligation_snapshot.py",
+      "line": "324",
+      "severity": "follow-on",
+      "text": "follow-on: the CLI sibling set is hardcoded identically here and at reckon/crew/runs.py:222, and no test asserts a newly added sibling is included, so a later split silently blinds reload detection."
+    },
+    {
+      "file": "docs/evidence/fragments/every-module-fits-a-worker-window/cli-module-split-moved.html",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the evidence fragment is in the declared write paths of the reviewed run but absent at head fa127e3, so the section's durable landing record was not produced."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit from 72525a3 to fa127e3; db30ad5 moves the code, 98ab5bb repoints patches, c67f1f04 extends the reload stamps, 0b03123 routes sync patches, fa127e3 slows the copied reload probe.",
+    "done_when": "done_when is the section 3 conditions for cli.py plus byte-identical help; the pure-move receipt (220/220 statements, zero problems) and help-comparison.json (84/84 paths) record both, with the size guard test test_every_module_fits_a_worker_window.py running in the narrow gate.",
+    "goal": "split reckon/cli.py (9061 lines at base) into command-group siblings while retaining cli.py as the import surface: head cli.py is 691 lines of re-exports and main is re-exported at reckon/cli.py:134, so the goal is met.",
+    "manifest": "read; it records five commits, the narrow-gate result (10 passed, EXIT=0), the pure-move and size-guard receipts, and the negative control, with baseline_suite and after_suite left empty.",
+    "write_paths": "manifest declares 93 paths; the diff touches 80 and every one is inside the grant, including the two extended readers reckon/crew/obligation_snapshot.py and reckon/crew/runs.py."
+  },
+  "justifications": {
+    "durability": "removing reckon/cli.py from the ALLOWLIST in tests/test_every_module_fits_a_worker_window.py:32 is a guard the negative control reddens, but the reload-stamp fix at reckon/crew/runs.py:222 has no test that fails if a sibling is dropped from the list.",
+    "evidence": "the pure-move receipt and help-comparison.json are recorded, but the 80-file census (census-final.log) ran at 0b03123, not at the reviewed head fa127e3, and its one failure was not re-measured at head.",
+    "fit": "the new modules are named for the capability they carry (reckon/cli_entry.py, reckon/crew_dispatch_commands.py) and cli.py keeps the repository's existing re-export idiom, but the sibling list is duplicated at reckon/crew/obligation_snapshot.py:324 and reckon/crew/runs.py:222.",
+    "goal_fidelity": "reckon/cli.py:134 re-exports main and the six siblings carry the moved commands, so the console-script path pyproject.toml:49 still resolves and help is byte-identical.",
+    "reuse": "the split is a verified pure move that forks no capability; the CLI source set has no single owner, and the only duplication is the two hardcoded stamp lists, which extend the same pre-existing function.",
+    "scope_discipline": "every path in git diff 72525a3..fa127e3 is inside the manifest's declared grant; two granted paths, the evidence fragment and the figure directory, were never written."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: split reckon/cli.py (9061 lines at base) into command-group siblings while retaining cli.py as the import surface: head cli.py is 691 lines of re-exports and main is re-exported at reckon/cli.py:134, so the goal is met.\nVERDICT done_when: done_when is the section 3 conditions for cli.py plus byte-identical help; the pure-move receipt (220/220 statements, zero problems) and help-comparison.json (84/84 paths) record both, with the size guard test test_every_module_fits_a_worker_window.py running in the narrow gate.\nVERDICT write_paths: manifest declares 93 paths; the diff touches 80 and every one is inside the grant, including the two extended readers reckon/crew/obligation_snapshot.py and reckon/crew/runs.py.\nVERDICT manifest: read; it records five commits, the narrow-gate result (10 passed, EXIT=0), the pure-move and size-guard receipts, and the negative control, with baseline_suite and after_suite left empty.\nVERDICT diff: read commit by commit from 72525a3 to fa127e3; db30ad5 moves the code, 98ab5bb repoints patches, c67f1f04 extends the reload stamps, 0b03123 routes sync patches, fa127e3 slows the copied reload probe.\nCALL_SITES: pyproject.toml:49, reckon/cli.py:134, reckon/crew_follow_commands.py:294\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/cli.py:134 re-exports main and the six siblings carry the moved commands, so the console-script path pyproject.toml:49 still resolves and help is byte-identical.\nSCORE evidence: 14\nJUSTIFICATION evidence: the pure-move receipt and help-comparison.json are recorded, but the 80-file census (census-final.log) ran at 0b03123, not at the reviewed head fa127e3, and its one failure was not re-measured at head.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in git diff 72525a3..fa127e3 is inside the manifest's declared grant; two granted paths, the evidence fragment and the figure directory, were never written.\nSCORE durability: 13\nJUSTIFICATION durability: removing reckon/cli.py from the ALLOWLIST in tests/test_every_module_fits_a_worker_window.py:32 is a guard the negative control reddens, but the reload-stamp fix at reckon/crew/runs.py:222 has no test that fails if a sibling is dropped from the list.\nSCORE fit: 17\nJUSTIFICATION fit: the new modules are named for the capability they carry (reckon/cli_entry.py, reckon/crew_dispatch_commands.py) and cli.py keeps the repository's existing re-export idiom, but the sibling list is duplicated at reckon/crew/obligation_snapshot.py:324 and reckon/crew/runs.py:222.\nSCORE reuse: 18\nJUSTIFICATION reuse: the split is a verified pure move that forks no capability; the CLI source set has no single owner, and the only duplication is the two hardcoded stamp lists, which extend the same pre-existing function.\nFINDING reckon/crew/obligation_snapshot.py:324 follow-on: the CLI sibling set is hardcoded identically here and at reckon/crew/runs.py:222, and no test asserts a newly added sibling is included, so a later split silently blinds reload detection.\nFINDING docs/evidence/fragments/every-module-fits-a-worker-window/cli-module-split-moved.html:1 follow-on: the evidence fragment is in the declared write paths of the reviewed run but absent at head fa127e3, so the section's durable landing record was not produced.\nreviewed_base_sha: 72525a342eb342ae14faddf2de3f05ae3e623be8\nreviewed_head_sha: fa127e3c2f1eb62aeb2927bfded57b81964da1c3",
+  "review_run_id": "r-20261008T064514443890-review-of-cli-module-split-moved",
+  "reviewed_base_sha": "72525a342eb342ae14faddf2de3f05ae3e623be8",
+  "reviewed_head_sha": "fa127e3c2f1eb62aeb2927bfded57b81964da1c3",
+  "reviewed_run_id": "r-20261008T044620659058-cli-module-split-moved",
+  "scores": {
+    "durability": 13,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T06:57:48.832897+00:00",
+  "total": 99
+}
