@@ -25,7 +25,7 @@
   <title>An MCP Failure Names Its Cause | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="8">
+<meta name="plan-version" content="13">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -74,24 +74,28 @@
 
     <h2 id="s2">§2 — reckon doctor names every MCP failure's cause</h2>
 <section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> <code>reckon doctor mcp</code> reads Claude Code's MCP connection logs
-      for a window (default seven days, <code>--since</code> to change it) and reports, per server, how many
-      connections it saw and how many failed, grouped by cause. Each cause carries its count, newest occurrence,
-      one example log path and the kind of working directory it failed in: main checkout, worker worktree or
-      temporary directory. The causes are the signatures in §1's table, matched by a table of patterns in a new
-      module <code>reckon/mcp_census.py</code>. A failure no pattern matches is reported as unclassified with
-      its first line rather than dropped, because the next unknown cause is the one this command exists to
-      surface. It also counts <code>storage-slow</code> tool results per tool from the transcripts for the
-      same window. <code>--json</code> emits the same report for an agent. The command reads and never
-      writes, and its runtime is bounded by naming the log directories it walks.</p>
+    <p><strong>Deliverable.</strong> <code>reckon doctor</code> gains an MCP connections check that reads
+      Claude Code's MCP connection logs for the last seven days and reports, per server, how many connections it
+      saw and how many failed, grouped by cause. Each cause carries its count, newest occurrence, one example log
+      path and the kind of working directory it failed in: main checkout, worker worktree or temporary directory.
+      The causes are the signatures in §1's table, matched by a table of patterns in a new module
+      <code>reckon/mcp_census.py</code>. A failure no pattern matches is reported as unclassified with its first
+      line rather than dropped, because the next unknown cause is the one this check exists to surface. It also
+      counts <code>storage-slow</code> tool results per tool for the same window through
+      <code>transcript_index</code> and <code>session_usage</code> in <code>reckon/velocity.py</code>, the
+      owner of reading Claude Code transcripts, so transcript parsing keeps one owner. The check adds no command
+      and no option: it is one more block in <code>reckon doctor</code>'s existing report, and an agent that
+      wants the figures calls the census function the block prints. It reads and never writes, and its runtime
+      is bounded by naming the log directories it walks.</p>
     <p><strong>Done when</strong> <code>tests/test_mcp_census.py</code> builds a fixture log tree holding one
       connection per signature in §1 plus one clean connection and one unmatched failure. It asserts that every
       signature lands in its cause with the right count, the unmatched failure is reported as unclassified, the
-      clean connection counts as a success, and the JSON and text outputs agree. A negative control is
+      clean connection counts as a success, and the doctor block prints the census function's figures. A negative control is
       executed and logged: with the pattern table emptied, every failure reports as unclassified and the test
       fails. Run against the real log tree on the fleet node, the census reproduces §1's imas-cx
       <code>CONNECTION_CLOSED</code> count within 5% for the same window. The write paths are
-      <code>reckon/mcp_census.py</code>, <code>reckon/cli.py</code> and <code>tests/test_mcp_census.py</code>.</p>
+      <code>reckon/mcp_census.py</code>, <code>reckon/cli.py</code> and <code>tests/test_mcp_census.py</code>; the
+      transcript count calls <code>reckon/velocity.py</code> and changes nothing in it.</p>
 
     <h2 id="s3">§3 — A reckon MCP timeout says whether it was computing or waiting</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
@@ -170,17 +174,20 @@
     <h2 id="s7">§7 — A worker starts only the MCP servers its work uses</h2>
 <section data-reckon="section" data-id="s7" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
     <p><strong>Deliverable.</strong> A dispatched worker's harness starts the <code>reckon</code> server and
-      no project MCP server unless the node asks for one. Dispatch already writes each run's own harness home
-      under <code>CLAUDE_CONFIG_DIR</code>, so the worker's settings there disable the project's
-      <code>.mcp.json</code> servers by default. A <code>--mcp &lt;name&gt;</code> dispatch option enables a
-      named one for a node whose work queries it, and the run record carries the servers it enabled. A
+      no project MCP server unless the project asks for one. The run's harness home is seeded by
+      <code>_seed_harness_entry</code> in <code>reckon/_backends.py</code>, the one writer of that home, so the
+      seeded <code>settings.json</code> carries the setting that disables the project's <code>.mcp.json</code>
+      servers. A project whose workers query a server names it under a <code>worker_mcp_servers</code> list in
+      its flight configuration, which the seeding reads, and the run record carries the servers it enabled. No
+      dispatch option is added. The surface this retires is the implicit default under which every worker
+      inherits every project server, the default that started about twenty imas-codex servers on 2026-10-08. A
       worker that needs the graph is no worse off. One that does not stops paying about 610 MB of memory and a
       launch that fails in a third of worktrees.</p>
-    <p><strong>Done when</strong> a dispatch test reads the harness settings written for a fixture run with no
-      <code>--mcp</code> option and finds the project's servers disabled and reckon enabled. With
-      <code>--mcp imas-cx</code> it finds imas-cx enabled, and the run record names it. A negative control is
-      executed and logged: with the settings write removed, the project server reads enabled and the test
-      fails. The write paths are <code>reckon/crew/dispatch.py</code>, which writes the run's harness home, and
+    <p><strong>Done when</strong> <code>tests/test_worker_mcp_servers.py</code> seeds a fixture run's harness
+      home for a project with no <code>worker_mcp_servers</code> and finds the project's servers disabled and
+      reckon enabled. For a project listing <code>imas-cx</code> it finds imas-cx enabled, and the run record
+      names it. A negative control is executed and logged: with the settings write removed, the project server
+      reads enabled and the test fails. The write paths are <code>reckon/_backends.py</code> and
       <code>tests/test_worker_mcp_servers.py</code>.</p>
 
     <h2 id="s8">§8 — A retried reckon read waits for the copy already running</h2>

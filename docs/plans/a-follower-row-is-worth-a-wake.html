@@ -25,7 +25,7 @@
   <title>A Follower Row Is Worth A Wake | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="8">
+<meta name="plan-version" content="15">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -87,7 +87,7 @@
       delivered and that no option narrows to action states, because hiding a recovery hides the news a
       reader is waiting for. This plan keeps that guarantee in a different form. Every change that asks for action or
       reverses an action row the reader was shown is delivered, and only rows that ask for nothing and
-      reverse nothing are held back. <code>--all</code> keeps the complete stream for a human pane.</p>
+      reverse nothing are held back. The producer's log keeps the complete stream for a human.</p>
     <p>The active plan
       <a href="/reckon/a-follower-keeps-your-work-in-view">a-follower-keeps-your-work-in-view</a> proposes
       a needs-you line on a ten-minute cadence. Under host delivery that is a turn every ten minutes per
@@ -102,20 +102,24 @@
     <ul>
       <li>A recovery: the run leaves a state whose coordinator row this pane printed, for a non-terminal state
         such as working.</li>
-      <li>An unexplained end: the run reaches a terminal state (recorded, promoted, withdrawn, discarded)
-        without this pane having printed a coordinator row for it since its arrival.</li>
+      <li>An unexplained end: the run reaches a state in <code>SETTLED_STATES</code> without this pane having
+        printed a coordinator row for it since its arrival. <code>SETTLED_STATES</code> gains
+        <code>withdrawn</code> and <code>discarded</code>, which a run also does not leave, so the one owner of
+        "a state a run does not leave" covers them and <code>HIDDEN_AT_ATTACH</code> derives from it as before.</li>
     </ul>
     <p>An arrival that resolves into an observer kind, the launch's <code>dispatched → working</code>, prints
       nothing. An arrival still sitting in dispatched at <code>ARRIVAL_WINDOW</code> prints as today. A
-      kind outside <code>COORDINATOR_KINDS</code> whose event carries a <code>recovery</code> verb other than
-      <code>observe</code> or empty counts as coordinator, so <code>working → exited-unfinished</code> and its
-      kin print without the audit's list being grown by hand. A coordinator row followed by another
+      kind outside <code>COORDINATOR_KINDS</code> counts as coordinator when its event's
+      <code>recovery_classification</code> is in <code>ACTIONABLE_RECOVERY_CLASSIFICATIONS</code> in
+      <code>reckon/crew/recovery.py</code>, the owner of "needs the coordinator", so
+      <code>working → exited-unfinished</code> and its kin print without the audit's list being grown by hand. A coordinator row followed by another
       transition of the same run within a twenty-second settle window prints only the later row, so the
       measured chains (<code>working → exited-unfinished → blocked</code> in 2 s,
-      <code>blocked → wait-aged → blocked</code> in 3 to 8 s) print once. The settle window is a module
-      constant beside <code>ARRIVAL_WINDOW</code>. No row is held more than two minutes from its first
-      transition. A pane built with observer context shown keeps today's behaviour exactly, for §3's
-      <code>--all</code>. <code>PaneRowPath</code> writes its memory only for printed rows, as it does today,
+      <code>blocked → wait-aged → blocked</code> in 3 to 8 s) print once. The settle window is one module
+      constant beside <code>ARRIVAL_WINDOW</code>; it is the only definition §2 adds, because a hold needs a
+      length and the existing windows each belong to one named noise pair. No row is held more than two minutes
+      from its first transition. A pane built with observer context shown keeps today's behaviour exactly, which
+      <code>replay_row_policy</code> uses for §5's comparison. <code>PaneRowPath</code> writes its memory only for printed rows, as it does today,
       and a held-back observer row is held back again when a re-arm re-derives it.</p>
     <p><strong>Done when</strong> <code>tests/test_row_policy_holds_observer_context.py</code> feeds
       <code>RowPolicy</code> the measured sequences and checks each one:</p>
@@ -140,21 +144,19 @@
 
     <h2 id="s3">§3 — The follower delivers through the policy</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> <code>reckon crew follow --all</code> builds its <code>PaneRowPath</code>
-      with observer context shown, so a human tailing the stream in a pane still sees every start and
-      echo. Without the flag, which is how a session host and the Monitor fallback arm it, the follower
-      uses §2's coordinator pane. A held row whose settle window elapses is released by the follower's wait
-      pass, through <code>RowPolicy.flush</code>, not only when the next transition arrives, so a lone
-      completion is never stuck behind a quiet fleet. The docstring paragraph of <code>crew_follow</code> that
-      says every transition is delivered is rewritten to state the guarantee §1 gives.</p>
+    <p><strong>Deliverable.</strong> The follower, armed by a session host or the Monitor fallback alike,
+      prints through §2's coordinator pane, and a held row whose settle window elapses is released by the
+      follower's existing wait pass through <code>PaneRowPath.flush</code>, so a lone completion is never stuck
+      behind a quiet fleet. No option is added to <code>crew follow</code>: a human who wants every row reads
+      the producer's log, which already prints each one, so the full stream needs no second surface. The
+      docstring paragraph of <code>crew_follow</code> that says every transition is delivered is rewritten to
+      state the guarantee §1 gives and to name the producer's log as the full stream.</p>
     <p><strong>Done when</strong> <code>tests/test_follow_settled_rows.py</code> runs a follower over a
       fixture stream for one session holding two runs. The first goes dispatched, working, complete and
       recorded. The second goes working, exited-unfinished and blocked two seconds apart. The pane receives
-      exactly two rows, the complete and the blocked. With <code>--all</code> it receives the rows
-      today's follower prints for the same fixture. A completion with no later transition is delivered
+      exactly two rows, the complete and the blocked. A completion with no later transition is delivered
       within the settle window plus one poll interval. A negative control is executed and logged: with the
-      follower building its row path with observer context shown regardless of the flag, the first
-      assertion fails. The write paths are <code>reckon/cli.py</code> and
+      follower building its row path with observer context shown, the first assertion fails. The write paths are <code>reckon/cli.py</code> and
       <code>tests/test_follow_settled_rows.py</code>.</p>
 
     <h2 id="s4">§4 — Find the path that re-announced a delivered run</h2>
