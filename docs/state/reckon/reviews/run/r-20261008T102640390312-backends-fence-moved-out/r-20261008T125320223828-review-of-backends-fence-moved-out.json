@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch.py:921 (_backends.fence_capability_problem)",
+    "reckon/crew/dispatch.py:1518 (_backends.fence_unprotected_paths)",
+    "reckon/crew/dispatch_launch.py:1005 (_backends.FENCE_BINARY)",
+    "reckon/crew/dispatch_launch.py:1396 (_backends.PROTECTED_BIND_WAIT_ATTEMPTS)",
+    "reckon/crew/dispatch_sessions.py:788 (_backends.FENCE_BINARY)"
+  ],
+  "completed_at": "2026-10-08T13:10:22.900Z",
+  "dispatched_at": "2026-10-08T12:53:44Z",
+  "findings": [],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against f4d5cc6; the move, the fence-reader repointing in six tests, the guard allowlist removal, the shared-write claim removal and the two review-repair commits are the whole change.",
+    "done_when": "the done-when asks the pure-move check to exit 0, both modules under 40,000 tokens, the guard to pass with the module off its allowlist, and no failure at the merged head; the receipt, the guard's size-mutation red log and the 40-file gate (523 passed, EXIT=0) record the first three, while the whole-suite base/head comparison is the coordinator's measure.",
+    "goal": "the goal is a pure move of the filesystem fence region out of reckon/_backends.py into reckon/_worker_fence.py so each fits a worker window; the pure-move receipt (problems [], 151 of 151 statements moved) and the landed sizes 36,910 and 15,475 tokens, both under 40,000, show the move landed.",
+    "manifest": "read; it records the pure-move receipt, the 492-passed gate, the size-mutation negative control, the import and dispatch-help checks, and the two review-repair reversals, each with a log path and an EXIT line.",
+    "write_paths": "read the manifest's declared paths; every path in the diff (reckon/_backends.py, reckon/_worker_fence.py, docs/state/reckon/shared-write-paths.json, the guard, eight test files and the fragment) is inside the declared scope."
+  },
+  "justifications": {
+    "durability": "the two blocking guards fire again (running tests/test_the_fence_fails_closed.py directly prints \"case 1 FAILED as declared\" and tests/test_fence_protects_the_worktree_pool.py prints \"sibling probe exists after the run: True\"), and reinstating each prior patch target in a scratch tree reddens each check, though the module-direct red logs are not wired into the pytest gate.",
+    "evidence": "the pure-move receipt (problems [] at pure-move-final.json), the guard's size-mutation red log (EXIT=1) and the 523-passed gate (writer-gate.log, EXIT=0) are recorded under log paths, but the manifest leaves baseline_suite and after_suite empty so the added-failure count is unmeasured and the whole-suite arm is the coordinator's.",
+    "fit": "reckon/_worker_fence.py is named for its single concern with no version suffix, carries no import of and no cycle with _backends, and its absent module docstring is required by the pure-move rule that a produced module may hold no non-import new statement (scripts/check_pure_move.py:15).",
+    "goal_fidelity": "reckon/_worker_fence.py holds all 57 moved definitions and reckon/_backends.py:73 re-exports them, so every production caller still resolves and both modules sit at 36,910 and 15,475 tokens.",
+    "reuse": "the fence keeps one owner in reckon/_worker_fence.py and reckon/_backends.py re-exports rather than forking, so the move adds no duplicate capability, and my search of reckon/ found no second copy of the fence.",
+    "scope_discipline": "every changed path is inside the declared write paths, and the shared-write-paths entry removal and guard comment scrub are the within-scope changes the brief asked for."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is a pure move of the filesystem fence region out of reckon/_backends.py into reckon/_worker_fence.py so each fits a worker window; the pure-move receipt (problems [], 151 of 151 statements moved) and the landed sizes 36,910 and 15,475 tokens, both under 40,000, show the move landed.\nVERDICT done_when: the done-when asks the pure-move check to exit 0, both modules under 40,000 tokens, the guard to pass with the module off its allowlist, and no failure at the merged head; the receipt, the guard's size-mutation red log and the 40-file gate (523 passed, EXIT=0) record the first three, while the whole-suite base/head comparison is the coordinator's measure.\nVERDICT write_paths: read the manifest's declared paths; every path in the diff (reckon/_backends.py, reckon/_worker_fence.py, docs/state/reckon/shared-write-paths.json, the guard, eight test files and the fragment) is inside the declared scope.\nVERDICT manifest: read; it records the pure-move receipt, the 492-passed gate, the size-mutation negative control, the import and dispatch-help checks, and the two review-repair reversals, each with a log path and an EXIT line.\nVERDICT diff: read commit by commit against f4d5cc6; the move, the fence-reader repointing in six tests, the guard allowlist removal, the shared-write claim removal and the two review-repair commits are the whole change.\nCALL_SITES: reckon/crew/dispatch.py:921 (_backends.fence_capability_problem), reckon/crew/dispatch.py:1518 (_backends.fence_unprotected_paths), reckon/crew/dispatch_launch.py:1005 (_backends.FENCE_BINARY), reckon/crew/dispatch_launch.py:1396 (_backends.PROTECTED_BIND_WAIT_ATTEMPTS), reckon/crew/dispatch_sessions.py:788 (_backends.FENCE_BINARY)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/_worker_fence.py holds all 57 moved definitions and reckon/_backends.py:73 re-exports them, so every production caller still resolves and both modules sit at 36,910 and 15,475 tokens.\nSCORE evidence: 19\nJUSTIFICATION evidence: the pure-move receipt (problems [] at pure-move-final.json), the guard's size-mutation red log (EXIT=1) and the 523-passed gate (writer-gate.log, EXIT=0) are recorded under log paths, but the manifest leaves baseline_suite and after_suite empty so the added-failure count is unmeasured and the whole-suite arm is the coordinator's.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every changed path is inside the declared write paths, and the shared-write-paths entry removal and guard comment scrub are the within-scope changes the brief asked for.\nSCORE durability: 19\nJUSTIFICATION durability: the two blocking guards fire again (running tests/test_the_fence_fails_closed.py directly prints \"case 1 FAILED as declared\" and tests/test_fence_protects_the_worktree_pool.py prints \"sibling probe exists after the run: True\"), and reinstating each prior patch target in a scratch tree reddens each check, though the module-direct red logs are not wired into the pytest gate.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/_worker_fence.py is named for its single concern with no version suffix, carries no import of and no cycle with _backends, and its absent module docstring is required by the pure-move rule that a produced module may hold no non-import new statement (scripts/check_pure_move.py:15).\nSCORE reuse: 20\nJUSTIFICATION reuse: the fence keeps one owner in reckon/_worker_fence.py and reckon/_backends.py re-exports rather than forking, so the move adds no duplicate capability, and my search of reckon/ found no second copy of the fence.\n",
+  "review_run_id": "r-20261008T125320223828-review-of-backends-fence-moved-out",
+  "reviewed_base_sha": "f4d5cc609c89cfa1a499efe0f0cc8368d62fbf62",
+  "reviewed_head_sha": "7acf321f5c982192767c8d81630d8dcd12b3d3b1",
+  "reviewed_run_id": "r-20261008T102640390312-backends-fence-moved-out",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T13:08:43.758064+00:00",
+  "total": 118
+}
