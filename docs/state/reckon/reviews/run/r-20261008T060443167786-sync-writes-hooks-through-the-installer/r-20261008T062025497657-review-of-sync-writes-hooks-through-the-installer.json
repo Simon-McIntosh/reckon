@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite or after_suite gate log, so the added-failure count was not taken from the run's own arms; supplemental: measured independently at 6a2ee21 the change reddens twelve tests outside the reviewed run's five-file gate -- tests/test_worker_git_guard.py 3 failed and tests/test_cli_settings_writer_reuses_the_store.py 9 failed, all AttributeError on symbols the diff removed from reckon/cli.py.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/cli.py:7987 (the sync command calls _configure_crew_guards)",
+    "reckon/cli.py:328 (_configure_crew_guards delegating to install.configure_crew_guards)",
+    "reckon/hooks/install.py:191 (install_hook_settings",
+    "the hooks-install path)"
+  ],
+  "completed_at": "2026-10-08T06:44:10.767Z",
+  "dispatched_at": "2026-10-08T06:21:27Z",
+  "findings": [
+    {
+      "file": "tests/test_worker_git_guard.py",
+      "line": "476",
+      "severity": "blocking",
+      "text": "blocking: reckon/cli.py:_is_worker_git_guard_group is removed by the diff though s2's done-when names only _is_native_agent_guard_group and _is_worker_message_guard_group and the private atomic write, and this file, outside the declared write paths, calls the removed name in three tests; measured against the worktree at 6a2ee21 'python -m pytest tests/test_worker_git_guard.py' gives '3 failed, 59 passed' EXIT=1 with AttributeError 'module reckon.cli has no attribute _is_worker_git_guard_group' at lines 476, 500 and 530."
+    },
+    {
+      "file": "tests/test_cli_settings_writer_reuses_the_store.py",
+      "line": "116",
+      "severity": "blocking",
+      "text": "blocking: removing the plan-required cli._write_json_atomically reddens this file, outside the declared write paths, which was written to exercise that exact function; measured against the worktree at 6a2ee21 the file reports '9 failed' EXIT=1, every failure AttributeError 'module reckon.cli has no attribute _write_json_atomically', so the section cannot land red without a coordinator granting a scope extension to move these assertions onto install._write_settings, or the two files being updated in the same change."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against f411aa1a; reckon/cli.py loses _is_native_agent_guard_group, _is_worker_message_guard_group, _is_worker_git_guard_group and its private _write_json_atomically and delegates, while reckon/hooks/install.py gains the two guard script-name constants, RECKON_IMPORTING_SCRIPT_NAMES, configure_crew_guards, upgrade_registered_commands, _is_crew_guard_group, a script_path argument on interpreter_path and include_core_hooks/crew_guard_paths on build_hook_snippet.",
+    "done_when": "the done-when names the five-file gate; the manifest records 34 passed EXIT=0 at 6a2ee21 and gate-committed.log's header names the revision and tree, and the declared negative control negative-control-named.log is red EXIT=1 with one failing id, but the gate names neither tests/test_worker_git_guard.py nor tests/test_cli_settings_writer_reuses_the_store.py, which this change reddens.",
+    "goal": "the node goal is to retire reckon sync's own hook writer onto the composer, recogniser and settings write reckon/hooks/install.py already owns; reckon/cli.py:328 _configure_crew_guards now delegates to hook_installer.configure_crew_guards at reckon/hooks/install.py:233, so the goal lands.",
+    "manifest": "read; it names commit 6a2ee21, the five gate logs and the negative control and quotes the pre-repair reproduction, but its baseline_suite and after_suite fields are empty so no added-failure count is derivable from them.",
+    "write_paths": "read the manifest's declared paths; git show --stat 6a2ee21 lists only reckon/cli.py, reckon/hooks/install.py, tests/test_hook_installer.py and tests/test_reckon_hook_commands.py, every one inside the declared scope."
+  },
+  "justifications": {
+    "durability": "the added binding test tests/test_reckon_hook_commands.py:83 fails on a bare git-guard command (negative-control-named.log EXIT=1), an assertion independent of the value under test, but the change regresses twelve existing tests in two out-of-scope files that no gate in this run covers.",
+    "evidence": "the gate's own log gate-committed.log records 34 passed EXIT=0 at 6a2ee21 and the negative control is red EXIT=1, but the reviewed manifest's baseline_suite and after_suite are empty so the added-failure count is unmeasured, and the five-file gate does not reach the tests this change breaks.",
+    "fit": "the new constants and helpers at reckon/hooks/install.py:69-95,233,285,310 follow the module's module-constant and _-prefixed-helper idiom beside is_worker_git_guard_group:374, and no name carries a plan label, version suffix or author attribution.",
+    "goal_fidelity": "sync's writer now composes, recognises and writes through reckon/hooks/install.py:233 configure_crew_guards, and the two duplicate recognisers at reckon/cli.py:318/343 and the private atomic write at reckon/cli.py:373 are gone, so the goal lands.",
+    "reuse": "the change removes sync's forked guards, so compose/recognise/write now extend the single owner reckon/hooks/install.py instead of duplicating it, leaving only _is_crew_guard_group:310 as a three-guard generalisation of the now production-unused is_worker_git_guard_group:374.",
+    "scope_discipline": "git show --stat 6a2ee21 lists four files, all inside the declared write paths, but the change also removes reckon/cli.py:_is_worker_git_guard_group, which neither the goal nor the plan's s2 done-when names, and that unrequested removal is what reddens tests/test_worker_git_guard.py."
+  },
+  "model": "deepseek-v4.1-flash",
+  "node": "review-of-sync-writes-hooks-through-the-installer",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to retire reckon sync's own hook writer onto the composer, recogniser and settings write reckon/hooks/install.py already owns; reckon/cli.py:328 _configure_crew_guards now delegates to hook_installer.configure_crew_guards at reckon/hooks/install.py:233, so the goal lands.\nVERDICT done_when: the done-when names the five-file gate; the manifest records 34 passed EXIT=0 at 6a2ee21 and gate-committed.log's header names the revision and tree, and the declared negative control negative-control-named.log is red EXIT=1 with one failing id, but the gate names neither tests/test_worker_git_guard.py nor tests/test_cli_settings_writer_reuses_the_store.py, which this change reddens.\nVERDICT write_paths: read the manifest's declared paths; git show --stat 6a2ee21 lists only reckon/cli.py, reckon/hooks/install.py, tests/test_hook_installer.py and tests/test_reckon_hook_commands.py, every one inside the declared scope.\nVERDICT manifest: read; it names commit 6a2ee21, the five gate logs and the negative control and quotes the pre-repair reproduction, but its baseline_suite and after_suite fields are empty so no added-failure count is derivable from them.\nVERDICT diff: read commit by commit against f411aa1a; reckon/cli.py loses _is_native_agent_guard_group, _is_worker_message_guard_group, _is_worker_git_guard_group and its private _write_json_atomically and delegates, while reckon/hooks/install.py gains the two guard script-name constants, RECKON_IMPORTING_SCRIPT_NAMES, configure_crew_guards, upgrade_registered_commands, _is_crew_guard_group, a script_path argument on interpreter_path and include_core_hooks/crew_guard_paths on build_hook_snippet.\nCALL_SITES: reckon/cli.py:7987 (the sync command calls _configure_crew_guards), reckon/cli.py:328 (_configure_crew_guards delegating to install.configure_crew_guards), reckon/hooks/install.py:191 (install_hook_settings, the hooks-install path)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: sync's writer now composes, recognises and writes through reckon/hooks/install.py:233 configure_crew_guards, and the two duplicate recognisers at reckon/cli.py:318/343 and the private atomic write at reckon/cli.py:373 are gone, so the goal lands.\nSCORE evidence: 14\nJUSTIFICATION evidence: the gate's own log gate-committed.log records 34 passed EXIT=0 at 6a2ee21 and the negative control is red EXIT=1, but the reviewed manifest's baseline_suite and after_suite are empty so the added-failure count is unmeasured, and the five-file gate does not reach the tests this change breaks.\nSCORE scope_discipline: 12\nJUSTIFICATION scope_discipline: git show --stat 6a2ee21 lists four files, all inside the declared write paths, but the change also removes reckon/cli.py:_is_worker_git_guard_group, which neither the goal nor the plan's s2 done-when names, and that unrequested removal is what reddens tests/test_worker_git_guard.py.\nSCORE durability: 14\nJUSTIFICATION durability: the added binding test tests/test_reckon_hook_commands.py:83 fails on a bare git-guard command (negative-control-named.log EXIT=1), an assertion independent of the value under test, but the change regresses twelve existing tests in two out-of-scope files that no gate in this run covers.\nSCORE fit: 17\nJUSTIFICATION fit: the new constants and helpers at reckon/hooks/install.py:69-95,233,285,310 follow the module's module-constant and _-prefixed-helper idiom beside is_worker_git_guard_group:374, and no name carries a plan label, version suffix or author attribution.\nSCORE reuse: 17\nJUSTIFICATION reuse: the change removes sync's forked guards, so compose/recognise/write now extend the single owner reckon/hooks/install.py instead of duplicating it, leaving only _is_crew_guard_group:310 as a three-guard generalisation of the now production-unused is_worker_git_guard_group:374.\nFINDING tests/test_worker_git_guard.py:476 blocking: reckon/cli.py:_is_worker_git_guard_group is removed by the diff though s2's done-when names only _is_native_agent_guard_group and _is_worker_message_guard_group and the private atomic write, and this file, outside the declared write paths, calls the removed name in three tests; measured against the worktree at 6a2ee21 'python -m pytest tests/test_worker_git_guard.py' gives '3 failed, 59 passed' EXIT=1 with AttributeError 'module reckon.cli has no attribute _is_worker_git_guard_group' at lines 476, 500 and 530.\nFINDING tests/test_cli_settings_writer_reuses_the_store.py:116 blocking: removing the plan-required cli._write_json_atomically reddens this file, outside the declared write paths, which was written to exercise that exact function; measured against the worktree at 6a2ee21 the file reports '9 failed' EXIT=1, every failure AttributeError 'module reckon.cli has no attribute _write_json_atomically', so the section cannot land red without a coordinator granting a scope extension to move these assertions onto install._write_settings, or the two files being updated in the same change.\nreviewed_base_sha: f411aa1a035d6368b5fa29c65e652e4781c99ecb\nreviewed_head_sha: 6a2ee21080863abb82e311ae58a5cd0ecaf75d67",
+  "review_run_id": "r-20261008T062025497657-review-of-sync-writes-hooks-through-the-installer",
+  "reviewed_base_sha": "f411aa1a035d6368b5fa29c65e652e4781c99ecb",
+  "reviewed_head_sha": "6a2ee21080863abb82e311ae58a5cd0ecaf75d67",
+  "reviewed_run_id": "r-20261008T060443167786-sync-writes-hooks-through-the-installer",
+  "role": "review",
+  "scores": {
+    "durability": 14,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 17,
+    "scope_discipline": 12
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T06:31:00.000000+00:00",
+  "total": 92
+}

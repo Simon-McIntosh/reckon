@@ -1,0 +1,87 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T07:19:26.639Z",
+  "dispatched_at": "2026-10-08T07:12:02Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-window-paces-the-lane.html:1924",
+      "id": "reasoning-1",
+      "reason": "a node following the reader list would wire pace_replay through effective_budget and make the replay report the current lifted multiple against past rows, undoing \u00a79's recorded-multiple guarantee.",
+      "text": "the reader list says \"preflight, the picker's offered rows, budget.pace_hold, the dispatch lane advisory, dispatch rows and pace replay ... all compute through it [effective_budget's result]\", but `reckon/crew/pace_replay.py` reads the multiple from the recorded row (`(\"policy\", \"pace_multiple\")`, line 287, built at line 543) and its loader docstring states its input boundary opens \"no live pointers, streams, receipts, or configuration layers\" (line 52) \u2014 replay must keep reporting the multiple that was in force at each dispatch, which is exactly why \u00a79's rows record it; routing replay through the live lift resolution would rewrite history under a lift",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-window-paces-the-lane.html:1925",
+      "id": "single_goal-1",
+      "reason": "splitting the non-lift reserve change into its own node lets each gate prove its own behaviour and keeps a reserve-semantics change from riding on the lift's verdict.",
+      "text": "\u00a710 bundles two deliverables: the pace lift (record, read-time expiry, reserve release) and a change to bookend-reserve semantics that applies with no lift in force (\"Outside a lift, a group whose every member review_excluded_backends lists withholds no bookend reserve ... This deliberately changes the reserve that \u00a74 landed\"), with the done-when asserting the second independently at line 1950 (\"With no lift, a group whose members are all review-excluded withholds no bookend reserve\"); the two ship on separate mechanisms and pass or fail on separate assertions, so one node cannot be reviewed and closed on one verdict",
+      "type": "single_goal",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "5f5b53e0c64aa03c9351ddfa078377808322e581b303106602cf9f2adf10fb74",
+  "plan_slug": "a-window-paces-the-lane",
+  "plan_version": 150,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "reckon-build",
+      "finding": "reasoning-1",
+      "reason": "Pace replay removed from the reader list; \u00a710 now states replay reads each row's recorded multiple, and pace.lift_id says whether a lift set it.",
+      "when": "2026-10-08T07:24:45.927375+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "reckon-build",
+      "finding": "single_goal-1",
+      "reason": "The no-lift bookend-reserve change and the bookend_reserve_pct declaration moved to a new \u00a711 with its own done-when and negative control; \u00a710 keeps the lift and its budget.lift ceilings only.",
+      "when": "2026-10-08T07:24:46.777484+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "reckon-build",
+      "reason": "Pace replay removed from the reader list; \u00a710 now states replay reads each row's recorded multiple, and pace.lift_id says whether a lift set it.",
+      "when": "2026-10-08T07:24:45.927375+00:00"
+    },
+    "single_goal-1": {
+      "action": "acted",
+      "by": "reckon-build",
+      "reason": "The no-lift bookend-reserve change and the bookend_reserve_pct declaration moved to a new \u00a711 with its own done-when and negative control; \u00a710 keeps the lift and its budget.lift ceilings only.",
+      "when": "2026-10-08T07:24:46.777484+00:00"
+    }
+  },
+  "review_run_id": "r-20261008T071132672173-plan-review-of-a-window-paces-the-lane",
+  "reviewed_blob_sha": "2628356b2a401201e678b59cd99c44f7c1c364d4",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited anchors resolve: `pace.policy(config)` is `reckon/crew/pace.py:128`, the 20% default is `reckon/crew/reserve.py` DEFAULT_RESERVE_PCT, `BudgetConfig` forbids extra keys so an undeclared `bookend_reserve_pct` is refused (`reckon/schema/flight.yaml:1212`), `budget.pace_hold` is `reckon/budget.py:2685`, `group_position` is `reckon/crew/budget_group.py:136`, and `skills/reckon-build/SKILL.md` \u00a74c exists.",
+    "done_when": "pass \u2014 \u00a710's done-when is measurable and declares one negative control (line 1951) that replaces `effective_budget` and must redden both the admit and the 100%-ceiling assertions, so the guard this node adds can be shown to fire.",
+    "evidence_paths": "pass \u2014 the section directs its tests to a temporary config home and names no session scratchpad or node-local temporary path for evidence.",
+    "naming": "pass \u2014 \u00a710's new symbols (`effective_budget`, `releases_at`, `bookend_reserve_pct`, `budget.lift`) are mechanism names; the section references plan sections (\u00a74, \u00a75b, \u00a78, \u00a79) only in plan prose, carrying no ticket number or version tag into code.",
+    "reasoning": "a finding \u2014 line 1924 lists `pace replay` among the readers that must compute through `effective_budget`, but `pace_replay.py` deliberately reads the recorded `pace_multiple` from the committed row and opens no configuration, so the stated mechanism contradicts the module it names.",
+    "single_goal": "a finding \u2014 \u00a710 carries two deliverables: the pace lift, and a change to bookend-reserve semantics that applies with no lift in force (line 1925, asserted at line 1950).",
+    "wiring": "pass \u2014 the plan's only declared relationship (plan-informs=background-agent-fitness-and-dispatch-scope) resolves to `docs/plans/background-agent-fitness-and-dispatch-scope.html`, and \u00a710 needs no cross-plan dependency: every prerequisite it names (\u00a74 reserve, \u00a78 replay, \u00a79 burn row) is a section of this same plan."
+  },
+  "section_digests": {
+    "_document": "a9b4e425234eb6fffeff1584d67108ba8a14bdeaa2aeba0fa25998b47c3100fa",
+    "s1": "fd232b0e9e301983eea254fa355a00f9cfdad5e4ba397415c196946997e8b78a",
+    "s10": "fc048f5768b1dcf9a327aca700c00c18fe634dda905f9fe17d7dd57a797049a5",
+    "s2": "0c4f642bff7cb6b87908ea9e036cb3161c15e31cb3285273e06bb2ac1f5c368c",
+    "s3": "ae3d7625321a46e7fa6a9ee3bac0272ee77d236811612140ef03b79670883261",
+    "s4": "8f3ac850d09e4745435c5274237c26be090ce2db03ac422e941c3329841d8563",
+    "s5": "3bc104a16d90fb6279e9ab8c70555e1041253ad31f6376c64b455da33489c6b0",
+    "s5b": "1be686d2a1165f13c4f4e81a29ca56c362c3b069dfc80759cf370cca59440d41",
+    "s6": "8e4ab80a317b73fb60010fe92858cbe3b073511ce10c4547c6eb8952a89829f0",
+    "s6-the-probe-reader-and-the-undeclared-dialect": "c463be6993bc79b07591a01d9e1a1d92d699a48d4c322b2cc395a0e78a2d097d",
+    "s7": "39b7111a3bfa256531f953bd33de123967e24fa4ffc75e6d1cbeca26a45c565d",
+    "s8": "9d68431496117798ca30bbebd6828adc5853e02df969ac62de3bb2dcd41512a4",
+    "s9": "5f72c27f2288b837b6513304ec92d0bf2e8950d169b0389c4c3ffeba27c23b6b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T07:19:53.696931+00:00"
+}
