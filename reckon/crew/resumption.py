@@ -20,8 +20,11 @@ checks that trigger on its cadence and leaves the run alone until it terminates.
 Four bounds keep the sweep from becoming its own hazard, and each is checked
 before anything is launched:
 
-* **At most one resume per trigger.** A resumed run is stamped with the hold or
-  condition it was resumed for. A fresh refusal or rewritten waiting manifest
+* **At most one resume per trigger.** A lift is recorded in the append-only
+  recovery log with the hold or condition it was resumed for, and the pointer's
+  ``auto_resume`` slot is a cache of that record rather than its authority — a
+  launch that rewrites the pointer from a snapshot taken before the stamp
+  cannot drop a line from the log. A fresh refusal or rewritten waiting manifest
   carries a new identity, so it can be judged independently.
 * **Never onto a lane still held.** The resume plan is built through the same
   budget verdict a hand-typed resume passes, so a lane whose hold is in force
@@ -333,6 +336,45 @@ def recovery_log_path(project: str) -> Path:
         for character in str(project)
     ).strip("-")
     return crew_home() / "recovery" / f"{readable or 'project'}.jsonl"
+
+
+def _lifted_holds(project: str) -> set[tuple[str, str]]:
+    """The (run id, signature) pairs the recovery log already records as lifted.
+
+    The sweep's append-only recovery log is the authority on what it has already
+    resumed: one line per sweep that judged anything, and its ``resumed`` list
+    names each lift with the run's id and the hold or condition signature it was
+    lifted for. A whole-pointer rewrite cannot drop a line from it, which is what
+    the pointer's own ``auto_resume`` slot cannot promise — a resume's launch
+    rewrites the pointer from a snapshot taken before the stamp, so the slot can
+    read absent for a lift that happened.
+    """
+    lifted: set[tuple[str, str]] = set()
+    try:
+        lines = recovery_log_path(project).read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return lifted
+    for line in lines:
+        if not line.strip():
+            continue
+        try:
+            report = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(report, Mapping):
+            continue
+        # A dry run appends its own line and lists what it *would* resume, so a
+        # preview is not a lift and must not retire a hold the sweep never took.
+        if report.get("dry_run"):
+            continue
+        for entry in report.get("resumed") or ():
+            if not isinstance(entry, Mapping):
+                continue
+            run_id = str(entry.get("run_id") or "")
+            signature = str(entry.get("hold") or "")
+            if run_id and signature:
+                lifted.add((run_id, signature))
+    return lifted
 
 
 def _refusal_observed_at(record: Mapping[str, Any]) -> datetime | None:
@@ -1152,6 +1194,7 @@ def sweep(
     launch = launcher
     test_condition = _run_condition_probe if condition_test is None else condition_test
     policy_block = budget_module.policy(config)
+    lifted_holds = _lifted_holds(project)
     resumed: list[dict[str, Any]] = []
     skipped: list[dict[str, Any]] = []
     considered = 0
@@ -1233,12 +1276,18 @@ def sweep(
                 "this run was already resumed for the hold that lapsed; "
                 "a further refusal writes its own hold to wait on"
             )
+        # The recovery log is the authority on what has already been lifted, and
+        # the pointer's slot is only a cache of it — one a resume's own launch
+        # can drop by rewriting the pointer from a snapshot taken before the
+        # stamp. A whole-pointer rewrite cannot drop a line from the log, so a
+        # hold already lifted there is refused even when the cache is gone.
         previous = pointer.get("auto_resume")
-        if (
+        cached = (
             isinstance(previous, Mapping)
             and signature
             and str(previous.get("trigger") or previous.get("hold") or "") == signature
-        ):
+        )
+        if signature and (cached or (run_id, signature) in lifted_holds):
             skipped.append(
                 {
                     **entry,
