@@ -23,11 +23,11 @@
   <title>A Window Paces The Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="120">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="e302ad39,04a479ef,4ef8356f,e219aa99,b2594d65,bacd8e17,6a915fd7,4d043fd0,fd4a158f,95ba8ea7,cb69a87f,768a9285,e5cf008e,6001f577,e6dd0dc4,c011b6f9,82095575,87c98418,8e70585c,b7ba4786,3f0e9621,798f87f8,e37ac897,d34eaf27">
 <meta name="plan-impl" content="0.9">
+<meta name="plan-version" content="121">
+<meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
   <main class="plan-doc">
@@ -1893,6 +1893,52 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
       landed evidence record</a>.</p>
     </div>
 
+    <h2 id="s10">§10 — A lift on the pace ends by itself</h2>
+<section data-reckon="section" data-id="s10" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Proposed 2026-10-08, from the lead.</strong> A lead can raise one budget group's pace multiple for a bounded time. The raise is a durable record every session reads, and it ends by itself: at the window reset it was granted against, at a stated time, or at a hard ceiling. No process has to remember to lower it.</p>
+
+<p><strong>Why the per-dispatch override is not enough</strong></p>
+<p>Measured 2026-10-08 around 03:12Z. The <code>codex-sub</code> group stood at 21% of its seven-day window after 22.0 h of 168, a 1.60× burn against the 1.1× multiple, so <code>budget.pace_hold</code> held every non-bookend dispatch. The lead chose to spend into the window anyway. Only two routes existed. Naming <code>--backend codex</code> bypasses the picker's hold for one node and leaves nothing a peer session can see. <code>--set budget.pace_multiple=1.8</code> on the dispatch was refused by the session's safety classifier as a safety-bypass flag. It would also have lasted one run, been invisible to every other coordinator, and left no record of who lifted what, or until when.</p>
+<p>The hold also misreported its own length. Its reason said <em>"held until the window resets at 2026-10-14T05:14:59Z"</em>, six days away. But the hold is <code>burn &gt; multiple</code>, and burn is utilisation over elapsed fraction, so with no further spend it releases once the elapsed fraction reaches <code>utilisation / multiple</code>: 0.21 / 1.1 × 168 h ≈ 32.1 h, about <strong>2026-10-08T13:20Z, nine hours away</strong>. Whether a lift is worth granting depends on exactly that figure, and today the hold prints the wrong one.</p>
+
+<p><strong>The lift record</strong></p>
+<p>One control document per workstation, <code>&lt;config-home&gt;/budget-lifts.json</code>, because a budget group is an account-wide wallet and not a project's. It is written atomically (temporary file, then rename) under a monotonically increasing <code>version</code>, in the same shape as the router's gate document. Each lift carries:</p>
+<table>
+<thead><tr><th>Field</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td><code>id</code>, <code>group</code></td><td>The lift, and the declared budget group it applies to. An undeclared group is refused, as <code>group_position</code> already does.</td></tr>
+<tr><td><code>pace_multiple</code></td><td>The multiple in force while the lift holds. It must exceed the configured one and must not exceed <code>budget.lift.max_multiple</code>.</td></tr>
+<tr><td><code>ends</code></td><td><code>{"kind": "reset", "clock": "seven_day" | "five_hour", "resets_at": &lt;that clock's reset at grant&gt;}</code> or <code>{"kind": "at", "at": &lt;iso&gt;}</code>.</td></tr>
+<tr><td><code>granted_by</code>, <code>granted_at</code>, <code>reason</code></td><td>Who lifted it and why, verbatim. A lift without a reason is refused.</td></tr>
+<tr><td><code>cleared_by</code>, <code>cleared_at</code></td><td>Early revocation. Ended lifts are kept as history, so the multiple can be tuned against what it did.</td></tr>
+</tbody>
+</table>
+
+<p><strong>It ends by itself: expiry at read time, not by a process</strong></p>
+<p>A lift is in force only when all of these hold: it is not cleared; <code>now</code> is before its end time; <code>now</code> is before <code>granted_at + budget.lift.max_hours</code>; and, for a reset-anchored lift, the group's current reading still reports the <code>resets_at</code> the lift was granted against. When the provider rolls the window, on schedule or by an early reset, the reading's <code>resets_at</code> moves and the lift ends at that observation, so a lift never carries into a fresh window. Expiry is a pure function of the record, the reading and the clock. A restarted server, a dead producer or an ended session therefore cannot leave a lift on, and nothing has to run at the moment it ends. The <code>max_hours</code> ceiling covers the one case the reading cannot: a stale reading that never shows the reset.</p>
+<p>That is what makes a token reset usable. Whatever a window still holds at its reset is lost, so a lift anchored to <code>reset</code> spends ahead into the window and stops, by itself, the moment the window turns over. <code>--clock five_hour</code> makes a lift ride a single five-hour window.</p>
+
+<p><strong>One seam, and what a lift does not touch</strong></p>
+<p>Every consumer already reads the multiple through <code>pace.allowance_for_group</code>, which reads <code>pace.policy(config)</code>. The lift is applied there, given the group, the reading and the time, so preflight, the picker's offered rows, <code>budget.pace_hold</code>, the dispatch lane advisory, dispatch rows and pace replay all see one value and none computes its own. A lift moves the pace bias and nothing else. The provider's own five-hour ceiling, <code>utilisation_ceiling_pct</code>, the resume reserve and the coordinator reserve all stand, because those protect resumes and reviews, which are what a spent window is kept for.</p>
+
+<p><strong>Surface and authority</strong></p>
+<ul>
+<li><code>reckon crew budget lift --group &lt;group&gt; --multiple &lt;m&gt; --until reset|&lt;iso&gt;|&lt;duration&gt; [--clock seven_day|five_hour] --reason "&lt;why&gt;"</code> grants a lift and prints the group's projected exhaustion at the lifted multiple against its reset. <code>--clear --group &lt;group&gt;</code> revokes one. <code>reckon crew budget lifts</code> lists active and recent lifts.</li>
+<li><code>crew(view="budget")</code> carries <code>lift: {id, multiple, ends_at, ends_on, remaining_seconds}</code> per group. Every dispatch row records <code>pace.lift_id</code> beside the multiple in force, which §9's burn log already requires.</li>
+<li>The follower prints one transition line when a lift is granted and one when it ends, naming what ended it: the reset observed, the time, the ceiling, or a clear.</li>
+<li>A lift is spend, so only the lead grants it. The grant is refused inside a fenced worker, whose environment names its run, so a worker cannot lift its own budget. The <code>--reason</code> is recorded verbatim.</li>
+<li><code>pace_hold</code> returns <code>releases_at</code>: the week start plus <code>utilisation / multiple</code> of the week, assuming no further spend. The hold reason prints it in place of the window reset. That is how the lead sees a nine-hour hold for what it is.</li>
+</ul>
+
+<p><strong>Done when</strong></p>
+<ul>
+<li>With the configured multiple at 1.1 and a <code>codex-sub</code> reading of utilisation 0.21 at 22.0 h elapsed, <code>pace_hold</code> holds an implement dispatch. A lift of 1.8 anchored to the seven-day reset admits it. A reading whose seven-day <code>resets_at</code> has moved ends the lift. A lift past its <code>at</code>, a cleared lift, and a lift older than <code>max_hours</code> with an unchanged <code>resets_at</code> are all inert. A lift above <code>max_multiple</code>, and one granted from inside a fenced run, are refused at grant.</li>
+<li>The negative control deletes the lift lookup from <code>pace.policy</code> alone, and the admit assertion must fail against it.</li>
+<li>For the same reading, <code>pace_hold</code> returns <code>releases_at</code> equal to the week start plus 0.21 / 1.1 × 168 h, derived from the fixture at assertion time rather than written down.</li>
+<li>Preflight and the picker's offered rows show the lifted multiple and its lift id. A dispatch row made under a lift carries <code>pace.lift_id</code>.</li>
+<li>Every test points the config home at a temporary directory and asserts afterwards that the real <code>budget-lifts.json</code> is untouched.</li>
+</ul>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="pace-multiple" data-choice="single-1.1" data-by="Simon McIntosh" data-when="2026-09-21T11:35:29+00:00">
@@ -1910,6 +1956,33 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
       <button class="r-opt chosen" data-value="continuous">continuous in the window figure</button>
       </p>
     <p class="r-dec-rat">Continuous in the window figure, so there is no cliff at which one node routes metered and the next local. The lead&#x27;s requirement that comes with it changes what the bar is for, and it is not a detail of shape: the bar must leave room for orchestrator judgement rather than resolve a lane by itself. Three outcomes, not two. A node may be hard enough that it is better left undispatched than sent to the free lane; a node may be close enough to the bar that the right move is to split it into two smaller nodes and dispatch both now; and the orchestrator must be able to decide against the bar in either direction. So the bar reports a position and a recommendation and never a routing, which is the same advisory-never-force contract this project already holds for lanes. Continuity also has a cost that must be paid rather than ignored: there is no tier name for a pre-flight line to print and no natural transition to assert, so section 6&#x27;s pre-flight prints the figure and the recommendation, and section 3&#x27;s tests assert monotonicity over the window domain and the three outcomes at their boundaries, rather than asserting transitions that a continuous bar does not have.</p>
+    </div>
+<div class="r-dec" data-key="lift-scope" data-choice="" data-by="" data-when="" data-sections="s10" data-recommended="multiple-only" data-recommended-by="reckon-edit">
+    <p class="r-dec-q">What may a lift raise?</p>
+    <p class="r-dec-ctx">A lift exists to spend ahead of pace. The reserves and the utilisation ceiling protect resumes and reviews.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="multiple-only">the pace multiple only; ceiling and reserves stand</button>
+      <button class="r-opt" data-value="multiple-and-ceiling">the pace multiple and the utilisation ceiling</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+<div class="r-dec" data-key="lift-default-end" data-choice="" data-by="" data-when="" data-sections="s10" data-recommended="next-reset" data-recommended-by="reckon-edit">
+    <p class="r-dec-q">When does a lift end if the grant names no end?</p>
+    <p class="r-dec-ctx">A lift anchored to a reset stops when the window turns over, which is the point at which any budget left in it would be lost.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="next-reset">at the next reset of the clock the hold rests on</button>
+      <button class="r-opt" data-value="fixed-hours">after a fixed duration, such as 12 h</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+<div class="r-dec" data-key="lift-exhaustion-guard" data-choice="" data-by="" data-when="" data-sections="s10">
+    <p class="r-dec-q">Is a lift refused when its projection exhausts the group before its reset?</p>
+    <p class="r-dec-ctx">At 1.8x from 21% used, codex-sub projects exhaustion three days before its reset. Exhausting early leaves no metered lane for the rest of the week; the local lane remains.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="advisory">print the projection at grant and admit</button>
+      <button class="r-opt" data-value="refuse-unless-allowed">refuse unless the grant passes --allow-early-exhaustion</button>
+      </p>
+    <p class="r-dec-rat"></p>
     </div>
 </section>
 
