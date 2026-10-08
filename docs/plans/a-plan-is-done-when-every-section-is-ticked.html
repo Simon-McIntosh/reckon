@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.73">
-<meta name="plan-version" content="41">
+<meta name="plan-version" content="42">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -126,7 +126,9 @@
       count the live plans that carry a gap today, and state the count in the evidence. It found 109 of 214 live
       plans across ten projects, mostly older plans with no declarations at all. A gap a plan already carries
       therefore stays writable (decision <code>coverage-gap-scope</code>). <code>reckon audit-doc</code> reports it,
-      and a write is refused only when it adds a gap the plan did not have.</p>
+      and a write is refused only when it adds a gap the plan did not have. A grandfathered gap still cannot reach
+      <code>done</code>: at the transition into a terminal status, an authored heading with no declaration counts as an
+      open section beside the declared ones, so its row must be declared and ticked before the plan closes.</p>
     <p><strong>Done when</strong> the census of every mounted project's live plans is recorded with its count. A test
       writes a plan with an undeclared heading and finds the audit error and the write refusal, and a second test
       finds the reverse case. Both fail on the current code, which checks neither; that is their negative
@@ -137,7 +139,9 @@
       when the check is wired into <code>_write_state_locked</code> alone, which proves the text path calls it
       too. A fifth test writes an unrelated change to a plan that already carries an undeclared heading and finds it
       accepted, while a write adding a second undeclared heading to the same plan is refused. It fails when the guard
-      treats the plan as carrying no gaps before the write, which is the strict form.</p>
+      treats the plan as carrying no gaps before the write, which is the strict form. A sixth test sets to
+      <code>done</code> a plan whose declared sections are all done but which carries one undeclared heading, and finds
+      the refusal naming that heading. It fails when the terminal guard reads the declaration map alone.</p>
 
     <h2 id="s6" data-reckon="section" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links="">§6 — A plan reaches done only when every todo is ticked</h2>
     <p><strong>Deliverable.</strong> A write that sets a plan's status to <code>shipped</code> or <code>done</code> is
@@ -314,7 +318,7 @@
     <div class="r-comment-body"><p>Independent review of r-20261008T025754782357-a-deferred-section-blocks-only-its-dependents at head 8bad67bf over the one commit it gained since the prior review (28e81ae6 "qualify each side of a graph judgment with its own project") — parsed record, total 113/120 over 6 dimensions (goal_fidelity 20, evidence 18, scope_discipline 19, durability 18, fit 19, reuse 19), reviewed_base_sha 28e81ae6 = the prior review's head, reviewed_head_sha 8bad67bf. The gained commit resolves the prior review's blocking finding: the graph-closure judgment member now qualifies the target with the dependency's own project (dependency[0]) instead of the dependent's, so a cross-project hold no longer names a plan that does not exist — verified by an independent negative control that restores the misnaming and fails the new cross-project test with assert 'alpha:base' == 'beta:base'. added_failure_count 0; no blocking findings, two follow-ons (the judgment_required count key vs schedule_override's deferred; the reviewed run's own suite arms are not like-for-like).</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261008T091637459272-review-of-every-section-has-a-declaration" data-who="reckon-build" data-when="2026-10-08T09:35:15.316Z">
-    <div class="r-comment-body"><p>Reviewed r-20261008T082524909480-every-section-has-a-declaration (base 6741a3ef, head 17a234247): stored a parsed 6-dimension record (goal_fidelity 20, evidence 19, scope_discipline 18, durability 20, fit 18, reuse 20; total 115) with added_failure_count 0; section s5&#x27;s deliverable is met and its four tests and census are reproduced.</p></div>
+    <div class="r-comment-body"><p>Reviewed r-20261008T082524909480-every-section-has-a-declaration (base 6741a3ef, head 17a234247): stored a parsed 6-dimension record (goal_fidelity 20, evidence 19, scope_discipline 18, durability 20, fit 18, reuse 20; total 115) with added_failure_count 0; section s5's deliverable is met and its four tests and census are reproduced.</p></div>
 </div>
 </section>
 </main>
