@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-run-has-one-live-worker-landed">
+  <meta name="plan-title" content="A Run Has One Live Worker — landed record">
+  <meta name="plan-summary" content="Closure synthesis for A Run Has One Live Worker: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="a-run-has-one-live-worker">
+  <meta name="plan-verdict" content="qualified">
+  <title>A Run Has One Live Worker — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A Run Has One Live Worker — landed record</h1>
+  <p>Closure synthesis for A Run Has One Live Worker: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s2-second-launcher">
+    <h2>§2 — the sweep lifted one hold twice</h2>
+    <p>Every launch of session <code>00ba9ff6</code> between 02:24 and 03:13 UTC, from <code>~/.config/reckon/crew/recovery/nova.jsonl</code> and the run directory. The wait sweep resumed the run at 02:25:08Z (supervisor 4059742, line 7668), and the attempt-3 worker launched at 02:25:46Z. At 02:26:18Z the sweep lifted the same hold again (supervisor 4059743, line 7669), with the same hold signature, advice and log path. Its worker, pid 4069224, ran under ppid 1 with no attempt record. From 02:26:53Z the stamp read back and later sweeps skipped. The once-only guard is the live pointer's <code>auto_resume</code> slot (<code>reckon/crew/resumption.py</code> 1236 to 1242, written by <code>_stamp_resumption_trigger</code> at line 923). The attempt-3 launch rewrote the whole pointer from a snapshot taken before the stamp and dropped it. The backstop, <code>_launcher_refusal</code> with <code>record_process_alive</code> (<code>reckon/crew/runs.py</code>), reads only record-named pids and never the session, so the orphan was invisible, and the follower's <em>process is gone</em> read the same records. The codex run of <code>c-s2-second-instance</code> was refused by the backend's own single-writer claim. The fixture check crashed in a budget-verdict call before reaching the guard, so the fixture clause rests on a code reading. Report: <code>~/.config/reckon/crew/reports/reckon/one-live-worker/second-launcher/report.md</code>. Review 94/120.</p>
+  </section>
+
+</main>
+</body>
+</html>

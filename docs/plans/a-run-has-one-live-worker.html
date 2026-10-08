@@ -21,11 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="a-crew-process-ends-with-its-owner">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
   <title>A Run Has One Live Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="4">
+<meta name="plan-impl" content="0.5">
+<meta name="plan-version" content="5">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -50,23 +51,12 @@
       A run's manifest is its record of what landed, and a second writer that rewrites it from a partial view
       drops commits a coordinator would then never promote. The coordinator repaired this run by hand.</p>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-08</span>
     <h2 id="s2">§2 — Find the second launcher</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> An investigation of run
-      <code>r-20261008T004428659638-cfs-compile-rows-cpu-seconds</code>. It reads the run directory under
-      <code>~/.config/reckon/crew/runs/</code>, its attempt and resume records, its stream and stderr logs, the
-      session-host and follower records, and the nova watch log. It names every launch of session
-      <code>00ba9ff6</code> between 04:24 and 05:13 by the code path that started it, for example the wait sweep in
-      <code>reckon/crew/resumption.py</code>, a recovery reflex, a repair resume or a coordinator command. It names the
-      check that should have refused the second launch, and why it did not. It also says why the follower read the
-      first worker as gone while a <code>claude -p --resume</code> process for that session was alive with ppid 1. The
-      report and its logs are written to
-      <code>~/.config/reckon/crew/reports/reckon/one-live-worker/second-launcher/</code>.</p>
-    <p><strong>Done when</strong> the report lists each launch with its timestamp, process id, parent and the function
-      that issued it, each backed by a quoted line from a named log file. It names the guard that admitted the second
-      launch, by file and line, and the condition under which it admits one. It states whether that condition can be
-      reproduced with a fixture run whose recorded worker pid is alive under a different parent. A repair section is
-      then added to this plan with that reproduction as its negative control.</p>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">Named: the wait sweep lifted one hold twice because the resume launch's whole-pointer rewrite dropped the auto_resume stamp, and the launch backstop reads only record-named pids. Repair is §3. Review 94/120. <a href="/reckon/evidence/archive/a-run-has-one-live-worker-landed.html#s2-second-launcher">full record</a></p>
+</section>
 
     <h2 id="s3">§3 — A hold lifts once, and a live session refuses a second worker</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
@@ -98,10 +88,16 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-arolw-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-08" data-recommends-skill="/reckon-build a-run-has-one-live-worker §2" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-arolw-001" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-08" data-recommends-skill="/reckon-build a-run-has-one-live-worker §2" data-resolved-at="2026-10-08T06:06:11+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Find the second launcher of one run&#x27;s worker session</h4>
     <div class="r-fu-body"><p>Plan authored from the nova S21 coordinator's defect report of 2026-10-08. §2 is a read-only investigation; the repair section follows its finding.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-run-has-one-live-worker §2</pre>
+    <p class="r-fu-outcome">§2 landed: second launcher named; repair planned as §3</p>
+    </article>
+<article class="r-fu" data-id="f-arolw-002" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-build" data-written-at="2026-10-08" data-recommends-skill="/reckon-build a-run-has-one-live-worker §3" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Make a hold lift once and refuse a second worker on a live session</h4>
+    <div class="r-fu-body"><p>§3 repairs the two guards §2 named, with a test reproducing each.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-run-has-one-live-worker §3</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -113,6 +109,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261008T043139194097-second-launcher-of-one-run" data-who="reckon-build" data-when="2026-10-08T05:35:23.982Z">
     <div class="r-comment-body"><p>deliverable is report.md at the granted write path; that path is outside any git repository, so no commit applies and the worktree is unmodified</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-s2-landed" data-who="reckon-build" data-when="2026-10-08T06:05:00Z">
+    <div class="r-comment-body">investigation recorded (gate not-run, review 94/120); section closed</div>
 </div>
 </section>
 </main>
