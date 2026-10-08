@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.75">
-<meta name="plan-version" content="44">
+<meta name="plan-version" content="45">
 <meta name="plan-modified" content="2026-10-08">
 <meta name="plan-commits" content="ed3d6ffc">
 </head>
@@ -85,7 +85,7 @@
       Starts, terminal echoes and attach re-announcements are observer context, and the gap replay
       (<code>_follow_gap_rows</code>) still let 446 bare rows through. This plan changes one decision in the
       existing policy: on the coordinator's pane, observer context is held back. It adds no second policy.</p>
-    <p><code>crew_follow</code>'s docstring in <code>reckon/cli.py</code> says every transition is
+    <p><code>crew_follow</code>'s docstring in <code>reckon/crew_follow_commands.py</code> says every transition is
       delivered and that no option narrows to action states, because hiding a recovery hides the news a
       reader is waiting for. This plan keeps that guarantee in a different form. Every change that asks for action or
       reverses an action row the reader was shown is delivered, and only rows that ask for nothing and
