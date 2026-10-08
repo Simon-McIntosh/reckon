@@ -25,7 +25,7 @@
   <title>A Follower Row Is Worth A Wake | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="22">
+<meta name="plan-version" content="25">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -97,7 +97,7 @@
     <h2 id="s2">§2 — One row policy decides what a follower delivers</h2>
 <section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
     <p><strong>Deliverable.</strong> <code>RowPolicy</code> in <code>reckon/crew/ticker.py</code> holds back a
-      row that <code>transition_class</code> classes as observer context instead of printing it, with two
+      row that <code>transition_class</code> classes as observer context instead of printing it, with three
       exceptions that print:</p>
     <ul>
       <li>A recovery: the run leaves a state whose coordinator row this pane printed, for a non-terminal state
@@ -113,7 +113,11 @@
         exit-phantom window prints nothing, because <code>NOISE_RESOLUTIONS</code> drops the resolution, so a run that
         finished and waits for promotion never reaches the coordinator. The pair now prints one row,
         <code>working → completed_unpromoted</code>, as an arrival's hold already prints its resolution under the
-        arrival's left side.</li>
+        arrival's left side. A resolution
+        row is dropped only when it completes an opener still held. Once the opener has printed, because its window
+        passed, the resolving row is judged like any other: <code>blocked → completed_unpromoted</code> after a printed
+        blocked prints as an action state, and <code>stalled → working</code> after a printed stall prints as a
+        recovery. Today <code>NOISE_RESOLUTIONS</code> drops both kinds whether or not a hold is open.</li>
     </ul>
     <p>An arrival that resolves into an observer kind, the launch's <code>dispatched → working</code>, prints
       nothing. An arrival still sitting in dispatched at <code>ARRIVAL_WINDOW</code> prints as today. A
@@ -140,6 +144,9 @@
       <li>arrival then <code>dispatched → withdrawn</code> twice prints nothing.</li>
       <li><code>working → blocked</code> then <code>blocked → completed_unpromoted</code> two seconds apart prints one
         row, <code>working → completed_unpromoted</code>; today it prints none.</li>
+      <li>The same pair 400 s apart prints the blocked at its window and then the completed_unpromoted;
+        <code>working → stalled</code> then <code>stalled → working</code> 400 s apart prints the stall and then the
+        recovery. Today the second row of each prints nothing.</li>
       <li>A working run whose next row is <code>working → discarded</code> prints the discarded.</li>
       <li>A run changing state every ten seconds prints within two minutes of its first change.</li>
       <li>With observer context shown, the first sequence prints the rows it prints today.</li>
