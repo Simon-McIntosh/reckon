@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-08T06:02:31.626Z",
+  "dispatched_at": "2026-10-08T05:51:51Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/one-live-worker/second-launcher/fixture-guard-check.log",
+      "line": "15",
+      "severity": "follow-on",
+      "text": "follow-on: the log the done_when's third clause relies on crashed before producing a verdict, _launcher_refusal raising CrewError at resumption.py:568 _readonly_budget_verdict via dispatch_sessions.py:870 _backend_settings before the live-process guard at resumption.py:601 was reached, and the log's last line reads EXIT=0, so the log reads success on a crash and demonstrates no verdict either way."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/one-live-worker/second-launcher/report.md",
+      "line": "93",
+      "severity": "follow-on",
+      "text": "follow-on: section 3 says fixture-guard-check.log records the fixture run against the real guard functions, but that log records a crash before any guard verdict, so the done_when's fixture clause is answered by a code reading the manifest itself concedes (retry_failures: the verdict recorded from the code reading instead) rather than by the executed check the clause asks for."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/one-live-worker/second-launcher/report.md",
+      "line": "76",
+      "severity": "follow-on",
+      "text": "follow-on: the delivered report carries an unresolved drafting aside, \"_observed_end_refusal (resumption.py:625) - hmm, which admits on an observation of end\", leaving a \"hmm\" in a finished deliverable."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "there is no diff; the node landed a report and a log outside any repository, the manifest's commits list is empty and the worktree is unmodified, so the revision read is the worktree base e692a894 on both sides and there is no code to review.",
+    "done_when": "the done_when asks report.md to list each launch of session 00ba9ff6 in the window with timestamp, pid, parent and issuing function each backed by a quoted named-log line, to name by file and line the guard that admitted the second launch with its admitting condition, and to state the fixture verdict; section 1 cites recovery/nova.jsonl lines 7668/7669, section 2 names resumption.py:1236-1242 with its admitting condition, and section 3 states the fixture answer, so all three clauses are present though the fixture clause rests on a code reading rather than the executed check (finding on fixture-guard-check.log).",
+    "goal": "the node goal is to name every launch of worker session 00ba9ff6 on run r-20261008T004428659638-cfs-compile-rows-cpu-seconds and the guard that admitted the second; report.md section 1 lists L1/L1w/L2/L2w/L3 with timestamp, pid, parent and issuing function and section 2 names the admitting guard, so the deliverable is delivered.",
+    "manifest": "read; status complete, naming the two deliverables and, in retry_failures, that the fixture's live pid was captured from setsid (which forks) so the recorded process was already gone and the guard fell through the live-process gate into an unrelated backend-config error, the verdict then of the fixture recorded from the code reading instead.",
+    "write_paths": "the node was fenced to the directory /home/ITER/mcintos/.config/reckon/crew/reports/reckon/one-live-worker/second-launcher; report.md and fixture-guard-check.log both sit inside it and no other path was written."
+  },
+  "justifications": {
+    "durability": "the deliverable is a document with no test that reddens if its claims stop being true, and the one check that was run, /home/ITER/mcintos/.config/reckon/crew/reports/reckon/one-live-worker/second-launcher/fixture-guard-check.log, crashed before reaching the guard and ended EXIT=0, so nothing guards the claimed reproduction.",
+    "evidence": "the guard citations are verified at reckon/crew/resumption.py:1236-1242 and 601 and reckon/crew/runs.py:4486, and the launch timeline quotes recovery/nova.jsonl lines 7668-7670, but the fixture evidence required by the third done_when clause is a crashed run (/home/ITER/mcintos/.config/reckon/crew/reports/reckon/one-live-worker/second-launcher/fixture-guard-check.log) and not the executed verdict the clause asks for.",
+    "fit": "report.md follows the plan's section order and cites paths and lines throughout, but it ships an unresolved drafting aside at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/one-live-worker/second-launcher/report.md:76 (\"hmm, which admits on an observation of end\") and overstates its own log at :93.",
+    "goal_fidelity": "report.md section 1 names every launch with the four required fields and section 2 names the admitting guard at reckon/crew/resumption.py:1236-1242 and its condition, meeting the deliverable; only the fixture clause is answered by reading rather than by the executed check the done_when's third clause names.",
+    "reuse": "the node adds no definition to the repository, so there is no added capability to fork; the report cites the existing owners at reckon/crew/resumption.py:579/923 and reckon/crew/runs.py:4486 rather than restating them.",
+    "scope_discipline": "every path the run wrote, report.md and fixture-guard-check.log, sits inside the declared write path /home/ITER/mcintos/.config/reckon/crew/reports/reckon/one-live-worker/second-launcher, with no code, plan or shared-index write."
+  },
+  "model": "deepseek-v4.1-flash",
+  "node": "review-of-second-launcher-of-one-run",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to name every launch of worker session 00ba9ff6 on run r-20261008T004428659638-cfs-compile-rows-cpu-seconds and the guard that admitted the second; report.md section 1 lists L1/L1w/L2/L2w/L3 with timestamp, pid, parent and issuing function and section 2 names the admitting guard, so the deliverable is delivered.\nVERDICT done_when: the done_when asks report.md to list each launch of session 00ba9ff6 in the window with timestamp, pid, parent and issuing function each backed by a quoted named-log line, to name by file and line the guard that admitted the second launch with its admitting condition, and to state the fixture verdict; section 1 cites recovery/nova.jsonl lines 7668/7669, section 2 names resumption.py:1236-1242 with its admitting condition, and section 3 states the fixture answer, so all three clauses are present though the fixture clause rests on a code reading rather than the executed check (finding on fixture-guard-check.log).\nVERDICT write_paths: the node was fenced to the directory /home/ITER/mcintos/.config/reckon/crew/reports/reckon/one-live-worker/second-launcher; report.md and fixture-guard-check.log both sit inside it and no other path was written.\nVERDICT manifest: read; status complete, naming the two deliverables and, in retry_failures, that the fixture's live pid was captured from setsid (which forks) so the recorded process was already gone and the guard fell through the live-process gate into an unrelated backend-config error, the verdict then of the fixture recorded from the code reading instead.\nVERDICT diff: there is no diff; the node landed a report and a log outside any repository, the manifest's commits list is empty and the worktree is unmodified, so the revision read is the worktree base e692a894 on both sides and there is no code to review.\nCALL_SITES: none\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: report.md section 1 names every launch with the four required fields and section 2 names the admitting guard at reckon/crew/resumption.py:1236-1242 and its condition, meeting the deliverable; only the fixture clause is answered by reading rather than by the executed check the done_when's third clause names.\nSCORE evidence: 14\nJUSTIFICATION evidence: the guard citations are verified at reckon/crew/resumption.py:1236-1242 and 601 and reckon/crew/runs.py:4486, and the launch timeline quotes recovery/nova.jsonl lines 7668-7670, but the fixture evidence required by the third done_when clause is a crashed run (/home/ITER/mcintos/.config/reckon/crew/reports/reckon/one-live-worker/second-launcher/fixture-guard-check.log) and not the executed verdict the clause asks for.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path the run wrote, report.md and fixture-guard-check.log, sits inside the declared write path /home/ITER/mcintos/.config/reckon/crew/reports/reckon/one-live-worker/second-launcher, with no code, plan or shared-index write.\nSCORE durability: 8\nJUSTIFICATION durability: the deliverable is a document with no test that reddens if its claims stop being true, and the one check that was run, /home/ITER/mcintos/.config/reckon/crew/reports/reckon/one-live-worker/second-launcher/fixture-guard-check.log, crashed before reaching the guard and ended EXIT=0, so nothing guards the claimed reproduction.\nSCORE fit: 15\nJUSTIFICATION fit: report.md follows the plan's section order and cites paths and lines throughout, but it ships an unresolved drafting aside at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/one-live-worker/second-launcher/report.md:76 (\"hmm, which admits on an observation of end\") and overstates its own log at :93.\nSCORE reuse: 20\nJUSTIFICATION reuse: the node adds no definition to the repository, so there is no added capability to fork; the report cites the existing owners at reckon/crew/resumption.py:579/923 and reckon/crew/runs.py:4486 rather than restating them.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/one-live-worker/second-launcher/fixture-guard-check.log:15 follow-on: the log the done_when's third clause relies on crashed before producing a verdict, _launcher_refusal raising CrewError at resumption.py:568 _readonly_budget_verdict via dispatch_sessions.py:870 _backend_settings before the live-process guard at resumption.py:601 was reached, and the log's last line reads EXIT=0, so the log reads success on a crash and demonstrates no verdict either way.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/one-live-worker/second-launcher/report.md:93 follow-on: section 3 says fixture-guard-check.log records the fixture run against the real guard functions, but that log records a crash before any guard verdict, so the done_when's fixture clause is answered by a code reading the manifest itself concedes (retry_failures: the verdict recorded from the code reading instead) rather than by the executed check the clause asks for.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/one-live-worker/second-launcher/report.md:76 follow-on: the delivered report carries an unresolved drafting aside, \"_observed_end_refusal (resumption.py:625) - hmm, which admits on an observation of end\", leaving a \"hmm\" in a finished deliverable.\nreviewed_base_sha: e692a894fc5aaa2cd4baa81606e5f57321043d24\nreviewed_head_sha: e692a894fc5aaa2cd4baa81606e5f57321043d24",
+  "review_run_id": "r-20261008T055113469460-review-of-second-launcher-of-one-run",
+  "reviewed_base_sha": "e692a894fc5aaa2cd4baa81606e5f57321043d24",
+  "reviewed_head_sha": "e692a894fc5aaa2cd4baa81606e5f57321043d24",
+  "reviewed_run_id": "r-20261008T043139194097-second-launcher-of-one-run",
+  "role": "review",
+  "scores": {
+    "durability": 8,
+    "evidence": 14,
+    "fit": 15,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T06:00:34.659097+00:00",
+  "total": 94
+}
