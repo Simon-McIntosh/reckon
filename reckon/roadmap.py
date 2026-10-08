@@ -16,7 +16,15 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-from reckon._plan_html import SECTION_NUMBER_PATTERN, read_state, read_state_file
+from reckon._plan_html import (
+    OPEN_SECTION_DECLARATIONS,
+    SECTION_DECLARATION_DEFERRED,
+    SECTION_DECLARATION_DONE,
+    SECTION_NUMBER_PATTERN,
+    open_sections,
+    read_state,
+    read_state_file,
+)
 from reckon._timestamps import parse_utc
 from reckon._schema import (
     GATE_TRANSITIONS,
@@ -338,10 +346,18 @@ def _gate_section_edges(
             target_status = _status(target)
             if stage:
                 section_found = stage in declared_for(parsed.slug, target)
-                satisfied = section_found and _section_satisfied(target, stage)
+                satisfied = section_found and _section_satisfied(
+                    target,
+                    stage,
+                    _plan_authored_state(target, docs_dir, project, parsed.slug).get(
+                        "section_declarations"
+                    ),
+                )
                 row["section_found"] = section_found
             else:
-                satisfied = target_status in COMPLETED_STATUSES
+                satisfied = _plan_dependency_satisfied(
+                    target, docs_dir, project, parsed.slug
+                )
             row.update(
                 {
                     "scope": "local",
@@ -548,11 +564,32 @@ def _status(plan: dict[str, Any]) -> str:
     return str(plan.get("workflow_status") or plan.get("status") or "draft")
 
 
-def _section_satisfied(plan: dict[str, Any], section: str) -> bool:
-    """Return whether a target plan has completed one named section."""
+def _section_satisfied(
+    plan: dict[str, Any],
+    section: str,
+    declarations: Mapping[str, Any] | None = None,
+) -> bool:
+    """Return whether a target plan has completed one named section.
+
+    A completed plan satisfies every section, and a ``done`` declaration
+    satisfies the section it names. An ``implementable`` or ``deferred``
+    declaration keeps the section open even when a gate reads passed: the
+    declaration is the author's own state for the section, and a deferred or
+    still-implementable section satisfies nothing. A passed section gate
+    remains the route for a section carrying no declaration.
+    """
 
     if _status(plan) in COMPLETED_STATUSES:
         return True
+    if declarations is None:
+        declarations = plan.get("section_declarations")
+    classification = ""
+    if isinstance(declarations, Mapping):
+        classification = str(declarations.get(section) or "").strip()
+    if classification == SECTION_DECLARATION_DONE:
+        return True
+    if classification in OPEN_SECTION_DECLARATIONS:
+        return False
     section_gates = [
         gate
         for gate in plan.get("gates") or []
@@ -562,6 +599,37 @@ def _section_satisfied(plan: dict[str, Any], section: str) -> bool:
         str(gate.get("verdict") or "").strip().lower() == "passed"
         for gate in section_gates
     )
+
+
+def _plan_dependency_satisfied(
+    plan: dict[str, Any],
+    docs_dir: Path | None,
+    project: str,
+    slug: str,
+) -> bool:
+    """Return whether a whole-plan dependency on ``slug`` is satisfied.
+
+    A completed plan satisfies it. Otherwise the dependency clears once no
+    section is left implementable, read through the same open-section predicate
+    the terminal guard uses: a deferred section blocks only the work that names
+    it, so it never holds a whole-plan dependency, and a section already ticked
+    has nothing left to give. A plan that declares no section at all declares
+    no work, so only completion satisfies a dependency on it — the rule this
+    replaces, kept for a plan whose sections were never declared.
+    """
+
+    if _status(plan) in COMPLETED_STATUSES:
+        return True
+    view = _plan_authored_state(plan, docs_dir, project, slug)
+    declarations = view.get("section_declarations")
+    if not isinstance(declarations, Mapping) or not declarations:
+        return False
+    return not [
+        section
+        for section in open_sections(view)
+        if str(declarations.get(section) or "").strip()
+        != SECTION_DECLARATION_DEFERRED
+    ]
 
 
 def execution_gates(plan: dict[str, Any]) -> list[dict[str, Any]]:
@@ -815,16 +883,21 @@ def _after_edges(
             "status": target_status,
         }
         if parsed.stage:
+            declarations = _plan_authored_state(
+                target, docs_dir, project, parsed.slug
+            ).get("section_declarations")
             found_section = parsed.stage in declared_section_identities(
                 _plan_authored_state(target, docs_dir, project, parsed.slug)
             )
             row["stage"] = parsed.stage
             row["section_found"] = found_section
             row["satisfied"] = found_section and _section_satisfied(
-                target, parsed.stage
+                target, parsed.stage, declarations
             )
         else:
-            row["satisfied"] = target_status in COMPLETED_STATUSES
+            row["satisfied"] = _plan_dependency_satisfied(
+                target, docs_dir, project, parsed.slug
+            )
         rows.append(row)
     return rows
 
@@ -952,7 +1025,13 @@ def _section_scoped_edges(
                     "status": _status(target),
                     "section_found": section_found,
                     "satisfied": section_found
-                    and _section_satisfied(target, parsed.stage),
+                    and _section_satisfied(
+                        target,
+                        parsed.stage,
+                        _plan_authored_state(
+                            target, docs_dir, project, parsed.slug
+                        ).get("section_declarations"),
+                    ),
                 }
             )
             rows.append(row)
@@ -1887,7 +1966,12 @@ def resolve_graph_target(
         decision_blocker_rows.extend(unsettled_decisions(plan, graph_sections_map))
         closure_blocker_rows.extend(closure_blockers(plan))
         dependencies_complete = all(
-            _status(plans[dependency]) in COMPLETED_STATUSES
+            _plan_dependency_satisfied(
+                plans[dependency],
+                project_state[dependency[0]].get("docs_dir"),
+                dependency[0],
+                dependency[1],
+            )
             for dependency in plan_blocking_graph[key]
         )
         # Readiness is the roadmap row's own verdict for this plan, so both
@@ -2468,14 +2552,19 @@ def _build_roadmap(
                 continue
 
             target_status = _status(target)
-            target_sections = declared_section_identities(
-                _plan_authored_state(target, docs_dir, project, parsed.slug)
-            )
+            target_view = _plan_authored_state(target, docs_dir, project, parsed.slug)
+            target_sections = declared_section_identities(target_view)
             section_found = not parsed.stage or parsed.stage in target_sections
             if parsed.stage:
-                satisfied = section_found and _section_satisfied(target, parsed.stage)
+                satisfied = section_found and _section_satisfied(
+                    target,
+                    parsed.stage,
+                    target_view.get("section_declarations"),
+                )
             else:
-                satisfied = target_status in COMPLETED_STATUSES
+                satisfied = _plan_dependency_satisfied(
+                    target, docs_dir, project, parsed.slug
+                )
             dependency_row = {
                 "ref": ref,
                 "scope": "local",
