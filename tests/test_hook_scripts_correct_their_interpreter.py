@@ -77,7 +77,7 @@ def _reckon_importing_hooks() -> list[Path]:
     return sorted(scripts)
 
 
-def test_every_reckon_importing_hook_uses_the_shared_bootstrap(tmp_path: Path):
+def test_every_reckon_importing_hook_uses_the_shared_bootstrap():
     scripts = _reckon_importing_hooks()
     assert {script.name for script in scripts} == {
         "coordinator_obligations.py",
@@ -89,6 +89,9 @@ def test_every_reckon_importing_hook_uses_the_shared_bootstrap(tmp_path: Path):
         assert 'with_name("interpreter_bootstrap.py")' in source
         assert "_bootstrap.ensure_interpreter(__file__)" in source
 
+
+def test_importing_hooks_reexecute_under_old_python(tmp_path: Path):
+    scripts = _reckon_importing_hooks()
     old_python, env = _old_python_on_path(tmp_path)
     manifest = tmp_path / "missing-manifest.md"
     env["RECKON_MANIFEST"] = str(manifest)
