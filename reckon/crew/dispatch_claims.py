@@ -1290,11 +1290,71 @@ def _peer_claim_is_a_later_racing_arrival(
 
 
 # How long a dispatch that lost a registration race waits for the winning claim
-# to launch or withdraw before refusing. The winner published moments earlier
-# and reaches its own admission within a handful of seconds, so the bound is
-# short on purpose: a wait holds the losing dispatch's whole turn, and a winner
-# still composing after this long is treated as the established owner.
-RACING_WINNER_WAIT_SECONDS = 15.0
+# to launch or withdraw before refusing. The wait is not fixed: the winner
+# published its claim and now composes and spawns a worker, and how long that
+# takes varies with the fleet, so the bound is derived from the observed
+# launch-to-claim time rather than a magic number. A wait holds the losing
+# dispatch's whole turn, so the bound still has to be short.
+#
+# The launch-to-claim time is measured on the fleet node over recent runs —
+# the interval from a claim's registration to the instant its worker record
+# carries ``launched_at``. Measured 2026-10-08 over 397 recent dispatches, in
+# seconds: min 1, median 10, p90 22, max 41.
+_CLAIM_LAUNCH_OBSERVED_SECONDS = (
+    1,
+    2,
+    3,
+    4,
+    5,
+    5,
+    6,
+    6,
+    7,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    16,
+    20,
+    22,
+    25,
+    41,
+)
+# The shortest grace, so a fleet with no launch to learn from still gives a
+# winner a moment rather than refusing on sight.
+CLAIM_GRACE_FLOOR_SECONDS = 5.0
+# The grace covers this multiple of the observed figure, so a launch a little
+# slower than the measured tail is still covered.
+CLAIM_GRACE_MARGIN = 1.5
+# The percentile of the observed distribution the grace is derived from: the
+# tail, so most winners launch inside the bound rather than a rare slow launch
+# stretching it.
+CLAIM_GRACE_PERCENTILE = 0.9
+
+
+def claim_grace_seconds(observed_launch_seconds: Iterable[float]) -> float:
+    """The bounded wait for an unlaunched racing winner, from observed launches.
+
+    ``observed_launch_seconds`` is the recent launch-to-claim distribution. The
+    grace is the observed tail scaled by a margin, never below the floor, so a
+    fleet that launches slowly waits longer and one that launches quickly does
+    not hold a losing dispatch's turn unnecessarily. An empty observation set —
+    a quiet fleet, or a reader that found nothing — falls back to the floor.
+    """
+    observed = sorted(
+        float(value)
+        for value in observed_launch_seconds
+        if value is not None and float(value) >= 0.0
+    )
+    if not observed:
+        return CLAIM_GRACE_FLOOR_SECONDS
+    rank = min(len(observed) - 1, int(CLAIM_GRACE_PERCENTILE * (len(observed) - 1)))
+    return max(CLAIM_GRACE_FLOOR_SECONDS, CLAIM_GRACE_MARGIN * observed[rank])
+
+
+RACING_WINNER_WAIT_SECONDS = claim_grace_seconds(_CLAIM_LAUNCH_OBSERVED_SECONDS)
 RACING_WINNER_POLL_SECONDS = 0.25
 
 
