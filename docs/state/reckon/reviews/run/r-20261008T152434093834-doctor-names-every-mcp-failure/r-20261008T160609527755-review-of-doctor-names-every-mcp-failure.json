@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/project_maintenance_commands.py:doctor"
+  ],
+  "completed_at": "2026-10-08T16:16:46.500Z",
+  "dispatched_at": "2026-10-08T16:06:32Z",
+  "findings": [
+    {
+      "file": "reckon/mcp_census.py",
+      "line": "245",
+      "severity": "follow-on",
+      "text": "follow-on: a failed connection is counted once per cause whose pattern its text carries (the `for name in matched or [UNCLASSIFIED]` loop at reckon/mcp_census.py:246), so the per-cause counts are not a partition of `failed`. In the real-tree run imas-cx reports failed 1635 while its cause counts sum to 2697, and reckon reports failed 1020 against 1197, because a connection logging two signatures (for example package metadata then CONNECTION_CLOSED) increments every cause it carries. Section 1 presents each signature as its own count, so the overlap may be intended, but a reader comparing causes to `failed` is misled. Consider attributing each failure to its first matched cause, or stating the overlap in the doctor output."
+    },
+    {
+      "file": "reckon/mcp_census.py",
+      "line": "123",
+      "severity": "follow-on",
+      "text": "follow-on: `directory_kind` is exported without a leading underscore although section 2 states the module holds one public function, the census. No caller outside the module uses it \u2014 the doctor block reads cause['directory_kind'] from the census's own dict (reckon/project_maintenance_commands.py:821) and tests/test_mcp_census.py calls only census \u2014 so the module's public surface is wider than the section declares. Either underscore it or move the kind rule behind census."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site: reckon/project_maintenance_commands.py:doctor",
+    "diff": "read commit by commit against base a7c06655d; f5e4ae5 adds reckon/mcp_census.py (census, the CAUSES table and the directory-kind rule reusing _in_linked_worktree and _repository_named_by_worktree), the doctor block and its printer, the transcript_tool_blocks extraction in reckon/velocity.py, and the 6-case test file; 6aeb819 records the evidence fragment; abb84ca7 narrows the transcript match to the error field so a quoted payload is not counted.",
+    "done_when": "the section names a fixture gate tests/test_mcp_census.py and a real-tree reproduction; the manifest records after_suite (6 passed, EXIT=0 at abb84ca78) but no baseline_suite, and negative-control.log shows 5 failed EXIT=1. I reproduced the fixture gate independently (6 passed, EXIT=0), the real-tree figure independently (census imas-cx CONNECTION_CLOSED 1065, equal to a raw in-window token count of 1065 against section 1's 1068, 0.28% within the 5% bound; connections 1643 equal a raw in-window file count of 1643), and the negative control independently (emptying CAUSES via a pytest plugin fails the per-cause assertions, EXIT=1).",
+    "goal": "the node's goal is that reckon doctor gains an MCP-connection census naming every failure's cause; the diff adds reckon/mcp_census.py with one public function census(window_start, window_end, log_root, transcript_root, temp_root), a doctor block calling it for the seven days ending now (reckon/project_maintenance_commands.py:966), and extracts velocity.transcript_tool_blocks from promotion_receipts so both readers walk a transcript one way. No command or option is added, nothing retired, storage-slow counted per tool through STORAGE_SLOW, read-only.",
+    "manifest": "read; it records commits f5e4ae5,6aeb819, abb84ca7, after_suite (6 passed, EXIT=0) with no baseline_suite, negative-control (5 failed EXIT=1) and the census real-tree figure of 1065; its fields reconcile with the logs on disk, whose first lines name the revision, tree and command.",
+    "write_paths": "the declared scope is reckon/mcp_census.py, reckon/project_maintenance_commands.py, reckon/velocity.py, tests/test_mcp_census.py and the evidence fragment; the diff a7c06655d..abb84ca78 touches exactly those five paths, every path inside the grant."
+  },
+  "justifications": {
+    "durability": "the negative control reddens (5 failed, EXIT=1) and I reproduced a red by emptying CAUSES (3 failed, EXIT=1); the tests are fixture-driven and date-free, but the gate carries no base arm and the census walk adds its 20-120 s cost to every reckon doctor call.",
+    "evidence": "the fixture gate reproduces (6 passed, EXIT=0) and the real-tree figure reproduces exactly (census imas-cx CONNECTION CLOSED 1065 = a raw in-window token count I ran of 1065; connections 1643 = a raw file count of 1643), but the manifest carries no baseline_suite, so the added-failure count is read off the after arm alone rather than subtracted from a base arm.",
+    "fit": "reckon/mcp_census.py:140 and :145 import _in_linked_worktree and _repository_named_by_worktree inside the function, matching the doctor module's lazy-import idiom, and the log walk uses os.scandir with follow_symlinks=False, the idiom the module docstring states.",
+    "goal_fidelity": "reckon/mcp_census.py:202 census is the window-taking entry point and the doctor block at reckon/project_maintenance_commands.py:966 calls it for the seven days ending now; every element of section 2's deliverable is present.",
+    "reuse": "reckon/velocity.py:1551 extracts transcript_tool_blocks so promotion_receipts and the census share one walk; the census reads transcript_index, _in_linked_worktree, _repository_named_by_worktree and STORAGE_SLOW from their existing owners and re-derives none.",
+    "scope_discipline": "the diff a7c06655d..abb84ca78 changes only reckon/mcp_census.py, reckon/project_maintenance_commands.py, reckon/velocity.py, tests/test_mcp_census.py and the evidence fragment, all inside the grant."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that reckon doctor gains an MCP-connection census naming every failure's cause; the diff adds reckon/mcp_census.py with one public function census(window_start, window_end, log_root, transcript_root, temp_root), a doctor block calling it for the seven days ending now (reckon/project_maintenance_commands.py:966), and extracts velocity.transcript_tool_blocks from promotion_receipts so both readers walk a transcript one way. No command or option is added, nothing retired, storage-slow counted per tool through STORAGE_SLOW, read-only.\nVERDICT done_when: the section names a fixture gate tests/test_mcp_census.py and a real-tree reproduction; the manifest records after_suite (6 passed, EXIT=0 at abb84ca78) but no baseline_suite, and negative-control.log shows 5 failed EXIT=1. I reproduced the fixture gate independently (6 passed, EXIT=0), the real-tree figure independently (census imas-cx CONNECTION_CLOSED 1065, equal to a raw in-window token count of 1065 against section 1's 1068, 0.28% within the 5% bound; connections 1643 equal a raw in-window file count of 1643), and the negative control independently (emptying CAUSES via a pytest plugin fails the per-cause assertions, EXIT=1).\nVERDICT write_paths: the declared scope is reckon/mcp_census.py, reckon/project_maintenance_commands.py, reckon/velocity.py, tests/test_mcp_census.py and the evidence fragment; the diff a7c06655d..abb84ca78 touches exactly those five paths, every path inside the grant.\nVERDICT manifest: read; it records commits f5e4ae5,6aeb819, abb84ca7, after_suite (6 passed, EXIT=0) with no baseline_suite, negative-control (5 failed EXIT=1) and the census real-tree figure of 1065; its fields reconcile with the logs on disk, whose first lines name the revision, tree and command.\nVERDICT diff: read commit by commit against base a7c06655d; f5e4ae5 adds reckon/mcp_census.py (census, the CAUSES table and the directory-kind rule reusing _in_linked_worktree and _repository_named_by_worktree), the doctor block and its printer, the transcript_tool_blocks extraction in reckon/velocity.py, and the 6-case test file; 6aeb819 records the evidence fragment; abb84ca7 narrows the transcript match to the error field so a quoted payload is not counted.\nCALL_SITES: reckon/project_maintenance_commands.py:doctor\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/mcp_census.py:202 census is the window-taking entry point and the doctor block at reckon/project_maintenance_commands.py:966 calls it for the seven days ending now; every element of section 2's deliverable is present.\nSCORE evidence: 19\nJUSTIFICATION evidence: the fixture gate reproduces (6 passed, EXIT=0) and the real-tree figure reproduces exactly (census imas-cx CONNECTION CLOSED 1065 = a raw in-window token count I ran of 1065; connections 1643 = a raw file count of 1643), but the manifest carries no baseline_suite, so the added-failure count is read off the after arm alone rather than subtracted from a base arm.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff a7c06655d..abb84ca78 changes only reckon/mcp_census.py, reckon/project_maintenance_commands.py, reckon/velocity.py, tests/test_mcp_census.py and the evidence fragment, all inside the grant.\nSCORE durability: 18\nJUSTIFICATION durability: the negative control reddens (5 failed, EXIT=1) and I reproduced a red by emptying CAUSES (3 failed, EXIT=1); the tests are fixture-driven and date-free, but the gate carries no base arm and the census walk adds its 20-120 s cost to every reckon doctor call.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/mcp_census.py:140 and :145 import _in_linked_worktree and _repository_named_by_worktree inside the function, matching the doctor module's lazy-import idiom, and the log walk uses os.scandir with follow_symlinks=False, the idiom the module docstring states.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/velocity.py:1551 extracts transcript_tool_blocks so promotion_receipts and the census share one walk; the census reads transcript_index, _in_linked_worktree, _repository_named_by_worktree and STORAGE_SLOW from their existing owners and re-derives none.\nFINDING reckon/mcp_census.py:245 follow-on: follow-on: a failed connection is counted once per cause whose pattern its text carries (the `for name in matched or [UNCLASSIFIED]` loop at reckon/mcp_census.py:246), so the per-cause counts are not a partition of `failed`. In the real-tree run imas-cx reports failed 1635 while its cause counts sum to 2697, and reckon reports failed 1020 against 1197, because a connection logging two signatures (for example package metadata then CONNECTION_CLOSED) increments every cause it carries. Section 1 presents each signature as its own count, so the overlap may be intended, but a reader comparing causes to `failed` is misled. Consider attributing each failure to its first matched cause, or stating the overlap in the doctor output.\nFINDING reckon/mcp_census.py:123 follow-on: follow-on: `directory_kind` is exported without a leading underscore although section 2 states the module holds one public function, the census. No caller outside the module uses it \u2014 the doctor block reads cause['directory_kind'] from the census's own dict (reckon/project_maintenance_commands.py:821) and tests/test_mcp_census.py calls only census \u2014 so the module's public surface is wider than the section declares. Either underscore it or move the kind rule behind census.\n",
+  "review_run_id": "r-20261008T160609527755-review-of-doctor-names-every-mcp-failure",
+  "reviewed_base_sha": "a7c06655d4eeb52633b366d67ce939a39a3b8d7f",
+  "reviewed_head_sha": "abb84ca783dfcd99886b2a2e93d6767030560822",
+  "reviewed_run_id": "r-20261008T152434093834-doctor-names-every-mcp-failure",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T16:30:00+00:00",
+  "total": 115
+}
