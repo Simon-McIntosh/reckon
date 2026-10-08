@@ -1,0 +1,51 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T04:09:37.259Z",
+  "dispatched_at": "2026-10-08T03:51:02Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-follower-row-is-worth-a-wake.html:111",
+      "id": "reasoning-1",
+      "reason": "the exception exists precisely so a finished-awaiting-promotion run reaches the coordinator, and it still does not whenever the hold has already released, so \u00a72's mechanism does not produce \u00a72's stated guarantee and \u00a75's \"zero held-back action states\" gate is unachievable on such a sequence.",
+      "text": "\u00a72's \"actionable resolution\" exception prints the net change only while the pair's hold window is open. Once the opener's hold has released the row falls through to the unchanged `NOISE_RESOLUTIONS` drop (`reckon/crew/ticker.py:1294`), so a `blocked \u2192 completed_unpromoted` reaching the pane after the 300 s exit-phantom window prints nothing, and the same drop hides a `stalled \u2192 working` recovery (`(\"stalled\",\"working\")` is in `NOISE_RESOLUTIONS`). Reproduced against the current class: feeding `working\u2192blocked` at t=0 then `blocked\u2192completed_unpromoted` at t=400 returns only `working\u2192blocked`; feeding `None\u2192blocked` then `blocked\u2192completed_unpromoted` returns only the blocked row; feeding `working\u2192stalled` at t=0 then `stalled\u2192working` at t=400 returns only `working\u2192stalled`.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-follower-row-is-worth-a-wake.html:99",
+      "id": "reasoning-2",
+      "reason": "the three bullets are individually unambiguous, so an implementer builds all three; only the word \"two\" needs correcting, which does not alter what gets built.",
+      "text": "\u00a72 says `RowPolicy` holds observer-context rows \"with two exceptions that print\", but the list beneath enumerates three (a recovery, an unexplained end, an actionable resolution). The third was added by the change under review, leaving the count stale.",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "e3ad1c7f415d3a8441239ebe8c16477a5881a0364cdf96fd36634d3cbed46fe2",
+  "plan_slug": "a-follower-row-is-worth-a-wake",
+  "plan_version": 22,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T035025181042-plan-review-of-a-follower-row-is-worth-a-wake",
+  "reviewed_blob_sha": "037c3e8a64d6bcfe8511364f7aea5c34e95c9f9d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the four \u00a71 hrefs (`a-follower-lives-as-long-as-its-session`, `research/follower-signal-audit`, `crew-observability-truth`, `a-follower-keeps-your-work-in-view`) all resolve as `<path>.html`, and the cited modules and existing tests (`reckon/crew/ticker.py`, `reckon/crew/recovery.py`, `reckon/cli.py`, `tests/test_a_dispatch_is_one_row.py`, `tests/test_follower_prints_only_policy_rows.py`) exist.",
+    "done_when": "pass \u2014 \u00a72's done-when enumerates eight measurable cases and declares a negative control (\"with the observer hold removed, the first case prints three rows and fails\"); the probe confirms today's code prints exactly three rows for that sequence, so the control is real.",
+    "evidence_paths": "pass \u2014 \u00a74 and \u00a75 write their reports to the run directory, and \u00a72's negative control is logged; no session-scratch or node-local-only path is named.",
+    "naming": "pass \u2014 \u00a72's symbols (`RowPolicy`, `PaneRowPath`, `NOISE_PAIRS`, `ACTIONABLE_RECOVERY_CLASSIFICATIONS`) are existing mechanism names; no plan label, stage name or ticket number reaches code, and no changelog prose.",
+    "reasoning": "a finding \u2014 \u00a72's new \"actionable resolution\" exception and its \"recovery\" exception both fire only while a noise hold is live; a resolution arriving after the hold's window (or with no opener at all) is still dropped by the unconditional `NOISE_RESOLUTIONS` branch, so \u00a72's stated guarantee (\"a run that finished and waits for promotion never reaches the coordinator\") is only partly delivered.",
+    "single_goal": "pass \u2014 \u00a72 states one deliverable (hold observer-context rows on the coordinator pane), \u00a73 delivers through it, \u00a74 is one investigation, \u00a75 one measurement.",
+    "wiring": "pass \u2014 the single declared `plan-depends-on` (`a-follower-outlives-its-monitor`) resolves to `docs/plans/a-follower-outlives-its-monitor.html`, and \u00a72's intra-plan references (`PaneRowPath`, `follower_row_path`) name real callers."
+  },
+  "section_digests": {
+    "_document": "57651ac23d8c226b299a6fb3798c4954e38bfc8b12c6a6ee0afcae03f380f75f",
+    "s1": "bea06a70e5a727324f7f05ddea157674cb647360778af5da9d99b6cb372018e7",
+    "s2": "fce0f94c150cba16de58153af2825b4ebd2b6d062608d8cbe43607571259f4a7",
+    "s3": "41d4ddd08ef0e265dd9b427e22278337608b4bef109bcc1632efbc0a2b31ec0e",
+    "s4": "2d1b89c737dfa8e215eb5353d9bd4452995d7c371c2446691bb88bd8e5e9f57f",
+    "s5": "5a420feaf96a858172eb9220dc1aea1a997735fbc8a33d53c4649116515bc4b0"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T04:11:27.697595+00:00"
+}
