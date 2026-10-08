@@ -252,6 +252,21 @@
     <p>§12's first node, §16 and §18 were stacked onto main as virtual merges and measured with the full suite, because §16 edits <code>tests/conftest.py</code>, which every test loads. Base: 12,515 passed, with 14 failures and errors. Head: 12,531 passed, with 13. Every head failure is also a base failure; the base's extra one is <code>test_timeout_reap_takes_the_spawned_child_with_the_driver</code>. So no failures were added. A peer's staged file in the shared checkout blocked a three-way merge, so the last two merges were built with <code>commit-tree</code> from a pinned HEAD and fast-forwarded. A focused gate of 213 tests passed at the merged head <code>5431e6921</code> (<code>EXIT=0</code>). Logs are in <code>~/.cache/reckon-suite-logs/merge-picker-s12a-s16-s18-*.log</code>.</p>
   </section>
 
+  <section id="s13">
+    <h2>§13 — dispatch reads its shared pre-pick state once (2026-10-08)</h2>
+    <p>Dispatch resolves its project repository once per process. A refused ledger index refresh returns the last good index's rows with their age instead of scanning the aggregate. The estimated-hours stamp moves when a sibling plan's metadata changes. The scratch-survey docstring states the orphan sweep's age rule. Four of the six new tests fail on the base revision.</p><p>Review 101 found no failures added. It also found that the identity cache is keyed by path string, not by git common directory as the comment says; that the sweep guard compares a constant; and that the timed driver passes at base. All three are §22. Run <code>r-20261008T124244188927-pre-pick-state-reads-once</code>, commits <code>ab5883931</code> and <code>e00169315</code>, merged at <code>e03273cec</code>.</p>
+  </section>
+
+  <section id="s21">
+    <h2>§21 — the claim grace follows recorded launches (2026-10-08)</h2>
+    <p>Each run records the instant its claim was registered and the instant its worker launched. The racing-winner grace is derived at dispatch from recent recorded intervals, through a bounded read cached per process, and falls back to the 5 s floor below 20 intervals. The frozen tuple is gone. In tests, interval sets of 8 s and 24 s give graces of 12 s and 36 s, and 19 records give the floor. The warm derivation adds 0.03 ms median. The run was blocked once: two existing tests pinned the removed tuple and the old constant. Its fence was widened to them and it resumed on its own session.</p><p>Review 105 found no failures added. The leftover <code>RACING_WINNER_WAIT_SECONDS</code> alias and the untested indexed branch are §23. Run <code>r-20261008T124329527557-claim-grace-follows-live-launches</code>, commits <code>7e33a7e34</code> to <code>2ebbb932b</code>, merged at <code>e03273cec</code>.</p>
+  </section>
+
+  <section id="s12-s13-s21-merge">
+    <h2>§12, §13 and §21 — full-suite merge check (2026-10-08)</h2>
+    <p>§12's second node, §13 and §21 were stacked onto main and measured with the full suite. The base arm hit its 2,700 s timeout at 99%, so its summary never printed. The head arm finished with 12,568 passed and 27 failures and errors. Those 19 failing modules were rerun at base and head: every head failure also fails at base except <code>test_the_cut_stops_the_repeated_docs_scan</code>, §12's own new test. In the stack it counts 2 plan rescans on a warm pick, against 0 expected. So §13 and §21 merged without §12's second node, and a focused gate of 187 tests passed at <code>e03273cec</code>. §12's second node waits on a repair of that interaction. Logs are in <code>~/.cache/reckon-suite-logs/merge-picker-s13-s21-*.log</code>.</p>
+  </section>
+
 </main>
 </body>
 </html>
