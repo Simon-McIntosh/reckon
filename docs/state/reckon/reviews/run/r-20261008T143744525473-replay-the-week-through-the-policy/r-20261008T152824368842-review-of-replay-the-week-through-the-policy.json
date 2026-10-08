@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-08T15:39:39.131Z",
+  "dispatched_at": "2026-10-08T15:29:02Z",
+  "findings": [
+    {
+      "file": "replay_week.py",
+      "line": "430",
+      "severity": "follow-on",
+      "text": "follow-on: the positive control subtracts totals['restored'] (75 rows, including the 53 'other: memory advance' rows attributed at replay_week.py:189), while section 5 authorises subtracting only the rows the two resolution rules restore (rule 1 = 2, rule 2 = 20); the extra 53 rows move the control delta from +26 to -27, both within 2%, so the check stands but the stated method subtracts rows the done-when does not name."
+    },
+    {
+      "file": "replay_week.py",
+      "line": "225",
+      "severity": "follow-on",
+      "text": "follow-on: window is computed as `ticker.NOISE_WINDOW.get(...) if False else (...)`; the first branch is dead and names ticker.NOISE_WINDOW, which does not exist in reckon/crew/ticker.py, so the line is misleading dead code."
+    },
+    {
+      "file": "replay_week.py",
+      "line": "117",
+      "severity": "follow-on",
+      "text": "follow-on: drive() reads pane_path._policy._held, a private attribute of RowPolicy, so the harness depends on an internal the policy does not expose and a rename there would break the measurement silently."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "there is no repository diff to read \u2014 head equals base at 9dc94bf and the deliverable is the report and its script under the write path rather than a code change.",
+    "done_when": "report.md and its gate log assert every section 5 done-when \u2014 54.0% of today's rows removed, 0 held-back settled action states, 0 action rows beyond their window plus 120 s, and the positive control within 2% \u2014 and I reproduced the gate end to end at the current streams (EXIT=0, 54.0%, 0 held back, 0 violations, control within 2%).",
+    "goal": "the node's goal is to measure what the merged row policy delivers over the week's producer streams per plan section 5; report.md reports per pane and in total the rows today's follower would deliver (9038) against the rows the policy delivers (4154) over the [2026-10-05, 2026-10-09) window for all 35 panes.",
+    "manifest": "read; it names the replay command and its log, states commits: none, records the one retry (the driver's deadline/wait-pass modelling) and its fix, and reports baseline_suite/after_suite as not applicable because no repository code was modified.",
+    "write_paths": "every artifact (report.md, replay_week.py, replay_week.log) lies under the declared path .../reports/reckon/follower-row/week-replay, and the reviewed worktree is clean at 9dc94bf with no repository file changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to measure what the merged row policy delivers over the week's producer streams per plan section 5; report.md reports per pane and in total the rows today's follower would deliver (9038) against the rows the policy delivers (4154) over the [2026-10-05, 2026-10-09) window for all 35 panes.\nVERDICT done_when: report.md and its gate log assert every section 5 done-when \u2014 54.0% of today's rows removed, 0 held-back settled action states, 0 action rows beyond their window plus 120 s, and the positive control within 2% \u2014 and I reproduced the gate end to end at the current streams (EXIT=0, 54.0%, 0 held back, 0 violations, control within 2%).\nVERDICT write_paths: every artifact (report.md, replay_week.py, replay_week.log) lies under the declared path .../reports/reckon/follower-row/week-replay, and the reviewed worktree is clean at 9dc94bf with no repository file changed.\nVERDICT manifest: read; it names the replay command and its log, states commits: none, records the one retry (the driver's deadline/wait-pass modelling) and its fix, and reports baseline_suite/after_suite as not applicable because no repository code was modified.\nVERDICT diff: there is no repository diff to read \u2014 head equals base at 9dc94bf and the deliverable is the report and its script under the write path rather than a code change.\nCALL_SITES: none\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: report.md measures exactly the section 5 quantities per pane and in total over the named streams, but the positive control's subtraction at replay_week.py:430 folds in 53 memory-advance rows the done-when does not name.\nSCORE evidence: 18\nJUSTIFICATION evidence: replay_week.log:1 names the revision, worktree and command and ends EXIT=0, and I reproduced the run (repro-replay.log, EXIT=0) with the same 54.0% removal, zero held-back states, zero delay violations and within-2% control.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every changed path is inside the declared write path .../follower-row/week-replay and the reviewed worktree shows no repository change at 9dc94bf.\nSCORE durability: 12\nJUSTIFICATION durability: no repository test guards this measurement; the report's instrument self-test (replay_week.py:279) reddens if the two resolution rules stop restoring rows, but it lives in the report script and no suite runs it.\nSCORE fit: 15\nJUSTIFICATION fit: the script reuses the ticker pane-driving idioms, but replay_week.py:225 carries a dead branch that names ticker.NOISE_WINDOW, an attribute absent from reckon/crew/ticker.py.\nSCORE reuse: 16\nJUSTIFICATION reuse: the script extends ticker.replay_row_policy, PaneRowPath, RowPolicy and NOISE_PAIRS, but replay_week.py:104-124 reimplements the follower's wait-pass release cadence that crew_follow_commands.py:1819 already runs.\nFINDING replay_week.py:430 follow-on: the positive control subtracts totals['restored'] (75 rows, including the 53 'other: memory advance' rows attributed at replay_week.py:189), while section 5 authorises subtracting only the rows the two resolution rules restore (rule 1 = 2, rule 2 = 20); the extra 53 rows move the control delta from +26 to -27, both within 2%, so the check stands but the stated method subtracts rows the done-when does not name.\nFINDING replay_week.py:225 follow-on: window is computed as `ticker.NOISE_WINDOW.get(...) if False else (...)`; the first branch is dead and names ticker.NOISE_WINDOW, which does not exist in reckon/crew/ticker.py, so the line is misleading dead code.\nFINDING replay_week.py:117 follow-on: drive() reads pane_path._policy._held, a private attribute of RowPolicy, so the harness depends on an internal the policy does not expose and a rename there would break the measurement silently.\n",
+  "review_run_id": "r-20261008T152824368842-review-of-replay-the-week-through-the-policy",
+  "reviewed_base_sha": "9dc94bf23b9b31b25811be8250004f601f8812c9",
+  "reviewed_head_sha": "9dc94bf23b9b31b25811be8250004f601f8812c9",
+  "reviewed_run_id": "r-20261008T143744525473-replay-the-week-through-the-policy",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 12,
+    "evidence": 18,
+    "fit": 15,
+    "goal_fidelity": 17,
+    "reuse": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T15:39:54.709041+00:00",
+  "total": 97
+}
