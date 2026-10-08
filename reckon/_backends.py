@@ -2380,6 +2380,7 @@ def _seed_harness_entry(
         filtered = _filter_top_level_keys(source, keys)
         if filtered is None:
             return
+        filtered = _bind_reckon_hook_commands(filtered)
         destination.write_text(json.dumps(filtered, indent=2, sort_keys=True) + "\n")
     else:
         destination.write_bytes(source.read_bytes())
@@ -2399,6 +2400,27 @@ def _filter_top_level_keys(source: Path, keys: Iterable[str]) -> dict[str, Any] 
     if not isinstance(loaded, Mapping):
         return None
     return {key: loaded[key] for key in keys if key in loaded}
+
+
+def _bind_reckon_hook_commands(settings: dict[str, Any]) -> dict[str, Any]:
+    """Bind every reckon hook command in a copied settings dict to its interpreter.
+
+    The operator's settings file carries whatever their last install left: a
+    bare ``python3 hook.py`` a shell resolves to the system interpreter, or the
+    checkout-bound form. A hook that imports reckon needs the checkout's own
+    interpreter — system python is older than the modules those hooks import —
+    so a run home seeded from such a file is passed through the installer's
+    recogniser, the same one ``reckon sync`` drives, before it is written. The
+    recogniser rewrites only the commands whose script imports reckon and
+    returns everything else, including a hook that is not reckon's, unchanged.
+    A settings dict with no ``hooks`` object is returned as-is.
+    """
+    if not isinstance(settings.get("hooks"), dict):
+        return settings
+    from reckon.hooks.install import upgrade_registered_commands
+
+    installed, _ = upgrade_registered_commands(settings)
+    return installed
 
 
 def _copy_tree_without_overwrite(source: Path, destination: Path) -> None:
