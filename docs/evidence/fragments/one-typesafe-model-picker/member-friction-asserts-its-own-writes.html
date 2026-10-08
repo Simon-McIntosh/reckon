@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="docs-project" content="reckon"><meta name="reckon-type" content="evidence">
+<meta name="plan-slug" content="member-friction-asserts-its-own-writes"><meta name="plan-title" content="The member-friction guard asserts its own writes, not peer activity">
+<meta name="plan-evidence-for" content="one-typesafe-model-picker"><meta name="plan-verifies" content="one-typesafe-model-picker#s6">
+<meta name="plan-recorded-at" content="2026-10-08"><meta name="plan-verdict" content="measurement">
+<title>The member-friction guard asserts its own writes, not peer activity | reckon</title>
+<link rel="stylesheet" href="/_shared/foundation.css"><link rel="stylesheet" href="/_shared/dashboard.css">
+</head><body><main class="plan-doc"><article data-reckon="landed" data-node="member-friction-asserts-its-own-writes" id="member-friction-asserts-its-own-writes">
+<h1>The member-friction guard asserts its own writes, not peer activity</h1>
+
+<p id="member-friction-asserts-its-own-writes-record">The teardown of <code>tests/test_member_friction.py</code> compared the whole real crew store before and after each test (<code>assert _real_stores() == before</code>), so a peer session dispatching or committing during a suite run made it error in both arms of a merge check. The guard now watches the real crew home — the destination an escaped write reaches — and asserts only that <em>this fixture's</em> ids never reach it, so peer activity around it is ignored while a genuine leak is still caught.</p>
+<p id="member-friction-asserts-its-own-writes-repair">An independent review found the first cut of the guard watching a temporary directory that neither the code under test nor the fixture wrote, so it could not fire on the escaped write it exists to catch (<code>fc0907bc0cd</code>); the guard's default target is now the real crew home, with a <code>RECKON_GUARD_HOME</code> override redirecting it to a temporary stand-in for the tests that plant entries. The review also found the previous manifest recorded a clean <code>after_suite</code> the head log contradicted (<code>f366309052d</code>); the record is corrected here to the head log's own result.</p>
+
+<h2 id="member-friction-asserts-its-own-writes-reproduction">The defect reproduced</h2>
+<p id="member-friction-asserts-its-own-writes-repro-body">Recorded at the base revision in <code>~/.cache/reckon-suite-logs/merge-subscription-lanes-base.log</code>: <code>ERROR tests/test_member_friction.py::test_unnamed_dispatch_is_admitted_while_a_review_worker_is_alive</code> at <code>assert _real_stores() == before</code>, the pointer list differing because entries appeared in the live directory while the 16-minute suite ran, in a run reporting <code>2731 passed, 3 skipped, 4 warnings, 1 error</code>. The whole-store comparison names no fixture identity, so it cannot tell a leak from a peer's arrival.</p>
+
+<h2 id="member-friction-asserts-its-own-writes-change">What changed</h2>
+<ul id="member-friction-asserts-its-own-writes-change-list">
+<li><code>_guard_store()</code> returns the real crew home (<code>Path.home()/".config"/"reckon"</code>) by default — the destination an escaped write reaches when a dispatcher bypasses the isolated <code>RECKON_HOME</code> — so the guard watches the write it exists to catch. <code>RECKON_GUARD_HOME</code> redirects it to a temporary stand-in for the tests that plant entries, so those never touch the operator's real home.</li>
+<li><code>_fixture_writes_under(store)</code> returns a live pointer only on an exact filename match for the fixture's run ids (<code>r-first.json</code>, <code>r-second.json</code>), and the project roster only when it names <code>fixture-member</code>. An exact-name match keeps the guard peer-safe where a substring match would fire on any roster describing a sample or a per-second rate.</li>
+<li>A <code>guard_stand_in</code> fixture installs the redirect and removes planted entries after the guard has looked; <code>test_isolation_guard_watches_the_escape_destination</code> asserts the default target is the real home and not a temporary directory.</li>
+</ul>
+
+<h2 id="member-friction-asserts-its-own-writes-measure">Measure</h2>
+<table id="member-friction-asserts-its-own-writes-gate">
+<thead><tr><th>arm</th><th>command</th><th>result</th></tr></thead>
+<tbody>
+<tr><td>base</td><td><code>pytest -n 6 tests/test_member_friction.py tests/test_dispatch*.py</code></td><td>204 passed, 1 failed, 1 skipped — EXIT=1</td></tr>
+<tr><td>head</td><td><code>pytest -n 6 tests/test_member_friction.py tests/test_dispatch*.py</code></td><td>206 passed, 2 failed, 1 skipped — EXIT=1</td></tr>
+</tbody>
+</table>
+<p id="member-friction-asserts-its-own-writes-delta">Added failures in this node's scope: <strong>0</strong>. Both red tests are load-timing flakes in <code>tests/test_dispatch_*.py</code>, outside this node's write scope: <code>test_an_unacknowledged_fifo_refuses_leaving_no_pointer_or_worktree</code> (elapsed 10.5 s against its 10.0 s ack ceiling under <code>-n 6</code>) and <code>test_a_discarded_run_is_not_recreated</code>, which is red in the base arm too. The two extra passing tests at head are the escape-destination check and the peer-tolerance check.</p>
+
+<h2 id="member-friction-asserts-its-own-writes-control">Negative control</h2>
+<p id="member-friction-asserts-its-own-writes-control-body">Point the guard's default target back at a temporary directory — the pre-repair behaviour — and <code>test_isolation_guard_watches_the_escape_destination</code> fails, <code>EXIT=1</code> (<code>negative-control-guard-target.log</code>). A variant that plants a fixture-named pointer in the guarded home makes <code>test_isolation_guard_refuses_a_fixture_named_write</code> assert the guard refuses it, so the guard still fires on a real leak. For the manifest finding, restoring the manifest's <code>after_suite</code> to the pre-repair record (exit_status 0, failure_count 0, 207 passed) makes the record-vs-log check report <code>MISMATCH</code> against <code>gate-head.log</code>, <code>EXIT=1</code>, while the corrected record passes, <code>EXIT=0</code> (<code>negative-control-after-suite-record.log</code>).</p>
+</article></main></body></html>
