@@ -21,6 +21,7 @@ from reckon._plan_html import (
     SECTION_DECLARATION_DEFERRED,
     SECTION_DECLARATION_DONE,
     SECTION_NUMBER_PATTERN,
+    authored_section_headings,
     open_sections,
     read_state,
     read_state_file,
@@ -186,6 +187,44 @@ def _plan_authored_state(
     if needs_records and authored.get("sections") is not None:
         view["sections"] = authored["sections"]
     return view
+
+
+def _plan_authored_html(
+    plan: Mapping[str, Any],
+    docs_dir: Path | None,
+    project: str,
+    slug: str,
+) -> str:
+    """A plan's authored markup, for the heading walk.
+
+    ``_plan_authored_state`` returns the parsed fields but not the text a
+    heading walk reads when a row already carries its declarations. This reads
+    the same file through the same resolution, memoized by path. An
+    unresolvable plan yields ``""`` — the same "nothing authored" reading the
+    state helper takes.
+    """
+
+    if docs_dir is None:
+        docs_dir = _load_mounts().get(project)
+    if docs_dir is None:
+        return ""
+    try:
+        resource = resolve_resource(
+            docs_dir, project, slug, "plan", include_archived=False
+        )
+    except Exception:  # noqa: BLE001 — a resolution error is "nothing authored"
+        return ""
+    path = getattr(resource, "path", None)
+    if path is None:
+        return ""
+
+    def read_text() -> str:
+        try:
+            return path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            return ""
+
+    return memoized("plan_authored_html", path, read_text)
 
 
 _SECTION_WORD_RE = re.compile(
@@ -613,9 +652,16 @@ def _plan_dependency_satisfied(
     section is left implementable, read through the same open-section predicate
     the terminal guard uses: a deferred section blocks only the work that names
     it, so it never holds a whole-plan dependency, and a section already ticked
-    has nothing left to give. A plan that declares no section at all declares
-    no work, so only completion satisfies a dependency on it — the rule this
-    replaces, kept for a plan whose sections were never declared.
+    has nothing left to give.
+
+    Three conditions keep that from clearing a dependency on work that was never
+    built. At least one section must be declared done — a plan whose every
+    section is deferred has nothing its dependents can consume, so they keep
+    waiting. Every authored section heading must carry a declaration — a legacy
+    plan may declare only some of its sections, and an undeclared heading is
+    outstanding work the dependency still needs. And a plan that declares no
+    section at all declares no work, so only completion satisfies a dependency
+    on it.
     """
 
     if _status(plan) in COMPLETED_STATUSES:
@@ -624,12 +670,24 @@ def _plan_dependency_satisfied(
     declarations = view.get("section_declarations")
     if not isinstance(declarations, Mapping) or not declarations:
         return False
-    return not [
-        section
-        for section in open_sections(view)
-        if str(declarations.get(section) or "").strip()
-        != SECTION_DECLARATION_DEFERRED
-    ]
+    if not any(
+        str(classification or "").strip() == SECTION_DECLARATION_DONE
+        for classification in declarations.values()
+    ):
+        return False
+    for section in open_sections(view):
+        if (
+            str(declarations.get(section) or "").strip()
+            != SECTION_DECLARATION_DEFERRED
+        ):
+            return False
+    declared = {str(section).strip() for section in declarations}
+    for identity, _heading in authored_section_headings(
+        _plan_authored_html(plan, docs_dir, project, slug)
+    ):
+        if identity not in declared:
+            return False
+    return True
 
 
 def execution_gates(plan: dict[str, Any]) -> list[dict[str, Any]]:
