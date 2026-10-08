@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.5">
-<meta name="plan-version" content="23">
+<meta name="plan-version" content="24">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -256,6 +256,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-10-08T05:05:00Z">
     <div class="r-comment-body"><p>Landed at merge <code>cff18dc7</code>. The plan view renders the payload's <code>todos</code> as one linked row per section above the plan body: checked with its closing comment when done, otherwise marked deferred or open. A repair round sent back by the coordinator made each row's click scroll to its section with <code>scrollIntoView</code>. The plain <code>#sN</code> link would have changed the SPA's hash route and dropped the reader on the home view. Gate: 6 passed; removing the render or the click handler fails its assertions. 26 UI test files: 0 added. Review 114/120. <a href="/reckon/evidence/fragments/a-plan-is-done-when-every-section-is-ticked/the-plan-view-shows-its-section-checklist.html">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261008T030334920284-the-plan-view-shows-its-section-checklist" data-who="reckon-build" data-when="2026-10-08T03:40:26.984Z">
+    <div class="r-comment-body"><p>The plan view renders its section checklist — a PlanChecklist component in docs/ui/plan.jsx maps the payload&#x27;s todos to one linked row per section (checked with its close for done, &quot;deferred&quot; for deferred, &quot;open&quot; otherwise), placed directly above the plan body container, styled in docs/ui/plans.css; each row link prevents the hash navigation and scrolls its section into view; gate tests/test_spa_plan_checklist.py is 6 passed, EXIT=0, removing the render fails 5 ids (EXIT=1) and dropping the row click handler fails exactly the click assertion (EXIT=1).</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261008T035521257087-review-of-a-deferred-section-blocks-only-its-dependents" data-who="reckon-build" data-when="2026-10-08T04:23:35.687Z">
     <div class="r-comment-body"><p>review of r-20261008T025754782357-a-deferred-section-blocks-only-its-dependents (section 9 of reckon:a-plan-is-done-when-every-section-is-ticked): parsed record, 6 dimensions scored goal_fidelity 13 / evidence 14 / scope_discipline 15 / durability 19 / fit 19 / reuse 20, total 100; reviewed_base_sha 9f0d75a3, reviewed_head_sha c5c3fbd0; added_failure_count 0, added_failure_ids []; one blocking finding and one follow-on</p></div>
