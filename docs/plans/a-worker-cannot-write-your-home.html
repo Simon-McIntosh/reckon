@@ -23,11 +23,11 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S22">
-<meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="123">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="9125b986,984c4f05,78e179c5">
 <meta name="plan-impl" content="0.99">
+<meta name="plan-version" content="124">
+<meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
   <main class="plan-doc">
@@ -1643,6 +1643,9 @@
 <div class="r-comment" data-section="s1" data-id="c-run-r-20260923T120839955492-review-of-launch-plan-wraps-a-filesystem-fence" data-who="reckon-ship" data-when="2026-09-23T12:29:55.545Z">
     <div class="r-comment-body"><p>fresh high-effort review stored at 89; read before promotion</p></div>
 </div>
+<div class="r-comment" data-section="s1" data-id="c-claude-json-bind-race" data-who="reckon-build" data-when="2026-10-08T11:05:00Z">
+    <div class="r-comment-body"><p>Reported 2026-10-08 by the imas-codex coordinator. Run <code>r-20261008T105230566600-review-of-mapping-slots</code> (local lane, launched 10:52:42Z) died at launch. Its stderr read <code>bwrap: Can't bind mount /oldroot/home/ITER/mcintos/.claude.json on /newroot/home/ITER/mcintos/.claude.json: No such file or directory</code>, then <code>srun: error: … task 0: Exited with exit code 1</code>. The file existed again at 10:52:49Z, which fits a live Claude Code session atomically replacing <code>~/.claude.json</code> while the fence's mandatory <code>--ro-bind</code> of it was being set up. Two defects follow. First, the bind is mandatory, so a moment's absence of the file kills the launch: a <code>--ro-bind-try</code> for that path, or a retry on this signature, would make it safe against transient absence. Second, the supervisor recorded <code>exit_code 0</code> with <code>stream_records_seen 0</code> and <code>ended_during launch</code>, which hides srun's exit 1. The run was classified abandoned and redispatched by hand.</p></div>
+</div>
 <div class="r-comment" data-section="s2" data-id="c-awcwyh-worker-written-memory" data-who="reckon-e5" data-when="">
     <div class="r-comment-body"><p><strong>Workers are writing the coordinator's memory store right now.</strong> Measured 2026-09-23 18:22 local. After the deletion, <code>~/.claude/projects/-home-ITER-mcintos-Code-reckon/memory/</code> was repopulated. It now holds six memory files and an index, and every file carries an <code>originSessionId</code> that is not this coordinator's session. One is a run id (<code>r-20260923T084911255856-review-of-harness-reference-states-the-cap</code>). The others are worker session ids. They were written between 11:10 and 18:22, and one was modified at 18:22 by a live review. Each file is loaded into every later coordinator session in this repository as standing guidance. So a worker's local convention becomes coordinator instruction, with no review, no version and no commit. This is the write direction §2 closes: a per-run harness home gives each worker its own <code>projects/</code> tree, so a worker's memory tooling resolves inside its run and not into the operator's. The files are left in place, because they are the operator's to triage.</p></div>
 </div>
@@ -1929,7 +1932,7 @@
     <div class="r-comment-body"><p>Stored a parsed five-dimension review (goal_fidelity 18, evidence 18, scope_discipline 19, durability 18, fit 18; total 91) of the codex-login-cannot-be-removed run at reviewed_base_sha 9e5081bb32085947e24a8b17921c94c7935e32df and reviewed_head_sha ccd96c93f1a9a0b1870bb78cf4e1466c20cc955a, with zero added failures and one follow-on finding.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261003T063915864412-codex-login-cannot-be-removed" data-who="reckon-build" data-when="2026-10-03T07:08:44.482Z">
-    <div class="r-comment-body"><p>A fenced codex launch records the operator login&#x27;s size before the fence opens and, after the run, reports a zero-byte login on the run&#x27;s record and stderr from two stat calls that never open the credential, while the writable bind keeps refusing unlink and rename at the mount point (removal and replacement hold at base; truncation is the half that failed at base and passes at head).</p></div>
+    <div class="r-comment-body"><p>A fenced codex launch records the operator login's size before the fence opens and, after the run, reports a zero-byte login on the run's record and stderr from two stat calls that never open the credential, while the writable bind keeps refusing unlink and rename at the mount point (removal and replacement hold at base; truncation is the half that failed at base and passes at head).</p></div>
 </div>
 </section>
 </main>
