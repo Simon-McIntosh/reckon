@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "local",
+  "base_log_revision": "7c882130dec0027ba473f12e96eb3a9e8b10b6e5",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/picker/outcomes.py:250",
+    "reckon/crew/picker/lane_context.py:224",
+    "reckon/crew/paid_lanes.py:805"
+  ],
+  "completed_at": "2026-10-08T03:45:07.237Z",
+  "dispatched_at": "2026-10-08T03:22:22Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/one-typesafe-model-picker/picker-joins-codex-by-lane.html",
+      "line": "24",
+      "severity": "follow-on",
+      "text": "follow-on: the Gate receipts row pins the head gate to 9aff46e1e, two commits behind the run head 6af4acbb, without stating that the later commits touch only this fragment, so a reader of the fragment alone cannot tell the gate covers the run head."
+    }
+  ],
+  "head_log_revision": "9aff46e1e2a45ffde91dc2d514d108abe04b8d13",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read both gained commits (be006ea3 and 6af4acbb) against the prior reviewed head 9aff46e1e; each adds two lines to the fragment -- a Gate receipts row and a Write fence as granted row -- and no code path is touched.",
+    "done_when": "the done_when names the widened gate (the picker targets plus every tests/ module importing reckon.crew.paid_lanes); the fragment's receipts row cites gate-head.log at head 9aff46e1e (459 passed, EXIT=0) and gate-base.log at base 7c882130 (449 passed, EXIT=0), both openable in the run directory, each with a revision/tree/command header and a terminal EXIT line.",
+    "goal": "the node's goal is to close two picker follow-ons -- codex runs recognised by lane rather than name prefix, and a document-backed budget reading given its own provenance label -- and to write the evidence fragment; the two commits gained since the prior review complete that fragment's receipts and fence disclosures and touch no other path.",
+    "manifest": "read; the run manifest names gate-base.log and gate-head.log as the base and head arms, records zero added failures, and names negative controls nc-picker.log and nc-paid.log, each ending EXIT=1; the earlier review's unopenable-receipt defect (a cited head_new.log absent from the run directory that a later reader resolves) is repaired.",
+    "write_paths": "the two gained commits change only docs/evidence/fragments/one-typesafe-model-picker/picker-joins-codex-by-lane.html, a path the dispatch fence granted; that fragment's fence row records the grant and both amendments (reckon/crew/paid_lanes.py added on the coordinator's resume advice; tests/test_paid_lanes_codex_window.py edited outside the grant, assertions unchanged)."
+  },
+  "justifications": {
+    "durability": "the guarded behaviour is covered independently by tests/test_picker_joins_codex_by_lane.py's lookalike and model-id cases and its two publisher tests, which the recorded nc-picker.log (3 failed, EXIT=1) and nc-paid.log (2 failed, EXIT=1) show redden on the pre-fix name-prefix join.",
+    "evidence": "the receipts row's logs are openable and self-describing -- gate-head.log's header names revision 9aff46e1e, the tree and the exact command and ends EXIT=0 -- though the head arm measures 9aff46e1e, two commits behind the head it is stored against.",
+    "fit": "both gained rows match the measure/result table already in docs/evidence/fragments/one-typesafe-model-picker/picker-joins-codex-by-lane.html and introduce no name the repository naming rules forbid.",
+    "goal_fidelity": "the gained commits finish the evidence fragment the goal names, adding the receipts and fence rows at docs/evidence/fragments/one-typesafe-model-picker/picker-joins-codex-by-lane.html:24.",
+    "reuse": "the gained commits add only evidence rows, no definition; the underlying join extends reckon/crew/picker/outcomes.py:98's ledger.resolve_name rather than forking it.",
+    "scope_discipline": "both gained commits stay inside the granted fragment path, and the fragment discloses the out-of-grant edit to tests/test_paid_lanes_codex_window.py at docs/evidence/fragments/one-typesafe-model-picker/picker-joins-codex-by-lane.html:26 rather than concealing it."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to close two picker follow-ons -- codex runs recognised by lane rather than name prefix, and a document-backed budget reading given its own provenance label -- and to write the evidence fragment; the two commits gained since the prior review complete that fragment's receipts and fence disclosures and touch no other path.\nVERDICT done_when: the done_when names the widened gate (the picker targets plus every tests/ module importing reckon.crew.paid_lanes); the fragment's receipts row cites gate-head.log at head 9aff46e1e (459 passed, EXIT=0) and gate-base.log at base 7c882130 (449 passed, EXIT=0), both openable in the run directory, each with a revision/tree/command header and a terminal EXIT line.\nVERDICT write_paths: the two gained commits change only docs/evidence/fragments/one-typesafe-model-picker/picker-joins-codex-by-lane.html, a path the dispatch fence granted; that fragment's fence row records the grant and both amendments (reckon/crew/paid_lanes.py added on the coordinator's resume advice; tests/test_paid_lanes_codex_window.py edited outside the grant, assertions unchanged).\nVERDICT manifest: read; the run manifest names gate-base.log and gate-head.log as the base and head arms, records zero added failures, and names negative controls nc-picker.log and nc-paid.log, each ending EXIT=1; the earlier review's unopenable-receipt defect (a cited head_new.log absent from the run directory that a later reader resolves) is repaired.\nVERDICT diff: read both gained commits (be006ea3 and 6af4acbb) against the prior reviewed head 9aff46e1e; each adds two lines to the fragment -- a Gate receipts row and a Write fence as granted row -- and no code path is touched.\nCALL_SITES: reckon/crew/picker/outcomes.py:250, reckon/crew/picker/lane_context.py:224, reckon/crew/paid_lanes.py:805\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the gained commits finish the evidence fragment the goal names, adding the receipts and fence rows at docs/evidence/fragments/one-typesafe-model-picker/picker-joins-codex-by-lane.html:24.\nSCORE evidence: 18\nJUSTIFICATION evidence: the receipts row's logs are openable and self-describing -- gate-head.log's header names revision 9aff46e1e, the tree and the exact command and ends EXIT=0 -- though the head arm measures 9aff46e1e, two commits behind the head it is stored against.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: both gained commits stay inside the granted fragment path, and the fragment discloses the out-of-grant edit to tests/test_paid_lanes_codex_window.py at docs/evidence/fragments/one-typesafe-model-picker/picker-joins-codex-by-lane.html:26 rather than concealing it.\nSCORE durability: 19\nJUSTIFICATION durability: the guarded behaviour is covered independently by tests/test_picker_joins_codex_by_lane.py's lookalike and model-id cases and its two publisher tests, which the recorded nc-picker.log (3 failed, EXIT=1) and nc-paid.log (2 failed, EXIT=1) show redden on the pre-fix name-prefix join.\nSCORE fit: 20\nJUSTIFICATION fit: both gained rows match the measure/result table already in docs/evidence/fragments/one-typesafe-model-picker/picker-joins-codex-by-lane.html and introduce no name the repository naming rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: the gained commits add only evidence rows, no definition; the underlying join extends reckon/crew/picker/outcomes.py:98's ledger.resolve_name rather than forking it.\nFINDING docs/evidence/fragments/one-typesafe-model-picker/picker-joins-codex-by-lane.html:24 follow-on: the Gate receipts row pins the head gate to 9aff46e1e, two commits behind the run head 6af4acbb, without stating that the later commits touch only this fragment, so a reader of the fragment alone cannot tell the gate covers the run head.\nreviewed_base_sha: 9aff46e1e2a45ffde91dc2d514d108abe04b8d13\nreviewed_head_sha: 6af4acbbc8c6d881b20f0bfd80aa9965bd843a04\n",
+  "review_run_id": "r-20261008T032112359362-review-of-picker-joins-codex-by-lane",
+  "reviewed_base_sha": "9aff46e1e2a45ffde91dc2d514d108abe04b8d13",
+  "reviewed_head_sha": "6af4acbbc8c6d881b20f0bfd80aa9965bd843a04",
+  "reviewed_run_id": "r-20261008T004712736537-picker-joins-codex-by-lane",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T03:45:23.789877+00:00",
+  "total": 114
+}

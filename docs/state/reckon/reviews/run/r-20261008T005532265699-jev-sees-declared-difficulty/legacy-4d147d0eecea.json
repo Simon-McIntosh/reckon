@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_picker_dispatch_pace.py::test_old_recorded_window_is_marked_stale"
+  ],
+  "backend": "clive",
+  "base_log_revision": "7c882130dec0027ba473f12e96eb3a9e8b10b6e5",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/picker/__init__.py:_declared_difficulty",
+    "reckon/crew/picker/__init__.py:_section_effort_hours",
+    "reckon/crew/picker/prompts.py:build_state"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-08T00:56:13Z",
+  "findings": [
+    {
+      "file": "reckon/crew/picker/__init__.py",
+      "line": "145",
+      "severity": "follow-on",
+      "text": "follow-on: the section-effort read is gated on provenance == 'plan-fallback', so a section's own declared effort is silently dropped wherever the plan declares no plan-effort-hours, leaving estimated_hours null where the section declares an independent figure; 26 of 162 live plans carry no such meta, so the difficulty signal the change exists to surface is lost for those."
+    },
+    {
+      "file": "docs/evidence/fragments/one-typesafe-model-picker/jev-sees-declared-difficulty.html",
+      "line": "15",
+      "severity": "follow-on",
+      "text": "follow-on: the evidence fragment and the head gate log name revision ea8694d45, one docs-only commit below the reviewed head c65e4fe8d, so the recorded arm does not name the reviewed head; harmless here because c65e4fe8d changes only the evidence fragment."
+    }
+  ],
+  "head_log_revision": "ea8694d4532ec02977f3fd60492dd97e9f3ea68d",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read the three commits against base 23f64fb23; they introduce _section_effort_hours, rework _declared_difficulty so the plan is resolved once and the estimate takes node-then-section-then-plan precedence, render estimated_hours_source unconditionally, and update the section-effort tests, the two pinned-state tests and the evidence fragment.",
+    "done_when": "the done-when names tests/test_jev_sees_declared_difficulty.py and the picker suite; the manifest records the base arm (179 passed, EXIT 0) and the head arm (196 passed, 1 failed, EXIT 1) with logs on disk, and an independent re-run of the three touched test files at the reviewed head c65e4fe8d passed 22 of 22 in 1.45s.",
+    "goal": "the node goal is that Jev's rendered state carries the effort a node's plan section declares ahead of the plan total; reckon/crew/picker/__init__.py:126 now reads the section record's effort through routing._section_record and overrides the plan figure it is charged with.",
+    "manifest": "read; it records commits 2f51d0d06, ea8694d45 and c65e4fe8d, both gate arms and both negative controls, but carries no armed baseline_suite/after_suite JSON, so the added failures were derived directly from the logs it names, logs/base-gate.log and logs/head-gate.log.",
+    "write_paths": "read the three commits against base 23f64fb23; every path in them (docs/evidence/fragments/one-typesafe-model-picker/jev-sees-declared-difficulty.html, reckon/crew/picker/__init__.py, reckon/crew/picker/prompts.py, tests/test_jev_sees_declared_difficulty.py, tests/test_jev_prompt_carries_what_it_weighs.py, tests/test_picker_helpers_have_one_owner.py) sits inside the declared scope."
+  },
+  "justifications": {
+    "durability": "tests/test_jev_sees_declared_difficulty.py:171 and :185 assert the section effort and its source on the rendered state, and disabling the section-effort read reddens both section-effort tests (48.0 against the declared 10.0 and 4.0); no test covers a plan that declares no total, the gap the first finding records.",
+    "evidence": "logs/base-gate.log (179 passed, EXIT 0) and logs/head-gate.log (196 passed, 1 failed, EXIT 1) are on disk and both negative controls are recorded; the head arm carries one unrelated flake and its header names ea8694d45, one docs-only commit below the reviewed head c65e4fe8d.",
+    "fit": "reckon/crew/picker/__init__.py:65 reuses routing._section_record and prompts.py:187 renders estimated_hours_source unconditionally, matching the module idiom, but it imports a private helper across modules and its docstring says the plan is resolved once while routing._estimated_hours resolves the plan again internally.",
+    "goal_fidelity": "reckon/crew/picker/__init__.py:145 gates the section-effort read on provenance == 'plan-fallback', so a section's own declared effort is dropped and the state renders estimated_hours null whenever the plan carries no plan-effort-hours meta (26 of 162 live plans), short of the node>section>plan order the change states.",
+    "reuse": "reckon/crew/picker/__init__.py:65 reuses routing._section_record and the routing resolver rather than forking effort parsing; no duplicated capability was introduced.",
+    "scope_discipline": "every path in the three commits against base 23f64fb23 sits inside the six declared write paths; nothing outside the goal was touched."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that Jev's rendered state carries the effort a node's plan section declares ahead of the plan total; reckon/crew/picker/__init__.py:126 now reads the section record's effort through routing._section_record and overrides the plan figure it is charged with.\nVERDICT done_when: the done-when names tests/test_jev_sees_declared_difficulty.py and the picker suite; the manifest records the base arm (179 passed, EXIT 0) and the head arm (196 passed, 1 failed, EXIT 1) with logs on disk, and an independent re-run of the three touched test files at the reviewed head c65e4fe8d passed 22 of 22 in 1.45s.\nVERDICT write_paths: read the three commits against base 23f64fb23; every path in them (docs/evidence/fragments/one-typesafe-model-picker/jev-sees-declared-difficulty.html, reckon/crew/picker/__init__.py, reckon/crew/picker/prompts.py, tests/test_jev_sees_declared_difficulty.py, tests/test_jev_prompt_carries_what_it_weighs.py, tests/test_picker_helpers_have_one_owner.py) sits inside the declared scope.\nVERDICT manifest: read; it records commits 2f51d0d06, ea8694d45 and c65e4fe8d, both gate arms and both negative controls, but carries no armed baseline_suite/after_suite JSON, so the added failures were derived directly from the logs it names, logs/base-gate.log and logs/head-gate.log.\nVERDICT diff: read the three commits against base 23f64fb23; they introduce _section_effort_hours, rework _declared_difficulty so the plan is resolved once and the estimate takes node-then-section-then-plan precedence, render estimated_hours_source unconditionally, and update the section-effort tests, the two pinned-state tests and the evidence fragment.\nCALL_SITES: reckon/crew/picker/__init__.py:_declared_difficulty, reckon/crew/picker/__init__.py:_section_effort_hours, reckon/crew/picker/prompts.py:build_state\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/picker/__init__.py:145 gates the section-effort read on provenance == 'plan-fallback', so a section's own declared effort is dropped and the state renders estimated_hours null whenever the plan carries no plan-effort-hours meta (26 of 162 live plans), short of the node>section>plan order the change states.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/base-gate.log (179 passed, EXIT 0) and logs/head-gate.log (196 passed, 1 failed, EXIT 1) are on disk and both negative controls are recorded; the head arm carries one unrelated flake and its header names ea8694d45, one docs-only commit below the reviewed head c65e4fe8d.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the three commits against base 23f64fb23 sits inside the six declared write paths; nothing outside the goal was touched.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_jev_sees_declared_difficulty.py:171 and :185 assert the section effort and its source on the rendered state, and disabling the section-effort read reddens both section-effort tests (48.0 against the declared 10.0 and 4.0); no test covers a plan that declares no total, the gap the first finding records.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/picker/__init__.py:65 reuses routing._section_record and prompts.py:187 renders estimated_hours_source unconditionally, matching the module idiom, but it imports a private helper across modules and its docstring says the plan is resolved once while routing._estimated_hours resolves the plan again internally.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew/picker/__init__.py:65 reuses routing._section_record and the routing resolver rather than forking effort parsing; no duplicated capability was introduced.\nFINDING reckon/crew/picker/__init__.py:145 follow-on: the section-effort read is gated on provenance == 'plan-fallback', so a section's own declared effort is silently dropped wherever the plan declares no plan-effort-hours, leaving estimated_hours null where the section declares an independent figure; 26 of 162 live plans carry no such meta, so the difficulty signal the change exists to surface is lost for those.\nFINDING docs/evidence/fragments/one-typesafe-model-picker/jev-sees-declared-difficulty.html:15 follow-on: the evidence fragment and the head gate log name revision ea8694d45, one docs-only commit below the reviewed head c65e4fe8d, so the recorded arm does not name the reviewed head; harmless here because c65e4fe8d changes only the evidence fragment.\nreviewed_base_sha: 23f64fb234e918478098f19d7e79b6cfd2d0506e\nreviewed_head_sha: c65e4fe8d06bf097b11b19906599b3320356f15c",
+  "review_run_id": "legacy-4d147d0eecea",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "23f64fb234e918478098f19d7e79b6cfd2d0506e",
+  "reviewed_head_sha": "c65e4fe8d06bf097b11b19906599b3320356f15c",
+  "reviewed_run_id": "r-20261008T005532265699-jev-sees-declared-difficulty",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T03:03:19.985087+00:00",
+  "total": 105
+}

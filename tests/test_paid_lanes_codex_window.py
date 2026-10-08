@@ -51,8 +51,12 @@ def test_publisher_uses_newest_run_home_without_a_project(tmp_path, monkeypatch)
         "resolve",
         lambda *_a, **_k: SimpleNamespace(
             config={
+                # The flat backend block lane expansion writes: each profile of
+                # the provider carries the group whose quota it draws, which is
+                # the declaration the publisher joins profiles to an account on.
                 "backends": {
-                    name: {} for name in ("codex", "codex-astra", "codex-luna")
+                    name: {"budget_group": "codex-sub"}
+                    for name in ("codex", "codex-astra", "codex-luna")
                 }
             }
         ),
