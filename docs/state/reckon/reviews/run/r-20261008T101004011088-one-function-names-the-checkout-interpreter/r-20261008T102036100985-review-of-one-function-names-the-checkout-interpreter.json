@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "backend": "clive",
+  "base_log_revision": null,
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/hooks/install.py:170",
+    "reckon/hooks/install.py:364",
+    "reckon/hooks/install.py:391",
+    "reckon/hooks/worker_git_guard.py:54",
+    "reckon/hooks/coordinator_obligations.py:104",
+    "reckon/hooks/worker_stop.py:65"
+  ],
+  "completed_at": "2026-10-08T10:42:21.642Z",
+  "dispatched_at": "2026-10-08T10:20:58Z",
+  "findings": [
+    {
+      "file": "tests/test_one_function_names_the_interpreter.py",
+      "line": "50",
+      "severity": "follow-on",
+      "text": "follow-on: the cross-side equality compares two calls that both resolve through interpreter_bootstrap.checkout_interpreter, so it stays true under a diverged resolver and cannot fail for the defect it names; the guard actually lives on line 48 against the test-built expected path, and this review's mutation confirmed the assertion never reddened."
+    },
+    {
+      "file": "commit-bb165ba2c",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: this commit and d406e7ee7 both end with a \"Co-Authored-By: Claude Code\" trailer, which the repository's unconditional ban on AI attribution forbids on any authored message."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commit by commit against base 4e9e3a9c2; install.py delegates interpreter_path to the bootstrap resolver and its recogniser to a new predicate, interpreter_bootstrap.py adds checkout_interpreter and is_checkout_interpreter, and a 92-line test file plus the evidence fragment are added, all inside scope.",
+    "done_when": "the done_when asks install.interpreter_path and the installer's recogniser to stop composing the layout, a synthetic-checkout test, and the installer/bootstrap/command tests passing; the manifest records the 34-passed gate and gate.log is on disk.",
+    "goal": "the node's goal is to name the checkout interpreter in one function; reckon/hooks/interpreter_bootstrap.py:13 adds checkout_interpreter and it is now the only composition of .venv/bin/python under reckon/hooks.",
+    "manifest": "read; it states the five-file gate ran 34 passed EXIT=0 and names gate.log and negative-control.log.",
+    "write_paths": "read the manifest's declared paths; every path in the diff against 4e9e3a9c2 is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_one_function_names_the_interpreter.py:48 and :61 pin the resolved path to a test-built expected Path and a mutation that diverges the resolver reddens three tests, though the cross-side equality at :50 cannot fail on a diverged layout because both sides delegate to the same resolver.",
+    "evidence": "tests/test_one_function_names_the_interpreter.py:65 scans every reckon/hooks module for the composed layout and gate.log records 34 passed EXIT=0 at head d406e7ee, but the scan matches only quoted names joined by a slash, so a differently-spelled composer would evade it.",
+    "fit": "interpreter_bootstrap.py:13-31 keeps the module stdlib-only and its names describe the mechanism, but both commits carry an attribution trailer the repository's attribution rule forbids.",
+    "goal_fidelity": "reckon/hooks/install.py:147 delegates interpreter_path to interpreter_bootstrap.checkout_interpreter and reckon/hooks/install.py:391 replaces the inline layout check with is_checkout_interpreter, so no reckon/hooks module other than the bootstrap composes the path.",
+    "reuse": "a search over reckon for a Python composer of .venv/bin/python outside reckon/hooks found none, and the change consolidates the two prior composers into interpreter_bootstrap.checkout_interpreter rather than forking a capability.",
+    "scope_discipline": "the diff against 4e9e3a9c2 changes exactly reckon/hooks/install.py, reckon/hooks/interpreter_bootstrap.py, tests/test_one_function_names_the_interpreter.py and the evidence fragment, all declared."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to name the checkout interpreter in one function; reckon/hooks/interpreter_bootstrap.py:13 adds checkout_interpreter and it is now the only composition of .venv/bin/python under reckon/hooks.\nVERDICT done_when: the done_when asks install.interpreter_path and the installer's recogniser to stop composing the layout, a synthetic-checkout test, and the installer/bootstrap/command tests passing; the manifest records the 34-passed gate and gate.log is on disk.\nVERDICT write_paths: read the manifest's declared paths; every path in the diff against 4e9e3a9c2 is inside them.\nVERDICT manifest: read; it states the five-file gate ran 34 passed EXIT=0 and names gate.log and negative-control.log.\nVERDICT diff: read commit by commit against base 4e9e3a9c2; install.py delegates interpreter_path to the bootstrap resolver and its recogniser to a new predicate, interpreter_bootstrap.py adds checkout_interpreter and is_checkout_interpreter, and a 92-line test file plus the evidence fragment are added, all inside scope.\nCALL_SITES: reckon/hooks/install.py:170, reckon/hooks/install.py:364, reckon/hooks/install.py:391, reckon/hooks/worker_git_guard.py:54, reckon/hooks/coordinator_obligations.py:104, reckon/hooks/worker_stop.py:65\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/hooks/install.py:147 delegates interpreter_path to interpreter_bootstrap.checkout_interpreter and reckon/hooks/install.py:391 replaces the inline layout check with is_checkout_interpreter, so no reckon/hooks module other than the bootstrap composes the path.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_one_function_names_the_interpreter.py:65 scans every reckon/hooks module for the composed layout and gate.log records 34 passed EXIT=0 at head d406e7ee, but the scan matches only quoted names joined by a slash, so a differently-spelled composer would evade it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff against 4e9e3a9c2 changes exactly reckon/hooks/install.py, reckon/hooks/interpreter_bootstrap.py, tests/test_one_function_names_the_interpreter.py and the evidence fragment, all declared.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_one_function_names_the_interpreter.py:48 and :61 pin the resolved path to a test-built expected Path and a mutation that diverges the resolver reddens three tests, though the cross-side equality at :50 cannot fail on a diverged layout because both sides delegate to the same resolver.\nSCORE fit: 19\nJUSTIFICATION fit: interpreter_bootstrap.py:13-31 keeps the module stdlib-only and its names describe the mechanism, but both commits carry an attribution trailer the repository's attribution rule forbids.\nSCORE reuse: 20\nJUSTIFICATION reuse: a search over reckon for a Python composer of .venv/bin/python outside reckon/hooks found none, and the change consolidates the two prior composers into interpreter_bootstrap.checkout_interpreter rather than forking a capability.\nFINDING tests/test_one_function_names_the_interpreter.py:50 follow-on: the cross-side equality compares two calls that both resolve through interpreter_bootstrap.checkout_interpreter, so it stays true under a diverged resolver and cannot fail for the defect it names; the guard actually lives on line 48 against the test-built expected path, and this review's mutation confirmed the assertion never reddened.\nFINDING commit-bb165ba2c:1 follow-on: this commit and d406e7ee7 both end with a \"Co-Authored-By: Claude Code\" trailer, which the repository's unconditional ban on AI attribution forbids on any authored message.\n",
+  "review_run_id": "r-20261008T102036100985-review-of-one-function-names-the-checkout-interpreter",
+  "reviewed_base_sha": "4e9e3a9c20d8433cab24de4eb0d2ffa082ecef38",
+  "reviewed_head_sha": "d406e7ee784707d1b42723df7d88b75f5b6007fd",
+  "reviewed_run_id": "r-20261008T101004011088-one-function-names-the-checkout-interpreter",
+  "reviewer": "review-of-one-function-names-the-checkout-interpreter",
+  "reviewer_run_id": "r-20261008T102036100985-review-of-one-function-names-the-checkout-interpreter",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T10:44:52.875931+00:00",
+  "total": 117
+}
