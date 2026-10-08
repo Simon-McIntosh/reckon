@@ -187,8 +187,16 @@ def _replace_stream(stream_path: Path, events: list[dict]) -> None:
 
 
 def _two_live_runs(home: Path) -> None:
+    """Two live runs whose rows an arming draws.
+
+    Delivered into ``complete``, so each run's baseline is an action row the
+    pane keeps — a run still in a progress state is observer context the pane
+    withholds, and would draw nothing.
+    """
     _write_pointer(home, RUN_A, "node-a", phase="working")
     _write_pointer(home, RUN_B, "node-b", phase="working")
+    _deliver(home, RUN_A, "complete")
+    _deliver(home, RUN_B, "complete")
 
 
 # ── Every arming replays the fleet, one row per live run ────────────────────
@@ -244,16 +252,16 @@ def test_a_rearm_with_nothing_new_carries_the_recorded_state_time(home) -> None:
                 _event(
                     RUN_A,
                     "node-a",
-                    state="working",
+                    state="completed_unpromoted",
                     observed_at=past,
-                    previous="dispatched",
+                    previous="working",
                 ),
                 _event(
                     RUN_B,
                     "node-b",
-                    state="working",
+                    state="completed_unpromoted",
                     observed_at=past,
-                    previous="dispatched",
+                    previous="working",
                 ),
             ],
         )
@@ -282,6 +290,7 @@ def test_a_rearm_stamps_the_entry_into_a_state_not_its_last_re_emission(
     began working.
     """
     _write_pointer(home, RUN_A, "node-a", phase="working")
+    _deliver(home, RUN_A, "complete")
     with runs._project_watch_claim(PROJECT, "1h") as (acquired, seat):
         assert acquired
         stream_path = Path(seat["stream_path"])
@@ -291,7 +300,7 @@ def test_a_rearm_stamps_the_entry_into_a_state_not_its_last_re_emission(
         entered = _iso(time.time() - 40 * 60)
         reemits = [
             _iso(time.time() - 30 * 60),
-            _iso(time.time() - 20 * 60),
+            _iso(time.time() - 20 * 60), _iso(time.time() - 20 * 60),
             _iso(time.time() - 10 * 60),
         ]
         _append_stream(
@@ -300,15 +309,15 @@ def test_a_rearm_stamps_the_entry_into_a_state_not_its_last_re_emission(
                 _event(
                     RUN_A,
                     "node-a",
-                    state="working",
+                    state="completed_unpromoted",
                     observed_at=entered,
-                    previous="dispatched",
+                    previous="working",
                 ),
                 *[
                     _event(
                         RUN_A,
                         "node-a",
-                        state="working",
+                        state="completed_unpromoted",
                         observed_at=stamp,
                         event="baseline",
                     )
@@ -338,6 +347,7 @@ def test_a_rearm_stamps_the_current_entry_after_a_state_returns(home) -> None:
     run would stamp the row with the stale first entry.
     """
     _write_pointer(home, RUN_A, "node-a", phase="working")
+    _deliver(home, RUN_A, "complete")
     with runs._project_watch_claim(PROJECT, "1h") as (acquired, seat):
         assert acquired
         stream_path = Path(seat["stream_path"])
@@ -353,23 +363,23 @@ def test_a_rearm_stamps_the_current_entry_after_a_state_returns(home) -> None:
                 _event(
                     RUN_A,
                     "node-a",
-                    state="working",
+                    state="completed_unpromoted",
                     observed_at=first_working,
-                    previous="dispatched",
-                ),
-                _event(
-                    RUN_A,
-                    "node-a",
-                    state="blocked",
-                    observed_at=blocked,
                     previous="working",
                 ),
                 _event(
                     RUN_A,
                     "node-a",
-                    state="working",
+                    state="failed",
+                    observed_at=blocked,
+                    previous="completed_unpromoted",
+                ),
+                _event(
+                    RUN_A,
+                    "node-a",
+                    state="completed_unpromoted",
                     observed_at=second_working,
-                    previous="blocked",
+                    previous="failed",
                 ),
             ],
         )
@@ -439,16 +449,16 @@ def test_a_rearm_carries_each_runs_recorded_state_time(home) -> None:
                 _event(
                     RUN_A,
                     "node-a",
-                    state="working",
+                    state="complete",
                     observed_at=a_stamp,
-                    previous="dispatched",
+                    previous="working",
                 ),
                 _event(
                     RUN_B,
                     "node-b",
-                    state="working",
+                    state="complete",
                     observed_at=b_stamp,
-                    previous="dispatched",
+                    previous="working",
                 ),
             ],
         )
@@ -489,16 +499,16 @@ def test_a_rearm_orders_rows_by_recorded_time(home) -> None:
                 _event(
                     RUN_A,
                     "node-a",
-                    state="working",
+                    state="complete",
                     observed_at=a_late,
-                    previous="dispatched",
+                    previous="working",
                 ),
                 _event(
                     RUN_B,
                     "node-b",
-                    state="working",
+                    state="complete",
                     observed_at=b_early,
-                    previous="dispatched",
+                    previous="working",
                 ),
             ],
         )
@@ -534,7 +544,7 @@ def test_a_replaced_stream_draws_each_live_run_once_with_recorded_times(home) ->
                 _event(
                     RUN_A,
                     "node-a",
-                    state="working",
+                    state="complete",
                     observed_at=a_stamp,
                     event="baseline",
                 ),
@@ -775,14 +785,14 @@ def test_a_recorded_state_the_live_fleet_denies_is_not_announced(home) -> None:
         second = _arm(resume=None)
 
     by_run = {str(event["run_id"]): event for event in second}
-    assert str(by_run[RUN_A]["to_state"]) == "working", (
+    assert str(by_run[RUN_A]["to_state"]) == "completed_unpromoted", (
         f"the live classification is the authority; got {by_run[RUN_A]!r}"
     )
     assert str(by_run[RUN_A]["observed_at"]) != stalled, (
         f"a state the live fleet denies must not carry the stream's time; got "
         f"{by_run[RUN_A]!r}"
     )
-    assert str(by_run[RUN_B]["to_state"]) == "working", by_run[RUN_B]
+    assert str(by_run[RUN_B]["to_state"]) == "completed_unpromoted", by_run[RUN_B]
 
 
 def test_a_rearm_records_its_own_place_for_the_next(home) -> None:
@@ -1424,9 +1434,9 @@ def test_the_pane_memory_does_not_suppress_a_replayed_row(home) -> None:
         _event(
             RUN_A,
             "node-a",
-            state="working",
+            state="complete",
             observed_at=a_stamp,
-            previous="dispatched",
+            previous="working",
         ),
         _event(
             RUN_B,
@@ -1445,7 +1455,7 @@ def test_the_pane_memory_does_not_suppress_a_replayed_row(home) -> None:
             SESSION,
             stream_path=stream_path,
             offset=0,
-            reported={RUN_A: "working"},
+            reported={RUN_A: "complete"},
         )
         _two_live_runs(home)
         _append_stream(stream_path, stream_events)
@@ -1456,7 +1466,7 @@ def test_the_pane_memory_does_not_suppress_a_replayed_row(home) -> None:
         f"a replayed row is not suppressed by the checkpoint's memory; got {drawn!r}"
     )
     by_run = {str(event["run_id"]): event for event in drawn}
-    assert str(by_run[RUN_A]["to_state"]) == "working", by_run[RUN_A]
+    assert str(by_run[RUN_A]["to_state"]) == "complete", by_run[RUN_A]
     assert str(by_run[RUN_A]["observed_at"]) == a_stamp, by_run[RUN_A]
     assert str(by_run[RUN_B]["observed_at"]) == b_stamp, by_run[RUN_B]
 
