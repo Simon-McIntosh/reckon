@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.73">
-<meta name="plan-version" content="43">
+<meta name="plan-version" content="45">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -129,10 +129,13 @@
       plans across ten projects, mostly older plans with no declarations at all. A gap a plan already carries
       therefore stays writable (decision <code>coverage-gap-scope</code>). <code>reckon audit-doc</code> reports it,
       and a write is refused only when it adds a gap the plan did not have. A grandfathered gap still cannot reach
-      <code>done</code>: at the transition into a terminal status, an authored heading with no declaration counts as an
-      open section beside the declared ones, so its row must be declared and ticked before the plan closes.</p>
+      <code>done</code>. This section widens §6's landed terminal guard, <code>_require_every_section_ticked</code> in
+      <code>reckon/_store.py</code>, so that at the transition into a terminal status it also counts an authored heading
+      with no declaration as open, read from the plan's HTML, and names it in the refusal. Its row must then be
+      declared and ticked before the plan closes. <code>_plan_html.open_sections</code>, which roadmap readiness also
+      reads, stays declaration-only, and a plan already at a terminal status is not re-judged.</p>
     <p><strong>Done when</strong> the census of every mounted project's live plans is recorded with its count. A test
-      writes a plan with an undeclared heading and finds the audit error and the write refusal, and a second test
+      adds an undeclared heading to a plan with no gap and finds the audit error and the write refusal, and a second test
       finds the reverse case. Both fail on the current code, which checks neither; that is their negative
       control. A third test adds a heading and its declaration in one <code>insert_section</code> write and finds it
       accepted. It fails when the check reads the authored <code>source_text</code> instead of the rendered
@@ -284,6 +287,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261008T025558982950-a-plan-reaches-done-only-when-every-section-is-ticked" data-who="reckon-build" data-when="2026-10-08T05:50:34.031Z">
     <div class="r-comment-body"><p>§6 terminal guard: _store._require_every_section_ticked refuses a write moving a plan to shipped/done while any section is implementable or deferred, read from the shared _plan_html.open_sections predicate, at validate_landing_patch, apply_ops and _write_state_locked, all three transition-keyed so an already-terminal plan is not re-judged; the patch site reads the pre-write status from the stored plan because the patch writer merges the patch before its validators run, and fails closed to the empty status when that plan cannot be read; census 17 of 213 terminal mounted plans hold an open section; gate 8 passed EXIT=0, base arm 5 failed EXIT=1</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-s6-widened-by-coverage" data-who="reckon-build" data-when="2026-10-08T13:55:00Z">
+    <div class="r-comment-body"><p>The coverage section widens this guard after decision <code>coverage-gap-scope</code>. Refusing only new gaps leaves an older plan's undeclared heading writable, so at the terminal transition <code>_require_every_section_ticked</code> will also count an authored heading with no declaration as open. <code>_plan_html.open_sections</code> stays declaration-only. This section's own tests and its landed record are unchanged.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-close-s7" data-who="reckon-build" data-when="2026-10-08T04:45:00Z">
     <div class="r-comment-body"><p>Landed at merge <code>8783e616</code>. Both skills and the coordinator reference land a section with <code>append_evidence</code>, a <code>set</code> of its declaration to <code>done</code>, and a <code>c-close-</code> comment carrying the result and the landing-record href. The body stays as authored. The contract tests follow the <code>c-close</code> link to a section of the landing record. Review 111/120. 22 skill-reading test files: 431 passed at both arms, 0 added. <a href="/reckon/evidence/fragments/a-plan-is-done-when-every-section-is-ticked/the-landing-beat-ticks-instead-of-collapsing.html">evidence</a></p></div>
