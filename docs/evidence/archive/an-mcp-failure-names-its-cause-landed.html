@@ -50,6 +50,11 @@
     <p>A one-plan read now resolves the named plan at its canonical typed path (<code>resources._resolve_canonical</code>) with no corpus scan, and takes its north-star diagnostic from a result memoised on the project state directory. Its <code>scandir</code> count is 0 for fixtures of 5 and 60 plans, and the payload equals the scan path's. The declared control reverts the direct resolution and reproduces 22 against 132. On the fleet node a warm one-plan read took 0.039 s, against a read that had not finished in 180 s; cold it took 12.6 s. A repair round made the fast path defer to the scan when a slug has both a live and an archived document, where the scan raises <code>ResourceCollision</code> and the first build returned the live resource (logged reproduction). 104 suite tests pass before and after. Reviews 108/120 and 113/120, 0 added failures. The MCP summary view still walks the corpus for its inventory, which is §12.</p>
   </section>
 
+  <section id="s12-summary-view-index">
+    <h2>§12 — the summary view reads the index</h2>
+    <p>The MCP summary view of one plan takes its plan inventory from the persisted metadata index (<code>reckon/metadata_index.py</code>). It reads the index while the tree's shape is unchanged, judged by the directories' stat identity, and walks the corpus only to rebuild a stale index. It resolves the selected document at its canonical path. A warm summary read of one plan now scans 0 directories at 5 and at 60 plans, against 33 and 198 before the change (<code>tests/test_summary_view_reads_the_index.py</code>; the declared negative control reverts the read to the walk and fails). Commits <code>cff2bbedf</code> and <code>e52b056fb</code>. The independent review stored 107/120. Its three follow-ons named the same gap: the worker's run of the existing <code>reckon.mcp</code> tests stopped at 18%. The coordinator closed it at the merged head (main <code>f4160bbef</code> plus <code>e52b056fb</code>): all 96 test modules importing <code>reckon.mcp</code>, <code>reckon._mcp_tools</code> or <code>reckon.metadata_index</code> pass, 1,516 passed and 2 skipped with EXIT=0.</p>
+  </section>
+
 </main>
 </body>
 </html>

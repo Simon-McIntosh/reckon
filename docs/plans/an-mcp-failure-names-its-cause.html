@@ -21,13 +21,14 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="reckon-reads-answer-in-seconds">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;}">
   <title>An MCP Failure Names Its Cause | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-impl" content="0.55">
-<meta name="plan-version" content="65">
+<meta name="plan-impl" content="0.64">
+<meta name="plan-version" content="66">
 <meta name="plan-modified" content="2026-10-08">
+<meta name="plan-commits" content="cff2bbed,e52b056f">
 </head>
 <body>
   <main class="plan-doc">
@@ -215,20 +216,12 @@
       resolve raises the schema refusal and the test fails. The write paths are <code>reckon/flight.py</code>,
       <code>reckon/_backends.py</code> and <code>tests/test_worker_mcp_servers.py</code>.</p>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-08</span>
     <h2 id="s12">§12 — The MCP summary view lists the inventory without walking the corpus</h2>
-<section data-reckon="section" data-id="s12" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-<p><strong>Deliverable.</strong> §9 made a one-plan <code>_store.read_plan</code> answer without a corpus scan; a warm read
-      took 0.039 s on the fleet node. The MCP tool's default summary view still scans the corpus for its plan inventory, through
-      <code>_discover_project</code> in <code>reckon/mcp.py</code> and <code>_covered_files</code> in <code>reckon/metadata_index.py</code>.
-      §9's worker measured 44 <code>scandir</code> calls at 5 plans against 264 at 60. The summary view takes its inventory from the
-      persisted metadata index, read when the index is current by the directories' stat identity, and walks the corpus only to rebuild a
-      stale index.</p>
-    <p><strong>Done when</strong> <code>tests/test_summary_view_reads_the_index.py</code> counts <code>os.scandir</code> calls during a warm
-      MCP <code>read_plan</code> summary view of one plan in fixture projects of 5 and of 60 plans. The counts are equal, and the payload
-      equals the one the current code returns. The negative control is executed and logged: with the index read reverted to the walk, the
-      60-plan count exceeds the 5-plan count and the test fails. The write paths are <code>reckon/mcp.py</code>,
-      <code>reckon/metadata_index.py</code> and <code>tests/test_summary_view_reads_the_index.py</code>; it runs after §8, which also edits
-      <code>reckon/mcp.py</code>.</p>
+<section data-reckon="section" data-id="s12" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">The summary view of one plan reads its inventory from the metadata index: 0 directory scans at 5 and 60 plans, against 33 and 198 before; 96 importer modules green at the merged head. <a href="/reckon/evidence/archive/an-mcp-failure-names-its-cause-landed.html#s12-summary-view-index">full record</a></p>
+</section>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -316,6 +309,9 @@
 </div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261008T123103399177-review-of-summary-view-reads-the-index" data-who="reckon-build" data-when="2026-10-08T12:44:54.620Z">
     <div class="r-comment-body"><p>Reviewed run r-20261008T102241291974-summary-view-reads-the-index at head e52b056fb: stored a parsed 6-dimension record (goal_fidelity 19, evidence 14, scope_discipline 19, durability 18, fit 18, reuse 19; total 107) recording reviewed_base_sha 4f249452c0cefb000c933bfcc428086f5e68fd39 and reviewed_head_sha e52b056fb1f9b94c22704345330b4518c7764730; the §12 done-when gate and its negative control reproduce independently (1 passed EXIT=0; 1 failed EXIT=1, 33 scandir at 5 plans vs 198 at 60); added_failure_count is null and added_failure_ids empty because the reviewed manifest left baseline_suite and after_suite empty.</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-s12-landed" data-who="reckon-build" data-when="2026-10-08T12:52:00Z">
+    <div class="r-comment-body"><p>gate passed (96 importer modules, 1,516 passed, EXIT=0 at the merged head; review 107/120); section 12 closed.</p></div>
 </div>
 </section>
 </main>
