@@ -32,6 +32,7 @@ import json
 import logging
 import os
 import shlex
+import threading
 import time
 from collections import Counter
 from collections.abc import Callable, Mapping
@@ -244,6 +245,68 @@ def _landing_grace_seconds() -> float:
     return WRITE_LANDING_GRACE_SECONDS if override is None else override
 
 
+# A timed-out body that was computing burns thread CPU time comparable to the
+# wall time it held; one that was waiting on storage burns almost none. The
+# fraction separates the two for a wait long enough to time, and the floor keeps
+# the kernel's CPU-accounting granularity from reading a very short wait as
+# computing. These decide only the reported cause; the ``error`` value stays
+# ``storage-slow`` so no existing caller's branch changes.
+_COMPUTING_CPU_FRACTION = 0.5
+_COMPUTING_CPU_FLOOR_SECONDS = 0.02
+
+
+def _thread_cpu_seconds(tid: int) -> float | None:
+    """CPU seconds one thread of this process has consumed, or None.
+
+    Read from ``/proc`` so the deadline can ask about the abandoned worker
+    thread by id: ``time.thread_time`` answers only for the calling thread, and
+    the caller here is the event loop, which is the thread that is not doing
+    the work. Returns None when the thread has exited or the counter is
+    unreadable, which is an unknown state rather than a zero.
+    """
+
+    try:
+        with open(f"/proc/self/task/{tid}/stat", "rb") as handle:
+            data = handle.read()
+    except OSError:
+        return None
+    close = data.rfind(b")")
+    if close < 0:
+        return None
+    fields = data[close + 2 :].split()
+    if len(fields) < 13:
+        return None
+    try:
+        utime = int(fields[11])
+        stime = int(fields[12])
+        ticks = os.sysconf("SC_CLK_TCK")
+    except (ValueError, OSError):
+        return None
+    if ticks <= 0:
+        return None
+    return (utime + stime) / ticks
+
+
+def _cause_of_timeout(cpu_seconds: float | None, waited: float) -> str:
+    """Name whether the abandoned body was computing or waiting on storage."""
+
+    if cpu_seconds is None:
+        return "waiting"
+    threshold = max(_COMPUTING_CPU_FLOOR_SECONDS, _COMPUTING_CPU_FRACTION * waited)
+    return "computing" if cpu_seconds >= threshold else "waiting"
+
+
+# The CLI command that answers each registered tool's work without the MCP
+# deadline, keyed by the tool's label. A tool with no CLI counterpart, such as
+# the plan writer, names nothing here rather than inventing a command.
+_CLI_ANSWER_COMMANDS = {
+    "read_plan": "reckon roadmap --project <project>",
+    "roadmap": "reckon roadmap --project <project>",
+    "audit": "reckon audit --project <project>",
+    "crew": "reckon crew list --project <project>",
+}
+
+
 def _file_fingerprint(path: str | None) -> tuple[int, int] | None:
     """The identity of one file as (mtime, size), or None when it is absent."""
 
@@ -311,10 +374,13 @@ async def _run_under_deadline(
     waiting: dict[str, Any] = {
         "path": str(path) if path is not None else None,
         "before": _UNSET,
+        "tid": None,
+        "cpu_base": None,
     }
     started = time.monotonic()
 
     def _work() -> Any:
+        waiting["tid"] = threading.get_native_id()
         if waiting["path"] is None and path_hint is not None:
             try:
                 resolved = path_hint()
@@ -327,12 +393,24 @@ async def _run_under_deadline(
         # must never execute on the event loop.
         if kind == "write" and waiting["path"] is not None:
             waiting["before"] = _file_fingerprint(waiting["path"])
+        # The CPU baseline is read here too, so the deadline can subtract it
+        # from the worker thread's counter and report what the abandoned body
+        # itself spent rather than what the whole process did.
+        waiting["cpu_base"] = _thread_cpu_seconds(waiting["tid"])
         return body()
 
     try:
         return await asyncio.wait_for(asyncio.to_thread(_work), limit)
     except TimeoutError:
         waited = time.monotonic() - started
+        cpu_seconds: float | None = None
+        tid = waiting["tid"]
+        cpu_base = waiting["cpu_base"]
+        if tid is not None and cpu_base is not None:
+            current = _thread_cpu_seconds(tid)
+            if current is not None:
+                cpu_seconds = max(0.0, current - cpu_base)
+        cause = _cause_of_timeout(cpu_seconds, waited)
         landed: bool | None = None
         if kind == "write" and waiting["path"] is not None:
             before = waiting["before"]
@@ -348,6 +426,9 @@ async def _run_under_deadline(
             waited=waited,
             deadline=limit,
             landed=landed,
+            cpu_seconds=cpu_seconds,
+            cause=cause,
+            cli_command=_CLI_ANSWER_COMMANDS.get(label),
         ).model_dump()
 
 
