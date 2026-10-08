@@ -20,11 +20,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;: [&quot;every-module-fits-a-worker-window#s4&quot;], &quot;s10&quot;: [&quot;every-module-fits-a-worker-window#s4&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;}">
   <title>Lane And Model Routing | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="43">
+<meta name="plan-version" content="44">
 <meta name="plan-modified" content="2026-10-08">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -99,7 +99,7 @@
 <p>A gate stores its required evidence as prose or as an anchor reference. <code>docs/ui/plan.jsx</code> renders that text as a link whatever it holds, so prose evidence becomes a broken link. This plan's content review raised it (<code>anchors_resolve-1</code>). Render a link only for a value that parses as an anchor reference, and render prose as text.</p><p>Write paths: <code>docs/ui/plan.jsx</code> and its tests. A browser test needs the chromium shim this host provides.</p><p><strong>Done when</strong> a test renders a gate whose evidence is prose and another whose evidence is an anchor reference. The first shows no link; the second links to the anchor.</p>
 
     <h2 id="s12">§12 — One owner for the provenance leaf rule</h2>
-<section data-reckon="section" data-id="s12" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s12" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
 <p>The review of §9 (score 102) found that <code>_leaf_paths</code>, added by §9 in <code>reckon/flight.py</code>, is a second copy of the leaf-traversal rule that <code>_record_provenance</code> applies inline. Provenance is right only while the two agree on which paths are leaves, and a comment now asserts that agreement instead of the code holding it. Make <code>_record_provenance</code> walk the leaves through <code>_leaf_paths</code>, so the module has one owner for the rule.</p><p>Write paths: <code>reckon/flight.py</code> and its tests.</p><p><strong>Done when</strong> <code>_record_provenance</code> calls <code>_leaf_paths</code> and holds no traversal of its own. A test changes the leaf rule in <code>_leaf_paths</code> alone (treating an empty mapping as a non-leaf, which today is a leaf) and shows <code>origin()</code> and <code>provenance_sources</code> both follow it. Every existing <code>origin()</code> assertion still passes.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
@@ -250,6 +250,9 @@
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261008T091705362102-review-of-gate-evidence-renders-as-written" data-who="reckon-build" data-when="2026-10-08T09:28:02.622Z">
     <div class="r-comment-body"><p>Review of r-20261008T084900561128-gate-evidence-renders-as-written at head 7f0275c48 vs base a8d228247 stored as a parsed 6-dimension record (goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 19, reuse 19; total 116, verdict pass), reviewed_base_sha and reviewed_head_sha both recorded, added_failure_count 0 with no added ids.</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-close-s12" data-who="reckon-build" data-when="2026-10-08T13:25:00Z">
+    <div class="r-comment-body"><p>§12 landed: <code>_record_provenance</code> walks leaves through <code>_leaf_paths</code> (merge <code>d93d8918e</code>, review 117, no failures added). <a href="/reckon/evidence/archive/lane-and-model-routing-landed.html#s12">evidence</a></p></div>
 </div>
 </section>
 </main>

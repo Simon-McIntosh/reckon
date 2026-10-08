@@ -65,6 +65,11 @@
     <p>Lane §9 and §11 were merged onto main as one stacked virtual merge and measured together. The population was 82 test files that import <code>reckon.flight</code>, call <code>origin()</code> or render <code>plan.jsx</code>, with 80 of them present at base. Base 1,268 passed and head 1,277 passed, 20 skipped in each arm, both <code>EXIT=0</code>, so no failures were added. A focused gate at the real merged head <code>c901ef916</code> passed 148 tests (<code>EXIT=0</code>). Logs are in <code>~/.cache/reckon-suite-logs/merge-lane-s9-s11-*.log</code>.</p>
   </section>
 
+  <section id="s12">
+    <h2>§12 — one owner for the provenance leaf rule (2026-10-08)</h2>
+    <p><code>_record_provenance</code> in <code>reckon/flight.py</code> now stamps every leaf by iterating <code>_leaf_paths</code> and holds no traversal of its own, so provenance and the lane expansion share one leaf rule. A test changes the rule in <code>_leaf_paths</code> alone, treating an empty mapping as a non-leaf, and both <code>origin()</code> and <code>provenance_sources</code> follow it. Restoring the inline traversal makes the test fail.</p><p>Run <code>r-20261008T123138358445-provenance-has-one-leaf-rule</code>, commits <code>a4ebec5a3</code> and <code>99b719788</code>, merged at <code>d93d8918e</code>. The merge check covered 73 files that import <code>reckon.flight</code> or call <code>origin()</code>: base 1,206 and head 1,207 passed, both <code>EXIT=0</code>. A focused gate at the merged head passed 138 tests. Review 117 found no added failures. Its one note is that the worker's head gate log names the base revision, because it ran before the commit.</p>
+  </section>
+
 </main>
 </body>
 </html>
