@@ -1,0 +1,64 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T13:41:23.876Z",
+  "dispatched_at": "2026-10-08T13:31:01Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-plan-is-done-when-every-section-is-ticked/r-20261008T133035064811-plan-review-of-a-plan-is-done-when-every-section-is-ticked/plan.html:121",
+      "id": "reasoning-1",
+      "reason": "the deliverable's universal \"a plan write that would introduce either gap is refused\" is false on a first-class write path the SPA already writes through, so a builder following the plan's two-path instruction leaves gap introduction open and the node's claim cannot be satisfied as written.",
+      "text": "\u00a75 says a plan write that would introduce a heading/declaration gap \"is refused\" and that the widened check \"is called on both write paths\" (state mode through `_write_state_locked`, text mode through `_replace_plan_text`), but `POST /plan/<project>/<slug>` (reckon/serve.py:3477) is a third plan write path: it reads the file, `_patch_into(state, patch)` (reckon/serve.py:3566), calls only `validate_landing_patch` (state alone), then `_plan_html.write_state` + `write_atomically` (reckon/serve.py:3603,3617). It never reaches `_write_state_locked` or `_replace_plan_text`, so a patch that drops or adds a `section_declarations` entry (both top-level state keys) can introduce `section-without-todo` or `todo-without-section` with no refusal \u2014 and the done-when tests none of it, so the gap passes every \u00a75 test",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "6db0acfb9b661a6738353927b2fde967c4cfcf27fbdf1582dbec2f2ee9ca15c9",
+  "plan_slug": "a-plan-is-done-when-every-section-is-ticked",
+  "plan_version": 42,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-08T13:42:48.177439+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-08T13:42:48.177439+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-plan-is-done-when-every-section-is-ticked.v42.json",
+  "review_run_id": "r-20261008T133035064811-plan-review-of-a-plan-is-done-when-every-section-is-ticked",
+  "reviewed_blob_sha": "50efacfff80a7921f9bdb3fe67b400dc9ac28a7c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every anchor resolves: `reckon audit-doc` (reckon/project_maintenance_commands.py:1252), `_require_heading_for_section_records` (reckon/_store.py:1663), `_require_new_section_contracts` (reckon/_store.py:1697), `_write_state_locked`, `_replace_plan_text`, and the decision key `coverage-gap-scope` (present at plan.html:210).",
+    "done_when": "pass \u2014 \u00a75's six tests each name a falsifiable control (base-arm failure, or a stated mutation such as reading `source_text`, wiring the guard into `_write_state_locked` alone, treating the plan as gap-free before the write, or reading the declaration map alone), and the census is a recorded count.",
+    "evidence_paths": "pass \u2014 \u00a75's census and gate logs land on the plan's durable evidence record, never a scratchpad or node-local temp path.",
+    "naming": "pass \u2014 the new tokens are audit finding codes and a decision key (emitted data), not plan labels carried into code symbols.",
+    "reasoning": "a finding \u2014 \u00a75 claims the coverage check is \"called on both write paths\", but a third plan write path rewrites the plan's embedded state directly and is never named.",
+    "single_goal": "pass \u2014 \u00a75 carries one deliverable, the coverage control that every section has a todo item, with the terminal-status branch as the same goal enforced at close.",
+    "wiring": "pass \u2014 \u00a75's ordering dependency (\u00a73's predicate, \u00a76's release of `reckon/_store.py`) is stated in the followup chain (f-tick-005) and no declared relationship points at a wrong node."
+  },
+  "section_digests": {
+    "_document": "899e6a58b97ae3065b809c4bc9bca87eb086fc0d18595a8a1f5d84e60c767b98",
+    "s1": "504d22771a3dd608a5f113f45b30b87012723b39ee6319c32160ad40e77b7adb",
+    "s2": "2d0220d0872dd77830193ee143573a19119b3152a998506dd5491a03a0f80500",
+    "s3": "dbf9166463b113d8f8a440402420ab71cecdf477a9019a3e22158b8db6ae5de9",
+    "s4": "f91b4fda0b5185501a0a7264c6ba88dc1586d9b53641cb27676fcd7d6e9a3bdc",
+    "s5": "cfe7b5cc7052c20e1669a6ca31af0db054c4d8d03199915594004bfa18eb3813",
+    "s6": "0418ebb7e7cc2b3384ba2f3083c13055aecdc2822cb908d790ca11cde28f29bd",
+    "s7": "d7e441a3d1c0f7f50bbb675a73d8cbff3d2573d8ea49fbaf1befb81e245eab7b",
+    "s8": "2f36255141168e93b0b91e1ed13f26491a53c82783099452394a9c4e5c70a19d",
+    "s9": "f2886be505469c66ee74166fd61eadf445d43f95f996dc8caabe3a0b733e7052"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T13:42:45.092753+00:00"
+}
