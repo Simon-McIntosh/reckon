@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken; supplemental: the reviewed run declares no baseline_suite/after_suite pair, but the arms it did run each report no FAILED id -- gate_head.log 7 passed, gate_existing_backends.log 61 passed, gate_backends_surface.log 167 passed -- and the only FAILED lines in the run directory are the intentional negative control.",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/_backends.py:3285 (launch_plan -> seed_harness_home -> _seed_worker_mcp_settings)",
+    "reckon/crew/dispatch.py:1546 (dispatch passes the resolved config as fence_config)",
+    "reckon/crew/dispatch_sessions.py:1096"
+  ],
+  "completed_at": "2026-10-08T06:31:17.540Z",
+  "dispatched_at": "2026-10-08T06:10:25Z",
+  "findings": [
+    {
+      "file": "reckon/_backends.py",
+      "line": "3285",
+      "severity": "follow-on",
+      "text": "follow-on: _declared_worker_mcp_servers is fed the resolved flight config, but reckon/flight.py:320 _schema_view removes only harness_home_files, harness_home_adjacent_files, sprint_recent_days and the review-owned keys, so a top-level worker_mcp_servers is refused (measured: resolve(overrides={\"worker_mcp_servers\": [\"imas-cx\"]}) raised FlightConfigError 'Extra inputs are not permitted'); the opt-in half is inert in production and tests/test_worker_mcp_servers.py:140 injects fence_config directly, so no test catches it."
+    },
+    {
+      "file": "tests/test_fence_is_on_again.py",
+      "line": "165",
+      "severity": "blocking",
+      "text": "blocking: the file is outside the run's declared write paths and its edit, like tests/test_harness_home_carries_the_operator_config.py:184, is required because both asserted the seeded settings.json held only the operator hooks key -- the contract the section supersedes -- so the change cannot land as declared without a coordinator granting the scope extension or reworking the section to leave that key set unchanged."
+    },
+    {
+      "file": "docs/evidence/fragments/an-mcp-failure-names-its-cause/workers-seed-only-named-mcp-servers.html",
+      "line": "24",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment reports the launch/seed surface as \"166 passed\" while gate_backends_surface.log, the log the same run cites, records 167 passed, so the record and its log disagree on the count."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against c5afaf59e; 8c9e4276e adds WORKER_MCP_SERVERS, the two settings-key constants, the worker_mcp_servers parameter and _declared_worker_mcp_servers/_seed_worker_mcp_settings in reckon/_backends.py, threads the declaration through launch_plan, adds tests/test_worker_mcp_servers.py and updates two existing assertions; 700fc0f62 adds the 30-line evidence fragment.",
+    "done_when": "the done-when names tests/test_worker_mcp_servers.py; I re-ran it at head 700fc0f62 -- 7 passed EXIT=0 -- and read the run's own negative control gate_negative.log, which removes the seeded write and fails EXIT=1 with 4 test ids the head arm passes; the named-server case is asserted only by injecting fence_config, not through flight resolution.",
+    "goal": "the node goal is that a dispatched worker's harness starts the reckon server and no project .mcp.json server unless the project names one; reckon/_backends.py:2264-2266 writes enableAllProjectMcpServers=false and enabledMcpjsonServers into the seeded settings.json, retiring the implicit every-server default, but the opt-in half is unreachable in production because reckon/flight.py:320 _schema_view does not exempt worker_mcp_servers, so a project cannot declare it (measured: resolve(overrides) raised FlightConfigError 'Extra inputs are not permitted').",
+    "manifest": "read; it names commits 8c9e4276e and 700fc0f62, three gate logs and the negative control, reports 7 passed and 167 passed, and itself flags the out-of-scope test edits under blockers; its test_logs omit gate_existing_backends.log (61 passed) and baseline.log (54 passed) that sit in the run's logs directory.",
+    "write_paths": "the manifest declares reckon/_backends.py, tests/test_worker_mcp_servers.py, the evidence fragment and the figures directory, but git diff --name-only c5afaf59e 700fc0f62 also lists tests/test_fence_is_on_again.py and tests/test_harness_home_carries_the_operator_config.py, both outside the declared scope."
+  },
+  "justifications": {
+    "durability": "removing _seed_worker_mcp_settings reddens 4 assertions (gate_negative.log EXIT=1), but tests/test_worker_mcp_servers.py:140 injects the same server name it later asserts at :144, and nothing asserts the flight-config path that would make the opt-in reachable.",
+    "evidence": "the gate tests/test_worker_mcp_servers.py passed 7 at EXIT=0 and the negative control gate_negative.log is red EXIT=1 with 4 ids, but the named-server assertion at tests/test_worker_mcp_servers.py:140 supplies fence_config directly, so it measures a config flight resolution never produces.",
+    "fit": "the new constants and helpers at reckon/_backends.py:2029-2266 follow the module's module-constant and _-prefixed-helper idiom beside _merge_harness_entry, and carry no plan label, version suffix or author attribution.",
+    "goal_fidelity": "the disable-group half lands at reckon/_backends.py:2264 and retires the every-server default, but reckon/flight.py:320 leaves worker_mcp_servers in the schema view so a project cannot declare the opt-in list (measured refusal), leaving half the goal's mechanism inert.",
+    "reuse": "a search of reckon/ for enableAllProjectMcpServers/enabledMcpjsonServers found no prior writer, so _seed_worker_mcp_settings extends the single seeder rather than forking a capability.",
+    "scope_discipline": "the diff touches tests/test_fence_is_on_again.py:165 and tests/test_harness_home_carries_the_operator_config.py:184, neither in the declared write paths, though both edits are forced because the done-when requires those existing assertions to be updated to the key set the section supersedes."
+  },
+  "model": "deepseek-v4.1-flash",
+  "node": "review-of-workers-seed-only-named-mcp-servers",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a dispatched worker's harness starts the reckon server and no project .mcp.json server unless the project names one; reckon/_backends.py:2264-2266 writes enableAllProjectMcpServers=false and enabledMcpjsonServers into the seeded settings.json, retiring the implicit every-server default, but the opt-in half is unreachable in production because reckon/flight.py:320 _schema_view does not exempt worker_mcp_servers, so a project cannot declare it (measured: resolve(overrides) raised FlightConfigError 'Extra inputs are not permitted').\nVERDICT done_when: the done-when names tests/test_worker_mcp_servers.py; I re-ran it at head 700fc0f62 -- 7 passed EXIT=0 -- and read the run's own negative control gate_negative.log, which removes the seeded write and fails EXIT=1 with 4 test ids the head arm passes; the named-server case is asserted only by injecting fence_config, not through flight resolution.\nVERDICT write_paths: the manifest declares reckon/_backends.py, tests/test_worker_mcp_servers.py, the evidence fragment and the figures directory, but git diff --name-only c5afaf59e 700fc0f62 also lists tests/test_fence_is_on_again.py and tests/test_harness_home_carries_the_operator_config.py, both outside the declared scope.\nVERDICT manifest: read; it names commits 8c9e4276e and 700fc0f62, three gate logs and the negative control, reports 7 passed and 167 passed, and itself flags the out-of-scope test edits under blockers; its test_logs omit gate_existing_backends.log (61 passed) and baseline.log (54 passed) that sit in the run's logs directory.\nVERDICT diff: read commit by commit against c5afaf59e; 8c9e4276e adds WORKER_MCP_SERVERS, the two settings-key constants, the worker_mcp_servers parameter and _declared_worker_mcp_servers/_seed_worker_mcp_settings in reckon/_backends.py, threads the declaration through launch_plan, adds tests/test_worker_mcp_servers.py and updates two existing assertions; 700fc0f62 adds the 30-line evidence fragment.\nCALL_SITES: reckon/_backends.py:3285 (launch_plan -> seed_harness_home -> _seed_worker_mcp_settings), reckon/crew/dispatch.py:1546 (dispatch passes the resolved config as fence_config), reckon/crew/dispatch_sessions.py:1096\nSCORE goal_fidelity: 13\nJUSTIFICATION goal_fidelity: the disable-group half lands at reckon/_backends.py:2264 and retires the every-server default, but reckon/flight.py:320 leaves worker_mcp_servers in the schema view so a project cannot declare the opt-in list (measured refusal), leaving half the goal's mechanism inert.\nSCORE evidence: 14\nJUSTIFICATION evidence: the gate tests/test_worker_mcp_servers.py passed 7 at EXIT=0 and the negative control gate_negative.log is red EXIT=1 with 4 ids, but the named-server assertion at tests/test_worker_mcp_servers.py:140 supplies fence_config directly, so it measures a config flight resolution never produces.\nSCORE scope_discipline: 12\nJUSTIFICATION scope_discipline: the diff touches tests/test_fence_is_on_again.py:165 and tests/test_harness_home_carries_the_operator_config.py:184, neither in the declared write paths, though both edits are forced because the done-when requires those existing assertions to be updated to the key set the section supersedes.\nSCORE durability: 16\nJUSTIFICATION durability: removing _seed_worker_mcp_settings reddens 4 assertions (gate_negative.log EXIT=1), but tests/test_worker_mcp_servers.py:140 injects the same server name it later asserts at :144, and nothing asserts the flight-config path that would make the opt-in reachable.\nSCORE fit: 18\nJUSTIFICATION fit: the new constants and helpers at reckon/_backends.py:2029-2266 follow the module's module-constant and _-prefixed-helper idiom beside _merge_harness_entry, and carry no plan label, version suffix or author attribution.\nSCORE reuse: 20\nJUSTIFICATION reuse: a search of reckon/ for enableAllProjectMcpServers/enabledMcpjsonServers found no prior writer, so _seed_worker_mcp_settings extends the single seeder rather than forking a capability.\nFINDING reckon/_backends.py:3285 follow-on: _declared_worker_mcp_servers is fed the resolved flight config, but reckon/flight.py:320 _schema_view removes only harness_home_files, harness_home_adjacent_files, sprint_recent_days and the review-owned keys, so a top-level worker_mcp_servers is refused (measured: resolve(overrides={\"worker_mcp_servers\": [\"imas-cx\"]}) raised FlightConfigError 'Extra inputs are not permitted'); the opt-in half is inert in production and tests/test_worker_mcp_servers.py:140 injects fence_config directly, so no test catches it.\nFINDING tests/test_fence_is_on_again.py:165 blocking: the file is outside the run's declared write paths and its edit, like tests/test_harness_home_carries_the_operator_config.py:184, is required because both asserted the seeded settings.json held only the operator hooks key -- the contract the section supersedes -- so the change cannot land as declared without a coordinator granting the scope extension or reworking the section to leave that key set unchanged.\nFINDING docs/evidence/fragments/an-mcp-failure-names-its-cause/workers-seed-only-named-mcp-servers.html:24 follow-on: the fragment reports the launch/seed surface as \"166 passed\" while gate_backends_surface.log, the log the same run cites, records 167 passed, so the record and its log disagree on the count.\nreviewed_base_sha: c5afaf59e7d40a55879c76ff4bd24deb6cc83026\nreviewed_head_sha: 700fc0f624cbc32f25bb757f7254d7bbbb62c3f5",
+  "review_run_id": "r-20261008T060941222529-review-of-workers-seed-only-named-mcp-servers",
+  "reviewed_base_sha": "c5afaf59e7d40a55879c76ff4bd24deb6cc83026",
+  "reviewed_head_sha": "700fc0f624cbc32f25bb757f7254d7bbbb62c3f5",
+  "reviewed_run_id": "r-20261008T044322676562-workers-seed-only-named-mcp-servers",
+  "role": "review",
+  "scores": {
+    "durability": 16,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 13,
+    "reuse": 20,
+    "scope_discipline": 12
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T06:25:59.950955+00:00",
+  "total": 93
+}
