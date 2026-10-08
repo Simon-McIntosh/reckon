@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.64">
-<meta name="plan-version" content="70">
+<meta name="plan-version" content="73">
 <meta name="plan-modified" content="2026-10-08">
 <meta name="plan-commits" content="cff2bbed,e52b056f">
 </head>
@@ -86,9 +86,11 @@
       worktree, and a directory under the system temporary directory reads as temporary; it re-derives neither. Most failing
       directories are gone by the time the census reads them: 1,453 of 1,500 sampled connection records name a directory that no
       longer exists, and 1,450 of those sit under a <code>reckon-worktrees</code> root. <code>_in_linked_worktree</code> answers
-      false for a missing path, so a missing path is classified by where it sat instead: under a <code>reckon-worktrees</code>
-      component, the root <code>_workspace_roots</code> in <code>reckon/crew/routing.py</code> provisions every worktree under, it reads
-      as a worker worktree, and any other missing path reads as gone, never as a main checkout. The fixture log tree in the done-when
+      false for a missing path, so a missing path is classified by where it sat instead. The worktree root is named
+      <code>.reckon-worktrees</code> on this workstation, and <code>_workspace_roots</code> in <code>reckon/crew/routing.py</code>
+      recognises it by a path component that reads <code>reckon-worktrees</code> once a leading dot is stripped. That test moves into
+      one helper in <code>reckon/crew/routing.py</code>, which <code>_workspace_roots</code> and the census both call. A missing path
+      the helper accepts reads as a worker worktree, and any other missing path reads as gone, never as a main checkout. The fixture log tree in the done-when
       includes one failure whose worktree directory has been removed, and it is counted as a worker worktree. The causes are the
       signatures in §1's table, matched by a table of patterns in the same module. A failure no pattern matches
       is reported as unclassified with its first line rather than dropped, because the next unknown cause is the
@@ -98,7 +100,9 @@
       tool-result blocks. That walk is inline in <code>promotion_receipts</code> in <code>reckon/velocity.py</code>, the loop over
       <code>record["message"]["content"]</code>, so it is extracted into one helper there that <code>promotion_receipts</code> and the
       census both call, rather than copied. <code>promotion_receipts</code> behaves as before, held by its existing tests. The census
-      adds only the <code>storage-slow</code> count, which no reader has. The check adds no command and
+      adds only the <code>storage-slow</code> count, which no reader has. The section adds one module, <code>reckon/mcp_census.py</code>, and one public function in it, the census; nothing
+      is retired, because no existing reader counts MCP connections or <code>storage-slow</code> results, and the doctor block and an
+      agent asking for another window both call that one function. The check adds no command and
       no option: it is one more block in <code>reckon doctor</code>'s existing report, and an agent that wants
       the figures for another window calls the census function. It reads and never writes, and its runtime is
       bounded by naming the log directories it walks.</p>
@@ -112,7 +116,8 @@
       fails; a second, with the tool-result reader returning nothing, fails the transcript count. Run against the real log tree on the fleet node for the window 2026-10-01T01:00:00Z to
       2026-10-08T01:00:00Z, the census function reproduces §1's imas-cx <code>CONNECTION_CLOSED</code> count within 5%, in a log written to the
       run directory. The write paths are
-      <code>reckon/mcp_census.py</code>, <code>reckon/project_maintenance_commands.py</code> (where <code>reckon doctor</code> is defined) and <code>reckon/velocity.py</code>, for the extracted walk, and <code>tests/test_mcp_census.py</code>. The tests that import
+      <code>reckon/mcp_census.py</code>, <code>reckon/project_maintenance_commands.py</code> (where <code>reckon doctor</code> is defined) and <code>reckon/velocity.py</code>, for the extracted walk, <code>reckon/crew/routing.py</code>, for the worktree-root helper, and
+      <code>tests/test_mcp_census.py</code>. The tests that import
       <code>reckon.velocity</code> pass at the head.</p>
 
     <section class="section-landed">
