@@ -23,11 +23,11 @@ def test_a_producer_keeps_publishing_after_a_slow_reload(tmp_path, monkeypatch) 
     home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(home))
     root, package = _copy_source(tmp_path)
-    cli_path = package / "cli.py"
-    source = cli_path.read_text()
+    follower_path = package / "crew_follow_commands.py"
+    source = follower_path.read_text()
     needle = '    "import pathlib, sys\\n"\n'
     assert needle in source
-    cli_path.write_text(
+    follower_path.write_text(
         source.replace(
             needle,
             '    "import pathlib, sys, time\\n"\n    "time.sleep(2)\\n"\n',
