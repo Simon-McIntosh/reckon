@@ -1350,7 +1350,7 @@ def _write_state_locked(
     ):
         _require_transition_verdict(new_data, "plan-terminal")
         if requested_status in _LANDED_STATUSES:
-            _require_every_section_ticked(new_data)
+            _require_every_section_ticked(new_data, text)
         _require_terminal_evidence(project, slug, requested_status, root)
     if state_type == "plan":
         _validate_decision_transitions(new_data, cur_state)
@@ -3395,34 +3395,98 @@ def _status_before_the_patch(state: dict[str, Any]) -> str:
     return str(stored.get("status") or "").strip().lower()
 
 
-def _require_every_section_ticked(state: dict[str, Any]) -> None:
+def _require_every_section_ticked(
+    state: dict[str, Any], html_text: str | None = None
+) -> None:
     """Refuse a landing while any section is still declared open.
 
     A plan reaches ``shipped`` or ``done`` only when every section's
     declaration is ``done``. An ``implementable`` or ``deferred`` section leaves
     the plan open, so the refusal names the sections still open, in the order
     their declarations were written.
+
+    An authored heading with no declaration is counted as open too, beside
+    those: the declaration map alone cannot see it, and a heading nothing
+    declares has no item to tick, so reading the map alone lets a plan land with
+    a section nobody ever answered for. The headings come from the plan's HTML,
+    which the write paths hold; without it the check stays the declaration-map
+    one it was.
     """
     from reckon import _plan_html
 
-    open_ids = _plan_html.open_sections(state)
-    if not open_ids:
+    open_ids = list(_plan_html.open_sections(state))
+    undeclared = _undeclared_headings(state, html_text)
+    if not open_ids and not undeclared:
         return
-    named = ", ".join(open_ids)
+    reasons = []
+    if open_ids:
+        reasons.append(f"{len(open_ids)} section(s) still open ({', '.join(open_ids)})")
+    if undeclared:
+        reasons.append(
+            "authored heading(s) with no section_declarations entry "
+            f"({', '.join(undeclared)}) count as open"
+        )
     raise OpError(
-        f"terminal status refused: {len(open_ids)} section(s) still open "
-        f"({named}) — tick each open section's declaration to 'done' before "
-        "the plan can land"
+        "terminal status refused: "
+        + "; ".join(reasons)
+        + " — every section needs a declaration ticked to 'done' before the "
+        "plan can land"
     )
 
 
-def validate_landing_patch(state: dict[str, Any], patch: dict[str, Any]) -> None:
+def _plan_html_text(state: dict[str, Any]) -> str | None:
+    """The plan's own HTML as it stands on disk, or None if it is not one.
+
+    A caller holding the document passes it, which is the accurate reading on
+    every write path. One that holds only the state dict — the op batch before
+    the state is written back — reads the file the ops were applied to, whose
+    headings are the headings the write produces: an inserted section carries
+    its declaration in the same op.
+    """
+    if str(state.get("type", "plan") or "plan") != "plan":
+        return None
+    project = str(state.get("project") or "")
+    slug = str(state.get("slug") or "")
+    if not project or not slug:
+        return None
+    try:
+        html_file = _resolve_html_file(project, slug)
+        if html_file is None or not html_file.is_file():
+            return None
+        return html_file.read_text(encoding="utf-8")
+    except OSError:
+        return None
+
+
+def _undeclared_headings(state: dict[str, Any], html_text: str | None) -> list[str]:
+    """Authored section headings of the plan that carry no declaration."""
+    from reckon import _plan_html
+
+    if html_text is None:
+        html_text = _plan_html_text(state)
+    if not html_text:
+        return []
+    declared = {str(key) for key in (state.get("section_declarations") or {})}
+    return sorted(
+        str(identity)
+        for identity, _ in _plan_html.authored_section_headings(html_text)
+        if str(identity) not in declared
+    )
+
+
+def validate_landing_patch(
+    state: dict[str, Any], patch: dict[str, Any], html_text: str | None = None
+) -> None:
     """Refuse a merge patch that lands a plan without naming a continuation.
 
     Deliberately keyed to the *write* rather than to the resulting state. A
     state-level invariant would retroactively lock every plan already recorded
     as shipped without a followup — measured at 155 of 202 across the mounted
     projects — so history stays editable and only a new landing owes an answer.
+
+    ``html_text`` is the plan's HTML as it stands when the patch is applied, so
+    the section check can see an authored heading nothing declares; a caller
+    without the document still gets the declaration-map check.
     """
     if str(state.get("type", "plan") or "plan") != "plan":
         return
@@ -3431,7 +3495,7 @@ def validate_landing_patch(state: dict[str, Any], patch: dict[str, Any]) -> None
     if requested_status in _LANDED_STATUSES and (
         _status_before_the_patch(state) not in TERMINAL_STATUSES
     ):
-        _require_every_section_ticked(state)
+        _require_every_section_ticked(state, html_text)
     if requested_status in TERMINAL_STATUSES:
         _require_transition_verdict(state, "plan-terminal")
         project = str(state.get("project") or "")
@@ -3515,13 +3579,18 @@ def _validate_continuation(working: dict, ops: list[dict]) -> None:
     raise OpError(CONTINUATION_REQUIRED)
 
 
-def apply_ops(working: dict, ops: list[dict], is_index: bool) -> list[str]:
+def apply_ops(
+    working: dict, ops: list[dict], is_index: bool, html_text: str | None = None
+) -> list[str]:
     """Apply ``ops`` IN ORDER to the working DICT in place.
 
     ``working`` is the read_state dict (plan) or the index ``data`` sub-object.
     Returns accumulated non-fatal warnings (e.g. double-active-sprint).
     Raises :class:`OpError` on any structurally invalid op — the caller then
     rejects WITHOUT writing. Pure: never touches disk or version fields.
+
+    ``html_text`` is the plan's HTML as it stands, read only by the terminal
+    check so the section check can see an authored heading nothing declares.
     """
     if not isinstance(ops, list):
         raise OpError("ops must be a list")
@@ -3549,7 +3618,7 @@ def apply_ops(working: dict, ops: list[dict], is_index: bool) -> list[str]:
         # An already-terminal plan is not re-judged: the guard keys on the
         # transition into a terminal status, not on a terminal status itself.
         if landing and previous_status not in TERMINAL_STATUSES:
-            _require_every_section_ticked(working)
+            _require_every_section_ticked(working, html_text)
         if any(
             op.get("op") == "set"
             and op.get("path") == "status"

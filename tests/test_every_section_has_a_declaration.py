@@ -11,8 +11,13 @@ was already there would refuse it at its next write.
 
 from __future__ import annotations
 
+import http.client
+import json
+import threading
 from copy import deepcopy
 from pathlib import Path
+
+import pytest
 
 from reckon import _plan_html, doccheck
 from reckon import mcp as mcp_module
@@ -44,6 +49,7 @@ def _write_plan(
     headings: list[tuple[str, str]],
     declarations: dict[str, str],
     records_for: set[str] | None = None,
+    followups: list[dict] | None = None,
 ) -> tuple[Path, Path]:
     """Author a plan file directly, bypassing the write path.
 
@@ -77,6 +83,7 @@ def _write_plan(
         "modified": "2026-10-08",
         "version": 0,
         "section_declarations": deepcopy(declarations),
+        "followups": deepcopy(followups or []),
         "sections": [
             _record(sid, status)
             for sid, status in declarations.items()
@@ -243,3 +250,83 @@ def test_a_plan_already_carrying_a_gap_accepts_an_unrelated_write(
     assert refused["ok"] is False, refused
     assert "s3" in refused["detail"], refused
     assert "section-without-todo" in refused["detail"], refused
+
+
+def test_a_landing_with_an_undeclared_heading_is_refused(tmp_path: Path) -> None:
+    """A plan cannot land while an authored heading carries no declaration.
+
+    Reading the declaration map alone, a heading nothing declares has no open
+    entry and the plan reaches ``done`` with a section nobody ever answered for.
+    The open followup keeps the continuation rule satisfied, so the write is
+    refused by the section guard rather than by the continuation rule.
+    """
+    checkout, path = _write_plan(
+        tmp_path,
+        [("s1", "One"), ("s2", "Two")],
+        {"s1": "done"},
+        records_for={"s1"},
+        followups=[
+            {
+                "id": "f-next",
+                "status": "open",
+                "prompt": "/reckon-build coverage §2",
+            }
+        ],
+    )
+    before = path.read_text(encoding="utf-8")
+
+    result = _edit(checkout, path, {"op": "set", "path": "status", "value": "done"})
+
+    assert result["ok"] is False, result
+    assert "s2" in result["detail"], result
+    assert "declaration" in result["detail"], result
+    assert path.read_text(encoding="utf-8") == before
+
+
+def test_the_server_patch_path_refuses_a_write_that_drops_a_declaration(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The HTTP patch path renders its own HTML and must checks it too.
+
+    ``POST /plan/<project>/<slug>`` patches state and renders the file with
+    ``write_state`` without reaching either store write path, so a patch that
+    drops a declaration would otherwise walk past the coverage guard.
+    """
+    checkout, path = _write_plan(tmp_path, [("s1", "One")], {"s1": "done"})
+    docs = checkout / "docs"
+    mounts = tmp_path / "mounts.json"
+    mounts.write_text(json.dumps({"sample": str(docs)}), encoding="utf-8")
+    monkeypatch.setenv("RECKON_MOUNTS_PATH", str(mounts))
+
+    import reckon.serve as serve_module
+
+    serve_module._MOUNTS_FILE = mounts
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
+    (tmp_path / "config").mkdir()
+    serve_module._DISC_CACHE.clear()
+
+    before = path.read_text(encoding="utf-8")
+    state, _ = _plan_html.read_state_and_text_file(path)
+    version = state["version"]
+
+    server = serve_module.ThreadingHTTPServer(("127.0.0.1", 0), serve_module.Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    connection = http.client.HTTPConnection("127.0.0.1", server.server_port, timeout=5)
+    try:
+        connection.request(
+            "POST",
+            "/plan/sample/coverage",
+            body=json.dumps({"section_declarations": {}}),
+            headers={"Content-Type": "application/json", "If-Match": str(version)},
+        )
+        response = connection.getresponse()
+        payload = json.loads(response.read())
+    finally:
+        connection.close()
+        server.shutdown()
+
+    assert response.status == 400, payload
+    assert payload["error"] == "section_coverage", payload
+    assert "s1" in payload["sections_without_declaration"], payload
+    assert path.read_text(encoding="utf-8") == before, "the refusal must not write"
