@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T03:23:38.100Z",
+  "dispatched_at": "2026-10-08T03:06:56Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-follower-lives-as-long-as-its-session.html:280",
+      "id": "wiring-1",
+      "reason": "with no followup invoking \u00a714 and f-afl-006's body uncorrected, the next `/reckon-build` dispatch carries \u00a79 only and a reader is told no code node remains, so \u00a714 is never reached and the plan's own record contradicts its declarations.",
+      "text": "\u00a714 is declared `implementable` but no followup invokes it, and the sole open followup f-afl-006 still asserts \"Every code node has landed\" and names \u00a79 as the plan's last node, which \u00a714's newly added code node makes false",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "699ae0b6e52ad15a48306e704ba3ce5cbbdcb472dd01cd10edf13e8ad3eb37c3",
+  "plan_slug": "a-follower-lives-as-long-as-its-session",
+  "plan_version": 64,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T030617216393-plan-review-of-a-follower-lives-as-long-as-its-session",
+  "reviewed_blob_sha": "f36da3a468fd9b8cbfd0adefb8162afc2205fc6b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_ask_session_host_for_follower` (reckon/crew/dispatch.py:1431), `_session_host_waiting` (reckon/crew/dispatch.py:1344), `_follower_end_line` (reckon/cli.py:3623), `skills/reckon-build/references/coordinator-reference.md`, and the `a-follower-outlives-its-monitor` dependency all resolve; the extensionless dep href resolves as `.html`.",
+    "done_when": "pass \u2014 \u00a714's done-when names five measurable cases in `tests/test_follower_hands_off_to_host.py` and a declared negative control (handoff check removed \u2192 the first case writes no request and fails).",
+    "evidence_paths": "pass \u2014 \u00a714 names no scratchpad path; its gate and negative control land on the plan's durable evidence directory, as the sibling sections' landed records do.",
+    "naming": "pass \u2014 \u00a714 introduces no plan labels, stage names, ticket numbers or version tags into symbols or comments; the new test file is named for its behaviour.",
+    "reasoning": "pass \u2014 the stated root cause (dispatch asks the session host only for an unattached session, and the follower's end row says re-arm) matches the cited code at dispatch.py:7559 and cli.py:3637, and the handoff mechanism names the callers it relies on.",
+    "single_goal": "pass \u2014 \u00a714 carries one mechanism (route a session's wake-up through its waiting host); the dispatch read and the reference update are the supporting changes that mechanism needs.",
+    "wiring": "a finding \u2014 \u00a714 is declared `implementable` but no followup carries it, and the only open followup (f-afl-006) invokes \u00a714's sibling \u00a79 while asserting every code node has landed."
+  },
+  "section_digests": {
+    "_document": "ea4194052b0d783d3f58716deb68bb17bc88d683dc9a7995b178b6be6a373e3c",
+    "s1": "a4eeecaff9300863f1a6f28d4f659a0977a7583ac703af75654ddf0622bd81d4",
+    "s10": "7dd4672bb7cf4d1be69d191b1b75168b2541ba034fb2e304aac73c5826be0125",
+    "s11": "e05ea2085f88e301a9bd3edd6b7f417b6926e799c9d5ce6ed68371c6b658880d",
+    "s12": "b9d1786058731f14be5bf5e3a693f8df0c72a0163c45603a8fc047776485e6a9",
+    "s13": "a0712742324c0998b55d2e12f73be0a740cd6f26ca2a0d5647a0665e7ac7896c",
+    "s14": "dc7b762ad69b4e87d8fd58871b8010eb58e5f398d56a53cb30b0709323293bc8",
+    "s2": "b9689c739005faa621201d6009e306831a98c253828e1da227693acd6b977ab2",
+    "s3": "27ff46e837af55f0eaba51e6b64d726f133b299233e5eb3f672ab5fc6b1ca9bd",
+    "s4": "9c4d2ab6d7ca5942dead1327565460770d77bccf4ecd90e73c42a2b6eef7d94d",
+    "s5": "42339a7b96242d9c43f0a11b39792c3a77586525b5e12fff673cb29b22b1f33d",
+    "s6": "c99082a11529fcb10ae0464cbc7f1ed142dfe25618098cdf03a199fd240978c8",
+    "s7": "c115e3e35b8c6fc3d8ce9a5648d440b39c7f571ee1afabdea4a1c2a395bc3a22",
+    "s8": "7870597c5f6c188f2c555f7f17bca65a25aa338f1f74d3557f870668b31f167f",
+    "s9": "36ff7b0447b49cb29d721d4956a0d47739c48e68212f6c9d6a1cd99f2195b73b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T03:23:56.747909+00:00"
+}
