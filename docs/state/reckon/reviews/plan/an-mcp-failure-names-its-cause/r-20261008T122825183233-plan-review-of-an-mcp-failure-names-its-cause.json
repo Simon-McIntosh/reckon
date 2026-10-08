@@ -1,0 +1,56 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T12:35:01.345Z",
+  "dispatched_at": "2026-10-08T12:28:53Z",
+  "findings": [
+    {
+      "anchor": "reckon/_backends.py:2233",
+      "id": "duplicate_owner-1",
+      "reason": "the section should keep the reader in `_backends.py` (adding its string-refusal there, where a bare string is currently dropped silently) and add only the `_schema_view` pop in flight.py, rather than declare a parallel reader that can drift from the one \u00a77 already seeds from.",
+      "text": "\u00a711 proposes adding \"a reader in `reckon/flight.py`\" that \"accepts [worker_mcp_servers] only as a list of server names\", but `_declared_worker_mcp_servers` at `reckon/_backends.py:2233` already reads the same key from the resolved flight config and normalises it to a server-name list (it is the function `_seed_worker_mcp_settings` is seeded from at `reckon/_backends.py:3318`), so the plan forks a second reader of one key and normalises it twice; the owner to extend is `_declared_worker_mcp_servers`, and the only genuinely new work \u00a711 needs is the `_schema_view` admission",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/velocity.py:1576",
+      "id": "duplicate_owner-2",
+      "reason": "\u00a72 should either add `reckon/velocity.py` to its write paths and extract the walk into a shared helper the promotion-receipt reader and the census both call, or drop the reuse claim and name the duplication it accepts.",
+      "text": "\u00a72 states its transcript count \"walks their tool-result blocks with the content-block walk the promotion-receipt reader in `reckon/velocity.py` already uses\" while also stating \"the transcript count calls `reckon/velocity.py` and changes nothing in it\", but that walk is not a reusable function \u2014 it is inline in `promotion_receipts` at `reckon/velocity.py:1576-1594` (the tool_use/tool_result loop over `record[\"message\"][\"content\"]`), so a census that changes nothing in velocity.py must copy the loop into `reckon/mcp_census.py`, giving two implementations of the transcript content-block walk that drift as the transcript schema is touched",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "3fb37294c91327dc98a64f692de26aaa277f91fa21600cc70e89ed00a4311476",
+  "plan_slug": "an-mcp-failure-names-its-cause",
+  "plan_version": 61,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T122825183233-plan-review-of-an-mcp-failure-names-its-cause",
+  "reviewed_blob_sha": "77c5fe58542bae9056026d3858e4c05b65c58c8e",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a72's `reckon/mcp_census.py` hides the window, the pattern table, the cause classification and the transcript count behind a single census function the doctor block calls; \u00a75 and \u00a711 add no module.",
+    "duplicate_owner": "a finding \u2014 \u00a711 declares \"a reader in `reckon/flight.py`\" for `worker_mcp_servers`, but `_declared_worker_mcp_servers` at `reckon/_backends.py:2233` already reads and validates that exact key from the resolved flight config (called at `reckon/_backends.py:3318`); and \u00a72 claims to reuse velocity's content-block walk while changing nothing in `reckon/velocity.py`, but that walk is inline in `promotion_receipts` (`reckon/velocity.py:1576-1594`), so reuse requires either editing velocity.py or duplicating the walk.",
+    "interface_budget": "pass \u2014 \u00a72 states in its own text that the check \"adds no command and no option\", \u00a75 adds a block to the existing `reckon doctor` report and names no option, and \u00a711 admits an existing key already read by `_declared_worker_mcp_servers` rather than adding a new family; none of \u00a72, \u00a75, \u00a711 extends cli_options (336), mcp_views (33) or refusal_families (23).",
+    "reuse_search": "pass \u2014 \u00a72 now cites `transcript_index` (`reckon/velocity.py:1363`) as the owner of locating Claude Code transcripts rather than walking `~/.claude/projects` itself, and cites the content-block walk the promotion-receipt reader uses; \u00a75 extends doctor's existing MCP-config reader (`reckon/project_maintenance_commands.py:896-935`); \u00a711 cites the `SPRINT_RECENT_DAYS_KEY`/`HARNESS_HOME_FILES` reckon-owned-key pattern in `reckon/flight.py`.",
+    "thin_wrapper": "pass \u2014 \u00a72's census adds log parsing and a pattern table no existing reader has, and \u00a75's launch check adds path/directory validation, rather than forwarding to an existing reader."
+  },
+  "section_digests": {
+    "_document": "fde96442d568e87088a9d75f21259acff20938624fe68039941e7b52e4c2123e",
+    "s1": "d0ea88c8e7e70627417eeb698c89b91962c8e03f4f18bbdc2e310ceeb8b0f1f5",
+    "s10": "469866bcda74ceac15429518848b4083b1f85964c53820829d32e65df2661acc",
+    "s11": "f3aaf115ddf2d2f4012428044d19a828d011b74a3cefa4e5dd034b52b3a0125f",
+    "s12": "6d00fdd3f3f2f1daffb67747e0ea1fb63ca5c2db026df4432bf50d4c767b9daf",
+    "s2": "d06332102f12aa47bcb6bb8530dfe4bb44db61e76051769eb2c9d36bce1594bb",
+    "s3": "05d43e5ed58103318c10e33d1dc6795cf27a2ab17593f4c172bb381d8c00fcde",
+    "s4": "fd5d8817baa9c4f4d8838eaad2fd20fb5a6088ac1c8dad8718a0fc1f7eeec45f",
+    "s5": "0efccf9b7631774bee09027c337e0599e1d4ad91274eb1c58105ba82279f9a54",
+    "s6": "38a3b13749c17899e607aeb6eb1c1324c5b7b7ecbe0f2027b43a50657e063c20",
+    "s7": "9a485205c44b324dcb24ad7acf24f7bfd53171fa8c18a03e9c9a2bdf3a458bed",
+    "s8": "019dc7e9b6ed8d4895820ecc99822eb6c6d34ba61c11a67986dd5d0154d5f3c1",
+    "s9": "633f50004da507a9f6881ceffc2c738ff841e6e61a27b5ff963f53749c491fcd"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T12:38:10.220952+00:00"
+}
