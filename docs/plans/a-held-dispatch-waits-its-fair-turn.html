@@ -24,9 +24,10 @@
   <title>A Held Dispatch Waits Its Fair Turn | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="13">
+<meta name="plan-version" content="15">
 <meta name="plan-modified" content="2026-10-08">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;}">
+<meta name="plan-commits" content="3c837fc1">
 </head>
 <body>
   <main class="plan-doc">
@@ -85,22 +86,12 @@
 <section data-reckon="section" data-id="s7" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-status="implementable" data-links=""></section>
 <p><code>tests/test_queue_order.py</code> carries a case named for queued runs holding no lane slot, but the review found it cannot fail on that property: counting a queued run as in flight would leave it green.</p><p><strong>Done when:</strong> the case builds a session whose only live pointer is queued and asserts that session ranks as holding no slot; a control that counts queued pointers as in flight makes it fail; <code>tests/test_queue_order.py</code> passes.</p>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-08</span>
     <h2 id="s8">§8 — crew recover reads a queued run</h2>
-<section data-reckon="section" data-id="s8" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
-<p><strong>Deliverable.</strong> A queued pointer names no log path, because nothing has launched; §2 writes it with
-      <code>launch</code> set to <code>cli</code>. <code>fold</code> in <code>reckon/crew/dispatch_sessions.py</code> passes the
-      pointer's <code>log_path</code> to <code>_backends.observe_log</code> for every cli pointer, so an empty path is read as
-      <code>Path("")</code>, the working directory, and the read raises <code>IsADirectoryError</code>. That is not a
-      <code>CrewError</code>, so <code>reckon crew recover</code> dies on the first queued pointer in the project, with or without
-      <code>--dispatch-reviews</code>. Measured 2026-10-08 12:30Z with four queued reckon pointers live. <code>fold</code> observes a
-      cli pointer's stream only when the pointer names a log path. A pointer without one keeps its stored fields, and
-      <code>classify_pointer</code> classifies it <code>queued</code> as it already does.</p>
-    <p><strong>Done when</strong> <code>tests/test_recover_reads_a_queued_run.py</code> builds a fixture crew home holding a queued
-      pointer written by <code>queue_dispatch</code> and one launched run with a stream, calls <code>recover</code> for the project,
-      and gets a report naming the queued run with classification <code>queued</code> and no exception. The negative control is
-      executed and logged: with the log-path condition removed from <code>fold</code>, <code>recover</code> raises
-      <code>IsADirectoryError</code> and the test fails. The write paths are <code>reckon/crew/dispatch_sessions.py</code> and
-      <code>tests/test_recover_reads_a_queued_run.py</code>.</p>
+<section data-reckon="section" data-id="s8" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">fold observes a cli pointer only when it names a log path, so a queued run classifies queued and crew recover no longer crashes on it. Review 116. <a href="/reckon/evidence/archive/a-held-dispatch-waits-its-fair-turn-landed.html#s8-recover-reads-a-queued-run">full record</a></p>
+</section>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -143,10 +134,11 @@
     <div class="r-fu-body"><p>The three decisions are locked: the local lane queues held dispatches, priority is runs in flight counted after every admission, and the drainer is a declared fleet service. §2 and §3 can run together; §4 needs both; §5 follows §2.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-held-dispatch-waits-its-fair-turn §2</pre>
     </article>
-<article class="r-fu" data-id="f-ahdwft-recover-queued" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-08" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-ahdwft-recover-queued" data-status="resolved" data-written-by="reckon-build" data-written-at="2026-10-08" data-recommends-skill="" data-resolved-at="2026-10-08T14:54:08+00:00" data-resolved-by="s25-quiet-mcp">
     <h4 class="r-fu-title">Make crew recover read a queued run</h4>
     <div class="r-fu-body"><p>A queued pointer crashes <code>crew recover</code>; §8 reads the stream only when the pointer names a log path.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-held-dispatch-waits-its-fair-turn §8</pre>
+    <p class="r-fu-outcome">§8 landed at 3c837fc18: crew recover reads a queued run. Its review follow-on, a queued tally in recover's counts, belongs with §5.</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -175,7 +167,10 @@
     <div class="r-comment-body"><p>Measured 2026-10-08 for whoever builds §4. The review reflex retries a review the lane holds by dispatching it again, and each attempt shows on every pane as <code>dispatched → withdrawn</code> with no pid. The reckon producer log holds 264 such rows, up to 23 for one review node; reckon-92 saw one review of its §5 run cycle that way about every two minutes from 11:48 to 12:40 CEST before it stuck in <code>queued</code>. Once a review is queued, nothing launches it: the reflex stops after its 30-minute bound, and a repeat dispatch is refused as already in flight. Discarding the queued pointer lets the reflex dispatch it again. §4's drainer is the single launcher that would retire both the withdraw loop and the stranded queue, so the reflex should enqueue a held review rather than retry it.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261008T143648233011-review-of-recover-reads-a-queued-run" data-who="reckon-build" data-when="2026-10-08T14:49:32.593Z">
-    <div class="r-comment-body"><p>landing: independent review of run r-20261008T130332012447-recover-reads-a-queued-run (reckon:a-held-dispatch-waits-its-fair-turn §8) stored at the head-keyed review-store path; scored goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 19, reuse 20 (total 116); one follow-on finding (recover&#x27;s counts dict carries no &quot;queued&quot; key, recovery.py:11684, outside the node&#x27;s scope); the fix is a one-line log_path guard at dispatch_sessions.py:164 that §8 specifies, verified against the node&#x27;s head and negative-control logs.</p></div>
+    <div class="r-comment-body"><p>landing: independent review of run r-20261008T130332012447-recover-reads-a-queued-run (reckon:a-held-dispatch-waits-its-fair-turn §8) stored at the head-keyed review-store path; scored goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 19, reuse 20 (total 116); one follow-on finding (recover's counts dict carries no "queued" key, recovery.py:11684, outside the node's scope); the fix is a one-line log_path guard at dispatch_sessions.py:164 that §8 specifies, verified against the node's head and negative-control logs.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-s8-landed" data-who="reckon-build" data-when="2026-10-08T14:56:00Z">
+    <div class="r-comment-body"><p>gate passed (focused test EXIT=0; 21 dispatch_sessions importer modules, 450 passed; review 116/120); section 8 closed. Follow-on for §5: <code>recover</code>'s counts carry no queued tally.</p></div>
 </div>
 </section>
 </main>
