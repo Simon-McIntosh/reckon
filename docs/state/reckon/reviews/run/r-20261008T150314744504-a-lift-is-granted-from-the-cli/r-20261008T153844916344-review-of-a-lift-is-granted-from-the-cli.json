@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "1f00bba4537b70316bda7a03b15d06e6be515e8b",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_run_commands.py:2125 crew_budget_lift",
+    "reckon/crew_run_commands.py:2357 crew_budget_lifts"
+  ],
+  "completed_at": "2026-10-08T15:48:15.957Z",
+  "dispatched_at": "2026-10-08T15:39:08Z",
+  "findings": [
+    {
+      "file": "skills/reckon-build/SKILL.md",
+      "line": "188",
+      "severity": "follow-on",
+      "text": "follow-on: two CLI inventory commands are joined on a single physical line (`... [--pretty]    reckon crew budget-lift --clear ...`), breaking the one-command-per-line convention of the block so the clear form does not read as its own entry."
+    },
+    {
+      "file": "reckon/crew_run_commands.py",
+      "line": "2101",
+      "severity": "follow-on",
+      "text": "follow-on: `_lift_ends` takes a `form` keyword and its docstring says the drain-by form ignores --until, but the parameter is never read in the body; the drain-by handling lives in budget_lift._end_block, so the parameter is dead and its docstring claims a behaviour the function does not implement."
+    },
+    {
+      "file": "tests/test_crew_budget_lift_cli.py",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the CLI gate exercises --multiple/--drain-by/--uncapped and the three refusals but never --from, --until (+clock), a session-scoped grant, or the --global/--session mutual-exclusion refusal, so four done-when-named branches have no assertion that fails on their regression."
+    }
+  ],
+  "head_log_revision": "c738d343ef7dd92230061fe364547d56be129d98",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read both commits (c9a8049d6 feat, c738d343e docs) against base 1f00bba; three production files changed (budget_lift.py, crew_run_commands.py, flight-defaults.yaml) plus four test files and the evidence fragment, all inside scope.",
+    "done_when": "the done_when names tests/test_crew_budget_lift_cli.py for the CLI behaviour and tests/test_budget_lift.py for the clear-by-id hardening and the shipped ceilings; the manifest records the gate at 114 passed head over 102 at base, and the run's own logs/baseline.log and logs/head.log carry those figures under headers naming their revisions.",
+    "goal": "the node's goal is that `reckon crew budget-lift` and `budget-lifts` grant, clear and list lifts through budget_lift and that the build skill's budget fence documents the pace hold, its reserves, releases_at and every lift form; reckon/crew_run_commands.py:2125 crew_budget_lift and :2357 crew_budget_lifts implement both verbs and skills/reckon-build/SKILL.md:439 adds the fence section.",
+    "manifest": "read; it states the gate command with counts, names its two gate logs and the negative-control log, and records zero failures either side.",
+    "write_paths": "read the manifest's declared paths; every path in the diff (9 files) is inside them, and the declared figures directory a-lift-is-granted-from-the-cli/ is correctly absent because the done-when names no artifact."
+  },
+  "justifications": {
+    "durability": "the new CLI behaviour is guarded by real CliRunner tests that assert the projection against an independent derivation (tests/test_crew_budget_lift_cli.py:150 fleet.projection) and assert the live lift record is untouched, but the done-when's `--from`, `--until`, `--clock` and `--session` options and the --global/--session exclusion have no test that would redden on their regression.",
+    "evidence": "the gate isolates RECKON_HOME and the manifest's baseline_suite/after_suite are armed JSON with completed true, exit_status 0 and zero failures, and an independent re-run of tests/test_crew_budget_lift_cli.py and tests/test_budget_lift.py at head returned 47 passed in 53.96s; docked one because the `artifacts` prose count for tests/test_budget_lift.py is stated beside the combined-run total rather than its own collection count.",
+    "fit": "the verbs follow the surrounding click and _emit_crew_result idiom and carry no plan labels, but reckon/crew_run_commands.py:2101 `_lift_ends` declares a `form` parameter it never reads and skills/reckon-build/SKILL.md:188 joins two inventory commands on one physical line.",
+    "goal_fidelity": "reckon/crew_run_commands.py:2125-2366 registers both verbs with every done-when flag and the three refusals, and the clear-by-id hardening and shipped ceilings land as the done-when states; docked one because the plan \u00a710 prose writes the verbs `budget lift`/`budget lifts` while the code registers `budget-lift`/`budget-lifts` (the done-when's own spelling, recorded under evidence_inputs).",
+    "reuse": "reckon/crew/budget_lift.py:152 published_readings delegates to the owner of the document shape (paid_lanes.document_windows, reckon/crew/paid_lanes.py:417) and reshapes into budget_lift's own reading payload; `_declared_group_members` extends budget_group.declared_groups and clear extends the existing clear rather than forking it.",
+    "scope_discipline": "the diff touches exactly the nine declared write paths, leaves the declared figures directory untouched as the done-when permits, keeps the worktree clean, and commits with a conventional subject and a body."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that `reckon crew budget-lift` and `budget-lifts` grant, clear and list lifts through budget_lift and that the build skill's budget fence documents the pace hold, its reserves, releases_at and every lift form; reckon/crew_run_commands.py:2125 crew_budget_lift and :2357 crew_budget_lifts implement both verbs and skills/reckon-build/SKILL.md:439 adds the fence section.\nVERDICT done_when: the done_when names tests/test_crew_budget_lift_cli.py for the CLI behaviour and tests/test_budget_lift.py for the clear-by-id hardening and the shipped ceilings; the manifest records the gate at 114 passed head over 102 at base, and the run's own logs/baseline.log and logs/head.log carry those figures under headers naming their revisions.\nVERDICT write_paths: read the manifest's declared paths; every path in the diff (9 files) is inside them, and the declared figures directory a-lift-is-granted-from-the-cli/ is correctly absent because the done-when names no artifact.\nVERDICT manifest: read; it states the gate command with counts, names its two gate logs and the negative-control log, and records zero failures either side.\nVERDICT diff: read both commits (c9a8049d6 feat, c738d343e docs) against base 1f00bba; three production files changed (budget_lift.py, crew_run_commands.py, flight-defaults.yaml) plus four test files and the evidence fragment, all inside scope.\nCALL_SITES: reckon/crew_run_commands.py:2125 crew_budget_lift, reckon/crew_run_commands.py:2357 crew_budget_lifts\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_run_commands.py:2125-2366 registers both verbs with every done-when flag and the three refusals, and the clear-by-id hardening and shipped ceilings land as the done-when states; docked one because the plan \u00a710 prose writes the verbs `budget lift`/`budget lifts` while the code registers `budget-lift`/`budget-lifts` (the done-when's own spelling, recorded under evidence_inputs).\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate isolates RECKON_HOME and the manifest's baseline_suite/after_suite are armed JSON with completed true, exit_status 0 and zero failures, and an independent re-run of tests/test_crew_budget_lift_cli.py and tests/test_budget_lift.py at head returned 47 passed in 53.96s; docked one because the `artifacts` prose count for tests/test_budget_lift.py is stated beside the combined-run total rather than its own collection count.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches exactly the nine declared write paths, leaves the declared figures directory untouched as the done-when permits, keeps the worktree clean, and commits with a conventional subject and a body.\nSCORE durability: 15\nJUSTIFICATION durability: the new CLI behaviour is guarded by real CliRunner tests that assert the projection against an independent derivation (tests/test_crew_budget_lift_cli.py:150 fleet.projection) and assert the live lift record is untouched, but the done-when's `--from`, `--until`, `--clock` and `--session` options and the --global/--session exclusion have no test that would redden on their regression.\nSCORE fit: 17\nJUSTIFICATION fit: the verbs follow the surrounding click and _emit_crew_result idiom and carry no plan labels, but reckon/crew_run_commands.py:2101 `_lift_ends` declares a `form` parameter it never reads and skills/reckon-build/SKILL.md:188 joins two inventory commands on one physical line.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew/budget_lift.py:152 published_readings delegates to the owner of the document shape (paid_lanes.document_windows, reckon/crew/paid_lanes.py:417) and reshapes into budget_lift's own reading payload; `_declared_group_members` extends budget_group.declared_groups and clear extends the existing clear rather than forking it.\nFINDING skills/reckon-build/SKILL.md:188 follow-on: two CLI inventory commands are joined on a single physical line (`... [--pretty]    reckon crew budget-lift --clear ...`), breaking the one-command-per-line convention of the block so the clear form does not read as its own entry.\nFINDING reckon/crew_run_commands.py:2101 follow-on: `_lift_ends` takes a `form` keyword and its docstring says the drain-by form ignores --until, but the parameter is never read in the body; the drain-by handling lives in budget_lift._end_block, so the parameter is dead and its docstring claims a behaviour the function does not implement.\nFINDING tests/test_crew_budget_lift_cli.py:1 follow-on: the CLI gate exercises --multiple/--drain-by/--uncapped and the three refusals but never --from, --until (+clock), a session-scoped grant, or the --global/--session mutual-exclusion refusal, so four done-when-named branches have no assertion that fails on their regression.\n",
+  "review_run_id": "r-20261008T153844916344-review-of-a-lift-is-granted-from-the-cli",
+  "reviewed_base_sha": "1f00bba4537b70316bda7a03b15d06e6be515e8b",
+  "reviewed_head_sha": "c738d343ef7dd92230061fe364547d56be129d98",
+  "reviewed_run_id": "r-20261008T150314744504-a-lift-is-granted-from-the-cli",
+  "reviewer": "review-of-a-lift-is-granted-from-the-cli",
+  "scores": {
+    "durability": 15,
+    "evidence": 19,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T15:46:38.690088+00:00",
+  "total": 109
+}
