@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured: baseline arm (guard neutered) fails 3 test ids; after arm (head, guard in place) fails 0; no failure id appears in after that is absent from baseline",
+  "base_log_revision": "6741a3efc71ef2bbb78723ae510d8ad31d16a72f",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/_store.py:1398",
+    "reckon/_store.py:1971"
+  ],
+  "completed_at": "2026-10-08T09:35:15.316Z",
+  "dispatched_at": "2026-10-08T09:17:08Z",
+  "findings": [
+    {
+      "file": "tests/test_record_attaches_to_existing_section.py",
+      "line": "0",
+      "severity": "follow-on",
+      "text": "follow-on: test_an_item_carrying_a_body_still_authors_the_heading_and_prose fails at head (reproduced: EXIT=1, OpError naming authored section heading 's1' carries no section_declarations entry) because its fixture plan carries an authored heading s1 with no declaration; the file is outside this node's write scope and the failure is the widened guard's intended behaviour, not a regression."
+    },
+    {
+      "file": "reckon/_store.py",
+      "line": "1234",
+      "severity": "follow-on",
+      "text": "follow-on: the feature commit 7b56097f3 also carries three unrelated mechanical edits inside _store.py (timezone.utc -> the already-imported UTC, two import-statement splits in read_plan/write_plan, one blank-line removal). They are correct but belong in their own style commit."
+    }
+  ],
+  "head_log_revision": "17a234247626c81a63dcf9ead24aa632d835ddbb",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 call site(s): reckon/_store.py:1398 (state path) and reckon/_store.py:1971 (text path)",
+    "diff": "base 6741a3ef..head 17a234247 adds section_coverage_gaps and _require_every_section_declared and a final=True arm to _require_heading_for_section_records in _store.py, wires it at the state path (rendered new_text) and _replace_plan_text; doccheck.py adds the two codes and _section_coverage_findings; a 4-test file and a census fragment are added; three small mechanical edits are folded into _store.py.",
+    "done_when": "s5's done-when: census recorded (fragment: 109 gapped of 214 live; reproduced 109 of 213 with the run's own enumeration) and four tests present, all passing at head, each with a reproduced negative control.",
+    "goal": "An authored heading and its section declaration must cover each other; audit reports the two gap codes and any plan write leaving a gap is refused, by one comparison on both write paths.",
+    "manifest": "Read; names commits 7b56097f3 and 17a234247, the gate command and its logs, a baseline_suite and an after_suite arm, and the negative control log; reads complete.",
+    "write_paths": "The diff touches reckon/_store.py, reckon/doccheck.py, tests/test_every_section_has_a_declaration.py and the evidence fragment, each inside the declared write paths."
+  },
+  "justifications": {
+    "durability": "Three negative controls each name a distinct regression a revert would trigger, all reproduced: neutering _require_every_section_declared fails the two refusal tests plus the text test; removing the coverage call from _replace_plan_text fails only the text-mode removal test; reading source_text instead of the rendered HTML fails the insert_section accept test.",
+    "evidence": "Head arm 4 passed EXIT=0 (reproduced); base arm (guard neutered) 3 failed / 1 passed EXIT=1 naming the three refusal tests (reproduced); both declared negative controls reproduced; the census count 109 reproduced exactly with the run's own _load_mounts/_iter_doc_files enumeration. The reviewed run carries both a baseline_suite and an after_suite, so added_failure_count is measured (0).",
+    "fit": "Names are by mechanism with no plan or stage label; the codes are emitted output data; the guard reuses the existing call site and the one HTML reader; malformed-state ValueError is swallowed with a stated reason and the text path translates OpError to the ValueError its callers catch. Docked for three mechanical edits folded into the feature commit.",
+    "goal_fidelity": "One comparison (section_coverage_gaps) feeds both the guard and reckon audit-doc; the guard reads the write's own rendered declarations; the text path calls the same function; _require_new_section_contracts is untouched; both audit codes are emitted.",
+    "reuse": "section_coverage_gaps is the single shared comparison, imported by doccheck; it inherits _plan_html.authored_section_headings and read_state rather than adding a second heading scan or a parallel guard.",
+    "scope_discipline": "Every diff path is inside the declared write paths; docked because the feature commit also carries three unrelated mechanical edits inside _store.py."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 6741a3efc71ef2bbb78723ae510d8ad31d16a72f\nreviewed_head_sha: 17a234247626c81a63dcf9ead24aa632d835ddbb\n\nVERDICT goal: The reviewed node's goal (plan s5) is that an authored section heading and its declaration cover each other: `reckon audit-doc` reports section-without-todo / todo-without-section, and a plan write leaving either is refused by one coverage check called on both write paths. The diff delivers this: section_coverage_gaps in reckon/_store.py is the one comparison, read by the widened _require_heading_for_section_records (final=True on the rendered HTML) at the state path and called in _replace_plan_text at the text path, and by doccheck._section_coverage_findings wired into audit_html.\nVERDICT done_when: s5's done-when is a recorded census plus four tests. The census is recorded in the landing fragment (109 gapped of 214 live mounted plans), and I reproduced it exactly with the run's own enumeration (doccheck._load_mounts + _iter_doc_files): 109 gapped of 213 live, per-project counts identical to the fragment except one plan that changed status since. Four tests exist: two refusal/report cases, an insert_section accept case, and a text-mode removal refusal; all four pass at head and each has a reproduced negative control.\nVERDICT write_paths: Read the manifest's declared paths (reckon/_store.py, reckon/doccheck.py, tests/test_every_section_has_a_declaration.py, the evidence fragment); the base..head diff touches exactly those and nothing else.\nVERDICT manifest: Read; it names two commits (7b56097f3, 17a234247), the gate command and logs, both a baseline_suite and an after_suite arm, and the negative control log; it reads complete and is consistent with the diff.\nVERDICT diff: Read base 6741a3ef against head 17a234247: _store.py gains section_coverage_gaps and _require_every_section_declared, widens _require_heading_for_section_records with final=True called on the rendered new_text at the state path and inside _replace_plan_text (OpError wrapped to ValueError for its callers); doccheck.py gains _section_coverage_findings and the section-without-todo / todo-without-section codes; a 4-test file and a census evidence fragment are added; the same commit also folds three small mechanical edits (timezone.utc -> the already-imported UTC, two import-statement splits, one blank-line removal) inside _store.py.\n\nCALL_SITES: reckon/_store.py:1398, reckon/_store.py:1971\n\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: Every clause of s5 is present and verified: one comparison (section_coverage_gaps) feeds both the guard and reckon audit-doc, so the refusal text and the finding cannot disagree; the guard reads the declarations the write produces (rendered new_text), proven by the source_text negative control; the text path calls the same function (proven by the text-path negative control); _require_new_section_contracts is untouched; and `reckon audit-doc` emits both codes through audit_html.\nSCORE evidence: 19\nJUSTIFICATION evidence: The run carries a real two-armed measurement: head arm 4 passed EXIT=0, base arm (guard neutered) 3 failed / 1 passed EXIT=1 naming exactly the three refusal tests. I reproduced both, reproduced the two declared negative controls (dropping the text-path call fails the text test; reading source_text fails the insert test), and reproduced the census count 109 exactly. Docked one point only because the base_arm command in the log invokes a bare `python` and omits --timeout, a small reproducibility blemish in an otherwise fully evidenced node.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: Every diff path (reckon/_store.py, reckon/doccheck.py, tests/test_every_section_has_a_declaration.py, the evidence fragment) is inside the node's declared write paths and nothing the goal does not imply is added at the file level; docked because the feature commit 7b56097f3 also carries three unrelated mechanical edits inside _store.py (timezone.utc -> UTC, two import splits, a blank-line removal), mixing reformatting with the intended change.\nSCORE durability: 20\nJUSTIFICATION durability: Three negative controls each name a distinct regression a revert would trigger, and I reproduced all three: neutering the coverage function fails the two refusal tests plus the text test; removing the coverage call from _replace_plan_text fails only the text-mode removal test; reading source_text instead of the rendered HTML; the tests assert on behaviour (ok False, the named id in the refusal detail, the file byte-unchanged), not on implementation shape.\nSCORE fit: 18\nJUSTIFICATION fit: Names are by mechanism (section_coverage_gaps, _require_every_section_declared, _SECTION_WITHOUT_TODO) with no plan or stage label; the codes are emitted output data; the guard reuses the existing call site and the existing HTML reader rather than a parallel path; _require_every_section_declared swallows a malformed-state ValueError with a stated reason and the text path wraps OpError into the ValueError its callers already catch. Docked for the folded mechanical edits noted under scope_discipline.\nSCORE reuse: 20\nJUSTIFICATION reuse: section_coverage_gaps is the single shared comparison, reused by the write guard and by doccheck (imported from reckon._store, not reimplemented); it inherits _plan_html.authored_section_headings, the one reader of authored section ids, and reads declarations via _plan_html.read_state rather than a second parser; no parallel guard or duplicated heading scan is introduced.\n\nFINDING tests/test_record_attaches_to_existing_section.py:0 follow-on: test_an_item_carrying_a_body_still_authors_the_heading_and_prose fails at head (reproduced: EXIT=1, OpError naming authored section heading 's1' carries no section_declarations entry) because its fixture plan carries an authored heading s1 with no declaration; the file is outside this node's write scope and the failure is the widened guard's intended behaviour, not a regression (the reviewed manifest records the same).\nFINDING reckon/_store.py:1234 follow-on: the feature commit 7b56097f3 also carries three unrelated mechanical edits inside _store.py (timezone.utc -> the already-imported UTC, two import-statement splits in read_plan/write_plan, one blank-line removal). They are correct but belong in their own style commit, per the repo's rule that a relint is never folded into a feature commit.\n",
+  "review_run_id": "r-20261008T091637459272-review-of-every-section-has-a-declaration",
+  "reviewed_base_sha": "6741a3efc71ef2bbb78723ae510d8ad31d16a72f",
+  "reviewed_head_sha": "17a234247626c81a63dcf9ead24aa632d835ddbb",
+  "reviewed_run_id": "r-20261008T082524909480-every-section-has-a-declaration",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T09:28:47.000000+00:00",
+  "total": 115
+}
