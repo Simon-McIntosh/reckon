@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="an-mcp-failure-names-its-cause">
+  <meta name="plan-title" content="Doctor flags unsafe MCP launches">
+  <meta name="plan-summary" content="reckon doctor reads every stdio MCP launch for Claude Code and flags an uv run that would sync, resolve its project from the session working directory, name a literal user home, or point at a missing directory.">
+  <meta name="plan-evidence-for" content="reckon:an-mcp-failure-names-its-cause">
+  <meta name="plan-verifies" content="reckon:an-mcp-failure-names-its-cause#s5">
+  <meta name="plan-recorded-at" content="2026-10-08">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="doctor,mcp,uv,sync,launch">
+  <title>Doctor flags unsafe MCP launches — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="doctor-flags-unsafe-mcp-launches" data-reckon="landed" data-when="2026-10-08">
+  <h2 id="doctor-flags-unsafe-mcp-launches-title">Doctor flags unsafe MCP launches</h2>
+  <p id="doctor-flags-unsafe-mcp-launches-landing">`reckon doctor` now reads the user-scope stdio entries in <code>~/.claude.json</code> and the <code>.mcp.json</code> at the root of each mounted project's checkout, and flags an <code>uv run</code> launch that omits <code>--no-sync</code>, names no absolute <code>--project</code>, carries a literal <code>/home/&lt;user&gt;</code> path, or names a <code>--project</code> directory that does not exist after <code>${HOME}</code> expansion. Each flagged launch prints a corrected <code>uv run --no-sync --project &lt;checkout&gt;</code> command with the checkout rendered through <code>${HOME}</code>, and doctor exits non-zero when any launch is flagged. Gate: <code>tests/test_doctor_mcp_launch.py</code>, 3 passed, <code>EXIT=0</code>.</p>
+</article>
+</body>
+</html>
