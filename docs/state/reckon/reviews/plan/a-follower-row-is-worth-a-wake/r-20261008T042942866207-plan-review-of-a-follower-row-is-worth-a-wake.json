@@ -1,0 +1,51 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T04:40:05.935Z",
+  "dispatched_at": "2026-10-08T04:30:21Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-follower-row-is-worth-a-wake.html:129",
+      "id": "reasoning-1",
+      "reason": "an implementer who adds only the named twenty-second constant fails the section's own churn done-when, and one who adds a two-minute cap adds a definition the section states it does not add.",
+      "text": "\u00a72 describes the settle window as a supersession debounce (\"a coordinator row followed by another transition of the same run within a twenty-second settle window prints only the later row\") yet calls that twenty-second constant \"the only definition \u00a72 adds\" (line 132) and asserts \"the settle hold never keeps a row more than two minutes from its first transition\" (line 133), a bound \u00a75 gates on; a pure twenty-second supersession defers a run that changes state more often than every twenty seconds indefinitely, so the two-minute maximum is an unnamed second definition (a maximum hold) and the done-when case \"a run changing state every ten seconds prints within two minutes of its first change\" cannot be satisfied by the twenty-second window alone",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-follower-row-is-worth-a-wake.html:135",
+      "id": "reasoning-2",
+      "reason": "\u00a75's positive control asserts the observer-shown pane reproduces today's row count within 2%, so the plan must state whether the resolution change is shared or gated on the observer hold, or the control measures a pane that is not today's behaviour.",
+      "text": "\u00a72 claims \"a pane built with observer context shown keeps today's behaviour exactly ... which replay_row_policy uses for \u00a75's comparison\", but the same section's third exception rewrites the shared resolution rule (\"a resolution row is dropped only when it completes an opener still held\", lines 117\u2013121), and that rule sits in `RowPolicy.feed` on the path an observer-shown pane also drives, so such a pane would print `blocked \u2192 completed_unpromoted` after a printed blocked where today `NOISE_RESOLUTIONS` drops it",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "49a8a7ea4e3f637e9042e7db4faf726efd7f6cef8a3bd46e6fd30fd7f36f166e",
+  "plan_slug": "a-follower-row-is-worth-a-wake",
+  "plan_version": 28,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T042942866207-plan-review-of-a-follower-row-is-worth-a-wake",
+  "reviewed_blob_sha": "68f0ee945015fb452c2cf85bc22376bd61c03655",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/ticker.py` (RowPolicy, NOISE_PAIRS, SETTLED_STATES, ARRIVAL_WINDOW, PaneRowPath, replay_row_policy), `reckon/crew/recovery.py:181` (ACTIONABLE_RECOVERY_CLASSIFICATIONS, which does contain `exited-unfinished`), the cited test modules, and the \u00a71/\u00a74 hrefs all resolve (extensionless hrefs resolved as `.html` under docs/plans, docs/research, docs/evidence/archive).",
+    "done_when": "pass \u2014 each \u00a72 bullet is a measurable row-count assertion over the measured sequences, and a negative control is named (observer hold removed \u2192 the first case prints three rows); \u00a73 names its own control too. The churn bullet's achievability is a defect of the mechanism, filed under reasoning.",
+    "evidence_paths": "pass \u2014 \u00a72's gate is a repo test and the negative-control log goes to the run directory; no scratchpad or node-local temp path is named.",
+    "naming": "pass \u2014 the new test module `tests/test_row_policy_holds_observer_context.py` and the described constant are named by mechanism; no plan label, stage name or ticket number reaches a symbol.",
+    "reasoning": "a finding \u2014 \u00a72 gives the settle hold two different sizes (a twenty-second window it calls the only definition it adds, and a two-minute maximum it asserts and \u00a75 gates on), and it claims an observer-shown pane reproduces today's behaviour while the third exception changes the shared `NOISE_RESOLUTIONS` path.",
+    "single_goal": "pass \u2014 \u00a72 carries one deliverable, the observer-hold change to `RowPolicy`.",
+    "wiring": "pass \u2014 \u00a72 declares no relationships of its own; the plan's `depends-on` (a-follower-outlives-its-monitor) resolves, and no \u00a72 edge is missing (prior wiring-1 was declined and \u00a72 has not changed that prose)."
+  },
+  "section_digests": {
+    "_document": "57651ac23d8c226b299a6fb3798c4954e38bfc8b12c6a6ee0afcae03f380f75f",
+    "s1": "bea06a70e5a727324f7f05ddea157674cb647360778af5da9d99b6cb372018e7",
+    "s2": "63eec76d6279b14c32b6344122a8c8170b42b60347ae146d5f240e854496e5c0",
+    "s3": "41d4ddd08ef0e265dd9b427e22278337608b4bef109bcc1632efbc0a2b31ec0e",
+    "s4": "de2aa9f5977b57bf9a0e566534e0a792ce0ec6d246a7e43be40842fc31db28f5",
+    "s5": "5a420feaf96a858172eb9220dc1aea1a997735fbc8a33d53c4649116515bc4b0"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T04:46:05.447923+00:00"
+}
