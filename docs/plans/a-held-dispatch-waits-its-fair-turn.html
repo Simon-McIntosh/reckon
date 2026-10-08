@@ -24,7 +24,7 @@
   <title>A Held Dispatch Waits Its Fair Turn | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="11">
+<meta name="plan-version" content="12">
 <meta name="plan-modified" content="2026-10-08">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
 </head>
@@ -170,6 +170,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261008T100554302696-review-of-a-held-dispatch-becomes-a-queued-run" data-who="reckon-build" data-when="2026-10-08T10:36:06.679Z">
     <div class="r-comment-body"><p>Stored a parsed six-dimension review record for run r-20261008T085254553686-a-held-dispatch-becomes-a-queued-run over the delta cf71f7ee..4481955e (total 109: goal_fidelity 19, evidence 15, scope_discipline 20, durability 18, fit 18, reuse 19); one follow-on finding on the queued-pointer re-queue path; added_failure_count unmeasured because the reviewed manifest names no baseline_suite.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-s4-withdraw-loop" data-who="reckon-build" data-when="2026-10-08T13:27:00Z">
+    <div class="r-comment-body"><p>Measured 2026-10-08 for whoever builds §4. The review reflex retries a review the lane holds by dispatching it again, and each attempt shows on every pane as <code>dispatched → withdrawn</code> with no pid. The reckon producer log holds 264 such rows, up to 23 for one review node; reckon-92 saw one review of its §5 run cycle that way about every two minutes from 11:48 to 12:40 CEST before it stuck in <code>queued</code>. Once a review is queued, nothing launches it: the reflex stops after its 30-minute bound, and a repeat dispatch is refused as already in flight. Discarding the queued pointer lets the reflex dispatch it again. §4's drainer is the single launcher that would retire both the withdraw loop and the stranded queue, so the reflex should enqueue a held review rather than retry it.</p></div>
 </div>
 </section>
 </main>
