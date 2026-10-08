@@ -1,0 +1,86 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "e0497bd71",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch.py:596 resolve_project_repository",
+    "reckon/crew/picker/__init__.py:138 _estimated_hours",
+    "reckon/crew/picker/snapshot.py:695 routing._estimated_hours",
+    "reckon/crew/routing.py:3111 ledger.load",
+    "reckon/crew_run_commands.py:1138 garbage_collect_scratch"
+  ],
+  "completed_at": "2026-10-08T13:24:55.847Z",
+  "dispatched_at": "2026-10-08T13:16:34Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_sections.py",
+      "line": "66",
+      "severity": "follow-on",
+      "text": "follow-on: repository_identity_once memoises repository_identity in _REPOSITORY_IDENTITIES keyed by str(path), while its comment at lines 56-62 and the evidence fragment both claim the key is each path's git common directory; a worktree path and its mount therefore occupy two entries and each pay a probe, so the stated keying is not what the code does."
+    },
+    {
+      "file": "docs/evidence/fragments/one-typesafe-model-picker/pre-pick-state-reads-once.html",
+      "line": "33",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment repeats the \"keyed by each path's git common directory\" claim that dispatch_sections.py:66 does not implement, so a reader is told the identity probe is once per repository when it is once per path string."
+    },
+    {
+      "file": "tests/test_pre_pick_state_reads_once.py",
+      "line": "218",
+      "severity": "follow-on",
+      "text": "follow-on: the item-4 divergence guard compares the docstring's quoted number against routing.SCRATCH_GRACE_SECONDS, not against the value garbage_collect_orphan_scratch applies, and test_the_orphan_sweep_uses_the_stated_grace at :225 only checks the source mentions the constant, so a sweep that stopped applying the age rule would not fail either test."
+    },
+    {
+      "file": "tests/test_pre_pick_state_reads_once.py",
+      "line": "241",
+      "severity": "follow-on",
+      "text": "follow-on: the timed-driver measure asserts the second dispatch's pre-pick stages are under 0.5 s but passes identically at base in the fixture, so it does not discriminate the fix; the worker discloses this in the manifest follow_ons and the evidence fragment."
+    }
+  ],
+  "head_log_revision": "e0497bd71",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "Read commit by commit against base e0497bd71; ab5883931 changes dispatch_sections.py, ledger.py and routing.py and adds the test file, e00169315 adds only the evidence fragment, and nothing falls outside scope.",
+    "done_when": "The done-when names tests/test_pre_pick_state_reads_once.py, the gate file list and a delta judgement; the manifest records base-arm-repro.log 4 failed/2 passed and head-arm.log 1 failed/260 passed against base-arm-gate.log 5 failed/256 passed.",
+    "goal": "The node goal was to make dispatch read its shared pre-pick state once and keep the four defective reads fixed \u2014 repository resolution, ledger index fallback, the estimate stamp and the scratch age rule; reckon/crew/dispatch_sections.py:66 adds repository_identity_once, reckon/ledger.py:979 adds _last_good_index_data's shared decode, reckon/crew/routing.py:3648 stamps every candidate plan file, and routing.py:2105 states the sweep's age rule.",
+    "manifest": "Read; it records the gate results and names the four gate logs, and its baseline_suite/after_suite blocks reconcile with those logs' summaries (5 failed/256 passed and 1 failed/260 passed, both EXIT=1).",
+    "write_paths": "The manifest declares reckon/crew/dispatch_sections.py, reckon/ledger.py, reckon/_store.py, reckon/crew/routing.py, the test file, the evidence fragment and a figures directory; the diff touches only dispatch_sections.py, ledger.py, routing.py, the test file and the fragment, all inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_pre_pick_state_reads_once.py:142 is proven to redden by negative-control.log (EXIT=1) and :101 and :182 observe git probes and os.scandir independently, but the item-4 guard at :218 asserts only that the docstring quotes SCRATCH_GRACE_SECONDS' value, not that the sweep applies it.",
+    "evidence": "base-arm-repro.log shows the four item tests red at base e0497bd71 and head-arm.log shows them green, but head-arm.log's header names e0497bd71 \"plus working-tree change\" rather than the committed head e00169315, so the 260-pass is not tied to the committed revision by the log alone.",
+    "fit": "the additions follow the surrounding docstring-and-dict idiom of reckon/crew/dispatch_sections.py:52 and reckon/ledger.py:975 and introduce no name the naming rules forbid, though the comment at dispatch_sections.py:56-62 describes a keying the code does not do.",
+    "goal_fidelity": "reckon/crew/dispatch_sections.py:66 keys its memo by str(path) although the goal and its own comment say keyed by the git common directory, so a worktree and its mount stay two entries, but all four plan items are implemented and tested.",
+    "reuse": "reckon/ledger.py:979 factors _index_payload out of _indexed_data so the refreshing and last-good reads share one decode, but reckon/crew/dispatch_sections.py:69 hand-rolls per-process memoisation where the repository already owns functools.lru_cache (reckon/ledger.py:213, reckon/crew/recovery.py:4503).",
+    "scope_discipline": "every path in the diff of e0497bd71..e00169315 \u2014 dispatch_sections.py, ledger.py, routing.py, the test file and the evidence fragment \u2014 is inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal was to make dispatch read its shared pre-pick state once and keep the four defective reads fixed \u2014 repository resolution, ledger index fallback, the estimate stamp and the scratch age rule; reckon/crew/dispatch_sections.py:66 adds repository_identity_once, reckon/ledger.py:979 adds _last_good_index_data's shared decode, reckon/crew/routing.py:3648 stamps every candidate plan file, and routing.py:2105 states the sweep's age rule.\nVERDICT done_when: The done-when names tests/test_pre_pick_state_reads_once.py, the gate file list and a delta judgement; the manifest records base-arm-repro.log 4 failed/2 passed and head-arm.log 1 failed/260 passed against base-arm-gate.log 5 failed/256 passed.\nVERDICT write_paths: The manifest declares reckon/crew/dispatch_sections.py, reckon/ledger.py, reckon/_store.py, reckon/crew/routing.py, the test file, the evidence fragment and a figures directory; the diff touches only dispatch_sections.py, ledger.py, routing.py, the test file and the fragment, all inside them.\nVERDICT manifest: Read; it records the gate results and names the four gate logs, and its baseline_suite/after_suite blocks reconcile with those logs' summaries (5 failed/256 passed and 1 failed/260 passed, both EXIT=1).\nVERDICT diff: Read commit by commit against base e0497bd71; ab5883931 changes dispatch_sections.py, ledger.py and routing.py and adds the test file, e00169315 adds only the evidence fragment, and nothing falls outside scope.\nCALL_SITES: reckon/crew/dispatch.py:596 resolve_project_repository, reckon/crew/picker/__init__.py:138 _estimated_hours, reckon/crew/picker/snapshot.py:695 routing._estimated_hours, reckon/crew/routing.py:3111 ledger.load, reckon/crew_run_commands.py:1138 garbage_collect_scratch\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_sections.py:66 keys its memo by str(path) although the goal and its own comment say keyed by the git common directory, so a worktree and its mount stay two entries, but all four plan items are implemented and tested.\nSCORE evidence: 16\nJUSTIFICATION evidence: base-arm-repro.log shows the four item tests red at base e0497bd71 and head-arm.log shows them green, but head-arm.log's header names e0497bd71 \"plus working-tree change\" rather than the committed head e00169315, so the 260-pass is not tied to the committed revision by the log alone.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff of e0497bd71..e00169315 \u2014 dispatch_sections.py, ledger.py, routing.py, the test file and the evidence fragment \u2014 is inside the manifest's declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_pre_pick_state_reads_once.py:142 is proven to redden by negative-control.log (EXIT=1) and :101 and :182 observe git probes and os.scandir independently, but the item-4 guard at :218 asserts only that the docstring quotes SCRATCH_GRACE_SECONDS' value, not that the sweep applies it.\nSCORE fit: 17\nJUSTIFICATION fit: the additions follow the surrounding docstring-and-dict idiom of reckon/crew/dispatch_sections.py:52 and reckon/ledger.py:975 and introduce no name the naming rules forbid, though the comment at dispatch_sections.py:56-62 describes a keying the code does not do.\nSCORE reuse: 15\nJUSTIFICATION reuse: reckon/ledger.py:979 factors _index_payload out of _indexed_data so the refreshing and last-good reads share one decode, but reckon/crew/dispatch_sections.py:69 hand-rolls per-process memoisation where the repository already owns functools.lru_cache (reckon/ledger.py:213, reckon/crew/recovery.py:4503).\nFINDING reckon/crew/dispatch_sections.py:66 follow-on: repository_identity_once memoises repository_identity in _REPOSITORY_IDENTITIES keyed by str(path), while its comment at lines 56-62 and the evidence fragment both claim the key is each path's git common directory; a worktree path and its mount therefore occupy two entries and each pay a probe, so the stated keying is not what the code does.\nFINDING docs/evidence/fragments/one-typesafe-model-picker/pre-pick-state-reads-once.html:33 follow-on: the fragment repeats the \"keyed by each path's git common directory\" claim that dispatch_sections.py:66 does not implement, so a reader is told the identity probe is once per repository when it is once per path string.\nFINDING tests/test_pre_pick_state_reads_once.py:218 follow-on: the item-4 divergence guard compares the docstring's quoted number against routing.SCRATCH_GRACE_SECONDS, not against the value garbage_collect_orphan_scratch applies, and test_the_orphan_sweep_uses_the_stated_grace at :225 only checks the source mentions the constant, so a sweep that stopped applying the age rule would not fail either test.\nFINDING tests/test_pre_pick_state_reads_once.py:241 follow-on: the timed-driver measure asserts the second dispatch's pre-pick stages are under 0.5 s but passes identically at base in the fixture, so it does not discriminate the fix; the worker discloses this in the manifest follow_ons and the evidence fragment.\n",
+  "review_run_id": "r-20261008T131546609680-review-of-pre-pick-state-reads-once",
+  "reviewed_base_sha": "e0497bd71fc1561bb9e072b0dd0e0615bffcb2aa",
+  "reviewed_head_sha": "e00169315f12c85e3665e81c09ae3a89dd541009",
+  "reviewed_run_id": "r-20261008T124244188927-pre-pick-state-reads-once",
+  "reviewer": {
+    "backend": "clive",
+    "effort": null,
+    "model": "deepseek-v4.1-flash",
+    "run_id": "r-20261008T131546609680-review-of-pre-pick-state-reads-once"
+  },
+  "reviewer_run_id": "r-20261008T131546609680-review-of-pre-pick-state-reads-once",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T13:44:35.058116+00:00",
+  "total": 101
+}
