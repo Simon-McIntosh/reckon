@@ -23,9 +23,9 @@
   <title>Every Reckon Hook Runs Under Reckon's Interpreter | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="8">
+<meta name="plan-version" content="9">
 <meta name="plan-modified" content="2026-10-08">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -56,16 +56,12 @@
     <p>Measured on 8 October: the operator's settings held <code>worker_stop.py</code>, <code>worker_git_guard.py</code> and <code>native_agent_guard.py</code> as bare script paths. Each script starts <code>#!/usr/bin/env python3</code>, and a plain shell on the fleet node resolves that to <code>/usr/bin/python3</code>, Python 3.9.16. The worker stop hook and the obligations hook import reckon modules that need <code>datetime.UTC</code> from Python 3.11, so under 3.9 the stop hook crashes and the worker ends its turn without its stop checks. The three guards import no module that needs 3.11 and decide correctly under 3.9: the content review measured the git guard there denying a banned <code>git reset --hard</code>. Their exposure is different. A guard whose script cannot reach its rules, such as a script copied away from its checkout or one gaining a newer import, decides nothing, and today that allows the command. Workers dispatched with the reckon venv first on <code>PATH</code> were masked; any other launch is exposed. Codex workers are unaffected, because they do not read these hooks.</p>
     <p>A durable fix cannot depend on an operator remembering to rerun an installer, so the interpreter is put in three places: the one composer every writer uses, the seeding of each run's harness home, and the hook scripts themselves.</p>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-08</span>
     <h2 id="s2">&sect;2 &mdash; Sync writes its hooks through the installer's composer</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p><code>reckon/hooks/install.py</code> already owns the composer, the recogniser and the in-place upgrade. <code>build_hook_snippet</code> composes each command as <code>interpreter_path()</code>, the checkout's <code>.venv/bin/python</code>, followed by the script. <code>_command_identity</code> treats a bare and a bound command as one entry. <code>_merge_settings</code> and <code>_write_settings</code> upgrade a bare command in place. <code>reckon hooks install</code> already uses them; <code>reckon sync</code> does not. Its writer, <code>_configure_crew_guards</code> in <code>reckon/cli.py</code>, composes its own commands, carries two recognisers that duplicate the installer's (<code>_is_native_agent_guard_group</code> and <code>_is_worker_message_guard_group</code>), and writes the settings file atomically on its own. The installer's in-place upgrade covers only the worker stop hook and the git guard today (<code>WORKER_SCRIPT_NAMES</code>), so a bare obligations hook is skipped rather than upgraded; its upgrade set is extended to every reckon-importing hook script. Sync's writer is then retired onto the installer: <code>reckon sync</code> composes, recognises and writes through <code>install.py</code>, and the duplicate recognisers and the private write are removed, with the tests that assert their bare output moving with them.</p><p>Which interpreter a command names follows from what the script needs. Scripts that import a reckon module, the obligations hook, the worker stop hook and the worker git guard, are composed with the checkout's interpreter. The native-agent guard and the worker-message guard are stdlib-only on purpose and decide correctly under any <code>python3</code>, so the composer writes them so they keep running where no reckon environment exists.</p>
-    <p><strong>Done when:</strong></p>
-    <ul>
-      <li>A test finds, by a search over the code rather than a hand list, every script under <code>reckon/hooks/</code> that either writer registers and that imports a reckon module, and finds each composed with the checkout's interpreter, so a reckon-importing hook added later without it fails the test.</li><li><code>reckon sync</code> composes, recognises and writes through <code>install.py</code>, and <code>_is_native_agent_guard_group</code>, <code>_is_worker_message_guard_group</code> and sync's private atomic write no longer exist in <code>reckon/cli.py</code>.</li>
-      <li><code>reckon sync</code> run against a temporary project and a temporary settings file writes every reckon-importing hook bound to the checkout's interpreter and the two stdlib-only guards runnable by any <code>python3</code>.</li>
-      <li>A settings file holding the bare reckon commands is upgraded in place by both <code>reckon sync</code> and <code>reckon hooks install</code>, with no duplicate entry, and every hook that is not reckon's is left byte-for-byte unchanged.</li>
-      <li>No test reads or writes the real <code>~/.claude/settings.json</code>.</li>
-    </ul>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">Landed: <code>reckon sync</code> writes its hook entries through <code>reckon/hooks/install.py</code>. <code>cli_entry._configure_crew_guards</code> delegates to the installer's <code>configure_crew_guards</code>, so every reckon-importing hook script is bound to the checkout interpreter and bare commands already in a settings file are upgraded in place. The private recognisers and atomic writer are gone. Merged gate over 19 affected test files: 302 passed, 0 failed; review 111/120. <a href="/reckon/evidence/archive/every-reckon-hook-runs-under-reckons-interpreter-landed.html#s2">full record</a></p>
+</section>
 
     <h2 id="s3">&sect;3 &mdash; A run's harness home carries interpreter-bound hooks</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
@@ -119,7 +115,10 @@
     <div class="r-comment-body"><p>Reviewed run r-20261008T060603749057-one-bootstrap-corrects-a-hooks-interpreter at head 6a52e6933 (base f411aa1a): six dimensions scored goal_fidelity 18, evidence 16, scope_discipline 20, durability 17, fit 18, reuse 5 (total 94); one follow-on finding that interpreter_bootstrap.py:18 duplicates install.py:132 interpreter_path(); no blocking findings.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261008T062025497657-review-of-sync-writes-hooks-through-the-installer" data-who="reckon-build" data-when="2026-10-08T06:44:10.767Z">
-    <div class="r-comment-body"><p>review of r-20261008T060443167786-sync-writes-hooks-through-the-installer stored parsed, scored 92/120, passing on goal_fidelity/evidence/fit/reuse with two blocking findings outside the node&#x27;s write scope (removed reckon/cli.py symbols redden tests/test_worker_git_guard.py 3 and tests/test_cli_settings_writer_reuses_the_store.py 9).</p></div>
+    <div class="r-comment-body"><p>review of r-20261008T060443167786-sync-writes-hooks-through-the-installer stored parsed, scored 92/120, passing on goal_fidelity/evidence/fit/reuse with two blocking findings outside the node's write scope (removed reckon/cli.py symbols redden tests/test_worker_git_guard.py 3 and tests/test_cli_settings_writer_reuses_the_store.py 9).</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20261008T1125-s2" data-who="reckon-build" data-when="2026-10-08T11:25:00+02:00">
+    <div class="r-comment-body">gate merged-population passed (302, 0 failed); section s2 closed by run sync-hooks-through-installer-after-cli-split</div>
 </div>
 </section>
 </main>
