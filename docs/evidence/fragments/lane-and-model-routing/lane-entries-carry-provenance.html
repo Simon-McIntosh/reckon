@@ -1,0 +1,58 @@
+<article class="landed-report" data-run-id="r-20261008T084755147230-lane-entries-carry-provenance" data-node="lane-entries-carry-provenance">
+<h3 id="lane-entries-carry-provenance-summary">Every key the lane expansion builds names the layer and the lane key it came from</h3>
+<p><code>reckon/flight.py::expand_lanes</code> builds a backend entry per lane and
+per derived legacy name, but recorded no provenance for the keys it copied. The
+lane-named entry carried no layer for the keys the lane supplied, and the
+derived entry's four keys the catalogue had filled first stayed attributed to
+<code>catalogue</code> after the lane overwrote them.</p>
+<p><code>expand_lanes</code> now takes the resolver's provenance maps and, for
+every key of every entry it builds, records the layer of the
+<code>lanes.*</code> key whose value it carries. A separate mapping
+<code>ResolvedFlight.provenance_sources</code> names that <code>lanes.*</code>
+key; <code>flight_report</code> carries it as the top-level
+<code>provenance_sources</code> key. The three synthesised keys — <code>lane</code>,
+<code>model_key</code> and <code>derived_from</code> — record the layer
+<code>expansion</code> and have no source key. The <code>provenance</code>
+mapping keeps its shape (key path to bare layer), so every existing
+<code>origin()</code> assertion is unchanged.</p>
+<table id="lane-entries-carry-provenance-before-after">
+<thead><tr><th>Key on <code>backends.claude-opus</code></th><th>Layer before</th><th>Source key before</th><th>Layer after</th><th>Source key after</th></tr></thead>
+<tbody>
+<tr><td><code>model</code></td><td><code>catalogue</code></td><td>none</td><td><code>host</code></td><td><code>lanes.claude.models.opus.model</code></td></tr>
+<tr><td><code>effort</code></td><td><code>catalogue</code></td><td>none</td><td><code>host</code></td><td><code>lanes.claude.models.opus.effort</code></td></tr>
+<tr><td><code>alias</code></td><td><code>catalogue</code></td><td>none</td><td><code>host</code></td><td><code>lanes.claude.models.opus.alias</code></td></tr>
+<tr><td><code>budget_group</code></td><td><code>catalogue</code></td><td>none</td><td><code>host</code></td><td><code>lanes.claude.models.opus.budget_group</code></td></tr>
+<tr><td><code>time_budget</code></td><td><code>host</code> (lane default).</td><td>none</td><td><code>host</code></td><td><code>lanes.claude.models.opus.time_budget</code> (model overrides the lane default)</td></tr>
+<tr><td><code>lane</code>, <code>model_key</code>, <code>derived_from</code></td><td>none</td><td>none</td><td><code>expansion</code></td><td>none</td></tr>
+</tbody></table>
+<p id="lane-entries-carry-provenance-effect">On the lane-named
+<code>backends.claude</code>, 8 copied keys that had no layer now name one, and
+its synthesised keys name <code>expansion</code>.</p>
+<p id="lane-entries-carry-provenance-commits">Commit:
+<code>d78a236257c9f7136a599778cfc81e6a5435dd6c</code> (resolver, report and
+tests). The final product revision measured is the head of this run's worktree,
+which is this commit for the product source.</p>
+<table id="lane-entries-carry-provenance-gate">
+<thead><tr><th>Arm</th><th>Log summary</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td>Base <code>a8d228247</code></td><td>569 passed, 1 skipped in 329.0s</td><td>EXIT=0</td></tr>
+<tr><td>Head (this change)</td><td>572 passed, 1 skipped in 342.7s</td><td>EXIT=0</td></tr>
+</tbody></table>
+<p>The gate is the files importing <code>reckon.flight</code> or calling
+<code>reckon.flight</code>'s <code>origin()</code>, run with the main
+environment's <code>python -m pytest -p no:cacheprovider -n 6</code>. Every
+existing <code>origin()</code> assertion passes in both arms. Added failures:
+<strong>0</strong>; the head adds the three tests below.</p>
+<p id="lane-entries-carry-provenance-control">Negative control: skipping the
+provenance recording for the declared mutation leaves the two provenance tests
+and the report test red — <code>3 failed in 0.66s</code>, <code>EXIT=1</code>.
+The reproduction is against the base resolver, which records no provenance for
+the keys the lane supplies and names the catalogue for the four keys the lane
+overwrites.</p>
+<p id="lane-entries-carry-provenance-artifacts">Durable logs and the exact
+commands: the run directory, including <code>gate-base.log</code>,
+<code>gate-head.log</code> and <code>negative-control.log</code>, each ending
+in an <code>EXIT=</code> line. New test module:
+<code>tests/test_lane_entries_carry_provenance.py</code>. No plan state,
+committed history, catalogue or shared configuration was rewritten.</p>
+</article>
