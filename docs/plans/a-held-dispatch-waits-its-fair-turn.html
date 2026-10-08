@@ -24,7 +24,7 @@
   <title>A Held Dispatch Waits Its Fair Turn | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="15">
+<meta name="plan-version" content="16">
 <meta name="plan-modified" content="2026-10-08">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="3c837fc1">
@@ -171,6 +171,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-s8-landed" data-who="reckon-build" data-when="2026-10-08T14:56:00Z">
     <div class="r-comment-body"><p>gate passed (focused test EXIT=0; 21 dispatch_sessions importer modules, 450 passed; review 116/120); section 8 closed. Follow-on for §5: <code>recover</code>'s counts carry no queued tally.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261008T130332012447-recover-reads-a-queued-run" data-who="reckon-build" data-when="2026-10-08T13:33:03.760Z">
+    <div class="r-comment-body"><p>landing: fold in reckon/crew/dispatch_sessions.py observes a cli pointer&#x27;s stream only when the pointer names a log path, so a queued pointer (written by queue_dispatch, launch=cli, no log_path) keeps its stored fields and classify_pointer reads it queued instead of observe_log raising IsADirectoryError on Path(&quot;&quot;) and killing reckon crew recover; measure: tests/test_recover_reads_a_queued_run.py passes EXIT=0 and the existing dispatch_sessions tests pass 450 passed EXIT=0, with the negative control (log-path condition removed) raising IsADirectoryError and failing the new test EXIT=1.</p></div>
 </div>
 </section>
 </main>
