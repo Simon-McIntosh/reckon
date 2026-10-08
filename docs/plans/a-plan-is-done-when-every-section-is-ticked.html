@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.73">
-<meta name="plan-version" content="37">
+<meta name="plan-version" content="38">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -243,6 +243,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261008T011254596374-the-plan-read-carries-its-section-checklist" data-who="reckon-build" data-when="2026-10-08T01:52:43.343Z">
     <div class="r-comment-body"><p>§3 landed: both plan reads carry a derived checklist — tests/test_plan_todos.py at head 5 passed EXIT=0; negative control base 62db795e fails 4 checklist ids and keep_declarations=True fails test_ticking_a_section_leaves_the_review_fingerprint_unchanged (EXIT=1)</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-s3-derived-field-regression" data-who="reckon-build" data-when="2026-10-08T08:17:16Z">
+    <div class="r-comment-body"><p>Regression from this section, fixed at <code>dd42b6681</code>. <code>_read_state</code> began carrying the derived <code>todos</code> list, but the writer re-parses the current file without it. A comment append that met a concurrent write then differed on <code>todos</code> and was refused as a version conflict instead of merged. <code>test_an_append_meeting_a_landing_write_is_not_lost</code> failed in 3 of 5 runs, base included. A closing comment fills its section's row, so deriving the list on both sides would not have fixed it. The commutative-append check now leaves derived fields out of the comparison (<code>_DERIVED_STATE_FIELDS</code>), and the fields they come from are still compared. Two deterministic tests cover the losing order and the closing-comment case, and both fail with the exclusion emptied. The threaded test now passes 10 of 10. The store importer population, 114 files, adds no failure.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261008T034441470592-review-of-a-plan-reaches-done-only-when-every-section-is-ticked" data-who="reckon-build" data-when="2026-10-08T04:07:28.183Z">
     <div class="r-comment-body"><p>independent review of r-20261008T025558982950 stored as a parsed record, 6 of 6 dimensions scored (total 115/120), base 786c5ba86a76d00549da0455b02e9cae31b58a6c head 26657466689deabf0b63dcab52a239995d5c041d, added_failure_count 0 with no added ids, one follow-on finding.</p></div>
