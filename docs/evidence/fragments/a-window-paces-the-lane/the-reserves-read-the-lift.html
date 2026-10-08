@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-window-paces-the-lane">
+  <meta name="plan-title" content="The reserves read the lift">
+  <meta name="plan-summary" content="The bookend, resume and coordinator reserve readers consult the group's effective budget block through budget_group.effective_block, so while a lift is in force its group's implementation ceiling reads 100% with all three reserves at zero, and each reader returns to the configured reserve once the lift ends.">
+  <meta name="plan-evidence-for" content="reckon:a-window-paces-the-lane">
+  <meta name="plan-node" content="the-reserves-read-the-lift">
+  <meta name="plan-recorded-at" content="2026-10-08">
+  <meta name="plan-environment" content="Linux compute node 98dci4-clu-2002; Python venv at /home/ITER/mcintos/Code/reckon/.venv; pytest with an isolated RECKON_HOME under tmp_path">
+  <title>The reserves read the lift &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>The reserves read the lift</h1>
+    <p class="plan-summary">One composition function resolves a lift against the
+    review-exclusion rule, and the three readers of a group's budget block &mdash; the
+    bookend refusal, the wallet's own figures, and routing's dispatch-purpose reserve
+    check &mdash; read its result. While a lift is in force on a group, all three reserves
+    read zero for it and the implementation ceiling opens to 100%; once it ends, each
+    returns to the figure the configured reserves give.</p>
+  </header>
+
+  <section aria-labelledby="the-reserves-read-the-lift-what">
+    <h2 id="the-reserves-read-the-lift-what">What landed</h2>
+    <p><code>budget_group.effective_block(config, group, *, readings, now, session,
+    path)</code> composes the two rules that can zero a wallet's reserves through one
+    resolution: <code>budget_lift.effective_budget</code> applies a lift in force, and
+    <code>reserve_block_for_group</code> then applies the review-exclusion rule to its
+    result. Three readers consult it.</p>
+    <ul>
+      <li><code>dispatch_admission._refuse_against_the_bookend_reserve</code> now judges
+      through the effective block, handing the resolver the dispatch's own pace row as the
+      newest reading, so a lift whose reset has already moved in that row is not in
+      force.</li>
+      <li><code>budget_group.group_figures</code> reports <code>reserve_pct</code> from the
+      effective block, deriving the resolver's reading from the wallet's own freshest
+      window report.</li>
+      <li><code>routing._budget_verdict</code> resolves the judged backend's declared
+      wallet and hands <code>budget.policy</code> a configuration whose budget block is
+      the effective one, so the resume and coordinator reserves reach zero and the
+      effective dispatch ceiling reads 100%.</li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="the-reserves-read-the-lift-measure">
+    <h2 id="the-reserves-read-the-lift-measure">The measure</h2>
+    <p>Gate at head: <code>tests/test_reserves_read_the_lift.py</code> plus the eight
+    existing reserve/pacing suites, <strong>111 passed</strong>, <code>EXIT=0</code>. At
+    the base revision the eight pre-existing suites give <strong>104 passed</strong>,
+    <code>EXIT=0</code>: zero added failures. Every figure in the new file is derived from
+    the configuration and fixtures at assertion time.</p>
+    <p>Negative control &mdash; replacing <code>budget_lift.effective_budget</code> with a
+    function that returns <code>config["budget"]</code> unchanged &mdash; turns the
+    100%-ceiling assertion and the admit assertion red: <strong>4 failed</strong>,
+    <code>EXIT=1</code>. That both the multiple and the reserve release pass through the
+    one function is what the red arm shows.</p>
+  </section>
+
+  <section aria-labelledby="the-reserves-read-the-lift-refs">
+    <h2 id="the-reserves-read-the-lift-refs">References</h2>
+    <ul>
+      <li>Gate log (head): <code>logs/head-gate.log</code> in the run directory.</li>
+      <li>Gate log (base): <code>logs/base-gate.log</code> in the run directory.</li>
+      <li>Negative control log: <code>logs/negative-control.log</code> in the run
+      directory.</li>
+    </ul>
+    <p>Changed paths: <code>reckon/crew/budget_group.py</code>,
+    <code>reckon/crew/dispatch_admission.py</code>, <code>reckon/crew/routing.py</code>,
+    <code>tests/test_reserves_read_the_lift.py</code>.</p>
+  </section>
+</main>
+</body>
+</html>

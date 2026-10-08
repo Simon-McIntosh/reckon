@@ -305,17 +305,27 @@ def _refuse_against_the_bookend_reserve(
     The row says which periods the source published. An unpublished period has
     no reserve to judge; a published period whose reading failed is unreadable
     and still refuses work outside the bookend roles.
+
+    The block it judges through is the group's effective one: a lift in force
+    releases all three reserves, and this refusal reads the same lifted block
+    every other reader of the budget block on a group's dispatch decision reads.
+    The row carries the wallet's clocks as they stood when this dispatch was
+    judged, which is the newest reading a reset-anchored lift checks its
+    recorded reset against; so a lift whose reset has already moved in this row
+    is not in force here.
     """
     if pace_record.get("group") is None:
         return
+    clocks = pace_record.get("clocks") or {}
     verdict = reserve_admit_windows(
-        budget_group.reserve_block_for_group(
-            (config or {}).get("budget") or {},
+        budget_group.effective_block(
             config,
             str(pace_record.get("group")),
+            readings=[clocks] if clocks else None,
+            now=parse_utc(pace_record.get("recorded_at")),
         ),
         role=role,
-        clocks=pace_record.get("clocks") or {},
+        clocks=clocks,
         lane=str(pace_record.get("lane") or ""),
     )
     if verdict["admitted"]:

@@ -15,7 +15,7 @@ import tempfile
 import time
 from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Iterable, Mapping
+from typing import TYPE_CHECKING, Any, Iterable, Mapping, Sequence
 
 from reckon import (
     _backends,
@@ -376,6 +376,31 @@ def resolve_budget_fallback(
     return resolve_role_override(config, role, spec_level, fallback_name)
 
 
+def _config_with_effective_budget(
+    config: Mapping[str, Any] | None,
+    group: str | None,
+    *,
+    readings: Sequence[Mapping[str, Any]] | None,
+    now: datetime | None,
+    session: str | None,
+) -> Mapping[str, Any] | None:
+    """A configuration whose budget block is the one in force for ``group``.
+
+    :func:`reckon.budget.policy` reads ``config["budget"]`` itself, so a lift's
+    released reserves reach it only through a substituted block; a group the
+    resolver names ``None`` has no wallet, so the configuration is returned
+    unchanged.
+    """
+    if group is None:
+        return config
+    from reckon.crew import budget_group as budget_group_module
+
+    block = budget_group_module.effective_block(
+        config, str(group), readings=readings, now=now, session=session
+    )
+    return {**(config or {}), "budget": block}
+
+
 def _budget_verdict(
     *,
     project: str,
@@ -385,15 +410,31 @@ def _budget_verdict(
     backend: Mapping[str, Any],
     purpose: str,
     budget_state: Mapping[str, Any] | None = None,
+    group: str | None = None,
+    readings: Sequence[Mapping[str, Any]] | None = None,
+    now: datetime | None = None,
+    session: str | None = None,
 ) -> dict[str, Any]:
     """Judge one backend's headroom for one purpose.
 
     Imported here rather than at module scope because the budget module reads run
     records through this one; deferring the import to call time keeps that a
     one-way dependency instead of a cycle.
+
+    The judged backend's declared wallet is resolved here, and the group's
+    effective budget block — a lift in force releases the resume and
+    coordinator reserves — is handed to :func:`reckon.budget.policy`, which
+    reads ``config["budget"]`` itself and so must receive the substituted
+    block. A group no lift covers is handed the configuration unchanged.
     """
     from reckon import budget as budget_module
 
+    from reckon.crew import budget_group as budget_group_module
+
+    wallet = group or budget_group_module.declared_group_for(config, backend_name)
+    judged_config = _config_with_effective_budget(
+        config, wallet, readings=readings, now=now, session=session
+    )
     if budget_state is None:
         recorded = budget_module.latest_recorded(project, root=root, config=config)
         state = budget_module.state_for(
@@ -404,7 +445,9 @@ def _budget_verdict(
         )
     else:
         state = budget_module.BudgetState(**dict(budget_state))
-    verdict = budget_module.decide(state, budget_module.policy(config), purpose=purpose)
+    verdict = budget_module.decide(
+        state, budget_module.policy(judged_config), purpose=purpose
+    )
     try:
         budget_module.record_checks(
             project,
