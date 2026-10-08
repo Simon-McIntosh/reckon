@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "7c882130dec0027ba473f12e96eb3a9e8b10b6e5",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/picker/__init__.py:_declared_difficulty",
+    "reckon/crew/picker/__init__.py:_section_effort_hours",
+    "reckon/crew/picker/prompts.py:build_state"
+  ],
+  "completed_at": "2026-10-08T04:06:13.074Z",
+  "dispatched_at": "2026-10-08T03:34:08Z",
+  "findings": [
+    {
+      "file": "reckon/crew/picker/__init__.py",
+      "line": "148",
+      "severity": "follow-on",
+      "text": "follow-on: the comment states that most plans do not declare a plan-effort-hours total, but a census of the mounted plans gives 67 of 340 live plans (about 20 percent) without one and the run's own figure is 26 of 162, so the comment claims the opposite of the measured common case; the read itself is correct and unaffected."
+    },
+    {
+      "file": "docs/evidence/fragments/one-typesafe-model-picker/jev-sees-declared-difficulty.html",
+      "line": "15",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment names the reviewed head as e1f1af346 while the head gate log it describes names ecbaf7f95, one docs-only commit above it, so the fragment's reviewed-head label is stale by one commit."
+    }
+  ],
+  "head_log_revision": "ecbaf7f9541c4464d23bd7fa44e71464c5848615",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read the two commits against base c65e4fe8d; e1f1af346 removes the provenance == 'plan-fallback' gate so the section-effort read runs for every non-node provenance, and ecbaf7f95 updates the fragment and adds the no-total test.",
+    "done_when": "the reviewed run's own arms record base 179 passed / 0 failed / EXIT 0 at 7c882130d and head 198 passed / 0 failed / EXIT 0 at ecbaf7f95; this review re-ran the full suite at ecbaf7f95 and reproduced 198 passed / 0 failed / EXIT 0, and ran the new test against base code where it fails 1 of 10 with assert None == 3.0.",
+    "goal": "the node goal is that Jev's rendered state carries the effort the node's plan section declares; reckon/crew/picker/__init__.py:146 reads the section record's effort for every non-node provenance, so a plan that declares no plan-effort-hours meta now yields its section's own figure where the previous gate dropped it and rendered estimated_hours null.",
+    "manifest": "read; the reviewed run's manifest records the six commits, both gate arms and both negative controls in prose but carries no armed baseline_suite/after_suite JSON, so added_failure_count 0 is derived from the base-gate.log and head-gate.log it names.",
+    "write_paths": "the two reviewed commits touch only reckon/crew/picker/__init__.py, tests/test_jev_sees_declared_difficulty.py and docs/evidence/fragments/one-typesafe-model-picker/jev-sees-declared-difficulty.html, all three inside the reviewed run's declared write paths."
+  },
+  "justifications": {
+    "durability": "test_a_section_effort_is_read_when_the_plan_declares_no_total fails 1 of 10 against base code with assert None == 3.0 and passes at head, and the run's negative control reddens all three section-effort tests when the read is skipped.",
+    "evidence": "both gate arms are on disk and the added-failure count of 0 is derived from the base-gate.log and head-gate.log the reviewed manifest names; the only blemishes are that the fragment names e1f1af346 as the reviewed head while the head gate log it describes is at ecbaf7f95 (a docs-only delta) and the reviewed manifest carries no armed suite JSON.",
+    "fit": "the fix reuses _section_effort_hours and _section_record and matches the module idiom, but the new comment claims the no-total case is most plans when the mounted-plan census (67 of 340 live plans, about 20 percent) and the run's own cited 26 of 162 both show it is a minority.",
+    "goal_fidelity": "the fix closes exactly the gap the prior review recorded -- the section-effort read no longer depends on the plan declaring a total -- and the new test pins the read path, so a plan with no plan-effort-hours meta now renders its section's effort with source section.",
+    "reuse": "no capability was duplicated; the section effort is still resolved through routing._section_record and the plan total through routing._estimated_hours.",
+    "scope_discipline": "the two reviewed commits touch exactly the three declared files and nothing outside the reviewed run's write scope."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that Jev's rendered state carries the effort the node's plan section declares; reckon/crew/picker/__init__.py:146 reads the section record's effort for every non-node provenance, so a plan that declares no plan-effort-hours meta now yields its section's own figure where the previous gate dropped it and rendered estimated_hours null.\nVERDICT done_when: the reviewed run's own arms record base 179 passed / 0 failed / EXIT 0 at 7c882130d and head 198 passed / 0 failed / EXIT 0 at ecbaf7f95; this review re-ran the full suite at ecbaf7f95 and reproduced 198 passed / 0 failed / EXIT 0, and ran the new test against base code where it fails 1 of 10 with assert None == 3.0.\nVERDICT write_paths: the two reviewed commits touch only reckon/crew/picker/__init__.py, tests/test_jev_sees_declared_difficulty.py and docs/evidence/fragments/one-typesafe-model-picker/jev-sees-declared-difficulty.html, all three inside the reviewed run's declared write paths.\nVERDICT manifest: read; the reviewed run's manifest records the six commits, both gate arms and both negative controls in prose but carries no armed baseline_suite/after_suite JSON, so added_failure_count 0 is derived from the base-gate.log and head-gate.log it names.\nVERDICT diff: read the two commits against base c65e4fe8d; e1f1af346 removes the provenance == 'plan-fallback' gate so the section-effort read runs for every non-node provenance, and ecbaf7f95 updates the fragment and adds the no-total test.\nCALL_SITES: reckon/crew/picker/__init__.py:_declared_difficulty, reckon/crew/picker/__init__.py:_section_effort_hours, reckon/crew/picker/prompts.py:build_state\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the fix closes exactly the gap the prior review recorded -- the section-effort read no longer depends on the plan declaring a total -- and the new test pins the read path, so a plan with no plan-effort-hours meta now renders its section's effort with source section.\nSCORE evidence: 18\nJUSTIFICATION evidence: both gate arms are on disk and the added-failure count of 0 is derived from the base-gate.log and head-gate.log the reviewed manifest names; the only blemishes are that the fragment names e1f1af346 as the reviewed head while the head gate log it describes is at ecbaf7f95 (a docs-only delta) and the reviewed manifest carries no armed suite JSON.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two reviewed commits touch exactly the three declared files and nothing outside the reviewed run's write scope.\nSCORE durability: 19\nJUSTIFICATION durability: test_a_section_effort_is_read_when_the_plan_declares_no_total fails 1 of 10 against base code with assert None == 3.0 and passes at head, and the run's negative control reddens all three section-effort tests when the read is skipped.\nSCORE fit: 18\nJUSTIFICATION fit: the fix reuses _section_effort_hours and _section_record and matches the module idiom, but the new comment claims the no-total case is most plans when the mounted-plan census (67 of 340 live plans, about 20 percent) and the run's own cited 26 of 162 both show it is a minority.\nSCORE reuse: 19\nJUSTIFICATION reuse: no capability was duplicated; the section effort is still resolved through routing._section_record and the plan total through routing._estimated_hours.\nFINDING reckon/crew/picker/__init__.py:148 follow-on: the comment states that most plans do not declare a plan-effort-hours total, but a census of the mounted plans gives 67 of 340 live plans (about 20 percent) without one and the run's own figure is 26 of 162, so the comment claims the opposite of the measured common case; the read itself is correct and unaffected.\nFINDING docs/evidence/fragments/one-typesafe-model-picker/jev-sees-declared-difficulty.html:15 follow-on: the fragment names the reviewed head as e1f1af346 while the head gate log it describes names ecbaf7f95, one docs-only commit above it, so the fragment's reviewed-head label is stale by one commit.\nreviewed_base_sha: c65e4fe8d06bf097b11b19906599b3320356f15c\nreviewed_head_sha: ecbaf7f9541c4464d23bd7fa44e71464c5848615",
+  "review_run_id": "r-20261008T033308006210-review-of-jev-sees-declared-difficulty",
+  "reviewed_base_sha": "c65e4fe8d06bf097b11b19906599b3320356f15c",
+  "reviewed_head_sha": "ecbaf7f9541c4464d23bd7fa44e71464c5848615",
+  "reviewed_run_id": "r-20261008T005532265699-jev-sees-declared-difficulty",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T04:02:43.551450+00:00",
+  "total": 114
+}
