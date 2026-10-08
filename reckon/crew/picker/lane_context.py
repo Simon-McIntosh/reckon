@@ -124,18 +124,48 @@ def _as_mapping(value: object) -> Mapping[str, Any]:
     return value if isinstance(value, Mapping) else {}
 
 
+def _document_backed_backends(snapshot: Mapping[str, Any] | None) -> frozenset[str]:
+    """Backends whose budget figures the published document, not the ledger, supplied.
+
+    A pre-flight report names, per backend, which source spoke for it. A figure
+    the paid-lanes document published is a different provenance from one a run
+    recorded, so the picker labels the two apart rather than folding a published
+    reading into the ledger vocabulary.
+    """
+
+    if not isinstance(snapshot, Mapping):
+        return frozenset()
+    sources = snapshot.get("window_sources")
+    if not isinstance(sources, Mapping):
+        return frozenset()
+    return frozenset(
+        str(name)
+        for name, source in sources.items()
+        if source == budget.WINDOW_SOURCE_DOCUMENT
+    )
+
+
 def _budget_block(
-    reading: Mapping[str, Any], *, moment: datetime, shelf_life_minutes: float
+    reading: Mapping[str, Any],
+    *,
+    moment: datetime,
+    shelf_life_minutes: float,
+    document_backed: bool = False,
 ) -> dict[str, Any]:
     """Name a reading's source and age and mark a stale ledger reading.
 
     An account-surface reading describes now and is never stale by age; a
     ledger-only reading carries the age of the run that recorded it, and past
-    its shelf life it no longer describes the present and is marked stale.
+    its shelf life it no longer describes the present and is marked stale. A
+    reading the paid-lanes document published is labelled with its own
+    provenance, distinct from the ledger's, so a reader can tell a published
+    figure from one a run recorded.
     """
 
     raw_source = reading.get("source")
-    if raw_source == "account-surface":
+    if document_backed:
+        source = budget.WINDOW_SOURCE_DOCUMENT
+    elif raw_source == "account-surface":
         source = "account-surface"
     elif raw_source in _LEDGER_SOURCES:
         source = "ledger"
@@ -169,6 +199,7 @@ def return_times(
         )
     )
     readings = _budget_readings(budget_snapshot)
+    document_backed = _document_backed_backends(budget_snapshot)
     size_key, size_bucket = _size_of(getattr(node, "time_budget", "") or "")
     blocks: dict[str, dict[str, Any]] = {}
     for candidate in candidates:
@@ -186,7 +217,12 @@ def return_times(
         reading = readings.get(str(backend))
         if reading is not None:
             block.update(
-                _budget_block(reading, moment=moment, shelf_life_minutes=shelf_life)
+                _budget_block(
+                    reading,
+                    moment=moment,
+                    shelf_life_minutes=shelf_life,
+                    document_backed=str(backend) in document_backed,
+                )
             )
         blocks[str(backend)] = block
     return blocks
