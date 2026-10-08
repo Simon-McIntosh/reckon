@@ -1,0 +1,56 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T04:38:39.413Z",
+  "dispatched_at": "2026-10-08T04:31:05Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-mcp-failure-names-its-cause.html:154",
+      "id": "done_when-1",
+      "reason": "the fixture or the rule set must be reconciled (either exempt a literal home from the missing-path rule, which must then be stated, or expect three flags and drop the \"for its missing directory\" phrasing), otherwise the node's gate is unsatisfiable as written.",
+      "text": "\u00a75's done-when asserts the user-scope entry `uv run --project /home/someone/Code/reckon reckon mcp` is \"flagged twice (it syncs, and it names one user's home)\", but \u00a75's earlier rule (line 140-142) also flags \"a launch whose --project or --directory names a path that does not exist, judged after expanding the variables Claude Code expands\", and `/home/someone/Code/reckon` names no variable and does not exist under the fixture's temporary home, so the entry is flagged three times and a correct implementation makes the done-when's own assertion fail",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-mcp-failure-names-its-cause.html:87",
+      "id": "reasoning-1",
+      "reason": "a worker implementing per-tool attribution will necessarily widen the `tool_use` capture, so the plan's intent is unambiguous and no dispatch path is lost.",
+      "text": "\u00a72 says the transcript count reuses \"the content-block walk the promotion-receipt reader in reckon/velocity.py already uses, adding only the `storage-slow` count\", but that walk (velocity.py:1582) records a `tool_use` name only when it is `Bash`, while the done-when requires per-tool counts (`read_plan` two, `roadmap` one), so \"adding only the count\" understates the work: the walk must also record every tool's name",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "ac42771e52338af132589beb6aeb9a07a1f85070c5bae7692835df423cfd7481",
+  "plan_slug": "an-mcp-failure-names-its-cause",
+  "plan_version": 36,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T043031428142-plan-review-of-an-mcp-failure-names-its-cause",
+  "reviewed_blob_sha": "7d11e53d286dd95a0705928f5489e3e226db8d4f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 \u00a72's cited `transcript_index` and promotion-receipt walk resolve (reckon/velocity.py:1363 and :1551/:1586), and \u00a75's `~/.claude.json` user-scope entries resolve (cli.py:8544,8556) as does its mount-names-the-docs-directory claim (mounts.json maps a project to its `docs/` dir, so the checkout is its parent); the extensionless plan href is the house convention.",
+    "done_when": "a finding \u2014 \u00a75's done-when expects the user-scope entry flagged twice, but \u00a75's own missing-path rule flags it a third time.",
+    "evidence_paths": "pass \u2014 \u00a72's real-tree census run is logged \"to the run directory\" (line 102), and \u00a75's evidence is the test file plus its negative-control logs, both durable.",
+    "naming": "pass \u2014 `reckon/mcp_census.py` and the two new test modules carry no plan labels, ticket numbers or version tags.",
+    "reasoning": "a finding \u2014 \u00a75's mechanism (three independent flag rules) cannot produce the flag count its done-when asserts for the user-scope entry.",
+    "single_goal": "pass \u2014 \u00a72 names one deliverable (the census function) and \u00a75 one (the launch-hygiene check); \u00a75's several flag rules feed one function and one test.",
+    "wiring": "pass \u2014 s2 and s5 add no new relationships beyond the plan's `depends-on` (`reckon-reads-answer-in-seconds`, line 22), which resolves to a real plan; \u00a75's ordering behind \u00a72 (both edit `reckon/cli.py`) is stated in the followup body (line 258), so no dependency the changed units need is missing."
+  },
+  "section_digests": {
+    "_document": "eca3309ad1ee448c0df57fb13e4276127be60f335ff96a3e0bff1ad96e72a7d8",
+    "s1": "d0ea88c8e7e70627417eeb698c89b91962c8e03f4f18bbdc2e310ceeb8b0f1f5",
+    "s10": "44a1c96517a7320b1c237bf1bcbbd71973f7077c24a1618b7d07f8665e36f695",
+    "s2": "7129157f5e9ff4843f8c51517b28ce9dbcd6f9d657fd6f8f419bf9fd232ad903",
+    "s3": "82031c5ca9a72cb79729fbc07674f2d108fbebb8874c2e50d572fbd48600c6b2",
+    "s4": "fd5d8817baa9c4f4d8838eaad2fd20fb5a6088ac1c8dad8718a0fc1f7eeec45f",
+    "s5": "df3578d2dba1be445cc01d5c295443c6b114ff9c79d5738fae77b68b0ac0c512",
+    "s6": "38a3b13749c17899e607aeb6eb1c1324c5b7b7ecbe0f2027b43a50657e063c20",
+    "s7": "94a9fbe3b42e3609383a12d22150c7a8eba5ed62efa8aeb7d6cf0e0f44731825",
+    "s8": "e767ac662612e3267540f7c6afbaf5dfc2387cde567739be1d2cee15e035f12e",
+    "s9": "fe0a11cad6c32f17b346471626c2be89c90d7ae7e833958120767162f4ae5bab"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T04:39:10.187626+00:00"
+}
