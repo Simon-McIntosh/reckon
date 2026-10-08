@@ -44,6 +44,7 @@ def _write_plan(path: Path, state: dict) -> None:
         f"<title>{state['slug']}</title>"
         '</head><body><main class="plan-doc">'
         '<h2 id="s2">&sect;2 &mdash; Section two</h2>'
+        '<h2 id="s3">&sect;3 &mdash; Section three</h2>'
         "</main></body></html>\n"
     )
     path.write_text(_plan_html.write_state(bare, state), encoding="utf-8")

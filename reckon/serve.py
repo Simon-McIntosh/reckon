@@ -3572,9 +3572,13 @@ class Handler(BaseHTTPRequestHandler):
         # The continuation rule has to hold on every write path, or an agent can
         # mark a plan landed here and tell nobody what comes next.
         try:
-            from reckon._store import OpError, validate_landing_patch
+            from reckon._store import (
+                OpError,
+                new_section_coverage_gaps,
+                validate_landing_patch,
+            )
 
-            validate_landing_patch(state, patch)
+            validate_landing_patch(state, patch, text)
         except OpError as exc:
             self._send_json(
                 HTTPStatus.BAD_REQUEST,
@@ -3618,6 +3622,25 @@ class Handler(BaseHTTPRequestHandler):
         ):
             self._send_json(
                 HTTPStatus.OK, {"ok": True, "slug": slug, "version": cur_version}
+            )
+            return
+
+        # The patch path renders its own HTML and never reaches the store's
+        # write paths, so the coverage check has to run here too: a patch that
+        # drops a declaration or adds a heading would otherwise walk past it.
+        undeclared, orphaned = new_section_coverage_gaps(text, new_text)
+        if undeclared or orphaned:
+            self._send_json(
+                HTTPStatus.BAD_REQUEST,
+                {
+                    "error": "section_coverage",
+                    "detail": (
+                        "the patch would leave a heading without a declaration "
+                        "or a declaration without a heading"
+                    ),
+                    "sections_without_declaration": undeclared,
+                    "declarations_without_section": orphaned,
+                },
             )
             return
 
