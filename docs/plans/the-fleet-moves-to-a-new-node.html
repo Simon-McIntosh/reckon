@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="the-fleet-moves-to-a-new-node">
   <meta name="plan-title" content="The Fleet Moves To A New Node">
   <meta name="plan-summary" content="Fix what loaded the drained fleet node, build a migrate command, then move every session into the same tabs on a new node with coordinators resumed">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="19.0">
   <meta name="plan-capability-version" content="1.0">
@@ -19,11 +19,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-sprint" content="S21">
-  <meta name="plan-section-declarations" content="{&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;}">
   <title>The Fleet Moves To A New Node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="75">
+<meta name="plan-version" content="76">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -246,9 +246,12 @@
 <section data-reckon="section" data-id="s15" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
 <p><code>reckon/hooks/install.py</code> binds the obligations hook to the checkout's own <code>.venv/bin/python</code>, and states that the worker stop hook "is standard-library only and keeps its bare script command". It no longer is: <code>worker_stop.py</code> imports <code>reckon._timestamps</code>, which needs <code>datetime.UTC</code> from Python 3.11. A bare command resolves <code>python3</code> through the worker's <code>PATH</code>, and a worker launched from a non-interactive shell on a compute node finds the system Python 3.9. Measured on 7 October: every worker this plan dispatched over ssh to the fleet node ended its turn with <code>ImportError: cannot import name 'UTC' from 'datetime' (/usr/lib64/python3.9/datetime.py)</code> in its stop hook, which is non-blocking, so two workers stopped with work uncommitted or unreported and had to be resumed. The worker git guard is launched the same way and imports reckon, and a guard that cannot import fails open. The move drives steps from a login node into other nodes' shells, so this must hold before it.</p><p>Every hook a worker runs is launched by the checkout's own interpreter, as the obligations hook already is, both in the installed user settings and in each fenced worker's harness settings. The docstring states the rule that now holds.</p><p><strong>Done when:</strong></p><ul><li>A test composes the worker hook commands and finds each names the checkout's <code>.venv/bin/python</code> before the script.</li><li>A test runs the worker stop hook and the git guard through their composed commands with a <code>PATH</code> whose first <code>python3</code> is a stub that exits non-zero, and both still run and decide.</li><li>An installed settings file carrying the bare commands is upgraded in place without a duplicate entry.</li></ul>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-08</span>
     <h2 id="s16">§16 — The cutover relays its request and retire ignores the caller&#x27;s session</h2>
-<section data-reckon="section" data-id="s16" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-<p>The move exposed two defects in <code>reckon fleet-node migrate</code>. First, the cutover step relays <code>session NAME LAYOUT</code> to the new node's supervisor through a step that runs <code>python -m reckon.crew.fleet_migrate request …</code>. The module's entry point accepts a request of at most four arguments and refuses this five-argument one, after the session has already been ended on the old node. Second, the retire check lists sessions in a step that inherits the caller's zellij variables. zellij then marks the caller's own session <code>(current)</code>, and the check counts it as held by the old job.</p><p><strong>Done when:</strong></p><ul><li>The entry point relays a request line of any length as one line, and a test sends <code>session NAME LAYOUT</code> through the step argv the cutover composes.</li><li>Before it ends the old session, the cutover proves the relay to the new node's supervisor with a request that has no side effect: a <code>ready</code> probe, answered by a written response. Only then does it end the old session and send the start request, so no session ever runs on both nodes at once. A test fails the relay and finds the old session still running and no start request sent, and a test finds the start request sent only after the old session's end receipt.</li><li>The session listing used by census, cutover and retire clears <code>ZELLIJ</code>, <code>ZELLIJ_SESSION_NAME</code> and <code>ZELLIJ_PANE_ID</code> from the step it runs, and a test with those set finds no session counted.</li></ul>
+<section data-reckon="section" data-id="s16" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">Landed through <code>135e708e2</code>: a <code>ready</code> probe proves the relay before the old session ends, the start request follows the end receipt so no session runs on two nodes, requests of any length relay, and every session listing ignores the caller's own zellij session. Reviews 112 and 114 of 120. <a href="/reckon/evidence/archive/the-fleet-moves-to-a-new-node-landed.html#s16">full record</a></p>
+</section>
 
     <section data-reckon="gates" id="gates" class="r-gates">
 <h2><span class="sec">§</span> Evidence gates</h2>
@@ -332,10 +335,11 @@
     <pre class="r-fu-prompt">/reckon-build the-fleet-moves-to-a-new-node §2</pre>
     <p class="r-fu-outcome">§2, §4, §5, §7, §14 and §15 are done; §6's gate and launch-path search, §8's census and layout, and §10's standby supervisor have landed. What remains is §6's lane-change test repair, §8's stand-up, promote, cutover and retire steps, §3's thread measurement on the new node, then the §9 rehearsal and the §10 to §13 move.</p>
     </article>
-<article class="r-fu" data-id="f-tfmtann-migrate-steps" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="fleet-move-20261007" data-written-at="2026-10-07" data-recommends-skill="/reckon-build the-fleet-moves-to-a-new-node §8" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tfmtann-migrate-steps" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="fleet-move-20261007" data-written-at="2026-10-07" data-recommends-skill="/reckon-build the-fleet-moves-to-a-new-node §8" data-resolved-at="2026-10-08T01:12:43+00:00" data-resolved-by="fleet-move-20261007">
     <h4 class="r-fu-title">Carry the migrate command through stand-up, promote, cutover and retire, then rehearse</h4>
     <div class="r-fu-body"><p>§8's remaining steps compose the standby supervisor and the reservation replacement, which have now landed. Stand-up and promote come first, then cutover and retire. §9's rehearsal follows. §10 to §13 are then held only by the rehearsal gate.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-fleet-moves-to-a-new-node §8</pre>
+    <p class="r-fu-outcome">The migrate command carried the move on 8 October: stand-up, promote, cutover of all five sessions and retire of job 1277272, with the fleet now on job 1281970 on 98dci4-clu-2002. The two defects the move exposed are fixed in §16. Done — no followup.</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
