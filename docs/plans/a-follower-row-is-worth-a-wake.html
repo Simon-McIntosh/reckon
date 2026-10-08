@@ -25,7 +25,7 @@
   <title>A Follower Row Is Worth A Wake | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="20">
+<meta name="plan-version" content="22">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -108,6 +108,12 @@
         "a state a run does not leave" covers them and <code>HIDDEN_AT_ATTACH</code> derives from it as before.
         A launch withdrawn straight from dispatched within <code>ARRIVAL_WINDOW</code> is not unexplained: it is the
         coordinator's own refused dispatch, which the dispatch call already reported, so it stays held back.</li>
+      <li>An actionable resolution: a noise pair whose resolving row lands in an action state prints the net change.
+        Today <code>working → blocked</code> followed by <code>blocked → completed_unpromoted</code> inside the 300 s
+        exit-phantom window prints nothing, because <code>NOISE_RESOLUTIONS</code> drops the resolution, so a run that
+        finished and waits for promotion never reaches the coordinator. The pair now prints one row,
+        <code>working → completed_unpromoted</code>, as an arrival's hold already prints its resolution under the
+        arrival's left side.</li>
     </ul>
     <p>An arrival that resolves into an observer kind, the launch's <code>dispatched → working</code>, prints
       nothing. An arrival still sitting in dispatched at <code>ARRIVAL_WINDOW</code> prints as today. A
@@ -132,6 +138,8 @@
       <li><code>working → exited-unfinished → blocked</code> two seconds apart prints one row, the blocked.</li>
       <li>A printed blocked followed by <code>blocked → working</code> prints the recovery.</li>
       <li>arrival then <code>dispatched → withdrawn</code> twice prints nothing.</li>
+      <li><code>working → blocked</code> then <code>blocked → completed_unpromoted</code> two seconds apart prints one
+        row, <code>working → completed_unpromoted</code>; today it prints none.</li>
       <li>A working run whose next row is <code>working → discarded</code> prints the discarded.</li>
       <li>A run changing state every ten seconds prints within two minutes of its first change.</li>
       <li>With observer context shown, the first sequence prints the rows it prints today.</li>
