@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.22">
-<meta name="plan-version" content="41">
+<meta name="plan-version" content="42">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -291,7 +291,10 @@
     <div class="r-comment-body"><p>independent review of r-20261008T044322676562-workers-seed-only-named-mcp-servers attached at base c5afaf59e7d40a55879c76ff4bd24deb6cc83026 / head 700fc0f624cbc32f25bb757f7254d7bbbb62c3f5, total 93/120; one blocking finding (tests/test_fence_is_on_again.py and tests/test_harness_home_carries_the_operator_config.py were edited outside the declared write paths and a coordinator must grant the scope extension or rework the section) and two follow-on findings (the worker_mcp_servers opt-in key is refused by flight's schema so the opt-in half is inert in production; the evidence fragment reports 166 passed against its own log's 167).</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261008T065716456795-review-of-workers-seed-only-named-mcp-servers" data-who="reckon-build" data-when="2026-10-08T07:16:16.020Z">
-    <div class="r-comment-body"><p>independent re-review of r-20261008T044322676562-workers-seed-only-named-mcp-servers covering only the commit it gained since review, 8a0f0d6e6 (delta 700fc0f624cbc32f25bb757f7254d7bbbb62c3f5..8a0f0d6e6c7cca73b4c62719f6c9bf1a235d8927), stored at the two granted paths, total 106/120; two follow-on findings (the evidence fragment claims a write-scope grant for tests/test_fence_is_on_again.py that the run&#x27;s own record shows was never widened; worker_mcp_servers is still refused by reckon/flight.py _schema_view so §7&#x27;s opt-in half is inert in production).</p></div>
+    <div class="r-comment-body"><p>independent re-review of r-20261008T044322676562-workers-seed-only-named-mcp-servers covering only the commit it gained since review, 8a0f0d6e6 (delta 700fc0f624cbc32f25bb757f7254d7bbbb62c3f5..8a0f0d6e6c7cca73b4c62719f6c9bf1a235d8927), stored at the two granted paths, total 106/120; two follow-on findings (the evidence fragment claims a write-scope grant for tests/test_fence_is_on_again.py that the run's own record shows was never widened; worker_mcp_servers is still refused by reckon/flight.py _schema_view so §7's opt-in half is inert in production).</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261008T044322676562-workers-seed-only-named-mcp-servers" data-who="reckon-build" data-when="2026-10-08T06:56:34.159Z">
+    <div class="r-comment-body"><p>§7 implemented in reckon/_backends.py: the run home seeder writes enableAllProjectMcpServers=false and enabledMcpjsonServers=[&lt;worker_mcp_servers&gt;] into the settings.json it creates, so a fenced claude-shaped worker starts no project .mcp.json server unless the project names it, with reckon still enabled via the user-scope carry. The record is written only when the launch carries a resolved flight configuration (a bare composition governs no project), which is what leaves the operator-harness test&#x27;s unchanged assertion green.</p></div>
 </div>
 </section>
 </main>
