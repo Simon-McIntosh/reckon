@@ -283,8 +283,27 @@ def test_a_landing_with_an_undeclared_heading_is_refused(tmp_path: Path) -> None
     assert path.read_text(encoding="utf-8") == before
 
 
+@pytest.fixture
+def mounts_discovery_cache():
+    """Hand a test an empty mounts cache, then put the prior one back.
+
+    The cache is a module global keyed by project and root, so leaving it
+    cleared would hand later tests a mounts view that no longer matches the
+    path they installed.
+    """
+    import reckon.serve as serve_module
+
+    saved = dict(serve_module._DISC_CACHE)
+    serve_module._DISC_CACHE.clear()
+    try:
+        yield serve_module
+    finally:
+        serve_module._DISC_CACHE.clear()
+        serve_module._DISC_CACHE.update(saved)
+
+
 def test_the_server_patch_path_refuses_a_write_that_drops_a_declaration(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mounts_discovery_cache
 ) -> None:
     """The HTTP patch path renders its own HTML and must checks it too.
 
@@ -298,12 +317,11 @@ def test_the_server_patch_path_refuses_a_write_that_drops_a_declaration(
     mounts.write_text(json.dumps({"sample": str(docs)}), encoding="utf-8")
     monkeypatch.setenv("RECKON_MOUNTS_PATH", str(mounts))
 
-    import reckon.serve as serve_module
+    serve_module = mounts_discovery_cache
 
-    serve_module._MOUNTS_FILE = mounts
+    monkeypatch.setattr(serve_module, "_MOUNTS_FILE", mounts)
     monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
     (tmp_path / "config").mkdir()
-    serve_module._DISC_CACHE.clear()
 
     before = path.read_text(encoding="utf-8")
     state, _ = _plan_html.read_state_and_text_file(path)
