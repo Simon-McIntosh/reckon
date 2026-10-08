@@ -13,7 +13,7 @@ import pytest
 from click.testing import CliRunner
 
 import reckon.crew.dispatch_picker as dispatch_picker_module
-from reckon import cli, ledger
+from reckon import cli, crew_dispatch_commands, ledger
 from reckon.crew import picker
 from reckon.crew.picker import Candidate
 
@@ -69,8 +69,8 @@ def repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     ):
         subprocess.run(["git", *args], cwd=root, check=True, capture_output=True)
     (home / "mounts.json").write_text(json.dumps({"proj": str(root / "docs")}))
-    monkeypatch.setattr(cli, "_resolved_flight", lambda *_a, **_k: CONFIG)
-    monkeypatch.setattr(cli, "_model_availability_refusal", lambda *_a, **_k: None)
+    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *_a, **_k: CONFIG)
+    monkeypatch.setattr(crew_dispatch_commands, "_model_availability_refusal", lambda *_a, **_k: None)
     return root
 
 

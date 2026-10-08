@@ -7,7 +7,7 @@ from types import SimpleNamespace
 import pytest
 from click.testing import CliRunner
 
-from reckon import cli
+from reckon import cli, crew_dispatch_commands
 from reckon.crew import picker
 from tests import test_dispatch_names_its_backend as base
 
@@ -36,8 +36,8 @@ def test_congested_local_lane_routing(dispatch_repo, tmp_path, monkeypatch, choi
     config["backends"]["alpha"]["lane_document"] = str(lane)
     config["local_backend"] = "alpha"
     config["routing"] = {"picker": "route"}
-    monkeypatch.setattr(cli, "_resolved_flight", lambda *_a, **_k: config)
-    monkeypatch.setattr(cli, "_model_availability_refusal", lambda *_a, **_k: None)
+    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *_a, **_k: config)
+    monkeypatch.setattr(crew_dispatch_commands, "_model_availability_refusal", lambda *_a, **_k: None)
     calls = []
 
     def pick(*_args, **_kwargs):

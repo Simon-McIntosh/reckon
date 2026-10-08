@@ -27,6 +27,7 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli as cli_module
+from reckon import crew_dispatch_commands
 from reckon.crew.node import TaskNode
 from reckon.crew.prompts import compose_prompt
 from tests import test_dispatch_names_its_backend as dispatch_tests
@@ -51,9 +52,9 @@ def _invoke(
 ):
     """Run the dispatch command for a test-writing node and read its payload."""
     config = deepcopy(dispatch_tests.CONFIG)
-    monkeypatch.setattr(cli_module, "_resolved_flight", lambda *_a, **_k: config)
+    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *_a, **_k: config)
     monkeypatch.setattr(
-        cli_module, "_model_availability_refusal", lambda *_a, **_k: None
+        crew_dispatch_commands, "_model_availability_refusal", lambda *_a, **_k: None
     )
     result = CliRunner().invoke(
         cli_module.main,

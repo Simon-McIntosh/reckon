@@ -55,7 +55,7 @@ import pytest
 from click.testing import CliRunner
 
 import reckon.crew.dispatch_watch as dispatch_watch_module
-from reckon import cli, crew
+from reckon import cli, crew, crew_dispatch_commands, crew_follow_commands
 from reckon.crew import runs
 
 # ``reckon.crew`` re-exports a function named ``dispatch``, so the module a test
@@ -67,7 +67,7 @@ dispatch_module = importlib.import_module("reckon.crew.dispatch")
 pytestmark = pytest.mark.arms_watch_producer
 
 REPO_ROOT = Path(cli.__file__).resolve().parents[1]
-FOLLOWER_SOURCE = Path(cli.__file__).resolve()
+FOLLOWER_SOURCE = Path(crew_follow_commands.__file__).resolve()
 PROJECT = "proj"
 # Distinctive on purpose: the shared-home check looks for these tokens, so an id
 # short enough to appear inside a stranger's pointer would report a false hit.
@@ -464,8 +464,8 @@ def test_a_reload_does_not_restart_the_lifetime(home, monkeypatch) -> None:
         kwargs.setdefault("sleeper", lambda _seconds: None)
         return real_lines(*args, **kwargs)
 
-    monkeypatch.setattr(cli, "_follow_watch_lines", _injected_lines)
-    monkeypatch.setattr(cli, "time", _InjectedTime(time, clock))
+    monkeypatch.setattr(crew_follow_commands, "_follow_watch_lines", _injected_lines)
+    monkeypatch.setattr(crew_follow_commands, "time", _InjectedTime(time, clock))
     # The instant the re-exec of an armed follower carries, in the variable it
     # carries it in, so this case enters where a replacement image enters.
     monkeypatch.setenv(cli._FOLLOWER_LIFETIME_ENV, str(1000.0 + grant))
@@ -778,7 +778,7 @@ def repo(tmp_path: Path, home: Path) -> Path:
 
 @pytest.fixture(autouse=True)
 def routing(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(cli, "_resolved_flight", lambda *args, **kwargs: CONFIG)
+    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *args, **kwargs: CONFIG)
 
 
 def _dispatch_arguments(repo: Path, session: str) -> list[str]:
@@ -880,7 +880,7 @@ def test_a_launch_that_carries_no_delivery_still_needs_the_producer(
     project = "sample"
     session = "session-in-harness"
     monkeypatch.setattr(
-        cli, "_resolved_flight", lambda *args, **kwargs: IN_HARNESS_CONFIG
+        crew_dispatch_commands, "_resolved_flight", lambda *args, **kwargs: IN_HARNESS_CONFIG
     )
 
     class _DeadSupervisor:

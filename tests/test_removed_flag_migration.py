@@ -21,7 +21,7 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from reckon import cli, crew
+from reckon import cli, crew, crew_follow_commands
 from reckon.crew import runs
 from reckon.crew.dispatch import WATCHER_LOAD_BOUND_SECONDS
 
@@ -157,7 +157,7 @@ def test_the_removed_flag_reconnects_instead_of_exiting_two(home, monkeypatch) -
     """
     calls: list[dict] = []
     stderr_writes = _capture_stderr(monkeypatch)
-    monkeypatch.setattr(cli, "_follow_watch_lines", _bounded_follower(calls))
+    monkeypatch.setattr(crew_follow_commands, "_follow_watch_lines", _bounded_follower(calls))
     runner = CliRunner()
     result = runner.invoke(
         cli.main,
@@ -204,7 +204,7 @@ def test_an_armed_follower_delivers_the_same_rows_as_an_unarmed_one(
     """
     calls: list[dict] = []
     stderr_writes = _capture_stderr(monkeypatch)
-    monkeypatch.setattr(cli, "_follow_watch_lines", _bounded_follower(calls))
+    monkeypatch.setattr(crew_follow_commands, "_follow_watch_lines", _bounded_follower(calls))
     runner = CliRunner()
     armed = runner.invoke(
         cli.main, ["crew", "follow", "--project", "proj", "--json", "--attention"]
@@ -319,7 +319,7 @@ def test_armed_and_bare_followers_register_the_same_scope(home, monkeypatch) -> 
         return real_registration(project, session, delivery=delivery, scope=scope)
 
     monkeypatch.setattr(runs, "follower_registration", recording)
-    monkeypatch.setattr(cli, "_follow_watch_lines", _bounded_follower([]))
+    monkeypatch.setattr(crew_follow_commands, "_follow_watch_lines", _bounded_follower([]))
     runner = CliRunner()
     armed = runner.invoke(
         cli.main,

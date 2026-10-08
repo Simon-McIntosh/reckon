@@ -8,7 +8,7 @@ from types import SimpleNamespace
 
 from click.testing import CliRunner
 
-from reckon import cli
+from reckon import cli, crew_dispatch_commands
 from reckon.crew import picker
 from reckon.crew.picker import outcomes
 
@@ -272,8 +272,8 @@ def test_dispatch_refuses_and_records_picker_hold(tmp_path, monkeypatch):
         "roles": {"implement": {}},
         "fences": {"time_budget": "25m", "needs_help_after_failures": 2},
     }
-    monkeypatch.setattr(cli, "_resolved_flight", lambda *_a, **_k: config)
-    monkeypatch.setattr(cli, "_model_availability_refusal", lambda *_a, **_k: None)
+    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *_a, **_k: config)
+    monkeypatch.setattr(crew_dispatch_commands, "_model_availability_refusal", lambda *_a, **_k: None)
     selection = {
         "action": "hold",
         "backend": None,

@@ -27,7 +27,7 @@ import reckon.crew.dispatch_plan as dispatch_plan_module
 import reckon.crew.dispatch_sessions as dispatch_sessions_module
 import reckon.crew.recovery as recovery_module
 from reckon import cli as cli_module
-from reckon import crew, flight, ledger
+from reckon import crew, crew_dispatch_commands, crew_run_commands, flight, ledger
 from reckon.crew import recovery, review, runs
 from reckon.crew.dispatch import shadow as dispatch_shadow
 from reckon.crew.refusals import format_refusal
@@ -641,7 +641,7 @@ def test_tmpfs_manifest_warning_names_the_durable_default(home) -> None:
 def test_dry_run_payload_reports_the_resolved_write_paths(
     home, repo, monkeypatch
 ) -> None:
-    monkeypatch.setattr(cli_module, "_resolved_flight", lambda *args, **kwargs: CONFIG)
+    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *args, **kwargs: CONFIG)
     node = _node()
     write_paths = ["reckon/crew.py", "tests/test_crew.py"]
 
@@ -697,7 +697,7 @@ def test_dry_run_payload_reports_the_resolved_write_paths(
 def test_dispatch_cli_accepts_and_persists_a_wave(home, repo, monkeypatch) -> None:
     config = json.loads(json.dumps(CONFIG))
     config["backends"]["alpha"]["launch"] = "in-harness"
-    monkeypatch.setattr(cli_module, "_resolved_flight", lambda *args, **kwargs: config)
+    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *args, **kwargs: config)
     node = _node()
 
     result = CliRunner().invoke(
@@ -740,7 +740,7 @@ def test_dispatch_cli_accepts_and_persists_a_wave(home, repo, monkeypatch) -> No
 def test_dispatch_cli_opens_a_wave_without_a_flag(home, repo, monkeypatch) -> None:
     config = json.loads(json.dumps(CONFIG))
     config["backends"]["alpha"]["launch"] = "in-harness"
-    monkeypatch.setattr(cli_module, "_resolved_flight", lambda *args, **kwargs: config)
+    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *args, **kwargs: config)
     node = _node()
 
     result = CliRunner().invoke(
@@ -884,7 +884,7 @@ def test_local_dry_run_selects_the_declared_backend(home, repo, monkeypatch) -> 
             "roles": {"implement": {"backend": None}},
         },
     )
-    monkeypatch.setattr(cli_module, "_resolved_flight", lambda *args, **kwargs: config)
+    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *args, **kwargs: config)
     node = _node()
 
     result = CliRunner().invoke(
@@ -926,7 +926,7 @@ def test_local_dry_run_selects_the_declared_backend(home, repo, monkeypatch) -> 
 
 
 def test_local_dry_run_refuses_an_unset_key(home, repo, monkeypatch) -> None:
-    monkeypatch.setattr(cli_module, "_resolved_flight", lambda *args, **kwargs: CONFIG)
+    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *args, **kwargs: CONFIG)
     node = _node()
 
     result = CliRunner().invoke(
@@ -974,7 +974,7 @@ def test_local_dispatch_marks_the_live_pointer(home, repo, monkeypatch) -> None:
             "roles": {"implement": {"backend": None}},
         },
     )
-    monkeypatch.setattr(cli_module, "_resolved_flight", lambda *args, **kwargs: config)
+    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *args, **kwargs: config)
     node = _node()
 
     result = CliRunner().invoke(
@@ -1765,7 +1765,7 @@ def test_cli_dispatch_reports_a_live_scope_conflict_on_its_own_exit_code(
         node_id="owner-node",
         write_paths=["reckon"],
     )
-    monkeypatch.setattr(cli_module, "_resolved_flight", lambda *args, **kwargs: CONFIG)
+    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *args, **kwargs: CONFIG)
 
     result = CliRunner().invoke(
         cli_module.main,
@@ -2010,7 +2010,7 @@ def _assert_attach_line_shape(
 def test_no_watch_dispatch_records_the_override_on_pointer_and_ledger(
     home, repo, monkeypatch
 ) -> None:
-    monkeypatch.setattr(cli_module, "_resolved_flight", lambda *args, **kwargs: CONFIG)
+    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *args, **kwargs: CONFIG)
     monkeypatch.setattr(crew, "_spawn", lambda *args, **kwargs: 4242)
     result = CliRunner().invoke(
         cli_module.main,
@@ -2066,7 +2066,7 @@ def test_no_watch_dispatch_records_the_override_on_pointer_and_ledger(
 
 
 def test_cli_dispatch_arms_a_missing_watcher(home, repo, monkeypatch) -> None:
-    monkeypatch.setattr(cli_module, "_resolved_flight", lambda *args, **kwargs: CONFIG)
+    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *args, **kwargs: CONFIG)
     monkeypatch.setattr(crew, "_spawn", lambda *args, **kwargs: 4242)
     existing = _write_running_pointer(
         home,
@@ -2208,7 +2208,7 @@ def test_cli_dispatch_reports_unreconciled_runs_on_its_own_exit_code(
         "fences": {**CONFIG["fences"], "unreconciled_run_grace": "5m"},
     }
     monkeypatch.setattr(
-        cli_module,
+        crew_dispatch_commands,
         "_resolved_flight",
         lambda *args, **kwargs: configured,
     )
@@ -2349,7 +2349,7 @@ def test_competence_threshold_is_the_named_horizon_in_both_speed_directions(
 def test_cli_competence_refusal_has_typed_dry_run_parity(
     home, repo, monkeypatch
 ) -> None:
-    monkeypatch.setattr(cli_module, "_resolved_flight", lambda *args, **kwargs: CONFIG)
+    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *args, **kwargs: CONFIG)
     monkeypatch.setattr(
         crew.capabilities,
         "load_capabilities",
@@ -2466,7 +2466,7 @@ def test_cli_plan_visibility_refusal_has_its_own_exit_code(
 ) -> None:
     plan = repo / "docs" / "plans" / "plan-a.html"
     plan.write_text(plan.read_text().replace("Dispatch", "Changed dispatch"))
-    monkeypatch.setattr(cli_module, "_resolved_flight", lambda *args, **kwargs: CONFIG)
+    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *args, **kwargs: CONFIG)
 
     result = CliRunner().invoke(
         cli_module.main,
@@ -3621,7 +3621,7 @@ def test_a_complete_manifest_emits_an_authorised_review_dispatch(
 
     configured = {**CONFIG, "local_backend": "alpha"}
     monkeypatch.setattr(
-        cli_module,
+        crew_dispatch_commands,
         "_dispatch_resolved_flight",
         lambda *_args, **_kwargs: configured,
     )
@@ -3903,7 +3903,7 @@ def test_cli_resume_resolves_the_run_projects_budget_policy(
         passed_configs.append(config)
         return original_resume(run_id, advice, config=config)
 
-    monkeypatch.setattr(cli_module, "_resolved_flight", resolve)
+    monkeypatch.setattr(crew_run_commands, "_resolved_flight", resolve)
     monkeypatch.setattr(crew, "resume_plan", resume)
 
     result = CliRunner().invoke(
@@ -4419,7 +4419,7 @@ def test_shadow_cli_routes_the_candidate_and_derives_the_node(
         return config
 
     monkeypatch.chdir(repo)
-    monkeypatch.setattr(cli_module, "_resolved_flight", resolve)
+    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", resolve)
     result = CliRunner().invoke(
         cli_module.main,
         [
@@ -4476,7 +4476,7 @@ def test_shadow_cli_accepts_and_persists_session_and_wave(
         return config
 
     monkeypatch.chdir(repo)
-    monkeypatch.setattr(cli_module, "_resolved_flight", resolve)
+    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", resolve)
     result = CliRunner().invoke(
         cli_module.main,
         [

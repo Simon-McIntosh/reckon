@@ -15,7 +15,6 @@ from reckon.crew.plan_review import plan_fingerprint
 from reckon.crew.runs import _watch_attach_line
 from reckon.mcp import _OP_VOCAB
 
-
 ROOT = Path(__file__).parents[1]
 
 
@@ -1445,7 +1444,7 @@ def test_ship_dispatch_exit_table_matches_cli_branches() -> None:
         "watcher-required": 8,
         "member-in-flight": 9,
     }
-    source = (ROOT / "reckon" / "cli.py").read_text()
+    source = (ROOT / "reckon" / "crew_dispatch_commands.py").read_text()
     assert "0 succeeded, 1 the configuration or request is wrong" in source
     branches = _dispatch_exit_branches(source)
     _assert_exit_table_matches(documented, branches)
@@ -1518,7 +1517,7 @@ def test_ship_documents_dispatch_prerequisites_and_refusal_remedies() -> None:
     assert "reckon sync" not in ship
     # A refusal the caller cannot read is indistinguishable from silence.
     assert "answers with a json document on stdout" in ship
-    assert '"error": "dispatch-refused"' in (ROOT / "reckon" / "cli.py").read_text()
+    assert '"error": "dispatch-refused"' in (ROOT / "reckon" / "crew_dispatch_commands.py").read_text()
     assert "commit the plan before dispatching" in ship
     assert "before creating a worktree" in ship
     assert "`--no-watch`" in ship

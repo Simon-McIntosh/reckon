@@ -25,7 +25,7 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli as cli_module
-from reckon import crew
+from reckon import crew, crew_dispatch_commands
 from reckon.crew import runs
 
 # These cases decide on the watcher, so arming is allowed for the module even
@@ -105,7 +105,7 @@ def repo(tmp_path: Path, home: Path) -> Path:
 
 @pytest.fixture(autouse=True)
 def routing(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(cli_module, "_resolved_flight", lambda *args, **kwargs: CONFIG)
+    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *args, **kwargs: CONFIG)
 
 
 def _spawn_runner() -> subprocess.Popen[str]:

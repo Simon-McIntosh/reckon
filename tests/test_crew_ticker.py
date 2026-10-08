@@ -12,7 +12,7 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli as cli_module
-from reckon import crew, ledger
+from reckon import crew, crew_follow_commands, ledger
 from reckon.crew import recovery
 from reckon.crew import ticker as ticker_module
 
@@ -732,7 +732,7 @@ def test_a_follower_delivers_only_lines_with_a_node_and_a_state_pair(monkeypatch
     reads the same state, with its source, from the machine stream.
     """
     monkeypatch.setattr(
-        cli_module,
+        crew_follow_commands,
         "_follow_watch_lines",
         lambda *_a, **_kw: iter([_event(), _event(node="second-node")]),
     )
@@ -759,7 +759,7 @@ def test_a_follower_delivers_only_lines_with_a_node_and_a_state_pair(monkeypatch
 def _follow_rows(monkeypatch, events, *args) -> list[str]:
     """The rows `crew follow` prints for these log lines, colour off."""
     monkeypatch.setattr(
-        cli_module, "_follow_watch_lines", lambda *_a, **_kw: iter(list(events))
+        crew_follow_commands, "_follow_watch_lines", lambda *_a, **_kw: iter(list(events))
     )
     result = CliRunner().invoke(
         cli_module.main,
@@ -1069,7 +1069,7 @@ def test_a_shadow_row_says_so_end_to_end_rather_than_by_identifier(
     """
     monkeypatch.delenv("NO_COLOR", raising=False)
     monkeypatch.setattr(
-        cli_module,
+        crew_follow_commands,
         "_follow_watch_lines",
         lambda *_a, **_kw: iter(
             [_fact_event(), _fact_event(node="shadow-node", shadow=True)]

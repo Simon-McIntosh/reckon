@@ -33,7 +33,7 @@ from click.testing import CliRunner
 import reckon.crew.dispatch_sessions as dispatch_sessions_module
 import reckon.mcp as mcp_module
 from reckon import cli as cli_module
-from reckon import crew
+from reckon import crew, crew_dispatch_commands
 from reckon.crew import resumption
 from tests import test_resume_and_lane_change_follow_their_own_attempt as lane
 from tests.test_resume_and_lane_change_follow_their_own_attempt import (  # noqa: F401
@@ -100,7 +100,7 @@ def _stub_flight(monkeypatch: pytest.MonkeyPatch) -> None:
     The subject is the advice file each door writes, not how the flight config
     resolves; the fixture repository has no flight file of its own.
     """
-    monkeypatch.setattr(cli_module, "_resolved_flight", lambda *a, **k: lane.CONFIG)
+    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *a, **k: lane.CONFIG)
     monkeypatch.setattr(
         mcp_module.flight_module,
         "resolve",

@@ -10,7 +10,7 @@ from types import SimpleNamespace
 import pytest
 from click.testing import CliRunner
 
-from reckon import cli, flight
+from reckon import cli, crew_dispatch_commands, flight
 from reckon.crew.node import TaskNode
 
 crew_dispatch = importlib.import_module("reckon.crew.dispatch")
@@ -73,8 +73,8 @@ def test_dispatch_passes_above_floor_and_flight_override_tunes_it(
 def test_dry_run_reports_the_same_named_refusal(tmp_path, monkeypatch):
     root, probes = _setup(tmp_path, monkeypatch, 4)
     config = flight.resolve(host_path=tmp_path / "absent.yaml").config
-    monkeypatch.setattr(cli, "_dispatch_resolved_flight", lambda *args: config)
-    monkeypatch.setattr(cli, "_model_availability_refusal", lambda *args, **kw: None)
+    monkeypatch.setattr(crew_dispatch_commands, "_dispatch_resolved_flight", lambda *args: config)
+    monkeypatch.setattr(crew_dispatch_commands, "_model_availability_refusal", lambda *args, **kw: None)
     result = CliRunner().invoke(
         cli.main,
         [

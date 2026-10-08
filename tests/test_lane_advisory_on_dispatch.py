@@ -14,7 +14,7 @@ import pytest
 from click.testing import CliRunner
 
 import reckon.crew.dispatch_plan as dispatch_plan_module
-from reckon import _plan_html, crew, ledger
+from reckon import _plan_html, crew, crew_dispatch_commands, ledger
 from reckon import cli as cli_module
 from reckon.crew.runs import _write_json, pointer_path
 from tests import test_dispatch_names_its_backend as existing_backend_tests
@@ -131,10 +131,10 @@ def _invoke(
 ):
     config = copy.deepcopy(existing_backend_tests.CONFIG)
     monkeypatch.setattr(
-        cli_module, "_resolved_flight", lambda *_args, **_kwargs: config
+        crew_dispatch_commands, "_resolved_flight", lambda *_args, **_kwargs: config
     )
     monkeypatch.setattr(
-        cli_module, "_model_availability_refusal", lambda *_args, **_kwargs: None
+        crew_dispatch_commands, "_model_availability_refusal", lambda *_args, **_kwargs: None
     )
     monkeypatch.setattr(
         dispatch_plan_module,

@@ -51,7 +51,7 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli as cli_module
-from reckon import crew
+from reckon import crew, crew_dispatch_commands
 from reckon.crew.node import PlanReviewMissingError
 from reckon.crew.runs import list_live, record_process_alive
 
@@ -410,7 +410,7 @@ def _dispatch_cli(
     done_when: str = DONE_WHEN,
 ) -> Any:
     """One ``reckon crew dispatch`` issuing from the operator's hand."""
-    monkeypatch.setattr(cli_module, "_resolved_flight", lambda *a, **k: CONFIG)
+    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *a, **k: CONFIG)
     arguments = [
         "crew",
         "dispatch",

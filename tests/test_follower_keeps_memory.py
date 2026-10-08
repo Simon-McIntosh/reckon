@@ -21,7 +21,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon import cli, crew
+from reckon import cli, crew, crew_follow_commands
 from reckon.crew import follow_checkpoint, runs
 from tests.test_follow_rearm_continues import (
     PROJECT,
@@ -53,7 +53,7 @@ def follow_lines(monkeypatch):
     def capture(line, *, stream=None):
         lines.append(line)
 
-    monkeypatch.setattr(cli, "_echo_follow_line", capture)
+    monkeypatch.setattr(crew_follow_commands, "_echo_follow_line", capture)
     return lines
 
 

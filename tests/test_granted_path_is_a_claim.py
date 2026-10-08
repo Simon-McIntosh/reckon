@@ -24,7 +24,7 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli as cli_module
-from reckon import crew
+from reckon import crew, crew_dispatch_commands
 
 PROJECT = "proj"
 PLAN = "plan-a"
@@ -102,7 +102,7 @@ def repo(tmp_path: Path, home: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     (home / "mounts.json").write_text(
         json.dumps({"proj": str(root / "docs")}), encoding="utf-8"
     )
-    monkeypatch.setattr(cli_module, "_resolved_flight", lambda *a, **k: CONFIG)
+    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *a, **k: CONFIG)
     return root
 
 

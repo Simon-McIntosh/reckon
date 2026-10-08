@@ -10,7 +10,7 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli as cli_module
-from reckon import crew
+from reckon import crew, crew_dispatch_commands
 from reckon.flight import flight_report
 
 
@@ -41,7 +41,7 @@ def unavailable_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict:
         "roles": {"implement": {}},
         "fences": {"time_budget": "10m"},
     }
-    monkeypatch.setattr(cli_module, "_resolved_flight", lambda *args, **kwargs: config)
+    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *args, **kwargs: config)
     monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
     return config
 

@@ -65,11 +65,11 @@ from pathlib import Path
 
 import pytest
 
-from reckon import cli
+from reckon import cli, crew_follow_commands
 from reckon.crew import runs
 
 REPO_ROOT = Path(cli.__file__).resolve().parents[1]
-FOLLOWER_SOURCE = Path(cli.__file__).resolve()
+FOLLOWER_SOURCE = Path(crew_follow_commands.__file__).resolve()
 
 # A project name this workstation does not use, so the real follower directory
 # for it is absent and the untouched assertion is a control rather than a
@@ -176,7 +176,7 @@ if os.environ.get("FOLLOWER_TEST_PASS_LOG"):
         "def wrapped(*args, **kwargs):\\n"
         "    kwargs['sleeper'] = sleeper\\n"
         "    return watch_lines(*args, **kwargs)\\n"
-        "cli._follow_watch_lines = wrapped\\n"
+        "crew_follow_commands._follow_watch_lines = wrapped\\n"
         "from reckon.cli import main\\n"
         "main()\\n"
     )

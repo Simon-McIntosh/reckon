@@ -10,8 +10,7 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli as cli_module
-from reckon import crew
-
+from reckon import crew, crew_dispatch_commands
 
 CONFIG = {
     "default_backend": "worker",
@@ -78,7 +77,7 @@ def repo(tmp_path: Path, home: Path) -> Path:
 
 @pytest.fixture(autouse=True)
 def routing(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(cli_module, "_resolved_flight", lambda *args, **kwargs: CONFIG)
+    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *args, **kwargs: CONFIG)
 
 
 def _node(path: str) -> crew.TaskNode:

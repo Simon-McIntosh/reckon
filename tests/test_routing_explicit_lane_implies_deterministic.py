@@ -15,7 +15,7 @@ from copy import deepcopy
 import pytest
 from click.testing import CliRunner
 
-from reckon import _store, cli
+from reckon import _store, cli, crew_dispatch_commands
 from reckon.crew import picker
 from tests.test_picker_in_dispatch import CONFIG, selection
 from tests.test_picker_in_dispatch import (
@@ -63,8 +63,8 @@ def route_config(repo, monkeypatch):
     """Resolve flight to the shipped route default and forbid a picker call."""
     config = deepcopy(CONFIG)
     config["routing"] = {"picker": "route"}
-    monkeypatch.setattr(cli, "_resolved_flight", lambda *_a, **_k: config)
-    monkeypatch.setattr(cli, "_layer_flight_config", lambda *_a, **_k: config)
+    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *_a, **_k: config)
+    monkeypatch.setattr(crew_dispatch_commands, "_layer_flight_config", lambda *_a, **_k: config)
     return config
 
 

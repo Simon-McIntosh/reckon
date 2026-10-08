@@ -7,7 +7,7 @@ from pathlib import Path
 from click.testing import CliRunner
 
 from reckon import cli as cli_module
-from reckon import crew, flight
+from reckon import crew, crew_dispatch_commands, flight
 from reckon.crew import plan_review
 
 _CONFIG = {
@@ -127,7 +127,7 @@ def _node() -> crew.TaskNode:
 def test_dry_run_agent_equals_successful_dispatch_agent(tmp_path, monkeypatch) -> None:
     repo = _repository(tmp_path, monkeypatch)
     definition = _node()
-    monkeypatch.setattr(cli_module, "_resolved_flight", lambda *args, **kwargs: _CONFIG)
+    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *args, **kwargs: _CONFIG)
 
     result = CliRunner().invoke(
         cli_module.main,

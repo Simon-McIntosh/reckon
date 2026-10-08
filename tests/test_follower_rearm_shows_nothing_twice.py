@@ -187,7 +187,7 @@ import traceback
 
 from click.testing import CliRunner
 
-from reckon import cli
+from reckon import cli, crew_follow_commands
 from reckon.crew import runs
 
 payload_path = pathlib.Path(sys.argv[1])
@@ -202,10 +202,10 @@ runs.follower_code_stamp = lambda: held
 if producer_live_hint:
     runs.producer_live = lambda project: True
 if terminal:
-    cli._follow_replay_visible = lambda: True
+    crew_follow_commands._follow_replay_visible = lambda: True
 
 rows = []
-cli._echo_follow_line = lambda line, *, stream=None: rows.append(line)
+crew_follow_commands._echo_follow_line = lambda line, *, stream=None: rows.append(line)
 payload = {"rows": [], "exit_code": None, "output": "", "error": ""}
 try:
     result = CliRunner().invoke(
@@ -317,7 +317,7 @@ def _run_follow(lines: list[str] | None = None, *, terminal: bool = False) -> li
     rows = payload["rows"]
     if lines is None:
         for row in rows:
-            cli._echo_follow_line(row)
+            crew_follow_commands._echo_follow_line(row)
     else:
         lines.extend(rows)
     return rows

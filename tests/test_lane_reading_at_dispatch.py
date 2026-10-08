@@ -12,6 +12,7 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli as cli_module
+from reckon import crew_dispatch_commands
 from tests import test_dispatch_names_its_backend as existing_backend_tests
 
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
@@ -35,10 +36,10 @@ def _invoke(
     if lane_document is not None:
         config["backends"]["beta"]["lane_document"] = str(lane_document)
     monkeypatch.setattr(
-        cli_module, "_resolved_flight", lambda *_args, **_kwargs: config
+        crew_dispatch_commands, "_resolved_flight", lambda *_args, **_kwargs: config
     )
     monkeypatch.setattr(
-        cli_module, "_model_availability_refusal", lambda *_args, **_kwargs: None
+        crew_dispatch_commands, "_model_availability_refusal", lambda *_args, **_kwargs: None
     )
     result = CliRunner().invoke(
         cli_module.main,

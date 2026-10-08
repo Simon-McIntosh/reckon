@@ -18,7 +18,7 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from reckon import __version__, cli, pages, serve
+from reckon import __version__, cli, cli_entry, pages, serve
 from tests.spa_browser_harness import (
     BrowserProbeError,
     _evaluate_browser_url,
@@ -883,7 +883,7 @@ def test_build_fails_loudly_when_packaged_index_is_missing(tmp_path, monkeypatch
     packaged_assets = fake_package / "_assets"
     shutil.copytree(REPO_ROOT / "docs/ui", packaged_assets / "ui")
     shutil.copytree(REPO_ROOT / "docs/_shared", packaged_assets / "_shared")
-    monkeypatch.setattr(cli, "__file__", str(fake_package / "cli.py"))
+    monkeypatch.setattr(cli_entry, "__file__", str(fake_package / "cli.py"))
     docs_dir = tmp_path / "docs"
     docs_dir.mkdir()
 

@@ -32,6 +32,7 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli as cli_module
+from reckon import crew_dispatch_commands
 from reckon.crew.dispatch import _directory_claim_overlaps
 from reckon.crew.runs import _write_json, pointer_path
 
@@ -149,7 +150,7 @@ def _dry_run(
     accept_directory_claim: bool = False,
 ):
     """One ``crew dispatch --dry-run`` issuing from the operator's hand."""
-    monkeypatch.setattr(cli_module, "_resolved_flight", lambda *a, **k: CONFIG)
+    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *a, **k: CONFIG)
     arguments = [
         "crew",
         "dispatch",

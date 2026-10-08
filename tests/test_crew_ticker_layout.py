@@ -20,6 +20,7 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli as cli_module
+from reckon import crew_follow_commands
 from reckon.crew import ticker as ticker_module
 
 ESCAPES = re.compile(r"\x1b\[[0-9;]*m")
@@ -1548,7 +1549,7 @@ def test_a_follower_opened_at_a_pane_width_emits_a_grid_at_that_width(
     try:
         monkeypatch.setattr(ticker_module, "_ancestor_terminal_paths", lambda: [path])
         monkeypatch.setattr(
-            cli_module,
+            crew_follow_commands,
             "_follow_watch_lines",
             lambda *_a, **_kw: iter([_event(), _event(node="second-node")]),
         )

@@ -19,7 +19,7 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli as cli_module
-from reckon import crew
+from reckon import crew, crew_dispatch_commands
 from reckon.crew import node as node_module
 
 
@@ -123,7 +123,7 @@ def test_dispatch_without_a_specification_level_exits_two(
         "fences": {"time_budget": "25m"},
     }
     monkeypatch.setattr(
-        cli_module, "_resolved_flight", lambda *_args, **_kwargs: config
+        crew_dispatch_commands, "_resolved_flight", lambda *_args, **_kwargs: config
     )
 
     result = CliRunner().invoke(

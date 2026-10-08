@@ -16,7 +16,7 @@ import pytest
 from click.testing import CliRunner
 
 import reckon.crew.dispatch_sessions as dispatch_sessions_module
-from reckon import _backends, crew
+from reckon import _backends, crew, crew_dispatch_commands
 from reckon import cli as cli_module
 from reckon.crew import recovery, runs
 
@@ -203,7 +203,7 @@ def test_crew_resume_keeps_the_harness_behind_a_supervisor(
     plan = _sleeping_plan(Path(runs.read_pointer(run_id)["worktree"]), dialect)
     monkeypatch.setattr(crew, "resume_plan", lambda *args, **kwargs: plan)
     monkeypatch.setattr(
-        cli_module,
+        crew_dispatch_commands,
         "_resolved_flight",
         lambda flight_module, project, checkout_path, overrides: CONFIG,
     )
@@ -247,7 +247,7 @@ def test_a_killed_resumed_worker_leaves_its_attempt_exit_record(
     plan = _sleeping_plan(Path(runs.read_pointer(run_id)["worktree"]), "codex")
     monkeypatch.setattr(crew, "resume_plan", lambda *args, **kwargs: plan)
     monkeypatch.setattr(
-        cli_module,
+        crew_dispatch_commands,
         "_resolved_flight",
         lambda flight_module, project, checkout_path, overrides: CONFIG,
     )

@@ -17,7 +17,7 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from reckon import cli as cli_module
+from reckon import project_maintenance_commands
 from reckon.cli import CLAUDE_SKILLS_DIR_ENV, main
 
 PLUGIN_NAME = "reckon-crew-host"
@@ -55,7 +55,7 @@ def module_scoped_sync(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Pa
     with pytest.MonkeyPatch.context() as patch:
         patch.setattr(Path, "home", classmethod(lambda cls: home))
         patch.setenv("RECKON_HOME", str(home / "docs-server"))
-        patch.setattr(cli_module, "_reckon_checkout", lambda: checkout)
+        patch.setattr(project_maintenance_commands, "_reckon_checkout", lambda: checkout)
         result = CliRunner().invoke(
             main,
             [

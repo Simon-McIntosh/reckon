@@ -32,7 +32,7 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli as cli_module
-from reckon import crew
+from reckon import crew, crew_dispatch_commands
 from reckon.crew.runs import list_live, pointer_path
 
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
@@ -193,7 +193,7 @@ def _cli_dispatch(config_home: Path, repo: Path, monkeypatch: pytest.MonkeyPatch
     The backend is resolved from the fixture's own config, and the refusal
     happens before any worker is launched, so nothing here starts a process.
     """
-    monkeypatch.setattr(cli_module, "_resolved_flight", lambda *a, **k: CONFIG)
+    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *a, **k: CONFIG)
     return CliRunner().invoke(
         cli_module.main,
         [

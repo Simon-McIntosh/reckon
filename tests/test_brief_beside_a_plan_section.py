@@ -27,7 +27,7 @@ from click.testing import CliRunner
 
 import reckon.crew.dispatch_plan as dispatch_plan_module
 from reckon import cli as cli_module
-from reckon import crew
+from reckon import crew, crew_dispatch_commands
 from reckon.crew.prompts import (
     BRIEF_LANDING_CONTRACT,
     PLAN_LANDING_CONTRACT,
@@ -358,10 +358,10 @@ def test_a_brief_beside_a_committed_plan_section_dispatches_end_to_end(
     """
     _config_home, repo, brief = committed_plan_repo
     monkeypatch.setattr(
-        cli_module, "_resolved_flight", lambda *_a, **_k: IN_HARNESS_CONFIG
+        crew_dispatch_commands, "_resolved_flight", lambda *_a, **_k: IN_HARNESS_CONFIG
     )
     monkeypatch.setattr(
-        cli_module, "_model_availability_refusal", lambda *_a, **_k: None
+        crew_dispatch_commands, "_model_availability_refusal", lambda *_a, **_k: None
     )
 
     result = CliRunner().invoke(

@@ -10,7 +10,7 @@ from copy import deepcopy
 import pytest
 from click.testing import CliRunner
 
-from reckon import _store, cli, crew, flight
+from reckon import _store, cli, crew, crew_dispatch_commands, flight
 from reckon.crew import dispatch_plan as dispatch_plan_module
 from reckon.crew import picker
 from reckon.crew.dispatch import change_lane
@@ -75,7 +75,7 @@ def test_dispatch_resolves_routing_key(
 ):
     config = deepcopy(CONFIG)
     config["routing"] = {"picker": configured}
-    monkeypatch.setattr(cli, "_resolved_flight", lambda *_a, **_k: config)
+    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *_a, **_k: config)
     monkeypatch.setattr(picker, "pick", lambda *_a, **_k: selection())
     payload = invoke(repo, route=override, dry_run=dry_run)
     assert payload["backend"] == expected_backend
@@ -162,7 +162,7 @@ def test_a_dry_run_report_is_comparable_across_picker_modes(repo, monkeypatch, m
     """
     config = deepcopy(CONFIG)
     config["routing"] = {"picker": mode}
-    monkeypatch.setattr(cli, "_resolved_flight", lambda *_a, **_k: config)
+    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *_a, **_k: config)
     monkeypatch.setattr(dispatch_plan_module, "new_run_id", lambda _node: "r-fixed")
     latencies = iter([1.0, 999.0])
 
@@ -209,7 +209,7 @@ def test_project_routing_layer_drives_dispatch(repo, monkeypatch, tmp_path):
         overrides=CONFIG,
     )
     assert resolved.provenance["routing.picker"] == "project"
-    monkeypatch.setattr(cli, "_resolved_flight", lambda *_a, **_k: resolved.config)
+    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *_a, **_k: resolved.config)
     monkeypatch.setattr(picker, "pick", lambda *_a, **_k: selection())
     assert invoke(repo)["backend"] == "beta"
 
