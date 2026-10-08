@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.0">
-<meta name="plan-version" content="10">
+<meta name="plan-version" content="11">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -209,9 +209,15 @@
     <pre class="r-fu-prompt">/reckon-build a-plan-is-done-when-every-section-is-ticked §3</pre>
     <p class="r-fu-outcome">superseded: the content review moved §5's owner to _require_heading_for_section_records; §3's dispatch was refused at the paused fleet gate during the node move</p>
     </article>
-<article class="r-fu" data-id="f-tick-004" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-07T22:56:00Z" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tick-004" data-status="resolved" data-written-by="reckon-build" data-written-at="2026-10-07T22:56:00Z" data-recommends-skill="" data-resolved-at="2026-10-08T01:11:02+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Dispatch §3 once the fleet gate reopens</h4>
     <div class="r-fu-body"><p>Checkpoint at the fleet move off 98dci4-clu-2018 (2026-10-08 00:55 CEST): no run of this plan is in flight. The design review (version 5) and the content review (version 7) are stored with every finding answered. §3's dispatch was refused <code>lane-paused</code>, and its brief is ready. Order once the gate reopens: §3 alone (the derivation function both readers call, and the open-section predicate); then §4, §6, §7 and §9 in parallel; then §5, which widens <code>_require_heading_for_section_records</code> once §6 releases <code>reckon/_store.py</code>. §8 stays deferred.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-plan-is-done-when-every-section-is-ticked §3</pre>
+    <p class="r-fu-outcome">the gate reopened on the new node; §3 is being dispatched, and §5 gains a carried requirement in f-tick-005</p>
+    </article>
+<article class="r-fu" data-id="f-tick-005" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-08T01:12:00Z" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build in three waves; §5&#x27;s guard reads the declarations a write produces</h4>
+    <div class="r-fu-body"><p>Order: §3 alone; then §4, §6, §7 and §9 in parallel; then §5 once §6 releases <code>reckon/_store.py</code>. §8 stays deferred. A requirement on §5, from the version-10 content review: its coverage check must compare headings against the declarations the write produces. At <code>_write_state_locked</code>, the guard's existing call site reads <code>source_text</code>, the authored HTML before <code>write_state</code> injects the new <code>plan-section-declarations</code>. A check there would test the old declarations against the new headings and falsely refuse a write that adds a heading and its declaration together. Amend §5's text and brief with this before dispatching it.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-plan-is-done-when-every-section-is-ticked §3</pre>
     </article>
 </section>
