@@ -1,0 +1,57 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T07:30:58.716Z",
+  "dispatched_at": "2026-10-08T07:22:26Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/an-mcp-failure-names-its-cause.html:226",
+      "id": "reasoning-1",
+      "reason": "without a scoped or followupped declaration no project will ever name a server, so \u00a711's premise (\"the opt-in half is inert\") survives its own landing.",
+      "text": "\u00a711 names \"imas-codex ... declares imas-cx there in its flight configuration\" as part of the solution, but imas-codex has no flight config (`docs/state/imas-codex/flight.yaml` absent; its repo is outside \u00a711's write paths of `reckon/flight.py` and the test), no followup records the change, and \u00a711's live done-when checks an imas-ambix worktree (snapshot:231) \u2014 a project that declares no server, so the check passes on the unfixed code \u2014 meaning the section can close green while \u00a77's opt-in half stays inert in production, the exact condition \u00a711 exists to fix",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/an-mcp-failure-names-its-cause.html:249",
+      "id": "wiring-1",
+      "reason": "\u00a73/\u00a74/\u00a76/\u00a77 landed after this followup was authored and the plan's own state-integrity rule requires the driving followup be refreshed when work lands, so the section-to-wave wiring a coordinator dispatches from is out of date.",
+      "text": "the only followup, f-amfc-001, is `open` and its body states \"\u00a72, \u00a73, \u00a74 and \u00a76 ... can run together\" although \u00a73/\u00a74/\u00a76 have since landed, and it names neither \u00a78/\u00a79/\u00a710 nor \u00a711, so the plan's declared next invocation (`/reckon-build an-mcp-failure-names-its-cause`) carries a coordination note that is stale and incomplete for the current remaining wave",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "5eaf91d388089f8f050a72f4d65498fe92cbd878ea09c2ff8e0c8b82081fd1e3",
+  "plan_slug": "an-mcp-failure-names-its-cause",
+  "plan_version": 44,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T072202069250-plan-review-of-an-mcp-failure-names-its-cause",
+  "reviewed_blob_sha": "af33e4c536f743bf55c65d48414e2971dc5888e8",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `mounts.json` maps each project to `<checkout>/docs`, so \u00a75's \"repository that holds the mount's docs/ directory\" resolves (imas-codex \u2192 /home/ITER/mcintos/Code/imas-codex, whose `.mcp.json` exists); the four evidence anchors in \u00a73/\u00a74/\u00a76/\u00a77 resolve to ids in `docs/evidence/archive/an-mcp-failure-names-its-cause-landed.html`; `/reckon/reckon-reads-answer-in-seconds` and both \u00a711 test/module paths resolve.",
+    "done_when": "pass \u2014 \u00a75's fixture and its two negative controls are internally consistent (three flags on the user-scope entry now that the missing-directory rule fires on `/home/someone/Code/reckon`), and \u00a711 carries a falsifiable unit test with a reverted-schema negative control.",
+    "evidence_paths": "pass \u2014 \u00a711's `ps` listing is written to the run directory (snapshot:231); \u00a75's gate is a test whose red log the run manifest records, and its test-isolation rule (temporary home, real `~/.claude.json` untouched) is stated (snapshot:150-152).",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach any symbol, file or comment named by the changed units.",
+    "reasoning": "a finding \u2014 \u00a711's stated production outcome (the opt-in half is no longer inert) requires a project to declare `worker_mcp_servers`, but \u00a711 scopes no write path or followup for the imas-codex declaration it names, and its live check targets imas-ambix, which declares nothing.",
+    "single_goal": "pass \u2014 each changed section names one deliverable: \u00a75 a doctor launch check, \u00a711 the schema admission of `worker_mcp_servers`.",
+    "wiring": "a finding \u2014 the driving followup f-amfc-001 (snapshot:249) still describes \u00a73/\u00a74/\u00a76 as a pending wave and never names \u00a78/\u00a79/\u00a710/\u00a711, so the plan's declared next invocation omits four implementable sections and the \u00a711\u2192\u00a77 relationship."
+  },
+  "section_digests": {
+    "_document": "acf6b5c827747d527794c41c0f3cc529c54de0c442964c5df1f6f8dd3eb86b76",
+    "s1": "d0ea88c8e7e70627417eeb698c89b91962c8e03f4f18bbdc2e310ceeb8b0f1f5",
+    "s10": "44a1c96517a7320b1c237bf1bcbbd71973f7077c24a1618b7d07f8665e36f695",
+    "s11": "76500e582b90e6511f2589177262329e896bbc5abc85321effaa69224cc262b4",
+    "s2": "7129157f5e9ff4843f8c51517b28ce9dbcd6f9d657fd6f8f419bf9fd232ad903",
+    "s3": "05d43e5ed58103318c10e33d1dc6795cf27a2ab17593f4c172bb381d8c00fcde",
+    "s4": "fd5d8817baa9c4f4d8838eaad2fd20fb5a6088ac1c8dad8718a0fc1f7eeec45f",
+    "s5": "3e9867402ffb3df16fe573240c8b0e6c8fda824b2eb1e7a39d962e6d09b11b91",
+    "s6": "38a3b13749c17899e607aeb6eb1c1324c5b7b7ecbe0f2027b43a50657e063c20",
+    "s7": "9a485205c44b324dcb24ad7acf24f7bfd53171fa8c18a03e9c9a2bdf3a458bed",
+    "s8": "e767ac662612e3267540f7c6afbaf5dfc2387cde567739be1d2cee15e035f12e",
+    "s9": "fe0a11cad6c32f17b346471626c2be89c90d7ae7e833958120767162f4ae5bab"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T07:31:48.120301+00:00"
+}
