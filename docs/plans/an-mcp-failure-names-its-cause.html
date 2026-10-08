@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.55">
-<meta name="plan-version" content="58">
+<meta name="plan-version" content="61">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -101,7 +101,7 @@
       fails; a second, with the tool-result reader returning nothing, fails the transcript count. Run against the real log tree on the fleet node for the window 2026-10-01T01:00:00Z to
       2026-10-08T01:00:00Z, the census function reproduces §1's imas-cx <code>CONNECTION_CLOSED</code> count within 5%, in a log written to the
       run directory. The write paths are
-      <code>reckon/mcp_census.py</code>, <code>reckon/cli.py</code> and <code>tests/test_mcp_census.py</code>; the
+      <code>reckon/mcp_census.py</code>, <code>reckon/project_maintenance_commands.py</code> (where <code>reckon doctor</code> is defined) and <code>tests/test_mcp_census.py</code>; the
       transcript count calls <code>reckon/velocity.py</code> and changes nothing in it.</p>
 
     <section class="section-landed">
@@ -149,7 +149,7 @@
       entry is flagged only for its path and the test fails; a second, with the missing-directory check removed,
       passes the third project and the test fails. Every <code>reckon sync</code> and <code>reckon doctor</code> test that
       reads a config resolves it under a temporary home, and the test asserts the real
-      <code>~/.claude.json</code> is untouched. The write paths are <code>reckon/cli.py</code> and
+      <code>~/.claude.json</code> is untouched. The write paths are <code>reckon/project_maintenance_commands.py</code>, where <code>reckon doctor</code> is defined, and
       <code>tests/test_doctor_mcp_launch.py</code>.</p>
 
     <section class="section-landed">
@@ -197,14 +197,19 @@
 
     <h2 id="s11">§11 — A project can name its worker MCP servers</h2>
 <section data-reckon="section" data-id="s11" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
-<p><strong>Deliverable.</strong> §7 seeds the worker setting from a project's <code>worker_mcp_servers</code>, but
-      <code>_schema_view</code> in <code>reckon/flight.py</code> refuses unknown top-level keys, so no project can declare one
-      and the opt-in half is inert. The flight schema admits <code>worker_mcp_servers</code> as a list of server names. A project that wants its workers to query a server names it in its own
-      flight configuration, in its own repository.</p>
+<p><strong>Deliverable.</strong> §7 seeds the worker setting from a project's <code>worker_mcp_servers</code>, but no project
+      can declare one: the generated flight model (<code>reckon/_flight_schema.py</code>, built from
+      <code>reckon/schema/flight.yaml</code>) refuses unknown top-level keys, so the opt-in half is inert. <code>reckon/flight.py</code>
+      declares <code>worker_mcp_servers</code> a reckon-owned key, the pattern it already uses for <code>SPRINT_RECENT_DAYS_KEY</code>
+      and <code>HARNESS_HOME_FILES</code>: <code>_schema_view</code> removes it before the generated model validates the rest, and a
+      reader in <code>reckon/flight.py</code> accepts it only as a list of server names. The schema file and the generated model are
+      not edited. A project that wants its workers to query a server names it in its own flight configuration, in its own
+      repository.</p>
     <p><strong>Done when</strong> a test in <code>tests/test_worker_mcp_servers.py</code> resolves a flight configuration carrying
       <code>worker_mcp_servers: [imas-cx]</code> without a schema refusal and seeds a run home whose settings enable
-      <code>imas-cx</code>. The negative control is executed and logged: with the schema change reverted, the resolve raises and the test
-      fails. The write paths are
+      <code>imas-cx</code>, and a configuration whose <code>worker_mcp_servers</code> is a single string is refused with a message naming
+      the key. The negative control is executed and logged: with <code>worker_mcp_servers</code> taken out of the reckon-owned keys, the
+      resolve raises the schema refusal and the test fails. The write paths are
       <code>reckon/flight.py</code> and <code>tests/test_worker_mcp_servers.py</code>.</p>
 
     <h2 id="s12">§12 — The MCP summary view lists the inventory without walking the corpus</h2>
