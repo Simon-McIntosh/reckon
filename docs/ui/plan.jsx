@@ -136,6 +136,38 @@ function PlanChecklist({ todos }) {
   );
 }
 
+// A gate's evidence is authored either as a reference the surface can follow or
+// as prose. Both travel in the same `href` slot, so the view has to tell them
+// apart rather than link whatever it is handed.
+//
+// The recognised shape is the server's reference grammar — the same safe
+// segments and `[project:]slug[#stage]` form that reckon/_schema.py reads link
+// fields through — widened to the route and same-page anchor forms the docs
+// corpus authors ([project:]slug[#stage], `/project/route#anchor`, `#anchor`).
+// Every segment is drawn from the server's own segment class, and the value
+// must carry no whitespace: a prose sentence is not a reference.
+const GATE_REFERENCE_SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+const GATE_PROJECT_SEGMENT = /^[A-Za-z0-9][A-Za-z0-9_-]*$/;
+
+function gateEvidenceIsReference(value) {
+  const text = String(value == null ? "" : value).trim();
+  if (!text || /\s/.test(text)) return false;
+  const hashAt = text.indexOf("#");
+  if (hashAt !== -1 && text.indexOf("#", hashAt + 1) !== -1) return false;
+  const target = hashAt === -1 ? text : text.slice(0, hashAt);
+  const fragment = hashAt === -1 ? null : text.slice(hashAt + 1);
+  if (fragment !== null && !GATE_REFERENCE_SEGMENT.test(fragment)) return false;
+  if (target === "") return fragment !== null;
+  let path = target;
+  const colonAt = target.indexOf(":");
+  if (colonAt !== -1) {
+    if (!GATE_PROJECT_SEGMENT.test(target.slice(0, colonAt))) return false;
+    path = target.slice(colonAt + 1);
+  }
+  const segments = path.replace(/^\/+/, "").split("/");
+  return segments.length > 0 && segments.every(segment => GATE_REFERENCE_SEGMENT.test(segment));
+}
+
 function GateTable({ gates }) {
   if (!gates || gates.length === 0) return null;
   return (
@@ -149,7 +181,11 @@ function GateTable({ gates }) {
               <td>{gate.measure || gate.id}</td>
               <td>{gate.status || "open"}</td>
               <td>{gate.verdict || "pending"}</td>
-              <td>{gate.evidence ? <a href={gate.evidence}>Evidence</a> : "Not recorded"}</td>
+              <td>{!gate.evidence
+                ? "Not recorded"
+                : gateEvidenceIsReference(gate.evidence)
+                  ? <a href={gate.evidence}>Evidence</a>
+                  : <span className="r-gate-evidence-prose">{gate.evidence}</span>}</td>
             </tr>
           ))}
         </tbody>

@@ -1,0 +1,19 @@
+<article class="landed-report" data-run-id="r-20261008T084900561128-gate-evidence-renders-as-written" data-node="gate-evidence-renders-as-written">
+<h3 id="gate-evidence-renders-as-written-summary">Gate evidence renders as written</h3>
+<p>The plan view's evidence-gate table rendered every <code>gate.evidence</code>
+value as an <code>&lt;a href&gt;</code>, so a gate whose evidence is a prose
+summary linked to a sentence the surface cannot follow. The table now reads the value
+through the server's reference grammar (the <code>[project:]slug[#stage]</code>
+form and safe segments of <code>reckon/_schema.py</code>, widened to the
+<code>/project/route#anchor</code> and <code>#anchor</code> forms the docs corpus
+authors). A value that parses links as before; a prose value renders as text in
+<code>r-gate-evidence-prose</code>; an absent value still reads
+<code>Not recorded</code>.</p>
+<table id="gate-evidence-renders-as-written-gate">
+<thead><tr><th>Arm</th><th>Log summary</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td>Base</td><td>86 passed, 19 skipped in 22.76s</td><td>EXIT=0</td></tr>
+<tr><td>Head</td><td>92 passed, 19 skipped in 38.97s</td><td>EXIT=0</td></tr>
+<tr><td>Negative control</td><td>3 failed, 3 passed (prose tests) in 2.77s</td><td>EXIT=1</td></tr>
+</tbody></table>
+</article>
