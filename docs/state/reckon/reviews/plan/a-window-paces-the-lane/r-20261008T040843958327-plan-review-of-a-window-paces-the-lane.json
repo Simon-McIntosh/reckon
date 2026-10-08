@@ -1,0 +1,74 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T04:31:35.594Z",
+  "dispatched_at": "2026-10-08T04:09:22Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-window-paces-the-lane.html:1897",
+      "id": "wiring-1",
+      "reason": "a node dispatched against \u00a710 must itself choose whether a lift may raise the utilisation ceiling (`lift-scope`, `data-choice=\"\"` at line 1960, recommended `multiple-only`) and whether an unnamed-end lift stops at the next reset or after 12 h (`lift-default-end`, `data-choice=\"\"` at line 1969), and unlike every other section, `\u00a710` appears only in its own heading with no `/reckon-build \u2026 \u00a710` prompt anywhere in the followups section, so nothing carries the invocation the chain expects.",
+      "text": "\u00a710 is declared `implementable` to a node's brief, yet it carries two unlocked decisions that decide its mechanism and no followup routes to it",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-window-paces-the-lane.html:992",
+      "id": "anchors_resolve-1",
+      "reason": "`/plan/<project>/<slug>` resolves to `docs/plans/<slug>.html` and `docs/plans/a-window-paces-the-lane-landed.html` does not exist (the record is `docs/evidence/archive/a-window-paces-the-lane-landed.html`), so all eight links 404 at the served plan and the section-by-section evidence trail cannot be reached.",
+      "text": "eight links into the landed evidence record use the plan route `/plan/reckon/a-window-paces-the-lane-landed#\u2026` (lines 992, 1318, 1406, 1479, 1569, 1667, 1727, 1792) where the same record is addressed by the evidence route `/reckon/evidence/archive/a-window-paces-the-lane-landed` at 17 other sites",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-window-paces-the-lane.html:40",
+      "id": "reasoning-1",
+      "reason": "`_backends.budget_from_rate_limit_info` has parsed `unifiedWindows.five_hour` / `seven_day` since `b9562693f` (2026-09-05) and `b3977b3a7` (2026-09-15), both before \u00a71's own \"Measured 2026-09-21\", and \u00a75b's record at line 1862 names the pre-existing read path `_run_budget_probe \u2192 _backends.probe_budget \u2192 dialect.read_account_surface`; the premise is also propagated into `plan-summary` (line 10) and the \u00a75 followup body (line 1993), and it is what \u00a75's justification (\"the reader shapes everything above it\") and the duplicate-parser question \u00a75b already raises both rest on.",
+      "text": "\u00a71's load-bearing premise \"Reckon reads neither\" is false against code that predates the section and the evidence it cites",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-window-paces-the-lane.html:384",
+      "id": "reasoning-2",
+      "reason": "`BudgetConfig.slots` in `reckon/schema/flight.yaml` declares `drain_lead_hours` (line 690) and `pace_multiple` (line 702) and no `bookend_reserve_pct`, the model is `extra=\"forbid\"` so an operator who writes the key is refused \"Extra inputs are not permitted\", and neither generated schema (`docs/_shared/flight.schema.json`, `reckon/_flight_schema.py`) contains it \u2014 while `reckon/crew/reserve.py:42,47,61` reads it with a hard-coded 20 % default, so the reserve \u00a74 says is tunable is in practice fixed; \u00a72 repaired exactly this class of defect for its own two keys, and \u00a74 states the same claim without the repair.",
+      "text": "\u00a74 records its landing as reading \"a `bookend_reserve_pct` flight key from the budget block\", but that key is not a settable flight key",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "79e95449f473547a7acab4fffe9a2fb6ca15480eb640b9479cd6da1bd20803d9",
+  "plan_slug": "a-window-paces-the-lane",
+  "plan_version": 121,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T040843958327-plan-review-of-a-window-paces-the-lane",
+  "reviewed_blob_sha": "218340bfcf7eb92ff3776af46adc7a3464c8dc50",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "finding \u2014 eight in-plan links address the landed record by the plan route instead of the evidence route, and that route does not resolve.",
+    "done_when": "pass \u2014 \u00a710's done-when is measurable (a named reading, a named lift, a named admit) and names a declared negative control (\"deletes the lift lookup from `pace.policy` alone, and the admit assertion must fail\"), which resolves on the real path because the admitted allowance is composed through `pace.allowance_for_group(\u2026, config=config)` \u2192 `pace.policy(config)`; its `releases_at` expectation is derived from the fixture at assertion time rather than written down.",
+    "evidence_paths": "pass \u2014 evidence lives at durable repo and docs paths (`docs/evidence/archive/a-window-paces-the-lane-landed.html`, `reckon/crew/*.py`, `tests/test_*.py`), never a scratchpad or tmp path, and the mutation logs are named by scratch-copy provenance rather than a temporary path a later reader cannot resolve.",
+    "naming": "pass \u2014 the landed modules (`pace.py`, `bar.py`, `reserve.py`, `hold.py`, `staleness.py`, `budget_group.py`, `pace_replay.py`, `window_reading.py`, `lane_document.py`) carry no plan labels, stage names, tool-verify numbers, version tags or changelog prose in symbols or comments.",
+    "reasoning": "finding \u2014 the plan's stated starting premise is false against code that predates it, and \u00a74 describes a flight key that is not declared, both of which a builder would act on.",
+    "single_goal": "pass \u2014 one deliverable per node; each done section names one artefact (bar.py, reserve.py, window_reading.py, hold.py, pace rows, replay guards) and \u00a710 names the lift alone.",
+    "wiring": "finding \u2014 s10 is the only section not `done` (`implementable`), and it is the section with the least wiring: two decisions attached to it are unlocked and no followup routes to it, while the single `informs` edge is declared correctly."
+  },
+  "section_digests": {
+    "_document": "c09c1da5f70de20a6a5cf1cbcbb1a29a0ff9a8ac86398932953b87d82dc05f1f",
+    "s1": "fd232b0e9e301983eea254fa355a00f9cfdad5e4ba397415c196946997e8b78a",
+    "s10": "a1f304c94d768cfe6dbdc80daab04a7ba68a23a6ebd661b9bea7e4672c1feee7",
+    "s2": "0c4f642bff7cb6b87908ea9e036cb3161c15e31cb3285273e06bb2ac1f5c368c",
+    "s3": "ae3d7625321a46e7fa6a9ee3bac0272ee77d236811612140ef03b79670883261",
+    "s4": "8f3ac850d09e4745435c5274237c26be090ce2db03ac422e941c3329841d8563",
+    "s5": "3bc104a16d90fb6279e9ab8c70555e1041253ad31f6376c64b455da33489c6b0",
+    "s5b": "1be686d2a1165f13c4f4e81a29ca56c362c3b069dfc80759cf370cca59440d41",
+    "s6": "8e4ab80a317b73fb60010fe92858cbe3b073511ce10c4547c6eb8952a89829f0",
+    "s6-the-probe-reader-and-the-undeclared-dialect": "c463be6993bc79b07591a01d9e1a1d92d699a48d4c322b2cc395a0e78a2d097d",
+    "s7": "39b7111a3bfa256531f953bd33de123967e24fa4ffc75e6d1cbeca26a45c565d",
+    "s8": "9d68431496117798ca30bbebd6828adc5853e02df969ac62de3bb2dcd41512a4",
+    "s9": "5f72c27f2288b837b6513304ec92d0bf2e8950d169b0389c4c3ffeba27c23b6b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T05:02:30.712289+00:00"
+}
