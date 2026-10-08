@@ -574,6 +574,57 @@ def _mutate_pointer(
         return record
 
 
+def queue_dispatch(record: dict[str, Any]) -> tuple[dict[str, Any], int]:
+    """Store a held local request once per project, session, section and node."""
+    lock = crew_home() / "locks" / "queued-dispatch.lock"
+    lock.parent.mkdir(parents=True, exist_ok=True)
+    with lock.open("a+b") as handle:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        try:
+            live = _list_live_records(project=str(record["project"]))
+            existing = next(
+                (
+                    pointer
+                    for pointer in live
+                    if pointer.get("phase") == "queued"
+                    and pointer.get("session") == record["session"]
+                    and (pointer.get("node") or {}).get("id") == record["node"]["id"]
+                    and (pointer.get("node") or {}).get("plan")
+                    == record["node"]["plan"]
+                    and (pointer.get("node") or {}).get("section")
+                    == record["node"]["section"]
+                ),
+                None,
+            )
+            run_id = str(
+                existing["run_id"] if existing is not None else record["run_id"]
+            )
+            with _pointer_lock(run_id):
+                if existing is not None:
+                    current = read_pointer(run_id)
+                    if current.get("phase") != "queued":
+                        raise CrewError(
+                            f"queued run {run_id!r} changed phase; retry dispatch"
+                        )
+                    record["run_id"] = run_id
+                    record["queued_at"] = current["queued_at"]
+                    record["created_at"] = current["created_at"]
+                _write_json(pointer_path(run_id), record)
+            from reckon.crew.queue_order import admission_order
+
+            live = _list_live_records(project=str(record["project"]))
+            queued = [pointer for pointer in live if pointer.get("phase") == "queued"]
+            order = admission_order(queued, live, now=datetime.now(UTC))
+            position = next(
+                index
+                for index, pointer in enumerate(order, 1)
+                if pointer["run_id"] == record["run_id"]
+            )
+            return record, position
+        finally:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+
 _RESUME_BUDGET = re.compile(
     r"\b(?:time\s+)?(?:budget|fence)\s+(?:is\s+)?"
     r"(?:extended|extends?)\s+(?:to|by)\s+"
