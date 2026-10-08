@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.5">
-<meta name="plan-version" content="29">
+<meta name="plan-version" content="31">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -122,7 +122,7 @@
       <code>_write_state_locked</code>, where it runs today. Text-mode writes (<code>edit_plan</code> mode text, through
       <code>_replace_plan_text</code>) never enter <code>_write_state_locked</code>, so the same function is called
       there before the write. <code>_require_new_section_contracts</code>, which that text path runs for newly
-      added headings only, keeps its narrower job. The census comes first:
+      added headings only, keeps its narrower job. The check compares headings with the declarations the write produces. On the state path that is the HTML <code>write_state</code> renders, carrying the new <code>plan-section-declarations</code>, not the authored <code>source_text</code> the existing call site reads. Otherwise a write that adds a heading and its declaration together would be refused against the old declarations. The census comes first:
       count the live plans that would fail today, and state the count in the evidence, because closing this guard
       turns every existing gap into a refusal at that plan's next write.</p>
     <p><strong>Done when</strong> the census of every mounted project's live plans is recorded with its count. A test
@@ -246,7 +246,7 @@
     <div class="r-comment-body"><p>review of r-20261008T025558982950 stored as a parsed record scoring all six dimensions (goal_fidelity 18, evidence 16, scope_discipline 20, durability 16, fit 20, reuse 20, total 110/120), revisions base 26657466689deabf0b63dcab52a239995d5c041d head 4de09c126e38d631d0ee9e7eaeeed8e3c626c6e5, added_failure_count 0 with no added ids, two follow-on findings and no blocker.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261008T060930791646-review-of-a-plan-reaches-done-only-when-every-section-is-ticked" data-who="reckon-build" data-when="2026-10-08T06:32:55.633Z">
-    <div class="r-comment-body"><p>review of r-20261008T025558982950 covering only its two commits since the prior review (4fa2d6004 fix, a5195290a evidence) stored as a parsed record scoring all six dimensions (goal_fidelity 19, evidence 17, scope_discipline 20, durability 18, fit 20, reuse 20, total 114/120), revisions base 4de09c126e38d631d0ee9e7eaeeed8e3c626c6e5 head a5195290a3063a797e2904fbcb281dccbc964264, added_failure_count 0 with no added ids; the delta resolves the prior review&#x27;s two substantive follow-ons (the fail-open pre-write status read and the untested production grandfathering path), two follow-on findings, no blocker.</p></div>
+    <div class="r-comment-body"><p>review of r-20261008T025558982950 covering only its two commits since the prior review (4fa2d6004 fix, a5195290a evidence) stored as a parsed record scoring all six dimensions (goal_fidelity 19, evidence 17, scope_discipline 20, durability 18, fit 20, reuse 20, total 114/120), revisions base 4de09c126e38d631d0ee9e7eaeeed8e3c626c6e5 head a5195290a3063a797e2904fbcb281dccbc964264, added_failure_count 0 with no added ids; the delta resolves the prior review's two substantive follow-ons (the fail-open pre-write status read and the untested production grandfathering path), two follow-on findings, no blocker.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-close-s7" data-who="reckon-build" data-when="2026-10-08T04:45:00Z">
     <div class="r-comment-body"><p>Landed at merge <code>8783e616</code>. Both skills and the coordinator reference land a section with <code>append_evidence</code>, a <code>set</code> of its declaration to <code>done</code>, and a <code>c-close-</code> comment carrying the result and the landing-record href. The body stays as authored. The contract tests follow the <code>c-close</code> link to a section of the landing record. Review 111/120. 22 skill-reading test files: 431 passed at both arms, 0 added. <a href="/reckon/evidence/fragments/a-plan-is-done-when-every-section-is-ticked/the-landing-beat-ticks-instead-of-collapsing.html">evidence</a></p></div>
@@ -271,6 +271,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261008T052120009011-review-of-a-deferred-section-blocks-only-its-dependents" data-who="reckon-build" data-when="2026-10-08T05:45:55.463Z">
     <div class="r-comment-body"><p>Independent review of r-20261008T025754782357-a-deferred-section-blocks-only-its-dependents at head e4f26bea over the two commits since the prior review (2c5adbfa4, e4f26bea): parsed record, total 107/120 over 6 dimensions (goal_fidelity 18, evidence 16, scope_discipline 18, durability 18, fit 19, reuse 18), reviewed_base_sha c5c3fbd0 = the prior review's head, reviewed_head_sha e4f26bea. The section-9 deliverable is met at plan version 24 — the at-least-one-done rule restored under the amended section, both uncertain cases (deferred-only, undeclared-heading) held and reported in judgment_required on the dependent row and the report, and the build skill updated; two follow-ons, no blockers.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261008T061933580577-review-of-a-deferred-section-blocks-only-its-dependents" data-who="reckon-build" data-when="2026-10-08T06:57:09.414Z">
+    <div class="r-comment-body"><p>Independent review of r-20261008T025754782357-a-deferred-section-blocks-only-its-dependents at head 28e81ae6 over the one commit gained since the prior review (head e4f26bea). The stored record parses (status parsed), scores all six dimensions in 0..20 (goal_fidelity 16, evidence 15, scope_discipline 18, durability 13, fit 18, reuse 18; total 98), records reviewed_base_sha e4f26bea (the prior review's head) and reviewed_head_sha 28e81ae6, and carries added_failure_count 0 with added_failure_ids [] derived from the reviewed run's own base and head suite logs. The gained commit routes a whole-plan judgment through one helper at all four holdable sites; the after-edge route is verified and falsifiable, but the graph-closure route misnames a cross-project dependency's target with the dependent's own project, so judgment_required names a plan that does not exist — one blocking finding plus one follow-on.</p></div>
 </div>
 </section>
 </main>

@@ -1,0 +1,38 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T06:58:13.328Z",
+  "dispatched_at": "2026-10-08T06:45:54Z",
+  "findings": [],
+  "plan_fingerprint": "e1f8ea12a3cbed4948a4d8fa6e06b005cc43725abd86c4f907df339e2aaf678e",
+  "plan_slug": "a-plan-is-done-when-every-section-is-ticked",
+  "plan_version": 29,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T064522460835-plan-review-of-a-plan-is-done-when-every-section-is-ticked",
+  "reviewed_blob_sha": "eabef9465a8d405efe1d1ef3a6ef74bc0d73a8ca",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the anchors the amended text adds resolve: `reckon/roadmap.py` (module), `_section_satisfied` (`reckon/roadmap.py:551`), `schedule_override` (`reckon/roadmap.py:1937`), `plan-depends-on` (a real relationship meta key, `reckon/_plan_html.py:627`), and `authored_section_headings` (`reckon/_plan_html.py:846`, introduced by \u00a73's commit 8c0113f0f \"feat(plan): derive a section checklist in both plan reads\").",
+    "done_when": "pass \u2014 \u00a79's done-when (line 175) names its negative controls (the first two cases \"fail on the current code, which waits for A to be complete\", and \"removing the `judgment_required` report fails its two tests\"); the changed prose did not touch it, and each fixture case (deferred-only, undeclared-heading, still-implementable, no-declaration) is one a wrong mechanism can fail.",
+    "evidence_paths": "pass \u2014 no node or the changed text names a session scratchpad or node-local temporary path; the landing beat writes evidence under the durable `docs/evidence/fragments/<plan>/` path (`reckon/_plan_html.py` `SECTION_CLOSE_COMMENT_PREFIX` comment).",
+    "naming": "pass \u2014 `judgment_required`, `deferred-only` and `undeclared-heading` are emitted verdict keys (output data), not symbol names, and the amended prose carries no plan label, ticket number, version tag or changelog prose.",
+    "reasoning": "pass \u2014 the three reasoning findings the prior review raised on this unit are each resolved by the amendments: \u00a79 line 174 now reads \"the implementable part of \u00a73's open-section predicate, which also lists deferred sections\" (matching `open_sections`, `reckon/_plan_html.py:869-882`, which returns `implementable` OR `deferred`, `OPEN_SECTION_DECLARATIONS` at :789), so a target of {s1 done, s2 deferred} is not blocked; the undeclared-heading case is now \"found by \u00a73's `authored_section_headings`\", the reader that sees a heading the declaration map lacks; and the `deferred-counts-as-ticked` rationale (line 187) now says the whole-plan dependency \"is judged by the rule in \u00a79\" rather than the old clearing rule, which matches \u00a79's at-least-one-done rule and the `uncertain-dependency` decision (all-deferred held and reported). The stated root cause (\u00a76 refuses `done` on a deferred section) matches \u00a76's own text, and the \u00a79 build's whole-plan route (the `target_status in COMPLETED_STATUSES` site, `reckon/roadmap.py:2483`) and section route (`_section_satisfied`, `reckon/roadmap.py:2476`) are the production call sites the described mechanism reaches.",
+    "single_goal": "pass \u2014 \u00a79 carries one deliverable, making roadmap readiness section-aware through one predicate and one `judgment_required` block; the changed prose adds no second goal.",
+    "wiring": "pass \u2014 the plan declares no `depends-on`/`informs`/`gates` node edges to mis-resolve; its one relationship, `plan-blocks: plan-lifecycle-hygiene` (snapshot line 21), resolves to `docs/plans/plan-lifecycle-hygiene.html`, and the build order narrated in f-tick-005 matches the sections it names."
+  },
+  "section_digests": {
+    "_document": "87ef47605cf19c57112c74de2a7a256fd667ecd67525bdf7b95bce41bb8977a9",
+    "s1": "504d22771a3dd608a5f113f45b30b87012723b39ee6319c32160ad40e77b7adb",
+    "s2": "2d0220d0872dd77830193ee143573a19119b3152a998506dd5491a03a0f80500",
+    "s3": "dbf9166463b113d8f8a440402420ab71cecdf477a9019a3e22158b8db6ae5de9",
+    "s4": "f91b4fda0b5185501a0a7264c6ba88dc1586d9b53641cb27676fcd7d6e9a3bdc",
+    "s5": "265e144255d875b02aaedf18887308355222b4e68d6794912f2826ec2aa0deac",
+    "s6": "0418ebb7e7cc2b3384ba2f3083c13055aecdc2822cb908d790ca11cde28f29bd",
+    "s7": "d7e441a3d1c0f7f50bbb675a73d8cbff3d2573d8ea49fbaf1befb81e245eab7b",
+    "s8": "2f36255141168e93b0b91e1ed13f26491a53c82783099452394a9c4e5c70a19d",
+    "s9": "f2886be505469c66ee74166fd61eadf445d43f95f996dc8caabe3a0b733e7052"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T06:59:41.653928+00:00"
+}

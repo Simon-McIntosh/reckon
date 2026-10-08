@@ -1,0 +1,95 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T06:31:22.448Z",
+  "dispatched_at": "2026-10-08T06:20:03Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/lane-and-model-routing.html:91",
+      "id": "done_when-1",
+      "reason": "the section must exempt the synthesized keys or name their origin explicitly; otherwise a worker on an exact spec either fails its own gate or fabricates a source for keys that have none.",
+      "text": "\u00a79's done-when requires \"every key of both entries\" to carry a provenance record naming the `lanes.*` key it came from, but `_lane_entry` (reckon/flight.py:1320) writes three keys \u2014 `lane`, `model_key`, `derived_from` \u2014 that are synthesized by the expansion and read from no `lanes.*` key, so those keys cannot satisfy a source-naming record and a test written to the done-when as stated cannot pass",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/lane-and-model-routing.html:91",
+      "id": "reasoning-1",
+      "reason": "without a stated shape the worker either drops the source-key half of the requirement or changes a contract that callers outside the write path depend on, and either outcome is the node deciding a question the plan left open.",
+      "text": "\u00a79's done-when requires each provenance record to name the source `lanes.*` key *and* \"the layer it was read from\", two facts, but the resolver's provenance is `dict[str, str]` mapping a key path to a bare layer name (`ResolvedFlight.provenance`, reckon/flight.py:175), exposed through `origin()` and asserted as `== \"<layer>\"` by `.origin()` calls across ~10 test files outside \u00a79's write paths, so the record cannot carry both facts without a value-shape change \u00a79 does not declare",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "376692db38dd44411e04189fca6bbdbb031d16fcffbf327b40704e6f54afe7bb",
+  "plan_slug": "lane-and-model-routing",
+  "plan_version": 32,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-08T06:35:07.491147+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-08T06:35:23.296801+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-08T06:36:02.345236+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-08T06:35:07.491147+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-08T06:36:02.345236+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-lane-and-model-routing.v32.json",
+  "review_run_id": "r-20261008T061928900704-plan-review-of-lane-and-model-routing",
+  "reviewed_blob_sha": "287ac851ec289948ab8cf7b322dc79d9948a1cde",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the two modules s9 cites (`reckon/flight.py`, `reckon/cli.py`) and the `expand_lanes` symbol all resolve at revision 6e8c72b76; \u00a79's `data-links` is empty, so nothing is claimed and nothing dangles.",
+    "done_when": "a finding \u2014 \u00a79's done-when requires *every* key of the expanded entries to carry a provenance record naming its `lanes.*` source, but `_lane_entry` synthesizes `lane`, `model_key` and `derived_from`, which have no `lanes.*` source to name.",
+    "evidence_paths": "pass \u2014 \u00a79 names no temporary or scratch path; the change is source plus tests, and its gate log belongs to the dispatched build node's report rather than to a session scratchpad.",
+    "naming": "pass \u2014 \u00a79 introduces no plan label, stage name, ticket number or version tag; its prose describes the mechanism (`expand_lanes`, provenance records) rather than a tracker entry.",
+    "reasoning": "a finding \u2014 \u00a79 states its premise correctly (verified: zero provenance keys under `backends.claude` and `backends.codex`, and `backends.claude-opus` carries exactly its four catalogue keys alias/budget_group/effort/model), but its done-when asks each record to name both the source `lanes.*` key *and* that key's layer, which the resolver's bare-layer provenance value cannot hold.",
+    "single_goal": "pass \u2014 \u00a79 carries one deliverable: per-key provenance for the entries `expand_lanes` builds, lane-named and derived alike.",
+    "wiring": "pass \u2014 \u00a79 declares no depends-on and edits only `reckon/flight.py` and its tests, both of which resolve at the reviewed revision; nothing it needs is registered against another node (the shared-file guard belongs to \u00a78, which owns `reckon/crew/picker/prompts.py`)."
+  },
+  "section_digests": {
+    "_document": "adb9712c097f2b4773082c2c696f40562be8620731a5f5a5b8b01c17a18155ac",
+    "s0": "5970e86b0d53213fecf631cb616a2db8d8f783a8532dc052f3423814906cde4f",
+    "s1": "6760f63ebdb0d0db10c3c004f30d4f4253bfb7582bc7a0e4054fed73e017a02d",
+    "s10": "9d27e940f021242c82017cf503b8e3d3277451ecaef61d1887ae36cecf3eb5a7",
+    "s11": "2e566713b8ee8cbfcf94503cba2640bac78329b96f748ff0334a858e08287755",
+    "s2": "0c6488cdae0f23d0600410d02191390e773858e9bc75008234f71cc66f01889b",
+    "s3": "6cb602347e0232fe459028eff2010884381d987053d550c4565f581c23032095",
+    "s4": "aa5a29a8662005607992ae17fc914d47e8e48c68b7e65395b4865f6d33ea37f4",
+    "s5": "2ffa1a3b1d2b09433f25a83f8a7a59b1774249bac29b945f2c2273ace57cb1ba",
+    "s6": "6c8117bcfdc7d4b0bafdc4fb2185779998c71b1730b07a0d900b543f02c08ec1",
+    "s7": "07952e2e354db24e76860530568500cc2066b69b4255c020db83677e46cb18e2",
+    "s8": "7ca129403c95fcbc111273a2b419b29279191bc54c157bb6f7d8de0d5b160d34",
+    "s9": "2428ee584c6c63e6eb4bb4aa19bb29322377f39222206671bc857c7caa21bbed"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T06:34:44.024919+00:00"
+}

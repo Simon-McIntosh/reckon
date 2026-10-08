@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured 0 by the reviewed run's own gate log the manifest names under its legacy test_logs field (logs/gate.head.log: 12 passed, no FAILED or ERROR id); the reviewed manifest is a build node's, so it carries no baseline_suite/after_suite pair and the standard read-time annotation reports the count unmeasured, but the recorded head arm shows no failing test, so no test regressed.",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery.py:4225",
+    "reckon/cli.py:7296",
+    "reckon/crew/promotion.py:complete"
+  ],
+  "completed_at": "2026-10-08T06:54:28.411Z",
+  "dispatched_at": "2026-10-08T06:20:40Z",
+  "findings": [],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read the single commit f0708fbca against base 5843e4bc; it adds _misdelivered_plan_review_directories and _require_plan_review_delivered_in_its_directory to reckon/crew/promotion.py, wires the require into the _require_independently sweep at reckon/crew/promotion.py:5719, adds the test file, and records the evidence fragment.",
+    "done_when": "the done_when names three cases; I re-ran the gate at head f0708fbca -- 12 passed EXIT=0 over tests/test_a_misdelivered_plan_review_cannot_promote.py, tests/test_a_promoted_plan_review_is_committed.py and tests/test_reviews_read_the_committed_store_first.py -- and independently reproduced the negative control in a scratch tree, where neutering the refusal reddens tests/test_a_misdelivered_plan_review_cannot_promote.py:203 (DID NOT RAISE CrewError) while the other two cases still pass.",
+    "goal": "the node's goal is that a plan review delivered outside its assigned report directory cannot promote; reckon/crew/promotion.py:8129 _require_plan_review_delivered_in_its_directory, backed by reckon/crew/promotion.py:8075 _misdelivered_plan_review_directories, refuses exactly that delivery and no other.",
+    "manifest": "read; it names commit f0708fbca, the gate log logs/gate.head.log (12 passed EXIT=0) and logs/negative-control.log (EXIT=1), all of which I confirmed on disk and reproduced; its only unstated point is that its manifest uses the legacy test_logs field rather than baseline_suite/after_suite, so the read-time annotation reports the added-failure count unmeasured.",
+    "write_paths": "the manifest declares reckon/crew/promotion.py, tests/test_a_misdelivered_plan_review_cannot_promote.py and docs/evidence/fragments/every-review-is-kept-as-a-committed-record/a-misdelivered-plan-review-cannot-promote.html; git diff --name-only 5843e4bc f0708fbca returns exactly those three, and the declared docs/figures directory was correctly left unused."
+  },
+  "justifications": {
+    "durability": "tests/test_a_misdelivered_plan_review_cannot_promote.py:203 fails when the refusal is removed (negative control) and :225/:226 fails if a delivered report stops committing its record, while :234 fails if the refusal over-fires on an empty delivery; each names a code change that reddens it rather than restating a value the test supplied.",
+    "evidence": "tests/test_a_misdelivered_plan_review_cannot_promote.py:203/:207/:225 measures precisely the three cases the done_when names, its result is recorded in logs/gate.head.log (12 passed EXIT=0) and logs/negative-control.log (EXIT=1), and I re-ran the gate at head (12 passed) and reproduced the negative control in a scratch tree.",
+    "fit": "the two added helpers at reckon/crew/promotion.py:8075 and :8129 follow the module's private-helper and require-independently idiom, carry no plan, sprint or version label, and mirror the node-id split already used by _plan_review_record_for_promoting_run at reckon/crew/promotion.py:8040.",
+    "goal_fidelity": "reckon/crew/promotion.py:8075 _misdelivered_plan_review_directories returns the (assigned, misdelivered) pair only when the composed directory naming the run exists and holds no report.md while the sibling directory named for the run's own id does, and returns None for a delivered report, an empty delivery, a missing composed directory and any non-plan-review run, exactly matching the deliverable.",
+    "reuse": "the change reuses recovery.PLAN_REVIEW_NODE_PREFIX, plan_review._plan_review_report_root, plan_review._REVIEW_REPORT_NAME and review_module._plan_review_crew_run_id rather than forking them, and its root scan is a genuinely different traversal from plan_review.delivered_reports, which cannot find a composed-but-undelivered directory because it requires both report.md and the sidecar.",
+    "scope_discipline": "git diff --name-only 5843e4bc f0708fbca lists reckon/crew/promotion.py, tests/test_a_misdelivered_plan_review_cannot_promote.py and the evidence fragment, every one inside the declared write paths, with no plan or shared-index write."
+  },
+  "model": "deepseek-v4.1-flash",
+  "node": "review-of-a-misdelivered-plan-review-cannot-promote",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a plan review delivered outside its assigned report directory cannot promote; reckon/crew/promotion.py:8129 _require_plan_review_delivered_in_its_directory, backed by reckon/crew/promotion.py:8075 _misdelivered_plan_review_directories, refuses exactly that delivery and no other.\nVERDICT done_when: the done_when names three cases; I re-ran the gate at head f0708fbca -- 12 passed EXIT=0 over tests/test_a_misdelivered_plan_review_cannot_promote.py, tests/test_a_promoted_plan_review_is_committed.py and tests/test_reviews_read_the_committed_store_first.py -- and independently reproduced the negative control in a scratch tree, where neutering the refusal reddens tests/test_a_misdelivered_plan_review_cannot_promote.py:203 (DID NOT RAISE CrewError) while the other two cases still pass.\nVERDICT write_paths: the manifest declares reckon/crew/promotion.py, tests/test_a_misdelivered_plan_review_cannot_promote.py and docs/evidence/fragments/every-review-is-kept-as-a-committed-record/a-misdelivered-plan-review-cannot-promote.html; git diff --name-only 5843e4bc f0708fbca returns exactly those three, and the declared docs/figures directory was correctly left unused.\nVERDICT manifest: read; it names commit f0708fbca, the gate log logs/gate.head.log (12 passed EXIT=0) and logs/negative-control.log (EXIT=1), all of which I confirmed on disk and reproduced; its only unstated point is that its manifest uses the legacy test_logs field rather than baseline_suite/after_suite, so the read-time annotation reports the added-failure count unmeasured.\nVERDICT diff: read the single commit f0708fbca against base 5843e4bc; it adds _misdelivered_plan_review_directories and _require_plan_review_delivered_in_its_directory to reckon/crew/promotion.py, wires the require into the _require_independently sweep at reckon/crew/promotion.py:5719, adds the test file, and records the evidence fragment.\nCALL_SITES: reckon/crew/recovery.py:4225, reckon/cli.py:7296, reckon/crew/promotion.py:complete\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:8075 _misdelivered_plan_review_directories returns the (assigned, misdelivered) pair only when the composed directory naming the run exists and holds no report.md while the sibling directory named for the run's own id does, and returns None for a delivered report, an empty delivery, a missing composed directory and any non-plan-review run, exactly matching the deliverable.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_a_misdelivered_plan_review_cannot_promote.py:203/:207/:225 measures precisely the three cases the done_when names, its result is recorded in logs/gate.head.log (12 passed EXIT=0) and logs/negative-control.log (EXIT=1), and I re-ran the gate at head (12 passed) and reproduced the negative control in a scratch tree.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 5843e4bc f0708fbca lists reckon/crew/promotion.py, tests/test_a_misdelivered_plan_review_cannot_promote.py and the evidence fragment, every one inside the declared write paths, with no plan or shared-index write.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_misdelivered_plan_review_cannot_promote.py:203 fails when the refusal is removed (negative control) and :225/:226 fails if a delivered report stops committing its record, while :234 fails if the refusal over-fires on an empty delivery; each names a code change that reddens it rather than restating a value the test supplied.\nSCORE fit: 19\nJUSTIFICATION fit: the two added helpers at reckon/crew/promotion.py:8075 and :8129 follow the module's private-helper and require-independently idiom, carry no plan, sprint or version label, and mirror the node-id split already used by _plan_review_record_for_promoting_run at reckon/crew/promotion.py:8040.\nSCORE reuse: 19\nJUSTIFICATION reuse: the change reuses recovery.PLAN_REVIEW_NODE_PREFIX, plan_review._plan_review_report_root, plan_review._REVIEW_REPORT_NAME and review_module._plan_review_crew_run_id rather than forking them, and its root scan is a genuinely different traversal from plan_review.delivered_reports, which cannot find a composed-but-undelivered directory because it requires both report.md and the sidecar.\nreviewed_base_sha: 5843e4bce63211906c4c232d5c23ce9be9a774e3\nreviewed_head_sha: f0708fbca061552b882f5336321a119883d365c4\n",
+  "review_run_id": "r-20261008T061924342935-review-of-a-misdelivered-plan-review-cannot-promote",
+  "reviewed_base_sha": "5843e4bce63211906c4c232d5c23ce9be9a774e3",
+  "reviewed_head_sha": "f0708fbca061552b882f5336321a119883d365c4",
+  "reviewed_run_id": "r-20261008T053950483843-a-misdelivered-plan-review-cannot-promote",
+  "role": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T06:44:34.034079+00:00",
+  "total": 115
+}

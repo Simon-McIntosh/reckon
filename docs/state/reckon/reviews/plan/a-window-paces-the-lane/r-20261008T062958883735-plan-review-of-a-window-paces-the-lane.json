@@ -1,0 +1,87 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T06:44:24.540Z",
+  "dispatched_at": "2026-10-08T06:30:40Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-window-paces-the-lane.html:1925",
+      "id": "reasoning-1",
+      "reason": "an implementer cannot satisfy both readings; taken literally \u00a710 removes the bookend reserve from every metered group (stripping verify's protection that \u00a78 says the reserve exists for) and voids the \"fifth expires unspent\" premise the lift is motivated by, so the plan must state which behaviour holds for a metered group.",
+      "text": "\u00a710 says a group whose every member is review-excluded withholds no bookend reserve, but line 1924 in the same section says the opposite for exactly those groups (\"`review_excluded_backends` lists every metered lane, so on those lanes only the `verify` role can spend that reserve. Up to a fifth of each metered window therefore expires unspent\"), and \u00a78 (:1082) states the metered lane's bookends \u2014 reviews *and* verifications \u2014 \"are reserved\" and rely on \u00a74's reserve; \u00a75b's landed figure (:850) likewise draws the metered wallet `codex-sub` with \"a 20% reserve withheld from the start of the window\", yet the workstation's own `review_excluded_backends` excludes all four of that wallet's members (codex, codex-astra, codex-luna, codex-tera) plus codex-spark, so under \u00a710's rule that wallet withholds none",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-window-paces-the-lane.html:1925",
+      "id": "done_when-1",
+      "reason": "the section's own done-when tests a lift above `max_multiple` and one older than `max_hours`, both of which pass against the default values with the keys never wired, so without an assertion that a flight layer writing either key is accepted and moves the boundary the deliverable is unmeasured.",
+      "text": "the change declares `budget.lift.max_multiple` (3.0) and `max_hours` (168) as `BudgetConfig` slots \"so a flight layer can set them\", but \u00a710's done-when (:1950) only asserts that `bookend_reserve_pct` is accepted by the schema and moves the boundary, and asserts nothing of the kind for the two lift ceilings declared in the same sentence; since the prior defect on this key set was that they were not settable flight keys, this deliverable can pass without the wiring being shown",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "c2f59433dec38508629d8a26f1354843c204d37826aeabc1f6b4e1fc520139da",
+  "plan_slug": "a-window-paces-the-lane",
+  "plan_version": 145,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "reckon-build",
+      "finding": "reasoning-1",
+      "reason": "The first paragraph now marks the verify-only spend as today's behaviour, and the rule names the reserve \u00a74 landed and \u00a75b and \u00a78 describe as deliberately changed for all-review-excluded groups, at the lead's 100% default ceiling, keeping verify's access and every other group's reserve.",
+      "when": "2026-10-08T06:48:21.740809+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "reckon-build",
+      "finding": "done_when-1",
+      "reason": "\u00a710's done-when now asserts that a flight layer setting budget.lift.max_multiple or max_hours is accepted and moves the boundary, with a refused and an admitted case for each.",
+      "when": "2026-10-08T06:48:22.445911+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "reckon-build",
+      "reason": "\u00a710's done-when now asserts that a flight layer setting budget.lift.max_multiple or max_hours is accepted and moves the boundary, with a refused and an admitted case for each.",
+      "when": "2026-10-08T06:48:22.445911+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "reckon-build",
+      "reason": "The first paragraph now marks the verify-only spend as today's behaviour, and the rule names the reserve \u00a74 landed and \u00a75b and \u00a78 describe as deliberately changed for all-review-excluded groups, at the lead's 100% default ceiling, keeping verify's access and every other group's reserve.",
+      "when": "2026-10-08T06:48:21.740809+00:00"
+    }
+  },
+  "review_run_id": "r-20261008T062958883735-plan-review-of-a-window-paces-the-lane",
+  "reviewed_blob_sha": "e4771db4d72480cd1835bd53b0245ec95a95ca30",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/reserve.py`, `reckon/schema/flight.yaml`, `pace.allowance_for_group`/`pace.policy`, `skills/reckon-build/SKILL.md` \u00a74c and the landed-evidence HTML all resolve; the newly cited `reserve.py` default (20.0) and `flight-defaults.yaml` (`resume_reserve_pct: 5`, `coordinator_reserve_pct: 3`) match the figures \u00a710 states.",
+    "done_when": "a finding \u2014 \u00a710's done-when asserts `bookend_reserve_pct` is settable through the schema and moves the boundary, but asserts nothing of the same kind for the `budget.lift` ceilings it declares in the same sentence.",
+    "evidence_paths": "pass \u2014 \u00a710 is still `implementable`, so there is no gate log yet; its cited evidence lives at `docs/evidence/archive/a-window-paces-the-lane-landed.html` and its gate targets are repository test files, not a scratch or node-local path.",
+    "naming": "pass \u2014 no plan label, stage name or ticket number reaches a symbol or comment in the changed text; `f-20261008T0700-pace-lift` is a followup id (data), and the \u00a710 heading id is the plan's own section anchor.",
+    "reasoning": "a finding \u2014 \u00a710's rule that \"a group whose every member `review_excluded_backends` lists withholds no bookend reserve\" contradicts the paragraph immediately above it, \u00a75b's landed figure, and \u00a78's stated premise.",
+    "single_goal": "pass \u2014 \u00a710 carries one deliverable (the lift record, its read-time expiry, and the reserve release it drives); the decisions attached to it are all about that one mechanism.",
+    "wiring": "pass \u2014 `plan-informs` names `background-agent-fitness-and-dispatch-scope`, which resolves at `docs/plans/background-agent-fitness-and-dispatch-scope.html`; no `depends-on` or `gates` edge is declared, and none is needed for a section whose build depends only on in-repo modules."
+  },
+  "section_digests": {
+    "_document": "a9b4e425234eb6fffeff1584d67108ba8a14bdeaa2aeba0fa25998b47c3100fa",
+    "s1": "fd232b0e9e301983eea254fa355a00f9cfdad5e4ba397415c196946997e8b78a",
+    "s10": "c78585807e95932aa643f547e6b779634faadb6826c0a15d9f88a4626e332e0a",
+    "s2": "0c4f642bff7cb6b87908ea9e036cb3161c15e31cb3285273e06bb2ac1f5c368c",
+    "s3": "ae3d7625321a46e7fa6a9ee3bac0272ee77d236811612140ef03b79670883261",
+    "s4": "8f3ac850d09e4745435c5274237c26be090ce2db03ac422e941c3329841d8563",
+    "s5": "3bc104a16d90fb6279e9ab8c70555e1041253ad31f6376c64b455da33489c6b0",
+    "s5b": "1be686d2a1165f13c4f4e81a29ca56c362c3b069dfc80759cf370cca59440d41",
+    "s6": "8e4ab80a317b73fb60010fe92858cbe3b073511ce10c4547c6eb8952a89829f0",
+    "s6-the-probe-reader-and-the-undeclared-dialect": "c463be6993bc79b07591a01d9e1a1d92d699a48d4c322b2cc395a0e78a2d097d",
+    "s7": "39b7111a3bfa256531f953bd33de123967e24fa4ffc75e6d1cbeca26a45c565d",
+    "s8": "9d68431496117798ca30bbebd6828adc5853e02df969ac62de3bb2dcd41512a4",
+    "s9": "5f72c27f2288b837b6513304ec92d0bf2e8950d169b0389c4c3ffeba27c23b6b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T06:44:57.084847+00:00"
+}
