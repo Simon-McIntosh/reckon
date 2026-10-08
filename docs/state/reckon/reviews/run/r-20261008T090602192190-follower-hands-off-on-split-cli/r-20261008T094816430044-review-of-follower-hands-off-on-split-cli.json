@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1180",
+    "reckon/crew_follow_commands.py:2318",
+    "reckon/crew_follow_commands.py:683",
+    "reckon/crew/dispatch_watch.py:551",
+    "reckon/crew/session_host.py:422"
+  ],
+  "completed_at": "2026-10-08T10:00:34.877Z",
+  "dispatched_at": "2026-10-08T09:48:37Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "1180",
+      "severity": "follow-on",
+      "text": "follow-on: the admission change is outside the declared write paths and is claimed by concurrent node a-held-dispatch-becomes-a-queued-run, so it needs a coordinator scope grant at promotion rather than a worker repair."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit 3889d7c5 against base b6af34e5 commit by commit, +630/-13 across seven files; the request-line composition is centralised, CHILD_ENV is stamped in session_host.py:422, and the start-up handoff sits after the adoption call.",
+    "done_when": "the done-when names the six handoff cases and the sibling suites with logged exits; gate-handoff.log records 6 passed EXIT=0, gate-siblings.log 33 passed EXIT=0 and negative-control-handoff.log EXIT=1 with test_a_follower_hands_off_to_a_waiting_host_and_exits failing.",
+    "goal": "the node goal is to port the waiting-host handoff onto the split modules with the host request written through dispatch_watch rather than a second copy and relaunched workers adopted before the handoff returns; reckon/crew/dispatch_watch.py:514 _request_host_follower is now the single composer of the request line, both callers at :539 and :561 route through it, and reckon/crew_follow_commands.py:2318 runs the handoff after _adopt_launched_workers_from_reexec at :2306.",
+    "manifest": "read; it records gate 6 passed EXIT=0, siblings 33 passed EXIT=0, negative control EXIT=1, and names reckon/crew/dispatch.py as an out-of-scope admission line needed for case 5.",
+    "write_paths": "the manifest declares crew_follow_commands.py, dispatch_watch.py, session_host.py, tests/test_follower_hands_off_to_host.py, coordinator-reference.md and the fragment; commit 3889d7c5 also touches reckon/crew/dispatch.py, which is outside the declared paths and the manifest's own blocker names it."
+  },
+  "justifications": {
+    "durability": "the logged negative control removes the handoff check and tests/test_follower_hands_off_to_host.py:208 fails EXIT=1, and by reading cases at :265, :293, :336 and :370 each name a condition under which it reddens.",
+    "evidence": "gate-handoff.log records 6 passed EXIT=0, gate-siblings.log 33 passed EXIT=0 and negative-control-handoff.log EXIT=1, but the reviewed manifest leaves baseline_suite and after_suite empty so the added-failure derivation is unmeasured.",
+    "fit": "the added symbols are mechanism-named and follow the dispatch_watch/reckon/crew_follow_commands.py idiom, with the established cross-module private-helper import at reckon/crew/dispatch.py:2281.",
+    "goal_fidelity": "reckon/crew/dispatch_watch.py:514 _request_host_follower is the one composer of the request line and reckon/crew_follow_commands.py:2306-2318 places the handoff after _adopt_launched_workers_from_reexec, matching the goal.",
+    "reuse": "the request line is composed once at reckon/crew/dispatch_watch.py:528 and both the waiting ask and the handoff call it, removing the duplicate the prior review flagged.",
+    "scope_discipline": "commit 3889d7c5 changes reckon/crew/dispatch.py at :1180, which is outside the manifest's declared write paths, though the change is required by the done-when's dispatch case and is coordinator-grantable."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to port the waiting-host handoff onto the split modules with the host request written through dispatch_watch rather than a second copy and relaunched workers adopted before the handoff returns; reckon/crew/dispatch_watch.py:514 _request_host_follower is now the single composer of the request line, both callers at :539 and :561 route through it, and reckon/crew_follow_commands.py:2318 runs the handoff after _adopt_launched_workers_from_reexec at :2306.\nVERDICT done_when: the done-when names the six handoff cases and the sibling suites with logged exits; gate-handoff.log records 6 passed EXIT=0, gate-siblings.log 33 passed EXIT=0 and negative-control-handoff.log EXIT=1 with test_a_follower_hands_off_to_a_waiting_host_and_exits failing.\nVERDICT write_paths: the manifest declares crew_follow_commands.py, dispatch_watch.py, session_host.py, tests/test_follower_hands_off_to_host.py, coordinator-reference.md and the fragment; commit 3889d7c5 also touches reckon/crew/dispatch.py, which is outside the declared paths and the manifest's own blocker names it.\nVERDICT manifest: read; it records gate 6 passed EXIT=0, siblings 33 passed EXIT=0, negative control EXIT=1, and names reckon/crew/dispatch.py as an out-of-scope admission line needed for case 5.\nVERDICT diff: read commit 3889d7c5 against base b6af34e5 commit by commit, +630/-13 across seven files; the request-line composition is centralised, CHILD_ENV is stamped in session_host.py:422, and the start-up handoff sits after the adoption call.\nCALL_SITES: reckon/crew/dispatch.py:1180, reckon/crew_follow_commands.py:2318, reckon/crew_follow_commands.py:683, reckon/crew/dispatch_watch.py:551, reckon/crew/session_host.py:422\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_watch.py:514 _request_host_follower is the one composer of the request line and reckon/crew_follow_commands.py:2306-2318 places the handoff after _adopt_launched_workers_from_reexec, matching the goal.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-handoff.log records 6 passed EXIT=0, gate-siblings.log 33 passed EXIT=0 and negative-control-handoff.log EXIT=1, but the reviewed manifest leaves baseline_suite and after_suite empty so the added-failure derivation is unmeasured.\nSCORE scope_discipline: 12\nJUSTIFICATION scope_discipline: commit 3889d7c5 changes reckon/crew/dispatch.py at :1180, which is outside the manifest's declared write paths, though the change is required by the done-when's dispatch case and is coordinator-grantable.\nSCORE durability: 16\nJUSTIFICATION durability: the logged negative control removes the handoff check and tests/test_follower_hands_off_to_host.py:208 fails EXIT=1, and by reading cases at :265, :293, :336 and :370 each name a condition under which it reddens.\nSCORE fit: 17\nJUSTIFICATION fit: the added symbols are mechanism-named and follow the dispatch_watch/reckon/crew_follow_commands.py idiom, with the established cross-module private-helper import at reckon/crew/dispatch.py:2281.\nSCORE reuse: 19\nJUSTIFICATION reuse: the request line is composed once at reckon/crew/dispatch_watch.py:528 and both the waiting ask and the handoff call it, removing the duplicate the prior review flagged.\nFINDING reckon/crew/dispatch.py:1180 follow-on: the admission change is outside the declared write paths and is claimed by concurrent node a-held-dispatch-becomes-a-queued-run, so it needs a coordinator scope grant at promotion rather than a worker repair.\n",
+  "review_run_id": "r-20261008T094816430044-review-of-follower-hands-off-on-split-cli",
+  "reviewed_base_sha": "b6af34e5d4a1afcd6b8b3608a1587c5fa250e135",
+  "reviewed_head_sha": "3889d7c5dc7dfb2465c1520d053c1bd2c85d3a1a",
+  "reviewed_run_id": "r-20261008T090602192190-follower-hands-off-on-split-cli",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 12
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T09:58:21.919456+00:00",
+  "total": 99
+}
