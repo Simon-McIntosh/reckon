@@ -37,7 +37,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Iterable, Mapping
+from typing import Any, Iterable, Iterator, Mapping
 
 from reckon import capability
 from reckon._store import _config_home
@@ -54,6 +54,12 @@ LAYER_ORDER = ("shipped", "host", "project", "override")
 # backend another layer already defines, so a catalogue entry alone never
 # creates a backend.
 CATALOGUE_LAYER = "catalogue"
+
+# The lane expansion synthesises keys of its own — ``lane``, ``model_key`` and
+# ``derived_from`` — that no layer declares, so it names itself as their source
+# layer rather than borrowing one. A copied key borrows the layer of the
+# ``lanes.*`` key it was read from instead.
+EXPANSION_LAYER = "expansion"
 
 # Maps whose keys are user-chosen names rather than schema-fixed keys. Their
 # entries are inlined objects whose identifier slot is the map key.
@@ -173,6 +179,10 @@ class ResolvedFlight:
 
     config: dict[str, Any]
     provenance: dict[str, str]
+    # Keyed the same way as ``provenance``, naming the ``lanes.*`` key each
+    # copied entry key was read from. The expansion's synthesised keys have no
+    # source key, so no record exists for them here.
+    provenance_sources: dict[str, str] = field(default_factory=dict)
     layers: list[LayerSource] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
     shadows: list[dict[str, str]] = field(default_factory=list)
@@ -1164,6 +1174,21 @@ def _record_provenance(
             provenance[path] = layer
 
 
+def _leaf_paths(data: Mapping[str, Any], prefix: str = "") -> Iterator[str]:
+    """Yield the dotted path of every leaf key in ``data``.
+
+    The leaf shapes ``_record_provenance`` stamps, so the two agree on what a
+    leaf is: a non-empty mapping recurses and everything else — a scalar, an
+    empty mapping, a list — is one.
+    """
+    for key, value in data.items():
+        path = f"{prefix}{key}"
+        if isinstance(value, Mapping) and value:
+            yield from _leaf_paths(value, prefix=f"{path}.")
+        else:
+            yield path
+
+
 def _sorted(value: Any) -> Any:
     """Return ``value`` with every mapping key ordered, recursively.
 
@@ -1349,7 +1374,56 @@ def _lane_entry(
     return entry
 
 
-def expand_lanes(merged: dict[str, Any]) -> None:
+def _lane_provenance(
+    lane_name: str,
+    backend_name: str,
+    lane_level: Mapping[str, Any],
+    model: Mapping[str, Any] | None,
+    model_key: str | None,
+    derived_from: str | None,
+    provenance: dict[str, str],
+    provenance_sources: dict[str, str],
+) -> None:
+    """Record where each key expansion wrote onto an entry came from.
+
+    A copied key names the layer of the ``lanes.*`` key whose value it carries,
+    which is the layer of the winning value rather than of an earlier layer that
+    filled the same path, and the source mapping names that ``lanes.*`` key. The
+    synthesised keys name the expansion itself: no layer declared them, so no
+    source key exists to point at.
+    """
+
+    def copied(leaf: str, source: str) -> None:
+        path = f"backends.{backend_name}.{leaf}"
+        layer = provenance.get(source)
+        if layer is not None:
+            provenance[path] = layer
+        provenance_sources[path] = source
+
+    for leaf in _leaf_paths(lane_level):
+        copied(leaf, f"lanes.{lane_name}.{leaf}")
+    if isinstance(model, Mapping):
+        for key in LANE_MODEL_KEYS:
+            value = model.get(key)
+            if value is None:
+                continue
+            for leaf in _leaf_paths({key: value}):
+                copied(leaf, f"lanes.{lane_name}.models.{model_key}.{leaf}")
+
+    synthesised = ["lane"]
+    if model_key is not None:
+        synthesised.append("model_key")
+    if derived_from is not None:
+        synthesised.append("derived_from")
+    for leaf in synthesised:
+        provenance[f"backends.{backend_name}.{leaf}"] = EXPANSION_LAYER
+
+
+def expand_lanes(
+    merged: dict[str, Any],
+    provenance: dict[str, str],
+    provenance_sources: dict[str, str],
+) -> None:
     """Expand each declared ``lanes:`` block into ``backends:`` entries in place.
 
     A lane becomes an entry named after the lane (carrying its default model),
@@ -1359,6 +1433,12 @@ def expand_lanes(merged: dict[str, Any]) -> None:
     exactly as before, and the ``derived_from`` marker lets ``reckon flight``
     count how many remain. A layer that declares no lanes leaves ``backends``
     exactly as it found it, so nothing moves until a declaration does.
+
+    Every key of every entry built here is recorded in ``provenance`` (a bare
+    layer name) and ``provenance_sources`` (the ``lanes.*`` key it came from),
+    so a reader of either surface can see which lane key set each value instead
+    of finding the entry attributed to the layer that happened to fill the
+    backend first.
     """
     lanes = merged.get("lanes")
     if not isinstance(lanes, Mapping) or not lanes:
@@ -1403,6 +1483,16 @@ def expand_lanes(merged: dict[str, Any]) -> None:
             if isinstance(existing, Mapping):
                 entry = deep_merge(copy.deepcopy(dict(existing)), entry)
             backends[name] = entry
+            _lane_provenance(
+                lane_name,
+                name,
+                lane_level,
+                model,
+                model_key,
+                derived_from,
+                provenance,
+                provenance_sources,
+            )
 
 
 def resolve(
@@ -1442,6 +1532,7 @@ def resolve(
 
     merged: dict[str, Any] = {}
     provenance: dict[str, str] = {}
+    provenance_sources: dict[str, str] = {}
     layers: list[LayerSource] = []
     contributing: list[str] = []
     warnings: list[str] = []
@@ -1496,13 +1587,14 @@ def resolve(
     # Lanes are expanded after every layer — catalogue included — has merged,
     # so an override written on a lane key reaches the expansion rather than
     # being dropped by it. A layer declaring no lanes leaves `backends` alone.
-    expand_lanes(merged)
+    expand_lanes(merged, provenance, provenance_sources)
     shadows = _catalogue_shadows(catalogue, layer_data)
 
     _validate_resolved(merged, " + ".join(contributing))
     return ResolvedFlight(
         config=ResolvedConfig(_sorted(merged), warnings=warnings),
         provenance=dict(sorted(provenance.items())),
+        provenance_sources=dict(sorted(provenance_sources.items())),
         layers=layers,
         warnings=warnings,
         shadows=shadows,
@@ -2083,6 +2175,7 @@ def flight_report(
         ],
         "project": project,
         "provenance": resolved.provenance,
+        "provenance_sources": resolved.provenance_sources,
         "undeclared_meteredness": configured_backends_without_meteredness(
             resolved.config
         ),

@@ -1363,6 +1363,7 @@ def test_default_stdout_parses_as_json_and_exits_zero():
         "layers",
         "project",
         "provenance",
+        "provenance_sources",
         "undeclared_meteredness",
         "warnings",
     }
