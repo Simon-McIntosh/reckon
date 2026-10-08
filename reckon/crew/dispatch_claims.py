@@ -2,10 +2,12 @@
 from __future__ import annotations
 import contextlib
 import hashlib
+import heapq
 import json
 import os
 import re
 import shutil
+import sqlite3
 import time
 from dataclasses import (
     dataclass,
@@ -65,6 +67,7 @@ from reckon.crew.runs import (
     pointer_path,
     reports_dir,
     run_dir,
+    runs_dir,
 )
 
 
@@ -606,6 +609,10 @@ def _publish_launch_claim(
     }
     if brief is not None:
         record["brief"] = brief
+    _write_json(
+        run_dir(run_id) / "claim.json",
+        {"run_id": run_id, "claim_registered_at": record["created_at"]},
+    )
     _write_json(pointer_path(run_id), record)
 
 
@@ -1296,32 +1303,6 @@ def _peer_claim_is_a_later_racing_arrival(
 # launch-to-claim time rather than a magic number. A wait holds the losing
 # dispatch's whole turn, so the bound still has to be short.
 #
-# The launch-to-claim time is measured on the fleet node over recent runs —
-# the interval from a claim's registration to the instant its worker record
-# carries ``launched_at``. Measured 2026-10-08 over 397 recent dispatches, in
-# seconds: min 1, median 10, p90 22, max 41.
-_CLAIM_LAUNCH_OBSERVED_SECONDS = (
-    1,
-    2,
-    3,
-    4,
-    5,
-    5,
-    6,
-    6,
-    7,
-    7,
-    8,
-    9,
-    10,
-    11,
-    12,
-    16,
-    20,
-    22,
-    25,
-    41,
-)
 # The shortest grace, so a fleet with no launch to learn from still gives a
 # winner a moment rather than refusing on sight.
 CLAIM_GRACE_FLOOR_SECONDS = 5.0
@@ -1354,7 +1335,124 @@ def claim_grace_seconds(observed_launch_seconds: Iterable[float]) -> float:
     return max(CLAIM_GRACE_FLOOR_SECONDS, CLAIM_GRACE_MARGIN * observed[rank])
 
 
-RACING_WINNER_WAIT_SECONDS = claim_grace_seconds(_CLAIM_LAUNCH_OBSERVED_SECONDS)
+# The directory listing is filtered by run id, then only the newest bounded
+# candidate set is opened. A process keeps the result briefly so repeated
+# admissions do not reread run receipts on every dispatch.
+CLAIM_GRACE_OBSERVATION_LIMIT = 128
+_CLAIM_GRACE_CACHE_SECONDS = 30.0
+CLAIM_GRACE_OBSERVATIONS_NAME = "claim-grace-observations.json"
+_claim_grace_cache: dict[Path, tuple[float, float]] = {}
+
+
+def _recent_run_names(directory: Path, *, indexed: bool) -> list[str]:
+    """Name recent runs from the committed index and live pointers."""
+    names: list[str] = []
+    if indexed:
+        database = crew_home() / "run_store.db"
+        try:
+            with sqlite3.connect(f"file:{database}?mode=ro", uri=True) as connection:
+                names.extend(
+                    row[0]
+                    for row in connection.execute(
+                        "SELECT run_id FROM runs WHERE run_id GLOB 'r-20*' "
+                        "ORDER BY run_id DESC LIMIT ?",
+                        (CLAIM_GRACE_OBSERVATION_LIMIT,),
+                    )
+                )
+        except sqlite3.Error:
+            pass
+        try:
+            with os.scandir(crew_home() / "live") as entries:
+                names.extend(
+                    entry.name[:-5]
+                    for entry in entries
+                    if entry.name.startswith("r-") and entry.name.endswith(".json")
+                )
+        except OSError:
+            pass
+        if names:
+            return heapq.nlargest(CLAIM_GRACE_OBSERVATION_LIMIT, set(names))
+    try:
+        with os.scandir(directory) as entries:
+            return heapq.nlargest(
+                CLAIM_GRACE_OBSERVATION_LIMIT,
+                (entry.name for entry in entries if entry.name.startswith("r-")),
+            )
+    except OSError:
+        return []
+
+
+def recent_claim_grace_seconds(root: Path | None = None) -> float:
+    """Derive a racing wait from recent complete launch receipts."""
+    directory = root if root is not None else runs_dir()
+    now = time.monotonic()
+    cached = _claim_grace_cache.get(directory)
+    if cached is not None and now - cached[0] < _CLAIM_GRACE_CACHE_SECONDS:
+        return cached[1]
+    if root is None:
+        try:
+            summary = json.loads(
+                (crew_home() / CLAIM_GRACE_OBSERVATIONS_NAME).read_text(
+                    encoding="utf-8"
+                )
+            )
+        except (OSError, ValueError):
+            summary = None
+        if isinstance(summary, Mapping) and isinstance(summary.get("intervals"), list):
+            intervals = [
+                float(row["seconds"])
+                for row in summary["intervals"]
+                if isinstance(row, Mapping)
+                and isinstance(row.get("seconds"), (int, float))
+                and row["seconds"] >= 0
+            ]
+            grace = (
+                claim_grace_seconds(intervals)
+                if len(intervals) >= 20
+                else CLAIM_GRACE_FLOOR_SECONDS
+            )
+            _claim_grace_cache[directory] = (now, grace)
+            return grace
+    latest = _recent_run_names(directory, indexed=root is None)
+    intervals: list[float] = []
+    for name in latest:
+        try:
+            record = json.loads(
+                (directory / name / "attempt-1-worker.json").read_text(encoding="utf-8")
+            )
+        except (OSError, ValueError):
+            try:
+                record = json.loads(
+                    (directory / name / "worker.json").read_text(encoding="utf-8")
+                )
+            except (OSError, ValueError):
+                continue
+        if not isinstance(record, Mapping):
+            continue
+        try:
+            attempt = int(record.get("attempt") or 1)
+        except (TypeError, ValueError):
+            continue
+        if attempt != 1:
+            continue
+        registered = parse_utc(str(record.get("claim_registered_at") or ""))
+        launched = parse_utc(str(record.get("launched_at") or ""))
+        if registered is None or launched is None:
+            continue
+        interval = (launched - registered).total_seconds()
+        if interval >= 0:
+            intervals.append(interval)
+    grace = (
+        claim_grace_seconds(intervals)
+        if len(intervals) >= 20
+        else CLAIM_GRACE_FLOOR_SECONDS
+    )
+    _claim_grace_cache[directory] = (now, grace)
+    return grace
+
+
+# Kept for callers displaying a default bound; admission reads the live value.
+RACING_WINNER_WAIT_SECONDS = CLAIM_GRACE_FLOOR_SECONDS
 RACING_WINNER_POLL_SECONDS = 0.25
 
 
@@ -1423,6 +1521,7 @@ def _settle_racing_winner(
     reread: Callable[[str], _RepositoryScopeClaim | None],
     clock: Callable[[], float],
     pause: Callable[[float], None],
+    grace_seconds: float | None = None,
 ) -> str:
     """Wait, bounded, for a racing winner to launch or withdraw.
 
@@ -1432,7 +1531,9 @@ def _settle_racing_winner(
     bound passed with the winner still unlaunched. Only a claim already known to
     be an unlaunched racing winner is ever reached here.
     """
-    deadline = clock() + RACING_WINNER_WAIT_SECONDS
+    deadline = clock() + (
+        recent_claim_grace_seconds() if grace_seconds is None else grace_seconds
+    )
     while True:
         current = reread(claim.run_id)
         if current is None or not current.binding:
@@ -1520,6 +1621,7 @@ def _raise_repository_scope_conflict(
                 # on sight would strand the paths if that winner withdraws for
                 # an unrelated reason. Wait, bounded, for it to launch (then the
                 # refusal stands) or to go (then the paths are this dispatch's).
+                grace_seconds = recent_claim_grace_seconds()
                 settle = _settle_racing_winner(
                     claim,
                     own_run_id=own_run_id,
@@ -1527,13 +1629,14 @@ def _raise_repository_scope_conflict(
                     reread=_racing_claim_current,
                     clock=_racing_clock,
                     pause=_racing_pause,
+                    grace_seconds=grace_seconds,
                 )
                 if settle == "proceed":
                     continue
                 if settle == "expired":
                     racing_winner_refusal = (
                         f"the earlier dispatch {claim.run_id!r} has not launched "
-                        f"within {RACING_WINNER_WAIT_SECONDS:g}s and its claim on "
+                        f"within {grace_seconds:g}s and its claim on "
                         "the paths still stands"
                     )
             if (
