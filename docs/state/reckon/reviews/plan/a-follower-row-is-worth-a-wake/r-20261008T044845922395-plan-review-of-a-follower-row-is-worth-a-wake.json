@@ -1,0 +1,51 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T05:07:42.039Z",
+  "dispatched_at": "2026-10-08T04:49:28Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-follower-row-is-worth-a-wake.html:128",
+      "id": "done_when-1",
+      "reason": "an implementer taking \"another transition\" literally collapses the action row into a withheld echo and suppresses the very duty the plan exists to protect, while an implementer reading it as coordinator-only builds a different policy than the text states; the rule's scope must be stated.",
+      "text": "the settle rule as written (\"a coordinator row followed by another transition of the same run within a twenty-second settle window prints only the later row\") covers a coordinator row followed by the observer terminal echo `complete \u2192 recorded`, so the later row is the withheld echo and the case at line 143-144 (\"prints exactly one row, the complete\") cannot be satisfied by the rule the case tests; its negative control at line 157-158 (hold removed prints three rows: working, complete, recorded) also assumes the `complete` was not superseded, contradicting the same rule",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-follower-row-is-worth-a-wake.html:136",
+      "id": "reasoning-1",
+      "reason": "\u00a73's negative control (line 180) and \u00a75's positive control both need this pane, so the plan must declare the mode and its parameter/owner rather than leave a node to invent an undeclared interface.",
+      "text": "\u00a72 claims \"A pane built with observer context shown keeps today's behaviour\" and \u00a75 (line 205-206) makes that pane its positive control, but no section declares the pane mode or the caller that builds it: `RowPolicy.__init__` (reckon/crew/ticker.py:1170) and `PaneRowPath.__init__` (ticker.py:1327) take no such flag, `replay_row_policy` (ticker.py:1412) exposes only `selects`/`clock`, and grep for a pane/observer mode in reckon/ and tests/ returns nothing, while \u00a72 (line 132-133) states its only added definitions are the two settle constants",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "ad3c90ba420f3fd9dfe0422524918ef4ea5d4ea2f479ed4142cb0d369c4eca4b",
+  "plan_slug": "a-follower-row-is-worth-a-wake",
+  "plan_version": 31,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T044845922395-plan-review-of-a-follower-row-is-worth-a-wake",
+  "reviewed_blob_sha": "424cbacd78c8d0d66160aab41c86fe9861398146",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited href resolves once `.html` is appended: docs/research/follower-signal-audit.html, docs/plans/crew-observability-truth.html (bare slug resolves via serve.py:698-705), docs/plans/a-follower-keeps-your-work-in-view.html, docs/plans/a-follower-lives-as-long-as-its-session.html, docs/evidence/archive/a-follower-row-is-worth-a-wake-landed.html#s4-reannounce-path, and the code anchors reckon/crew/ticker.py, reckon/cli.py, reckon/crew/recovery.py, all present.",
+    "done_when": "a finding \u2014 \u00a72's first done-when case expects the `complete` to be the one printed row, but the settle rule it is written beside suppresses a coordinator row followed by \"another transition\", and `complete \u2192 recorded` is such a transition, so the case's expected row is not fixed by the rule the case is supposed to test.",
+    "evidence_paths": "pass \u2014 \u00a75 writes its report to the run directory and reads the producer streams under ~/.config/reckon/crew/watch/*.events in place; no session scratchpad or node-local temporary path is named.",
+    "naming": "pass \u2014 no plan label, stage name, ticket number or version tag reaches a symbol or comment; the new test names describe the mechanism (test_row_policy_holds_observer_context.py, test_follow_settled_rows.py).",
+    "reasoning": "a finding \u2014 \u00a72/\u00a73/\u00a75 all rest on a pane mode \"observer context shown\", but no section declares that mode or the code path that builds it, and \u00a72 states \u00a72 adds only two constants, so \u00a75's positive control rests on a mechanism the plan never names.",
+    "single_goal": "pass \u2014 \u00a72 carries one deliverable (hold observer-context rows in `RowPolicy` with three printing exceptions); \u00a75 carries one (the replay measurement).",
+    "wiring": "pass \u2014 the declared `depends-on` (a-follower-outlives-its-monitor) resolves to docs/plans/a-follower-outlives-its-monitor.html, the \u00a71 in-prose reference to a-follower-keeps-your-work-in-view is explicitly advisory (prior wiring-1 declined), and the s2/s5 edits add no relationship."
+  },
+  "section_digests": {
+    "_document": "57651ac23d8c226b299a6fb3798c4954e38bfc8b12c6a6ee0afcae03f380f75f",
+    "s1": "bea06a70e5a727324f7f05ddea157674cb647360778af5da9d99b6cb372018e7",
+    "s2": "6c4ebf2ea34d9e696460f93568afddae1e56e5209cc31a7e15f2b379765854b0",
+    "s3": "41d4ddd08ef0e265dd9b427e22278337608b4bef109bcc1632efbc0a2b31ec0e",
+    "s4": "de2aa9f5977b57bf9a0e566534e0a792ce0ec6d246a7e43be40842fc31db28f5",
+    "s5": "828e58fc5baf0bc0f9a8c30b8428b8d1effc82e4edf54e707a834360e363c973"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T05:07:45.498305+00:00"
+}
