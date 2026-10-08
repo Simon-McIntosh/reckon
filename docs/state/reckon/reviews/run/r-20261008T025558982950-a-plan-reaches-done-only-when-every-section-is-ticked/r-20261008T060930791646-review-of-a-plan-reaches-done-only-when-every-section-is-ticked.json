@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs named in its manifest test_logs (head_arm.log at head a5195290a, base_arm.log at 786c5ba8): 0 failures at head minus 5 at base yields no added failing test. The reviewed run's manifest carries baseline_suite and after_suite as null (classification.json shows both null), so the count was derived from the named logs directly. The reviewer's own arms independently reproduce both: rv_head_gate.log 8 passed EXIT=0 at a5195290a, rv_base_gate.log 5 failed 3 passed EXIT=1 at 786c5ba8.",
+  "base_log_revision": "786c5ba86a76d00549da0455b02e9cae31b58a6c",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/serve.py:3577",
+    "reckon/mcp.py:3751",
+    "reckon/_store.py:1201"
+  ],
+  "completed_at": "2026-10-08T06:32:55.633Z",
+  "dispatched_at": "2026-10-08T06:10:14Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-plan-is-done-when-every-section-is-ticked/a-plan-reaches-done-only-when-every-section-is-ticked.html",
+      "line": "69",
+      "severity": "follow-on",
+      "text": "The after-arm logs the fragment names (head_arm.log, head_regression.log) carry no revision/tree/command header, and head_arm.log carries no EXIT sentinel, while base_arm.log and the nc_*.log arms do carry a header. The head evidence is therefore not self-describing at the revision it claims. Carried from the prior review of this run (its follow-on 3) and still present at the reviewed head; the reviewer's own head gate (rv_head_gate.log) supplies the missing header and EXIT=0 for this delta."
+    },
+    {
+      "file": "tests/test_terminal_status_needs_every_section_ticked.py",
+      "line": "180",
+      "severity": "follow-on",
+      "text": "test_the_patch_writer_refuses_when_the_stored_plan_cannot_be_read exercises only the read-error branch of _status_before_the_patch (read_plan raising). The two sibling branches that also return the empty string and hence fail closed \u2014 an empty project or slug, and an empty stored record (stored = {}) \u2014 are not separately exercised, so a future change to either is not fenced by this test."
+    }
+  ],
+  "head_log_revision": "a5195290a3063a797e2904fbcb281dccbc964264",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call sites",
+    "diff": "read the two delta commits against 4de09c126e: 4fa2d6004 makes _status_before_the_patch return the empty string on an unreadable store (fail closed) and adds an on-disk grandfathering fixture plus a fail-closed test; a5195290a updates the evidence fragment to record both follow-ons, the two negative controls and the 8-test gate.",
+    "done_when": "the census is recorded with its count (17 of 213 terminal mounted plans hold an open section) and the two refusal tests must fail at base; head 8 passed EXIT=0, base arm 5 failed EXIT=1 with the refusal tests failing DID NOT RAISE.",
+    "goal": "the goal is to refuse a write that sets a plan to shipped or done while any declaration is implementable or deferred, naming the open sections; reproduced at head: apply_ops raises 'terminal status refused: 1 section(s) still open (s2)' for an implementable section, and the patch writer fails closed and raises the same naming when the stored plan cannot be read.",
+    "manifest": "read; it states the gate (8 passed EXIT=0), the five-file patch-path regression (115 passed EXIT=0), the base and two nc arms, and the census count, all under test_logs.",
+    "write_paths": "read the run's declared write paths; every path in the delta's two commits is inside them."
+  },
+  "justifications": {
+    "durability": "the fail-closed fix is exercised by two negative controls (nc_requested: requested-status-only keying restored, the stored-terminal grandfathering test fails; nc_fallback: fallback-to-state-status restored, the unreadable-store test fails) and the production grandfathering case is now a real on-disk fixture rather than one with project/slug removed; docked because _status_before_the_patch's empty-project/slug and empty-record fail-closed branches are not separately exercised by a test.",
+    "evidence": "the census is recorded with its count (census.log: 15 projects, 374 plans, 213 terminal, 17 terminal-with-open-section, all 17 slugs listed in the fragment) and the measure is an independent base/head pair: reviewer head gate 8 passed EXIT=0 at a5195290a and reviewer base arm 5 failed 3 passed EXIT=1 at 786c5ba8, reproducing the run's own head_arm.log (8 passed) and base_arm.log (5 failed, EXIT=1). Docked because the run's own head_arm.log and head_regression.log carry no revision/tree/command header and head_arm.log no EXIT sentinel, the manifest names its gate logs under test_logs rather than baseline_suite/after_suite, and the wider-regression base-arm comparison was stopped leaving 5 order-dependent failures unattributed.",
+    "fit": "reuses the existing terminal-guard idiom (_require_every_section_ticked beside _refuse_hiding_followup at reckon/_store.py:3274) and the pre-existing _LANDED_STATUSES constant (:3132), and reads the stored-status technique _followups_before_the_patch already uses; no new module and no new write path.",
+    "goal_fidelity": "reckon/_store.py:3308 (validate_landing_patch), :3428 (apply_ops) and :1345 (_write_state_locked) call _require_every_section_ticked on a write moving a plan into shipped or done, all three transition-keyed, and :3284 reads _plan_html.open_sections, so the landed change refuses the landing and names the open ids exactly as the goal states; the delta's fail-closed change means an unreadable store can no longer switch the guard off. Probe at head: validate_landing_patch on a plan whose stored record cannot be read raises 'terminal status refused: 1 section(s) still open (s2)'.",
+    "reuse": "reads the single open-section predicate _plan_html.open_sections rather than re-deriving the declaration vocabulary, and reuses the stored-plan read (read_plan) rather than adding a parallel reader for the pre-write status.",
+    "scope_discipline": "the delta's two commits change only reckon/_store.py, tests/test_terminal_status_needs_every_section_ticked.py and the evidence fragment, every one inside the run's declared write paths (reckon/_store.py, tests/test_terminal_status_needs_every_section_ticked.py, docs/evidence/fragments/a-plan-is-done-when-every-section-is-ticked/a-plan-reaches-done-only-when-every-section-is-ticked.html)."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: refuse a write into shipped or done while any section declaration is implementable or deferred, naming the open sections; reproduced at head, apply_ops and validate_landing_patch raise 'terminal status refused: 1 section(s) still open (s2)', and the delta's fail-closed helper now raises the same naming when the stored plan cannot be read.\nVERDICT done_when: census recorded with its count (17 of 213) and refusal tests that fail at base; reviewer head gate 8 passed EXIT=0, reviewer base arm 5 failed EXIT=1 with the refusal tests failing DID NOT RAISE.\nVERDICT write_paths: the delta's two commits change only reckon/_store.py, tests/test_terminal_status_needs_every_section_ticked.py and the evidence fragment, all inside the run's declared paths.\nVERDICT manifest: read; records the 8-passed gate, the 115-passed patch-path regression, the base and two nc arms, and the census.\nVERDICT diff: read the two delta commits against 4de09c126e; 4fa2d6004 fails the pre-write status read closed and adds an on-disk grandfathering fixture plus a fail-closed test; a5195290a records both follow-ons.\nCALL_SITES: reckon/serve.py:3577, reckon/mcp.py:3751, reckon/_store.py:1201\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the guard at reckon/_store.py:3308, :3428 and :1345 refuses a shipped/done write with an open section and names the ids, reading _plan_html.open_sections; the fail-closed change closes the hole where an unreadable store switched the guard off.\nSCORE evidence: 17\nJUSTIFICATION evidence: census recorded with count (15 projects, 374 plans, 213 terminal, 17 with an open section) and an independent base/head pair reproduces the run's arms (head 8 passed EXIT=0, base 5 failed EXIT=1); docked for the header-less head logs and the null baseline_suite/after_suite in the run manifest.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the delta touches only the three declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: fail-closed fix plus two negative controls and a real on-disk grandfathering fixture; docked for the two untested fail-closed branches of _status_before_the_patch.\nSCORE fit: 20\nJUSTIFICATION fit: reuses the _require_* terminal-guard idiom, _LANDED_STATUSES, and the stored-status technique _followups_before_the_patch uses.\nSCORE reuse: 20\nJUSTIFICATION reuse: reads the single predicate _plan_html.open_sections and reuses read_plan rather than adding a parallel reader.\nFINDING docs/evidence/fragments/a-plan-is-done-when-every-section-is-ticked/a-plan-reaches-done-only-when-every-section-is-ticked.html:69 follow-on: the after-arm logs carry no header/EXIT; carried from the prior review.\nFINDING tests/test_terminal_status_needs_every_section_ticked.py:180 follow-on: only the read-error branch of the fail-closed helper is tested, not the empty-project/slug or empty-record branches.",
+  "review_run_id": "r-20261008T060930791646-review-of-a-plan-reaches-done-only-when-every-section-is-ticked",
+  "reviewed_base_sha": "4de09c126e38d631d0ee9e7eaeeed8e3c626c6e5",
+  "reviewed_head_sha": "a5195290a3063a797e2904fbcb281dccbc964264",
+  "reviewed_run_id": "r-20261008T025558982950-a-plan-reaches-done-only-when-every-section-is-ticked",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T06:28:32+00:00",
+  "total": 114
+}
