@@ -8,10 +8,12 @@ message naming --repo only when the project has no registered checkout at all.
 A dispatch that names no member carries its own per-run identity, so a live
 review worker from an earlier run never holds a later dispatch in flight.
 
-The isolation guard watches a temporary crew home that stands in for the
-machine's real one. It asserts only that this fixture's own ids never reach
-that home: a peer session dispatching concurrently leaves entries, but none of
-them names anything of ours, so a busy host cannot make the guard fire.
+The isolation guard watches the real crew home — the destination an escaped
+write reaches when a dispatcher bypasses the isolated RECKON_HOME — so it can
+fire on the write it exists to catch. It asserts only that this fixture's own
+ids never reach that home: a peer session dispatching concurrently leaves
+entries, but none of them names anything of ours, so a busy host cannot make
+the guard fire.
 """
 
 from __future__ import annotations
@@ -51,30 +53,49 @@ CONFIG = {
 FIXTURE_PROJECT = "sample"
 FIXTURE_MEMBER = "fixture-member"
 FIXTURE_RUN_IDS = ("r-first", "r-second")
-_FIXTURE_IDS = (FIXTURE_PROJECT, FIXTURE_MEMBER, *FIXTURE_RUN_IDS)
+
+#: Where a dispatcher that ignores the isolated RECKON_HOME still lands: the
+#: crew home under the real user home. The guard watches it by default.
+_ESCAPE_HOME = Path.home() / ".config" / "reckon"
+
+
+def _guard_store() -> Path:
+    """The crew home the isolation guard inspects.
+
+    Without an override this is the real crew home, the destination an escaped
+    write reaches when a dispatcher bypasses RECKON_HOME, so the guard can fire
+    on exactly the write it exists to catch. ``RECKON_GUARD_HOME`` redirects it
+    to a temporary stand-in for the tests that plant entries, so those never
+    touch the real home.
+    """
+    override = os.environ.get("RECKON_GUARD_HOME")
+    if override:
+        return Path(override).expanduser()
+    return _ESCAPE_HOME
 
 
 def _fixture_writes_under(store: Path) -> list[str]:
     """Every entry under a crew home that names one of this fixture's ids.
 
     A dispatcher that wrote outside its isolated home would leave a live
-    pointer or a roster row naming the fixture here, so this is a write-side
-    check rather than a read of code that never ran. A peer session's entries
-    name nothing of ours, so the whole store may move around them without this
-    firing.
+    pointer for one of the fixture's run ids, or a roster for the fixture's
+    project, here. Matching the exact pointer filename and the exact project
+    directory keeps a busy host's own entries — which name nothing of ours,
+    even where a long node description happens to contain our member's spelling
+    — from firing the guard.
     """
     found: list[str] = []
     live = store / "crew" / "live"
     if live.is_dir():
+        expected = {f"{run_id}.json" for run_id in FIXTURE_RUN_IDS}
         found.extend(
-            str(entry)
-            for entry in sorted(live.iterdir())
-            if any(identity in entry.name for identity in _FIXTURE_IDS)
+            str(entry) for entry in sorted(live.iterdir()) if entry.name in expected
         )
-    for roster in sorted((store / "state").glob("*/crew.json")):
-        text = roster.read_text(encoding="utf-8", errors="replace")
-        if any(identity in text for identity in _FIXTURE_IDS):
-            found.append(str(roster))
+    roster = store / "state" / FIXTURE_PROJECT / "crew.json"
+    if roster.is_file() and f'"{FIXTURE_MEMBER}"' in roster.read_text(
+        encoding="utf-8", errors="replace"
+    ):
+        found.append(str(roster))
     return found
 
 
@@ -92,44 +113,29 @@ def _assert_isolation(store: Path) -> None:
 
 
 @pytest.fixture()
-def real_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """A temporary crew home standing in for the machine's real one.
+def guard_stand_in(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Path]:
+    """Redirect the guard to a temporary store and clean up what a test plants.
 
-    The isolation guard inspects this directory rather than the operator's real
-    crew home, and it is installed as RECKON_HOME, so the suite never reads or
-    writes the real home and a planted leak is removed with the temporary tree.
+    A test that plants entries requests this before ``isolated_project``, so
+    this fixture's teardown runs after the isolation guard has inspected the
+    store: a planted entry is present while the guard looks and gone once the
+    test ends, exactly as a peer's own run appears and disappears during a
+    suite. The redirect keeps those plants out of the operator's real home.
     """
-    store = tmp_path / "real-crew-home"
+    store = tmp_path / "guard-home"
     (store / "crew" / "live").mkdir(parents=True)
     (store / "state").mkdir()
-    monkeypatch.setenv("RECKON_HOME", str(store))
-    return store
-
-
-@pytest.fixture()
-def peer_dispatch() -> Iterator[list[Path]]:
-    """Stand in for a concurrent peer session dispatching during the suite.
-
-    A test appends the paths its peer leaves behind; the teardown removes them.
-    ``isolated_project`` requests it, so this teardown runs after the isolation
-    guard has inspected the store: the peer's entry is present while the guard
-    looks and gone once the test ends, exactly as a peer's own run appears and
-    disappears during a suite.
-    """
-    planted: list[Path] = []
-    yield planted
-    for path in planted:
-        path.unlink(missing_ok=True)
+    monkeypatch.setenv("RECKON_GUARD_HOME", str(store))
+    yield store
+    for path in sorted((store / "crew" / "live").iterdir()):
+        path.unlink()
 
 
 @pytest.fixture()
 def isolated_project(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    real_store: Path,
-    peer_dispatch: list[Path],
 ) -> Iterator[tuple[Path, Path]]:
-    _ = peer_dispatch  # requested for ordering, not for its value
     config_home = tmp_path / "config"
     config_home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(config_home))
@@ -159,38 +165,49 @@ def isolated_project(
 
     yield config_home, tmp_path_repo
 
-    _assert_isolation(real_store)
+    _assert_isolation(_guard_store())
 
 
-def test_isolation_guard_refuses_a_fixture_named_write(real_store: Path) -> None:
-    """A pointer naming this fixture in the crew home is the leak the guard
-    exists to catch, so the guard must refuse it."""
-    leaked = real_store / "crew" / "live" / f"{FIXTURE_RUN_IDS[0]}.json"
+def test_isolation_guard_watches_the_escape_destination(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """The guard's default target is the real crew home — where an escaped
+    write lands — not a fixture directory nothing writes."""
+    monkeypatch.delenv("RECKON_GUARD_HOME", raising=False)
+    watched = _guard_store()
+    assert watched == Path.home() / ".config" / "reckon"
+    assert tmp_path not in watched.parents
+
+
+def test_isolation_guard_refuses_a_fixture_named_write(
+    guard_stand_in: Path,
+) -> None:
+    """A pointer naming this fixture in the crew home the guard watches is the
+    leak it exists to catch, so the guard must refuse it."""
+    leaked = guard_stand_in / "crew" / "live" / f"{FIXTURE_RUN_IDS[0]}.json"
     leaked.write_text("{}", encoding="utf-8")
     try:
         with pytest.raises(AssertionError):
-            _assert_isolation(real_store)
+            _assert_isolation(_guard_store())
     finally:
         leaked.unlink()
 
 
 def test_isolation_guard_tolerates_a_peer_dispatch(
+    guard_stand_in: Path,
     isolated_project: tuple[Path, Path],
-    real_store: Path,
-    peer_dispatch: list[Path],
 ) -> None:
     """A peer's live pointer must not be mistaken for this fixture's leak.
 
-    The peer's entry is planted after the isolated home is set up and stays
-    until the guard has looked, which is exactly the window a concurrent
-    dispatch on a shared host occupies.
+    ``guard_stand_in`` is requested before ``isolated_project``, so its entry
+    survives the isolation guard's look at teardown — exactly the window a
+    concurrent dispatch on a shared host occupies.
     """
-    peer = real_store / "crew" / "live" / "r-20260901T000000000000-peer-node.json"
+    peer = guard_stand_in / "crew" / "live" / "r-20260901T000000000000-peer-node.json"
     peer.write_text('{"run_id": "r-20260901T000000000000-peer-node"}', encoding="utf-8")
-    peer_dispatch.append(peer)
 
-    assert _fixture_writes_under(real_store) == []
-    _assert_isolation(real_store)
+    assert _fixture_writes_under(guard_stand_in) == []
+    _assert_isolation(_guard_store())
 
 
 def _member_node() -> crew.TaskNode:
