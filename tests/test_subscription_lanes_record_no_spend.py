@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon import capabilities, ledger
+from reckon import capabilities, flight, ledger
 from reckon.crew.picker import outcomes
 
 # A host layer declaring each backend under test. The catalogue only fills keys
@@ -45,6 +45,25 @@ backends:
     command: claude
     budget_group: claude-metered
 """
+
+
+# A project-layer flight that moves one lane the host left metered into a
+# subscription group. The catalogue only fills keys for a backend another layer
+# already defines, so the project names the backend the host declares.
+PROJECT_FLIGHT = """\
+version: 1
+
+backends:
+  gemini-pro:
+    budget_group: research-sub
+"""
+
+
+def _write_project_flight(project: str) -> None:
+    """Write a project layer where the resolver reads it, without a mount."""
+    path = flight.project_config_path(project)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(PROJECT_FLIGHT)
 
 
 def _catalogue_path() -> Path:
@@ -128,6 +147,74 @@ def test_a_host_override_of_a_budget_group_wins_over_the_catalogue(
     assert _budget("claude")["cost_usd"] == 1.61
 
 
+def test_a_project_flight_moves_a_backend_into_a_subscription_group() -> None:
+    """A project-layer override reaches billing on that project's rows only.
+
+    The host layer leaves ``gemini-pro`` metered; one project's flight layer
+    moves it into a subscription group. A row for that project must record no
+    per-token spend — nulled, flagged imputed, and naming the group — while the
+    same backend on another project's row keeps its cost. The override is a
+    property of the project, not of the lane, so both directions are asserted.
+    """
+    _write_project_flight("moved")
+
+    moved = ledger.build_record(
+        run_id="r-moved",
+        plan="plan-a",
+        project="moved",
+        gate="passed",
+        backend="gemini-pro",
+        budget={"cost_usd": 1.61, "cost_usd_cumulative": 1.61},
+    )["budget"]
+    elsewhere = ledger.build_record(
+        run_id="r-elsewhere",
+        plan="plan-a",
+        project="elsewhere",
+        gate="passed",
+        backend="gemini-pro",
+        budget={"cost_usd": 1.61, "cost_usd_cumulative": 1.61},
+    )["budget"]
+
+    assert moved["cost_usd"] is None
+    assert moved["cost_usd_cumulative"] is None
+    assert moved["cost_usd_imputed"] is True
+    assert moved["billing"] == "subscription"
+    assert moved["budget_group"] == "research-sub"
+
+    assert elsewhere["cost_usd"] == 1.61
+    assert elsewhere["cost_usd_cumulative"] == 1.61
+    assert "billing" not in elsewhere
+    assert "cost_usd_imputed" not in elsewhere
+
+
+def test_a_read_row_reads_its_project_layer() -> None:
+    """A row read back under its project is billed by that project's override.
+
+    The read surfaces resolve billing at read time, so a row stamped with the
+    project whose flight moved the lane into a subscription group is labelled a
+    subscription there and metered under any other project.
+    """
+    _write_project_flight("moved")
+
+    moved = {
+        "backend": "gemini-pro",
+        "budget": {"cost_usd": 1.61},
+        "_project": "moved",
+    }
+    elsewhere = {
+        "backend": "gemini-pro",
+        "budget": {"cost_usd": 1.61},
+        "_project": "elsewhere",
+    }
+
+    assert capabilities._backend_billing(moved) == "subscription"
+    assert capabilities._cost_usd(moved) is None
+    assert capabilities._cost_usd_imputed(moved) is True
+
+    assert capabilities._backend_billing(elsewhere) is None
+    assert capabilities._cost_usd(elsewhere) == 1.61
+
+
 def test_a_malformed_catalogue_leaves_a_lane_metered(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -202,13 +289,12 @@ def test_picker_outcomes_name_subscription_backends_not_dollars() -> None:
     assert "gemini-pro" not in billing["subscription_backends"]
 
 
-def test_capabilities_route_rows_label_a_subscription_lane() -> None:
-    """The routing row's billing key reads the same declaration.
+def test_backend_billing_labels_a_subscription_lane() -> None:
+    """The billing class a row's backend carries is the catalogue's declaration.
 
-    ``derive_routing`` sets each grouped observation's ``billing`` from
-    :func:`capabilities._backend_billing`, which is what the row-level
-    ``billing`` and the ``median_cost_usd`` block carry; a subscription lane is
-    labelled there and its dollar cost is null.
+    :func:`capabilities._backend_billing` — which the routing row's ``billing``
+    key and its ``median_cost_usd`` block read — labels a subscription lane so
+    a reader is told which lanes the dollars exclude, and nulls its cost.
     """
     subscription = {"backend": "claude", "budget": {"cost_usd": 1.61}}
     metered = {"backend": "gemini-pro", "budget": {"cost_usd": 1.61}}

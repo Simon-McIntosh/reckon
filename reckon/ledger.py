@@ -2190,7 +2190,7 @@ def is_unmetered_backend(backend: str) -> bool:
 _RESOLVED_FLIGHT_CACHE: dict[tuple[Any, ...], Mapping[str, Any]] = {}
 
 
-def _flight_layer_key() -> tuple[Any, ...]:
+def _flight_layer_key(project: str | None = None) -> tuple[Any, ...]:
     """A cache key naming the flight layer files and their content identity.
 
     Keyed on the paths and their mtimes rather than on the resolved object, so
@@ -2198,15 +2198,23 @@ def _flight_layer_key() -> tuple[Any, ...]:
     repeated lookups within one promotion are cheap. A layer that cannot be
     stat'd contributes its path alone, which stays stable across those reads —
     the cache then holds the empty config a missing layer resolves to.
+
+    ``project`` adds the project layer to the key. A project's own
+    ``budget_group`` override lives in that file, so a key that omitted it
+    would let one project's resolution answer for a different project, and
+    would keep answering from the pre-override config after the file changed.
     """
     from reckon import flight
 
-    parts: list[Any] = []
-    for path in (
+    paths: list[Path] = [
         flight.shipped_defaults_path(),
         flight.host_config_path(),
         flight.model_catalogue_path(),
-    ):
+    ]
+    if project:
+        paths.append(flight.project_config_path(project))
+    parts: list[Any] = []
+    for path in paths:
         resolved = str(path)
         try:
             stat = os.stat(path)
@@ -2217,7 +2225,7 @@ def _flight_layer_key() -> tuple[Any, ...]:
     return tuple(parts)
 
 
-def _resolved_flight_config() -> Mapping[str, Any]:
+def _resolved_flight_config(project: str | None = None) -> Mapping[str, Any]:
     """The flight config reckon runs under, or ``{}`` when it cannot be read.
 
     Read lazily and defensively: the config is versioned data in the checkout,
@@ -2229,49 +2237,64 @@ def _resolved_flight_config() -> Mapping[str, Any]:
     is what lets a host, project or override value for a backend's
     ``budget_group`` reach this reader, so which lanes are subscription-billed
     is a routing decision a project or host can change without editing code.
+
+    ``project`` folds in that project's layer, so the override a project writes
+    for one of its own lanes is honoured on its rows. Without it only the
+    shipped, host and catalogue layers speak — the right answer for a caller
+    that has no project, such as a row read without one or a surface pooling
+    every project.
     """
     from reckon import flight
 
-    key = _flight_layer_key()
+    key = _flight_layer_key(project)
     cached = _RESOLVED_FLIGHT_CACHE.get(key)
     if cached is not None:
         return cached
     try:
-        config = flight.resolve().config
+        config = flight.resolve(project).config
     except (flight.FlightConfigError, OSError, ValueError):
         config = {}
     _RESOLVED_FLIGHT_CACHE[key] = config
     return config
 
 
-def backend_budget_group(backend: str) -> str | None:
+def backend_budget_group(backend: str, *, project: str | None = None) -> str | None:
     """The budget group resolved flight config declares for a backend, or ``None``.
 
     The lookup is delegated to the module that owns the declaration
     (:mod:`reckon.crew.budget_group`), read over resolved config rather than
     the catalogue file alone, so a host or project override of a backend's
-    ``budget_group`` is honoured. A backend the config does not name declares
-    no group here, so a lane whose billing nothing states keeps its cost.
+    ``budget_group`` is honoured. ``project`` selects the project layer, so a
+    project that moves one of its lanes into a group is read that way on its
+    own rows. A backend the config does not name declares no group here, so a
+    lane whose billing nothing states keeps its cost.
     """
     from reckon.crew import budget_group as budget_group_module
 
-    return budget_group_module.declared_group_for(_resolved_flight_config(), backend)
+    return budget_group_module.declared_group_for(
+        _resolved_flight_config(project), backend
+    )
 
 
-def is_subscription_backend(backend: str) -> bool:
+def is_subscription_backend(backend: str, *, project: str | None = None) -> bool:
     """Whether a named backend draws on a group the catalogue bills as a
     flat subscription rather than metering it per token.
 
     The billing rides the catalogue's ``budget_group`` name: a group whose
     name ends in ``-sub`` (``claude-sub``, ``codex-sub``) is a subscription.
-    The lookup reads the catalogue, so a backend it does not name — or names
-    without a group — is metered and keeps its recorded cost.
+    The lookup reads the resolved config, so a backend it does not name — or
+    names without a group — is metered and keeps its recorded cost. ``project``
+    folds that project layer in, so one project can move a lane into a
+    subscription group and be billed as one there while the same lane stays
+    metered on another project's rows.
     """
-    group = backend_budget_group(backend)
+    group = backend_budget_group(backend, project=project)
     return group is not None and group.endswith(SUBSCRIPTION_GROUP_SUFFIX)
 
 
-def _label_unmetered_cost(budget: Mapping[str, Any], backend: str) -> dict[str, Any]:
+def _label_unmetered_cost(
+    budget: Mapping[str, Any], backend: str, *, project: str | None = None
+) -> dict[str, Any]:
     """Replace an invented dollar figure with an explicit, flagged absence.
 
     ``cost_usd`` is not missing from an unmetered run's stream — the harness
@@ -2294,9 +2317,13 @@ def _label_unmetered_cost(budget: Mapping[str, Any], backend: str) -> dict[str, 
     nulled.  ``capabilities._cost_usd`` treats ``cost_usd_imputed`` as
     authoritative over either field, so the flag keeps exactly the meaning it
     has today: a nulled figure, not a computed one.
+
+    ``project`` names the project the row belongs to, so that project's own
+    ``budget_group`` override is folded into the resolution and a lane the
+    project moved into a subscription group is billed as one on its rows.
     """
     result = dict(budget)
-    subscription = is_subscription_backend(backend)
+    subscription = is_subscription_backend(backend, project=project)
     if not subscription and not is_unmetered_backend(backend):
         return result
     reported = (result.get("cost_usd"), result.get("cost_usd_cumulative"))
@@ -2311,7 +2338,7 @@ def _label_unmetered_cost(budget: Mapping[str, Any], backend: str) -> dict[str, 
             "cost_usd_cumulative"
         )
         result["billing"] = "subscription"
-        group = backend_budget_group(backend)
+        group = backend_budget_group(backend, project=project)
         if group:
             result["budget_group"] = group
     result["cost_usd"] = None
@@ -2325,6 +2352,7 @@ def build_record(
     run_id: str,
     plan: str,
     gate: str,
+    project: str = "",
     failure_classification: str = "",
     node: str = "",
     node_definition: Mapping[str, Any] | None = None,
@@ -2499,7 +2527,7 @@ def build_record(
         # Carried here because the pointer that held it is deleted on promotion,
         # and a pre-flight that has to make a call to learn headroom spends the
         # very resource it is measuring — most often when it is scarcest.
-        "budget": _label_unmetered_cost(budget or {}, backend),
+        "budget": _label_unmetered_cost(budget or {}, backend, project=project),
         "lane_receipt": None if lane_receipt is None else dict(lane_receipt),
         "lineage": stored_lineage,
         "shadow_controlled": stored_shadow_controlled,

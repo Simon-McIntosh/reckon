@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="one-typesafe-model-picker">
+  <meta name="plan-title" content="A project's budget-group override reaches billing">
+  <meta name="plan-summary" content="The ledger and the capability rows resolve a backend's subscription billing with the project the row belongs to, so a project's own budget_group override reaches its ledger rows and leaves another project's rows metered.">
+  <meta name="plan-evidence-for" content="reckon:one-typesafe-model-picker">
+  <meta name="plan-verifies" content="reckon:one-typesafe-model-picker#s17">
+  <meta name="plan-recorded-at" content="2026-10-08">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="ledger,billing,budget-group,capabilities,project-layer">
+  <title>A project's budget-group override reaches billing — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="project-budget-group-reaches-billing" data-node="project-budget-group-reaches-billing" data-reckon="landed" data-when="2026-10-08">
+  <h2>A project's budget-group override reaches billing</h2>
+  <p>Billing now resolves with the project the row belongs to. <code>ledger.is_subscription_backend</code>, <code>backend_budget_group</code> and <code>build_record</code> take a <code>project</code> and fold that project's flight layer in, and <code>capabilities._backend_billing</code> reads the reader's <code>_project</code> stamp, so a project that moves a lane into a subscription group records zero per-token spend on its own rows while the same lane stays metered on another project's.</p>
+</article>
+</body>
+</html>
