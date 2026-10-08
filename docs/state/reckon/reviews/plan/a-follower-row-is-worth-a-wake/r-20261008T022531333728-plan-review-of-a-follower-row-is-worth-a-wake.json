@@ -1,0 +1,51 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-08T02:51:14.733Z",
+  "dispatched_at": "2026-10-08T02:26:14Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-follower-row-is-worth-a-wake.html#s2",
+      "id": "reasoning-1",
+      "reason": "the node cannot satisfy the exception, the decision and the bullet at once, so the implementer must pick one of two contradictory outcomes for the same sequence.",
+      "text": "\u00a72's second exception (\"an unexplained end: the run reaches a state in SETTLED_STATES without this pane having printed a coordinator row for it since its arrival\") fires on a launched run that goes `dispatched \u2192 withdrawn` (withdrawn is one of the two states \u00a72 adds to `SETTLED_STATES`, and `transition_class('dispatched','withdrawn')` is observer), and the `start-rows` decision's rationale states a launch that fails \"reaches stalled, launch-failed or withdrawn, which the policy delivers\", but \u00a72's done-when bullet 4 asserts \"arrival then `dispatched \u2192 withdrawn` twice prints nothing\"",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-follower-row-is-worth-a-wake.html#s5",
+      "id": "reasoning-2",
+      "reason": "\u00a75's positive control cannot pass as written, so the gate it feeds is unmeetable until the control names the observer-show mode that \u00a72 actually provides.",
+      "text": "\u00a72 states the comparison pane is one built \"with observer context shown\" and that `replay_row_policy` uses it for \u00a75's comparison, while \u00a75's positive control is \"the same replay with the window at zero reproduces today's row count within 2%\": the observer hold is the dominant row remover and \u00a72 makes it independent of the settle window, so zeroing the window still withholds observer rows and cannot reproduce today's count",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "300257b5a34fcef31e851e3bce83de879b0b0b054ef2745a53bf03153b4c21cc",
+  "plan_slug": "a-follower-row-is-worth-a-wake",
+  "plan_version": 15,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261008T022531333728-plan-review-of-a-follower-row-is-worth-a-wake",
+  "reviewed_blob_sha": "6df464fa09ae6625df5cb0644c175d4389210180",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited symbol resolves at the cited module (`RowPolicy`, `PaneRowPath`, `follower_row_path`, `replay_row_policy`, `transition_class`, `SETTLED_STATES`, `HIDDEN_AT_ATTACH`, `ARRIVAL_WINDOW`, `COORDINATOR_KINDS`, `NOISE_PAIRS`, `PaneRowPath.flush`, `ACTIONABLE_RECOVERY_CLASSIFICATIONS`), the two named existing tests exist, and the four cited docs exist; extensionless hrefs resolve as `<path>.html`.",
+    "done_when": "pass \u2014 \u00a72 and \u00a73 each declare a measurable done-when with a stated negative control (observer hold removed / observer context shown).",
+    "evidence_paths": "pass \u2014 the gate tests sit under `tests/`, the negative-control logs ride the run record, and \u00a74/\u00a75 name the run directory.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach the code symbols or comments; the sole dated reference (`2026-09-25 follower signal audit`) names a research document, not a tracker entry.",
+    "reasoning": "a finding \u2014 \u00a72's \"unexplained end\" exception is defined to print a run that reaches `SETTLED_STATES` with no coordinator row shown, which covers its own done-when case `dispatched \u2192 withdrawn`, yet that bullet asserts nothing prints.",
+    "single_goal": "pass \u2014 \u00a73 carries one deliverable (the follower prints through the \u00a72 pane), and \u00a72's hold, settle window, `SETTLED_STATES` gain and 2-minute cap are one policy decision rather than two, so each node closes on one verdict.",
+    "wiring": "pass \u2014 the declared depends-on `a-follower-outlives-its-monitor` resolves to docs/plans/a-follower-outlives-its-monitor.html, and \u00a72/\u00a73 name their callers (`PaneRowPath`/`follower_row_path`, `crew_follow`)."
+  },
+  "section_digests": {
+    "_document": "3a26de53f8f85820f474b57bd7f2d9285d3fcd0bbbd9b7815056c2cd2d0d6678",
+    "s1": "bea06a70e5a727324f7f05ddea157674cb647360778af5da9d99b6cb372018e7",
+    "s2": "e66056304058aba2ba40f473704643164ddd2b96637bd2a4f6a199ed5bd3d721",
+    "s3": "41d4ddd08ef0e265dd9b427e22278337608b4bef109bcc1632efbc0a2b31ec0e",
+    "s4": "2d1b89c737dfa8e215eb5353d9bd4452995d7c371c2446691bb88bd8e5e9f57f",
+    "s5": "121871d26669536624bbf204933b2d5ef75f84f48944c43e04bc0b123177a8e4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T03:00:29.677813+00:00"
+}
