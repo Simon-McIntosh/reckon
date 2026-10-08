@@ -21,11 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="a-follower-outlives-its-monitor">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
   <title>A Follower Row Is Worth A Wake | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="27">
+<meta name="plan-impl" content="0.25">
+<meta name="plan-version" content="28">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -177,26 +178,12 @@
       follower building its row path with observer context shown, the first assertion fails. The write paths are <code>reckon/cli.py</code> and
       <code>tests/test_follow_settled_rows.py</code>.</p>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-08</span>
     <h2 id="s4">§4 — Find the path that re-announced a delivered run</h2>
-<section data-reckon="section" data-id="s4" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> An investigation of the 446 bare rows of §1. They carry no arrow, are
-      re-announcements of a state already delivered, and got past <code>_follow_gap_rows</code>, which drops a
-      run whose recorded state equals its current one, and past the <code>RowPolicy.seed</code> memory a
-      re-arm restores. One measured case: session <code>9cf43820</code> received
-      <code>dispatched → working</code> for <code>dispatch-module-split-moved</code> at 02:50:15 on
-      2026-10-08, then a bare <code>working</code> for the same run, stamped 02:50:15, at 02:53:00. Its
-      session host had started a new follower child at 02:52:42. The investigation finds why that child
-      re-announced the run, whether through a resume mode that fell back to a fresh baseline, a delivered
-      record missing the run, or a seed the child never read. It counts how many of the 446 rows that path
-      explains, by session and by delivery (host child restart, Monitor re-arm, in-place reload). §2 holds
-      back a bare working row as observer context, but a bare <code>unpromoted</code> or
-      <code>blocked</code> row is coordinator context and §2 does not stop it, so the path matters after §2
-      lands.</p>
-    <p><strong>Done when</strong> the report written to the run directory names the function and branch that
-      drew the 02:53:00 row, reproduces it in a logged command against a fixture follower whose delivered
-      record holds the run at working, and gives the count of §1's bare rows that branch explains. The
-      repair, if the report finds one owed, is added to this plan as a new section with that reproduction as
-      its negative control.</p>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">Named: _fleet_replay's baseline loop on a continue-mode arming draws 397 of the 446 bare rows, because that arming never seeds the pane from its checkpoint; reproduced with a one-variable control. Review 108/120. <a href="/reckon/evidence/archive/a-follower-row-is-worth-a-wake-landed.html#s4-reannounce-path">full record</a></p>
+</section>
 
     <h2 id="s5">§5 — Replay the measured week through the policy</h2>
 <section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
@@ -240,7 +227,10 @@
     <div class="r-comment-body"><p>none owed — the review node changes no repository source; its deliverable is the stored review record for run r-20261008T020110635209-follower-reannounce-path</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261008T020110635209-follower-reannounce-path" data-who="reckon-build" data-when="2026-10-08T02:55:52.597Z">
-    <div class="r-comment-body"><p>397 of 446 bare re-announcements come from _fleet_replay&#x27;s baseline loop on a continue-mode arming, which neither reads the delivered record nor seeds the pane from the checkpoint; reproduced with a one-variable control; review 108/120</p></div>
+    <div class="r-comment-body"><p>397 of 446 bare re-announcements come from _fleet_replay's baseline loop on a continue-mode arming, which neither reads the delivered record nor seeds the pane from the checkpoint; reproduced with a one-variable control; review 108/120</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-s4-landed" data-who="reckon-build" data-when="2026-10-08T04:30:00Z">
+    <div class="r-comment-body">investigation recorded (gate not-run, review 108/120); section closed</div>
 </div>
 </section>
 </main>

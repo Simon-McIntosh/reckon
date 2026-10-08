@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-follower-row-is-worth-a-wake-landed">
+  <meta name="plan-title" content="A Follower Row Is Worth A Wake — landed record">
+  <meta name="plan-summary" content="Closure synthesis for A Follower Row Is Worth A Wake: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="a-follower-row-is-worth-a-wake">
+  <meta name="plan-verdict" content="qualified">
+  <title>A Follower Row Is Worth A Wake — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A Follower Row Is Worth A Wake — landed record</h1>
+  <p>Closure synthesis for A Follower Row Is Worth A Wake: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s4-reannounce-path">
+    <h2>§4 — a continuing arming re-announces every live run</h2>
+    <p>397 of the 446 bare rows of §1 (89%) were drawn by <code>_fleet_replay</code>'s baseline loop in <code>reckon/cli.py</code>, reached from <code>_follow_watch_lines</code> on an arming whose resume plan is <code>continue</code>: a fresh child (a session host restarting it, or a Monitor re-arm) whose durable checkpoint continues. That path neither reads the delivered record nor seeds the row path with the checkpoint's <code>reported</code> map, which only an in-place reload applies through <code>path.reseed</code>. A fixture follower whose delivered record holds a run at working reproduced the bare row; the same record with the checkpoint removed, so the arming reads the record, drew none. The host-restart versus Monitor re-arm split is not recoverable from the frozen extraction. Report: <code>~/.config/reckon/crew/reports/reckon/follower-quiet/reannounce-path/report.md</code>. Review 108/120.</p>
+  </section>
+
+</main>
+</body>
+</html>

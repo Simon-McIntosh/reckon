@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="reckon-reads-answer-in-seconds">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
   <title>An MCP Failure Names Its Cause | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-impl" content="0.11">
-<meta name="plan-version" content="31">
+<meta name="plan-impl" content="0.22">
+<meta name="plan-version" content="36">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -85,8 +85,9 @@
       is reported as unclassified with its first line rather than dropped, because the next unknown cause is the
       one this check exists to surface. It also counts <code>storage-slow</code> tool results per tool over the
       same window: it enumerates transcript files through <code>transcript_index</code> in
-      <code>reckon/velocity.py</code>, the owner of locating Claude Code transcripts, and reads their
-      tool-result blocks itself, because no existing reader parses tool results. The check adds no command and
+      <code>reckon/velocity.py</code>, the owner of locating Claude Code transcripts, and walks their
+      tool-result blocks with the content-block walk the promotion-receipt reader in
+      <code>reckon/velocity.py</code> already uses, adding only the <code>storage-slow</code> count, which no reader has. The check adds no command and
       no option: it is one more block in <code>reckon doctor</code>'s existing report, and an agent that wants
       the figures for another window calls the census function. It reads and never writes, and its runtime is
       bounded by naming the log directories it walks.</p>
@@ -118,40 +119,34 @@
       <code>waiting</code> and the test fails. The write paths are <code>reckon/mcp.py</code>,
       <code>reckon/_mcp_tools.py</code> and <code>tests/test_mcp_deadline_names_its_cause.py</code>.</p>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-08</span>
     <h2 id="s4">§4 — Measure where a reckon read spends its time</h2>
-<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> A measurement of <code>read_plan</code> (summary view of one plan),
-      <code>roadmap</code> (summary view of the reckon project) and <code>crew</code> (live view) as an MCP
-      server answers them: cold, the first call of a fresh server, and warm, the third call. Each is reported
-      with wall time, process CPU time and the top functions by cumulative time from a profile. It runs on the
-      fleet node under its ordinary load, records that load, and compares the warm figures with the claim
-      <a href="/reckon/reckon-reads-answer-in-seconds">reckon-reads-answer-in-seconds</a> shipped. The report
-      is written to the run directory and ends with the change it recommends, which becomes a new section of
-      this plan if it is reckon's to make.</p>
-    <p><strong>Done when</strong> the report gives cold and warm wall and CPU seconds for all three reads,
-      names the functions that dominate the slowest one, and says whether the warm path still answers within
-      the deadline. A positive control is part of the measurement: a call against a fixture project of three
-      plans answers in under a second on the same node.</p>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">Measured: a one-plan read walks the corpus (26,858 scandir calls, still running at 180 s); warm read_plan and roadmap never answer within 30 s; a fenced worker cannot read crew live. Became §9 and §10. Review 108/120. <a href="/reckon/evidence/archive/an-mcp-failure-names-its-cause-landed.html#s4-read-time-profile">full record</a></p>
+</section>
 
     <h2 id="s5">§5 — reckon doctor flags any MCP launch that would sync or resolve from its working directory</h2>
 <section data-reckon="section" data-id="s5" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
     <p><strong>Deliverable.</strong> <code>reckon doctor</code> reads every stdio MCP server registered for
-      Claude Code: the user-scope entries in <code>~/.claude.json</code> and the <code>.mcp.json</code> of each
-      mounted project. It flags a launch that runs <code>uv run</code> without <code>--no-sync</code>, or that
+      Claude Code: the user-scope entries in <code>~/.claude.json</code> and the <code>.mcp.json</code> at the root of each
+      mounted project's checkout, the repository that holds the mount's <code>docs/</code> directory, since a mount
+      names the docs directory and not the checkout. It flags a launch that runs <code>uv run</code> without <code>--no-sync</code>, or that
       names no absolute <code>--project</code> and so resolves its project from whatever directory the session
       started in. A worker's worktree is the case that fails. For each flagged launch it prints the corrected
       command, <code>uv run --no-sync --project &lt;checkout&gt; …</code>. The checkout is written so it
       names no single user's home: through a variable Claude Code expands in MCP configuration, such as
       <code>${HOME}</code> or a project-specific variable with a default. A launch whose arguments carry a
       literal <code>/home/&lt;user&gt;</code> path is flagged too. So is a launch whose <code>--project</code> or
-      <code>--directory</code> names a path that does not exist: §6 found 467 imas-cx launches lost to exactly that. Doctor exits non-zero when any launch is
+      <code>--directory</code> names a path that does not exist, judged after expanding the variables Claude Code
+      expands in MCP configuration, such as <code>${HOME}</code>: §6 found 467 imas-cx launches lost to exactly that. Doctor exits non-zero when any launch is
       flagged. The
       existing environment-drift check stays beside it, because a launch that no longer syncs depends on the
       shared environment being kept current, which is already every agent's job. reckon edits no other
       project's <code>.mcp.json</code>. Those edits belong to their repositories and are recorded as followups
       naming each one.</p>
     <p><strong>Done when</strong> <code>tests/test_doctor_mcp_launch.py</code> gives doctor a fixture user
-      config and two fixture projects. One project launches with <code>uv run imas-codex serve</code>, one with
+      config and three fixture projects. One project launches with <code>uv run imas-codex serve</code>, one with
       <code>uv run --no-sync --project ${HOME}/Code/imas-codex imas-codex serve</code> where the test creates that
       directory under the temporary home, one with <code>uv run --no-sync --project ${HOME}/Code/absent serve</code> naming
       a directory that does not exist, and the user-scope reckon
@@ -279,6 +274,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261008T015927466111-reckon-mcp-read-time-profile" data-who="reckon-build" data-when="2026-10-08T02:51:17.976Z">
     <div class="r-comment-body"><p>s4 measured on 98dci4-clu-2002 (fleet job 1281970, 8 CPUs, load 13.8-59.2) at revision ad0b0b611: read_plan summary and roadmap summary never answer within the 30 s read deadline (all six calls storage-slow, 7.6-19.3 s CPU burned), crew live (watch lock writable) answers at 28.17 s warm and read_plan discovery at 20.65 s against the shipped claim of 0.98 s for that same call; the 3-plan fixture control answers in 2.03 s for 0.03 s CPU, so it fails its &lt;1 s bound, and a missing plan in the same fixture returns not_found in 7 ms, so that ~2 s is a fixed wait in the success path. Report, logs and profile at the report directory; nothing in the repository changed</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-s4-landed" data-who="reckon-build" data-when="2026-10-08T04:30:00Z">
+    <div class="r-comment-body">investigation recorded (gate not-run, review 108/120); section closed</div>
 </div>
 </section>
 </main>
