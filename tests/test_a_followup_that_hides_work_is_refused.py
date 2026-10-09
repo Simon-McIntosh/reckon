@@ -16,7 +16,6 @@ the backlog clears.
 from __future__ import annotations
 
 import html
-import importlib
 import json
 from pathlib import Path
 
@@ -24,6 +23,7 @@ import pytest
 
 import reckon._store as _store_module
 import reckon.mcp as mcp_module
+from tests.mcp_family_reload import reload_mcp_family
 
 PROJECT = "temp-followup-refusal-project"
 HOST_DECLARATIONS = {"s1": "done", "s2": "implementable"}
@@ -91,8 +91,7 @@ def setup(tmp_path, monkeypatch):
 
     serve_mod._MOUNTS_FILE = mounts_file
     serve_mod._STATE_ROOT = state_root
-    importlib.reload(_store_module)
-    importlib.reload(mcp_module)
+    reload_mcp_family()
     return docs_dir
 
 

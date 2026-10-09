@@ -1,16 +1,15 @@
 from __future__ import annotations
 
-import importlib
 import json
 from pathlib import Path
 
 import pytest
 
-import reckon._store as store_module
 import reckon.mcp as mcp_module
 from reckon._plan_html import write_state
 from reckon.mcp_views import compact_size, roadmap_view
 from reckon.roadmap import build_roadmap
+from tests.mcp_family_reload import reload_mcp_family
 
 
 @pytest.fixture()
@@ -30,8 +29,7 @@ def mounted_project(tmp_path, monkeypatch):
     serve_module._MOUNTS_FILE = mounts
     serve_module._STATE_ROOT = state_root
     serve_module._DISC_CACHE.clear()
-    importlib.reload(store_module)
-    importlib.reload(mcp_module)
+    reload_mcp_family()
     return project, docs
 
 

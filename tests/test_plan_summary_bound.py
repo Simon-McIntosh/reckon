@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import importlib
 import json
 from pathlib import Path
 
@@ -10,6 +9,7 @@ import reckon._store as store_module
 import reckon.mcp as mcp_module
 from reckon._plan_html import write_state
 from reckon.doccheck import audit_html, audit_lifecycle
+from tests.mcp_family_reload import reload_mcp_family
 
 
 @pytest.fixture()
@@ -20,8 +20,7 @@ def mounted_project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     mounts_file = tmp_path / "mounts.json"
     mounts_file.write_text(json.dumps({project: str(docs_dir)}), encoding="utf-8")
     monkeypatch.setenv("RECKON_MOUNTS_PATH", str(mounts_file))
-    importlib.reload(store_module)
-    importlib.reload(mcp_module)
+    reload_mcp_family()
     return project, docs_dir
 
 

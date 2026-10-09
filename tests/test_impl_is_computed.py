@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import importlib
 import json
 from pathlib import Path
 
@@ -12,6 +11,7 @@ import reckon._store as store_module
 import reckon.mcp as mcp_module
 import reckon.serve as serve_module
 from reckon._plan_html import parse_meta, parse_plan, read_state
+from tests.mcp_family_reload import reload_mcp_family
 
 REAL_CONFIG_HOME = Path.home() / ".config" / "reckon"
 
@@ -81,8 +81,7 @@ def project(tmp_path, monkeypatch):
     serve_module._MOUNTS_FILE = home / "mounts.json"
     serve_module._STATE_ROOT = home / "state"
     serve_module._DISC_CACHE.clear()
-    importlib.reload(store_module)
-    importlib.reload(mcp_module)
+    reload_mcp_family()
     yield "sample", docs
     assert store_module._config_home() == home
     assert _config_home_entries() == before

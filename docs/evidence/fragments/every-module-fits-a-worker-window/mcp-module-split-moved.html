@@ -18,7 +18,7 @@
 <body>
 <article class="r-note" id="mcp-module-split-moved-landing" data-node="mcp-module-split-moved" data-reckon="landed" data-when="2026-10-08">
   <h2 id="mcp-module-split-moved-title">MCP module split</h2>
-  <p id="mcp-module-split-moved-summary">The MCP server moved its storage deadlines, its edit_plan tool and the helpers they read into three sibling modules as a pure move, with every patch that read a moved name repointed at the module which now defines it.</p>
+  <p id="mcp-module-split-moved-summary">The MCP server moved its storage deadlines, its edit_plan tool and the helpers they read into three sibling modules as a pure move, with every patch that read a moved name repointed at the module which now defines it. The tests that point storage at a temporary project reload the whole tool family with the store through one shared helper, so a tool module never keeps a stale store exception class.</p>
   <table id="mcp-module-split-moved-measures">
     <tbody>
       <tr><th scope="row">Pure move</th><td>134 statements moved; 76 new import lines; 0 problems; EXIT=0</td></tr>
@@ -26,6 +26,7 @@
       <tr><th scope="row">mcp.py after the split</th><td>32,118 estimated tokens</td></tr>
       <tr><th scope="row">Registered tool surface</th><td>names and parameter schemas identical at base and head (audit, crew, edit_plan, read_plan, roadmap)</td></tr>
       <tr><th scope="row">26-file gate</th><td>2 failed / 259 passed; EXIT=1, parity with the base two failures</td></tr>
+      <tr><th scope="row">Whole-family reload proof</th><td>head-fail files plus the 28 reloading modules: 16 failed / 546 passed at -n 12, none absent from the base failure list</td></tr>
       <tr><th scope="row">Module-size guard</th><td>4 passed; EXIT=0</td></tr>
       <tr><th scope="row">Declared size mutation</th><td>1 failed; EXIT=1</td></tr>
     </tbody>

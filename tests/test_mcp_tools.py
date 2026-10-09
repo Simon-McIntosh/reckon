@@ -13,7 +13,6 @@ Test setup:
 
 from __future__ import annotations
 
-import importlib
 import hashlib
 import json
 import subprocess
@@ -24,6 +23,7 @@ import pytest
 import reckon._store as _store_module
 import reckon.mcp as mcp_module
 from reckon._mcp_tools import CrewArgs, ReadPlanArgs
+from tests.mcp_family_reload import reload_mcp_family
 
 
 # ── Fixtures ───────────────────────────────────────────────────────────────
@@ -85,8 +85,7 @@ def setup(tmp_path, monkeypatch):
     serve_mod._MOUNTS_FILE = mounts_file
     serve_mod._STATE_ROOT = state_root
 
-    importlib.reload(_store_module)
-    importlib.reload(mcp_module)
+    reload_mcp_family()
 
     return docs_dir, state_root, project
 
@@ -646,8 +645,7 @@ def test_list_projects_from_mounts(tmp_path, monkeypatch):
     mounts_file = tmp_path / "mounts.json"
     mounts_file.write_text(json.dumps(mounts))
     monkeypatch.setenv("RECKON_MOUNTS_PATH", str(mounts_file))
-    importlib.reload(_store_module)
-    importlib.reload(mcp_module)
+    reload_mcp_family()
     result = mcp_module._list_projects()
     names = {p["name"] for p in result["projects"]}
     assert "proj-a" in names
@@ -656,8 +654,7 @@ def test_list_projects_from_mounts(tmp_path, monkeypatch):
 
 def test_list_projects_no_mounts(tmp_path, monkeypatch):
     monkeypatch.setenv("RECKON_MOUNTS_PATH", str(tmp_path / "nonexistent.json"))
-    importlib.reload(_store_module)
-    importlib.reload(mcp_module)
+    reload_mcp_family()
     result = mcp_module._list_projects()
     assert result["projects"] == []
 
