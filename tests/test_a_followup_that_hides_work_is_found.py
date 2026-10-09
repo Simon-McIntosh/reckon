@@ -16,6 +16,7 @@ import pytest
 from reckon._plan_html import parse_plan, write_state
 from reckon.followup_pointers import classify_followup
 from reckon.roadmap import build_roadmap
+from tests.mcp_family_reload import reload_mcp_family
 
 PROJECT = "temp-followup-pointer-project"
 HOST_DECLARATIONS = {"s1": "done", "s2": "implementable"}
@@ -241,9 +242,7 @@ def test_the_mcp_roadmap_summary_counts_a_followup_that_hides_work(
 ):
     """The path a coordinator reads: the MCP tool's summary carries the finding."""
 
-    import importlib
 
-    import reckon._store as store_module
     import reckon.mcp as mcp_module
 
     project = "temp-followup-mcp-project"
@@ -285,8 +284,7 @@ def test_the_mcp_roadmap_summary_counts_a_followup_that_hides_work(
     serve_module._MOUNTS_FILE = mounts
     serve_module._STATE_ROOT = state_root
     serve_module._DISC_CACHE.clear()
-    importlib.reload(store_module)
-    importlib.reload(mcp_module)
+    reload_mcp_family()
 
     summary = mcp_module._roadmap(project, view="summary")
 

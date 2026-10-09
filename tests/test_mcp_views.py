@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import importlib
 import inspect
 import json
 from copy import deepcopy
@@ -11,7 +10,6 @@ from pathlib import Path
 
 import pytest
 
-import reckon._store as store_module
 import reckon.mcp as mcp_module
 from reckon.doccheck import ACTIVE_PLAN_STALE_AFTER_DAYS
 from reckon.mcp_views import (
@@ -32,6 +30,7 @@ from reckon.project_state import (
     marker_path,
 )
 from reckon.roadmap import build_roadmap
+from tests.mcp_family_reload import reload_mcp_family
 
 _VIEW_PROVENANCE = {
     "checkout": "/tmp/test-checkout",
@@ -109,8 +108,7 @@ def setup(tmp_path, monkeypatch):
 
     serve_module._MOUNTS_FILE = mounts_file
     serve_module._STATE_ROOT = state_root
-    importlib.reload(store_module)
-    importlib.reload(mcp_module)
+    reload_mcp_family()
     return docs_dir, project
 
 

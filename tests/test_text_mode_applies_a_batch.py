@@ -11,7 +11,6 @@ untouched.
 from __future__ import annotations
 
 import asyncio
-import importlib
 import json
 from pathlib import Path
 
@@ -21,6 +20,7 @@ import reckon._store as _store_module
 import reckon.mcp as _mcp_module
 import reckon.serve as _serve_module
 from reckon._plan_html import write_state
+from tests.mcp_family_reload import reload_mcp_family
 
 
 @pytest.fixture()
@@ -40,8 +40,7 @@ def mounted_docs(tmp_path, monkeypatch):
     _serve_module._MOUNTS_FILE = mounts
     _serve_module._STATE_ROOT = state_root
     _serve_module._DISC_CACHE.clear()
-    importlib.reload(_store_module)
-    importlib.reload(_mcp_module)
+    reload_mcp_family()
     return project, plans
 
 

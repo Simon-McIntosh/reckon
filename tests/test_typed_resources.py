@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import importlib
 import http.client
 import json
 import threading
@@ -11,7 +10,6 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-import reckon._store as store_module
 import reckon.mcp as mcp_module
 import reckon.resources as resources_module
 from reckon import _plan_html
@@ -27,6 +25,7 @@ from reckon.resources import (
     resolve_route,
 )
 from reckon.serve import discover_plans
+from tests.mcp_family_reload import reload_mcp_family
 
 
 def _artifact(
@@ -69,8 +68,7 @@ def _mount(
 
     serve_module._MOUNTS_FILE = mounts
     serve_module._STATE_ROOT = state
-    importlib.reload(store_module)
-    importlib.reload(mcp_module)
+    reload_mcp_family()
 
 
 def test_typed_identity_distinguishes_equal_leaf_slugs(tmp_path):

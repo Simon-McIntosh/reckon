@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import importlib
 import json
 from html import escape
 from pathlib import Path
@@ -10,9 +9,9 @@ from pathlib import Path
 import pytest
 
 import reckon._schema as schema_module
-import reckon._store as store_module
 import reckon.mcp as mcp_module
 import reckon.roadmap as roadmap_module
+from tests.mcp_family_reload import reload_mcp_family
 
 
 @pytest.fixture()
@@ -33,8 +32,7 @@ def docs_tree(tmp_path, monkeypatch):
 
     serve_module._MOUNTS_FILE = mounts_file
     serve_module._STATE_ROOT = state_root
-    importlib.reload(store_module)
-    importlib.reload(mcp_module)
+    reload_mcp_family()
     return docs_dir, project
 
 

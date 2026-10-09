@@ -34,6 +34,7 @@ from pathlib import Path
 import pytest
 
 from reckon import _plan_html, _store, mcp, mcp_edit_plan
+from tests.mcp_family_reload import reload_mcp_family
 
 PROJECT = "race-fixture"
 PLAN = "race-target"
@@ -170,8 +171,7 @@ def _forced_interleaving(
         monkeypatch.setattr(mcp_edit_plan, "read_plan", real_read)
         # Leave the process with the store and the tool surface agreeing again,
         # whichever class objects they started with.
-        importlib.reload(mcp_edit_plan)
-        importlib.reload(mcp)
+        reload_mcp_family()
     if not fired:
         raise AssertionError(
             "the edit never read the plan, so no landing write was forced in"

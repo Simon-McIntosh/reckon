@@ -8,15 +8,14 @@ resolve. These tests pin the grammar, the write-boundary rejection of
 malformed refs, and both resolution paths.
 """
 
-import importlib
 import json
 
 import pytest
 
-import reckon._store as _store_module
 import reckon.mcp as mcp_module
 import reckon.serve as serve_module
 from reckon._schema import PlanState, parse_plan_ref, split_refs
+from tests.mcp_family_reload import reload_mcp_family
 
 
 # ── Grammar ──────────────────────────────────────────────────────────────────
@@ -107,11 +106,9 @@ def two_projects(tmp_path, monkeypatch):
     state_root.mkdir()
     monkeypatch.setenv("RECKON_MOUNTS_PATH", str(mounts_file))
     monkeypatch.setenv("RECKON_STATE_ROOT", str(state_root))
-    importlib.reload(_store_module)
-    importlib.reload(mcp_module)
+    reload_mcp_family()
     yield dirs
-    importlib.reload(_store_module)
-    importlib.reload(mcp_module)
+    reload_mcp_family()
 
 
 def _plan_html(project: str, slug: str, status: str, depends_on: str = "") -> str:
