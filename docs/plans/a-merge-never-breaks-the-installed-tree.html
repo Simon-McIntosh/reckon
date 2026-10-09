@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-merge-never-breaks-the-installed-tree">
+  <meta name="plan-title" content="A Merge Never Breaks The Installed Tree">
+  <meta name="plan-summary" content="A conflicting merge in the shared checkout put conflict markers in code every follower imports. Refuse such a merge before it runs.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="1.75">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-sprint" content="S25">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-standalone" content="The git guard is its own surface; no live plan's section waits on it and it waits on none.">
+  <meta name="plan-north-star" content="unattended-execution">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;}">
+  <title>A Merge Never Breaks The Installed Tree | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: one conflicting merge reached every follower on the workstation</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
+    <p>On 2026-10-08 the lead saw this line in a follower pane, between ordinary rows:
+      <code>reckon crew follow deferred its reload: the new image does not import (SyntaxError: invalid syntax); keeping the current
+      image, retrying when the code changes</code>. Every producer and follower runs from the main reckon checkout and re-execs when its
+      code changes. Before it re-execs, it imports the new code and refuses to load code that does not import, a guard added in
+      <code>2bafddb13</code>. The guard worked: no follower or producer died. What it caught was this:</p>
+    <table>
+      <thead><tr><th>Time (CEST)</th><th>Observed</th></tr></thead>
+      <tbody>
+        <tr><td>23:57:29</td><td>A coordinator session, building another plan, ran <code>git merge --no-ff a44b5105f</code> in the shared reckon checkout. Its branch predated the split of <code>reckon/crew/recovery.py</code> merged at 19:04, and the merge stopped: <em>Automatic merge failed; fix conflicts</em>.</td></tr>
+        <tr><td>23:57:29</td><td>Git wrote <code>&lt;&lt;&lt;&lt;&lt;&lt;&lt;</code> markers into <code>reckon/crew/recovery.py</code> in the working tree, which is the code every reckon process imports.</td></tr>
+        <tr><td>23:57</td><td>The producers for reckon, imas-codex, imas-ambix, nova and RabbitPy each logged <em>deferred its reload … SyntaxError</em>, and so did the followers, whose panes showed the line.</td></tr>
+        <tr><td>23:57:46</td><td>The session ran <code>git merge --abort</code>. It confirmed <code>import reckon.crew.recovery</code> worked again, and the tree was clean by 23:58.</td></tr>
+      </tbody>
+    </table>
+    <p>For those 25 seconds, any reckon command that imported <code>recovery.py</code> from the checkout, such as a <code>crew</code> verb, a
+      hook or a restarting MCP server, would have failed with the same <code>SyntaxError</code>. Another session saw it and asked who owned the merge.
+      The cause is the place, not the merge: a conflicting merge is routine in a worktree, but a main checkout here is also the installed
+      program. Nothing stops a coordinator from starting one there. The worker git guard
+      (<code>reckon/hooks/worker_git_guard.py</code>) is already registered as a <code>PreToolUse</code> Bash hook for every session,
+      but it applies only inside a crew run and lets every coordinator command through.</p>
+    <p>The same log shows two other moments when the tree briefly did not import: an <code>ImportError</code> at 06:42 during the CLI split,
+      and a nova <em>unterminated string literal</em>. Neither is a merge conflict, and this plan does not address them; the reload guard
+      covered both.</p>
+
+    <h2 id="s2">§2 — The git guard refuses a merge that would conflict in a main checkout</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> <code>reckon/hooks/worker_git_guard.py</code> gains a second rule that applies to every session,
+      coordinator or worker. A <code>git merge</code> whose target repository is a main checkout, not a linked worktree, is first predicted
+      with <code>git merge-tree --write-tree --no-messages HEAD &lt;commit&gt;</code> in that repository. When the prediction reports
+      conflicts, the merge is refused before it runs. The refusal names the conflicted paths and the remedy: resolve the merge in a scratch
+      worktree, commit it there, and fast-forward the checkout to it. A merge with no predicted conflict runs as before, as does any
+      merge in a linked worktree or one the prediction cannot answer, such as an unknown revision. The guard reuses the module's existing
+      command split and target resolution and its existing <code>PreToolUse</code> registration, so no install step changes. The module
+      docstring states both rules. It adds no public definition and no refusal family beyond this one message.</p>
+    <p><strong>Done when</strong> <code>tests/test_merge_guard_refuses_a_conflicting_merge.py</code> builds a temporary repository with a
+      main checkout and a branch that conflicts with it on one file, and feeds the hook a coordinator payload, with no
+      <code>RECKON_RUN_ID</code>, for <code>git merge --no-ff &lt;branch&gt;</code> run in the main checkout. The hook denies it, naming the
+      conflicted file. Afterwards the checkout's file still matches <code>HEAD</code> and <code>MERGE_HEAD</code> does not exist. The same
+      payload for a branch that merges cleanly is allowed, as is the conflicting merge issued from a linked worktree. The negative control is
+      executed and logged: with the merge rule removed, the conflicting payload is allowed and the test fails. The tests importing
+      <code>reckon.hooks.worker_git_guard</code> pass. The write paths are <code>reckon/hooks/worker_git_guard.py</code> and
+      <code>tests/test_merge_guard_refuses_a_conflicting_merge.py</code>.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+    </section>
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-amnbit-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-10-09" data-recommends-skill="/reckon-build a-merge-never-breaks-the-installed-tree §2">
+    <h3 class="r-fu-title">Refuse a conflicting merge in a main checkout</h3>
+    <div class="r-fu-body"><p>One section: §2 extends the existing git guard.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-merge-never-breaks-the-installed-tree §2</pre>
+</article>
+    </section>
+  <section data-reckon="comments" id="comments" class="r-comments">
+  </section>
+</main>
+</body>
+</html>
