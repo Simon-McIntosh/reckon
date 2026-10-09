@@ -2825,6 +2825,7 @@ def group_pace(
         runway = _group_runway(group, members, clocks, records, effective, moment=moment)
         allowance = _group_allowance(group, reading, clocks, effective, moment=moment)
         lift_id = effective_block.get("lift_id")
+        session_lift = None
         if lift_id:
             # ``lift_id`` is set only by the resolver, and only when a lift
             # governs. The block's ``lift`` key is not that signal: resolved
@@ -2839,6 +2840,16 @@ def group_pace(
                 "lift": effective_block.get("lift"),
                 "lift_hold": effective_block.get("pace_hold"),
             }
+        else:
+            session_lift = _other_session_lift(
+                config,
+                group=group,
+                session=session,
+                readings=_lift_history(
+                    records, members=set(members), reading=reading, moment=moment
+                ),
+                moment=moment,
+            )
         report.append(
             {
                 "group": group,
@@ -2855,7 +2866,42 @@ def group_pace(
                 ),
             }
         )
+        if session_lift is not None:
+            report[-1]["session_lift"] = session_lift
     return report
+
+
+def _other_session_lift(
+    config: Mapping[str, Any],
+    *,
+    group: str,
+    session: str | None,
+    readings: Sequence[Mapping[str, Any]],
+    moment: datetime,
+) -> Mapping[str, Any] | None:
+    """The in-force session lift on ``group`` that another session owns.
+
+    A session lift decides who may spend past pace, not whose budget is spent,
+    so a session that is not the one named still reports it: the entry names the
+    lift and its session without applying it, so a lane emptying faster than
+    pace is never a surprise. The lift is reported only while it is in force.
+    """
+    from reckon.crew import budget_lift
+
+    prefix = budget_lift.SESSION_PREFIX
+    for lift in budget_lift.list_lifts(group=group):
+        scope = str(lift.get("scope") or "")
+        if not scope.startswith(prefix):
+            continue
+        owner = scope[len(prefix):]
+        if not owner or owner == str(session or ""):
+            continue
+        block = budget_lift.effective_budget(
+            config, group=group, readings=readings, now=moment, session=owner
+        )
+        if block.get("lift_id") == lift.get("id"):
+            return block.get("lift")
+    return None
 
 
 def _pace_releases_at(
@@ -3154,6 +3200,7 @@ def pace_row(
     root: str | Path | None = None,
     hold: Mapping[str, Any] | None = None,
     now: datetime | None = None,
+    session: str | None = None,
 ) -> dict[str, Any]:
     """Record one dispatch's pace, from the wallet that paced it.
 
@@ -3193,6 +3240,16 @@ def pace_row(
         "node": node,
         "score": float(score),
         "recorded_at": moment.isoformat(),
+        # The dispatching session rides the row so a session-scoped lift governs
+        # this dispatch and no other: the pace is resolved for the session the
+        # dispatch named, and the reserve refusal reads that same session off the
+        # row rather than resolving it a second time and risking a disagreement.
+        "session": session,
+        # A row made under a lift carries the lift id beside the multiple in
+        # force: the replay reads the multiple each row recorded, and the id says
+        # whether a lift set it. None is a group under no lift, and it rides the
+        # row for every group so the absence is stated rather than inferred.
+        "lift_id": None,
         "policy": {
             "drain_lead_hours": float(policy_block.drain_lead_hours),
             "pace_multiple": float(policy_block.pace_multiple),
@@ -3244,6 +3301,7 @@ def pace_row(
             windows=readings,
             ready=[{"name": node, "group": group, "score": float(score)}],
             now=moment,
+            session=session,
         )
         if item["group"] == group
     )
@@ -3284,6 +3342,17 @@ def pace_row(
             "reason": None,
         }
     )
+    # The lift a governing block names, recorded beside the multiple in force so
+    # a replay reads the multiple the dispatch was actually judged at. A lift
+    # raises the multiple, so the row's stored policy is the lifted one when a
+    # lift governs and the configured one otherwise; the id tells the two apart.
+    allowance = entry["allowance"]
+    lift_block = allowance.get("lift") if isinstance(allowance, Mapping) else None
+    if isinstance(lift_block, Mapping):
+        row["lift_id"] = lift_block.get("id")
+        multiple = allowance.get("pace_multiple")
+        if isinstance(multiple, (int, float)) and not isinstance(multiple, bool):
+            row["policy"]["pace_multiple"] = float(multiple)
     return row
 
 

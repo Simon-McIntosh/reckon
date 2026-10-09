@@ -25,9 +25,9 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s6-the-probe-reader-and-the-undeclared-dialect&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="e302ad39,04a479ef,4ef8356f,e219aa99,b2594d65,bacd8e17,6a915fd7,4d043fd0,fd4a158f,95ba8ea7,cb69a87f,768a9285,e5cf008e,6001f577,e6dd0dc4,c011b6f9,82095575,87c98418,8e70585c,b7ba4786,3f0e9621,798f87f8,e37ac897,d34eaf27">
-<meta name="plan-impl" content="0.94">
-<meta name="plan-version" content="188">
-<meta name="plan-modified" content="2026-10-08">
+<meta name="plan-impl" content="0.97">
+<meta name="plan-version" content="195">
+<meta name="plan-modified" content="2026-10-09">
 </head>
 <body>
   <main class="plan-doc">
@@ -2076,10 +2076,11 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     <div class="r-fu-body"><p>§10's three decisions are locked with the lead. The next step is to build the lift record, read-time expiry with reset detection, the reserve release, and the declared bookend reserve.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-window-paces-the-lane §10</pre>
     </article>
-<article class="r-fu" data-id="f-20261008T0930-bookend-default" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-08 09:30" data-recommends-skill="/reckon-build a-window-paces-the-lane §11" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-20261008T0930-bookend-default" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-08 09:30" data-recommends-skill="/reckon-build a-window-paces-the-lane §11" data-resolved-at="2026-10-08T23:59:37+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Build the bookend reserve default for review-excluded groups</h4>
     <div class="r-fu-body"><p>§11 was split out of §10 at the content review's request. It declares <code>bookend_reserve_pct</code> and withholds no bookend reserve on a group whose every member excludes reviews.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-window-paces-the-lane §11</pre>
+    <p class="r-fu-outcome">§11 landed: a declared budget group whose every member review_excluded_backends lists withholds no bookend reserve, and bookend_reserve_pct is a declared BudgetConfig slot (merged ae495deab, reviewed head 410cec8d, review 116/120, verified at main 215 passed). Done — no followup.</p>
     </article>
 </section>
 
@@ -2451,7 +2452,25 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     <div class="r-comment-body"><p>the review of r-20261008T150419991564-the-pace-reads-the-lift is re-stored at its canonical path and its .at-4c7c29c9f twin, scoring goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 20, reuse 20 (total 118) over reviewed base d10a6771b and head 4c7c29c9f, with added_failure_count 0 and no added ids derived from the reviewed run's own gate logs; the gained commits close the prior re-review's budget.lift key-collision follow-on and its unguarded-fixture follow-on.</p></div>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261008T175656809356-review-of-the-follower-names-a-lift" data-who="reckon-build" data-when="2026-10-08T18:02:00.045Z">
-    <div class="r-comment-body"><p>Independent review of r-20261008T164819566217-the-follower-names-a-lift (commit a44b5105 over base 587168a) stored as a parsed record: all six dimensions scored 0..20 (goal_fidelity 17, evidence 17, scope_discipline 20, durability 18, fit 19, reuse 15; total 106), three follow-on findings, added_failure_count 0 with empty added_failure_ids derived from the reviewed run&#x27;s own gate_base.log and gate_head.log.</p></div>
+    <div class="r-comment-body"><p>Independent review of r-20261008T164819566217-the-follower-names-a-lift (commit a44b5105 over base 587168a) stored as a parsed record: all six dimensions scored 0..20 (goal_fidelity 17, evidence 17, scope_discipline 20, durability 18, fit 19, reuse 15; total 106), three follow-on findings, added_failure_count 0 with empty added_failure_ids derived from the reviewed run's own gate_base.log and gate_head.log.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-20261009T0140-s10-follower" data-who="reckon-build" data-when="2026-10-09T01:40:00Z">
+    <div class="r-comment-body"><p>Node 9 landed: the follower names a lift's start and end (merged <code>562fc8963</code>, reviewed head <code>f3954f49</code>, review 105/120). It was re-applied by a corrective node after a peer's split of <code>recovery.py</code> blocked the first merge. <a href="/reckon/evidence/archive/a-window-paces-the-lane-landed.html#s10-follower-names-the-lift">evidence</a></p><p><strong>Re-plan: §10 is ten nodes.</strong> Two peer runs from session <code>s25-picker</code> are complete but unpromoted and still claim <code>reckon/crew/dispatch.py</code> (<code>claim-grace-has-one-name</code>) and <code>reckon/crew/picker/snapshot.py</code> (<code>hold-names-the-serving-lane</code>). So the surfaces work is cut in two. <code>a-lift-reaches-every-budget-row</code> threads the session and clocks through every reader outside those two files; it is delivered and in review. A last node then wires the three <code>dispatch.py</code> call sites and the picker's offered rows, and takes the follower review's follow-ons. <code>impl</code> is 33 of 35, 0.94.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261008T220016793532-the-follower-row-names-the-lift" data-who="reckon-build" data-when="2026-10-08T23:20:01.266Z">
+    <div class="r-comment-body"><p>The producer tick folds the workstation lift document into each project's watch stream and the follower renders each row's clause, so a granted row names its group, form, multiple and lift id and an ended row names its cause; the four end conditions are computed once in the public `budget_lift.end_cause` that `effective_budget` also reads through, so the resolver and the stream cannot disagree.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261008T232137076130-review-of-the-follower-row-names-the-lift" data-who="reckon-build" data-when="2026-10-08T23:37:43.103Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261008T220016793532-the-follower-row-names-the-lift (base 75514321b6e3685fa2927a2936d74dd3bb28ef21, head f3954f493b1912e5fc7607e94817ce07c2232174): stored a parsed six-dimension record scoring goal_fidelity 18, evidence 16, scope_discipline 19, durability 17, fit 19, reuse 16, total 105/120, with added_failure_count 0 and added_failure_ids [] derived from the reviewed run's own base-suite.log and head-suite.log; four follow-on findings, none blocking.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-20261009T0200-s10-budget-rows" data-who="reckon-build" data-when="2026-10-09T02:00:00Z">
+    <div class="r-comment-body"><p>Node 10 of 11 landed: the dispatching session reaches every budget reader outside <code>dispatch.py</code> and the picker snapshot (merged <code>577b4d6ba</code>, reviewed head <code>1ed17e13</code>, review 114/120). It needed one scope widening onto the pace-row schema files. <code>impl</code> is 34 of 35, 0.97. The last node wires the three <code>dispatch.py</code> call sites and the picker's offered rows, and answers the follower review's three follow-ons. It waits on the <code>s25-picker</code> runs <code>claim-grace-has-one-name</code> (holding <code>dispatch.py</code>) and <code>hold-names-the-serving-lane</code> (holding <code>picker/snapshot.py</code>), both complete and unpromoted. <a href="/reckon/evidence/archive/a-window-paces-the-lane-landed.html#s10-lift-reaches-every-budget-row">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261008T220249883848-a-lift-reaches-every-budget-row" data-who="reckon-build" data-when="2026-10-08T23:37:43.255Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/a-window-paces-the-lane/a-lift-reaches-every-budget-row.html</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261008T233751524625-review-of-a-lift-reaches-every-budget-row" data-who="reckon-build" data-when="2026-10-08T23:57:58.012Z">
+    <div class="r-comment-body"><p>review of r-20261008T220249883848-a-lift-reaches-every-budget-row stored: total 114/120 (goal_fidelity 19, evidence 18, scope_discipline 20, durability 19, fit 19, reuse 19), reviewed a3cf73e67..1ed17e138, added_failure_count 0</p></div>
 </div>
 </section>
 </main>

@@ -317,12 +317,14 @@ def _refuse_against_the_bookend_reserve(
     if pace_record.get("group") is None:
         return
     clocks = pace_record.get("clocks") or {}
+    session = pace_record.get("session")
     verdict = reserve_admit_windows(
         budget_group.effective_block(
             config,
             str(pace_record.get("group")),
             readings=[clocks] if clocks else None,
             now=parse_utc(pace_record.get("recorded_at")),
+            session=None if session is None else str(session),
         ),
         role=role,
         clocks=clocks,

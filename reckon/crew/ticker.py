@@ -267,7 +267,11 @@ NEEDS_ACTION = frozenset(
 # only a state a reader must act on has anything to explain. The recovery module
 # imports this renderer, so the display contract cannot import its own set
 # without a cycle; this is the one documented display copy, and the property
-# test covers the classifier's full vocabulary.
+# test covers the classifier's full vocabulary. The three lift states are the
+# one non-run member: a lift row carries the group, its form and multiple and
+# what ended it in its clause, and no classifier emits them, so they are added
+# here rather than reached for from the lift module, which would close the cycle
+# this set exists to avoid.
 CLAUSE_STATES = NEEDS_ACTION | frozenset(
     {
         "complete",
@@ -275,6 +279,9 @@ CLAUSE_STATES = NEEDS_ACTION | frozenset(
         "ended-without-manifest",
         "held",
         "interrupted",
+        "lift-ended",
+        "lift-granted",
+        "lift-in-force",
         "needs-help",
         "promotable",
         "ready",
