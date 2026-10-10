@@ -25,7 +25,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="14">
+<meta name="plan-version" content="15">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -175,7 +175,10 @@
     <div class="r-comment-body"><p>§4 landed: git HEAD is resolved once per commit, including in linked worktrees (merged <code>5c09a1ef9</code>); review 115/120 after a repair round. The warm audit's remaining git processes are in <code>recovery_review_subject.py</code>, recorded in the evidence. <a href="/reckon/evidence/archive/a-read-answers-inside-its-deadline-landed.html#s4">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261010T212226904790-git-head-resolved-once" data-who="reckon-build" data-when="2026-10-10T21:54:50.243Z">
-    <div class="r-comment-body"><p>reckon:a-read-answers-inside-its-deadline §4 — _git_head memoises the resolved sha on the identity (mtime, inode, size) of the repository&#x27;s HEAD file and the ref file it names, resolved through a linked worktree&#x27;s commondir, so a warm creation/last-modified lookup for an unchanged checkout starts no git process and a new commit (including one in a linked worktree) re-resolves the new date; tests/test_git_head_is_resolved_once.py 2 passed EXIT=0, negative controls 1 failed EXIT=1 each.</p></div>
+    <div class="r-comment-body"><p>reckon:a-read-answers-inside-its-deadline §4 — _git_head memoises the resolved sha on the identity (mtime, inode, size) of the repository's HEAD file and the ref file it names, resolved through a linked worktree's commondir, so a warm creation/last-modified lookup for an unchanged checkout starts no git process and a new commit (including one in a linked worktree) re-resolves the new date; tests/test_git_head_is_resolved_once.py 2 passed EXIT=0, negative controls 1 failed EXIT=1 each.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261010T221423923626-review-of-git-head-resolved-once" data-who="reckon-build" data-when="2026-10-10T22:25:34.889Z">
+    <div class="r-comment-body"><p>reckon:a-read-answers-inside-its-deadline §4 — independent review of r-20261010T212226904790-git-head-resolved-once for the commit it gained since review r-20261010T213605774740 (reviewed_base_sha 4685373af, reviewed_head_sha 323a2a62f): total 115/120 (goal_fidelity 19, evidence 18, scope_discipline 20, durability 19, fit 20, reuse 19). The gained commit fixes the prior review&#x27;s sole blocking finding: _head_identity now resolves the branch ref through _common_git_directory(git_dir), so a commit in a linked worktree changes the memo identity and _git_head re-resolves; I reproduced the repair with the run&#x27;s own four-file head arm (20 passed EXIT=0 at 323a2a62f) and my own mutation arm reverting the fix (1 failed EXIT=1, the worktree test reddens, the main-checkout test still passes). Two non-blocking follow-ons (unbounded _GIT_HEAD_MEMO; no baseline_suite/after_suite recorded so the added-failure count is unmeasured). No blocking findings.</p></div>
 </div>
 </section>
 </main>

@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed run r-20261010T212226904790-git-head-resolved-once recorded no baseline_suite or after_suite gate logs \u2014 neither field is present on its manifest.md, worker.json or supervisor.json, and classification.json only echoes the prompt text. With no baseline and after arm to subtract, no added-failure count could be derived for the gained commit; the node ran a focused four-file head arm instead (20 passed EXIT=0) and its own mutation arm (1 failed EXIT=1).",
+  "backend": "local",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/serve.py:1278 (_common_git_directory, definition added by the gained commit)",
+    "reckon/serve.py:1299 (_head_identity, changed by the gained commit to resolve the ref through _common_git_directory); reached from _git_head at reckon/serve.py:1337"
+  ],
+  "completed_at": "2026-10-10T22:25:34.889Z",
+  "dispatched_at": "2026-10-10T22:14:46Z",
+  "findings": [
+    {
+      "file": "reckon/serve.py",
+      "line": "1243",
+      "severity": "follow-on",
+      "text": "follow-on (carry-forward): _GIT_HEAD_MEMO is keyed on str(repo_dir) and never evicted, so a long-lived server accumulates one entry per checkout path. Benign at current scale but unbounded; flagged by the previous review as a follow-on and not addressed by the gained commit, which is within the node's declared scope."
+    },
+    {
+      "file": "run-record",
+      "line": "tests",
+      "severity": "follow-on",
+      "text": "follow-on (record-fidelity): the reviewed run records no baseline_suite or after_suite gate logs, so the added-failure count for its commits is unmeasured rather than zero; the prior review raised the same gap. The gained commit did repair the earlier placeholder in the manifest's tests field (it now carries the literal four-file command and 20 passed EXIT=0)."
+    }
+  ],
+  "head_log_revision": "323a2a62f3ed7d2b8a47338ee898ee5d8ca681f7",
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "call_sites": "verified 2 references introduced or changed by the gained commit \u2014 the new definition _common_git_directory at reckon/serve.py:1278 and its single call site inside _head_identity at :1322, which _git_head reaches at :1337.",
+    "diff": "read commit 323a2a62f against the previously reviewed head 4685373af: three files, +78/-4 \u2014 31 lines changed in reckon/serve.py (the new _common_git_directory plus its use in _head_identity), 49 lines added to tests/test_git_head_is_resolved_once.py (a _rev oracle helper and test_a_linked_worktree_resolves_a_new_commit), and one sentence updated in the evidence fragment; nothing outside the declared scope.",
+    "done_when": "the done-when names tests/test_git_head_is_resolved_once.py and the three-times-each warm assertion with a declared, executed negative control, and the gained commit must close the prior review's blocking regression. I reconstructed the revision 323a2a62f from the shared object store (sha256 of reckon/serve.py and the test module match the commit blobs) and ran the reviewed run's own four-file head arm: 20 passed EXIT=0. The worktree commit is now re-resolved, so the blocking staleness is repaired.",
+    "goal": "the gained commit's goal is that a new commit in a linked worktree re-resolves the HEAD date instead of returning the memo's stale sha. _head_identity now reads the named ref under _common_git_directory(git_dir) (reckon/serve.py:1322) \u2014 the main checkout's git directory named by the worktree's commondir \u2014 so the ref component of the identity is no longer None and changes on a worktree commit; verified correct.",
+    "manifest": "read; status complete, commits 4685373af then 323a2a62f, tests field now the literal four-file command with 20 passed EXIT=0 (the placeholder defect the prior review raised is repaired), negative_control_log set to worktree-negative-control.log; baseline_suite/after_suite are absent so the added-failure count is unmeasured.",
+    "regression_fixed": "the prior review's sole blocking finding (worktree memo staleness) is repaired by this commit and I reproduced the repair: with the fix present the run's own test_a_linked_worktree_resolves_a_new_commit passes, and with _common_git_directory mutated back to returning the private directory it fails with `assert 1 > 1` at tests/test_git_head_is_resolved_once.py:169 (1 failed, EXIT=1), while the main-checkout test still passes.",
+    "write_paths": "read the reviewed manifest's declared paths (reckon/serve.py, tests/test_git_head_is_resolved_once.py, the evidence fragment, the figures dir); every path in git diff 4685373af..323a2a62f is inside them and the figures directory remains unpopulated."
+  },
+  "justifications": {
+    "durability": "the new worktree test reddens under a mutation of the code changed by this commit (reproduced: fix reverted, 1 failed EXIT=1 at the stale-head assertion), so the guard now fires for the mode it names; the only unguarded surface left, packed-refs identity when a loose ref is absent, is a pre-existing property of the memo design rather than this commit, and the memo still grows unbounded.",
+    "evidence": "the gained commit's own test reproduced independently at 323a2a62f: four-file head arm 20 passed EXIT=0, and the fix-reverted arm 1 failed EXIT=1 in the worktree test; module.__file__ and resolved cwd recorded in each log. The manifest's tests field now carries the literal command. The run records no baseline_suite/after_suite, so the added-failure count is unmeasured, which is a record gap rather than a defect in the commit.",
+    "fit": "the gained commit follows the module's own idiom: _common_git_directory mirrors the path-prefix shape of _git_directory (read a small pointer file, resolve a possibly-relative target, fall back to the given directory), is mechanism-named, and its docstring states why the common directory must be followed; the _head_identity and _git_head docstrings were extended to say a worktree ref resolves through the common directory.",
+    "goal_fidelity": "reckon/serve.py:1322 now reads the ref under _common_git_directory(git_dir), which follows the worktree's commondir (the main checkout's git directory) so the ref component of _head_identity is the branch ref that actually changes on a commit; a single commondir hop matches how git resolves a linked worktree's shared refs, and for a detached worktree HEAD itself carries the new sha so the identity still changes; the main-checkout path is unchanged because a missing commondir returns the given directory. Verified by the run's own test and by my fix-reverted mutation arm.",
+    "reuse": "the commit reuses _file_identity and the _git_directory path shape rather than adding an abstraction, adds exactly one small helper, and leaves the memoisation and the two date maps untouched as section 4 required; no duplicated reader is introduced.",
+    "scope_discipline": "every path the gained commit touches \u2014 reckon/serve.py, tests/test_git_head_is_resolved_once.py, docs/evidence/fragments/a-read-answers-inside-its-deadline/git-head-resolved-once.html \u2014 is inside the reviewed manifest's declared write paths, and the diff 4685373af..323a2a62f contains no other file."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the gained commit's goal is that a new commit in a linked worktree re-resolves the HEAD date instead of returning the memo's stale sha. _head_identity now reads the named ref under _common_git_directory(git_dir) (reckon/serve.py:1322) \u2014 the main checkout's git directory named by the worktree's commondir \u2014 so the ref component of the identity is no longer None and changes on a worktree commit; verified correct.\nVERDICT done_when: the done-when names tests/test_git_head_is_resolved_once.py and the three-times-each warm assertion with a declared, executed negative control, and the gained commit must close the prior review's blocking regression. I reconstructed 323a2a62f from the shared object store (sha256 of reckon/serve.py and the test module match the commit blobs) and ran the run's own four-file head arm: 20 passed EXIT=0. The worktree commit is now re-resolved.\nVERDICT write_paths: read the reviewed manifest's declared paths; every path in git diff 4685373af..323a2a62f is inside them and the figures dir is unpopulated.\nVERDICT manifest: read; status complete, commits 4685373af then 323a2a62f, tests field now the literal four-file command with 20 passed EXIT=0 (the placeholder defect the prior review raised is repaired); baseline_suite/after_suite absent so the added-failure count is unmeasured.\nVERDICT diff: read commit 323a2a62f against 4685373af: three files, +78/-4 \u2014 31 lines changed in reckon/serve.py, 49 lines added to the test module, one sentence in the evidence fragment; nothing outside scope.\nVERDICT regression_fixed: the prior review's sole blocking finding (worktree memo staleness) is repaired; reproduced: fix present -> test_a_linked_worktree_resolves_a_new_commit passes; _common_git_directory reverted -> 1 failed EXIT=1 with `assert 1 > 1` at tests/test_git_head_is_resolved_once.py:169, main-checkout test still passes.\nCALL_SITES: reckon/serve.py:1278 (_common_git_directory), reckon/serve.py:1299 (_head_identity, reached from _git_head at :1337)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/serve.py:1322 now reads the ref under _common_git_directory(git_dir), which follows the worktree's commondir so the ref component of _head_identity is the branch ref that changes on a commit; a single commondir hop matches git's own resolution, a detached worktree's HEAD carries the new sha so its identity still changes, and a missing commondir returns the given directory so the main-checkout path is unchanged; verified by the run's own test and my fix-reverted mutation arm.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gained commit's own test reproduced independently at 323a2a62f: four-file head arm 20 passed EXIT=0, and the fix-reverted arm 1 failed EXIT=1 in the worktree test; module.__file__ and cwd recorded in each log. The manifest's tests field now carries the literal command. The run records no baseline_suite/after_suite, so the added-failure count is unmeasured, a record gap rather than a defect in the commit.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path the gained commit touches is inside the reviewed manifest's declared write paths, and 4685373af..323a2a62f contains no other file.\nSCORE durability: 19\nJUSTIFICATION durability: the new worktree test reddens under a mutation of the code changed by this commit (reproduced: fix reverted, 1 failed EXIT=1 at the stale-head assertion), so the guard now fires for the mode it names; the remaining unguarded surface, packed-refs identity when a loose ref is absent, is pre-existing, and the memo still grows unbounded.\nSCORE fit: 20\nJUSTIFICATION fit: _common_git_directory mirrors the path-prefix shape of _git_directory, is mechanism-named, and its docstring states why the common directory must be followed; the _head_identity and _git_head docstrings were extended accordingly.\nSCORE reuse: 19\nJUSTIFICATION reuse: the commit reuses _file_identity and the _git_directory path shape rather than adding an abstraction, adds exactly one small helper, and leaves the memoisation and the two date maps untouched as section 4 required; no duplicated reader is introduced.\nFINDING reckon/serve.py:1243 follow-on (carry-forward): _GIT_HEAD_MEMO is keyed on str(repo_dir) and never evicted, so a long-lived server accumulates one entry per checkout path; flagged by the previous review and not addressed by the gained commit, which is within scope.\nFINDING run-record:tests follow-on (record-fidelity): the reviewed run records no baseline_suite or after_suite gate logs, so the added-failure count for its commits is unmeasured rather than zero; the prior review raised the same gap.\nreviewed_base_sha: 4685373afcb6de84fb45421a4fda5763001d5e7d\nreviewed_head_sha: 323a2a62f3ed7d2b8a47338ee898ee5d8ca681f7\n",
+  "review_run_id": "r-20261010T221423923626-review-of-git-head-resolved-once",
+  "reviewed_base_sha": "4685373afcb6de84fb45421a4fda5763001d5e7d",
+  "reviewed_head_sha": "323a2a62f3ed7d2b8a47338ee898ee5d8ca681f7",
+  "reviewed_run_id": "r-20261010T212226904790-git-head-resolved-once",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T22:23:46.863423+00:00",
+  "total": 115
+}
