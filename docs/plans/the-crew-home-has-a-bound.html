@@ -25,7 +25,7 @@
   <title>The Crew Home Has A Bound | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="5">
+<meta name="plan-version" content="6">
 <meta name="plan-modified" content="2026-10-10">
 </head>
 <body>
@@ -139,6 +139,11 @@
     </article>
 </section>
   
+<section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s4" data-id="c-defer-s4-1010" data-who="reckon-build coordinator (health-review-1010)" data-when="2026-10-10T20:40:00Z">
+    <div class="r-comment-body"><p>Before §4 is dispatched, apply the two findings deferred from review <code>r-20261010T201537185527-plan-review-of-the-crew-home-has-a-bound</code>: <code>reasoning-1</code> (a new flight key needs a <code>gc</code> namespace in <code>reckon/schema/flight.yaml</code>, regeneration of <code>reckon/_flight_schema.py</code> and <code>docs/_shared/flight.schema.json</code> by <code>scripts/regen_flight_schema.py</code>, and those paths in scope, because <code>tests/test_flight.py</code> asserts the regeneration is byte-identical) and <code>reasoning-2</code> (<code>line_boundary</code> reads backward from the end of a whole file and takes no offset, so the head cut needs its own forward snap, as <code>trim_service_log</code> does at <code>fleet_supervisor.py:566-570</code>).</p></div>
+</div>
+</section>
 </main>
 </body>
 </html>
