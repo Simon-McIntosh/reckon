@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;done&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;done&quot;,&quot;s27&quot;:&quot;done&quot;,&quot;s28&quot;:&quot;done&quot;,&quot;s29&quot;:&quot;implementable&quot;,&quot;s30&quot;:&quot;done&quot;,&quot;s31&quot;:&quot;done&quot;,&quot;s32&quot;:&quot;done&quot;}">
 <meta name="plan-impl" content="0.96875">
-<meta name="plan-version" content="314">
+<meta name="plan-version" content="315">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -1005,6 +1005,9 @@
 </div>
 <div class="r-comment" data-section="s32" data-id="c-run-r-20261010T225646738553-hold-records-its-state" data-who="reckon-build" data-when="2026-10-10T23:15:52.818Z">
     <div class="r-comment-body"><p>§32 — a pick's Selection now carries rendered_state, questions and template_digest, and record_picker_hold stores them in the hold row (inline ≤8 KiB, else beside the holds file behind payload_ref) tagged with a request digest; replay_hold rebuilds the state and questions byte-identically and refuses a digest mismatch. tests/test_hold_records_its_state.py fails on main (the row carries no state) and the stored size of one recorded hold is 8009 bytes of payload (8411 bytes as a row); the picker+dispatch gate ran 131 passed, EXIT=0 at 25195982b; fragment docs/evidence/fragments/one-typesafe-model-picker/hold-records-its-state.html.</p></div>
+</div>
+<div class="r-comment" data-section="s32" data-id="c-run-r-20261010T231642832717-review-of-hold-records-its-state" data-who="reckon-build" data-when="2026-10-10T23:24:30.806Z">
+    <div class="r-comment-body"><p>stored the parsed review of r-20261010T225646738553-hold-records-its-state (goal_fidelity 19, evidence 15, scope_discipline 20, durability 18, fit 19, reuse 20; total 111); two follow-on findings: the evidence fragment and manifest name revision 25195982b (the base) for the 6-passed gate the new module cannot run at, and the reviewed manifest records no baseline_suite/after_suite so the added-failure count is unmeasured.</p></div>
 </div>
 </section>
 <section data-reckon="followups" id="followups" class="r-followups">

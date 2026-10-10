@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "backend": "local",
+  "base_log_revision": null,
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/dispatch.py:687"
+  ],
+  "completed_at": "2026-10-10T23:24:30.806Z",
+  "dispatched_at": "2026-10-10T23:17:07Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/one-typesafe-model-picker/hold-records-its-state.html",
+      "line": "24",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment records the 6-passed gate \"at revision 25195982b\", the base, but tests/test_hold_records_its_state.py is added by this change and does not exist at 25195982b, so the named revision cannot be the one the gate ran at; gate-new-tests.log's own header names d20cb469e and the tree, so the fragment's revision is wrong as literally read."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261010T225646738553-hold-records-its-state/manifest.md",
+      "line": "22",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest records no baseline_suite and no after_suite, so a reader cannot derive the added-failure count from its own gate logs; it supplies a negative-control base arm instead, which reddens the new module but is not a suite delta."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read 25195982b..b64e426b2 commit by commit; three commits, five files, +389/-0, being the Selection fields, the digest/payload/replay helpers, six new tests and the fragment.",
+    "done_when": "the done_when asks a test that makes the picker hold, shows a replay rebuilds byte-identical state and questions compared by digest, fails on main where the row carries no state, and names the stored size; tests/test_hold_records_its_state.py:172 covers the replay, the negative control reddens five ids, and the manifest names 8009 bytes, but the reviewed manifest records no baseline_suite/after_suite so its suite delta is unmeasured.",
+    "goal": "the node goal is to make a hold record the exact state and questions Jev answered so a replay rebuilds them byte-identically; reckon/crew/picker/__init__.py:460 attaches rendered_state, questions and template_digest to the Selection and reckon/crew/picker/outcomes.py:82 replay_hold rebuilds them from the row, so the change does exactly the goal.",
+    "manifest": "read; status complete, the tests line claims 131 passed EXIT=0 and the new module 6 passed EXIT=0, but it and the fragment name revision 25195982b (the base) for a gate the new module cannot run at, and baseline_suite/after_suite are absent so added_failure_count is unmeasured.",
+    "write_paths": "the manifest declares outcomes.py, __init__.py, dispatch.py, types.py, the new test module, the evidence fragment and a figures directory; git diff --stat at b64e426b2 touches only five files inside that fence, and reckon/crew/dispatch.py is unchanged because Selection.as_dict() already carries the new keys."
+  },
+  "justifications": {
+    "durability": "tests/test_hold_records_its_state.py:183 asserts the replayed state equals seen[\"state\"], what the stub client captured rather than the value the test passed in, and the negative control at logs/negative-control.log reddens five ids when the state recording is removed.",
+    "evidence": "tests/test_hold_records_its_state.py:183 compares the replayed state against what the stub client saw and the manifest names 8009 bytes, but the reviewed manifest records no baseline_suite/after_suite so added_failure_count is unmeasured and the fragment misnames the gate revision.",
+    "fit": "the three commits carry conventional subjects with bodies and no attribution, and reckon/crew/picker/outcomes.py:52 comments the mechanism rather than the change history and names no plan or ticket label.",
+    "goal_fidelity": "reckon/crew/picker/__init__.py:460 stores the rendered state, questions and template digest on the Selection and reckon/crew/picker/outcomes.py:82 rebuilds them, which is what the goal asks.",
+    "reuse": "hold_request_digest, replay_hold and _template_digest at reckon/crew/picker/outcomes.py:69 have no pre-existing counterpart in reckon/crew (searched picker, outcomes and worker_digest) and extend the existing hold writer rather than forking a capability.",
+    "scope_discipline": "git diff --stat 25195982b..b64e426b2 touches only the five files under the declared fence and mutates no shared plan, index or sprint state."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make a hold record the exact state and questions Jev answered so a replay rebuilds them byte-identically; reckon/crew/picker/__init__.py:460 attaches rendered_state, questions and template_digest to the Selection and reckon/crew/picker/outcomes.py:82 replay_hold rebuilds them from the row, so the change does exactly the goal.\nVERDICT done_when: the done_when asks a test that makes the picker hold, shows a replay rebuilds byte-identical state and questions compared by digest, fails on main where the row carries no state, and names the stored size; tests/test_hold_records_its_state.py:172 covers the replay, the negative control reddens five ids, and the manifest names 8009 bytes, but the reviewed manifest records no baseline_suite/after_suite so its suite delta is unmeasured.\nVERDICT write_paths: the manifest declares outcomes.py, __init__.py, dispatch.py, types.py, the new test module, the evidence fragment and a figures directory; git diff --stat at b64e426b2 touches only five files inside that fence, and reckon/crew/dispatch.py is unchanged because Selection.as_dict() already carries the new keys.\nVERDICT manifest: read; status complete, the tests line claims 131 passed EXIT=0 and the new module 6 passed EXIT=0, but it and the fragment name revision 25195982b (the base) for a gate the new module cannot run at, and baseline_suite/after_suite are absent so added_failure_count is unmeasured.\nVERDICT diff: read 25195982b..b64e426b2 commit by commit; three commits, five files, +389/-0, being the Selection fields, the digest/payload/replay helpers, six new tests and the fragment.\nCALL_SITES: reckon/crew/dispatch.py:687\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/picker/__init__.py:460 stores the rendered state, questions and template digest on the Selection and reckon/crew/picker/outcomes.py:82 rebuilds them, which is what the goal asks.\nSCORE evidence: 15\nJUSTIFICATION evidence: tests/test_hold_records_its_state.py:183 compares the replayed state against what the stub client saw and the manifest names 8009 bytes, but the reviewed manifest records no baseline_suite/after_suite so added_failure_count is unmeasured and the fragment misnames the gate revision.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 25195982b..b64e426b2 touches only the five files under the declared fence and mutates no shared plan, index or sprint state.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_hold_records_its_state.py:183 asserts the replayed state equals seen[\"state\"], what the stub client captured rather than the value the test passed in, and the negative control at logs/negative-control.log reddens five ids when the state recording is removed.\nSCORE fit: 19\nJUSTIFICATION fit: the three commits carry conventional subjects with bodies and no attribution, and reckon/crew/picker/outcomes.py:52 comments the mechanism rather than the change history and names no plan or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: hold_request_digest, replay_hold and _template_digest at reckon/crew/picker/outcomes.py:69 have no pre-existing counterpart in reckon/crew (searched picker, outcomes and worker_digest) and extend the existing hold writer rather than forking a capability.\nFINDING docs/evidence/fragments/one-typesafe-model-picker/hold-records-its-state.html:24 follow-on: the fragment records the 6-passed gate \"at revision 25195982b\", the base, but tests/test_hold_records_its_state.py is added by this change and does not exist at 25195982b, so the named revision cannot be the one the gate ran at; gate-new-tests.log's own header names d20cb469e and the tree, so the fragment's revision is wrong as literally read.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261010T225646738553-hold-records-its-state/manifest.md:22 follow-on: the reviewed manifest records no baseline_suite and no after_suite, so a reader cannot derive the added-failure count from its own gate logs; it supplies a negative-control base arm instead, which reddens the new module but is not a suite delta.\nreviewed_base_sha: 25195982b28a16c1b446ad64a0994f2199a414c9\nreviewed_head_sha: b64e426b277982da0893a16ec03228bf7185f276",
+  "review_run_id": "r-20261010T231642832717-review-of-hold-records-its-state",
+  "reviewed_base_sha": "25195982b28a16c1b446ad64a0994f2199a414c9",
+  "reviewed_head_sha": "b64e426b277982da0893a16ec03228bf7185f276",
+  "reviewed_run_id": "r-20261010T225646738553-hold-records-its-state",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T23:23:18.289054+00:00",
+  "total": 111
+}
