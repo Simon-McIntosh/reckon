@@ -292,6 +292,21 @@
     <p><code>stamp_of</code> in <code>reckon/crew/picker/__init__.py</code> stamps resolved paths through <code>capabilities.file_stamp</code>, not the private <code>ledger._file_identity</code>. <code>test_a_renamed_plan_file_is_not_served_stale</code> renames the plan and fails when the cache ignores its stamp (<code>48.0 == 10.0</code>). The stamp narrows to modification time and size, which still moves on every content edit and reads none for a renamed file.</p><p>Run <code>r-20261008T161243424790-pick-cache-proved-on-a-renamed-plan</code>, commit <code>debeb5bb7</code>, merged at <code>fd48070b1</code>. The merge check covered the 39 test files that import <code>reckon.crew.picker</code>: base 345 passed and head 346 passed, with the same one failure in each. Review 118 found no added failures. Its other follow-on, the wall-clock flake in <code>test_dispatch_marks_old_published_window_stale</code>, is pre-existing and recorded for a later section.</p>
   </section>
 
+  <section id="s19">
+    <h2>§19 — Jev weighs a hold against the lanes that can serve the node (2026-10-10)</h2>
+    <p>The rendered picker state names the lanes that can serve the node: <code>serving_lanes</code>, <code>serving_lane_count</code> and <code>hold_waits_for</code>. Both recorded review holds were replayed, at 0.83 (<code>review-of-member-friction-asserts-its-own-writes</code>, 2026-10-08T02:31:54Z) and 0.84 (<code>review-of-subscription-lanes-record-no-spend</code>, 2026-10-07T07:46:40Z). Both were wrong on the facts Jev had. Review routing excludes 7 of the 8 declared backends, and <code>native</code> cannot run a routed dispatch, so only the local lane can serve a review. A hold therefore waited on the lane that was already serving. The coordinator overrode the first with <code>--local</code> a minute later. Run <code>r-20261008T161834154362-hold-names-the-serving-lane</code>, commit <code>c2f7666a7</code>. Its fence was widened to <code>tests/test_picker_helpers_have_one_owner.py</code>, whose golden bytes change with the new fields. Merged at <code>4aca668aa</code>. Review 106 found no added failures. Its follow-ons, the key placement, the duplicate grouping and the missing post-change replay, are §26.</p>
+  </section>
+
+  <section id="s23">
+    <h2>§23 — the claim grace has one name and a tested index branch (2026-10-10)</h2>
+    <p><code>RACING_WINNER_WAIT_SECONDS</code>, which equalled <code>CLAIM_GRACE_FLOOR_SECONDS</code>, and its re-export through <code>reckon.crew.dispatch</code> are removed. A test derives the grace through the run-store index branch, and it fails both when only the index read is broken and when <code>_recent_run_names</code> returns no run names. The first version of that test passed with the index broken, because the fallback directory scan also found its run directories. The run was resumed to build receipts that only the index reaches. Run <code>r-20261008T161322288767-claim-grace-has-one-name</code>, commits <code>8f80cfff1</code> and <code>e6a820455</code>, reviews 108 and 117, merged at <code>4aca668aa</code>.</p>
+  </section>
+
+  <section id="s19-s23-merge">
+    <h2>§19 and §23 — merge check (2026-10-10)</h2>
+    <p>§19 and §23 were stacked on main and measured over the 226 test files that import the picker, dispatch-claims or dispatch modules. Base 2,336 passed and head 2,344 passed. The one head-only failure, <code>test_a_scoped_follower_receives_only_the_runs_its_session_dispatched</code>, passed three of three in each arm on rerun, so it is load-sensitive, not added. A focused gate of 191 tests passed at <code>4aca668aa</code>. Logs are in <code>~/.cache/reckon-suite-logs/merge-picker-s19-s23-*.log</code>.</p>
+  </section>
+
 </main>
 </body>
 </html>
