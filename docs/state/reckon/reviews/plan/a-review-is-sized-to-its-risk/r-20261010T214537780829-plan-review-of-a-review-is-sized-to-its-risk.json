@@ -1,0 +1,47 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T21:54:13.049Z",
+  "dispatched_at": "2026-10-10T21:46:06Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-review-is-sized-to-its-risk/r-20261010T214537780829-plan-review-of-a-review-is-sized-to-its-risk/plan.html:185",
+      "id": "reasoning-1",
+      "reason": "\u00a79's own deliverable and done-when add the test that composes the loader into a brief, so correcting \"called by tests\" to \"called by nothing\" changes no work the section prescribes.",
+      "text": "\u00a79 states \"`load_review_prompt` \u2026 is called by tests and by no production path, and the same is true of `load_claims_review_prompt`, added by \u00a78\": `load_claims_review_prompt` (`reckon/crew/review.py:437`) has no caller anywhere in the tree \u2014 `grep -rn load_claims_review_prompt` returns only its definition \u2014 so \u00a79 overstates how far \u00a78 exercised its loader, and an implementer reusing it can assume a validated path that does not exist",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "c073f3db65b3364d645fa48bb4c67dd07ed042a7e734adfba7129fb80bce34de",
+  "plan_slug": "a-review-is-sized-to-its-risk",
+  "plan_version": 147,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261010T214537780829-plan-review-of-a-review-is-sized-to-its-risk",
+  "reviewed_blob_sha": "3bfe41780420337701cd5a79446da9b89e968122",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every citation resolves in the tree: `recovery_review_subject.py:503` blanks the brief when a plan is set, `:496-502` is the plan-authority invariant, `recovery_review_subject.py:598-601` is the `--brief` XOR `--plan`/`--section` pair \u00a79 cites as 597-601, `recovery_classification.py:550` calls `_review_dispatch_action`, and the cited run prompt exists at 141 lines with the dimensions named only in its done-when.",
+    "done_when": "pass \u2014 `tests/test_a_review_receives_its_rubric.py` names a falsifiable assertion set (SCORE block and every dimension name in the implement run's brief, CLAIM grammar in the investigate run's brief, --plan/--section beside --brief for a plan-naming run) with a declared negative control that fails the first assertion when the brief is composed from the reviewed run's brief alone.",
+    "evidence_paths": "pass \u2014 \u00a79 writes no scratch evidence; its only on-disk deliverable is a test under `tests/`, and its negative-control log is delivered on the run's `test_logs`/manifest, so no gate log lands in a session scratchpad.",
+    "naming": "pass \u2014 \u00a79's new names are mechanism terms (`SCORE`/`CLAIM` grammar, `_review_dispatch_fields`/`_tokens`/`_action`); no plan labels or ticket numbers reach code, and the \u00a7-references live only in the plan's own prose.",
+    "reasoning": "a finding \u2014 \u00a79's evidence sentence claims `load_claims_review_prompt` is \"called by tests and by no production path\", but the loader is called by nothing at all, not even a test.",
+    "single_goal": "pass \u2014 \u00a79 carries one deliverable: a run review's composed brief carries its rubric, read from one place by both the reflex dispatch and the obligation's next command.",
+    "wiring": "pass \u2014 \u00a79's only needed dependency is \u00a78's claims loader, which \u00a78 landed at 430105036 and \u00a79 states it runs on; no depends-on/informs/gates edge points at the wrong node."
+  },
+  "section_digests": {
+    "_document": "559cec5332c4e2772f0c8bb42b10af28b4a6c6214163ada0e79741c0481d484f",
+    "s1": "1bca4570a6dc141df8190260147c4603fdbd4e237bbd0fa1f635f166cdf5637b",
+    "s2": "d87e94711b1191be6062f6581f0bf3c2f7793876a327c35be59e3dd37bbe72c8",
+    "s3": "865c2c7d189405d6ba0566cebd8df5e459211cc93a64a9332de51cff756b47ac",
+    "s4": "834dc20a74581e06fc6c6b99a07ea7b628c9c36d7c390cee1b4e599eeec7b070",
+    "s5": "dd9455e66ea742a997a12400b194e02c6557b19217a06db0a58f82d7d82b8fde",
+    "s6": "cb4e838e28a346993a653862da66ac934c2c1b8e7e1aa1d7cb23c7082672067d",
+    "s7": "044f93aa0d0fd0aed5a7b5b535f5b7a2efacfc541ef12f41a04af14289440d7c",
+    "s8": "a12e7aff5d1cfd541706cc743c3d78ed9c0a96dba6af2c4f8b6dbb2309ea9582",
+    "s9": "3cc2a52825983e24d6bcb3f342f8f21cbd91f2144772c41418b9a0362bf5da37"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T21:56:07.882782+00:00"
+}
