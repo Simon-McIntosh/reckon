@@ -13,6 +13,9 @@ lane.
   was read from, and the budget reading behind the candidate -- its source, its
   age, and whether a ledger-only reading has passed its shelf life.
 * :func:`local_lane` reports the local serving lane's live load.
+* :func:`lane_groups` is the one grouping of the offered candidates into lanes,
+  keyed by family or backend, shared by the lanes block and the serving-lane
+  facts so the two cannot disagree about which lanes exist.
 
 Both blocks carry ``None`` for every figure no reading supports. A group with
 no runs has no median, and a lane document that was never published is not a
@@ -335,6 +338,26 @@ def _lane_account(
     }
 
 
+def lane_groups(candidates: Sequence[Any]) -> dict[str, list[Any]]:
+    """Group offered candidates into the lanes that can serve the node.
+
+    A lane is keyed by the candidate's family, falling back to its backend when
+    it declares no family: a candidate with no family still belongs to a lane,
+    its own backend, so no offered candidate is dropped from the grouping. The
+    lanes block states each lane's pressure once from this grouping, and the
+    serving-lane facts name the lanes it holds, so the two cannot disagree about
+    which lanes exist.
+    """
+
+    grouped: dict[str, list[Any]] = {}
+    for candidate in candidates:
+        lane = getattr(candidate, "family", None) or getattr(candidate, "backend", None)
+        if not lane:
+            continue
+        grouped.setdefault(str(lane), []).append(candidate)
+    return grouped
+
+
 def lanes(
     candidates: Sequence[Any],
     *,
@@ -356,12 +379,7 @@ def lanes(
     if moment.tzinfo is None:
         moment = moment.replace(tzinfo=UTC)
     groups_by_backend = _groups_by_backend(budget_snapshot)
-    grouped: dict[str, list[Any]] = {}
-    for candidate in candidates:
-        lane = getattr(candidate, "family", None)
-        if lane is None:
-            continue
-        grouped.setdefault(str(lane), []).append(candidate)
+    grouped = lane_groups(candidates)
     blocks: dict[str, dict[str, Any]] = {}
     for lane, members in grouped.items():
         block = dict(_NULL_LANE)

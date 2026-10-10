@@ -33,6 +33,9 @@ NODE_FIELDS = {
     "attempts",
     "write_path_count",
     "negative_control_declared",
+    "serving_lanes",
+    "serving_lane_count",
+    "hold_waits_for",
 }
 
 #: The candidate facts the routing instructions tell Jev to weigh. A field

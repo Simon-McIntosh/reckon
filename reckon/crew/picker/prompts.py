@@ -168,16 +168,11 @@ def _serving_lanes(candidates: Sequence[Any]) -> list[str]:
     A lane serves the node when at least one of its models is offered: a
     candidate carrying a reason was removed because it cannot run, so the lanes
     left across the offered candidates are the lanes a pick could send this node
-    to. The lane name is the candidate's family, falling back to its backend
-    when it declares none.
+    to. The grouping is the one shared with the lanes block, so a candidate with
+    no family counts as a lane here exactly as it does there.
     """
 
-    lanes: list[str] = []
-    for candidate in candidates:
-        lane = getattr(candidate, "family", None) or getattr(candidate, "backend", None)
-        if lane and str(lane) not in lanes:
-            lanes.append(str(lane))
-    return lanes
+    return list(lane_context.lane_groups(candidates))
 
 
 def _hold_waits_for(serving_lanes: Sequence[str]) -> str | None:
@@ -221,6 +216,7 @@ def build_state(
     could read.
     """
 
+    serving_lanes = _serving_lanes(candidates)
     node_state: dict[str, Any] = {
         "role": node.role,
         "spec_level": node.spec_level,
@@ -235,8 +231,16 @@ def build_state(
         "attempts": attempts,
         "write_path_count": len(node.write_paths or []),
         "negative_control_declared": _negative_control_declared(node),
+        # How many lanes can serve this node, and what a hold waits on. A node
+        # whose other lanes are excluded by role cannot be served by them
+        # however much pressure they show, so a hold that does not name the
+        # serving lane waits on nothing it can reach. These describe every lane
+        # that can serve the node, so they are node-scoped rather than facts of
+        # the local lane.
+        "serving_lanes": serving_lanes,
+        "serving_lane_count": len(serving_lanes),
+        "hold_waits_for": _hold_waits_for(serving_lanes),
     }
-    serving_lanes = _serving_lanes(candidates)
     return {
         "node": node_state,
         "orchestrator_comment": comment,
@@ -245,16 +249,7 @@ def build_state(
         },
         "return_times": lane["return_times"],
         "lanes": lane["lanes"],
-        "local_lane": {
-            **lane["local_lane"],
-            # How many lanes can serve this node, and what a hold waits on. A
-            # node whose other lanes are excluded by role cannot be served by
-            # them however much pressure they show, so a hold that does not name
-            # the serving lane waits on nothing it can reach.
-            "serving_lanes": serving_lanes,
-            "serving_lane_count": len(serving_lanes),
-            "hold_waits_for": _hold_waits_for(serving_lanes),
-        },
+        "local_lane": lane["local_lane"],
     }
 
 

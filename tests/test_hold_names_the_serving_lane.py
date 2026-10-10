@@ -17,7 +17,8 @@ import json
 import pytest
 
 from reckon.crew.node import TaskNode
-from reckon.crew.picker import PickRequest, pick, prompts, snapshot
+from reckon.crew.picker import PickRequest, lane_context, pick, prompts, snapshot
+from reckon.crew.picker.types import Candidate
 from tests import test_picker as fixtures
 
 live_facts = fixtures.live_facts
@@ -136,7 +137,7 @@ def test_recorded_review_hold_names_the_single_serving_lane(
     )
     assert selection.action == "hold"
     assert selection.confidence == 0.66
-    lane = state["local_lane"]
+    lane = state["node"]
     assert lane["serving_lanes"] == ["local"]
     assert lane["serving_lane_count"] == 1
     assert lane["hold_waits_for"] == (
@@ -179,7 +180,7 @@ def test_serving_lane_count_follows_the_offered_lanes(live_facts, tmp_path):
     state, _ = _replay(
         "implement-node", config, tmp_path, probability=0.2, role="implement"
     )
-    lane = state["local_lane"]
+    lane = state["node"]
     assert lane["serving_lane_count"] == 2
     assert lane["hold_waits_for"] == (
         "any one of 2 lanes that can serve this node to have room"
@@ -205,7 +206,7 @@ def test_no_serving_lane_names_nothing_to_wait_for(live_facts, tmp_path):
             now=None,
         )
     )
-    lane = state["local_lane"]
+    lane = state["node"]
     assert lane["serving_lanes"] == []
     assert lane["serving_lane_count"] == 0
     assert lane["hold_waits_for"] is None
@@ -218,3 +219,72 @@ def test_glossary_defines_the_serving_lane_facts():
     glossary = questions["route"]["glossary"]
     assert "serving_lanes" in glossary
     assert "hold_waits_for" in glossary
+
+
+def _offered_candidate(backend="clive", family="local"):
+    return Candidate(
+        backend=backend,
+        family=family,
+        model="m",
+        effort="high",
+        local=True,
+        availability="served",
+        utilisation_pct=None,
+        burn_multiple=None,
+        pace_allowance=None,
+        resets_at=None,
+        worker_slots=None,
+        congestion=None,
+        outcomes={"passed": 0, "failed": 0, "not-run": 0, "unknown": 0},
+    )
+
+
+def _render_state(candidates, config, tmp_path):
+    return json.loads(
+        prompts.render(
+            "state.jinja",
+            node=_request("n").node,
+            capability={},
+            estimated_context=0,
+            comment="",
+            candidates=candidates,
+            config=config,
+            now=None,
+        )
+    )
+
+
+def test_a_familyless_candidate_still_counts_as_a_lane(live_facts, tmp_path):
+    """A candidate with no family belongs to a lane: its own backend.
+
+    The lanes block and the serving-lane facts are read from one grouping, so a
+    family-less candidate the state can serve is counted in serving_lane_count
+    and carries its own entry in the lanes block rather than being dropped from
+    the grouping.
+    """
+
+    state = _render_state(
+        [_offered_candidate(backend="solo", family=None)], REVIEW_CONFIG, tmp_path
+    )
+    assert state["node"]["serving_lanes"] == ["solo"]
+    assert state["node"]["serving_lane_count"] == 1
+    assert "solo" in state["lanes"]
+
+
+def test_one_grouping_drives_the_lanes_block_and_the_serving_lanes(
+    live_facts, tmp_path, monkeypatch
+):
+    """Replacing the grouping moves both the lanes block and the serving lanes.
+
+    The lanes block and the serving-lane facts are read from the one grouping,
+    so a replacement grouping is followed by both rather than by one of them.
+    """
+
+    def grouped(candidates):
+        return {"only": list(candidates)}
+
+    monkeypatch.setattr(lane_context, "lane_groups", grouped)
+    state = _render_state([_offered_candidate()], REVIEW_CONFIG, tmp_path)
+    assert list(state["lanes"]) == ["only"]
+    assert state["node"]["serving_lanes"] == ["only"]
+    assert state["node"]["serving_lane_count"] == 1
