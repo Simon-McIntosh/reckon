@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T20:02:39.796Z",
+  "dispatched_at": "2026-10-10T19:55:33Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-suite-tests-behaviour/r-20261010T195506664571-plan-review-of-the-suite-tests-behaviour/plan.html:101",
+      "id": "done_when-1",
+      "reason": "a wrong population measure sends the node to dedupe test functions instead of helpers, so the gate can pass green while the declared deliverable is untouched.",
+      "text": "\u00a74's done-when counts \"module-level test functions whose normalised body ... is identical to one in another test file\", but the deliverable it must measure is helper fixtures (`config_home`, `_spawn_runner`, `_row`, `checkout`, `_placed_backend`, ...); the health review uses \"test functions\" for `test_*` bodies (T7: \"11 test functions are byte-identical copies\"), so a node implementing the wording literally counts the ~11 duplicated `test_*` bodies and moves those, leaving the ~202 helper copies the section exists to remove \u2014 and the same sentence demands zero identical bodies suite-wide while the deliverable scopes work to helpers copied across three or more files",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-suite-tests-behaviour/r-20261010T195506664571-plan-review-of-the-suite-tests-behaviour/plan.html:100",
+      "id": "reasoning-1",
+      "reason": "the gate and the stated placement rule can disagree, so the node either fails its own done-when or silently ignores the section's instruction.",
+      "text": "\u00a74 says fixtures \"move to `tests/conftest.py` only when every importer is in the suite's root\", but a `tests/conftest.py` fixture is visible to every module under `tests/`, including sub-directories, so the condition is false and a node honouring it will leave body-identical fixtures whose importers span sub-directory roots duplicated, which the done-when's \"falls to zero outside `tests/helpers/`\" then forbids",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "721896b9fb7426078a4e9ddda79c4016558c71792fa1d9f188b0add88eb7f64f",
+  "plan_slug": "the-suite-tests-behaviour",
+  "plan_version": 3,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261010T195506664571-plan-review-of-the-suite-tests-behaviour",
+  "reviewed_blob_sha": "a83f8b4d8f49f8818185c493512eef420101afc4",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited clone evidence resolves (`health-test-suite/clones.json`, `clones.log`, `browser-probe.log` all present), `tests/conftest.py` is 1,231 lines as \u00a76 states, `reckon/crew/standing_suite.py:164/285` name `_result_counts`/`_build_counts` as \u00a73 claims, and `_row` is defined in 39 test files as \u00a71 states.",
+    "done_when": "a finding \u2014 \u00a74's done-when measures \"module-level test functions\", a population that is not the helper fixtures the section exists to dedupe.",
+    "evidence_paths": "pass \u2014 \u00a74's before/after counts land in the manifest and the counting script sits beside the run's log, both on the durable report/log path the dispatch names; nothing is written to a session scratchpad or node-local temp.",
+    "naming": "pass \u2014 \u00a74 introduces no plan labels, stage names, ticket numbers or version tags into any symbol, path or comment.",
+    "reasoning": "a finding \u2014 \u00a74's mechanism (move fixtures to `tests/conftest.py`) is gated on an incorrect condition about pytest fixture visibility, so it can leave the very duplicates its done-when forbids.",
+    "single_goal": "pass \u2014 \u00a74 carries one deliverable (give the duplicated helpers one home); the conftest clause is a placement detail of that same deliverable, not a second goal.",
+    "wiring": "pass \u2014 the plan declares `plan-after the-suite-is-green-at-head` and `plan-standalone`; `docs/plans/the-suite-is-green-at-head.html` exists and \u00a74 waits on no other plan, while \u00a75's ordering after \u00a74 is stated in the followup rather than as a wrong edge."
+  },
+  "section_digests": {
+    "_document": "4d822237848d5605e94c6c3ff5445a796b353b59284a7a44b45375e30caccb49",
+    "s1": "1d6184c53af837617ac7ee370d7b6d622f0b187f5ac5e8f8d90a1dda6a98b5b2",
+    "s2": "0a2190864603950ade3af9b2de4b53b463e747cc8dc4c1f6e9175cdd5a4ee623",
+    "s3": "b54ea6f02bf0468b0b6f22c4317ef1f30b269045ffcaa9c19ae6abd2d175e96b",
+    "s4": "5bc89c4ba0a8294f47b092815154b4c404bf14cc087e5e76d71d7ce8cda57bf4",
+    "s5": "ab2721f7547c999de436c1bb3551c6fe1aff3bbe51e9d92c2f44f5f91ce4123d",
+    "s6": "2ab2547ce36adce1b8926643bbc4604f1d6d1695d52434c1e8849e50f80c4b9d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T20:05:49.208240+00:00"
+}
