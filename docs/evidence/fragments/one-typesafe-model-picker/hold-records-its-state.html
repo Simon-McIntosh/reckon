@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="one-typesafe-model-picker">
+  <meta name="plan-title" content="A hold records the state Jev answered, so it can be replayed exactly">
+  <meta name="plan-summary" content="A hold row now stores the exact state and questions Jev was shown, plus the template digest, so a replay rebuilds the identical request rather than re-deriving it from run records.">
+  <meta name="plan-evidence-for" content="reckon:one-typesafe-model-picker">
+  <meta name="plan-verifies" content="reckon:one-typesafe-model-picker#s32">
+  <meta name="plan-recorded-at" content="2026-10-11">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="picker,hold,replay">
+  <title>A hold records the state Jev answered — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="hold-records-its-state" data-reckon="landed" data-when="2026-10-11">
+  <h2 id="hold-records-its-state-heading">A hold records the state Jev answered</h2>
+  <p id="hold-records-its-state-measure">The selection now carries the rendered state, the questions and the template digest, and <code>record_picker_hold</code> stores them in the row — inline below an 8&nbsp;KiB limit and beside the holds file behind a reference above it — tagged with a request digest. <code>replay_hold</code> rebuilds the state and questions byte-identically and refuses on a mismatched digest. The stored size of one recorded hold is 8009&nbsp;bytes of payload (8411&nbsp;bytes as a row).</p>
+  <p id="hold-records-its-state-gate">Gate: <code>pytest tests/test_hold_records_its_state.py</code> at revision 25195982b, 6 passed, <code>EXIT=0</code>; the wider picker and dispatch gate (19 modules reading the selection) ran 131 passed, <code>EXIT=0</code>. The declared mutation — <code>record_picker_hold</code> with its state/questions recording removed, so the row carries no state as on main — fails 5 test ids the head arm does not fail, <code>EXIT=1</code>.</p>
+</article>
+</body>
+</html>

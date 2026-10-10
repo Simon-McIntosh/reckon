@@ -60,6 +60,14 @@ class Selection:
     jev_latency_ms: float = 0.0
     answering_model: str | None = None
     usage: dict[str, Any] = field(default_factory=dict)
+    # The exact request Jev was shown, so a hold can be replayed rather than
+    # rebuilt from run records. ``rendered_state`` is the state JSON as sent and
+    # ``questions`` is the questions mapping as sent; ``template_digest``
+    # identifies the templates that produced them. A replay sends the identical
+    # request only when all three agree.
+    rendered_state: str = ""
+    questions: dict[str, Any] = field(default_factory=dict)
+    template_digest: str = ""
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)

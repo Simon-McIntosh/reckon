@@ -11,6 +11,7 @@ Older rows with no route mode use the backend match as an approximate attributio
 from __future__ import annotations
 
 import fcntl
+import hashlib
 import json
 import os
 import re
@@ -41,6 +42,74 @@ BURN_LEVELS = ("below_1", "1_to_2", "2_to_4", "4_and_above", "unknown")
 # count how often a hold is overruled instead of folding it into the shadow
 # picks.
 OVERRIDDEN_HOLD_ROUTE_MODE = "overridden-hold"
+
+#: A hold's request is the exact state and questions Jev was shown, so a replay
+#: sends the identical request rather than rebuilding the state from run
+#: records. The serialized request is stored inline in the row below this many
+#: bytes and written beside the holds file, behind a reference, above it.
+HOLD_PAYLOAD_INLINE_LIMIT = 8192
+HOLD_PAYLOAD_DIR = "picker-holds"
+
+
+def _hold_payload_bytes(state: str, questions: Any) -> bytes:
+    """Canonical bytes of one hold's request, so its digest is stable.
+
+    The keys are sorted and the separators fixed, so two serializations of the
+    same request are the same bytes and a digest over them names the request
+    rather than the way it happened to be written.
+    """
+    return json.dumps(
+        {"state": state, "questions": questions},
+        separators=(",", ":"),
+        sort_keys=True,
+        default=str,
+    ).encode("utf-8")
+
+
+def hold_request_digest(state: str, questions: Any) -> str:
+    """The digest of the exact state and questions a pick sent Jev."""
+    return hashlib.sha256(_hold_payload_bytes(state, questions)).hexdigest()
+
+
+def _write_hold_payload(docs: Path, project: str, digest: str, payload: bytes) -> str:
+    """Write a request beside the holds file and return the reference to it."""
+    directory = _hold_path(docs, project).parent / HOLD_PAYLOAD_DIR
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / f"{digest}.json").write_bytes(payload)
+    return f"{HOLD_PAYLOAD_DIR}/{digest}.json"
+
+
+def replay_hold(
+    record: Mapping[str, Any], *, docs: Path, project: str
+) -> dict[str, Any]:
+    """Rebuild the exact state and questions a hold recorded, verified by digest.
+
+    A row stores its request inline or, when it was too large, beside the holds
+    file behind a reference. Either way the state and questions are recovered
+    byte-identical and the recomputed digest is compared against the recorded
+    one, so a row that has been edited, or a reference that has been lost, is
+    refused rather than replayed as a different request.
+    """
+    ref = record.get("payload_ref")
+    if ref is not None:
+        stored = json.loads(
+            (_hold_path(docs, project).parent / str(ref)).read_text(encoding="utf-8")
+        )
+        state, questions = stored["state"], stored["questions"]
+    else:
+        state, questions = record.get("state", ""), record.get("questions") or {}
+    digest = hold_request_digest(state, questions)
+    recorded = record.get("request_digest")
+    if recorded is not None and digest != recorded:
+        raise ValueError(
+            f"hold replay digest mismatch: recorded {recorded}, rebuilt {digest}"
+        )
+    return {
+        "state": state,
+        "questions": questions,
+        "request_digest": digest,
+        "template_digest": record.get("template_digest"),
+    }
 
 
 def overridden_hold(selection: object) -> bool:
@@ -132,6 +201,13 @@ def record_picker_hold(
     """Append one run-free hold with an exclusive lock and durable flush."""
     path = _hold_path(docs, project)
     path.parent.mkdir(parents=True, exist_ok=True)
+    # The exact request the hold answered travels with the row, inline when it
+    # is small and by reference when it is not, so a replay sends the identical
+    # request instead of rebuilding the state from run records.
+    state = str(selection.get("rendered_state") or "")
+    questions = selection.get("questions") or {}
+    payload = _hold_payload_bytes(state, questions)
+    request_digest = hashlib.sha256(payload).hexdigest()
     record = {
         "project": project,
         "node": node,
@@ -139,7 +215,17 @@ def record_picker_hold(
         "held_at": (now or datetime.now(UTC)).astimezone(UTC).isoformat(),
         "confidence": _number(selection.get("confidence")),
         "reasons": [reason],
+        "template_digest": str(selection.get("template_digest") or ""),
+        "request_digest": request_digest,
+        "payload_bytes": len(payload),
     }
+    if len(payload) <= HOLD_PAYLOAD_INLINE_LIMIT:
+        record["state"] = state
+        record["questions"] = questions
+    else:
+        record["payload_ref"] = _write_hold_payload(
+            docs, project, request_digest, payload
+        )
     with path.open("a", encoding="utf-8") as stream:
         fcntl.flock(stream, fcntl.LOCK_EX)
         stream.write(json.dumps(record, sort_keys=True) + "\n")
