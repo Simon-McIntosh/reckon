@@ -67,9 +67,9 @@ def _answer() -> dict:
         "model": "jev-snapshot",
         "answers": {
             "route": {
-                "choice": "clive:local-model",
+                "choice": "local:local-model:local",
                 "confidence": 0.9,
-                "probabilities": {"clive:local-model": 0.9, "hold": 0.1},
+                "probabilities": {"local:local-model:local": 0.9, "hold": 0.1},
             }
         },
     }

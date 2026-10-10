@@ -102,8 +102,8 @@ def live_facts(monkeypatch, tmp_path):
 
 
 #: The lane-and-model pair each configured backend is offered to Jev under.
-LOCAL_PAIR = "local:local-model"
-REMOTE_PAIR = "codex:remote-model"
+LOCAL_PAIR = "local:local-model:local"
+REMOTE_PAIR = "codex:remote-model:remote"
 
 
 def answer(choice=REMOTE_PAIR, confidence=0.9):

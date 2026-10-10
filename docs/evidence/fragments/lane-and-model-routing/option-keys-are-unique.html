@@ -1,0 +1,22 @@
+<article class="landed-report" data-run-id="r-20261010T184146434406-option-keys-are-unique" data-node="option-keys-are-unique">
+<h3 id="option-keys-are-unique-summary">Every option key is unique and honest</h3>
+<p>Two defects shared one key builder. A key of <code>&lt;lane&gt;:&lt;model&gt;</code>
+named neither of two backends that share a family and a model, so the questions mapping
+keyed by it kept only the last and Jev could never choose the first. A candidate that
+declares no model was keyed <code>&lt;lane&gt;:&lt;backend&gt;</code>, offering its backend
+where a model belongs.</p>
+<p>The key now names what the candidate carries: <code>&lt;lane&gt;:&lt;model&gt;:&lt;backend&gt;</code>
+when it has a model, and <code>&lt;lane&gt;:&lt;backend&gt;</code> when it does not and the
+lane is a family, so two modelless backends on one lane stay distinct while the entry's
+<code>model</code> field still renders null. <code>build_questions</code> refuses two
+candidates offered under one key rather than silently dropping the second. The picker
+tests that pinned the offered key now pin the lane, model and backend each backend is
+offered under.</p>
+<table id="option-keys-are-unique-gate">
+<thead><tr><th>Arm</th><th>Log summary</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td>Base</td><td>199 passed in 80.39s (gate without the new test file, which does not exist at base)</td><td>EXIT=0</td></tr>
+<tr><td>Head</td><td>203 passed in 42.04s</td><td>EXIT=0</td></tr>
+<tr><td>Negative control</td><td>1 failed, 3 passed in 0.97s (option_key ignores the backend again; the shared-family test fails)</td><td>EXIT=1</td></tr>
+</tbody></table>
+</article>
