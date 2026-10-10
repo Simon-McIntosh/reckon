@@ -28,7 +28,6 @@ against it.
 
 from __future__ import annotations
 
-import os
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
@@ -36,6 +35,7 @@ from typing import Any
 from reckon import _store
 from reckon.crew import repair as _repair
 from reckon.crew import review as _review
+from reckon.crew import runs as _runs
 
 # The record field a per-finding disposition is written under, keyed by the
 # finding's index within its record — the same index the rows carry as
@@ -87,44 +87,17 @@ def _split_anchor(anchor: str) -> tuple[str, str]:
     return text, ""
 
 
-def _repository_relative(raw_path: str, root: Path | None) -> str | None:
-    """The repository-relative form of a finding's path, or ``None`` outside.
-
-    A path inside the checkout is the root itself or something beneath it. An
-    absolute path under the root is returned relative to it, so a finding citing
-    ``/checkout/reckon/a.py`` groups with one citing ``reckon/a.py`` and both
-    count toward the same recurrence. Any path that resolves outside the tree --
-    an absolute report or manifest path, a home-relative store path, one that
-    climbs above the root — is no repository path and yields ``None``.
-
-    A path that names itself relative (no leading separator, no home anchor, no
-    leading ``..``) is already repository-relative and is returned unchanged,
-    whether or not a root is known: with no root the checkout's own location is
-    unknown, but the path's shape is not.
-    """
-    text = str(raw_path or "").strip()
-    if not text:
-        return None
-    expanded = os.path.normpath(os.path.expanduser(text))
-    if os.path.isabs(expanded):
-        if root is None:
-            return None
-        base = os.path.normpath(str(root))
-        if expanded == base:
-            return ""
-        if expanded.startswith(base + os.sep):
-            return expanded[len(base) + 1 :]
-        return None
-    if expanded == ".." or expanded.startswith(".." + os.sep):
-        return None
-    return expanded
-
-
 def _scope_of(raw_path: str, root: Path | None) -> str:
-    """Whether a finding's path lies inside the checkout, or names an artefact."""
+    """Whether a finding's path lies inside the checkout, or names an artefact.
+
+    The boundary is measured by the dispatch scope reader's own normalisation,
+    so a path this reader calls repository-relative is the path a scope claim
+    binds, and a symlinked spelling and a ``..``-bearing one land on the same
+    row rather than two.
+    """
     return (
         SCOPE_REPOSITORY
-        if _repository_relative(raw_path, root) is not None
+        if _runs._repository_relative_scope(raw_path, root) is not None
         else SCOPE_ARTEFACT
     )
 
@@ -235,7 +208,7 @@ def _record_rows(record: Mapping[str, Any], root: Path | None) -> list[dict[str,
     rows: list[dict[str, Any]] = []
     for index, finding in enumerate(_record_findings(record)):
         raw_path = str(finding.get("path") or "").strip()
-        relative = _repository_relative(raw_path, root)
+        relative = _runs._repository_relative_scope(raw_path, root)
         rows.append(
             {
                 "path": relative if relative is not None else raw_path,
