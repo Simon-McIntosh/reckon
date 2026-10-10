@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T22:37:35.519Z",
+  "dispatched_at": "2026-10-10T22:31:49Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/nothing-lands-unreached.html:127",
+      "id": "done_when-1",
+      "reason": "the four test rewrites are the deliverable's riskiest edit and the change is a one-line done-when addition (run the four staying tests) plus widening the grep pattern to the bare module names, without which the gate cannot show the conversion worked.",
+      "text": "\u00a74's done-when checks that \"its moved tests pass from their new location\" but never that the four tests that STAY in tests/ and that the deliverable rewrites (test_a_lift_reaches_every_budget_row.py, test_ledger_files_and_index_agree.py, test_writer_callers_first_wave.py, test_timestamp_callers_batch_a.py) still pass, and the done-when's grep pattern `reckon\\.crew\\.(carryover_census|death_census|pace_replay)` cannot see those files' imports, which are all written in the bare-name form `from reckon.crew import carryover_census, death_census` (test_ledger_files_and_index_agree.py:12), `from reckon.crew import pace_replay` (test_a_lift_reaches_every_budget_row.py:31) and `from reckon.crew import carryover_census` (test_writer_callers_first_wave.py:283) \u2014 so a botched importlib-by-path conversion of any of the four passes every stated measure (moved tests pass, grep clean, ratchet passes) while the test actually fails at collection",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "4c5cd77e62376ae908935dc5ee0de56654e1e5e102db17e4533dccfec79bdb66",
+  "plan_slug": "nothing-lands-unreached",
+  "plan_version": 14,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261010T223121286782-plan-review-of-nothing-lands-unreached",
+  "reviewed_blob_sha": "a699802a94d16914e01a9299658707533ce7c587",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the four named test files, the two research scripts, the three census modules and every cited plan link resolve; extensionless hrefs resolve as `<path>.html`.",
+    "done_when": "a finding \u2014 \u00a74's done-when verifies only the moved tests, never the four tests that stay in tests/ and are rewritten, and its dotted-path grep cannot see their `from reckon.crew import ...` imports.",
+    "evidence_paths": "pass \u2014 the plan's gate logs and evidence land on the repository's durable evidence path (docs/evidence/archive/nothing-lands-unreached-landed.html, which resolves), not a session or node-local scratch path.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach new symbols; the only identifiers carrying ordinal-like text (test_writer_callers_first_wave.py, test_timestamp_callers_batch_a.py) are existing cited filenames, not names this plan introduces.",
+    "reasoning": "pass \u2014 \u00a74's mechanism (move to scripts/census/, add an argparse main behind a __main__ guard, load the four staying tests by path) can produce its done-when; its root cause (unreached, evidence-producing modules) matches \u00a71's reach graph; and the only production locus referencing the three modules is reckon/budget.py:2651, which is in \u00a74's declared write paths, so the mechanism runs where the plan says it does.",
+    "single_goal": "pass \u2014 each section names one deliverable (\u00a74: move the three census modules out of the package).",
+    "wiring": "pass \u2014 \u00a74's ordering (after \u00a73, itself after \u00a72) is stated in the section text and in f-nlu-002, and the plan's only cross-plan relation (the g-tcirbn-reach-instrument gate on the-codebase-is-reviewed-between-nodes \u00a76) is explicitly disclaimed by the plan-standalone meta and resolves on that plan."
+  },
+  "section_digests": {
+    "_document": "13351dbde138aeb68206f8604e3d44d518bf7e59793cafbbebfdc90ee8902fc0",
+    "s1": "e0a15218687e5ca8207eca1ee8bbe8317a16d92d1864ef9c2b905c1e2443b5fd",
+    "s2": "5af896b6106e1d92e8b6b8ffe1f4aeffac2e91bddbc2afdbae9feeadafbc8740",
+    "s3": "6bb9cc6b8984fead7b347d5d5c61e872c1db89fa64b675b6d25a211f80bcb477",
+    "s4": "224ba26807671534f65d5196c87debbf9cb69a2ceb09f417ff61b8a2af10a785"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T22:40:57.448692+00:00"
+}
