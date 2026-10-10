@@ -19,14 +19,14 @@
   <meta name="plan-sprint" content="S25">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
-  <meta name="plan-section-depends-on" content="{&quot;s4&quot;: [&quot;every-module-fits-a-worker-window#s4&quot;], &quot;s10&quot;: [&quot;every-module-fits-a-worker-window#s4&quot;]}">
+  <meta name="plan-section-depends-on" content="{&quot;s4&quot;: [&quot;every-module-fits-a-worker-window#s4&quot;], &quot;s10&quot;: [&quot;every-module-fits-a-worker-window#s4&quot;], &quot;s14&quot;: [&quot;lane-and-model-routing#s4&quot;]}">
   <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s0&quot;:&quot;done&quot;}">
   <title>Lane And Model Routing | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-north-star" content="unattended-execution">
 <meta name="plan-impl" content="0.7777777777777778">
-<meta name="plan-version" content="51">
+<meta name="plan-version" content="53">
 <meta name="plan-modified" content="2026-10-10">
 </head>
 <body>
@@ -39,7 +39,7 @@
       <li><strong>The model is already a launch parameter, not an identity.</strong> Codex receives <code>-m &lt;model&gt;</code> and claude receives <code>--model &lt;model&gt;</code>. The <code>claude</code> and <code>claude-haiku</code> blocks are byte-identical after comments, and <code>claude-opus</code> differs from <code>claude</code> in one line, a 40-minute time budget against 25.</li>
       <li><strong>The package never names the duplicate backends.</strong> <code>claude-opus</code>, <code>claude-haiku</code>, <code>codex-astra</code> and <code>codex-luna</code> have 0 references in <code>reckon/</code> and <code>skills/</code>. The names live in configuration (three files), tests (fixtures) and history: 3,123 ledger rows, 2,471 run records and 4,404 review files. That history is never rewritten; readers resolve old names through an alias table.</li>
     </ul>
-    <p>The first seven sections below are independently landable in the report's migration order; §8–§12 are follow-ons from their reviews. Each leaves the tree working, and the measure for each configuration step is that the resolved flight of every project in <code>mounts.json</code>, counted when the step runs, is unchanged.</p>
+    <p>The first seven sections below are independently landable in the report's migration order; §8–§14 are follow-ons from their reviews. Each leaves the tree working, and the measure for each configuration step is that the resolved flight of every project in <code>mounts.json</code>, counted when the step runs, is unchanged.</p>
     <p><strong>What the new surface retires.</strong> The plan adds a <code>lanes:</code> key (§1), a <code>--model</code> option (§4) and one resolver (§7), and each replaces more than it adds. <code>lanes:</code> replaces the per-model backend blocks as the declaration: three claude blocks and three codex blocks become two lane blocks (§3, §6). <code>--model</code> replaces naming a model through a separate backend name such as <code>--backend claude-opus</code>, which survives only as an alias. The resolver replaces scattered name comparisons on stored rows, reviews and <code>review_excluded_backends</code>. The derived entries count, which <code>reckon flight</code> reports, is the measure that the old surface is actually retiring.</p>
 
     <section class="section-landed">
@@ -179,10 +179,16 @@
     <pre class="r-fu-prompt">/reckon-build lane-and-model-routing §9</pre>
     <p class="r-fu-outcome"><p>§9 (merge <code>c901ef916</code>, review 102) and §11 (merge <code>943d9ded5</code>, review 116) landed on 2026-10-08. §9's review follow-on became §12.</p></p>
     </article>
-<article class="r-fu" data-id="f-lmr-006" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-73" data-written-at="2026-10-08 12:30" data-recommends-skill="/reckon-build lane-and-model-routing §12" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-lmr-006" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-73" data-written-at="2026-10-08 12:30" data-recommends-skill="/reckon-build lane-and-model-routing §12" data-resolved-at="2026-10-10T21:16:49+00:00" data-resolved-by="reckon-73">
     <h4 class="r-fu-title">Build §12, then §8; §4 and §10 after the section-dependency fix</h4>
     <div class="r-fu-body"><p>§12 (one owner for the provenance leaf rule) can start now. §8 shares <code>reckon/crew/picker/prompts.py</code> with <code>one-typesafe-model-picker</code> §12 and §19, so it goes when neither holds a claim on it. §4 and §10 wait on <code>every-module-fits-a-worker-window</code> §4. That section has landed, but the roadmap's <code>_section_satisfied</code> still ignores a done declaration until <code>a-plan-is-done-when-every-section-is-ticked</code> §9 lands.</p></div>
     <pre class="r-fu-prompt">/reckon-build lane-and-model-routing §12</pre>
+    <p class="r-fu-outcome"><p>§12 (merge <code>d93d8918e</code>) and §8 (merge <code>9c4356047</code>) landed; §4 is built and in its merge check.</p></p>
+    </article>
+<article class="r-fu" data-id="f-lmr-007" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-73" data-written-at="2026-10-10 21:20" data-recommends-skill="/reckon-build lane-and-model-routing §10" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Land §4, then build §10, §13 and §14</h4>
+    <div class="r-fu-body"><p>§4 merges once its full-suite check passes. §10 and §14 both edit the dispatch command module, so they follow §4 one at a time; §14 also refactors §4's <code>--model</code> code. §13 is test-only and can run beside them.</p></div>
+    <pre class="r-fu-prompt">/reckon-build lane-and-model-routing §10</pre>
     </article>
 </section>
   <section data-reckon="gates" id="gates" class="r-gates">
