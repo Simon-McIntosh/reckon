@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T22:51:55.421Z",
+  "dispatched_at": "2026-10-10T22:43:12Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/nothing-lands-unreached.html:121",
+      "id": "anchors_resolve-1",
+      "reason": "without it the move is dispatched, the module leaves reckon/crew/, and a reader of a-window-paces-the-lane is sent to a path that no longer exists while every stated measure still passes; the plane's own promise to update prose naming the old path cannot be met inside its fence.",
+      "text": "\u00a74 promises \"A docstring or prose that names the old module path is updated to the script path\", but its write paths exclude docs/, and its done-when's `git grep` is scoped to \"reckon/ tests/ skills/ scripts/ and the research scripts\", so the section can pass while an active plan still points at a removed module: docs/plans/a-window-paces-the-lane.html:1109 and :1234 describe \"reckon/crew/pace_replay.py\" as the current landed path (plan-status active); docs/plans/a-review-dies-where-nobody-is-looking.html:398 names \"reckon/crew/carryover_census.py\" as producer of session-carryover.json (plan-status active). The node is fenced out of editing another plan, so the fix must be an explicit scope handling (a follow-on routing the two plans' citations, or a declared retention of live-plan prose alongside the data-provenance retention the section already allows)",
+      "type": "anchors_resolve",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "742935dc81db11963c81fd677592621cdb7de576d7f4c0909f2f9ac8d2c4429c",
+  "plan_slug": "nothing-lands-unreached",
+  "plan_version": 15,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261010T224245324264-plan-review-of-nothing-lands-unreached",
+  "reviewed_blob_sha": "9f83b34f8bf1584fe6bb4a27775ff381dc861f61",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a74 moves reckon/crew/{carryover_census,death_census,pace_replay}.py out of the package, but two active plans cite those module paths as current facts and neither lies in \u00a74's write paths or its grep scope.",
+    "done_when": "pass \u2014 \u00a74's done-when is measurable (each script's `--help` exits 0; the moved tests and the four rewritten staying tests pass; a scoped git grep returns no hit; the ratchet passes) and names a declared negative control (an old import left in a test fails at collection).",
+    "evidence_paths": "pass \u2014 no gate log or evidence path is placed in a session scratchpad or a node-local temporary directory; the section defers to the run record as the other sections do.",
+    "naming": "pass \u2014 the new scripts' symbols and comments carry no plan label, stage name, ticket number or version tag, and no changelog prose.",
+    "reasoning": "pass \u2014 the stated root cause matches \u00a71's cited reach evidence; \u00a74's mechanism (move + add an argparse `main()` behind a `__main__` guard + rewrite imports) can produce its done-when; and the one-off scripts' entry point is named (run by hand from scripts/census/ with `--help`), so no production caller is required.",
+    "single_goal": "pass \u2014 \u00a74 carries one deliverable: move the three one-off census modules out of the package.",
+    "wiring": "pass \u2014 \u00a74 declares its dependency on \u00a72's ratchet allowlist and on \u00a73 (both edit tests/test_every_module_is_reached.py) and runs after \u00a73; the only plan-level relation, the \u00a76 gate g-tcirbn-reach-instrument, is owned by another plan and is correctly left unexpressed in plan-standalone."
+  },
+  "section_digests": {
+    "_document": "13351dbde138aeb68206f8604e3d44d518bf7e59793cafbbebfdc90ee8902fc0",
+    "s1": "e0a15218687e5ca8207eca1ee8bbe8317a16d92d1864ef9c2b905c1e2443b5fd",
+    "s2": "5af896b6106e1d92e8b6b8ffe1f4aeffac2e91bddbc2afdbae9feeadafbc8740",
+    "s3": "6bb9cc6b8984fead7b347d5d5c61e872c1db89fa64b675b6d25a211f80bcb477",
+    "s4": "a603cc4c748e1ab5d64532c7c2cb4b0bdff62fec4c234e99ead64e92379775cc"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T22:55:45.959050+00:00"
+}
