@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T23:22:51.875Z",
+  "dispatched_at": "2026-10-10T23:18:14Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/nothing-lands-unreached.html:130",
+      "id": "done_when-1",
+      "reason": "the measure must cover the research scripts' imports (e.g. extend the grep to them with their prose lines carved out, or add an import check on both scripts at the integrated head) or the deliverable's \"each script still importing\" claim must be dropped, so the node can only close on a done-when that actually tests what it promises.",
+      "text": "\u00a74's done-when narrows the rename grep to `reckon/ tests/ skills/ scripts/`, which excludes `docs/`, but the deliverable still lists `docs/research/scripts/scan_local_lane_deaths.py` (line 649: `from reckon.crew.death_census import pointer_process_alive`) and `docs/research/data/crew-pattern-review/worker-anatomy/anatomy_census.py` (line 46: `from reckon.crew.carryover_census import _dialect, _first_turn_input`) as write paths and states \"each script still importing at the integrated head\"; `git grep ... -- scripts/` returns no hit for `docs/research/scripts/` (exit 1), so after the move a worker could leave either import on the deleted `reckon.crew` path and the section's gate would still pass \u2014 at which point `anatomy_census.py` fails at import and the evidence it reproduces is lost, which is the exact outcome \u00a74 exists to prevent",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "78a28da6233d0d896058e806b31e417a68eb70ddb57742fc5604523cd24352c1",
+  "plan_slug": "nothing-lands-unreached",
+  "plan_version": 20,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261010T231744834479-plan-review-of-nothing-lands-unreached",
+  "reviewed_blob_sha": "eb64bc0af2e7aff980b0f1415f354fb1fd0bd2d3",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited anchors resolve at this tree: `reckon/crew/death_census.py:357` (the `generated_by` assignment), `reckon/budget.py:2651` (the prose naming `reckon.crew.pace_replay`), the four stay-in-`tests/` files, `tests/test_every_module_is_reached.py`, and both research scripts (`docs/research/scripts/scan_local_lane_deaths.py`, `docs/research/data/crew-pattern-review/worker-anatomy/anatomy_census.py`) all exist.",
+    "done_when": "a finding \u2014 \u00a74's done-when's rename grep is scoped to `reckon/ tests/ skills/ scripts/`, which does not reach the two `docs/research` scripts that \u00a74 declares as write paths, so the section's own \"each script still importing at the integrated head\" claim is measured by nothing.",
+    "evidence_paths": "pass \u2014 the gate for \u00a74 is a set of reproducible commands (`--help` exit 0, tests, `git grep`, ratchet) whose logs land in the run/report dirs, not in a session scratchpad; \u00a72's reachability report sits under the durable `~/.config/reckon/crew/reports/` tree.",
+    "naming": "pass \u2014 \u00a74's new artifacts are named by mechanism (`scripts/census/`, `main()`, an `argparse` parser, `__main__` guard); no plan label, ticket number or version tag reaches code.",
+    "reasoning": "pass \u2014 the mechanism is sound on the real code path: `scripts/` carries no `__init__.py` (confirmed: `scripts/__init__.py` and `scripts/census/__init__.py` are absent), so the deliverable's turn to `importlib` path loads for the four staying tests and the two research scripts is the correct shape, and the callers it relies on (the four tests, the two research scripts) are named; the stated cause \u2014 modules reached only by their own tests \u2014 matches the reachability evidence in \u00a71.",
+    "single_goal": "pass \u2014 each section names one deliverable (\u00a72 the reach reader + ratchet, \u00a73 the deletion, \u00a74 the census-module move).",
+    "wiring": "pass \u2014 the plan declares itself standalone, and \u00a72/\u00a73/\u00a74 sequencing (\"\u00a73 runs after \u00a72\", \"\u00a74 runs after \u00a73, which writes the same allowlist\") matches the followup f-nlu-002 order (\u00a72 then \u00a73 then \u00a74); no section declares a depends-on that points at a wrong node."
+  },
+  "section_digests": {
+    "_document": "13351dbde138aeb68206f8604e3d44d518bf7e59793cafbbebfdc90ee8902fc0",
+    "s1": "e0a15218687e5ca8207eca1ee8bbe8317a16d92d1864ef9c2b905c1e2443b5fd",
+    "s2": "5af896b6106e1d92e8b6b8ffe1f4aeffac2e91bddbc2afdbae9feeadafbc8740",
+    "s3": "6bb9cc6b8984fead7b347d5d5c61e872c1db89fa64b675b6d25a211f80bcb477",
+    "s4": "136e02211b31121efb0fde3b1708b08dfafabb1954a7d57801674893bd67eab9"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T23:23:33.926448+00:00"
+}
