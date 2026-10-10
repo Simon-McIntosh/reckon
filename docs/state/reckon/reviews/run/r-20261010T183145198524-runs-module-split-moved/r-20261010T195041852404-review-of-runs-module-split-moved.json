@@ -1,0 +1,82 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 4,
+  "added_failure_ids": [
+    "tests/test_a_review_never_runs_in_harness.py::test_a_review_never_lands_on_the_owning_runs_in_harness_backend",
+    "tests/test_crew.py::test_first_dispatch_proceeds_with_a_freshly_armed_project_watch",
+    "tests/test_crew_dispatch_arming.py::test_a_peer_sessions_follower_does_not_admit_this_dispatch",
+    "tests/test_watcher_unit_restart.py::test_every_unit_template_in_the_tree_is_covered_here"
+  ],
+  "call_site_count": 10,
+  "call_sites": [
+    "reckon/crew/runs.py:2754",
+    "reckon/crew_follow_commands.py:2580",
+    "reckon/crew_follow_commands.py:1145",
+    "reckon/crew/placement.py:862",
+    "reckon/crew/claims.py:256",
+    "reckon/crew/recovery_liveness.py:212",
+    "reckon/crew/dispatch_sessions.py:179",
+    "reckon/crew/routing.py:1746",
+    "reckon/crew/promotion_checks.py:233",
+    "reckon/crew/recovery_watch.py:365"
+  ],
+  "completed_at": "2026-10-10T20:07:30.323Z",
+  "dispatched_at": "2026-10-10T19:51:04Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261010T183145198524-runs-module-split-moved/manifest.md",
+      "line": "after_suite",
+      "severity": "follow-on",
+      "text": "follow-on: the run's own after_suite arm measures db544b1c rather than the reviewed head 118959ef, so the section 7 clause that the whole suite at the merged head show no failure absent at its base is not measured at the reviewed head by this run; the repaired test (test_watcher_unit_restart.py::test_every_unit_template_in_the_tree_is_covered_here) is covered only by the targeted rerun, and the coordinator owns the merged-head suite."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261010T183145198524-runs-module-split-moved/baseline-result.json",
+      "line": "failure_count",
+      "severity": "follow-on",
+      "text": "follow-on: the arm recorder's stored baseline_suite/after_suite records count the tests/conftest.py::test_temp_config_home ERROR as a failure, so their failure_count (19 and 20) disagrees with the gate logs' own summaries (18 failed, 19 failed); the added delta is 4 either way, but a reader reconciling the JSON against its cited log finds a one-off mismatch."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 10 production call site(s)",
+    "diff": "read commit by commit against base 81cbe9fb. db544b1c moves 90 names into follower_registration.py, process_liveness.py, run_paths.py and watch_unit.py, leaving runs.py an import surface spelled name as name, and repoints eleven test files whose patches or text reads named a moved name; 118959ef repoints the watcher-template inventory in test_watcher_unit_restart.py from runs.py to watch_unit.py while still rendering through the runs compatibility reexport.",
+    "done_when": "the done-when is check_pure_move.py exit 0, every module at or under 40,000, the guard passing with the module out of its allowlist, and the whole suite at the merged head showing no failure absent at its base. The first three hold and I reproduced them. The fourth is only partly this node's evidence: the run's own arms measure base 81cbe9fb at 18 failed and head db544b1c at 19 failed (EXIT=1 both), an added delta of 4, and neither arm measures the reviewed head 118959ef.",
+    "goal": "section 7's deliverable for this module is that reckon/crew/runs.py comes under the bound by moving cohesive groups out, each produced module at or under 40,000 estimated tokens, the original kept as the import surface under the section 8 contract. Verified at the reviewed head: runs.py measures 33,987 estimated tokens (118,954 bytes) and its four siblings follower_registration.py 7,736, process_liveness.py 4,216, run_paths.py 536 and watch_unit.py 10,184 all sit well under 40,000; runs.py re-exports all 90 moved names and each is the same object as in its owning module (zero missing, zero identity mismatch); no produced module imports runs at any level.",
+    "manifest": "read; status complete with a body, tests line carrying both literal commands and the 18/19/EXIT=1 counts, test_logs naming baseline.log and head.log, negative_control_log naming negative-control.log whose last line is EXIT=1, and baseline_suite/after_suite JSON carrying revision, command, log_path and failure ids.",
+    "write_paths": "every path in both commits lies inside the manifest's declared changed_paths and its orientation_write_paths: 17 files at db544b1c (five source modules, the evidence fragment, eleven test files) and one file at 118959ef (test_watcher_unit_restart.py). Nothing outside the fence is touched."
+  },
+  "justifications": {
+    "durability": "the guards fire rather than pass silently -- the size guard reddens under the declared mutation (restore runs.py to its base size: 1 failed, 3 passed, EXIT=1) and the pure-move checker refuses an altered statement; each repointed test asserts through the moved owner with a positive control (test_crew_record_liveness now scans runs.py, watch_unit.py and follower_registration.py and asserts follower_registration.py still calls process_alive; test_the_cli_module_set_has_one_owner patches follower_registration.__file__ and still calls runs.follower_code_stamp to hold the reexport). Held below full because the final head's durability rests on a 2-file targeted rerun rather than the full arm.",
+    "evidence": "strong and reproducible -- I re-ran the pure-move checker (EXIT=0, problems []), re-measured every module size, confirmed the 90-name surface identity, and reproduced 22 passed EXIT=0 across test_every_module_fits_a_worker_window.py, test_watcher_unit_restart.py, test_the_cli_module_set_has_one_owner.py and test_crew_record_liveness.py. It is held below full for three reasons: the run's own after_suite arm measures head db544b1c, not the reviewed head 118959ef, so the head's own full-suite behaviour rests on a targeted 11-passed rerun rather than a full arm; three of the four added ids are attributed to xdist timing flakes using rerun logs the run records as coordinator-held and did not carry; and the baseline_suite/after_suite JSON failure_count (19 and 20) disagrees with the gate logs' own summaries (18 failed, 19 failed) because the arm recorder counts the tests/conftest.py::test_temp_config_home ERROR as a failure.",
+    "fit": "the four new module names describe mechanism (follower_registration, process_liveness, run_paths, watch_unit) with no version, plan, sprint, stage or ticket identifier, and the added test names are renamed to describe what they hold (test_the_registration_module_still_calls_the_primitive); no attribution appears.",
+    "goal_fidelity": "the node's goal lands and I verified it directly at the reviewed head: runs.py 33,987 tokens is under the 40,000 bound (down from 54,682), the four siblings are 7,736/4,216/536/10,184, the pure-move receipt is 209 of 209 base statements with no altered, lost or duplicated statement (EXIT=0, reproduced in this worktree), and the compatibility surface is complete and identity-preserving across all 90 moved names. It is not 20 only because section 7's own merged-head clause is coordinator-owned and this run's arms measure db544b1c rather than the reviewed head.",
+    "reuse": "the split extends rather than forks -- runs.py stays the single compatibility surface and every consumer keeps reading a moved name through it, while the produced modules share one another by deferred relative imports as the dispatch.py precedent does; run_paths.py is a genuine deduplication, holding the six shared path helpers (crew_home, delivery_roots and siblings) that three of the four siblings read, instead of triplicating them.",
+    "scope_discipline": "git show --name-only over db544b1c (17 files) and 118959ef (1 file) lists only paths inside the manifest's declared changed_paths and orientation_write_paths, with nothing outside the fence; the reviewed worktree is clean at head."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: section 7's deliverable for this module is that reckon/crew/runs.py comes under the bound by moving cohesive groups out, each produced module at or under 40,000 estimated tokens, the original kept as the import surface under the section 8 contract. Verified at the reviewed head: runs.py measures 33,987 estimated tokens (118,954 bytes) and its four siblings follower_registration.py 7,736, process_liveness.py 4,216, run_paths.py 536 and watch_unit.py 10,184 all sit well under 40,000; runs.py re-exports all 90 moved names and each is the same object as in its owning module (zero missing, zero identity mismatch); no produced module imports runs at any level.\nVERDICT done_when: the done-when is check_pure_move.py exit 0, every module at or under 40,000, the guard passing with the module out of its allowlist, and the whole suite at the merged head showing no failure absent at its base. The first three hold and I reproduced them. The fourth is only partly this node's evidence: the run's own arms measure base 81cbe9fb at 18 failed and head db544b1c at 19 failed (EXIT=1 both), an added delta of 4, and neither arm measures the reviewed head 118959ef.\nVERDICT write_paths: every path in both commits lies inside the manifest's declared changed_paths and its orientation_write_paths: 17 files at db544b1c (five source modules, the evidence fragment, eleven test files) and one file at 118959ef (test_watcher_unit_restart.py). Nothing outside the fence is touched.\nVERDICT manifest: read; status complete with a body, tests line carrying both literal commands and the 18/19/EXIT=1 counts, test_logs naming baseline.log and head.log, negative_control_log naming negative-control.log whose last line is EXIT=1, and baseline_suite/after_suite JSON carrying revision, command, log_path and failure ids.\nVERDICT diff: read commit by commit against base 81cbe9fb. db544b1c moves 90 names into follower_registration.py, process_liveness.py, run_paths.py and watch_unit.py, leaving runs.py an import surface spelled name as name, and repoints eleven test files whose patches or text reads named a moved name; 118959ef repoints the watcher-template inventory in test_watcher_unit_restart.py from runs.py to watch_unit.py while still rendering through the runs compatibility reexport.\nCALL_SITES: reckon/crew/runs.py:2754, reckon/crew_follow_commands.py:2580, reckon/crew_follow_commands.py:1145, reckon/crew/placement.py:862, reckon/crew/claims.py:256, reckon/crew/recovery_liveness.py:212, reckon/crew/dispatch_sessions.py:179, reckon/crew/routing.py:1746, reckon/crew/promotion_checks.py:233, reckon/crew/recovery_watch.py:365\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the node's goal lands and I verified it directly at the reviewed head: runs.py 33,987 tokens is under the 40,000 bound (down from 54,682), the four siblings are 7,736/4,216/536/10,184, the pure-move receipt is 209 of 209 base statements with no altered, lost or duplicated statement (EXIT=0, reproduced in this worktree), and the compatibility surface is complete and identity-preserving across all 90 moved names. It is not 20 only because section 7's own merged-head clause is coordinator-owned and this run's arms measure db544b1c rather than the reviewed head.\nSCORE evidence: 17\nJUSTIFICATION evidence: strong and reproducible -- I re-ran the pure-move checker (EXIT=0, problems []), re-measured every module size, confirmed the 90-name surface identity, and reproduced 22 passed EXIT=0 across test_every_module_fits_a_worker_window.py, test_watcher_unit_restart.py, test_the_cli_module_set_has_one_owner.py and test_crew_record_liveness.py. It is held below full for three reasons: the run's own after_suite arm measures head db544b1c, not the reviewed head 118959ef, so the head's own full-suite behaviour rests on a targeted 11-passed rerun rather than a full arm; three of the four added ids are attributed to xdist timing flakes using rerun logs the run records as coordinator-held and did not carry; and the baseline_suite/after_suite JSON failure_count (19 and 20) disagrees with the gate logs' own summaries (18 failed, 19 failed) because the arm recorder counts the tests/conftest.py::test_temp_config_home ERROR as a failure.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --name-only over db544b1c (17 files) and 118959ef (1 file) lists only paths inside the manifest's declared changed_paths and orientation_write_paths, with nothing outside the fence; the reviewed worktree is clean at head.\nSCORE durability: 18\nJUSTIFICATION durability: the guards fire rather than pass silently -- the size guard reddens under the declared mutation (restore runs.py to its base size: 1 failed, 3 passed, EXIT=1) and the pure-move checker refuses an altered statement; each repointed test asserts through the moved owner with a positive control (test_crew_record_liveness now scans runs.py, watch_unit.py and follower_registration.py and asserts follower_registration.py still calls process_alive; test_the_cli_module_set_has_one_owner patches follower_registration.__file__ and still calls runs.follower_code_stamp to hold the reexport). Held below full because the final head's durability rests on a 2-file targeted rerun rather than the full arm.\nSCORE fit: 20\nJUSTIFICATION fit: the four new module names describe mechanism (follower_registration, process_liveness, run_paths, watch_unit) with no version, plan, sprint, stage or ticket identifier, and the added test names are renamed to describe what they hold (test_the_registration_module_still_calls_the_primitive); no attribution appears.\nSCORE reuse: 20\nJUSTIFICATION reuse: the split extends rather than forks -- runs.py stays the single compatibility surface and every consumer keeps reading a moved name through it, while the produced modules share one another by deferred relative imports as the dispatch.py precedent does; run_paths.py is a genuine deduplication, holding the six shared path helpers (crew_home, delivery_roots and siblings) that three of the four siblings read, instead of triplicating them.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261010T183145198524-runs-module-split-moved/manifest.md:after_suite follow-on: the run's own after_suite arm measures db544b1c rather than the reviewed head 118959ef, so the section 7 clause that the whole suite at the merged head show no failure absent at its base is not measured at the reviewed head by this run; the repaired test (test_watcher_unit_restart.py::test_every_unit_template_in_the_tree_is_covered_here) is covered only by the targeted rerun, and the coordinator owns the merged-head suite.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261010T183145198524-runs-module-split-moved/baseline-result.json:failure_count follow-on: the arm recorder's stored baseline_suite/after_suite records count the tests/conftest.py::test_temp_config_home ERROR as a failure, so their failure_count (19 and 20) disagrees with the gate logs' own summaries (18 failed, 19 failed); the added delta is 4 either way, but a reader reconciling the JSON against its cited log finds a one-off mismatch.\nreviewed_base_sha: 81cbe9fbbd3bdf9cbd906f03040df1f1992066f6\nreviewed_head_sha: 118959efec524d84319b9e69f6ad716998c300a1\n",
+  "review_run_id": "r-20261010T195041852404-review-of-runs-module-split-moved",
+  "reviewed_base_sha": "81cbe9fbbd3bdf9cbd906f03040df1f1992066f6",
+  "reviewed_head_sha": "118959efec524d84319b9e69f6ad716998c300a1",
+  "reviewed_run_id": "r-20261010T183145198524-runs-module-split-moved",
+  "reviewer": {
+    "backend": "clive",
+    "effort": null,
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261010T195041852404-review-of-runs-module-split-moved",
+  "rubric": "code",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T20:05:06.590526+00:00",
+  "total": 114
+}
