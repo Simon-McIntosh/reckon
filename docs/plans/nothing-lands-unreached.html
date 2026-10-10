@@ -25,6 +25,8 @@
   <title>Nothing Lands Unreached | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-10-10">
 </head>
 <body>
   <main class="plan-doc">
@@ -48,7 +50,7 @@
         <tr><td>12 helpers with no reference at all, in <code>_schema.py</code>, <code>crew/placement.py</code>, <code>serve.py</code>,
           <code>crew/repair.py</code>, <code>crew/reports.py</code>, <code>crew_dispatch_commands.py</code> and <code>crew/session_host.py</code></td><td>2026-08 to 2026-10</td><td>none</td></tr>
         <tr><td>The <code>reckon crew pick --estimated-context</code> option, used by no skill, test, ledger row, plan or source</td><td></td><td>none</td></tr>
-        <tr><td>Flight keys <code>on_fail</code>, <code>reflex</code>, <code>spelling</code> and <code>max_concurrent_runs</code>, declared and read by no code</td><td></td><td>none</td></tr>
+        <tr><td>Flight keys <code>on_fail</code>, <code>reflex</code>, <code>spelling</code> and <code>max_concurrent_runs</code>, declared and read by no product code; out of scope here, because <code>max_concurrent_runs</code> is set in the host flight layer and <code>on_fail</code> in the shipped defaults, and tests assert both stay resolvable (<code>tests/test_backend_carries_no_worker_cap.py:249</code>, <code>tests/test_flight.py:879</code>), so their removal needs a deprecation path</td><td></td><td>none</td></tr>
       </tbody>
     </table>
     <p>The coordinator confirmed the module rows by grep on 2026-10-10: outside its own file, each module is named only in a docstring
@@ -69,8 +71,8 @@
       corrected against a positive control, so the module carries that control as a test. A ratchet test,
       <code>tests/test_every_module_is_reached.py</code>, asserts every module under <code>reckon/</code> is reached or appears in an
       allowlist that names, for each entry, the plan that owns wiring it; the allowlist may shrink and the test fails when it grows.</p>
-    <p><strong>Done when</strong> the ratchet test passes at the integrated head with an allowlist of exactly the modules still unreached
-      after §3 and §4, and <code>tests/test_reach_graph.py</code> passes: a temporary tree with a console script importing <code>a</code>,
+    <p><strong>Done when</strong> the ratchet test passes at the integrated head with an allowlist of exactly the modules unreached at
+      this section's base, each naming its owner (§3 and §4, which run after this section, remove their modules from it), and <code>tests/test_reach_graph.py</code> passes: a temporary tree with a console script importing <code>a</code>,
       <code>a</code> importing <code>b</code>, and an unimported <code>c</code> reports <code>a</code> and <code>b</code> reached and
       <code>c</code> not; <code>neighbourhood(["b"])</code> returns <code>a</code>; and a module reached only through
       <code>python -m</code> in a reckon source string is reported reached (the positive control). The negative control is executed and
@@ -80,20 +82,21 @@
     <h2 id="s3">§3 — Code no plan owns and nothing reaches is deleted</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
     <p><strong>Deliverable.</strong> Delete <code>reckon/crew/context_budget.py</code> and <code>reckon/project_state_parity.py</code> with the
-      tests that exist only to test them; the 12 unreferenced helpers; the <code>--estimated-context</code> option; and the four flight keys,
-      after confirming no mounted project's flight layer sets one (read every <code>docs/state/*/flight.yaml</code> named by
-      <code>~/.config/reckon/mounts.json</code>; a key some layer sets is kept and its docstring says what reads it instead). Each deletion is
+      tests that exist only to test them; the 12 unreferenced helpers; and the <code>--estimated-context</code> option. The two modules leave §2's allowlist in the
+      same commit. Each deletion is
       confirmed against the tree at dispatch by <code>grep -rn &lt;name&gt; reckon/ tests/ skills/</code>, because a peer may have wired one
       since 2026-10-10; a name that has gained a caller is left and reported in the manifest. Removing a module named by
       <code>routing.py:3533</code>'s docstring updates that docstring.</p>
     <p><strong>Done when</strong> <code>grep -rn</code> for each deleted name over <code>reckon/ tests/ skills/</code> returns no hit, the tests
-      importing the touched modules pass (their list built at dispatch from the head tree), and <code>reckon crew pick --help</code> no
+      importing the touched modules and every test naming a deleted module, helper or option pass (their list built at dispatch from the
+      head tree by import and by <code>grep</code>), §2's ratchet test passes with the two modules gone from its allowlist, and <code>reckon crew pick --help</code> no
       longer lists <code>--estimated-context</code>. The manifest's line delta is negative. The negative control is executed and logged:
       restoring one deleted helper's call site in a scratch copy makes the grep for it non-empty, proving the grep can fire. Write paths:
       <code>reckon/crew/context_budget.py</code>, <code>reckon/project_state_parity.py</code>, <code>reckon/_schema.py</code>,
       <code>reckon/crew/placement.py</code>, <code>reckon/serve.py</code>, <code>reckon/crew/repair.py</code>,
       <code>reckon/crew/reports.py</code>, <code>reckon/crew_dispatch_commands.py</code>, <code>reckon/crew/session_host.py</code>,
-      <code>reckon/crew/routing.py</code>, <code>reckon/schema/</code>, and the test files whose only subject is a deleted module.</p>
+      <code>reckon/crew/routing.py</code>, <code>reckon/crew_dispatch_commands.py</code>, <code>tests/test_every_module_is_reached.py</code>, and
+      the test files whose only subject is a deleted module. This section runs after §2.</p>
 
     <h2 id="s4">§4 — One-off census modules move out of the package</h2>
 <section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
@@ -108,30 +111,30 @@
       returns no hit outside the moved files, and §2's ratchet test passes with the three modules gone from its allowlist. The negative
       control is executed and logged: with one moved module's old import left in a test, that test fails at collection. Write paths:
       <code>reckon/crew/carryover_census.py</code>, <code>reckon/crew/death_census.py</code>, <code>reckon/crew/pace_replay.py</code>,
-      <code>reckon/budget.py</code>, <code>scripts/census/</code>, and the tests importing the three modules. This section runs after §2.</p>
+      <code>reckon/budget.py</code>, <code>scripts/census/</code>, and the tests importing the three modules, <code>tests/test_every_module_is_reached.py</code>. This section runs after §3, which
+      writes the same allowlist.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="census-modules" data-choice="move-to-scripts" data-by="reckon-build coordinator (health-review-1010)" data-when="2026-10-10">
-  <p class="r-dec-q">What happens to a module that produced committed evidence once and that nothing runs?</p>
-  <p class="r-dec-opts">
-    <button class="r-opt" data-value="move-to-scripts">Move it to scripts/census/ with its tests</button>
-    <button class="r-opt" data-value="wire">Wire it behind a CLI verb</button>
-    <button class="r-opt" data-value="delete">Delete it</button>
-  </p>
-  <p class="r-dec-rat">Wiring adds a verb nobody asked for; deleting loses the reproduction of committed evidence. A script keeps the reproduction and takes the module out of the package's surface.</p>
-</div>
-    </section>
+    <p class="r-dec-q">What happens to a module that produced committed evidence once and that nothing runs?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="move-to-scripts">Move it to scripts/census/ with its tests</button>
+      <button class="r-opt" data-value="wire">Wire it behind a CLI verb</button>
+      <button class="r-opt" data-value="delete">Delete it</button>
+      </p>
+    <p class="r-dec-rat">Wiring adds a verb nobody asked for; deleting loses the reproduction of committed evidence. A script keeps the reproduction and takes the module out of the package&#x27;s surface.</p>
+    </div>
+</section>
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-nlu-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-10-10" data-recommends-skill="/reckon-build nothing-lands-unreached">
-    <h3 class="r-fu-title">Build the reach guard and clear the unreached code</h3>
+<article class="r-fu" data-id="f-nlu-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-10-10" data-recommends-skill="/reckon-build nothing-lands-unreached" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build the reach guard and clear the unreached code</h4>
     <div class="r-fu-body"><p>§2 and §3 in parallel; §4 after §2.</p></div>
     <pre class="r-fu-prompt">/reckon-build nothing-lands-unreached</pre>
-</article>
-    </section>
-  <section data-reckon="comments" id="comments" class="r-comments">
-  </section>
+    </article>
+</section>
+  
 </main>
 </body>
 </html>

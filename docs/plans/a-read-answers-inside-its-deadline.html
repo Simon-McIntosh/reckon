@@ -20,11 +20,13 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
-  <meta name="plan-standalone" content="It restores what reckon-reads-answer-in-seconds shipped; that plan is complete, and no live plan's section waits on read latency.">
+  <meta name="plan-standalone" content="It restores what reckon-reads-answer-in-seconds shipped; that plan is complete, and no live plan&#x27;s section waits on read latency.">
   <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-10-10">
 </head>
 <body>
   <main class="plan-doc">
@@ -84,14 +86,16 @@
 
     <h2 id="s4">§4 — A git answer is asked once per process</h2>
 <section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> The git-date lookups behind the audit and roadmap read through an in-process memo keyed on the
-      repository's <code>HEAD</code> and the path, in front of the persistent cache they use today, so a resident server asks git once per
+    <p><strong>Deliverable.</strong> The git-date lookups behind the audit and roadmap (<code>_run_git</code> and the creation and last-modified
+      caches in <code>reckon/serve.py</code>, lines 1116 to 1468) read through an in-process memo keyed on the repository's
+      <code>HEAD</code> and the path, in front of the persistent cache under <code>~/.config/reckon/cache/git-creation/</code> they use
+      today, so a resident server asks git once per
       revision and a fenced or read-only home still benefits. The persistent cache stays the second level.</p>
     <p><strong>Done when</strong> <code>tests/test_git_dates_are_asked_once.py</code> calls the lookup three times for one path in a temporary
       repository with the persistent cache directory read-only and asserts, through a counting wrapper on the subprocess call, one
       <code>git</code> invocation; after a new commit, the next call asks again. The negative control is executed and logged: with the
       memo key omitting <code>HEAD</code>, the post-commit call returns the stale date and the test fails. Write paths:
-      <code>reckon/doccheck.py</code>, <code>tests/test_git_dates_are_asked_once.py</code>.</p>
+      <code>reckon/serve.py</code>, <code>tests/test_git_dates_are_asked_once.py</code>.</p>
 
     <h2 id="s5">§5 — Every plan read goes through the parse memo</h2>
 <section data-reckon="section" data-id="s5" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
@@ -104,7 +108,7 @@
       negative control is executed and logged: with <code>read_authored</code> restored to its own read, the count exceeds ten and the test
       fails. The roadmap and audit tests pass, their list built at dispatch from the head tree. Write paths: <code>reckon/roadmap.py</code>,
       <code>reckon/serve.py</code>, <code>reckon/project_state.py</code>, <code>tests/test_every_plan_read_is_memoised.py</code>. This
-      section runs after §2, which writes <code>project_state.py</code>.</p>
+      section runs after §2, which writes <code>project_state.py</code>, and after §4, which writes <code>serve.py</code>.</p>
 
     <h2 id="s6">§6 — The reads are measured inside their deadline</h2>
 <section data-reckon="section" data-id="s6" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
@@ -116,19 +120,16 @@
       restarted on the promoted code, returns without <code>storage-slow</code>. The negative control is the base revision measured the
       same way in the same session, which must exceed the deadline for the comparison to count. Write paths: the run's own log directory.</p>
 
-    <section data-reckon="decisions" id="decisions" class="r-decisions">
-<h2><span class="sec">§</span> Decisions</h2>
-    </section>
+    
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-araiid-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-10-10" data-recommends-skill="/reckon-build a-read-answers-inside-its-deadline">
-    <h3 class="r-fu-title">Make the first reads answer</h3>
+<article class="r-fu" data-id="f-araiid-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-10-10" data-recommends-skill="/reckon-build a-read-answers-inside-its-deadline" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Make the first reads answer</h4>
     <div class="r-fu-body"><p>§2, §3 and §4 in parallel; §5 after §2; §6 last.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-read-answers-inside-its-deadline</pre>
-</article>
-    </section>
-  <section data-reckon="comments" id="comments" class="r-comments">
-  </section>
+    </article>
+</section>
+  
 </main>
 </body>
 </html>

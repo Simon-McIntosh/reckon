@@ -25,7 +25,7 @@
   <title>The Codebase Is Reviewed Between Nodes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="5">
 <meta name="plan-modified" content="2026-10-10">
 </head>
 <body>
@@ -48,7 +48,7 @@
           <code>repair.follow_on_findings</code> has that one caller</td></tr>
         <tr><td>Finding citations naming a file an earlier review had already cited</td><td>650 of 1,434 (45.3%);
           <code>reckon/crew/dispatch.py</code> named by 46 distinct reviews, <code>promotion.py</code> by 33, <code>recovery.py</code> by 35</td>
-          <td><code>health-review-yield/scan_summary.json</code></td></tr>
+          <td><code>health-review-yield/control_summary.json</code> (<code>recurrence_pre</code>)</td></tr>
         <tr><td>Verbatim repeats among those findings</td><td>0 of 55 on <code>dispatch.py</code>: a recurring fault is re-found in new
           words, so only a reader holding the earlier findings can tell new from known</td><td><code>health-review-yield/control_out.txt</code></td></tr>
         <tr><td>Plan-review findings with any answer</td><td>203 of 584 (34.8%)</td><td><code>health-review-yield/scan_summary.json</code></td></tr>
@@ -57,7 +57,7 @@
         <tr><td>Modules reached by no production entry point, only by tests</td><td>7, including <code>reckon/crew/hold.py</code>, merged
           2026-10-10 as <code>hold-names-the-serving-lane</code></td><td><code>health-reachability/reach_graph.log</code></td></tr>
         <tr><td>Non-shipped plans; members of the carry-over sprint S22</td><td>63; 55, of which 12 are shipped</td>
-          <td><code>health-plan-portfolio/portfolio.csv</code></td></tr>
+          <td><code>health-plan-portfolio/portfolio.csv</code> (non-shipped plans) and <code>docs/sprints/S22.html</code> (members)</td></tr>
       </tbody>
     </table>
     <p>None of these is any one coordinator's fault, and none is visible from inside one node or one plan. A coordinator working on
@@ -103,7 +103,11 @@
       is kept with <code>scope: artefact</code> and left out of recurrence, because 254 of the 847 follow-ons name such paths. The reader is
       a new module beside <code>reckon/crew/review.py</code> rather than an addition to it (3,264 lines); it reads records through the
       existing record readers in that module and adds no store. It adds one MCP view and one value of an existing CLI option, and retires
-      nothing, because no reader of findings by path exists: today the only way to ask is a full scan of 3,200 records.</p>
+      nothing, because no reader of findings by path exists: today the only way to ask is a full scan of 3,200 records. The plan-review
+      readers in <code>reckon/crew/plan_review.py</code> already count recurrence by finding type (<code>declined_recurrence</code>, line
+      1421; <code>_finding_type_recurrence</code>, line 1609) and list unanswered findings (<code>unanswered_findings</code>, line 1311);
+      the path reader reuses their record iteration and counting helper and differs only in its key, the repository path a finding names,
+      which none of them groups by.</p>
     <p><strong>Done when</strong> <code>tests/test_findings_read_by_path.py</code> builds a temporary project holding three committed run-review
       records: two naming <code>reckon/a.py</code> (one <code>blocking</code>, one <code>follow-on</code>) and one naming a report path. It
       asserts that the view for prefix <code>reckon/</code> returns both <code>reckon/a.py</code> rows with recurrence 2 and disposition
@@ -119,7 +123,9 @@
       index of a finding in that run's newest review record, as §3's rows print it. The closed set is unchanged: a <code>fold</code> names the
       node the finding went into, an <code>exemption</code> names why it is not being acted on. The entry is written to the same record the
       dimension disposition already rewrites, and §3's reader reports it. <code>--dimension</code> and <code>--finding</code> are mutually
-      exclusive and one is required. The verb's refusals stay the store's own. This extends one writer; it adds one option and no verb.</p>
+      exclusive and one is required. The verb's refusals stay the store's own. This extends one writer; it adds one option and no verb. Nothing in <code>dispose</code> retires, because
+      <code>--dimension</code> still answers the sub-floor duty rows it exists for; the alternative, a verb of its own for findings, would
+      add a verb and the same options again.</p>
     <p><strong>Done when</strong> <code>tests/test_dispose_a_finding.py</code> stores a review with two follow-on findings, runs
       <code>reckon crew dispose --run &lt;id&gt; --finding 1 --kind fold --node fix-a</code>, and asserts §3's reader reports finding 1 as
       <code>folded:fix-a</code> and finding 0 as <code>open</code>; an exemption with no reason, and a call naming both
@@ -143,12 +149,15 @@
       line delta, chosen only from treatments that delete code, narrow an interface, wire or delete unreached code, or close a finding
       recurring in two or more reviews; or <code>TREATMENT: none — &lt;reason&gt;</code>. A finding already in the brief is cited by its
       §3 row, never re-reported as new.</p>
-    <p><strong>Done when</strong> <code>tests/test_health_review_parses.py</code> parses a fixed reviewer output through the parser §6
-      installs and asserts six verdicts, the classed findings, one treatment with write paths and a done-when, and the
+    <p>The section also installs the parser for this output in <code>reckon/crew/review.py</code>, which owns the review parsers
+      and their rubric item sets (<code>parse_plan_review_report</code>, line 742), so the rubric and the reader of what it emits land
+      together and the parser family stays with its owner.</p>
+    <p><strong>Done when</strong> <code>tests/test_health_review_parses.py</code> parses a fixed reviewer output through that parser
+      and asserts six verdicts, the classed findings, one treatment with write paths and a done-when, and the
       <code>TREATMENT: none</code> form; an output with two <code>TREATMENT</code> lines, or a treatment naming no write path, is refused by
       name. The negative control is executed and logged: with the one-treatment check removed, the two-treatment output parses and the test
-      fails. Write paths: <code>reckon/crew/prompts/health_review.md</code>, <code>tests/test_health_review_parses.py</code>. The parser is
-      §6's; this section's test lands with §6.</p>
+      fails. Write paths: <code>reckon/crew/prompts/health_review.md</code>, <code>reckon/crew/review.py</code>,
+      <code>tests/test_health_review_parses.py</code>. This section runs after §4, which also writes <code>review.py</code>.</p>
 
     <h2 id="s6">§6 — One review verb composes a code review around a plan or a path</h2>
 <section data-reckon="section" data-id="s6" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
@@ -158,18 +167,20 @@
       sections' write paths, or the named paths, plus every production module one import away in either direction, read from the
       reachability instrument <a href="/reckon/plans/nothing-lands-unreached.html#s2">nothing-lands-unreached §2</a> delivers. It composes the
       §5 brief and dispatches one read-only <code>review</code> node through the ordinary dispatch path, writing to a report directory under
-      the crew reports root, and stores the parsed result as a review record keyed by the neighbourhood so §3 can read it. The parser lives
-      beside the plan-review report parser. <code>review-plan</code> stays as a hidden alias that prints a one-line deprecation to stderr
-      until §7 moves its callers; §7 removes it, so the verb count is unchanged once the plan lands.</p>
+      the crew reports root, and stores the result, parsed by §5's parser, as a review record keyed by the neighbourhood so §3 can read
+      it. The verb is defined in <code>reckon/crew_dispatch_commands.py</code> (<code>crew_review_plan</code>, line 1782) and mounted by
+      <code>reckon/cli.py</code>. <code>review-plan</code> stays as a hidden alias that prints a one-line deprecation to stderr
+      until §7 moves its callers; §7 removes it, so the verb count is unchanged once the plan lands. Every <code>review-plan</code> option
+      moves to <code>review</code> unchanged; <code>--around</code> and <code>--path</code> are the two options added, and nothing else
+      retires because no existing verb composes a review of code rather than of one run or one plan.</p>
     <p><strong>Done when</strong> <code>tests/test_review_composes_a_code_subject.py</code> builds a temporary repository with three modules
       where <code>a</code> imports <code>b</code> and <code>c</code> is unrelated, and a plan whose section writes <code>a</code>. It runs
       <code>reckon crew review --project P --around &lt;plan&gt; --session S --dry-run</code> and asserts the composed brief names
       <code>a</code> and <code>b</code> and not <code>c</code>, carries the open §3 findings for <code>a</code>, and carries the four interface
-      figures. <code>reckon crew review-plan --dry-run</code> composes the same plan brief as <code>reckon crew review --plan</code>. §5's
-      parse test passes. The negative control is executed and logged: with the one-hop import expansion removed, <code>b</code> is missing
+      figures. <code>reckon crew review-plan --dry-run</code> composes the same plan brief as <code>reckon crew review --plan</code>. The negative control is executed and logged: with the one-hop import expansion removed, <code>b</code> is missing
       and the test fails. The tests that import the review-plan composer pass. Write paths: <code>reckon/crew/plan_review.py</code>,
-      <code>reckon/crew_run_commands.py</code>, <code>tests/test_review_composes_a_code_subject.py</code>,
-      <code>tests/test_health_review_parses.py</code>.</p>
+      <code>reckon/crew_dispatch_commands.py</code>, <code>reckon/cli.py</code>, <code>tests/test_review_composes_a_code_subject.py</code>.
+      This section runs after §5, whose parser it stores through.</p>
 
     <h2 id="s7">§7 — The /reckon-review skill</h2>
 <section data-reckon="section" data-id="s7" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
@@ -187,11 +198,17 @@
     <p><strong>Done when</strong> <code>tests/test_skill_contracts.py</code> discovers <code>reckon-review</code> beside the other reckon
       skills, and asserts its body is at most 1,500 words; the cited-command test
       <a href="/reckon/plans/the-crew-contract-fits-one-read.html#s5">the-crew-contract-fits-one-read §5</a> delivers passes with the
-      new skill in its corpus; <code>grep -rn "review-plan" skills/ reckon/</code> returns no hit outside the alias
-      removal's own changelog-free code; and <code>reckon crew review-plan --help</code> exits non-zero. The negative control is executed and
+      new skill in its corpus; <code>grep -rn "review-plan" skills/ reckon/</code> returns no hit, the refusal text in
+      <code>reckon/crew/refusals.py</code>, the new-work verb list in <code>reckon/hooks/coordinator_obligations.py</code> and the flight
+      default naming the verb included; and <code>reckon crew review-plan --help</code> exits non-zero. The negative control is executed and
       logged: with the skill's body padded past 1,500 words, the contract test fails. Write paths:
       <code>skills/reckon-review/</code>, <code>skills/reckon-build/</code>, <code>skills/reckon-create/SKILL.md</code>,
-      <code>skills/reckon-edit/SKILL.md</code>, <code>reckon/crew_run_commands.py</code>, <code>tests/test_skill_contracts.py</code>.</p>
+      <code>skills/reckon-edit/SKILL.md</code>, <code>reckon/crew_dispatch_commands.py</code>, <code>reckon/crew/refusals.py</code>,
+      <code>reckon/hooks/coordinator_obligations.py</code>, <code>reckon/schema/flight-defaults.yaml</code>, <code>tests/test_skill_contracts.py</code>,
+      and the tests that invoke <code>review-plan</code>, listed at dispatch by <code>grep -rln "review-plan" tests/</code> (on 2026-10-10:
+      <code>tests/test_review_plan_command.py</code>, <code>tests/test_the_surfaces_pass_the_plan.py</code>,
+      <code>tests/test_plan_review_gate.py</code>, <code>tests/test_nothing_sweeps_old_plans.py</code>,
+      <code>tests/test_an_edit_tells_its_author_a_review_is_owed.py</code>), whose calls move to <code>review</code>.</p>
 
     <h2 id="s8">§8 — The portfolio rubric proposes a disposition for every live plan</h2>
 <section data-reckon="section" data-id="s8" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
@@ -261,6 +278,10 @@
 <div class="r-gate" data-id="g-tcirbn-reach-instrument" data-section="s6" data-gated-sections="s6" data-status="open" data-verdict="">
     <h4 class="r-gate-measure">reckon/reach.py returns the production modules one import away from a named path, and its ratchet test passes at the integrated head</h4>
     <p class="r-gate-required-evidence">nothing-lands-unreached#s2</p>
+    </div>
+<div class="r-gate" data-id="g-tcirbn-cited-commands" data-section="s7" data-gated-sections="s7" data-status="open" data-verdict="">
+    <h4 class="r-gate-measure">tests/test_cited_commands_exist.py exists at the integrated head and passes over every skill</h4>
+    <p class="r-gate-required-evidence">the-crew-contract-fits-one-read#s5</p>
     </div>
 </section>
     <section data-reckon="decisions" id="decisions" class="r-decisions">
