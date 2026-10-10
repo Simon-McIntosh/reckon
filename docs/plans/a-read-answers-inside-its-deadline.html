@@ -25,7 +25,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="17">
+<meta name="plan-version" content="18">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -108,15 +108,16 @@
 <section data-reckon="section" data-id="s5" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
     <p><strong>Deliverable.</strong> The readers <code>section_authored</code> (<code>reckon/roadmap.py</code>) and
       <code>readiness_state</code> (<code>reckon/serve.py</code>), and the metadata index build's per-plan parse (<code>_plan_record</code> in
-      <code>reckon/metadata_index.py</code>, which today reads the file and calls <code>_plan_html.read_state</code> itself), derive their values from the parse the
-      <code>read_state_and_text</code> memo already holds for the file, instead of each parsing it under its own memo kind; a memo entry
+      <code>reckon/metadata_index.py</code>, which today reads the file and calls <code>_plan_html.read_state</code> itself), derive their values from the parse the path-keyed memo
+      <code>read_state_and_text_file</code> (<code>reckon/_plan_html.py</code>, memo kind <code>read_state_and_text</code>) already holds for
+      the file, instead of each parsing it under its own memo kind; a memo entry
       they keep holds only the derived value. The other call sites the profile names are checked the same way.</p>
     <p><strong>Done when</strong> <code>tests/test_every_plan_read_is_memoised.py</code> runs, in one process, a cold roadmap read and then a
       discovery read (<code>_discover_*</code> in <code>reckon/serve.py</code>, which reaches <code>readiness_state</code> through
       <code>_read_readiness_state</code>) of a temporary project holding ten plans, and asserts, through a counting wrapper on
       <code>read_state</code>, at most ten parses across both reads, the metadata index build included, so a cold roadmap of a fresh project parses each plan once whichever
       reader asks first. Functions are cited by name because line numbers in these modules moved during this sprint. The audit is not the measure, because its per-plan parse
-      (<code>_audit_plan_state</code>, <code>reckon/mcp.py:2246</code>) reaches neither changed reader. The
+      (<code>_audit_plan_state</code> in <code>reckon/mcp.py</code>) reaches neither changed reader. The
       negative control is executed and logged: with <code>read_authored</code> given back its own parse under its own kind, the count exceeds
       ten and the test fails. The roadmap and audit tests pass, their list built at dispatch from the head tree. Write paths: <code>reckon/roadmap.py</code>,
       <code>reckon/serve.py</code>, <code>reckon/metadata_index.py</code>, <code>tests/test_every_plan_read_is_memoised.py</code>. This section runs after §3, which writes

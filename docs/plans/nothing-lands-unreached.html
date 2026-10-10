@@ -25,7 +25,7 @@
   <title>Nothing Lands Unreached | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="17">
+<meta name="plan-version" content="18">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -117,7 +117,7 @@
       <code>scripts/census/</code> as standalone scripts with their tests; all three get a <code>main()</code> with an <code>argparse</code> parser behind a
       <code>__main__</code> guard (<code>death_census.main</code> today treats its first argument as an output path and parses no flag, so
       it is brought to the same shape rather than copied), so the evidence they produced stays reproducible and the package
-      loses three modules and their public definitions. A docstring or prose that names the old module path is updated to the script path; a
+      loses three modules and their public definitions. A docstring or comment in code under <code>reckon/</code>, <code>tests/</code> or <code>scripts/</code> that names the old module path is updated to the script path (plan and research prose under <code>docs/</code> is a dated record and is not rewritten); a
       committed data file's <code>generated_by</code> or provenance field keeps the name of what produced it, because it records history.
       The four tests that stay in <code>tests/</code> and import the modules (<code>test_a_lift_reaches_every_budget_row.py</code>,
       <code>test_ledger_files_and_index_agree.py</code>, <code>test_writer_callers_first_wave.py</code>,

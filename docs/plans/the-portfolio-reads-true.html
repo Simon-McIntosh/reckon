@@ -24,7 +24,7 @@
   <title>The Portfolio Reads True | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="12">
+<meta name="plan-version" content="13">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -95,8 +95,9 @@
       <code>_git_last_committed(repo_dir, docs_dir)</code> (<code>reckon/serve.py</code>), which returns a map of repository-relative
       path to last-commit time for the whole docs tree, rather than a new git reader: <code>derived_plan_age</code> takes the repository and
       docs directories beside the plan path and looks the plan up in that map, which the audit loop builds once per run. The audit loop is
-      routed through it; every caller of <code>derived_plan_age</code> passes the new arguments: the roadmap's first call, which passes no path today, and
-      the archive's call. Functions are cited by name because line numbers in these modules moved during this sprint. The audit, the roadmap and the archive then report one age, with its source named on the row. Other git-date readers (for example <code>_commit_days</code> in <code>reckon/fleet_index.py</code>) are left as they are, and the
+      routed through it; every caller of <code>derived_plan_age</code> passes the new arguments: both calls in the roadmap's <code>_authorisation_age</code> (the
+      first passes no path today, the second a fallback path), the archive's call, and the three direct callers in
+      <code>tests/test_doccheck.py</code>. Functions are cited by name because line numbers in these modules moved during this sprint. The audit, the roadmap and the archive then report one age, with its source named on the row. Other git-date readers (for example <code>_commit_days</code> in <code>reckon/fleet_index.py</code>) are left as they are, and the
       node lists every git-date reader it finds in its manifest for the code-mode review to take. A non-shipped plan between 14 and 30 days old is reported <code>AGING</code> (info), and past 30 days
       <code>STALE</code> as today. The section adds one audit code, <code>AGING</code>; nothing retires, because no row reports
       the 14 to 30 day band.</p>
@@ -106,7 +107,7 @@
       <code>AGING</code> row with age 20 and source <code>commit</code>; a second plan committed 40 days ago reports <code>STALE</code>. The
       dates are derived from the fixture's own commit dates at assertion time, never written as literals. The negative control is executed
       and logged: with the age read from the mtime, the first plan reports age 0 and no row, and the test fails. Write paths:
-      <code>reckon/doccheck.py</code>, <code>reckon/roadmap.py</code>, <code>reckon/archive.py</code>, <code>tests/test_staleness_counts_from_the_last_commit.py</code>. This section runs after §2,
+      <code>reckon/doccheck.py</code>, <code>reckon/roadmap.py</code>, <code>reckon/archive.py</code>, <code>tests/test_doccheck.py</code>, <code>tests/test_staleness_counts_from_the_last_commit.py</code>. This section runs after §2,
       which also writes <code>doccheck.py</code>.</p>
 
     <h2 id="s4">§4 — The audit reports a sprint member list that disagrees with its plans</h2>
