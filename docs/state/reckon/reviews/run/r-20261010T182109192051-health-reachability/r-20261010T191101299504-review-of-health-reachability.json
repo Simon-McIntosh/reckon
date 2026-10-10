@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-10T19:23:09.678Z",
+  "dispatched_at": "2026-10-10T19:11:29Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/health-review-1010/health-reachability/report.md",
+      "line": "58",
+      "severity": "follow-on",
+      "text": "follow-on: the headline states \"6 test-only-module\" but reach_graph.log:32 records 57, and only 57 reconciles 3434+35+57+25+36=3587, so the report contradicts its own instrument log."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/health-review-1010/health-reachability/report.md",
+      "line": "70",
+      "severity": "follow-on",
+      "text": "follow-on: F4 asserts death_census.py has \"no __main__ guard and no -m launch\", but reckon/crew/death_census.py:380 carries an `if __name__ == \"__main__\":` guard."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/health-review-1010/health-reachability/report.md",
+      "line": "73",
+      "severity": "follow-on",
+      "text": "follow-on: F7 is marked unowned on evidence \"grep -rn project_state_parity docs/plans -> no hits\", but docs/plans/project-state-fleet-migration.html:72 names the module at the reviewed base revision."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/health-review-1010/health-reachability/report.md",
+      "line": "54",
+      "severity": "follow-on",
+      "text": "follow-on: \"unreachable from every production entry point\" overstates the measurement for serving_origin.py, death_census.py and project_state_parity.py, each of which carries a __main__ guard runnable as `python -m`, which the report's own method section names as an entry."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "the node changes no repository source (manifest commits: none), so the deliverable read is report.md against the logs its own instrument wrote.",
+    "done_when": "the done_when requires report.md to end with findings=N high=N mid=N low=N owned=N regressed=N unowned=N with findings>=1 and every row citing a path:line or command figure; report.md ends with findings=11 high=1 mid=6 low=4 owned=5 regressed=0 unowned=6 and every row cites an artefact.",
+    "goal": "the reviewed node's goal is to report which recently landed code no production entry point reaches; report.md delivers a reachability list and 11 findings, so the goal is answered in substance.",
+    "manifest": "read; it records the gate as the reach_graph.py invocation with EXIT=0 and the closing finding line, and names reach_graph.log, unreached_probe.txt and flight_keys.log as its logs.",
+    "write_paths": "the manifest declares the reports directory as the sole write path and records no repository commits, and the node wrote only under that directory."
+  },
+  "justifications": {
+    "durability": "the instrument reach_graph.py carries no persisted test, only the one-off self-mutation recorded in negative_control.log:1-17 that fails nothing until a human re-runs it.",
+    "evidence": "the gate ran and the manifest records EXIT=0, but report.md:58 contradicts reach_graph.log:32 (6 versus 57) and report.md:70 and report.md:73 carry evidence strings the code does not support.",
+    "fit": "reach_graph.py is a standalone script outside version control, so it carries no repository naming rule or idiom against which it can be judged either way.",
+    "goal_fidelity": "report.md:52-61 answers the goal with a module and def reachability list, but its headline overstates the claim for modules that are themselves runnable entry points.",
+    "reuse": "reach_graph.py adds a static module and function reachability capability no reckon owner provides; interface_counts.py:1-25 counts interface width and clones.py:73 detects textual copies, and neither builds a reachability graph.",
+    "scope_discipline": "the manifest records no repository commits and the node wrote only under its declared reports write path."
+  },
+  "node": "review-of-health-reachability",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is to report which recently landed code no production entry point reaches; report.md delivers a reachability list and 11 findings, so the goal is answered in substance.\nVERDICT done_when: the done_when requires report.md to end with findings=N high=N mid=N low=N owned=N regressed=N unowned=N with findings>=1 and every row citing a path:line or command figure; report.md ends with findings=11 high=1 mid=6 low=4 owned=5 regressed=0 unowned=6 and every row cites an artefact.\nVERDICT write_paths: the manifest declares the reports directory as the sole write path and records no repository commits, and the node wrote only under that directory.\nVERDICT manifest: read; it records the gate as the reach_graph.py invocation with EXIT=0 and the closing finding line, and names reach_graph.log, unreached_probe.txt and flight_keys.log as its logs.\nVERDICT diff: the node changes no repository source (manifest commits: none), so the deliverable read is report.md against the logs its own instrument wrote.\nCALL_SITES: none\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: report.md:52-61 answers the goal with a module and def reachability list, but its headline overstates the claim for modules that are themselves runnable entry points.\nSCORE evidence: 12\nJUSTIFICATION evidence: the gate ran and the manifest records EXIT=0, but report.md:58 contradicts reach_graph.log:32 (6 versus 57) and report.md:70 and report.md:73 carry evidence strings the code does not support.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the manifest records no repository commits and the node wrote only under its declared reports write path.\nSCORE durability: 6\nJUSTIFICATION durability: the instrument reach_graph.py carries no persisted test, only the one-off self-mutation recorded in negative_control.log:1-17 that fails nothing until a human re-runs it.\nSCORE fit: 12\nJUSTIFICATION fit: reach_graph.py is a standalone script outside version control, so it carries no repository naming rule or idiom against which it can be judged either way.\nSCORE reuse: 18\nJUSTIFICATION reuse: reach_graph.py adds a static module and function reachability capability no reckon owner provides; interface_counts.py:1-25 counts interface width and clones.py:73 detects textual copies, and neither builds a reachability graph.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/health-review-1010/health-reachability/report.md:58 follow-on: the headline states \"6 test-only-module\" but reach_graph.log:32 records 57, and only 57 reconciles 3434+35+57+25+36=3587, so the report contradicts its own instrument log.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/health-review-1010/health-reachability/report.md:70 follow-on: F4 asserts death_census.py has \"no __main__ guard and no -m launch\", but reckon/crew/death_census.py:380 carries an `if __name__ == \"__main__\":` guard.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/health-review-1010/health-reachability/report.md:73 follow-on: F7 is marked unowned on evidence \"grep -rn project_state_parity docs/plans -> no hits\", but docs/plans/project-state-fleet-migration.html:72 names the module at the reviewed base revision.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/health-review-1010/health-reachability/report.md:54 follow-on: \"unreachable from every production entry point\" overstates the measurement for serving_origin.py, death_census.py and project_state_parity.py, each of which carries a __main__ guard runnable as `python -m`, which the report's own method section names as an entry.\n",
+  "review_run_id": "r-20261010T191101299504-review-of-health-reachability",
+  "reviewed_base_sha": "4aca668aa4ca7d6186004d4b19952af2266342da",
+  "reviewed_head_sha": "4aca668aa4ca7d6186004d4b19952af2266342da",
+  "reviewed_run_id": "r-20261010T182109192051-health-reachability",
+  "scores": {
+    "durability": 6,
+    "evidence": 12,
+    "fit": 12,
+    "goal_fidelity": 16,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T19:30:00+00:00",
+  "total": 83
+}
