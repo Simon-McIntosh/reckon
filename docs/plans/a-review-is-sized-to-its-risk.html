@@ -28,7 +28,7 @@
 <meta name="plan-commits" content="505c690b,9701e873,c45e7bac,dd19e201,31509127">
 <meta name="plan-artifacts" content="reckon/review_tiers.py,reckon/schema/flight.yaml,reckon/schema/flight-defaults.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/flight.py,tests/test_review_tiers.py">
 <meta name="plan-impl" content="0.6666666666666666">
-<meta name="plan-version" content="151">
+<meta name="plan-version" content="152">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -662,7 +662,10 @@
     <div class="r-comment-body"><p>§9 landed: every run reviewer now receives its rubric in its brief (merged <code>3dc129e7c</code>); one repair round fixed a write from a read path. <a href="/reckon/evidence/archive/a-review-is-sized-to-its-risk-landed.html#s9">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261010T220900276544-a-review-receives-its-rubric" data-who="reckon-build" data-when="2026-10-10T22:56:37.053Z">
-    <div class="r-comment-body"><p>Run reviews now receive their rubric in the brief: _review_dispatch_fields composes the brief from load_review_prompt (or load_claims_review_prompt for a read-only run) plus the reviewed run&#x27;s id, head and stored brief path, and _review_dispatch_tokens emits --brief beside --plan/--section when a plan is named. The brief is materialized to the reviewed run&#x27;s directory as review-brief.md only when the composition is the run-review dispatch (the only caller passing delta); every read - the review-missing obligation&#x27;s next command, the in-flight check, the repair dispatch - returns the same path and text and writes nothing. Gate tests/test_a_review_receives_its_rubric.py+tests/test_crew_obligations.py+tests/test_review_lane_follows_its_run.py pass 22/22 (EXIT=0), negative control dropping the dispatch gate fails the obligation read&#x27;s unchanged-records check at EXIT=1.</p></div>
+    <div class="r-comment-body"><p>Run reviews now receive their rubric in the brief: _review_dispatch_fields composes the brief from load_review_prompt (or load_claims_review_prompt for a read-only run) plus the reviewed run's id, head and stored brief path, and _review_dispatch_tokens emits --brief beside --plan/--section when a plan is named. The brief is materialized to the reviewed run's directory as review-brief.md only when the composition is the run-review dispatch (the only caller passing delta); every read - the review-missing obligation's next command, the in-flight check, the repair dispatch - returns the same path and text and writes nothing. Gate tests/test_a_review_receives_its_rubric.py+tests/test_crew_obligations.py+tests/test_review_lane_follows_its_run.py pass 22/22 (EXIT=0), negative control dropping the dispatch gate fails the obligation read's unchanged-records check at EXIT=1.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261010T232745571218-brief-run-review-tests-follow-the-rubric" data-who="reckon-build" data-when="2026-10-10T23:34:52.500Z">
+    <div class="r-comment-body"><p>tests/test_review_of_a_brief_run_names_its_brief.py rewritten to the rubric-carrying brief contract — a brief-carried run&#x27;s composed review brief names the reviewed run&#x27;s stored brief path, and a plan-naming run&#x27;s command carries --brief beside --plan/--section; pytest -q on it plus tests/test_a_review_receives_its_rubric.py: 11 passed, EXIT=0.</p></div>
 </div>
 </section>
 </main>
