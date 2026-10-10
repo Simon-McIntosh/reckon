@@ -1,0 +1,44 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T19:15:21.692Z",
+  "dispatched_at": "2026-10-10T19:06:22Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html#s4",
+      "id": "reasoning-1",
+      "reason": "a node dispatched to \u00a74 would open `doccheck.py`, find no git-date lookup, and either stall or edit the wrong module; the correct module is `serve.py`, which \u00a75 also writes, so \u00a74's write path must move and its serialization against \u00a75 be stated.",
+      "text": "\u00a74 declares its write path as `reckon/doccheck.py`, but the git-date lookups it describes live in `reckon/serve.py` (`_git_creation_cache_path`, `_git_last_modified_cache_path`, `_run_git` at serve.py:1116\u20131468, persistent cache at `~/.config/reckon/cache/git-creation/`), and `reckon/doccheck.py` contains no `subprocess` or git code at all",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "6a68b19bdfe9f47da34ef3cdee7868ff1c588d5a2b04b30d099cd740f2139f9d",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261010T190553997644-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "ffa3496ad2f337bb4c07c8adfe3a0c3cb447edde",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited file:line resolves exactly against the",
+    "done_when": "pass \u2014 each of \u00a72\u2013\u00a76 names an executed negative control (journal",
+    "evidence_paths": "pass \u2014 \u00a72\u2013\u00a75 gates are `tests/*.py` inside the repo, \u00a76's",
+    "naming": "pass \u2014 proposed test filenames (`test_a_read_takes_no_lock.py`,",
+    "reasoning": "a finding \u2014 \u00a74 cites a module that does not carry the mechanism",
+    "single_goal": "pass \u2014 \u00a72 no write lock, \u00a73 memoised walk, \u00a74 git asked once,",
+    "wiring": "pass \u2014 the plan declares no machine-readable depends-on/gates meta"
+  },
+  "section_digests": {
+    "_document": "ed56ddda67cab69463c811909740e400e27ec4661d29dba9a7afeb660333816e",
+    "s1": "08a7f1567b1e2d537c0f631e1c1a3d62e7f43443a0e0e28607b3bfd6e1a9b4f5",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s3": "62a02d300084d0c4ae811f3858562352d22bbb05b2bcbb683f921d062e56ea89",
+    "s4": "2c3cb1db0afb80d7d3bccd12c61ebd2b9b8f27fd0c7d2b10c7d2dc1f031a0f3c",
+    "s5": "64b674063099d73a136ce1c3f244c4dc442c0589d09d20d0d2c28dd91c76d4c6",
+    "s6": "00db597c53dfd6e3d857f89ee748a8c6ecfe51576b2b66e64772393805c59b52"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T19:19:41.494007+00:00"
+}
