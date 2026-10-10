@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-read-answers-inside-its-deadline">
+  <meta name="plan-evidence-for" content="reckon:a-read-answers-inside-its-deadline">
+  <meta name="plan-verifies" content="reckon:a-read-answers-inside-its-deadline#s4">
+  <meta name="plan-recorded-at" content="2026-10-10">
+  <meta name="plan-verdict" content="passed">
+  <title>Git HEAD is resolved once per commit | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="git-head-resolved-once-landing" data-node="git-head-resolved-once" data-reckon="landed" data-when="2026-10-10">
+  <h2>Git HEAD is resolved once per commit, not once per lookup</h2>
+  <p><code>_git_head</code> now memoises the resolved sha on the identity of the repository's <code>HEAD</code> and the ref file it names (mtime, inode and size, read as files rather than by git, with a linked worktree's ref reached through its <code>commondir</code>), so a warm creation or last-modified lookup for an unchanged checkout starts no git process, and a new commit changes that identity so the next lookup resolves the new date. <code>tests/test_git_head_is_resolved_once.py</code>: 2 passed, EXIT=0; negative controls — HEAD memo keyed on nothing (1 failed, EXIT=1) and the worktree ref read from the private git directory (1 failed, EXIT=1).</p>
+</article>
+</body>
+</html>
