@@ -234,18 +234,17 @@ def test_the_resolver_reports_its_failure_instead_of_raising(repo, monkeypatch):
     assert error == "CrewError: mounts unavailable"
 
 
-def test_two_backends_with_different_chains_share_the_request_figure(
-    tmp_path, monkeypatch
-):
-    """Every candidate block wears the request's figure, not its own backend's.
+def test_each_backend_block_carries_its_own_chain_authority(tmp_path, monkeypatch):
+    """Every candidate block wears its own backend's estimate, not the request's.
 
     Two backends whose standing instruction chains differ — one cli/claude, one
-    codex — would, under a per-backend rule, render two different candidate
-    figures while the request wore a third. The standing chain is the
-    machine-read input, so it is stubbed to differ by a known amount, making
-    the divergence the one figure removes measurable: the claude candidate's
-    own chain still measures differently, yet its block must carry the request's
-    harness-independent figure exactly as the codex candidate's does.
+    codex — are each gated on their own chain, so their blocks must render the
+    figures the context-fit verdict measured for them while the request keeps a
+    single harness-independent figure. The standing chain is the machine-read
+    input, so it is stubbed to differ by a known amount, making the split
+    measurable: the claude block wears the claude chain's estimate and the codex
+    block the codex chain's, and the two differ from each other and from the
+    request's figure.
     """
     from reckon.crew import picker, routing
     from reckon.crew.picker import snapshot as snapshot_module
@@ -255,7 +254,7 @@ def test_two_backends_with_different_chains_share_the_request_figure(
     (repo / "src" / "target.py").write_text("x" * 400)
 
     def fake_standing(_repo, backend):
-        tokens = 60000 if backend.get("command") == "claude" else 51000
+        tokens = 60000 if backend and backend.get("command") == "claude" else 51000
         return tokens, {"effective_tokens": tokens, "files": []}
 
     monkeypatch.setattr(routing, "_standing_context_input", fake_standing)
@@ -340,13 +339,7 @@ def test_two_backends_with_different_chains_share_the_request_figure(
     assert set(blocks) == {"claude_lane", "codex_lane"}
     request = seen["request"]
     assert request and request > 0
-    for name, figure in blocks.items():
-        assert figure == request, name
 
-    # Non-vacuity: the two chains genuinely differ, so a per-backend figure
-    # would have split the candidates. The claude candidate's own chain still
-    # measures away from the request; the block above nevertheless wears the
-    # request's figure, which is the rule this node puts in place.
     claude_only = snapshot_module.estimated_context_tokens(
         node, repo, backend_settings=config["backends"]["claude_lane"]
     )
@@ -355,5 +348,11 @@ def test_two_backends_with_different_chains_share_the_request_figure(
     )
     assert claude_only != codex_only, "the two chains must differ to bite"
     assert claude_only != request, "the claude chain must measure away from the request"
-    assert blocks["claude_lane"] == request
+    # Each block wears the estimate the context-fit verdict measured for that
+    # candidate's own chain, not the request's figure a shared rule would have
+    # put on both.
+    assert blocks["claude_lane"] == claude_only
+    assert blocks["codex_lane"] == codex_only
+    assert blocks["claude_lane"] != blocks["codex_lane"]
+    # The request estimate stays one harness-independent figure.
     assert request == codex_only
