@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T20:04:22.055Z",
+  "dispatched_at": "2026-10-10T19:53:53Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-portfolio-reads-true.html:80",
+      "id": "done_when-1",
+      "reason": "the node must either add that test to its write paths and state how its assertions are superseded, or keep derive_impl_from_sections returning None for partial coverage, or it breaks a green test its own gate requires to pass.",
+      "text": "\u00a72's done-when requires \"the tests importing reckon._plan_html pass\", but \u00a72 changes a partial-coverage plan's parsed state to source declarations with a declaration-count figure, and tests/test_impl_stays_authorable_while_records_are_partial.py \u2014 green at b2174fd1c (4 passed) \u2014 asserts the opposite for exactly that case (line 114-119: derive_impl_from_sections is None; line 125-126: impl 0.25, impl_source authored); that test is not among \u00a72's write paths (snapshot lines 82-84), so \u00a72 cannot satisfy its own gate without an out-of-scope edit",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-portfolio-reads-true.html:93",
+      "id": "reasoning-1",
+      "reason": "the asserted cross-reader \"one age\" property cannot be delivered without editing roadmap.py to pass a path (or reorder), which the write paths exclude, so the plan must widen its scope or drop the roadmap claim.",
+      "text": "\u00a73 claims \"the audit, the roadmap and the archive report one age with its source named on the row\", but roadmap.py:945 calls derived_plan_age without a path on its first attempt (a path is supplied only after a None result at line 968), so with the commit read first the roadmap returns plan-modified before any commit source is consulted, and reckon/roadmap.py is not in \u00a73's write paths (snapshot lines 101-102)",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "37e544d1fbe9ae29f6f4d2a931147e32a1b3bc82be28202b033e59d460c78c5a",
+  "plan_slug": "the-portfolio-reads-true",
+  "plan_version": 3,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261010T195326319223-plan-review-of-the-portfolio-reads-true",
+  "reviewed_blob_sha": "3f12984f91d9fb5b03663b7580c51601b7207562",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 derive_impl_from_sections (_plan_html.py:800), impl_source \"computed\" (:1128), IMPL_SOURCE_ENUM (_schema.py:112), plan_review.py:122, _store.py:2606, derived_plan_age (doccheck.py:230), the audit loop (:531), _git_last_committed (serve.py:1432), archive.py:87, roadmap.py:945 and ACTIVE_PLAN_STALE_AFTER_DAYS (doccheck.py:154) all resolve; two citations are imprecise but land in the right file \u2014 _plan_html.py:1125 is the derive call, not one of the two impl_source assignments (:1128 and :1130), and fleet_index.py:33 is the HEAD helper, not its date reader _commit_days (:45); neither misdirects a reader to a different file.",
+    "done_when": "a finding \u2014 \u00a72's done-when (snapshot line 80) requires the tests importing reckon._plan_html to pass while the deliverable changes the parsed state an existing green test asserts.",
+    "evidence_paths": "pass \u2014 the gates point at section evidence (the-portfolio-reads-true#s2/#s3), the tests are written under tests/, and negative-control logs land on the run's own record, not a scratchpad.",
+    "naming": "pass \u2014 impl-meta-stale and AGING are emitted audit codes (data), and derived_plan_age, derive_impl_from_sections and the impl_source values carry no plan label, ticket number or version tag.",
+    "reasoning": "a finding \u2014 \u00a73 asserts a cross-reader result (\"the audit, the roadmap and the archive report one age\", snapshot line 93) that its mechanism cannot produce on the roadmap's code path within the section's write paths.",
+    "single_goal": "pass \u2014 \u00a72 (derive impl from declarations, with its one schema value and one audit code) and \u00a73 (age counts from the last commit) each name one coherent deliverable.",
+    "wiring": "pass \u2014 \u00a72 and \u00a73 are held by \u00a76's gates g-tprt-impl-honest (the-portfolio-reads-true#s2) and g-tprt-age-honest (the-portfolio-reads-true#s3); the \u00a72\u2192\u00a73\u2192\u00a74\u2192\u00a75 order is carried by the shared doccheck.py serialisation named in the followup rather than by a declared section relation, but no needed dependency is missing."
+  },
+  "section_digests": {
+    "_document": "a2e40a46ef8769d14f88fec5811bd50d0aa5fc6a7f36f66f1ebcba3a9533436a",
+    "s1": "56204248c9050844c40ac7e00bff909830602caaa4b95be87bacea51b1495a03",
+    "s2": "49de6856b295819129b814d3726761e3dc5c57608445ee65bebaa73e3517341b",
+    "s3": "4bcf8ae8c65d2c188a606f12537d9bbdd4af86e7c6e87905a3d1562fbcf99573",
+    "s4": "9280ec81cafc36b7de1295b0f22745c6162986e93d9731a8e8b99c51d658a217",
+    "s5": "6faa47a6baa98d4e30fc9ec11b4968f36696b381308a599ae91bf7eb75418236",
+    "s6": "3b386242a01bc207ce0810ef1ee5ccbd8a9d5ea78f77a5dd6fc61b2f207c53d0"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T20:10:02.272589+00:00"
+}
