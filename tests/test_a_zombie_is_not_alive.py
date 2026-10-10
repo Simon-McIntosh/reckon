@@ -24,7 +24,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import runs
+from reckon.crew import process_liveness, runs
 
 
 def _pid_max() -> int:
@@ -82,7 +82,7 @@ def test_a_zombie_stat_record_reports_not_alive(
 ) -> None:
     """The kernel zombie state makes the probe answer not alive, without a
     signal probe at all — the process has exited regardless of who owns it."""
-    monkeypatch.setattr(runs, "_process_state", lambda pid: "Z")
+    monkeypatch.setattr(process_liveness, "_process_state", lambda pid: "Z")
     assert runs.process_alive(12345) is False
 
 
@@ -91,7 +91,7 @@ def test_live_states_report_alive(monkeypatch: pytest.MonkeyPatch, state: str) -
     """Running, sleeping, stopped and uninterruptible-sleep states all stay
     alive: the change narrows to the zombie case alone rather than treating
     every parsed state as a verdict."""
-    monkeypatch.setattr(runs, "_process_state", lambda pid: state)
+    monkeypatch.setattr(process_liveness, "_process_state", lambda pid: state)
     # os.getpid() is a real, signalable process, so the probe path succeeds
     # and the state override is the only thing varied.
     assert runs.process_alive(os.getpid()) is True
@@ -102,7 +102,7 @@ def test_a_pid_with_no_stat_record_returns_as_it_does_today(
 ) -> None:
     """An unreadable stat record is not proof of death: the question falls
     through to the signal probe unchanged, in both directions."""
-    monkeypatch.setattr(runs, "_process_state", lambda pid: None)
+    monkeypatch.setattr(process_liveness, "_process_state", lambda pid: None)
     assert runs.process_alive(os.getpid()) is True
     assert runs.process_alive(_pid_max() + 4096) is False
 
@@ -113,7 +113,7 @@ def test_an_unparsable_stat_record_returns_as_it_does_today(
     """A stat record that exists but yields no state field behaves as today
     rather than raising: the probe still answers, and unparsable is not a
     verdict about the process."""
-    monkeypatch.setattr(runs, "_process_stat_fields", lambda pid: [])
+    monkeypatch.setattr(process_liveness, "_process_stat_fields", lambda pid: [])
     assert runs._process_state(os.getpid()) is None
     assert runs.process_alive(os.getpid()) is True
 

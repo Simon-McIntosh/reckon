@@ -1,20 +1,12 @@
 """The classifier reaches liveness through the module that defines it.
 
-A name imported into another module is bound at import time, so replacing the
-attribute on the defining module leaves every such binding untouched. The
-measured cost: a test replaced ``process_alive`` on ``reckon.crew.runs`` and
-the classifier — holding its own import-time binding — consulted the real
-process table instead of the arranged answer, so no failed transition rendered
-after the arranged process had stopped.
-
-What this locks in: classification reads ``runs.process_alive`` at the point
-of call, so replacing the definition on its owning module replaces what the
-classifier consults. Both directions are asserted on one pointer, because a
-single direction could be coincidentally right: the replacement reporting
-not alive must make a terminal word the outcome, and the same pointer whose
-replacement reports alive must defer that word. A pointer with no recorded
-launching host is not the classifier's business to ask the process table
-about, so it keeps the stored answer and performs no lookup.
+Classification delegates to ``record_process_alive``, which resolves
+``process_liveness.process_alive`` at the point of call. Replacing that
+attribute must therefore replace the probe the classifier consults.
+Both directions are asserted on one pointer: reporting not alive must make a
+terminal word the outcome, and reporting alive must defer that word. A pointer
+with no recorded launching host is not the classifier's business to ask the
+process table about, so it keeps the stored answer and performs no lookup.
 """
 
 from __future__ import annotations
@@ -26,7 +18,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import recovery, runs
+from reckon.crew import process_liveness, recovery
 
 HOST = socket.gethostname()
 
@@ -74,14 +66,14 @@ def test_replacing_the_module_function_changes_the_classification(
     # the real process table and answer alive for both.
     pointer = _pointer(tmp_path, "r-reach", launcher_host=HOST, stored_alive=None)
 
-    monkeypatch.setattr(runs, "process_alive", lambda _pid: False)
+    monkeypatch.setattr(process_liveness, "process_alive", lambda _pid: False)
     dead_row = recovery.classify_pointer(pointer, now_seconds=time.time())
     assert dead_row["process_alive"] is False
     assert dead_row["liveness_proven"] is True
     assert dead_row["classification"] == "failed"
     assert dead_row["manifest_status"] == "failed"
 
-    monkeypatch.setattr(runs, "process_alive", lambda _pid: True)
+    monkeypatch.setattr(process_liveness, "process_alive", lambda _pid: True)
     live_row = recovery.classify_pointer(pointer, now_seconds=time.time())
     assert live_row["process_alive"] is True
     assert live_row["liveness_proven"] is True
@@ -103,7 +95,7 @@ def test_pointer_without_a_launching_host_keeps_the_stored_answer(
             f"process lookup performed without a recorded host {pid!r}"
         )
 
-    monkeypatch.setattr(runs, "process_alive", _forbidden_lookup)
+    monkeypatch.setattr(process_liveness, "process_alive", _forbidden_lookup)
     row = recovery.classify_pointer(
         _pointer(
             tmp_path,

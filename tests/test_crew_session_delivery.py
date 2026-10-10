@@ -21,7 +21,7 @@ from pathlib import Path
 import pytest
 
 from reckon import cli, crew
-from reckon.crew import recovery, runs
+from reckon.crew import follower_registration, recovery, runs
 from reckon.crew import ticker as ticker_module
 from reckon.crew.dispatch import WATCHER_LOAD_BOUND_SECONDS
 
@@ -854,7 +854,7 @@ def test_the_descriptor_trace_is_paid_once_per_process(home, monkeypatch) -> Non
         scans += 1
         return real(inode, exclude=exclude)
 
-    monkeypatch.setattr(runs, "_pipe_reader_pids", counted)
+    monkeypatch.setattr(follower_registration, "_pipe_reader_pids", counted)
 
     read_end, write_end = os.pipe()
     try:

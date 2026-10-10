@@ -20,6 +20,7 @@ import reckon.crew.dispatch_sessions as dispatch_sessions_module
 from reckon import _backends, _plan_html, crew, ledger
 from reckon import cli as cli_module
 from reckon.crew import (
+    process_liveness,
     recovery,
     recovery_review_delivery,
     recovery_stream,
@@ -852,12 +853,14 @@ def test_observe_and_watch_render_failure_only_after_the_process_stops(
         },
     )
 
-    dispatch_module = importlib.import_module("reckon.crew.dispatch")
+    importlib.import_module("reckon.crew.dispatch")
     liveness = {"alive": True}
     monkeypatch.setattr(
         dispatch_sessions_module, "process_alive", lambda _pid: liveness["alive"]
     )
-    monkeypatch.setattr(runs, "process_alive", lambda _pid: liveness["alive"])
+    monkeypatch.setattr(
+        process_liveness, "process_alive", lambda _pid: liveness["alive"]
+    )
 
     live_pointer = crew.observe(run_id)
     assert live_pointer["process_alive"] is True

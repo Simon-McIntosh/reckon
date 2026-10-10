@@ -26,7 +26,7 @@ from pathlib import Path
 import pytest
 
 from reckon import __version__
-from reckon.crew import recovery, recovery_watch, runs
+from reckon.crew import process_liveness, recovery, recovery_watch, runs
 
 
 @pytest.fixture()
@@ -300,7 +300,7 @@ def test_producer_live_leaves_a_record_replaced_mid_check_alone(
         _rewrite_seat_record("proj", newer)
         return real_process_alive(pid)
 
-    monkeypatch.setattr(runs, "process_alive", racing_process_alive)
+    monkeypatch.setattr(process_liveness, "process_alive", racing_process_alive)
 
     assert runs.producer_live("proj") is False
     assert _read_seat_record("proj") == newer
