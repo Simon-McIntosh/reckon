@@ -1,0 +1,45 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T22:52:12.394Z",
+  "dispatched_at": "2026-10-10T22:47:04Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-suite-tests-behaviour.html:133",
+      "id": "reasoning-1",
+      "reason": "the node will implement the criterion as written and silently remove roughly 150 non-browser tests from the standing suite; the criterion must be narrowed to the tests that actually reach the harness, or the coverage loss made an explicit decision.",
+      "text": "\u00a77 marks \"every test in a module that imports tests/spa_browser_harness.py\", but \u00a72 defines the browser population as \"the tests reaching installed_browser_or_skip\" (56 ids, \u00a77's own preamble); 34 files reference the harness (33 test modules) and together they hold ~205 test functions, so the marked set is a large superset of the population \u2014 tests/test_build.py alone defines 24 tests and only 9 use the browser fixture `rendered_browser` (line 225, where `installed_browser_or_skip` is called by that module-scoped fixture) \u2014 and the standing-suite command excluding the marker would drop ~150 non-browser tests from the standing suite, not the 56 browser ids",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "9189b19ad4d24ab4c43f8d6f22b7eea771381e1a1cda654d1e7ddf27b185fc89",
+  "plan_slug": "the-suite-tests-behaviour",
+  "plan_version": 14,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261010T224634148536-plan-review-of-the-suite-tests-behaviour",
+  "reviewed_blob_sha": "92171ac166e78876ac1b6d91482edd36692c738c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 tests/spa_browser_harness.py (installed_browser_or_skip:539), tests/conftest.py (pytest_collection_modifyitems:1110), reckon/crew/standing_suite.py, docs/state/reckon/flight.yaml (review.suite.command:81) and the-suite-is-green-at-head.html all resolve; the extensionless hrefs resolve as `<path>.html`; the absent tests/test_browser_population_is_its_own_row.py is a declared write path.",
+    "done_when": "pass \u2014 \u00a77's done-when (tests/test_browser_population_is_its_own_row.py asserts the marker set, the command's collection excludes it, a fixed log writes the browser row) is measurable and names an executed negative control (marker exclusion removed, a marked test is collected and fails).",
+    "evidence_paths": "pass \u2014 the quiet-node measurement and the browser row are written to the run directory and the standing-suite record, both durable, neither a scratchpad nor a node-local temp.",
+    "naming": "pass \u2014 `browser` is a pytest marker, `g-tstb-browser-row` is a gate id in plan data, and the new test file is named for what it measures; no plan label reaches code.",
+    "reasoning": "a finding \u2014 \u00a77's module-level marker criterion does not match the browser population \u00a72 defines.",
+    "single_goal": "pass \u2014 \u00a77 carries one goal, \"the browser population runs as its own suite row\"; the marker, the command exclusion and the row are its parts.",
+    "wiring": "pass \u2014 \u00a77's hold on \u00a72 is now declared: gate `g-tstb-browser-row` (data-section=\"s2\", data-gated-sections=\"s2\", required-evidence `the-suite-tests-behaviour#s7`) matches the house r-gate shape seen in a-small-change-is-a-small-node, and \u00a77's \"runs on \u00a72's held head\" is a dispatch base, not a plan-shaped wait the roadmap must order."
+  },
+  "section_digests": {
+    "_document": "e17b65d6e579c79abe158c68fa6611786a1145fe183287cb6ce34e4e38fdc7be",
+    "s1": "1d6184c53af837617ac7ee370d7b6d622f0b187f5ac5e8f8d90a1dda6a98b5b2",
+    "s2": "0a2190864603950ade3af9b2de4b53b463e747cc8dc4c1f6e9175cdd5a4ee623",
+    "s3": "b54ea6f02bf0468b0b6f22c4317ef1f30b269045ffcaa9c19ae6abd2d175e96b",
+    "s4": "0bbb53f80bd6f9eb08c166f5e54fdde7bd5678c29b455fd39e15555bcbc17e35",
+    "s5": "ab2721f7547c999de436c1bb3551c6fe1aff3bbe51e9d92c2f44f5f91ce4123d",
+    "s6": "2ab2547ce36adce1b8926643bbc4604f1d6d1695d52434c1e8849e50f80c4b9d",
+    "s7": "10d85a43480337e14c7308bfca714221bbc40aaa80bc2bef084ddedd16528ebe"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T22:56:32.172710+00:00"
+}
