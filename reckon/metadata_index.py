@@ -482,9 +482,82 @@ def _covered_files(docs_dir: Path) -> list[tuple[str, Path]]:
     the single docs-tree walk: the discovery change signature sweeps the same
     function, so the index's covered set and discovery's counted set cannot
     drift into two implementations.
+
+    The index records each visited directory's identity, so a tree whose shape
+    is unchanged answers from the persisted file set without walking it. A tree
+    whose shape moved, or one the index has not seen, walks; the walk's set and
+    directory identities are recorded, so the next read skips the walk.
     """
 
-    return _walk_covered(docs_dir)[0]
+    project = _docs_dir_project(docs_dir)
+    if project is not None:
+        reused = _reuse_covered(docs_dir, project)
+        if reused is not None:
+            return reused[0]
+    files, dirs = _walk_covered(docs_dir)
+    if project is not None:
+        _record_covered_shape(docs_dir, project, files, dirs)
+    return files
+
+
+def _docs_dir_project(docs_dir: Path) -> str | None:
+    """Return the project a docs tree is mounted as, from the mounts table.
+
+    The discovery change signature sweeps :func:`_covered_files`, which is
+    shared with the index and takes only the tree. Resolving the project from
+    the mount that names it lets that reader reach the index's persisted
+    walk-skip without a second directory-identity map. A tree no mount names —
+    a dispatch worktree, an unregistered checkout — returns ``None`` and the
+    reader walks as it always did.
+    """
+
+    from reckon._store import _mounts_path
+
+    try:
+        raw = json.loads(_mounts_path().read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    if not isinstance(raw, dict):
+        return None
+    try:
+        target = str(Path(docs_dir).resolve())
+    except OSError:
+        return None
+    for project in sorted(raw):
+        path = raw[project]
+        if not isinstance(project, str) or not isinstance(path, str):
+            continue
+        try:
+            if str(Path(path).expanduser().resolve()) == target:
+                return project
+        except OSError:
+            continue
+    return None
+
+
+def _record_covered_shape(
+    docs_dir: Path,
+    project: str,
+    files: list[tuple[str, Path]],
+    dirs: list[tuple[str, Path]],
+) -> None:
+    """Persist the file set and directory identities one walk observed.
+
+    Each covered file keeps the entry the index already holds for it, so a
+    digest and the fields derived from it survive; a file the index has not
+    seen keeps only its path and is parsed by the next index build. A file that
+    left the tree drops out. Recording the shape keeps the walk-skip reusable
+    without the parse a full index build performs.
+    """
+
+    known = _load_persisted(docs_dir, project)
+    entries = [known.get(relative) or {"path": relative} for relative, _path in files]
+    stamps: dict[str, list[int]] = {}
+    for relative, path in dirs:
+        identity = _dir_identity(path)
+        if identity is not None:
+            stamps[relative] = identity
+    _store_persisted(docs_dir, project, entries, stamps)
 
 
 def _dir_identity(path: Path) -> list[int] | None:
