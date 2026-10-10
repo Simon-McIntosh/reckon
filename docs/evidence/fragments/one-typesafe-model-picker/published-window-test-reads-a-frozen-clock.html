@@ -1,0 +1,42 @@
+<section id="published-window-test-reads-a-frozen-clock">
+  <h2>The published-window staleness test reads a frozen clock</h2>
+  <p>
+    One test-only repair; no product code changed.
+    <code>test_dispatch_marks_old_published_window_stale</code> read the wall
+    clock twice — once to place the observed reading, once inside the picker
+    snapshot that computes the candidate's <code>budget_age_s</code> — so any
+    drift between the two reads moved the measured age off the recorded
+    observation and the <code>approx(7200, abs=1)</code> bound flapped under
+    load. The snapshot module's clock is now pinned to the captured moment, as
+    the neighbouring stale-recorded-window case already does, leaving the age a
+    single source.
+  </p>
+  <table>
+    <thead>
+      <tr><th>Arm</th><th>Clock</th><th>Result</th></tr>
+    </thead>
+    <tr>
+      <td>Base (<code>9a9d3d3ec</code>)</td>
+      <td>snapshot clock advanced one hour between the write and the read</td>
+      <td><code>assert 10800.0 == 7200 &plusmn; 1</code> &mdash; fails, as
+        recorded</td>
+    </tr>
+    <tr>
+      <td>Head</td>
+      <td>pinned to the captured moment</td>
+      <td>passes; an hour of wall-clock drift cannot reach the age</td>
+    </tr>
+    <tr>
+      <td>Negative control</td>
+      <td>release the pin so the read lands an hour forward</td>
+      <td><code>assert 10800.0 == 7200 &plusmn; 1</code> &mdash; fails</td>
+    </tr>
+  </table>
+  <h3 id="published-write-reads-gate">Gate</h3>
+  <p>
+    Every <code>tests/test_picker*.py</code> module, <code>-n 6</code>. Base
+    <code>9a9d3d3ec</code>: 160 passed, 0 failed. Head
+    <code>bc50c07c2</code>: 160 passed, 0 failed &mdash; 0 added failures. Logs
+    under the run directory.
+  </p>
+</section>
