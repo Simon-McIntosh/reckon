@@ -104,6 +104,13 @@ _RESULT_WORDS = {
     "xpassed": "xpassed",
 }
 
+# A skip's short-summary line, as ``-rs`` prints it. Unlike a FAILED line, whose
+# token is a node id, pytest reports a skip by location: ``SKIPPED [1]
+# tests/test_x.py:12: needs a GPU``. The bracketed ``[N]`` is the count of items
+# sharing that line, so the ``path:lineno`` after it — before the reason's own
+# colon — is the id this reads.
+_SKIPPED_ID_RE = re.compile(r"^SKIPPED\s+(?:\[\d+\]\s+)?(?P<location>\S+)")
+
 
 def suite_runs_dir(project_root: str | Path, project: str) -> Path:
     """Return the directory holding one file per suite run for ``project``.
@@ -193,6 +200,23 @@ def _ran_count(counts: Mapping[str, int | None]) -> int | None:
     return sum(reported) if reported else None
 
 
+def _pytest_skipped_ids(log_text: str) -> set[str]:
+    """Return the locations a gate log reports SKIPPED, from a ``-rs`` summary.
+
+    A skip's short-summary line prints the item's location rather than a node
+    id, so this is the per-id extractor ``_pytest_failure_ids`` reads FAILED and
+    ERROR lines with, extended to ``SKIPPED``: the bracketed count is dropped
+    and the ``path:lineno`` before the reason is taken, with the separator colon
+    stripped so a skip the runner reports by file line reads as one identity.
+    """
+    ids: set[str] = set()
+    for raw in log_text.splitlines():
+        match = _SKIPPED_ID_RE.match(raw.strip())
+        if match:
+            ids.add(match.group("location").rstrip(":"))
+    return ids
+
+
 def run(
     project_root: str | Path,
     declaration: SuiteDeclaration,
@@ -203,8 +227,9 @@ def run(
     The command runs in its own session so the whole group can be stopped at
     the budget; the combined output is captured to ``log_path``. The returned
     record carries the revision the run was taken at, the command, the exit
-    status, the collected/passed/failed/errored counts, the duration and
-    budget, and the two failure flags a hold reads.
+    status, the collected/passed/failed/skipped/errored counts and the failure
+    and skip ids, the duration and budget, and the two failure flags a hold
+    reads.
     """
     log_path = Path(log_path)
     log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -271,12 +296,14 @@ def _build_record(
         "collected": counts["collected"],
         "passed": counts["passed"],
         "failed": counts["failed"],
+        "skipped": counts["skipped"],
         "errored": counts["errored"],
         "duration_seconds": round(duration_seconds, 3),
         "budget_seconds": budget_seconds,
         "collection_failed": counts["collection_failed"],
         "over_budget": over_budget,
         "failure_ids": counts["failure_ids"],
+        "skipped_ids": counts["skipped_ids"],
         "log_path": str(log_path),
         "observed_at": _observed_at(),
     }
@@ -327,9 +354,11 @@ def _build_counts(log_text: str, exit_status: int | None) -> dict[str, Any]:
         "collected": collected,
         "passed": results["passed"],
         "failed": results["failed"],
+        "skipped": results["skipped"] if results["skipped"] is not None else 0,
         "errored": results["errored"],
         "collection_failed": collection_failed,
         "failure_ids": sorted(_pytest_failure_ids(log_text)),
+        "skipped_ids": sorted(_pytest_skipped_ids(log_text)),
     }
 
 
