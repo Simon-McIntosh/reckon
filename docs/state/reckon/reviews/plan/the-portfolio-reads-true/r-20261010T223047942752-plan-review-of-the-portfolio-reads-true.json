@@ -1,0 +1,60 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T22:37:01.603Z",
+  "dispatched_at": "2026-10-10T22:31:14Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-portfolio-reads-true.html:99",
+      "id": "reasoning-1",
+      "reason": "the write paths must add `reckon/archive.py` (or the archive claim must be dropped), and a node following the section as written would either hit a TypeError at archive.py:87 or ship an archive that disagrees with the audit it says it matches.",
+      "text": "\u00a73 states \"The audit, the roadmap and the archive then report one age, with its source named on the row\", and its deliverable gives `derived_plan_age` a new interface (\"takes the repository and docs directories beside the plan path\"), yet the \"Write paths\" list (doccheck.py, roadmap.py, the new test) omits `reckon/archive.py`, whose `derived_plan_age(...)` call at archive.py:87 passes only `modified` and `fallback_path` \u2014 so the interface change either breaks that caller or leaves the archive reading the file's mtime, contradicting the section's own claim that the archive reports the commit age",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-portfolio-reads-true.html:95",
+      "id": "anchors_resolve-1",
+      "reason": "this citation is the section's whole warrant for the existing lookup it reuses (the point the two deferred findings turned on), and the section's author revised this very sentence in 11fcab500 while leaving the line stale, so the anchor must be corrected to 1532 for the claim to be checkable.",
+      "text": "\u00a73 cites `_git_last_committed(repo_dir, docs_dir)` at `reckon/serve.py:1432`, but the function is defined at serve.py:1532; line 1432 is inside `_git_last_modified_payload`, an unrelated cache-payload helper",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-portfolio-reads-true.html:100",
+      "id": "anchors_resolve-2",
+      "reason": "the section instructs the node to enumerate these readers in its manifest as deliberately untouched, and a wrong location makes that list name code that is not a git-date reader, so the record of what was left alone is wrong.",
+      "text": "\u00a73 names \"the two other git-date readers (`reckon/metadata_index.py:681`, `reckon/fleet_index.py:33`) [which] are left as they are and listed in the manifest\", but neither line resolves to a git-date reader: metadata_index.py:681 is the closing `),` of an unrelated dict literal (the module consumes git time maps passed in, it does not read git itself), and fleet_index.py:33 is `capture_output=True` inside `_git_head` (a `rev-parse HEAD` sha reader with no date) \u2014 the file's actual date reader is `_commit_days` at fleet_index.py:45 (`--format=%ad`)",
+      "type": "anchors_resolve",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "b654126818115e0cc2d5f37c3fe94734283b149cae17c0e74026136ba0af45d3",
+  "plan_slug": "the-portfolio-reads-true",
+  "plan_version": 11,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261010T223047942752-plan-review-of-the-portfolio-reads-true",
+  "reviewed_blob_sha": "a9d5f3f8c9d7c5c5e4f48e4cbdce562dd7a7e58a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 two of \u00a73's citations do not resolve to the code they name.",
+    "done_when": "pass \u2014 \u00a73's done-when names an executed negative control (age read from the mtime makes the 20-day fixture report age 0 and no row, so the test fails) and derives its ages from the fixture's own commit dates rather than literals.",
+    "evidence_paths": "pass \u2014 the gate is a repository test file under `tests/`, not a session scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 `AGING` and `STALE` are audit-code labels, the same vocabulary as the existing `MISSING_IMPL`/`STALE_RCA` codes, and no plan label, stage name or ticket number reaches a symbol.",
+    "reasoning": "a finding \u2014 \u00a73 changes `derived_plan_age`'s interface and names the archive among the three readers that report the new commit age, but `reckon/archive.py`, which calls it, is not among \u00a73's write paths.",
+    "single_goal": "pass \u2014 \u00a73 carries one deliverable, a plan's age read from its last commit, with the AGING band as its threshold on the same reading.",
+    "wiring": "pass \u2014 \u00a73 declares its ordering after \u00a72 in prose and in follow-up f-tprt-002 (\"\u00a72, \u00a73, \u00a74, \u00a75 in turn\"); its section element carries no `depends-on` link, which is consistent with \u00a72 having already landed (merged c6abb36b4), so no dispatch is misordered."
+  },
+  "section_digests": {
+    "_document": "a2e40a46ef8769d14f88fec5811bd50d0aa5fc6a7f36f66f1ebcba3a9533436a",
+    "s1": "56204248c9050844c40ac7e00bff909830602caaa4b95be87bacea51b1495a03",
+    "s2": "69b86246adb4ea89719f367ac57f43940ed14fb88c5c89408cf18a6b59911f57",
+    "s3": "0c935529ebc2091e3049bd365b261acd9432d593d610a49ee13037a6e37c7674",
+    "s4": "9280ec81cafc36b7de1295b0f22745c6162986e93d9731a8e8b99c51d658a217",
+    "s5": "6faa47a6baa98d4e30fc9ec11b4968f36696b381308a599ae91bf7eb75418236",
+    "s6": "3b386242a01bc207ce0810ef1ee5ccbd8a9d5ea78f77a5dd6fc61b2f207c53d0"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T22:39:10.688249+00:00"
+}
