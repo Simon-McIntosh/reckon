@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="the-crew-home-has-a-bound">
+  <meta name="plan-title" content="The Crew Home Has A Bound">
+  <meta name="plan-summary" content="reckon's caches and crew home hold 330 GB: 93 GB of per-worktree ledger indexes, 198 GB of run logs, 37 GB of reports. Bound each store and sweep it.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="5.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-sprint" content="S26">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-north-star" content="unattended-execution">
+  <meta name="plan-standalone" content="Storage bounds for the crew home and caches; no live plan waits on them and they wait on none. The pick-input index belongs to one-typesafe-model-picker's code and is fixed here because its growth is independent of the picker's open sections.">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <title>The Crew Home Has A Bound | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: four stores grow with every run and nothing bounds them</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
+    <p>The runtime-state health review of 2026-10-10
+      (<code>~/.config/reckon/crew/reports/reckon/health-review-1010/health-state-hygiene/</code>, figures in <code>evidence.md</code>) measured
+      the stores reckon writes outside the repository. All of them live in the shared GPFS home that every login and compute node reads.</p>
+    <table>
+      <thead><tr><th>Store</th><th>Size</th><th>Why it grows</th></tr></thead>
+      <tbody>
+        <tr><td>Ledger indexes, <code>~/.cache/reckon/ledger-*.sqlite</code></td><td>1,629 files, 93 GB (re-measured by the coordinator);
+          1,444 written on 2026-10-08</td><td><code>_run_index_path</code> (<code>reckon/ledger.py:896-899</code>) names the index by the
+          resolved ledger path, and every worktree resolves a different path, so each dispatched worktree builds a full-size index of the
+          same project's ledger and nothing removes it</td></tr>
+        <tr><td>Run directories, <code>~/.config/reckon/crew/runs/</code></td><td>11,231 directories, 198 GB</td><td>A worker's captured
+          logs have no size limit: one run holds two 5.4 GB copies of one validation log, and five 2 GB model checkpoints sit in run
+          directories. Retention prunes whole directories only, and skips the 568 directories with no ledger row
+          (<code>reckon/crew/routing.py:1764-1771</code>)</td></tr>
+        <tr><td>Reports, <code>~/.config/reckon/crew/reports/</code></td><td>807 entries, 37 GB</td><td>The only sweep is of plan-review raw
+          reports (<code>routing.py:1431-1515</code>)</td></tr>
+        <tr><td>Run locks, <code>~/.config/reckon/crew/locks/</code></td><td>11,888 files, 10,813 for runs already in the ledger</td>
+          <td><code>_pointer_lock</code> (<code>reckon/crew/runs.py:549-559</code>) creates one per run and nothing unlinks it</td></tr>
+      </tbody>
+    </table>
+    <p>Six directories in the crew home are named after shell redirections (<code>runs 2&gt;</code>, holding a nested
+      <code>dev/null; cat &gt; </code>), and seven untracked files at the root of the main checkout (<code>9</code>, <code>14</code>,
+      <code>16</code>, <code>42</code>, <code>47</code>, <code>192</code>, <code>head</code>) are pytest output captured by a mangled
+      redirection. Of 6,806 commits since 2026-10-01, 3,702 are <code>promote(...)</code> or <code>release(...)</code> records; that churn
+      belongs to <a href="/reckon/plans/history-persists-as-detail-washes-out.html">history-persists-as-detail-washes-out</a> and is not
+      repeated here.</p>
+
+    <h2 id="s2">§2 — One ledger index per project, and the old ones are swept</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> <code>_run_index_path</code> keys the index on the project and the repository's common git directory,
+      so a worktree and its main checkout share one index file, which rebuilds when its stamp moves exactly as now. The
+      <code>pick-input</code> kind gets its own leaf under the cache root instead of the root itself (<code>reckon/_store.py:162</code>), and
+      <code>reckon crew gc</code> reports, and with <code>--apply</code> removes, every <code>ledger-*.sqlite</code> in the old location and
+      every index in the new one not opened in seven days. Removal prints each path and its size; nothing is removed silently. A sweep
+      never removes an index open by a live process (checked with <code>fcntl</code> lock probing the index already takes).</p>
+    <p><strong>Done when</strong> <code>tests/test_ledger_index_is_shared_by_worktrees.py</code> builds a temporary repository with a main
+      checkout and two linked worktrees, resolves the index path from each, and asserts one path; and a temporary cache root seeded with
+      three old-location files and one recent new-location index reports exactly three removals under <code>gc</code> and removes them under
+      <code>gc --apply</code>, leaving the recent one. The cache root is a temporary path and the test asserts the real
+      <code>~/.cache/reckon</code> is untouched. The negative control is executed and logged: with the key reverted to the resolved
+      ledger path, the worktrees resolve two paths and the test fails. The pick and ledger tests pass, their list built at dispatch from the
+      head tree. Write paths: <code>reckon/ledger.py</code>, <code>reckon/_store.py</code>, <code>reckon/crew/routing.py</code>,
+      <code>tests/test_ledger_index_is_shared_by_worktrees.py</code>.</p>
+
+    <h2 id="s3">§3 — gc reaches reports, locks and run directories with no ledger row</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> <code>garbage_collect</code> (<code>reckon/crew/routing.py:1520</code>) gains three row sets, each reported
+      by default and acted on only with <code>--apply</code>, each re-checking for a live pointer immediately before acting, as the pointer
+      reap already does: report trees under <code>reports/&lt;project&gt;/</code> whose newest file is older than the run retention and
+      whose run is not live; lock files whose run is in the ledger, not live and past retention; and run directories with neither a ledger
+      row nor a live pointer, past retention. Every removal prints its path and size. The existing plan-review sweep is folded into the
+      report row set rather than kept beside it.</p>
+    <p><strong>Done when</strong> <code>tests/test_gc_reaches_every_crew_store.py</code> builds a temporary crew home holding, for each row set,
+      one entry past retention and one inside it, plus one past-retention entry whose run has a live pointer, and asserts <code>gc</code>
+      reports exactly the three past-retention entries without a live pointer and <code>gc --apply</code> removes exactly those, printing
+      each. The negative control is executed and logged: with the live-pointer re-check removed, the live run's entry is reported and the
+      test fails. The existing gc tests pass. Write paths: <code>reckon/crew/routing.py</code>,
+      <code>tests/test_gc_reaches_every_crew_store.py</code>.</p>
+
+    <h2 id="s4">§4 — A run's captured file has a size limit</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> After a run is promoted, <code>gc</code> reports any file in its run directory over a configured size
+      (flight key <code>gc.run_file_max_mb</code>, default 256) and, with <code>--apply</code>, replaces it with its first and last megabyte
+      around a one-line marker naming the original size and sha256, so a log cited as evidence keeps its head, its tail and a verifiable
+      identity. A file a ledger row names as a gate log is truncated the same way, never deleted. Binary artefacts over the limit
+      (<code>*.pt</code>, <code>*.h5</code>, <code>*.npz</code>) are reported, not touched.</p>
+    <p><strong>Done when</strong> <code>tests/test_gc_bounds_a_run_file.py</code> builds a promoted temporary run directory with a 3 MB log and a
+      3 MB <code>.pt</code> file under a 1 MB limit, and asserts <code>gc --apply</code> leaves the log at about 2 MB with the marker, its
+      first and last line intact and the original sha256 in the marker, and the <code>.pt</code> file unchanged and reported. A run that is
+      not promoted is untouched. The negative control is executed and logged: with the promoted check removed, the unpromoted run's log is
+      truncated and the test fails. Write paths: <code>reckon/crew/routing.py</code>, <code>reckon/schema/</code>,
+      <code>tests/test_gc_bounds_a_run_file.py</code>. This section runs after §3, which writes the same module.</p>
+
+    <h2 id="s5">§5 — The existing backlog is reclaimed</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> An operational node, run after §2 to §4 are promoted and installed: run <code>reckon crew gc</code> for
+      the reckon repository and capture its report, then <code>reckon crew gc --apply</code>, capturing every printed removal to a log under
+      the run directory; remove the six redirection-named directories in the crew home and the seven stray files at the checkout root after
+      listing each with its contents' first line; and remove the 18 clean worktrees whose heads <code>main</code> already contains through
+      <code>gc --apply</code>. Nothing is removed that the listing did not name.</p>
+    <p><strong>Done when</strong> the log records the before and after sizes of <code>~/.cache/reckon</code>,
+      <code>~/.config/reckon/crew/runs</code>, <code>reports</code> and <code>locks</code> (measured with <code>du -s</code> under a
+      <code>timeout</code>), the cache holds no file in the old index location, the crew home holds no redirection-named directory,
+      <code>git status --porcelain</code> at the checkout root lists none of the seven files, and the combined size of the four stores is at
+      least 100 GB lower than the §1 figures. The removal listing is in the log before the first removal line. Write paths: the run's own log
+      directory.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+    </section>
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-tchhab-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-10-10" data-recommends-skill="/reckon-build the-crew-home-has-a-bound">
+    <h3 class="r-fu-title">Bound the crew home and caches</h3>
+    <div class="r-fu-body"><p>§2 first (largest saving); §3 then §4 on <code>routing.py</code>; §5 last.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-crew-home-has-a-bound</pre>
+</article>
+    </section>
+  <section data-reckon="comments" id="comments" class="r-comments">
+  </section>
+</main>
+</body>
+</html>

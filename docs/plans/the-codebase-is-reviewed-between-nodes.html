@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="the-codebase-is-reviewed-between-nodes">
+  <meta name="plan-title" content="The Codebase Is Reviewed Between Nodes">
+  <meta name="plan-summary" content="Reviews read one node or one plan, and 847 follow-on findings a month are dropped. A /reckon-review skill reviews code, plans and sprints, and treats them.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="14.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S26">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-north-star" content="state-that-tells-the-truth">
+  <meta name="plan-section-depends-on" content="{&quot;s6&quot;: [&quot;nothing-lands-unreached#s2&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
+  <title>The Codebase Is Reviewed Between Nodes | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: every review reads one node or one plan, and nothing reads between them</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
+    <p>reckon reviews work at two points. Before a build, a plan gets a content review and a prior-art and depth review
+      (<code>reckon/crew/prompts/plan_review.md</code>, <code>plan_design_review.md</code>). After a node lands, its diff gets an
+      independent review (<code>reckon/crew/prompts/review.md</code>). Both are bounded to their subject by design: the landed-node
+      review is told <em>"Do not review code the node did not touch"</em> (<code>review.md:29-45</code>). The crew-pattern review of
+      2026-09-26 measured the result: work that is <em>better-verified, not better-designed</em>, because <em>nothing owns the codebase
+      between nodes</em> (<a href="/reckon/research/orchestrator-crew-pattern-review.html#s1">orchestrator-crew-pattern-review §1</a>).</p>
+    <p>A health review on 2026-10-10 (eight read-only crew nodes, session <code>health-review-1010</code>, reports under
+      <code>~/.config/reckon/crew/reports/reckon/health-review-1010/</code>) measured what falls between them:</p>
+    <table>
+      <thead><tr><th>Measured</th><th>Figure</th><th>Source</th></tr></thead>
+      <tbody>
+        <tr><td>Follow-on findings raised by landed-node reviews in 30 days</td><td>847, every one closed <code>decline-only</code>; the
+          finding list is counted into a reason string and nothing reads it again</td><td><code>reckon/crew/recovery_repair_dispatch.py:674-685</code>;
+          <code>repair.follow_on_findings</code> has that one caller</td></tr>
+        <tr><td>Finding citations naming a file an earlier review had already cited</td><td>650 of 1,434 (45.3%);
+          <code>reckon/crew/dispatch.py</code> named by 46 distinct reviews, <code>promotion.py</code> by 33, <code>recovery.py</code> by 35</td>
+          <td><code>health-review-yield/scan_summary.json</code></td></tr>
+        <tr><td>Verbatim repeats among those findings</td><td>0 of 55 on <code>dispatch.py</code>: a recurring fault is re-found in new
+          words, so only a reader holding the earlier findings can tell new from known</td><td><code>health-review-yield/control_out.txt</code></td></tr>
+        <tr><td>Plan-review findings with any answer</td><td>203 of 584 (34.8%)</td><td><code>health-review-yield/scan_summary.json</code></td></tr>
+        <tr><td>Duplicate function pairs inside <code>reckon/crew/</code></td><td>190 unique pairs; <code>promotion_scope.py</code> in 31</td>
+          <td><code>health-crew-surface/clone_scan.tsv</code></td></tr>
+        <tr><td>Modules reached by no production entry point, only by tests</td><td>7, including <code>reckon/crew/hold.py</code>, merged
+          2026-10-10 as <code>hold-names-the-serving-lane</code></td><td><code>health-reachability/reach_graph.log</code></td></tr>
+        <tr><td>Non-shipped plans; members of the carry-over sprint S22</td><td>63; 55, of which 12 are shipped</td>
+          <td><code>health-plan-portfolio/portfolio.csv</code></td></tr>
+      </tbody>
+    </table>
+    <p>None of these is any one coordinator's fault, and none is visible from inside one node or one plan. A coordinator working on
+      <code>dispatch.py</code> today cannot see the 46 earlier reviews of it, and the review of its node is told not to look.</p>
+
+    <h2 id="s2">§2 — The design: one skill, three modes, and a reviewer that starts from what is already known</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
+    <p><strong>Is a standing health review busy work?</strong> It is when it generates findings from nothing, because the measured yield
+      of review is already low where the subject is small: 12.9% of source-change reviews and 2.4% of docs reviews led to an observable
+      repair (<a href="/reckon/research/review-node-utility.html#s3">review-node-utility §3</a>). It is not when it starts from the 847
+      follow-ons a month that are recorded and dropped, ranks them by recurrence, and proposes at most one treatment that deletes code or
+      closes a recurring finding. The design below holds those three properties: <strong>known findings first, one treatment per review,
+      and a yield the lead can read</strong>, with a stated rule for turning the reflex off.</p>
+    <p><strong>A skill, not a coordinator node pattern alone.</strong> A node pattern written into <code>reckon-build</code> would add a
+      second concern to a skill that <a href="/reckon/plans/the-crew-contract-fits-one-read.html">the-crew-contract-fits-one-read</a> is
+      trying to shrink, and would leave plan and sprint health with no entry point. So:</p>
+    <ul>
+      <li><code>/reckon-review &lt;target&gt;</code> is one skill whose mode follows from its target: a path or <code>--around &lt;plan&gt;</code>
+        selects <strong>code</strong> mode; a plan slug selects <strong>plan</strong> mode; a sprint id or <code>project</code> selects
+        <strong>portfolio</strong> mode. A lead or a coordinator calls the same skill.</li>
+      <li>Code mode composes one read-only review node through a crew verb (§6), reads it back, and dispatches at most one treatment node.
+        Plan mode audits a plan's currency against the code and its overlap with other live plans. Portfolio mode proposes close, merge,
+        retire and re-sprint dispositions and applies them through <code>reckon-edit</code> and <code>reckon-sprint</code>, recording the
+        round in the sprint review resource that already exists (<code>docs/state/reckon/review.html</code>, last written 2026-09-01).</li>
+      <li><code>reckon-build</code> gains one step, not a procedure: in a plan build's first wave, run <code>/reckon-review --around
+        &lt;plan&gt;</code> once, in parallel with the plan's own nodes (§9).</li>
+    </ul>
+    <p><strong>Reuse map.</strong> Findings already live in committed review records (<code>docs/state/reckon/reviews/run/</code>, from
+      <a href="/reckon/plans/every-review-is-kept-as-a-committed-record.html">every-review-is-kept-as-a-committed-record</a>);
+      dispositions already have a writer (<code>reckon crew dispose</code>, fold or exemption, today scoped to a sub-floor dimension);
+      review composition already has a verb (<code>reckon crew review-plan</code>); the instruments exist as <code>reckon/clones.py</code>,
+      <code>reckon/interface_counts.py</code> and the velocity view. This plan adds one reader, extends one writer and one verb, and adds one
+      prompt and one skill.</p>
+
+    <h2 id="s3">§3 — Every stored finding is readable by the path it names</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> One derived reader over the committed run-review and plan-review records of a project
+      (<code>docs/state/&lt;project&gt;/reviews/run/**</code> and <code>reviews/plan/**</code>), served as the crew MCP view
+      <code>crew(project, view="findings", path=&lt;prefix&gt;)</code> and as <code>reckon crew ledger --view findings [--path &lt;prefix&gt;]</code>.
+      Each row carries the finding's path and line, its severity, its text, the review run id, the reviewed run id, the reviewed head sha,
+      and its disposition (<code>open</code> until §4 records one). Rows are grouped by repository-relative path with a recurrence count, the
+      number of distinct reviews naming that path. A finding whose path is not inside the repository (a report, a manifest, a store path)
+      is kept with <code>scope: artefact</code> and left out of recurrence, because 254 of the 847 follow-ons name such paths. The reader is
+      a new module beside <code>reckon/crew/review.py</code> rather than an addition to it (3,264 lines); it reads records through the
+      existing record readers in that module and adds no store. It adds one MCP view and one value of an existing CLI option, and retires
+      nothing, because no reader of findings by path exists: today the only way to ask is a full scan of 3,200 records.</p>
+    <p><strong>Done when</strong> <code>tests/test_findings_read_by_path.py</code> builds a temporary project holding three committed run-review
+      records: two naming <code>reckon/a.py</code> (one <code>blocking</code>, one <code>follow-on</code>) and one naming a report path. It
+      asserts that the view for prefix <code>reckon/</code> returns both <code>reckon/a.py</code> rows with recurrence 2 and disposition
+      <code>open</code>, that the report row carries <code>scope: artefact</code> and adds no recurrence, and that the CLI form prints the same
+      rows as JSON. The negative control is executed and logged: with the reader filtered through <code>repair.blocking_findings</code>, the
+      follow-on row is missing and the test fails. <code>tests/test_ledger.py</code> passes, holding the MCP surface at five tools. Write
+      paths: <code>reckon/crew/findings.py</code>, <code>reckon/mcp.py</code>, <code>reckon/crew_run_commands.py</code>,
+      <code>tests/test_findings_read_by_path.py</code>.</p>
+
+    <h2 id="s4">§4 — A finding carries a disposition, so a later review does not re-find it</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> <code>reckon crew dispose</code> takes <code>--finding &lt;n&gt;</code> beside <code>--run</code>: the
+      index of a finding in that run's newest review record, as §3's rows print it. The closed set is unchanged: a <code>fold</code> names the
+      node the finding went into, an <code>exemption</code> names why it is not being acted on. The entry is written to the same record the
+      dimension disposition already rewrites, and §3's reader reports it. <code>--dimension</code> and <code>--finding</code> are mutually
+      exclusive and one is required. The verb's refusals stay the store's own. This extends one writer; it adds one option and no verb.</p>
+    <p><strong>Done when</strong> <code>tests/test_dispose_a_finding.py</code> stores a review with two follow-on findings, runs
+      <code>reckon crew dispose --run &lt;id&gt; --finding 1 --kind fold --node fix-a</code>, and asserts §3's reader reports finding 1 as
+      <code>folded:fix-a</code> and finding 0 as <code>open</code>; an exemption with no reason, and a call naming both
+      <code>--dimension</code> and <code>--finding</code>, each exit non-zero and write nothing (the record's bytes are unchanged). The
+      negative control is executed and logged: with the finding branch writing to the dimension slot, the reader reports finding 1
+      <code>open</code> and the test fails. The existing dispose tests pass. Write paths: <code>reckon/crew_run_commands.py</code>,
+      <code>reckon/crew/review.py</code>, <code>tests/test_dispose_a_finding.py</code>. This section runs after §3, which it reads through.</p>
+
+    <h2 id="s5">§5 — The health rubric reads known findings first and proposes at most one treatment</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> <code>reckon/crew/prompts/health_review.md</code>, a rubric for a read-only review of a neighbourhood of
+      code rather than of one diff. The brief the composer (§6) hands it names the neighbourhood's modules, the open §3 findings for those
+      paths with their recurrence, the four interface figures from <code>reckon/interface_counts.py</code>, the clone pairs
+      <code>reckon/clones.py</code> reports inside the neighbourhood, and the neighbourhood's modules that no entry point reaches. The rubric
+      has six items, each with a verdict line: <code>known_findings</code> (group the open findings into defect classes and say which recur),
+      <code>duplicate_capability</code> (a census by capability, not text, across the neighbourhood and the package: every implementation of
+      one capability, each with <code>path:line</code>), <code>unreached</code>, <code>interface_growth</code> (surface added in the last 14
+      days without anything retired), <code>width</code> (modules over the worker-window bound) and <code>test_debt</code> (duplicated helpers
+      and source-text assertions in the neighbourhood's tests). It emits <code>FINDING</code> lines in the plan-review grammar with a class,
+      then exactly one <code>TREATMENT</code> line: a single goal, its write paths, a done-when with a negative control, and its expected
+      line delta, chosen only from treatments that delete code, narrow an interface, wire or delete unreached code, or close a finding
+      recurring in two or more reviews; or <code>TREATMENT: none — &lt;reason&gt;</code>. A finding already in the brief is cited by its
+      §3 row, never re-reported as new.</p>
+    <p><strong>Done when</strong> <code>tests/test_health_review_parses.py</code> parses a fixed reviewer output through the parser §6
+      installs and asserts six verdicts, the classed findings, one treatment with write paths and a done-when, and the
+      <code>TREATMENT: none</code> form; an output with two <code>TREATMENT</code> lines, or a treatment naming no write path, is refused by
+      name. The negative control is executed and logged: with the one-treatment check removed, the two-treatment output parses and the test
+      fails. Write paths: <code>reckon/crew/prompts/health_review.md</code>, <code>tests/test_health_review_parses.py</code>. The parser is
+      §6's; this section's test lands with §6.</p>
+
+    <h2 id="s6">§6 — One review verb composes a code review around a plan or a path</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> <code>reckon crew review-plan</code> becomes <code>reckon crew review</code>. Its existing options keep
+      their meaning under <code>--plan</code>, and two subjects are added: <code>--around &lt;plan&gt;</code> and <code>--path &lt;path&gt;</code>
+      (repeatable). For a code subject the verb resolves the neighbourhood: the production modules named by the plan's implementable
+      sections' write paths, or the named paths, plus every production module one import away in either direction, read from the
+      reachability instrument <a href="/reckon/plans/nothing-lands-unreached.html#s2">nothing-lands-unreached §2</a> delivers. It composes the
+      §5 brief and dispatches one read-only <code>review</code> node through the ordinary dispatch path, writing to a report directory under
+      the crew reports root, and stores the parsed result as a review record keyed by the neighbourhood so §3 can read it. The parser lives
+      beside the plan-review report parser. <code>review-plan</code> stays as a hidden alias that prints a one-line deprecation to stderr
+      until §7 moves its callers; §7 removes it, so the verb count is unchanged once the plan lands.</p>
+    <p><strong>Done when</strong> <code>tests/test_review_composes_a_code_subject.py</code> builds a temporary repository with three modules
+      where <code>a</code> imports <code>b</code> and <code>c</code> is unrelated, and a plan whose section writes <code>a</code>. It runs
+      <code>reckon crew review --project P --around &lt;plan&gt; --session S --dry-run</code> and asserts the composed brief names
+      <code>a</code> and <code>b</code> and not <code>c</code>, carries the open §3 findings for <code>a</code>, and carries the four interface
+      figures. <code>reckon crew review-plan --dry-run</code> composes the same plan brief as <code>reckon crew review --plan</code>. §5's
+      parse test passes. The negative control is executed and logged: with the one-hop import expansion removed, <code>b</code> is missing
+      and the test fails. The tests that import the review-plan composer pass. Write paths: <code>reckon/crew/plan_review.py</code>,
+      <code>reckon/crew_run_commands.py</code>, <code>tests/test_review_composes_a_code_subject.py</code>,
+      <code>tests/test_health_review_parses.py</code>.</p>
+
+    <h2 id="s7">§7 — The /reckon-review skill</h2>
+<section data-reckon="section" data-id="s7" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> <code>skills/reckon-review/SKILL.md</code>, a short core of at most 1,500 words in the shape of the
+      reckon-build core. It resolves the mode from the target and runs one loop per mode. <strong>Code:</strong> compose with
+      <code>reckon crew review --around|--path</code>, read the stored result with <code>crew(view="findings")</code>, prototype the
+      treatment's change against the code to confirm it is real, then either dispatch it through <code>reckon-build</code>'s dispatch with
+      write paths disjoint from any live claim, or record why not, and dispose every finding it read: <code>fold</code> into the treatment or
+      a plan section, or <code>exemption</code> with a reason. <strong>Plan:</strong> run §8's rubric on one plan and the existing content and
+      design reviews; apply what it proposes through <code>reckon-edit</code>. <strong>Portfolio:</strong> run §8's rubric on a sprint or
+      the project, apply close, merge and re-sprint dispositions through <code>reckon-edit</code> and <code>reckon-sprint</code>, archive a
+      retirement with <code>plan-archived</code>, and record the round in the sprint review resource. A merge or retirement of a plan another
+      live session is building is proposed, never applied. The skill states the busy-work rule of §2 and the stop rule of §10, and every
+      <code>reckon-*</code> skill that names <code>review-plan</code> names <code>review</code> instead, which removes §6's alias.</p>
+    <p><strong>Done when</strong> <code>tests/test_skill_contracts.py</code> discovers <code>reckon-review</code> beside the other reckon
+      skills, and asserts its body is at most 1,500 words; the cited-command test
+      <a href="/reckon/plans/the-crew-contract-fits-one-read.html#s5">the-crew-contract-fits-one-read §5</a> delivers passes with the
+      new skill in its corpus; <code>grep -rn "review-plan" skills/ reckon/</code> returns no hit outside the alias
+      removal's own changelog-free code; and <code>reckon crew review-plan --help</code> exits non-zero. The negative control is executed and
+      logged: with the skill's body padded past 1,500 words, the contract test fails. Write paths:
+      <code>skills/reckon-review/</code>, <code>skills/reckon-build/</code>, <code>skills/reckon-create/SKILL.md</code>,
+      <code>skills/reckon-edit/SKILL.md</code>, <code>reckon/crew_run_commands.py</code>, <code>tests/test_skill_contracts.py</code>.</p>
+
+    <h2 id="s8">§8 — The portfolio rubric proposes a disposition for every live plan</h2>
+<section data-reckon="section" data-id="s8" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> <code>reckon/crew/prompts/portfolio_review.md</code> and the composer branch
+      <code>reckon crew review --sprint &lt;id&gt;</code>, <code>--portfolio</code> (every non-shipped plan of the project), or <code>--plan &lt;slug&gt; --rubric currency</code>. The
+      brief carries, for every non-shipped plan in scope, the figures the portfolio health review computed by hand: status, stored and
+      derived impl, sprint and sprint membership, days since its last commit, open section declarations and followups, and the roadmap's
+      ready or blocked verdict. The rubric asks the reviewer to spot-check each plan's remaining implementable section against the tree
+      (is it already in the code?) and to cluster plans by subject, and emits one <code>DISPOSITION &lt;slug&gt;: keep | close | merge-into
+      &lt;slug&gt; | retire | re-sprint &lt;id&gt; — &lt;evidence&gt;</code> line per plan in scope. The figures come from the existing
+      readers (<code>reckon/roadmap.py</code>, <code>reckon/_plan_html.py</code>); the composer computes none of them itself.</p>
+    <p><strong>Done when</strong> <code>tests/test_portfolio_review_composes.py</code> builds a temporary project with four plans (one shipped,
+      one active with every section done, one draft untouched in a fixture history, one active and in progress), runs
+      <code>reckon crew review --project P --portfolio --session S --dry-run</code>, and asserts the brief lists the three
+      non-shipped plans with their derived impl and commit age and omits the shipped one; a fixed reviewer output parses to three
+      dispositions and an output omitting one plan is refused by name. The negative control is executed and logged: with the brief's
+      plan filter including shipped plans, the shipped plan appears and the test fails. Write paths:
+      <code>reckon/crew/prompts/portfolio_review.md</code>, <code>reckon/crew/plan_review.py</code>,
+      <code>tests/test_portfolio_review_composes.py</code>. This section runs after §6, whose verb it extends.</p>
+
+    <h2 id="s9">§9 — A plan build reviews its neighbourhood once, in its first wave</h2>
+<section data-reckon="section" data-id="s9" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> The payload of a plan's implementation dispatch carries a <code>health_review</code> block: the newest
+      code-mode review whose neighbourhood covers the node's write paths, its age, the open findings count from §3 for those paths, and
+      the one compose command when none is younger than seven days. It is advisory and never refuses. <code>skills/reckon-build/SKILL.md</code>
+      gains one step under <em>Shape the wave</em>: when the block names a compose command and the plan writes product source, run
+      <code>/reckon-review --around &lt;plan&gt;</code> once as a parallel node, and treat its result in the next beat like any other
+      landing. A plan that writes only documents or plans skips it.</p>
+    <p><strong>Done when</strong> <code>tests/test_dispatch_names_the_health_review.py</code> dry-runs an implementation dispatch in a
+      temporary project twice: with no stored code review, the block names the compose command and no review; with a stored code
+      review of the node's write path dated today, the block names that review and no command. A docs-only node's block is
+      <code>null</code>. The negative control is executed and logged: with the coverage test comparing the review's paths to the plan slug
+      instead of the node's write paths, the second dispatch still names the command and the test fails. Write paths:
+      <code>reckon/crew/dispatch_admission.py</code>, <code>skills/reckon-build/SKILL.md</code>,
+      <code>tests/test_dispatch_names_the_health_review.py</code>. This section runs after §3 and §6.</p>
+
+    <h2 id="s10">§10 — The yield is on the velocity view, with a rule for turning the reflex off</h2>
+<section data-reckon="section" data-id="s10" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> <code>crew(view="velocity")</code> gains a <code>health_reviews</code> field, served when named in
+      <code>fields</code>, for the window: code-mode reviews composed; findings read as known against reported as new; treatments
+      dispatched, promoted and the product-line delta of the promoted ones; findings disposed by kind; and the change in clone pairs and
+      unreached modules inside the reviewed neighbourhoods between each review and the next. It measures disposition from the records, not
+      from commits touching a cited file, because that proxy matched baseline churn (71.0% against 75.2%) in the 2026-10-10 measurement. The
+      stop rule is stated in the skill and the field's docstring: after ten code-mode reviews, if fewer than half of the treatments promoted
+      or the promoted treatments added product lines in total, §9's step becomes opt-in, and the lead decides whether to keep it.</p>
+    <p><strong>Done when</strong> <code>tests/test_velocity_counts_health_reviews.py</code> builds a temporary ledger and review store with
+      three code-mode reviews, two treatments (one promoted with a net deletion of 40 lines, one discarded) and five dispositions, and
+      asserts the field reports 3 reviews, 1 of 2 treatments promoted, −40 product lines and the dispositions by kind. The negative control is
+      executed and logged: with treatments counted from dispatch instead of promotion, the field reports 2 of 2 and the test fails. Write
+      paths: <code>reckon/velocity.py</code>, <code>tests/test_velocity_counts_health_reviews.py</code>.</p>
+
+    <h2 id="s11">§11 — The first code-mode review treats the promotion family</h2>
+<section data-reckon="section" data-id="s11" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> The proving run. Run <code>/reckon-review --path reckon/crew/promotion_scope.py --path
+      reckon/crew/promotion_gate.py --path reckon/crew/promotion_checks.py</code> once §3 to §7 have landed, and carry its treatment to a
+      promoted node. The health review of 2026-10-10 counted <code>promotion_scope.py</code> in 31 duplicate pairs and
+      <code>promotion_gate.py</code> in 23 (<code>health-crew-surface/clone_scan.tsv</code>); the review is expected to read those as known
+      and to choose among them.</p>
+    <p><strong>Done when</strong> the review record is stored and §3 serves it; every finding it read carries a disposition; its treatment
+      is promoted with a passing gate and its own negative control, or the record states <code>TREATMENT: none</code> with a reason the
+      coordinator accepts in writing on this section; and <code>reckon/clones.py</code> run over the three modules at the integrated head
+      reports fewer duplicate pairs than at this plan's base, with both counts in the landing record. Write paths: the treatment node's own,
+      named by the review.</p>
+
+    <section data-reckon="gates" id="gates" class="r-gates">
+<h2><span class="sec">§</span> Evidence gates</h2>
+<div class="r-gate" data-id="g-tcirbn-reach-instrument" data-section="s6" data-gated-sections="s6" data-status="open" data-verdict="">
+    <h4 class="r-gate-measure">reckon/reach.py returns the production modules one import away from a named path, and its ratchet test passes at the integrated head</h4>
+    <p class="r-gate-required-evidence">nothing-lands-unreached#s2</p>
+</div>
+    </section>
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="review-shape" data-choice="skill-with-modes" data-by="reckon-build coordinator (health-review-1010)" data-when="2026-10-10">
+  <p class="r-dec-q">Should codebase health review be a node every coordinator dispatches, written into reckon-build, or a separate /reckon-review skill?</p>
+  <p class="r-dec-opts">
+    <button class="r-opt" data-value="skill-with-modes">A /reckon-review skill with code, plan and portfolio modes; reckon-build gains one step that calls it</button>
+    <button class="r-opt" data-value="coordinator-node">A node pattern written into reckon-build only</button>
+  </p>
+  <p class="r-dec-rat">Plan and sprint health need an entry point that is not a plan build, and reckon-build is being shrunk by the-crew-contract-fits-one-read. One skill serves the lead and the coordinator; the coordinator's obligation is one step that calls it (§9). The lead may reopen this.</p>
+</div>
+<div class="r-dec" data-key="treatments-per-review" data-choice="one" data-by="reckon-build coordinator (health-review-1010)" data-when="2026-10-10">
+  <p class="r-dec-q">How many treatment nodes may one code-mode review dispatch?</p>
+  <p class="r-dec-opts">
+    <button class="r-opt" data-value="one">One, chosen from deleting, narrowing, wiring or recurring-finding treatments</button>
+    <button class="r-opt" data-value="unbounded">As many as it finds</button>
+  </p>
+  <p class="r-dec-rat">An unbounded treatment list is how a health review becomes busy work and contends with the plan it runs beside. Every other finding is disposed, so it is not lost.</p>
+</div>
+    </section>
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-tcirbn-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-10-10" data-recommends-skill="/reckon-build the-codebase-is-reviewed-between-nodes">
+    <h3 class="r-fu-title">Build the health-review loop</h3>
+    <div class="r-fu-body"><p>§3 and §5 first; §4 after §3; §6 after §3 and the reachability instrument; §7, §8, §9 after §6; §10 beside them; §11 last.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-codebase-is-reviewed-between-nodes</pre>
+</article>
+    </section>
+  <section data-reckon="comments" id="comments" class="r-comments">
+  </section>
+</main>
+</body>
+</html>

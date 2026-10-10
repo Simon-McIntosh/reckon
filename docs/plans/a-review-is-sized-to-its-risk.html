@@ -20,16 +20,16 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
   <meta name="plan-blocks" content="a-small-change-is-a-small-node">
   <title>A Review Is Sized To Its Risk | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="140">
 <meta name="plan-commits" content="505c690b,9701e873,c45e7bac,dd19e201,31509127">
 <meta name="plan-artifacts" content="reckon/review_tiers.py,reckon/schema/flight.yaml,reckon/schema/flight-defaults.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/flight.py,tests/test_review_tiers.py">
 <meta name="plan-impl" content="0.95">
+<meta name="plan-version" content="141">
+<meta name="plan-modified" content="2026-10-10">
 </head>
 <body>
   <main class="plan-doc">
@@ -175,6 +175,10 @@
     <h2 id="s7">§7 — Build the review tiers</h2>
 <section data-reckon="section" data-id="s7" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
 <p>§2 first; then §3, §4 and §5, which all touch the review reflex and run in that order; §6 is independent and can run beside §2.</p><p><strong>Done when</strong> §2 lands and §3–§5 follow in order, with §6 beside §2.</p><p>Moved from followup f-arist-001 on a-review-is-sized-to-its-risk by work-is-a-section-not-a-followup §4; evidence against main at 1135b00d9 (line numbers may have moved since): plan <code>active</code> impl 0.95</p>
+
+    <h2 id="s8">§8 — A read-only run&#x27;s review checks the claims it reports</h2>
+<section data-reckon="section" data-id="s8" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p>On 2026-10-10 the review reflex asked for a landed-node review of eight read-only investigation runs (session <code>health-review-1010</code>), each a report under the crew reports root with no commit. The done-when it composed (<code>reckon/crew/recovery_review_subject.py:468</code>) requires six dimension scores and <code>added_failure_count</code> and <code>added_failure_ids</code> derived from the run's <code>baseline_suite</code> and <code>after_suite</code> gate logs, which such a run never writes. The same reviews are worth having for a different reason: a coordinator turns an investigation's figures into plans, and two of those eight reports were wrong in ways only re-running their own commands showed (an option-usage scan that first read every option as unused, then every option as used; a reachability graph that under-reported until a positive control corrected it).</p><p><strong>Deliverable.</strong> A review of a run whose role is <code>investigate</code>, or whose node is brief-carried and has no commit beyond its base, is composed with a claims rubric instead of the landed-node rubric: the reviewer picks the three findings the report ranks highest, re-runs the command or script each cites from the report directory, and emits one <code>CLAIM</code> verdict per finding (<code>reproduced</code>, <code>differs</code> with both figures, or <code>not-runnable</code> with the reason) plus the report's own summary line checked against its table. The stored record carries those verdicts and no suite-delta fields, and the review tier and promotion read it as complete.</p><p><strong>Done when</strong> <code>tests/test_a_read_only_run_gets_a_claims_review.py</code> composes the reflex review for a temporary investigate run with a report and no commit, and asserts the done-when names the claims rubric and no <code>added_failure_count</code>; a fixed reviewer output with three <code>CLAIM</code> lines parses to a complete record that promotion accepts; and an implement run's reflex review is composed exactly as before. The negative control is executed and logged: with the role test removed, the investigate run's done-when names <code>added_failure_count</code> and the test fails. Write paths: <code>reckon/crew/recovery_review_subject.py</code>, <code>reckon/crew/prompts/</code>, <code>reckon/crew/review.py</code>, <code>tests/test_a_read_only_run_gets_a_claims_review.py</code>.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>

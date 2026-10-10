@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="the-suite-tests-behaviour">
+  <meta name="plan-title" content="The Suite Tests Behaviour">
+  <meta name="plan-summary" content="72 browser tests skip on every run, 202 test helpers are copies, and 60 tests assert on source text. Run what is skipped and test behaviour, not spelling.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="mid">
+  <meta name="plan-effort-hours" content="6.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S26">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling">
+  <meta name="plan-north-star" content="state-that-tells-the-truth">
+  <meta name="plan-after" content="the-suite-is-green-at-head">
+  <meta name="plan-standalone" content="It shares the suite with the-suite-is-green-at-head, which it is sequenced after, but no section of either waits on the other.">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;deferred&quot;}">
+  <title>The Suite Tests Behaviour | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: a suite twice the size of its code that skips its UI and guards spelling</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
+    <p>The test-suite health review of 2026-10-10
+      (<code>~/.config/reckon/crew/reports/reckon/health-review-1010/health-test-suite/</code>) measured 1,091 test files and 340,709 test
+      lines against 162,150 lines of source, 12,878 collected tests, and a last recorded full run of 727.97 s against a 1,200 s budget
+      with 77 failures. Inside that suite:</p>
+    <table>
+      <thead><tr><th>Measured</th><th>Figure</th><th>Evidence</th></tr></thead>
+      <tbody>
+        <tr><td>Tests that skip on every run</td><td>72, all browser-driven SPA tests, because
+          <code>tests/spa_browser_harness.installed_browser</code> looks only for <code>google-chrome</code>, <code>chromium</code> or
+          <code>chromium-browser</code> on <code>PATH</code>, and the Playwright headless shell installed under
+          <code>~/.cache/ms-playwright/</code> is none of those</td><td><code>browser-probe.log</code>: 151 passed, 72 skipped</td></tr>
+        <tr><td>Suite records that say so</td><td>None: the suite record has <code>passed</code>, <code>failed</code> and
+          <code>collected</code> and no skip count</td><td><code>docs/state/reckon/suite-runs/</code></td></tr>
+        <tr><td>Test helpers that are whole copies of a helper in another test file</td><td>202 pairs; <code>config_home</code> and
+          <code>_spawn_runner</code> 20 each across 5 files, <code>_row</code> 14 across 6</td><td><code>clones.log</code>, <code>clones.json</code></td></tr>
+        <tr><td>Assertions on source text rather than behaviour</td><td>60 sites in 40 files, e.g.
+          <code>tests/test_the_unreconciled_count_has_one_composition.py:150</code> asserting a helper's name appears in
+          <code>inspect.getsource</code> of its caller</td><td>grep over <code>tests/</code></td></tr>
+      </tbody>
+    </table>
+    <p>A skipped UI test reports success it did not earn. A copied helper must be repaired once per copy. A source-text assertion fails on a
+      rename and passes on a broken rewrite, which is why refactors in this repository redden tests that measure nothing about behaviour.
+      Keeping the suite green at head and within its budget is owned by
+      <a href="/reckon/plans/the-suite-is-green-at-head.html">the-suite-is-green-at-head</a>; this plan does not repeat it.</p>
+
+    <h2 id="s2">§2 — The browser harness finds the browser that is installed</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> <code>installed_browser()</code> resolves, in order, <code>RECKON_BROWSER</code>, the three names on
+      <code>PATH</code> it looks for today, and Playwright's headless shell under <code>$PLAYWRIGHT_BROWSERS_PATH</code> or
+      <code>~/.cache/ms-playwright/chromium_headless_shell-*/chrome-headless-shell-linux64/chrome-headless-shell</code>, newest first. Its
+      skip message names every location it checked, so <code>tests/test_browser_skip_is_not_vacuous.py</code> keeps its meaning. The browser
+      tests that then fail are not fixed here: each failing id is listed in the manifest against a base arm run the same way, and the
+      coordinator records them on the-suite-is-green-at-head.</p>
+    <p><strong>Done when</strong> the browser population (the tests reaching <code>installed_browser_or_skip</code>, built at dispatch from the
+      head tree) runs on the compute allocation with 0 skips for a missing browser, logged once with <code>-rs</code>; a unit test points
+      <code>PLAYWRIGHT_BROWSERS_PATH</code> at a temporary directory holding an executable stub at the headless-shell path and asserts the
+      harness returns it, and with an empty directory and an empty <code>PATH</code> asserts the skip message lists the locations. The
+      negative control is executed and logged: with the Playwright clause removed, the population skips again. Write paths:
+      <code>tests/spa_browser_harness.py</code>, <code>tests/test_browser_harness_finds_playwright.py</code>.</p>
+
+    <h2 id="s3">§3 — The suite record carries its skips</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> The record <code>reckon crew suite run</code> writes gains <code>skipped</code> and <code>skipped_ids</code>,
+      parsed from the same pytest output it already reads, and the suite's summary line in the follower and the velocity view prints the
+      skip count beside passed and failed.</p>
+    <p><strong>Done when</strong> <code>tests/test_suite_record_counts_skips.py</code> feeds the record writer a fixed pytest log ending
+      <code>3 failed, 10 passed, 2 skipped</code> with two <code>SKIPPED</code> lines under <code>-rs</code>, and asserts
+      <code>skipped == 2</code> and both ids; a log with no skips records <code>0</code> and an empty list, not an absent field. The negative
+      control is executed and logged: with the skip clause removed from the summary parse, the first log records 0 and the test fails.
+      Write paths: <code>reckon/crew/standing_suite.py</code>, <code>tests/test_suite_record_counts_skips.py</code>.</p>
+
+    <h2 id="s4">§4 — A helper copied across test files has one home</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> The helpers the health review found copied whole across three or more test files
+      (<code>config_home</code>, <code>_spawn_runner</code>, <code>_row</code>, <code>checkout</code>, <code>_placed_backend</code>,
+      <code>_replace_stream</code>, <code>_start_worker</code>, <code>assert_untouched</code>, <code>_git_env</code>,
+      <code>_seat_record</code> and the rest of that list) move to <code>tests/helpers/</code>, one module per subject, and every copy is
+      replaced by an import. A copy that differs from the others in behaviour is left where it is and named in the manifest. Fixtures that
+      must stay fixtures move to <code>tests/conftest.py</code> only when every importer is in the suite's root.</p>
+    <p><strong>Done when</strong> <code>reckon/clones.py</code> over <code>tests/</code> reports at most 40 cross-file full-body helper pairs,
+      against 202 on 2026-10-10, with both counts in the manifest; the test files touched pass at the integrated head with the same pass
+      and fail ids as at base, the population built at dispatch; and the line delta over <code>tests/</code> is negative. The negative
+      control is executed and logged: one replaced helper's import pointed at a stub that raises fails the tests that imported it.
+      Write paths: <code>tests/helpers/</code>, <code>tests/conftest.py</code>, and the test files holding the copies, listed at dispatch
+      from the clone report.</p>
+
+    <h2 id="s5">§5 — An assertion on source text becomes an assertion on behaviour, or is deleted</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> Each of the 60 sites that read a module's source (<code>inspect.getsource</code>, or
+      <code>ast.parse</code> of <code>__file__</code>) is either rewritten to call the code and assert its effect, or deleted where the
+      behaviour it stood for is already asserted elsewhere, citing that test in the manifest. A site that guards a structural invariant no
+      behaviour shows (a module exporting no forbidden name, say) stays, and the manifest says why. Tests for the reach graph and the clone
+      detector, whose subject is source, are out of scope.</p>
+    <p><strong>Done when</strong> <code>grep -rn -e inspect.getsource -e "__file__).read_text" tests/</code> counts at most 15 sites,
+      against 60 on 2026-10-10, each remaining one listed with its reason; the edited test files pass at the integrated head; and for three
+      rewritten tests, chosen by the reviewer, reverting the behaviour they now assert makes them fail, logged as the negative control.
+      Write paths: the test files holding the sites, listed at dispatch from the grep.</p>
+
+    <h2 id="s6">§6 — Process reaping runs only around tests that spawn</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="deferred" data-links=""></section>
+    <p>Deferred. <code>tests/conftest.py</code> (1,231 lines) reaps spawned processes around every test through autouse fixtures that walk
+      <code>/proc</code>. Narrowing them to tests that spawn could shorten the suite, but nothing has measured their share of the 728 s.
+      This section opens only when a suite run with <code>--durations</code> attributes a measured share to those fixtures, and its
+      done-when is written then against that figure.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+    </section>
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-tstb-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-10-10" data-recommends-skill="/reckon-build the-suite-tests-behaviour">
+    <h3 class="r-fu-title">Run the skipped tests and test behaviour</h3>
+    <div class="r-fu-body"><p>§2, §3 and §4 in parallel; §5 after §4, since both touch many test files.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-suite-tests-behaviour</pre>
+</article>
+    </section>
+  <section data-reckon="comments" id="comments" class="r-comments">
+  </section>
+</main>
+</body>
+</html>

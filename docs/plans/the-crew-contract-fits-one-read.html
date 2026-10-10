@@ -21,13 +21,13 @@
   <meta name="plan-tags" content="crew,reckon-tooling,documentation">
   <meta name="plan-after" content="a-review-is-sized-to-its-risk,a-refusal-is-about-the-work,a-small-change-is-a-small-node">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
   <title>The Crew Contract Fits One Read | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="26">
 <meta name="plan-impl" content="0.35">
+<meta name="plan-version" content="27">
+<meta name="plan-modified" content="2026-10-10">
 </head>
 <body>
   <main class="plan-doc">
@@ -72,6 +72,10 @@
     <h2 id="s4">§4 — Classify, then rewrite, the build skill</h2>
 <section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
 <p>§2 can start now; §3 starts once both gates close and the lead has confirmed §2's "still wanted" column.</p><p><strong>Done when</strong> §2 lands and §3 starts only after both gates close and the lead has confirmed §2's "still wanted" column.</p><p>Moved from followup f-tccfor-001 on the-crew-contract-fits-one-read by work-is-a-section-not-a-followup §4; evidence against main at 1135b00d9 (line numbers may have moved since): plan <code>active</code> impl 0.35</p>
+
+    <h2 id="s5">§5 — Every command a skill or format document cites exists</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p>The skill-drift health review of 2026-10-10 (<code>~/.config/reckon/crew/reports/reckon/health-review-1010/health-skill-drift/</code>) extracted 261 <code>reckon</code> command citations from the skills, their references, the AGENTS files, <code>PLAN-FORMAT.md</code> and the crew prompts, and ran <code>--help</code> for every verb they name. Three citations name commands that do not exist: <code>PLAN-FORMAT.md:321</code> and <code>:330</code> prescribe <code>reckon migrate-project-state</code> and <code>reckon migrate-fleet</code>, deleted on 2026-08-24 in <code>807053fb6</code>, and <code>skills/reckon-build/references/sprint-orchestration.md:1011</code> names <code>reckon crew census</code>. The command table in <code>references/coordinator-reference.md:593-614</code> is a copy of <code>SKILL.md:185-211</code> that has already lost five live commands. Nothing fails when a cited command is renamed or removed, so each of these was found by reading.</p><p><strong>Deliverable.</strong> <code>tests/test_cited_commands_exist.py</code> extracts every <code>reckon</code> command form cited in <code>skills/**/*.md</code>, <code>PLAN-FORMAT.md</code>, every <code>AGENTS.md</code> in the repository and <code>reckon/crew/prompts/*.md</code>, and asserts each verb chain and each flag appears in that command's <code>--help</code>; a citation inside a sentence that marks it as planned names its plan and is allowed. The three dead citations are rewritten to the commands that exist or removed, and the copied table in <code>coordinator-reference.md</code> is replaced by a pointer to <code>SKILL.md</code>.</p><p><strong>Done when</strong> the test passes at the integrated head and reports the number of citations it checked (at least 250); and the negative control is executed and logged: a temporary skill file citing <code>reckon crew dispatch --no-such-flag</code> fails the test by file and line. Write paths: <code>tests/test_cited_commands_exist.py</code>, <code>PLAN-FORMAT.md</code>, <code>skills/reckon-build/references/</code>.</p>
 
     <section data-reckon="gates" id="gates" class="r-gates">
 <h2><span class="sec">§</span> Evidence gates</h2>

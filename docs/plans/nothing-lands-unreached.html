@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="nothing-lands-unreached">
+  <meta name="plan-title" content="Nothing Lands Unreached">
+  <meta name="plan-summary" content="Seven reckon modules and a dozen helpers are reached only by their own tests. A reach guard stops new ones; the unowned are deleted or moved out.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="3.75">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S26">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-north-star" content="state-that-tells-the-truth">
+  <meta name="plan-standalone" content="It waits on no plan; its one downstream consumer is the section gate g-tcirbn-reach-instrument held on the-codebase-is-reviewed-between-nodes §6, which no plan-level relation expresses.">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+  <title>Nothing Lands Unreached | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: code that passes its own tests and that nothing calls</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
+    <p>A node's gate proves its code works when called. It does not prove anything calls it. The health review of 2026-10-10
+      built a static import and call graph from every production entry point (the <code>reckon</code> console script and its verbs, the
+      MCP tools, the <code>serve.py</code> handlers and the hooks) and crossed it with every definition added since 2026-09-10
+      (<code>~/.config/reckon/crew/reports/reckon/health-review-1010/health-reachability/</code>). Of 3,500 additions, 3,434 are reached,
+      and these are not:</p>
+    <table>
+      <thead><tr><th>Unreached</th><th>Added</th><th>A live plan naming it</th></tr></thead>
+      <tbody>
+        <tr><td><code>reckon/crew/hold.py</code></td><td>2026-09-21</td><td><a href="/reckon/plans/a-window-paces-the-lane.html">a-window-paces-the-lane</a></td></tr>
+        <tr><td><code>reckon/crew/serving_origin.py</code></td><td>2026-09-21</td><td>a-window-paces-the-lane</td></tr>
+        <tr><td><code>reckon/crew/pace_replay.py</code></td><td>2026-09-26</td><td>a-window-paces-the-lane</td></tr>
+        <tr><td><code>reckon/crew/carryover_census.py</code></td><td>2026-09-23</td><td><a href="/reckon/plans/the-ledger-is-one-file-per-run.html">the-ledger-is-one-file-per-run</a></td></tr>
+        <tr><td><code>reckon/crew/death_census.py</code></td><td>2026-09-23</td><td>the-ledger-is-one-file-per-run</td></tr>
+        <tr><td><code>reckon/crew/context_budget.py</code></td><td>2026-09-08</td><td>none</td></tr>
+        <tr><td><code>reckon/project_state_parity.py</code></td><td>2026-08-24</td><td>none</td></tr>
+        <tr><td>12 helpers with no reference at all, in <code>_schema.py</code>, <code>crew/placement.py</code>, <code>serve.py</code>,
+          <code>crew/repair.py</code>, <code>crew/reports.py</code>, <code>crew_dispatch_commands.py</code> and <code>crew/session_host.py</code></td><td>2026-08 to 2026-10</td><td>none</td></tr>
+        <tr><td>The <code>reckon crew pick --estimated-context</code> option, used by no skill, test, ledger row, plan or source</td><td></td><td>none</td></tr>
+        <tr><td>Flight keys <code>on_fail</code>, <code>reflex</code>, <code>spelling</code> and <code>max_concurrent_runs</code>, declared and read by no code</td><td></td><td>none</td></tr>
+      </tbody>
+    </table>
+    <p>The coordinator confirmed the module rows by grep on 2026-10-10: outside its own file, each module is named only in a docstring
+      (<code>reckon/budget.py:2651</code>, <code>reckon/crew/routing.py:3533</code>). An unreached validator reports nothing, an unreached
+      hold holds nothing, and a plan that shipped one reads as delivered. The landed-node review cannot see this, because it reads one diff
+      and its <code>CALL_SITES</code> line was <code>none</code> on 21.2% of reviews in the last 30 days without anything acting on it.</p>
+
+    <h2 id="s2">§2 — The reach graph is a reckon instrument, and a ratchet test keeps it honest</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> <code>reckon/reach.py</code>: a static reader that, for a revision's <code>reckon/</code> tree, resolves the
+      production entry points (the console scripts in <code>pyproject.toml</code> and the Click verbs they mount, the MCP tool functions,
+      the <code>serve.py</code> handlers, and every module launched by <code>-m</code> from reckon's own source) and returns the set of
+      modules and module-level definitions reachable from them through imports and attribute references, plus a
+      <code>neighbourhood(paths)</code> function returning the production modules one import away from the named paths in either direction.
+      It reads sources with <code>ast</code> and never imports the package, reusing the source walk in <code>reckon/velocity.py</code>
+      (<code>read_sources</code>) and the cache pattern of <code>reckon/interface_counts.py</code>. The health review's script
+      (<code>health-reachability/reach_graph.py</code>) is the starting point; its first version under-reported reachability and was
+      corrected against a positive control, so the module carries that control as a test. A ratchet test,
+      <code>tests/test_every_module_is_reached.py</code>, asserts every module under <code>reckon/</code> is reached or appears in an
+      allowlist that names, for each entry, the plan that owns wiring it; the allowlist may shrink and the test fails when it grows.</p>
+    <p><strong>Done when</strong> the ratchet test passes at the integrated head with an allowlist of exactly the modules still unreached
+      after §3 and §4, and <code>tests/test_reach_graph.py</code> passes: a temporary tree with a console script importing <code>a</code>,
+      <code>a</code> importing <code>b</code>, and an unimported <code>c</code> reports <code>a</code> and <code>b</code> reached and
+      <code>c</code> not; <code>neighbourhood(["b"])</code> returns <code>a</code>; and a module reached only through
+      <code>python -m</code> in a reckon source string is reported reached (the positive control). The negative control is executed and
+      logged: an extra unreached module added to the temporary repository's <code>reckon/</code> fails the ratchet test by name. Write paths:
+      <code>reckon/reach.py</code>, <code>tests/test_reach_graph.py</code>, <code>tests/test_every_module_is_reached.py</code>.</p>
+
+    <h2 id="s3">§3 — Code no plan owns and nothing reaches is deleted</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> Delete <code>reckon/crew/context_budget.py</code> and <code>reckon/project_state_parity.py</code> with the
+      tests that exist only to test them; the 12 unreferenced helpers; the <code>--estimated-context</code> option; and the four flight keys,
+      after confirming no mounted project's flight layer sets one (read every <code>docs/state/*/flight.yaml</code> named by
+      <code>~/.config/reckon/mounts.json</code>; a key some layer sets is kept and its docstring says what reads it instead). Each deletion is
+      confirmed against the tree at dispatch by <code>grep -rn &lt;name&gt; reckon/ tests/ skills/</code>, because a peer may have wired one
+      since 2026-10-10; a name that has gained a caller is left and reported in the manifest. Removing a module named by
+      <code>routing.py:3533</code>'s docstring updates that docstring.</p>
+    <p><strong>Done when</strong> <code>grep -rn</code> for each deleted name over <code>reckon/ tests/ skills/</code> returns no hit, the tests
+      importing the touched modules pass (their list built at dispatch from the head tree), and <code>reckon crew pick --help</code> no
+      longer lists <code>--estimated-context</code>. The manifest's line delta is negative. The negative control is executed and logged:
+      restoring one deleted helper's call site in a scratch copy makes the grep for it non-empty, proving the grep can fire. Write paths:
+      <code>reckon/crew/context_budget.py</code>, <code>reckon/project_state_parity.py</code>, <code>reckon/_schema.py</code>,
+      <code>reckon/crew/placement.py</code>, <code>reckon/serve.py</code>, <code>reckon/crew/repair.py</code>,
+      <code>reckon/crew/reports.py</code>, <code>reckon/crew_dispatch_commands.py</code>, <code>reckon/crew/session_host.py</code>,
+      <code>reckon/crew/routing.py</code>, <code>reckon/schema/</code>, and the test files whose only subject is a deleted module.</p>
+
+    <h2 id="s4">§4 — One-off census modules move out of the package</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> <code>reckon/crew/carryover_census.py</code>, <code>reckon/crew/death_census.py</code> and
+      <code>reckon/crew/pace_replay.py</code> produced committed evidence once and are run by nothing. They move to
+      <code>scripts/census/</code> as standalone scripts with their tests, so the evidence they produced stays reproducible and the package
+      loses three modules and their public definitions. A docstring or evidence record that names the old module path is updated to the
+      script path. <code>hold.py</code> and <code>serving_origin.py</code> stay in the package on the §2 allowlist with
+      <code>a-window-paces-the-lane</code> named as their owner, and the coordinator records a comment on that plan naming them as unwired.</p>
+    <p><strong>Done when</strong> each script runs from <code>scripts/census/</code> with <code>--help</code> exiting 0, its moved tests pass
+      from their new location, <code>git grep -n "reckon.crew.carryover_census\|reckon.crew.death_census\|reckon.crew.pace_replay"</code>
+      returns no hit outside the moved files, and §2's ratchet test passes with the three modules gone from its allowlist. The negative
+      control is executed and logged: with one moved module's old import left in a test, that test fails at collection. Write paths:
+      <code>reckon/crew/carryover_census.py</code>, <code>reckon/crew/death_census.py</code>, <code>reckon/crew/pace_replay.py</code>,
+      <code>reckon/budget.py</code>, <code>scripts/census/</code>, and the tests importing the three modules. This section runs after §2.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="census-modules" data-choice="move-to-scripts" data-by="reckon-build coordinator (health-review-1010)" data-when="2026-10-10">
+  <p class="r-dec-q">What happens to a module that produced committed evidence once and that nothing runs?</p>
+  <p class="r-dec-opts">
+    <button class="r-opt" data-value="move-to-scripts">Move it to scripts/census/ with its tests</button>
+    <button class="r-opt" data-value="wire">Wire it behind a CLI verb</button>
+    <button class="r-opt" data-value="delete">Delete it</button>
+  </p>
+  <p class="r-dec-rat">Wiring adds a verb nobody asked for; deleting loses the reproduction of committed evidence. A script keeps the reproduction and takes the module out of the package's surface.</p>
+</div>
+    </section>
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-nlu-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-10-10" data-recommends-skill="/reckon-build nothing-lands-unreached">
+    <h3 class="r-fu-title">Build the reach guard and clear the unreached code</h3>
+    <div class="r-fu-body"><p>§2 and §3 in parallel; §4 after §2.</p></div>
+    <pre class="r-fu-prompt">/reckon-build nothing-lands-unreached</pre>
+</article>
+    </section>
+  <section data-reckon="comments" id="comments" class="r-comments">
+  </section>
+</main>
+</body>
+</html>

@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="the-portfolio-reads-true">
+  <meta name="plan-title" content="The Portfolio Reads True">
+  <meta name="plan-summary" content="63 plans are open, S22 is a 55-plan backlog, impl reads 1.0 over open work and STALE never fires. Make the readings honest, then prune.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="6.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S26">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling">
+  <meta name="plan-north-star" content="state-that-tells-the-truth">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+  <title>The Portfolio Reads True | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: the instruments that should say a plan is finished or forgotten do not</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
+    <p>The portfolio health review of 2026-10-10 read every plan and sprint resource in reckon
+      (<code>~/.config/reckon/crew/reports/reckon/health-review-1010/health-plan-portfolio/</code>, with one row per non-shipped plan in
+      <code>portfolio.csv</code>). Of 164 plans, 63 are not shipped. The roadmap ranks 38 of them ready. Sprint S22, titled <em>Open work
+      carried from S16 to S20</em>, has 55 members, 12 of them shipped, and no dates: it is a backlog. 24 shipped plans keep a live sprint
+      membership. The review proposed closing 6 plans, merging 4 into their live owners, retiring 3 and re-sprinting the rest of S22.</p>
+    <p>The audit did not raise any of this, because its instruments read the wrong thing:</p>
+    <table>
+      <thead><tr><th>Instrument</th><th>What it reads</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td><code>impl</code></td><td>When a plan's section records do not cover every declaration,
+          <code>derive_impl_from_sections</code> (<code>reckon/_plan_html.py:800-841</code>) returns nothing and the authored meta stands</td>
+          <td><code>a-lane-can-say-where-it-stands</code> reads 1.0 with <code>s7</code> declared implementable; 16 live plans carry an authored
+          figure of 0.9 or more over open declarations. <code>advise-the-lane-never-force-it</code> serves 1.0 while its file says 0.4</td></tr>
+        <tr><td><code>STALE</code></td><td>The file's mtime (<code>reckon/doccheck.py:531</code>) against 30 days
+          (<code>ACTIVE_PLAN_STALE_AFTER_DAYS</code>, line 154)</td><td>Every server write refreshes the mtime, so the audit reported 0 stale
+          plans while 34 non-shipped plans were 8 to 16 days past their last commit</td></tr>
+        <tr><td>Sprint membership</td><td>Nothing compares a sprint's member list with each plan's <code>plan-sprint</code></td>
+          <td>7 disagreements, all on terminal plans</td></tr>
+        <tr><td><code>unwired-plan</code></td><td>Plan-level depends-on, blocks and informs, gates, and a standalone reason
+          (<code>reckon/doccheck.py:874-901</code>)</td><td>A plan wired only by <code>plan-section-depends-on</code> or <code>plan-after</code> is
+          reported unwired, which pushes an author toward a plan-level wire that marks a whole plan blocked when one section waits</td></tr>
+      </tbody>
+    </table>
+    <p>The stale <code>docs/state/reckon/index.json</code> naming S17 active while S21 and S25 are active is owned by
+      <a href="/reckon/plans/one-fact-has-one-reader.html">one-fact-has-one-reader</a> and is not repeated here.</p>
+
+    <h2 id="s2">§2 — A plan with section declarations derives its impl from them</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> When section records cover every declaration, impl stays the effort-weighted figure it is today. When
+      they do not, impl is derived from the declarations by count (done over done plus implementable, deferred excluded) and the parsed
+      state says so with <code>impl_source: declarations</code>; the authored meta stands only for a plan with no declarations, with
+      <code>impl_source: authored</code>. A plan with an implementable declaration therefore never reads 1.0. <code>reckon audit-doc</code>
+      reports <code>impl-meta-stale</code> (warn) when the meta on disk differs from the derived figure by more than 0.01, so a reader of the
+      file and a reader of the server agree once the next write lands.</p>
+    <p><strong>Done when</strong> <code>tests/test_impl_derives_from_declarations.py</code> parses three temporary plans: one whose records
+      cover its declarations (impl effort-weighted, source <code>sections</code>); one with authored meta 1.0, declarations
+      <code>{s1: done, s2: implementable}</code> and a record for <code>s1</code> only (impl 0.5, source <code>declarations</code>); and one
+      with no declarations (authored figure, source <code>authored</code>). <code>reckon audit-doc</code> on the second file reports
+      <code>impl-meta-stale</code>. The negative control is executed and logged: with the coverage fallback returning the authored figure, the
+      second plan reads 1.0 and the test fails. The tests importing <code>reckon._plan_html</code> pass, their list built at dispatch from the
+      head tree. Write paths: <code>reckon/_plan_html.py</code>, <code>reckon/doccheck.py</code>,
+      <code>tests/test_impl_derives_from_declarations.py</code>.</p>
+
+    <h2 id="s3">§3 — Staleness counts from a plan's last commit</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> <code>reckon audit</code> computes a plan's age from the date of the last commit touching its file, read
+      with the git date cache the audit already keeps, falling back to <code>plan-modified</code> and only then to the file's mtime, and
+      names the source on the row. A non-shipped plan between 14 and 30 days old is reported <code>AGING</code> (info), and past 30 days
+      <code>STALE</code> as today.</p>
+    <p><strong>Done when</strong> <code>tests/test_staleness_counts_from_the_last_commit.py</code> builds a temporary git repository with
+      a plan committed 20 days ago (by <code>GIT_COMMITTER_DATE</code>) and then touched on disk today, runs the audit, and asserts an
+      <code>AGING</code> row with age 20 and source <code>commit</code>; a second plan committed 40 days ago reports <code>STALE</code>. The
+      dates are derived from the fixture's own commit dates at assertion time, never written as literals. The negative control is executed
+      and logged: with the age read from the mtime, the first plan reports age 0 and no row, and the test fails. Write paths:
+      <code>reckon/doccheck.py</code>, <code>tests/test_staleness_counts_from_the_last_commit.py</code>.</p>
+
+    <h2 id="s4">§4 — The audit reports a sprint member list that disagrees with its plans</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> <code>reckon audit</code> emits <code>SPRINT_MEMBERSHIP</code> for a plan whose <code>plan-sprint</code>
+      names a sprint that does not list it, for a sprint member whose <code>plan-sprint</code> names another sprint, and, as info, for a
+      shipped plan still listed by a sprint that is not closed. It reads membership through the sprint resource reader
+      <code>reckon/project_state.py</code> already provides.</p>
+    <p><strong>Done when</strong> <code>tests/test_audit_reports_sprint_membership.py</code> builds a temporary project with one sprint
+      listing plans <code>a</code> and <code>b</code>, where <code>a</code> carries that sprint, <code>b</code> carries another, and
+      <code>c</code> carries the sprint without being listed, and asserts two warn rows (<code>b</code>, <code>c</code>) and none for
+      <code>a</code>. The negative control is executed and logged: with the comparison reading only the plan side, the <code>b</code> row is
+      missing and the test fails. Write paths: <code>reckon/doccheck.py</code>, <code>tests/test_audit_reports_sprint_membership.py</code>.</p>
+
+    <h2 id="s5">§5 — A section-level relation counts as wiring</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> <code>unwired_plan_finding</code> (<code>reckon/doccheck.py:874</code>) treats a plan as wired when it
+      declares <code>plan-section-depends-on</code> or <code>plan-after</code>, or when another plan holds a gate whose required evidence
+      names it, beside the links, gates and standalone reason it accepts today. The audit message and the reckon-create skill's wiring table
+      name the section-level forms, so the right wire is also the one that silences the finding.</p>
+    <p><strong>Done when</strong> <code>tests/test_section_relations_count_as_wiring.py</code> audits a temporary project in which plan
+      <code>x</code> declares only <code>plan-section-depends-on</code> on <code>y#s2</code>, plan <code>y</code> is named only as the required
+      evidence of a gate on <code>x</code>, and plan <code>z</code> declares nothing: <code>z</code> is reported unwired, <code>x</code> and
+      <code>y</code> are not. The negative control is executed and logged: with the gate-evidence clause removed, <code>y</code> is reported
+      unwired and the test fails. Write paths: <code>reckon/doccheck.py</code>, <code>skills/reckon-create/SKILL.md</code>,
+      <code>tests/test_section_relations_count_as_wiring.py</code>.</p>
+
+    <h2 id="s6">§6 — The first portfolio review prunes reckon</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> The proving run of the portfolio mode. Once §2 and §3 have landed, so the readings it starts from are
+      honest, run <code>/reckon-review --portfolio</code> on reckon and apply its dispositions: close the plans whose sections are all done in
+      the code, merge each duplicate into its live owner, archive the retirements, and move every live S22 member into an advancing sprint
+      or the backlog explicitly, after which S22 is closed. A plan another live session is building is proposed, not changed, and named in
+      the round's record.</p>
+    <p><strong>Done when</strong> the round is recorded in <code>docs/state/reckon/review.html</code> with one disposition per non-shipped
+      plan; S22 lists no live member and is closed; the count of non-shipped plans is at most 50, against 63 on 2026-10-10, with both counts
+      in the landing record; and <code>reckon roadmap --project reckon</code> reports no new error-level wiring finding. The negative control
+      is the 2026-10-10 baseline: the same count taken before the round must read 63 or more, or the reduction is not attributable to it.
+      Write paths: the plan and sprint resources the dispositions name, through <code>reckon-edit</code> and <code>reckon-sprint</code>.</p>
+
+    <section data-reckon="gates" id="gates" class="r-gates">
+<h2><span class="sec">§</span> Evidence gates</h2>
+<div class="r-gate" data-id="g-tprt-portfolio-mode" data-section="s6" data-gated-sections="s6" data-status="open" data-verdict="">
+    <h4 class="r-gate-measure">reckon crew review --portfolio composes a portfolio review and parses one disposition per non-shipped plan</h4>
+    <p class="r-gate-required-evidence">the-codebase-is-reviewed-between-nodes#s8</p>
+</div>
+    </section>
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+    </section>
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-tprt-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-10-10" data-recommends-skill="/reckon-build the-portfolio-reads-true">
+    <h3 class="r-fu-title">Make the portfolio readings honest, then prune</h3>
+    <div class="r-fu-body"><p>§2 to §5 in parallel, serialised where they share <code>reckon/doccheck.py</code>; §6 after the gate opens.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-portfolio-reads-true</pre>
+</article>
+    </section>
+  <section data-reckon="comments" id="comments" class="r-comments">
+  </section>
+</main>
+</body>
+</html>
