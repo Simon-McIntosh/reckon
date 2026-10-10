@@ -317,6 +317,11 @@
     <p><code>test_dispatch_marks_old_published_window_stale</code> in <code>tests/test_picker_dispatch_pace.py</code> pins the picker snapshot's clock to the captured moment, as the neighbouring stale-recorded-window test does. Under parallel load the wall clock no longer moves <code>budget_age_s</code> off its recorded observation. Advancing the clock an hour fails the test (<code>10800 == 7200 ± 1</code>). Run <code>r-20261010T184236589536-published-window-test-reads-a-frozen-clock</code>, commits <code>bc50c07c2</code> and <code>c1f845f3e</code>, merged at <code>c732de6ff</code>. The module and <code>tests/test_picker.py</code> passed 35 at the merged head. Review 116 found no added failures. It noted that the neighbouring <code>test_dispatch_uses_published_window_as_direct_pick_does</code> still samples the wall clock twice; that is recorded as a follow-on.</p>
   </section>
 
+  <section id="s17">
+    <h2>§17 — a project&#x27;s budget-group override reaches billing (2026-10-10)</h2>
+    <p><code>is_subscription_backend</code> and <code>backend_budget_group</code> in <code>reckon/ledger.py</code> resolve the flight with the row's project, so a project that moves a backend into a subscription <code>budget_group</code> records no per-token spend on its own rows, while another project's rows stay metered. The misnamed <code>derive_routing</code> test now calls the function it is named for.</p><p>The first merge check found four failures in promotion tests outside the gate. Those tests stubbed <code>flight.resolve</code> with a zero-argument lambda, which the new project argument broke. The run was resumed and widened the stubs in six test files, and the coordinator accepted them at promotion. The full-suite merge check then gave base 12,786 passed and 18 failed, head 12,787 passed and 21 failed. The three head-only failures passed two of two in each arm on rerun, and so did the four repaired promotion tests. A focused gate of 291 tests passed at the merged head.</p><p>Run <code>r-20261008T161750879184-project-budget-group-reaches-billing</code>, commits <code>d379a89ba</code> and <code>5b65a8494</code>, reviews 103 and 101, merged at <code>959b14fe0</code>. Two billing readers still pass no project, the promotion writer and the picker's outcome summary; they are §25.</p>
+  </section>
+
 </main>
 </body>
 </html>
