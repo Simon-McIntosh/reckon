@@ -192,3 +192,11 @@ def test_promoted_row_carries_lane_and_model_key(catalogue) -> None:
     )
     assert (row["lane"], row["model_key"]) == ("claude", "opus")
     assert '"lane": "claude"' in ledger.serialize_run(row)
+
+
+def test_sibling_surfaces_name_a_model() -> None:
+    """The surfaces that already take ``--backend`` take ``--model`` too."""
+    for args in (["crew", "preflight", "--help"], ["crew", "shadow", "--help"]):
+        result = CliRunner().invoke(cli.main, args)
+        assert result.exit_code == 0, result.output
+        assert "--model" in result.output

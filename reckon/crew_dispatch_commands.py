@@ -729,6 +729,15 @@ def crew_pick(
     help="Backend to check by name, instead of resolving roles.",
 )
 @click.option(
+    "--model",
+    "models",
+    multiple=True,
+    help=(
+        "Model key, model id or alias to check, resolved through the catalogue "
+        "and added to the backends checked. Repeat as needed."
+    ),
+)
+@click.option(
     "--purpose",
     type=click.Choice(["dispatch", "resume"]),
     default="dispatch",
@@ -758,7 +767,7 @@ def crew_pick(
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_preflight(
-    project, roles, backends, purpose, checkout_path, overrides, ready, pretty
+    project, roles, backends, models, purpose, checkout_path, overrides, ready, pretty
 ):
     """Report whether backend budget state allows a wave to open, without spending it.
 
@@ -781,13 +790,19 @@ def crew_preflight(
 
     crew_module, flight_module = _crew_modules()
     config = _dispatch_resolved_flight(flight_module, project, checkout_path, overrides)
+    checked_backends = list(backends)
+    # A named model checks the backend that serves it, the same unit the
+    # budget report is keyed by.
+    checked_backends.extend(
+        _model_narrowed_backend(config, model, "", local=False)[0] for model in models
+    )
     try:
         ready_nodes = [_parse_ready_node(statement) for statement in ready]
         windows = budget_module.recorded_windows(project, config, root=checkout_path)
         report = budget_module.preflight(
             project,
             config,
-            backends=list(backends) or None,
+            backends=checked_backends or None,
             roles=list(roles) or None,
             root=checkout_path,
             purpose=purpose,
@@ -1699,6 +1714,15 @@ def crew_dispatch(
     help="Candidate backend name resolved through flight config.",
 )
 @click.option(
+    "--model",
+    "model_name",
+    default="",
+    help=(
+        "Model key, model id or alias within --backend's lane; resolved through "
+        "the catalogue and narrowed to the backend that serves it."
+    ),
+)
+@click.option(
     "--set",
     "overrides",
     multiple=True,
@@ -1716,7 +1740,9 @@ def crew_dispatch(
     help="Validate and resolve only: no worktree, process or live pointer.",
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_shadow(run_id, session, wave, backend, overrides, member, dry_run, pretty):
+def crew_shadow(
+    run_id, session, wave, backend, model_name, overrides, member, dry_run, pretty
+):
     """Re-run a committed run at its original base as isolated evidence."""
     from reckon.crew.dispatch import shadow, shadow_source
 
@@ -1725,6 +1751,15 @@ def crew_shadow(run_id, session, wave, backend, overrides, member, dry_run, pret
     try:
         source = shadow_source(run_id, repo=repo)
         node = source["node"]
+        if model_name:
+            # The model narrows to the backend serving it exactly as naming
+            # that backend would, so the shadow runs the same configuration.
+            base_config = _dispatch_resolved_flight(
+                flight_module, source["project"], repo, overrides
+            )
+            backend = _model_narrowed_backend(
+                base_config, model_name, backend, local=False
+            )[0]
         routed_overrides = [*overrides, f"roles.{node.role}.backend={backend}"]
         if node.spec_level:
             routed_overrides.append(
