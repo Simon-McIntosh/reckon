@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "local",
+  "base_log_revision": "2704b1a705467b4086a745a1ce303c00db5838b5",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/picker/__init__.py:372",
+    "reckon/crew/picker/prompts.py:344"
+  ],
+  "completed_at": "2026-10-10T22:25:45.751Z",
+  "dispatched_at": "2026-10-10T22:18:47Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/one-typesafe-model-picker/jev-hold-follows-its-instructions.html",
+      "line": "45",
+      "severity": "follow-on",
+      "text": "follow-on: the four replayed Jev calls do not reproduce the recorded holds even before the change (hold probability 0.05 and 0.03 against the recorded 0.84 and 0.83), and each response is recorded only as a one-line summary rather than the full response, so the replay shows the reconstructed state routes but does not show that the instruction change drove the recorded holds, which remain unexplained."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261010T220735057264-jev-hold-follows-its-instructions/gate-head.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the head gate log names revision 2704b1a705467b4086a745a1ce303c00db5838b5 (worktree head, uncommitted) rather than the reviewed head a4419f6c6ee68bb86e5b988bbe22f945498c2152, because the gate ran on the uncommitted tree before the commits were made, so a reader cannot tell from the log alone which revision was gated."
+    },
+    {
+      "file": "docs/evidence/fragments/one-typesafe-model-picker/jev-hold-follows-its-instructions.html",
+      "line": "45",
+      "severity": "follow-on",
+      "text": "follow-on: no figure was produced even though docs/figures/one-typesafe-model-picker/jev-hold-follows-its-instructions was in the node's write scope, so the before/after hold-probability comparison the fragment exists to show is carried only as prose."
+    }
+  ],
+  "head_log_revision": "a4419f6c6ee68bb86e5b988bbe22f945498c2152",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read 2704b1a705467b4086a745a1ce303c00db5838b5..a4419f6c6ee68bb86e5b988bbe22f945498c2152 commit by commit; four files, +162/-2, the code change being the two rendered Jinja strings in questions.jinja and the new key-form test module.",
+    "done_when": "the done_when asks the manifest to record each held state's local_lane.admission with a verdict plus four replayed hold probabilities with the command and response for each, and a test that fails when the instructions name another key form; the manifest records both admissions as admitting, four real Jev calls in jev-replay.log, and tests/test_jev_instructions_name_the_key_form.py:37 is that key-form test.",
+    "goal": "the node's goal is to find what drives Jev's hold and make the routing instructions name the serving-lane facts and the current option key form; reckon/crew/picker/templates/questions.jinja:1 now names node.serving_lanes, node.serving_lane_count and node.hold_waits_for and describes the key as <lane>:<model>:<backend>.",
+    "manifest": "read the reviewed node's manifest; status complete, one landing line, gate 13 passed EXIT=0 against base 4 failed EXIT=1, and a baseline_suite/after_suite pair carrying the arm revisions and failure ids.",
+    "write_paths": "read the node's declared paths (questions.jinja, the two test modules, the evidence fragment and a figures directory); the diff's four files are all inside them and no figure was written."
+  },
+  "justifications": {
+    "durability": "tests/test_jev_instructions_name_the_key_form.py:37 fails on main's questions.jinja (proved by the base arm) and compares the instruction regex against option_key's own arity at tests/test_jev_instructions_name_the_key_form.py:53, an independent source rather than the value it passed in.",
+    "evidence": "the gate is green at the reviewed head (13 passed, EXIT=0) against a red base (4 failed, EXIT=1), but the four replayed calls are recorded only as one-line summaries in jev-replay.log and the before arm contradicts the recorded 0.84 hold, so the done_when's replay evidence is weak.",
+    "fit": "the change edits the existing Jinja string in place and adds no symbol outside the repository's naming rules, and both commits carry a conventional subject and a body.",
+    "goal_fidelity": "reckon/crew/picker/templates/questions.jinja:1 names the serving lanes and the key form as the goal asks, but the \"what drives the hold\" half is not established because the before arm routes at 0.05 and so never reproduced the recorded hold.",
+    "reuse": "the change names facts reckon/crew/picker/prompts.py:219-242 already builds rather than re-deriving them, and forks no capability the repository owns.",
+    "scope_discipline": "the diff touches only reckon/crew/picker/templates/questions.jinja, the two named test modules and the node's own evidence fragment, with no unrelated reformatting or file outside the declared scope."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to find what drives Jev's hold and make the routing instructions name the serving-lane facts and the current option key form; reckon/crew/picker/templates/questions.jinja:1 now names node.serving_lanes, node.serving_lane_count and node.hold_waits_for and describes the key as <lane>:<model>:<backend>.\nVERDICT done_when: the done_when asks the manifest to record each held state's local_lane.admission with a verdict plus four replayed hold probabilities with the command and response for each, and a test that fails when the instructions name another key form; the manifest records both admissions as admitting, four real Jev calls in jev-replay.log, and tests/test_jev_instructions_name_the_key_form.py:37 is that key-form test.\nVERDICT write_paths: read the node's declared paths (questions.jinja, the two test modules, the evidence fragment and a figures directory); the diff's four files are all inside them and no figure was written.\nVERDICT manifest: read the reviewed node's manifest; status complete, one landing line, gate 13 passed EXIT=0 against base 4 failed EXIT=1, and a baseline_suite/after_suite pair carrying the arm revisions and failure ids.\nVERDICT diff: read 2704b1a705467b4086a745a1ce303c00db5838b5..a4419f6c6ee68bb86e5b988bbe22f945498c2152 commit by commit; four files, +162/-2, the code change being the two rendered Jinja strings in questions.jinja and the new key-form test module.\nCALL_SITES: reckon/crew/picker/__init__.py:372, reckon/crew/picker/prompts.py:344\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/picker/templates/questions.jinja:1 names the serving lanes and the key form as the goal asks, but the \"what drives the hold\" half is not established because the before arm routes at 0.05 and so never reproduced the recorded hold.\nSCORE evidence: 13\nJUSTIFICATION evidence: the gate is green at the reviewed head (13 passed, EXIT=0) against a red base (4 failed, EXIT=1), but the four replayed calls are recorded only as one-line summaries in jev-replay.log and the before arm contradicts the recorded 0.84 hold, so the done_when's replay evidence is weak.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only reckon/crew/picker/templates/questions.jinja, the two named test modules and the node's own evidence fragment, with no unrelated reformatting or file outside the declared scope.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_jev_instructions_name_the_key_form.py:37 fails on main's questions.jinja (proved by the base arm) and compares the instruction regex against option_key's own arity at tests/test_jev_instructions_name_the_key_form.py:53, an independent source rather than the value it passed in.\nSCORE fit: 19\nJUSTIFICATION fit: the change edits the existing Jinja string in place and adds no symbol outside the repository's naming rules, and both commits carry a conventional subject and a body.\nSCORE reuse: 19\nJUSTIFICATION reuse: the change names facts reckon/crew/picker/prompts.py:219-242 already builds rather than re-deriving them, and forks no capability the repository owns.\nFINDING docs/evidence/fragments/one-typesafe-model-picker/jev-hold-follows-its-instructions.html:45 follow-on: the four replayed Jev calls do not reproduce the recorded holds even before the change (hold probability 0.05 and 0.03 against the recorded 0.84 and 0.83), and each response is recorded only as a one-line summary rather than the full response, so the replay shows the reconstructed state routes but does not show that the instruction change drove the recorded holds, which remain unexplained.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261010T220735057264-jev-hold-follows-its-instructions/gate-head.log:1 follow-on: the head gate log names revision 2704b1a705467b4086a745a1ce303c00db5838b5 (worktree head, uncommitted) rather than the reviewed head a4419f6c6ee68bb86e5b988bbe22f945498c2152, because the gate ran on the uncommitted tree before the commits were made, so a reader cannot tell from the log alone which revision was gated.\nFINDING docs/evidence/fragments/one-typesafe-model-picker/jev-hold-follows-its-instructions.html:45 follow-on: no figure was produced even though docs/figures/one-typesafe-model-picker/jev-hold-follows-its-instructions was in the node's write scope, so the before/after hold-probability comparison the fragment exists to show is carried only as prose.\nreviewed_base_sha: 2704b1a705467b4086a745a1ce303c00db5838b5\nreviewed_head_sha: a4419f6c6ee68bb86e5b988bbe22f945498c2152\n",
+  "review_run_id": "r-20261010T221824281636-review-of-jev-hold-follows-its-instructions",
+  "reviewed_base_sha": "2704b1a705467b4086a745a1ce303c00db5838b5",
+  "reviewed_head_sha": "a4419f6c6ee68bb86e5b988bbe22f945498c2152",
+  "reviewed_run_id": "r-20261010T220735057264-jev-hold-follows-its-instructions",
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T22:25:04.253894+00:00",
+  "total": 106
+}
