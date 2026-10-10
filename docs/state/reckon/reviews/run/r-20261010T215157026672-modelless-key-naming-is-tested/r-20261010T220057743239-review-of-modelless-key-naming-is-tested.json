@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "local",
+  "base_log_revision": "52e9eeaa63844900a8125787520a6ca6cd96f6e8",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/picker/__init__.py:229",
+    "reckon/crew/picker/__init__.py:319",
+    "reckon/crew/picker/__init__.py:372",
+    "reckon/crew/picker/__init__.py:386"
+  ],
+  "completed_at": "2026-10-10T22:08:48.366Z",
+  "dispatched_at": "2026-10-10T22:01:40Z",
+  "findings": [
+    {
+      "file": "tests/test_option_keys_are_unique.py",
+      "line": "102",
+      "severity": "follow-on",
+      "text": "follow-on: this test duplicates the guard test_a_modelless_candidate_does_not_name_its_backend_a_model at line 87 -- render(\"questions.jinja\") calls build_questions (reckon/crew/picker/prompts.py:349) and questions.jinja copies criteria_entries verbatim, so both read one dict and redden together; the negative control's own two failures and the fact that both pass at base 9a9d3d3ec show the new test adds no guard, and \u00a713's premise that no such guard existed is unsupported."
+    },
+    {
+      "file": "docs/evidence/fragments/lane-and-model-routing/modelless-key-naming-is-tested.html",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the diff writes this fragment outside \u00a713's stated write path tests/test_option_keys_are_unique.py, and the manifest further declares docs/figures/lane-and-model-routing/modelless-key-naming-is-tested which the diff never wrote, so the scope accounting does not match the diff."
+    }
+  ],
+  "head_log_revision": "764b203dfac34ac037cfa6c9e372927e652a9ea2",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit 764b203d against base 52e9eeaa; it adds one test function to tests/test_option_keys_are_unique.py and a landing fragment, changes no product code, and every change is inside the declared test file.",
+    "done_when": "\u00a713's done_when asks for a test of the rendered questions for a modelless candidate that fails when its backend is labelled as a model and passes on main; gate-head.log records 194 passed EXIT=0 and negative-control.log records 2 failed EXIT=1, so the gate measures the done_when literally.",
+    "goal": "the node goal is that a modelless key's naming has a test that fails without it; tests/test_option_keys_are_unique.py:102 adds a rendered-questions test for a modelless candidate, which is the shape \u00a713 asks for, though it passes at \u00a78's base too.",
+    "manifest": "read; it records status complete, commit 764b203d, base/head gates of 193 and 194 passed with no failures, a negative control of 2 failed, and names its log paths.",
+    "write_paths": "\u00a713 names tests/test_option_keys_are_unique.py; the diff also adds docs/evidence/fragments/lane-and-model-routing/modelless-key-naming-is-tested.html and the manifest declares a docs/figures path the diff never wrote."
+  },
+  "justifications": {
+    "durability": "tests/test_option_keys_are_unique.py:102 duplicates the guard tests/test_option_keys_are_unique.py:87 already provides, since render(\"questions.jinja\") delegates to build_questions (reckon/crew/picker/prompts.py:349) and the template copies criteria_entries verbatim.",
+    "evidence": "negative-control.log and gate-head.log record EXIT=1 and EXIT=0, but the mutation there reddens the pre-existing test at tests/test_option_keys_are_unique.py:87 as well, so the evidence shows no gap the landed test fills.",
+    "fit": "the added test follows the candidate() helper and docstring idiom of tests/test_option_keys_are_unique.py:18 and 102 and introduces no plan label or banned name.",
+    "goal_fidelity": "tests/test_option_keys_are_unique.py:102 adds the rendered-questions test \u00a713 names, but it passes at \u00a78's base 9a9d3d3ec, so it does not fail in the absence of the item-2 change it is meant to guard.",
+    "reuse": "the added test re-implements the capability tests/test_option_keys_are_unique.py:87 already owns; render() is a thin wrapper over build_questions (reckon/crew/picker/prompts.py:319-355), so it duplicates the guard rather than covering a distinct path.",
+    "scope_discipline": "\u00a713 names tests/test_option_keys_are_unique.py as the write path, yet the diff adds docs/evidence/fragments/lane-and-model-routing/modelless-key-naming-is-tested.html and the manifest additionally declares a docs/figures path never written."
+  },
+  "node": "review-of-modelless-key-naming-is-tested",
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 52e9eeaa63844900a8125787520a6ca6cd96f6e8\nreviewed_head_sha: 764b203dfac34ac037cfa6c9e372927e652a9ea2\nVERDICT goal: the node goal is that a modelless key's naming has a test that fails without it; tests/test_option_keys_are_unique.py:102 adds a rendered-questions test for a modelless candidate, which is the shape \u00a713 asks for, though it passes at \u00a78's base too.\nVERDICT done_when: \u00a713's done_when asks for a test of the rendered questions for a modelless candidate that fails when its backend is labelled as a model and passes on main; gate-head.log records 194 passed EXIT=0 and negative-control.log records 2 failed EXIT=1, so the gate measures the done_when literally.\nVERDICT write_paths: \u00a713 names tests/test_option_keys_are_unique.py; the diff also adds docs/evidence/fragments/lane-and-model-routing/modelless-key-naming-is-tested.html and the manifest declares a docs/figures path the diff never wrote.\nVERDICT manifest: read; it records status complete, commit 764b203d, base/head gates of 193 and 194 passed with no failures, a negative control of 2 failed, and names its log paths.\nVERDICT diff: read commit 764b203d against base 52e9eeaa; it adds one test function to tests/test_option_keys_are_unique.py and a landing fragment, changes no product code, and every change is inside the declared test file.\nCALL_SITES: reckon/crew/picker/__init__.py:229, reckon/crew/picker/__init__.py:319, reckon/crew/picker/__init__.py:372, reckon/crew/picker/__init__.py:386\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: tests/test_option_keys_are_unique.py:102 adds the rendered-questions test \u00a713 names, but it passes at \u00a78's base 9a9d3d3ec, so it does not fail in the absence of the item-2 change it is meant to guard.\nSCORE evidence: 16\nJUSTIFICATION evidence: negative-control.log and gate-head.log record EXIT=1 and EXIT=0, but the mutation there reddens the pre-existing test at tests/test_option_keys_are_unique.py:87 as well, so the evidence shows no gap the landed test fills.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: \u00a713 names tests/test_option_keys_are_unique.py as the write path, yet the diff adds docs/evidence/fragments/lane-and-model-routing/modelless-key-naming-is-tested.html and the manifest additionally declares a docs/figures path never written.\nSCORE durability: 12\nJUSTIFICATION durability: tests/test_option_keys_are_unique.py:102 duplicates the guard tests/test_option_keys_are_unique.py:87 already provides, since render(\"questions.jinja\") delegates to build_questions (reckon/crew/picker/prompts.py:349) and the template copies criteria_entries verbatim.\nSCORE fit: 18\nJUSTIFICATION fit: the added test follows the candidate() helper and docstring idiom of tests/test_option_keys_are_unique.py:18 and 102 and introduces no plan label or banned name.\nSCORE reuse: 5\nJUSTIFICATION reuse: the added test re-implements the capability tests/test_option_keys_are_unique.py:87 already owns; render() is a thin wrapper over build_questions (reckon/crew/picker/prompts.py:319-355), so it duplicates the guard rather than covering a distinct path.\nFINDING tests/test_option_keys_are_unique.py:102 follow-on: this test duplicates the guard test_a_modelless_candidate_does_not_name_its_backend_a_model at line 87 -- render(\"questions.jinja\") calls build_questions (reckon/crew/picker/prompts.py:349) and questions.jinja copies criteria_entries verbatim, so both read one dict and redden together; the negative control's own two failures and the fact that both pass at base 9a9d3d3ec show the new test adds no guard, and \u00a713's premise that no such guard existed is unsupported.\nFINDING docs/evidence/fragments/lane-and-model-routing/modelless-key-naming-is-tested.html:1 follow-on: the diff writes this fragment outside \u00a713's stated write path tests/test_option_keys_are_unique.py, and the manifest further declares docs/figures/lane-and-model-routing/modelless-key-naming-is-tested which the diff never wrote, so the scope accounting does not match the diff.",
+  "review_run_id": "r-20261010T220057743239-review-of-modelless-key-naming-is-tested",
+  "reviewed_base_sha": "52e9eeaa63844900a8125787520a6ca6cd96f6e8",
+  "reviewed_head_sha": "764b203dfac34ac037cfa6c9e372927e652a9ea2",
+  "reviewed_run_id": "r-20261010T215157026672-modelless-key-naming-is-tested",
+  "reviewer": "review-of-modelless-key-naming-is-tested",
+  "scores": {
+    "durability": 12,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 14,
+    "reuse": 5,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T22:07:40.091596+00:00",
+  "total": 80
+}
