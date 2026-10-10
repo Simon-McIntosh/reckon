@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "backend": "local",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/findings.py:100",
+    "reckon/crew/findings.py:211"
+  ],
+  "completed_at": "2026-10-10T22:33:43.042Z",
+  "dimension_dispositions": {},
+  "dispatched_at": "2026-10-10T22:16:47Z",
+  "findings": [
+    {
+      "file": "reckon/crew/findings.py",
+      "line": "211",
+      "severity": "follow-on",
+      "text": "Blanking a finding's path now reads as repository-scoped. With a root known, runs._repository_relative_scope('', root) returns '.' (Path('') resolves to the root itself), so _record_rows gives path '.' and _scope_of 'repository', where the retired findings._repository_relative returned None and the row was path '' with scope 'artefact'. Measured through _record_rows at head 2f2682e44 (module /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/health-review-1010/findings-uses-the-scope-owner/reckon/crew/findings.py): a finding with no path key -> path '.' scope 'repository'; at base 611ad57d the same finding -> path '' scope 'artefact'. An absolute path equal to the root shifts the same way (base '' / artefact; head '.' / repository). The new absent-root branch guards the empty path; the rooted branch does not, so findings' deliberate artefact classification for a pathless finding is lost. No test covers a pathless finding, so the suite stays green through the change."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew/findings.py:100 (_scope_of) and reckon/crew/findings.py:211 (_record_rows); the owner is reckon/crew/runs.py:521.",
+    "diff": "read against base 611ad57d: the single commit 2f2682e44 deletes findings._repository_relative (os.path.normpath + startswith) and its two call sites now call runs._repository_relative_scope; runs._repository_relative_scope gains a repo-is-None branch; +115/-38 across four files.",
+    "done_when": "The reviewed node's evidence fence: findings.py defines no path-normalisation of its own and calls the owner; the named suite passes EXIT=0 with its list built from the head tree; a new case asserts a symlinked and a ..-bearing path resolve identically through both callers; the negative control fails the symlink case. All present. I reproduced the head arm (67 passed, EXIT=0) and the negative control (1 failed, 6 passed, EXIT=1) independently.",
+    "goal": "Route the findings reader's path scoping through runs._repository_relative_scope. Delivered: findings._repository_relative is deleted and both call sites (findings.py:100 in _scope_of, findings.py:211 in _record_rows) call runs._repository_relative_scope, whose signature is widened to Path | None.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261010T215312164968-findings-uses-the-scope-owner/manifest.md; status complete, commit 2f2682e44, head gate 67 passed EXIT=0, negative control 1 failed EXIT=1, names its log paths; it declares no baseline_suite and no after_suite field.",
+    "write_paths": "The manifest declares four write paths; git diff --name-only 611ad57d..2f2682e44 lists exactly four files, all inside them (findings.py, runs.py, tests/test_findings_read_by_path.py, the evidence fragment); the declared docs/figures directory is unused; the reviewed worktree is clean at head."
+  },
+  "justifications": {
+    "durability": "The added test asserts an independent expectation \u2014 recurrence 2 over two spellings of one file, both lines present, and paths == [FILE] \u2014 rather than restating its own input, and the reproduced negative control shows it reddens when the delegation is reverted. Scored below full because the reader's empty-path behaviour, which the retired function deliberately classified as an artefact, is now unguarded and classified as repository: no test covers a pathless finding, so the change passes the suite uncaught.",
+    "evidence": "Every load-bearing claim reproduces under my own instruments. Head arm: the reviewed run's six-file command, run in a scratch copy of 2f2682e44 with the module resolved there (module.__file__ = .../rev-scope-owner-2f2682e44/reckon/crew/findings.py), 67 passed, EXIT=0. Negative control: restoring findings' own normpath/startswith scoping reddens only the new symlink test (1 failed, 6 passed, EXIT=1), matching the reviewed run's own log. The reviewed run declared neither baseline_suite nor after_suite, so the added-failure count is unmeasured rather than zero.",
+    "fit": "The changed and added names state their mechanism (_repository_relative_scope, the absent-root branch); the docstrings are updated in the same change to describe the symlink/.. normalisation and the no-repository case; no plan, sprint or ticket identifier appears in the changed source or test.",
+    "goal_fidelity": "The landed change is exactly the goal: findings' own normalisation is removed and both call sites route through runs._repository_relative_scope, extended to accept an absent root; the absent-root branch reproduces findings' old None-root behaviour (empty -> None, absolute -> None, already-relative -> normalised posix). Scored below full because the same routing changed behaviour the goal did not ask to change: a blank or root-equal path moved from artefact to repository, measured through _record_rows at both revisions.",
+    "reuse": "The follow-on this node repairs is closed: findings._repository_relative, a second implementation of the same in-repository boundary capability, is deleted, and both of its call sites now use reckon.crew.runs._repository_relative_scope \u2014 the owner the follow-on named. No duplicate scoping mechanism remains.",
+    "scope_discipline": "One commit, four files, every path inside the declared write paths and nothing outside them; no plan-meta line (status, impl, version, modified, archived) is rewritten; the reviewed worktree is clean at head 2f2682e44."
+  },
+  "node": "review-of-findings-uses-the-scope-owner",
+  "project": "reckon",
+  "review_run_id": "r-20261010T221624683842-review-of-findings-uses-the-scope-owner",
+  "reviewed_base_sha": "611ad57df4aa062bb055de8c940e893a4710a27c",
+  "reviewed_head_sha": "2f2682e44f5884a7e77844fb26547926fafad771",
+  "reviewed_run_id": "r-20261010T215312164968-findings-uses-the-scope-owner",
+  "reviewer": "review-of-findings-uses-the-scope-owner",
+  "role": "review",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T22:44:00Z",
+  "total": 112
+}
