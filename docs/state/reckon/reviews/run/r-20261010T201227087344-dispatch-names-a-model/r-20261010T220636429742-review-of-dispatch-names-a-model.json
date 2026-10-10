@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's gate-base.log and gate-head.log, which its manifest names under test_logs; the manifest carries no baseline_suite or after_suite field, so the pair was read directly through review.annotate_added_failures. Both arms are green (base 297 passed, EXIT=0; head 306 passed, EXIT=0), so no failures are added.",
+  "backend": "local",
+  "base_log_revision": "c16b71de9724b9a3c1523c6effd18a2b45c6697d",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:956",
+    "reckon/ledger.py:2512",
+    "reckon/ledger.py:2475"
+  ],
+  "completed_at": "2026-10-10T22:21:02.974Z",
+  "dispatched_at": "2026-10-10T22:06:59Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/lane-and-model-routing/dispatch-names-a-model.html",
+      "line": "33",
+      "severity": "follow-on",
+      "text": "follow-on: the gate table ships unsubstituted template tokens - GATE_BASE_SUMMARY and GATE_BASE_EXIT on the base row, GATE_HEAD_SUMMARY and GATE_HEAD_EXIT on the head row - so the landed evidence names no result; the head row also labels its revision dba1dbfa while the gate log it should cite ran at 71d67539, and the real summaries are '297 passed in 203.24s (0:03:23)' and '306 passed in 205.61s (0:03:25)', both EXIT=0."
+    },
+    {
+      "file": "reckon/ledger.py",
+      "line": "2471",
+      "severity": "follow-on",
+      "text": "follow-on: the new try/except has no test - nothing raises FlightConfigError, OSError or ValueError through build_record in the suite, so removing the fallback would leave the gate green; a test that submits a malformed catalogue to build_record and asserts the row is still written with lane and model_key unset would cover it."
+    },
+    {
+      "file": "reckon/ledger.py",
+      "line": "2475",
+      "severity": "follow-on",
+      "text": "follow-on: catching ValueError also swallows resolve_name's ambiguity refusal, which is raised as ValueError, so an ambiguous identity silently stores lane and model_key as None instead of surfacing; a probe raising ValueError from the resolver left the pair unset with no error."
+    }
+  ],
+  "head_log_revision": "71d67539bdc184c17eb6b1931c1c841ce562097b",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read dba1dbfaa8e1757d69c6cc3082e05bb8f33650b6..71d67539bdc184c17eb6b1931c1c841ce562097b; two files, +54/-4, the code change being the two RECORD_FIELDS entries, the try/except around normalize_identity, and the two record keys.",
+    "done_when": "measured at the reviewed head - build_record writes lane='claude'/model_key='sonnet' for backend='claude' and lane='claude'/model_key='opus' for 'claude-opus' (declared=True), and a monkeypatched flight.FlightConfigError leaves lane=None/model_key=None with no raise; the declared-field test the commit targets could not run here because it reads mounted ledgers and skipped with none available.",
+    "goal": "the commit declares lane and model_key in RECORD_FIELDS and makes the row builder survive a malformed catalogue; reckon/ledger.py:126-127 adds the two keys to the declared schema, reckon/ledger.py:2471-2476 wraps the identity resolution so a bad catalogue leaves the pair unset rather than raising out of the ledger, and reckon/ledger.py:2512-2513 writes the resolved pair onto the row beside backend.",
+    "manifest": "the reviewed node's manifest is present and status complete and lists this commit as its last; it carries no baseline_suite or after_suite field, so the added-failure count was taken from the gate-base.log and gate-head.log it names under test_logs, each opening with a line naming revision, tree and command and ending EXIT=0.",
+    "write_paths": "the commit touches only the two paths the node declared, reckon/ledger.py and docs/evidence/fragments/lane-and-model-routing/dispatch-names-a-model.html; no path outside the node's write_paths is touched."
+  },
+  "justifications": {
+    "durability": "the declared schema is guarded by tests/test_record_fields_declare_every_key.py, but that test is not in the node's gate and skips where no mounted ledgers resolve, and neither the pair write at :2512 nor the malformed-catalogue fallback at :2471 has a test that fails on regression.",
+    "evidence": "the head gate at the reviewed revision is green (306 passed in 205.61s, EXIT=0) against a green base (297 passed in 203.24s, EXIT=0), so no failures are added, and the malformed-catalogue survival reproduces; but the evidence fragment ships unsubstituted template tokens in its gate table and the new fallback has no test that would redden if it regressed.",
+    "fit": "the added comment at :2465-2470 explains the mechanism (keeping a row attributable after a backend name retires) and the commit carries a conventional subject and a body stating what changed and why, with no attribution, plan label or stray version suffix.",
+    "goal_fidelity": "reckon/ledger.py:126-127 declares both keys in RECORD_FIELDS and :2512-2513 writes them from an identity resolved through the catalogue's one resolver, so the commit's stated goal is met, verified by a probe in which backend 'claude' yields (claude, sonnet) and 'claude-opus' yields (claude, opus).",
+    "reuse": "the change calls the existing normalize_identity and resolve_name rather than adding a second resolver or a second declared-schema list, and its try/except mirrors the module's existing catalogue-error handling at reckon/ledger.py:764.",
+    "scope_discipline": "the change touches exactly the two paths the node declared, reckon/ledger.py and the evidence fragment, +54/-4 lines, with no unrelated reformatting, rename or file outside the scope."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the commit declares lane and model_key in RECORD_FIELDS and makes the row builder survive a malformed catalogue; reckon/ledger.py:126-127 adds the two keys to the declared schema, reckon/ledger.py:2471-2476 wraps the identity resolution so a bad catalogue leaves the pair unset rather than raising out of the ledger, and reckon/ledger.py:2512-2513 writes the resolved pair onto the row beside backend.\nVERDICT done_when: measured at the reviewed head - build_record writes lane='claude'/model_key='sonnet' for backend='claude' and lane='claude'/model_key='opus' for 'claude-opus' (declared=True), and a monkeypatched flight.FlightConfigError leaves lane=None/model_key=None with no raise; the declared-field test the commit targets could not run here because it reads mounted ledgers and skipped with none available.\nVERDICT write_paths: the commit touches only the two paths the node declared, reckon/ledger.py and docs/evidence/fragments/lane-and-model-routing/dispatch-names-a-model.html; no path outside the node's write_paths is touched.\nVERDICT manifest: the reviewed node's manifest is present and status complete and lists this commit as its last; it carries no baseline_suite or after_suite field, so the added-failure count was taken from the gate-base.log and gate-head.log it names under test_logs, each opening with a line naming revision, tree and command and ending EXIT=0.\nVERDICT diff: read dba1dbfaa8e1757d69c6cc3082e05bb8f33650b6..71d67539bdc184c17eb6b1931c1c841ce562097b; two files, +54/-4, the code change being the two RECORD_FIELDS entries, the try/except around normalize_identity, and the two record keys.\nVERDICT call_sites: reckon/crew/promotion.py:956 is the sole production caller of ledger.build_record whose row gains the pair, reckon/ledger.py:2512 writes it, and reckon/ledger.py:2475 is the new fallback.\nCALL_SITES: reckon/crew/promotion.py:956, reckon/ledger.py:2512, reckon/ledger.py:2475\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/ledger.py:126-127 declares both keys in RECORD_FIELDS and :2512-2513 writes them from an identity resolved through the catalogue's one resolver, so the commit's stated goal is met, verified by a probe in which backend 'claude' yields (claude, sonnet) and 'claude-opus' yields (claude, opus).\nSCORE evidence: 14\nJUSTIFICATION evidence: the head gate at the reviewed revision is green (306 passed in 205.61s, EXIT=0) against a green base (297 passed in 203.24s, EXIT=0), so no failures are added, and the malformed-catalogue survival reproduces; but the evidence fragment ships unsubstituted template tokens in its gate table and the new fallback has no test that would redden if it regressed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the change touches exactly the two paths the node declared, reckon/ledger.py and the evidence fragment, +54/-4 lines, with no unrelated reformatting, rename or file outside the scope.\nSCORE durability: 15\nJUSTIFICATION durability: the declared schema is guarded by tests/test_record_fields_declare_every_key.py, but that test is not in the node's gate and skips where no mounted ledgers resolve, and neither the pair write at :2512 nor the malformed-catalogue fallback at :2471 has a test that fails on regression.\nSCORE fit: 19\nJUSTIFICATION fit: the added comment at :2465-2470 explains the mechanism (keeping a row attributable after a backend name retires) and the commit carries a conventional subject and a body stating what changed and why, with no attribution, plan label or stray version suffix.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change calls the existing normalize_identity and resolve_name rather than adding a second resolver or a second declared-schema list, and its try/except mirrors the module's existing catalogue-error handling at reckon/ledger.py:764.\nFINDING docs/evidence/fragments/lane-and-model-routing/dispatch-names-a-model.html:33 follow-on: the gate table ships unsubstituted template tokens - GATE_BASE_SUMMARY and GATE_BASE_EXIT on the base row, GATE_HEAD_SUMMARY and GATE_HEAD_EXIT on the head row - so the landed evidence names no result; the head row also labels its revision dba1dbfa while the gate log it should cite ran at 71d67539, and the real summaries are '297 passed in 203.24s (0:03:23)' and '306 passed in 205.61s (0:03:25)', both EXIT=0.\nFINDING reckon/ledger.py:2471 follow-on: the new try/except has no test - nothing raises FlightConfigError, OSError or ValueError through build_record in the suite, so removing the fallback would leave the gate green; a test that submits a malformed catalogue to build_record and asserts the row is still written with lane and model_key unset would cover it.\nFINDING reckon/ledger.py:2475 follow-on: catching ValueError also swallows resolve_name's ambiguity refusal, which is raised as ValueError, so an ambiguous identity silently stores lane and model_key as None instead of surfacing; a probe raising ValueError from the resolver left the pair unset with no error.\nreviewed_base_sha: dba1dbfaa8e1757d69c6cc3082e05bb8f33650b6\nreviewed_head_sha: 71d67539bdc184c17eb6b1931c1c841ce562097b",
+  "review_run_id": "r-20261010T220636429742-review-of-dispatch-names-a-model",
+  "reviewed_base_sha": "dba1dbfaa8e1757d69c6cc3082e05bb8f33650b6",
+  "reviewed_head_sha": "71d67539bdc184c17eb6b1931c1c841ce562097b",
+  "reviewed_run_id": "r-20261010T201227087344-dispatch-names-a-model",
+  "scores": {
+    "durability": 15,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T22:17:10.795064+00:00",
+  "total": 107
+}
