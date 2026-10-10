@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-crew-home-has-a-bound">
+  <meta name="plan-title" content="Garbage collection reaches every crew store">
+  <meta name="plan-summary" content="crew gc reports and, under --apply, sweeps three stores the crew home keeps outside the ledger: run-keyed report trees, run lock files and unledgered run directories. Each row set withholds any entry whose run a live pointer still names, re-reads the live set immediately before each removal, and states each removal's path and size.">
+  <meta name="plan-evidence-for" content="reckon:the-crew-home-has-a-bound">
+  <meta name="plan-verifies" content="reckon:the-crew-home-has-a-bound#s3">
+  <meta name="plan-recorded-at" content="2026-10-11">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,gc,retention,reports,locks,runs">
+  <title>Garbage collection reaches every crew store — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="gc-reaches-every-crew-store" data-node="gc-reaches-every-crew-store" data-reckon="landed" data-when="2026-10-11">
+  <h2>Garbage collection reaches every crew store</h2>
+  <p>Three stores under the crew home grow with every run and nothing bounded them. <code>garbage_collect</code> now reports all three and removes them only under <code>garbage_collect</code>'s <code>apply</code>: a run-keyed report tree under <code>reports/&lt;project&gt;/&lt;run-id&gt;/</code>, a run's advisory lock <code>locks/&lt;run-id&gt;.lock</code>, and a run directory <code>runs/&lt;run-id&gt;/</code> that holds neither a ledger row nor a live pointer. The three row sets are carried on the report as <code>report_trees</code>, <code>lock_files</code> and <code>unledgered_run_directories</code>, each with a matching <code>*_removed</code> count. The existing plan-review raw-report sweep is folded into the report row set rather than run beside it, so <code>report_trees</code> lists a plan-review tree (<code>family: "plan-review"</code>) and a general run tree (<code>family: "run"</code>) alike, and the <code>plan_review_raw_reports</code> key is the plan-review projection of that set.</p>
+  <p>A row is offered only when its run is known — live or already in the ledger — and past retention, and a row whose run a live pointer still names is withheld: the run may be writing into its tree, or may take its lock again. The live set is re-read immediately before each removal, so a pointer that appears mid-sweep still withholds its run's row. A lock is offered only for a run already in the ledger, because a lock with no row is not yet a finished run's, and the queue's own <code>queued-dispatch.lock</code> is never matched. An unledgered run directory is offered whole, because with no row and no pointer nothing durable covers its stream. Every removal prints its path and its size — the bytes a tree holds, the honest zero of an empty lock file.</p>
+  <p>The declared mutation — <code>_run_has_live_pointer</code> returning <code>False</code> unconditionally, removing the live-pointer re-check — makes the sweep report the live run's report tree and the live run's lock and run directory, and the case fails (<code>EXIT=1</code>, <code>assert report_paths == {str(raw_old)}</code>). The head gate on the node's own change, <code>tests/test_gc_reaches_every_crew_store.py</code> plus the existing gc, raw-report, removal-path and worktree-residue cases, is 77 passed at <code>EXIT=0</code>. This gate measures only this node's own change; verifying the merged result belongs to a separately dispatched test node.</p>
+</article>
+</body>
+</html>
