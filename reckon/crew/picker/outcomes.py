@@ -71,9 +71,7 @@ def hold_request_digest(state: str, questions: Any) -> str:
     return hashlib.sha256(_hold_payload_bytes(state, questions)).hexdigest()
 
 
-def _write_hold_payload(
-    docs: Path, project: str, digest: str, payload: bytes
-) -> str:
+def _write_hold_payload(docs: Path, project: str, digest: str, payload: bytes) -> str:
     """Write a request beside the holds file and return the reference to it."""
     directory = _hold_path(docs, project).parent / HOLD_PAYLOAD_DIR
     directory.mkdir(parents=True, exist_ok=True)

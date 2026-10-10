@@ -13,7 +13,7 @@ rather than replayed as a different request.
 from __future__ import annotations
 
 import json
-from datetime import UTC, datetime
+from datetime import datetime
 
 import pytest
 
@@ -52,9 +52,7 @@ def _isolated_lane(tmp_path, monkeypatch):
     lane = tmp_path / "lane.json"
     monkeypatch.setenv("RECKON_LOCAL_LANE_DOCUMENT", str(lane))
     monkeypatch.setattr(lane_context, "list_live", list)
-    monkeypatch.setattr(
-        "reckon.crew.picker._record_pick_timings", lambda *a, **k: None
-    )
+    monkeypatch.setattr("reckon.crew.picker._record_pick_timings", lambda *a, **k: None)
 
 
 def _candidate(backend: str = "clive", family: str = "local") -> Candidate:
