@@ -209,6 +209,10 @@ def test_questions_explain_every_weighed_field():
     assert route["type"] == "choice"
     assert "Choose only an offered option" in route["instructions"]
     assert "sliding scale" in route["instructions"]
+    # The instructions name the facts a hold decision turns on: the lanes that
+    # can serve the node, and what a hold waits on when only one can.
+    assert "serving_lanes" in route["instructions"]
+    assert "hold_waits_for" in route["instructions"]
     glossary = route["glossary"]
     for term in (
         "spec_level",
