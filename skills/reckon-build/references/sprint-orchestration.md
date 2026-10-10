@@ -1008,7 +1008,8 @@ which are the query's own siblings; a process showing `00:00` has just started a
 is not an orphan. Then confirm with `/proc/<pid>/cwd` before signalling anything,
 and signal only the pids that survived the listing — never a pattern, never pid 1.
 
-`reckon crew census` replaces that recipe when it lands: it reads the owning
+`reckon crew census` (planned in `a-crew-process-ends-with-its-owner`) replaces
+that recipe when it lands: it reads the owning
 session from the environment each process recorded, rather than inferring one from
 a command line. Until then the recipe is the step, and a step rather than a
 reminder — a session that ends without it has left its processes on a shared login

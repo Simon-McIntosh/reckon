@@ -318,35 +318,19 @@ The active sprint id is derived from the unique sprint whose status is
 Each resource owns its optimistic-concurrency version, so unrelated writes do
 not contend.
 
-`reckon migrate-project-state docs --project <project>` is the only activation
-path. It preserves a byte-identical snapshot below
-`docs/.reckon/snapshots/project-state/`, stages and validates all resources,
-proves composed parity, rechecks the source, installs resources, and publishes
-`docs/.reckon/project-state-migration.json` last. Marker absence/staging means
-legacy mode; a complete distributed marker forbids fallback.
+`reckon sync` is the only activation path. On a project with no legacy
+`index.json` and no existing typed resource, sync stages the canonical resources
+above, reads each one back to validate it, installs them atomically, and
+publishes `docs/.reckon/project-state-migration.json` last with
+`format: distributed` and `status: complete`. Marker absence means legacy mode;
+a complete distributed marker forbids fallback, and a project that already
+carries a legacy `index.json` is preserved rather than converted.
 
 ### Registered repository migration ledger
 
-`reckon migrate-fleet` resolves the active mount registry at runtime and treats
-each repository as an independent transaction. The registry path and content
-hash are fixed for the run. Every mount receives a content-bearing snapshot and
-one ledger row; no project name is compiled into Reckon.
-
-Only projects supplied with `--apply-project` may change. Other repositories,
-and repositories with migration-path dirt, detached checkouts, active alternate
-worktrees, upstream lag, invalid resource identity, or missing project state,
-receive a terminal `deferred` row with exact evidence and a required action.
-Selected repositories are copied to a staging tree, then capability state,
-typed layout, and distributed project state are migrated in that order.
-Document, schema, relationship, progressive-read, and isolated static-build
-verification must pass before the staged tree is installed.
-
-The ledger is written atomically after every transition and a completed run is
-idempotent. Its terminal states are `verified`, `deferred`, and `rolled-back`.
-A verified row initially records exact working-tree paths; `reckon
-migration-record` attaches the repository commit and pushed ref. The rollback
-command restores only the ledger's exact changed paths from the matching
-snapshot, so unrelated files are outside its deletion boundary.
+Removed. Distributed project state is created per repository by `reckon sync`,
+which owns the whole transaction for the project it is run in; there is no
+fleet-wide migration entrypoint and no cross-repository ledger.
 
 ## Legacy compatibility view — `index.json`
 

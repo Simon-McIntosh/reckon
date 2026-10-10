@@ -263,7 +263,8 @@ backgrounded search, so the host half is here:
   the orphans come from.** Before the closing summary, run the listing in
   `sprint-orchestration.md` §17 — bracketed pattern, own ancestry excluded by
   pid, near-zero ages discarded — and stop what it prints, the follower
-  included. `reckon crew census` replaces the recipe when it lands.
+  included. `reckon crew census` (planned in `a-crew-process-ends-with-its-owner`)
+  replaces the recipe when it lands.
 
 - **No backgrounded dispatch loop or wave script.**
   `run_in_background: true` is what makes one possible. A backgrounded `Bash`

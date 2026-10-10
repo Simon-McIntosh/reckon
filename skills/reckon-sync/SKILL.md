@@ -47,7 +47,7 @@ repos. Canonical sources live in `~/Code/reckon`, not dotfiles.
 4. **Never overwrite per-plan HTML** the user has already authored.
 5. **No per-plan state JSON.** Plan state lives as semantic HTML. A new scaffold
    seeds legacy project config for compatibility; `reckon
-   migrate-project-state` later creates typed sprint/milestone/blocker/timeline
+   sync` creates the typed sprint/milestone/blocker/timeline
    resources, an identity-only `project.json`, and freezes `index.json`.
 6. **reckon-sync owns `mounts.json` and the state-dir symlink exclusively.** `reckon-create` does NOT touch these.
 7. **Never use `/tmp`.** Use `$REPO_ROOT/.reckon-sync-tmp-$(date +%s)` if needed and clean it up.
