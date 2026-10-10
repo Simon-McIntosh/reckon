@@ -1,0 +1,44 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T23:18:21.805Z",
+  "dispatched_at": "2026-10-10T23:10:24Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-portfolio-reads-true.html:98",
+      "id": "reasoning-1",
+      "reason": "a literal implementation leaves the roadmap on a different age source from the audit, so either \u00a73 must state that the first call gains a path or it must drop the \"one age\" claim for the roadmap.",
+      "text": "\u00a73 says \"every caller of `derived_plan_age` passes the new arguments: both calls in the roadmap's `_authorisation_age` (the first passes no path today, the second a fallback path)\" and that the three consumers \"report one age\", yet the commit lookup it adds is keyed by \"look[ing] the plan up in that map\" \u2014 which needs the plan path \u2014 and `reckon/roadmap.py:945` supplies none (`plan.get(\"modified\") or plan.get(\"last\")` with `created_at=plan.get(\"created\")`, so the first call returns `plan-modified` or `file-created` non-None and `reckon/roadmap.py:968`'s path-bearing call is reached only when both are absent); the roadmap therefore cannot report the commit age the audit reports",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "d89548874c28ada1a8c442a92931af4be60b2880dc25cacd48a089042d72ac92",
+  "plan_slug": "the-portfolio-reads-true",
+  "plan_version": 14,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261010T230955000384-plan-review-of-the-portfolio-reads-true",
+  "reviewed_blob_sha": "825157e028f09c7d2c1d72a25102dfc464299b29",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 \u00a73 cites functions and modules by name; `derived_plan_age` (`reckon/doccheck.py:239`), `_git_last_committed(repo_dir, docs_dir)` (`reckon/serve.py:1532`), `_commit_days` (`reckon/fleet_index.py:45`), `reckon/archive.py:87`, `reckon/roadmap.py:945/968`, and the three direct callers in `tests/test_doccheck.py` (lines 124/135/150) all resolve.",
+    "done_when": "pass \u2014 \u00a73 names a measurable outcome (an `AGING` row with age 20 and source `commit`, a 40-day plan reported `STALE`) and an executed negative control (age read from the mtime \u2192 age 0, no row, test fails).",
+    "evidence_paths": "pass \u2014 the write paths are repository sources and test files under `tests/`; no session scratchpad or node-local temporary path is named.",
+    "naming": "pass \u2014 the new test file is named by what it measures (`tests/test_staleness_counts_from_the_last_commit.py`), and `AGING`/`STALE` are emitted audit codes, not plan or ticket labels.",
+    "reasoning": "a finding \u2014 \u00a73 claims every caller passes the new arguments and that the audit, the roadmap and the archive then report one age, but the roadmap's first `derived_plan_age` call passes no plan path, so the commit-first read cannot apply there and the roadmap's age stays the plan-modified/file-created figure the audit no longer reports.",
+    "single_goal": "pass \u2014 \u00a73 carries one deliverable: one age owner, one new audit code (`AGING`), one migration of its callers.",
+    "wiring": "pass \u2014 \u00a73 declares its order after \u00a72 in prose (\"This section runs after \u00a72, which also writes `doccheck.py`\") and in followup f-tprt-002, and gate `g-tprt-age-honest` names `the-portfolio-reads-true#s3`."
+  },
+  "section_digests": {
+    "_document": "a2e40a46ef8769d14f88fec5811bd50d0aa5fc6a7f36f66f1ebcba3a9533436a",
+    "s1": "56204248c9050844c40ac7e00bff909830602caaa4b95be87bacea51b1495a03",
+    "s2": "69b86246adb4ea89719f367ac57f43940ed14fb88c5c89408cf18a6b59911f57",
+    "s3": "5c10346ff9b4cc1f6e03362e2de6357fe863d64e01cb49e38af59388752378b0",
+    "s4": "9280ec81cafc36b7de1295b0f22745c6162986e93d9731a8e8b99c51d658a217",
+    "s5": "53d056457e8d9470758a7c7131caafc6fab7491610f7f3fcab1b958907a1e9b9",
+    "s6": "3b386242a01bc207ce0810ef1ee5ccbd8a9d5ea78f77a5dd6fc61b2f207c53d0"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T23:19:11.534051+00:00"
+}
