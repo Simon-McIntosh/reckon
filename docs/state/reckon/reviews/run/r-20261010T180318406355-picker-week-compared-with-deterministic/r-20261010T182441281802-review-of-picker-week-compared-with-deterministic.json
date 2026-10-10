@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed run's manifest baseline_suite and after_suite are both empty (an investigate run with no test arms), so no gate log exists to derive a count from; the read-time annotation yields the same absence.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-10T18:40:52.947Z",
+  "dispatched_at": "2026-10-10T18:25:07Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/picker-week-compared-with-deterministic/report.md",
+      "line": "154",
+      "severity": "follow-on",
+      "text": "The sentence \"The command's independent cut ... 1/13 chosen below 1x, 4/66 at 1-2x, 9/94 at 2-4x\" attributes those counts to `reckon crew pick --outcomes`, but the command prints offered_codex_by_burn below_1 0/16, 1_to_2 3/278, 2_to_4 3/221 over all offered rows; the report's figures are the routed-only restriction (reproducible from data/rows-window.jsonl as 13/1, 66/4, 94/9) but are not the numbers the command prints. Not blocking: the conclusion that codex is chosen rarely holds either way."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/picker-week-compared-with-deterministic/report.md",
+      "line": "176",
+      "severity": "follow-on",
+      "text": "the stage-time-fix split (354/2,657=13.3% before, 22/336=6.6% after) and the by-day rates at report.md:178 are printed only as literals inside data/make_figure.py; neither data/analyse.py nor the cited command produces them, so the report's own Reproduce instructions do not regenerate that table. The numbers are reproducible from data/rows-window.jsonl (233/641=36.3%, 354/2,657=13.3%, 22/336=6.5%), so the defect is the missing producing command, not the values."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/picker-week-compared-with-deterministic/report.md",
+      "line": "96",
+      "severity": "follow-on",
+      "text": "\u00a73 says the outcomes command is \"confirmed against the same ledger rows\", but the command reports actions.route 2,508 while data/analysis.txt reports 2,510 (a two-row classification gap); the two instruments the report presents as agreeing do not, and the report does not note it."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "no production call sites: the deliverable is a report and its scripts under ~/.config/reckon/crew/reports, not code reachable at runtime.",
+    "diff": "there is no diff, because the run landed no commit (manifest commits: none) and its only deliverables are outside every repository; I read the report and its data artifacts against the base tree at c512a3b5757a5d027d8e91d2c584f8f43b828fc9 and re-derived its numbers there.",
+    "done_when": "the done-when asks for four figures and three questions each with its row count and producing command, one SVG, and plain statements where a population is too small; all are present (report.md:1-207, picker-week.svg), and the two too-small calls are explicit (report.md:154, 190-203).",
+    "goal": "the node goal is a report comparing one week of picker routing with deterministic routing on success, spend, fallbacks and confidence; report.md delivers it with \u00a71 success, \u00a72 metered spend, \u00a73 fallbacks and \u00a74 confidence, plus Questions A-C.",
+    "manifest": "read; it records status complete, base c512a3b5, changed_paths all inside the grant, the gate commands and their logs, and a landing line; baseline_suite and after_suite are empty because this investigate run had no test arms, so added_failure_count is unmeasured rather than zero.",
+    "write_paths": "the grant is /home/ITER/mcintos/.config/reckon/crew/reports/reckon/picker-week-compared-with-deterministic; the shipped paths (report.md, picker-week.svg, data/*) all lie inside it, and the picker worktree at c512a3b5 is clean."
+  },
+  "justifications": {
+    "durability": "the three data scripts plus data/analysis.txt and the raw reads are recorded so the figures can be re-derived, but data/make_figure.py hardcodes several series so a data change would not surface in the figure and nothing fails if a figure drifts from its source.",
+    "evidence": "I reproduced the two arms (picker 241/248, deterministic 1450/1474), the 308/2,685 split, the routed confidence bands (13/15, 36/36, 75/76, 117/121) and the timeout-by-day rates from data/rows-window.jsonl independently, but report.md:154 cites the command for numbers it does not print and report.md:176-178's rates are hardcoded in data/make_figure.py with no producing command.",
+    "fit": "the scripts follow the report-directory idiom and picker-week.svg honours the data-ink rules (data/make_figure.py despines top/right, labels directly, no grid), and the only section-mark in the deliverable (report.md:159) is an internal cross-reference, not a plan label.",
+    "goal_fidelity": "report.md gives all four measures the goal names (success \u00a71, spend \u00a72, fallbacks \u00a73, confidence \u00a74) and answers the three questions, each with row counts and commands, so the node goal is met in full.",
+    "reuse": "data/analyse.py re-derives several measures `reckon crew pick --outcomes` already prints (calibration, fallback_reasons, offered_codex_by_burn, metered_spend), costing some duplication, but the command owns no two-arm comparison, which is the report's purpose, so the scripts extend the analysis rather than fork a repository capability.",
+    "scope_discipline": "every shipped path lies inside the grant and the picker worktree stays clean at c512a3b5, with no code, plan or crew state modified."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is a report comparing one week of picker routing with deterministic routing on success, spend, fallbacks and confidence; report.md delivers it with \u00a71 success, \u00a72 metered spend, \u00a73 fallbacks and \u00a74 confidence, plus Questions A-C.\nVERDICT done_when: the done-when asks for four figures and three questions each with its row count and producing command, one SVG, and plain statements where a population is too small; all are present (report.md:1-207, picker-week.svg), and the too-small calls are explicit (report.md:154,190-203).\nVERDICT write_paths: the grant is /home/ITER/mcintos/.config/reckon/crew/reports/reckon/picker-week-compared-with-deterministic; the shipped paths (report.md, picker-week.svg, data/*) all lie inside it, and the picker worktree at c512a3b5 is clean.\nVERDICT manifest: read; it records status complete, base c512a3b5, changed_paths all inside the grant, the gate commands and their logs, and a landing line; baseline_suite and after_suite are empty because this investigate run had no test arms, so added_failure_count is unmeasured rather than zero.\nVERDICT diff: there is no diff, because the run landed no commit (manifest commits: none) and its only deliverables are outside every repository; I read the report and its data artifacts against the base tree at c512a3b5757a5d027d8e91d2c584f8f43b828fc9 and re-derived its numbers there.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: report.md gives all four measures the goal names (success \u00a71, spend \u00a72, fallbacks \u00a73, confidence \u00a74) and answers the three questions, each with row counts and commands, so the node goal is met in full.\nSCORE evidence: 16\nJUSTIFICATION evidence: I reproduced the two arms (picker 241/248, deterministic 1450/1474), the 308/2,685 split, the routed confidence bands (13/15,36/36,75/76,117/121) and the timeout-by-day rates from data/rows-window.jsonl independently, but report.md:154 cites the command for numbers it does not print and report.md:176-178's rates are hardcoded in data/make_figure.py with no producing command.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every shipped path lies inside the grant and the picker worktree stays clean at c512a3b5, with no code, plan or crew state modified.\nSCORE durability: 15\nJUSTIFICATION durability: the three data scripts plus data/analysis.txt and the raw reads are recorded so the figures can be re-derived, but data/make_figure.py hardcodes several series (its own body) so a data change would not surface in the figure and nothing fails if a figure drifts from its source.\nSCORE fit: 19\nJUSTIFICATION fit: the scripts follow the report-directory idiom and picker-week.svg honours the data-ink rules (data/make_figure.py despines top/right, labels directly, no grid), and the only section-mark in the deliverable (report.md:159) is an internal cross-reference, not a plan label.\nSCORE reuse: 16\nJUSTIFICATION reuse: data/analyse.py re-derives several measures `reckon crew pick --outcomes` already prints (calibration, fallback_reasons, offered_codex_by_burn, metered_spend), costing some duplication, but the command owns no two-arm comparison, which is the report's purpose, so the scripts extend the analysis rather than fork a repository capability.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/picker-week-compared-with-deterministic/report.md:154 follow-on: the sentence \"The command's independent cut ... 1/13 chosen below 1x, 4/66 at 1-2x, 9/94 at 2-4x\" attributes those counts to `reckon crew pick --outcomes`, but the command prints offered_codex_by_burn below_1 0/16, 1_to_2 3/278, 2_to_4 3/221 (all offered rows); the report's figures are the routed-only restriction, reproducible from data/rows-window.jsonl (13/1, 66/4, 94/9) but not from the command the sentence names. Not blocking: the conclusion that codex is chosen rarely holds either way.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/picker-week-compared-with-deterministic/report.md:176 follow-on: the stage-time-fix split (354/2,657=13.3% before, 22/336=6.6% after) and the by-day rates at report.md:178 are printed only as literals inside data/make_figure.py; neither data/analyse.py nor the cited command produces them, so the report's own Reproduce instructions do not regenerate that table. They are reproducible from data/rows-window.jsonl (I got 233/641=36.3%, 354/2,657=13.3%, 22/336=6.5%), so the defect is the missing producing command, not the numbers.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/picker-week-compared-with-deterministic/report.md:96 follow-on: \u00a73 says the outcomes command is \"confirmed against the same ledger rows\", but the command reports actions.route 2,508 while data/analysis.txt reports 2,510 (a two-row classification gap); the two instruments the report presents as agreeing do not, and the report does not note the discrepancy.",
+  "review_run_id": "r-20261010T182441281802-review-of-picker-week-compared-with-deterministic",
+  "reviewed_base_sha": "c512a3b5757a5d027d8e91d2c584f8f43b828fc9",
+  "reviewed_head_sha": "c512a3b5757a5d027d8e91d2c584f8f43b828fc9",
+  "reviewed_run_id": "r-20261010T180318406355-picker-week-compared-with-deterministic",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T18:38:16.956185+00:00",
+  "total": 106
+}
