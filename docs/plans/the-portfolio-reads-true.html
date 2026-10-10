@@ -24,7 +24,7 @@
   <title>The Portfolio Reads True | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="5">
+<meta name="plan-version" content="6">
 <meta name="plan-modified" content="2026-10-10">
 </head>
 <body>
@@ -167,16 +167,25 @@
     
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-tprt-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-10-10" data-recommends-skill="/reckon-build the-portfolio-reads-true" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tprt-001" data-status="resolved" data-written-by="reckon-create" data-written-at="2026-10-10" data-recommends-skill="/reckon-build the-portfolio-reads-true" data-resolved-at="2026-10-10T20:44:17+00:00" data-resolved-by="reckon-build coordinator (health-review-1010)">
     <h4 class="r-fu-title">Make the portfolio readings honest, then prune</h4>
     <div class="r-fu-body"><p>§2 to §5 in parallel, serialised where they share <code>reckon/doccheck.py</code>; §6 after the gate opens.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-portfolio-reads-true</pre>
+    <p class="r-fu-outcome"><p>Superseded by f-tprt-002, which names the first section so the roadmap can dispatch it.</p></p>
+    </article>
+<article class="r-fu" data-id="f-tprt-002" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-build coordinator (health-review-1010)" data-written-at="2026-10-10" data-recommends-skill="/reckon-build the-portfolio-reads-true §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Make the portfolio readings honest, then prune</h4>
+    <div class="r-fu-body"><p>Order: §2, §3, §4, §5 in turn (each writes <code>reckon/doccheck.py</code>); §6 once its three gates open.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-portfolio-reads-true §2</pre>
     </article>
 </section>
   
 <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s3" data-id="c-defer-s3-1010" data-who="reckon-build coordinator (health-review-1010)" data-when="2026-10-10T20:40:00Z">
     <div class="r-comment-body"><p>Before §3 is dispatched, apply the two findings deferred from review <code>r-20261010T201502689461-plan-review-of-the-portfolio-reads-true</code>: <code>reasoning-1</code> (<code>_git_last_committed</code> takes a repository and a docs directory and returns a whole-tree map, so <code>derived_plan_age</code> needs those, not a plan path) and <code>reasoning-2</code> (that lookup reads the author date, <code>%at</code>, so the fixture must backdate <code>GIT_AUTHOR_DATE</code> as well as the committer date).</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-gate-blocks-plan-1010" data-who="reckon-build coordinator (health-review-1010)" data-when="2026-10-10T20:50:00Z">
+    <div class="r-comment-body"><p>Observed while wiring this sprint: <code>reckon roadmap</code> reports this plan and the-codebase-is-reviewed-between-nodes <code>effective_status: blocked</code> because each holds an open gate on one later section (§6), while their first sections were dispatchable and running. A section gate is meant to hold that section only; the roadmap treats it as a plan-level block, which is the misreport the reckon-create wiring rules give as the reason to prefer a gate. When §5 is revised before its dispatch, decide whether this belongs in §5 (wiring honesty) or a section of its own.</p></div>
 </div>
 </section>
 </main>
