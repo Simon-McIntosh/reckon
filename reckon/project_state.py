@@ -463,7 +463,8 @@ def read_resource(
         raise ProjectStateError(
             "distributed_resource_inactive: project-state marker is not complete"
         )
-    recover_project_state_transactions(docs_dir, project)
+    if _pending_transaction_journals(docs_dir):
+        recover_project_state_transactions(docs_dir, project)
     data, version = _read_resource_unchecked(
         docs_dir, project, resource_type, resource_id
     )
@@ -1940,6 +1941,19 @@ def _mark_move_journal_committed(path: Path) -> None:
         fsync=True,
         fsync_directory=True,
     )
+
+
+def _pending_transaction_journals(docs_dir: Path) -> list[Path]:
+    """List prepared transaction journals without taking a lock.
+
+    The read path consults this before recovering, so a tree with nothing to
+    recover opens no lock file: taking the recovery lock creates one under
+    ``.reckon/locks`` and fails with ``EROFS`` in a read-only tree.
+    """
+    root = docs_dir / ".reckon" / "transactions"
+    if not root.is_dir():
+        return []
+    return sorted(root.glob("sprint-move-*.json"))
 
 
 def recover_project_state_transactions(docs_dir: Path, project: str) -> list[Path]:

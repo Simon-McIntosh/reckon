@@ -1,0 +1,18 @@
+<article class="landed-report" data-run-id="r-20261010T203158076090-a-read-takes-no-lock" data-node="a-read-takes-no-lock">
+<h3 id="a-read-takes-no-lock-summary">A read takes no write lock when nothing needs recovering</h3>
+<p>The project-state read path ran transaction recovery unconditionally, and
+recovery opened an exclusive <code>flock</code> at
+<code>docs/.reckon/locks/&lt;project&gt;-transactions-recovery.lock</code>. Opening that file is a
+write, so a read of a read-only tree died with <code>OSError</code> before answering.
+<code>read_resource</code> now lists the journals with <code>_pending_transaction_journals</code>
+under <code>.reckon/transactions</code> without a lock and calls
+<code>recover_project_state_transactions</code> only when a journal is present; a tree with
+nothing to recover opens no lock file and creates none, while a real journal is still
+recovered under its lock.</p>
+<table id="a-read-takes-no-lock-gate">
+<thead><tr><th>Arm</th><th>Log summary</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td>Head</td><td>3 passed in 6.89s</td><td>EXIT=0</td></tr>
+<tr><td>Negative control</td><td>2 failed, 1 passed in 6.25s (journal check removed; the read takes the lock and dies on the read-only tree)</td><td>EXIT=1</td></tr>
+</tbody></table>
+</article>
