@@ -1,0 +1,80 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "backend": "local",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/review.py:annotate_review_of_run",
+    "reckon/crew/review.py:store_review",
+    "reckon/crew/review.py:read_review"
+  ],
+  "completed_at": "2026-10-10T18:47:42.722Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "exempted",
+      "reason": "A one-off read-only census script re-counted CLI options instead of calling reckon/interface_counts.py; the script ships nothing, and the plan its findings feed (the-codebase-is-reviewed-between-nodes \u00a76) composes from interface_counts.",
+      "recorded_at": "2026-10-10T19:35:04.780949+00:00"
+    }
+  },
+  "dispatched_at": "2026-10-10T18:35:19Z",
+  "findings": [
+    {
+      "file": "report.md",
+      "line": "152",
+      "severity": "blocking",
+      "text": "blocking: the required final summary line reads `findings=10 high=1 mid=4 low=5 owned=2 regressed=0 unowned=8` while the findings table it summarises holds 9 rows (high=1 W1, mid=4 W2/W3/W4/I1, low=4 W5/W6/I2/D1): findings should be 9, low 4, and unowned 7 (9 minus the 2 owned), so every field that a coordinator reads mechanically is wrong by the same off-by-one, and a reader could believe a finding was dropped."
+    },
+    {
+      "file": "clone_scan.tsv",
+      "line": "5",
+      "severity": "follow-on",
+      "text": "follow-on: every data row of the delivered clone_scan.tsv is the placeholder `False ? 0 ? 0` \u2014 clone_scan.py:60-67 reads the match keys `a`/`b`/`left`/`right` while reckon/clones.py clone_matches returns `run_function`/`existing_function` \u2014 so the per-pair evidence W3/W4 cite (the named _dialect_notes cluster) is not readable from the artifact. The counts are: the header records `# pairs reported: 715`, and a re-run reproduces 190 crew-to-crew / 281 crossing under the strict reckon/crew/ boundary, but the underlying clone_pairs.json was written to the run's scratch directory and is not among the delivered files."
+    },
+    {
+      "file": "cli_width.py",
+      "line": "29",
+      "severity": "follow-on",
+      "text": "follow-on: cli_width.py re-implements CLI-option counting that reckon/interface_counts.py:14 already owns as its 'CLI options' family (option decorators on a command or group callback, each counted once with its aliases together), and the brief item 2 named that module; the report's method table at report.md:30-36 records no search for it, so a capability the repository owns is forked rather than extended, and the reuse dimension is scored at most 5."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "the reviewed node landed no commits against its base; its output is the report and instrument artefacts, which I read in full at reports/reckon/health-review-1010/health-crew-surface.",
+    "done_when": "the done_when asks for report.md with a method section, a findings table (id/class/severity/finding/evidence/remedy/est-lines/owner), a top-five list and a final `findings=...` line; all four are present at report.md, though the final line's tally is wrong (F1).",
+    "goal": "the reviewed node's goal was to measure whether the crew dispatch surface is deep/wide and where it duplicates a capability; report.md and its five instruments address exactly that, and the goal is stated at the run's brief.md.",
+    "manifest": "read; it records the five instruments and their outputs, status complete, and names report.md and the .tsv logs under test_logs, and it names no baseline_suite/after_suite gate logs because a read-only review node runs no pytest gate.",
+    "write_paths": "the reviewed node was read-only; every artefact (report.md, the five scripts and their .tsv/.json outputs) is under its declared reports path, and its worktree at d33407f58afee is clean."
+  },
+  "justifications": {
+    "durability": "module_map.py, cli_width.py and option_usage.py would reproduce a later reader's run (verified by re-running module_map and the option control), but the clone evidence would not: clone_scan.tsv has no readable pair data and clone_pairs.json was written to the run's scratch, not delivered.",
+    "evidence": "the delivered instruments reproduce: module_map.py reruns to 97 modules EXIT=0, cli_width.json holds 40 verbs, option_usage_all.tsv carries the CONTROL --project 1663 and crew_pick --estimated-context 0, and the W3 figures 190/281 reproduce from a clone re-run under the strict reckon/crew/ boundary; but clone_scan.tsv's per-row columns are all placeholders (report artifact) and report.md:152's tally contradicts its own table.",
+    "fit": "report.md follows the required shape (method, findings table, top five, final line) and the delivered scripts carry mechanism-describing names; the single fit defect is the summary line at report.md:152 disagreeing with the table above it.",
+    "goal_fidelity": "the brief's five measure items; report.md:12-150 answers items 1-4 (module map, interface width, duplicated capabilities, dead/test-only code) but item 5, the refusal taxonomy, is left unmeasured and disclosed at report.md:145-149, so the goal is mostly, not fully, met.",
+    "reuse": "cli_width.py:29-101 re-implements the CLI-option-counting capability reckon/interface_counts.py:14 already owns (option decorators on a command/group callback, aliases counted together) instead of extending it, and the brief named the owner.",
+    "scope_discipline": "the reviewed node was read-only: its worktree at d33407f58afee is clean (git status --porcelain empty) with 0 commits beyond base and every artefact sits under its declared reports/.../health-crew-surface path."
+  },
+  "node": "review-of-health-crew-surface",
+  "project": "reckon",
+  "review_run_id": "r-20261010T183454354859-review-of-health-crew-surface",
+  "reviewed_base_sha": "d33407f58afee19c756aef1227c01f6a1bf7f342",
+  "reviewed_head_sha": "d33407f58afee19c756aef1227c01f6a1bf7f342",
+  "reviewed_run_id": "r-20261010T181743078368-health-crew-surface",
+  "reviewer": "review-of-health-crew-surface",
+  "scores": {
+    "durability": 14,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T19:40:00.616459+00:00",
+  "total": 86
+}
