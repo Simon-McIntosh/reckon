@@ -23,7 +23,13 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import recovery, recovery_liveness, recovery_repair_dispatch, runs
+from reckon.crew import (
+    process_liveness,
+    recovery,
+    recovery_liveness,
+    recovery_repair_dispatch,
+    runs,
+)
 
 HOST = socket.gethostname()
 OTHER_HOST = f"{HOST}.foreign-host.invalid"
@@ -195,7 +201,7 @@ def test_the_lookup_happens_only_when_the_host_matches(
     pid = os.getpid()
     looked_up: list[int] = []
     monkeypatch.setattr(
-        runs,
+        process_liveness,
         "process_alive",
         lambda candidate: looked_up.append(candidate) or False,
     )

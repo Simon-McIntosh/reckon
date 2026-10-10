@@ -1,19 +1,14 @@
 """The CLI's modules are declared once and both code stamps read that set.
 
-Two code stamps decide whether a running producer (``source_code_stamp`` in
-``reckon/crew/obligation_snapshot.py``) or a running follower
-(``follower_code_stamp`` in ``reckon/crew/runs.py``) is on old code. Each used
-to list the CLI's module names as its own literals, so a module that carried a
-command but was named in one list and not the other reloaded one process and
-left the other stale, silently.
+A producer uses ``source_code_stamp`` in ``reckon/crew/obligation_snapshot.py``
+and a follower uses ``follower_code_stamp`` in
+``reckon/crew/follower_registration.py``. Both read the declaration in
+:data:`reckon.crew.obligation_snapshot.CLI_MODULE_FILES`, relative to the
+package directory, so changing a command module advances both stamps.
 
-The declaration now lives in :data:`reckon.crew.obligation_snapshot.CLI_MODULE_FILES`,
-relative to the package directory. The first case walks the click tree from its
-root group and derives the modules that actually carry commands, so a new
-command module that is not declared is named rather than merely missed. The
-second case proves both stamps read the declaration: changing any declared
-module's bytes moves both stamps, and changing nothing leaves both where they
-were.
+The first case walks the click tree and checks that every module carrying a
+command is declared. The second proves both stamps change on a declared
+module's edit and remain unchanged when its bytes do not change.
 """
 
 from __future__ import annotations
@@ -24,7 +19,7 @@ from pathlib import Path
 import click
 
 from reckon import cli as cli_module
-from reckon.crew import obligation_snapshot, runs
+from reckon.crew import follower_registration, obligation_snapshot, runs
 
 ROOT_GROUP = cli_module.main
 
@@ -89,12 +84,14 @@ def _copied_package(tmp_path: Path) -> Path:
 def _stamps(package_dir: Path) -> tuple[str, str]:
     """Both code stamps, computed over ``package_dir``'s bytes."""
     source = obligation_snapshot.source_code_stamp(package_dir)
-    original = runs.__file__
+    original = follower_registration.__file__
     try:
-        runs.__file__ = str(package_dir / "crew" / "runs.py")
+        follower_registration.__file__ = str(
+            package_dir / "crew" / "follower_registration.py"
+        )
         follower = runs.follower_code_stamp()
     finally:
-        runs.__file__ = original
+        follower_registration.__file__ = original
     return source, follower
 
 

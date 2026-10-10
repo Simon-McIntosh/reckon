@@ -4,8 +4,8 @@ A worker's pid answers only on the host that issued it, so once a run is
 placed as a job the pid primitive is the wrong question and the run's own
 record is the right one. These cases hold the shape that makes that change
 possible: the accessor answers exactly what the primitive answers for the
-record's pid today, and no module outside :mod:`reckon.crew.runs` reaches for
-a record's pid by itself.
+record's pid today, and no module outside :mod:`reckon.crew.process_liveness`
+reaches for a record's pid by itself.
 """
 
 from __future__ import annotations
@@ -25,9 +25,12 @@ from reckon.crew import recovery, runs
 REPO_ROOT = Path(__file__).resolve().parents[1]
 CREW = REPO_ROOT / "reckon" / "crew"
 
-# Modules that decide a run's liveness from its record. runs.py owns both the
-# pid primitive and the accessor, so it is not in this list.
+# Modules that decide a run's liveness from its record. process_liveness.py
+# owns the pid primitive and accessor, so it is not in this list.
 LIVENESS_MODULES = (
+    "runs.py",
+    "watch_unit.py",
+    "follower_registration.py",
     "recovery.py",
     "recovery_classification.py",
     "recovery_liveness.py",
@@ -187,9 +190,9 @@ def test_no_module_decides_record_liveness_with_a_bare_pid() -> None:
     assert offenders == {}
 
 
-def test_the_module_owning_the_primitive_still_calls_it() -> None:
+def test_the_registration_module_still_calls_the_primitive() -> None:
     """The scan is not blind on a file it is known to match."""
-    assert _process_alive_calls((CREW / "runs.py").read_text())
+    assert _process_alive_calls((CREW / "follower_registration.py").read_text())
 
 
 # --- the recorded start time is re-derived on every read ---------------------
