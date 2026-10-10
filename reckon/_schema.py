@@ -108,8 +108,10 @@ STATUS_ENUM = [
 ]
 SECTION_DECLARATION_ENUM = ["implementable", "deferred", "done"]
 #: How a plan's impl fraction was obtained: derived from typed section records
-#: ("computed") or read from the plan-impl meta ("authored").
-IMPL_SOURCE_ENUM = ["computed", "authored"]
+#: ("computed"), derived by count from the section declarations while the records
+#: do not cover them ("declarations"), or read from the plan-impl meta
+#: ("authored").
+IMPL_SOURCE_ENUM = ["computed", "declarations", "authored"]
 PERSISTABLE_STATUS_ENUM = [status for status in STATUS_ENUM if status != "blocked"]
 ROI_ENUM = ["high", "mid", "low"]
 EFFORT_ENUM = ["S", "M", "L", "XL"]
@@ -1307,8 +1309,9 @@ class PlanState(BaseModel):
         "",
         description=(
             "How the impl fraction was obtained: 'computed' from typed section "
-            "records, or 'authored' from the plan-impl meta. Absent when neither "
-            "source produced a figure."
+            "records, 'declarations' by count from the section declarations while "
+            "the records do not cover them, or 'authored' from the plan-impl meta. "
+            "Absent when no source produced a figure."
         ),
         json_schema_extra=_enum(IMPL_SOURCE_ENUM),
     )

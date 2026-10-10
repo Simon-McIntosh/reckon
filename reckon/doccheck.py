@@ -132,6 +132,15 @@ _PLAN_REF_COULD_BE_SECTION_REF = "plan-ref-could-be-section-ref"
 _SECTION_WITHOUT_TODO = "section-without-todo"
 _TODO_WITHOUT_SECTION = "todo-without-section"
 
+# The plan-impl meta on disk and the figure the section records derive must
+# agree. They part company when records do not cover the declarations — the
+# served figure is then derived from the file's declarations while an authored
+# meta the store still accepts, or one written before the rule landed, sits on
+# disk unchanged — so the file and the server read different numbers until the
+# next write lands.
+_IMPL_META_STALE = "impl-meta-stale"
+_IMPL_META_TOLERANCE = 0.01
+
 # Section identities are numbered from one: s0 states why the plan exists and
 # carries no work.
 _NUMBERED_SECTION_ID = re.compile(
@@ -1168,6 +1177,45 @@ def _followup_section_findings(
     return out
 
 
+def _impl_meta_stale_findings(
+    doc_type: str, state: Mapping[str, Any], soup: BeautifulSoup
+) -> list[Finding]:
+    """Report a plan whose ``plan-impl`` meta disagrees with its derived figure.
+
+    The parser derives impl for itself; the meta records what was written to
+    disk. A plan whose records cover its declarations writes both together, so
+    they agree. A plan whose records are partial reads the declaration-count
+    figure while the file keeps whatever meta it carries, so the two part
+    company — an authored write the store still accepts on such a plan is the
+    ordinary way this happens. Report the gap at ``warn`` once the next write
+    will settle it.
+    """
+    if doc_type != "plan":
+        return []
+    source = str(state.get("impl_source") or "")
+    if source not in {"computed", "declarations"}:
+        return []
+    served = state.get("impl")
+    meta = soup.find("meta", attrs={"name": "plan-impl"})
+    if served is None or meta is None:
+        return []
+    try:
+        meta_impl = float(str(meta.get("content") or "").strip())
+    except (TypeError, ValueError):
+        return []
+    if abs(float(served) - meta_impl) <= _IMPL_META_TOLERANCE:
+        return []
+    return [
+        Finding(
+            "warn",
+            _IMPL_META_STALE,
+            f"plan-impl meta is {meta_impl:g} but the section records derive "
+            f"{float(served):g} (impl_source: {source}); the file and the server "
+            "disagree until the next write lands",
+        )
+    ]
+
+
 def audit_html(html_text: str, *, project: str | None = None) -> list[Finding]:
     """Audit one document's HTML, returning findings (worst-first ordering)."""
     soup = BeautifulSoup(html_text or "", "html.parser")
@@ -1231,6 +1279,9 @@ def audit_html(html_text: str, *, project: str | None = None) -> list[Finding]:
                 f"the maximum is {PLAN_SUMMARY_MAX_LENGTH}",
             )
         )
+
+    # The served impl figure and the plan-impl meta on disk must agree.
+    out.extend(_impl_meta_stale_findings(doc_type, state, soup))
 
     # Landed/evidence records must carry the plan -> evidence back-link;
     # without it the graph shows research->plan (informs) but never which
