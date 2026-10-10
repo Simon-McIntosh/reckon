@@ -75,6 +75,11 @@
     <p><code>option_key</code> in <code>reckon/crew/picker/prompts.py</code> names an offered candidate <code>&lt;lane&gt;:&lt;model&gt;:&lt;backend&gt;</code>. Two backends sharing a family and a model are each offered and each resolvable from Jev's answer. Before, the second replaced the first in the questions mapping. A modelless candidate is keyed by its lane and backend. Picker tests that pinned the old key form were updated under a widened fence; <code>tests/test_picker_pressure.py</code> was accepted beyond it. Dropping the backend from the key fails the shared-family test.</p><p>Run <code>r-20261010T184146434406-option-keys-are-unique</code>, commits <code>6dda5d969</code>, <code>2afbfd1ab</code> and <code>d5876990d</code>, review 103, merged at <code>9c4356047</code>, no failures added. Review follow-on: the modelless-candidate tests also pass at base, whose key already read <code>&lt;lane&gt;:&lt;backend&gt;</code>. So item 2's change in how the questions name that part has no test that fails without it.</p>
   </section>
 
+  <section id="s13">
+    <h2>§13 — the modelless key guard already existed (2026-10-10)</h2>
+    <p>§13 asked for a test that a modelless candidate's key names its backend, not a model. The guard already existed: <code>test_a_modelless_candidate_does_not_name_its_backend_a_model</code> in <code>tests/test_option_keys_are_unique.py</code> asserts that the entry's model is null, its backend is the candidate's, and the key's second part is that backend. It passes at base.</p><p>Run <code>r-20261010T215157026672-modelless-key-naming-is-tested</code> (commit <code>764b203df</code>) added <code>test_the_rendered_questions_name_a_modelless_key_part_as_its_backend</code>, which reads the rendered <code>questions.jinja</code> instead of <code>build_questions</code>. Review 80 found no added failures, but found the test duplicates the existing guard. The template copies <code>criteria_entries</code> verbatim, so the two tests read one dict and fail together, and both pass at base. The run also wrote its evidence fragment outside the declared write path and declared a figure directory it never wrote. The commit was not merged. §13 closes with no defect found and no code change.</p>
+  </section>
+
 </main>
 </body>
 </html>
