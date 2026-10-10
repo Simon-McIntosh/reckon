@@ -25,7 +25,7 @@
   <title>The Crew Home Has A Bound | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="4">
 <meta name="plan-modified" content="2026-10-10">
 </head>
 <body>
@@ -99,13 +99,19 @@
       (flight key <code>gc.run_file_max_mb</code>, default 256) and, with <code>--apply</code>, replaces it with its first and last megabyte
       around a one-line marker naming the original size and sha256, so a log cited as evidence keeps its head, its tail and a verifiable
       identity. A file a ledger row names as a gate log is truncated the same way, never deleted. Binary artefacts over the limit
-      (<code>*.pt</code>, <code>*.h5</code>, <code>*.npz</code>) are reported, not touched.</p>
+      (<code>*.pt</code>, <code>*.h5</code>, <code>*.npz</code>) are reported, not touched. The cut reuses what the repository already
+      owns: the head-and-tail truncation behind the service-log bound in <code>reckon/crew/fleet_supervisor.py</code>
+      (<code>SERVICE_LOG_LIMIT_BYTES</code> and <code>SERVICE_LOG_KEEP_BYTES</code>, line 223; the cut at lines 540 to 574) is lifted into
+      one helper both call, cutting on <code>line_boundary</code> (<code>reckon/crew/runs.py:1923</code>) so no line is split; gate-log
+      paths are read with <code>_declared_arm_paths</code> (<code>reckon/crew/promotion_release.py:127</code>). The rotating watch log
+      (<code>WATCH_LOG_MAX_BYTES</code>, <code>runs.py:3985</code>) keeps its newest bytes because nothing cites its head; a run's log keeps
+      both ends because a gate's command and its verdict sit at opposite ends.</p>
     <p><strong>Done when</strong> <code>tests/test_gc_bounds_a_run_file.py</code> builds a promoted temporary run directory with a 3 MB log and a
       3 MB <code>.pt</code> file under a 1 MB limit, and asserts <code>gc --apply</code> leaves the log at about 2 MB with the marker, its
       first and last line intact and the original sha256 in the marker, and the <code>.pt</code> file unchanged and reported. A run that is
       not promoted is untouched. The negative control is executed and logged: with the promoted check removed, the unpromoted run's log is
-      truncated and the test fails. Write paths: <code>reckon/crew/routing.py</code>, <code>reckon/schema/</code>,
-      <code>tests/test_gc_bounds_a_run_file.py</code>. This section runs after §3, which writes the same module.</p>
+      truncated and the test fails. Write paths: <code>reckon/crew/routing.py</code>, <code>reckon/crew/fleet_supervisor.py</code>,
+      <code>reckon/schema/</code>, <code>tests/test_gc_bounds_a_run_file.py</code>; the fleet supervisor's own log tests pass. This section runs after §3, which writes the same module.</p>
 
     <h2 id="s5">§5 — The existing backlog is reclaimed</h2>
 <section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>

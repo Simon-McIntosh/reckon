@@ -24,7 +24,7 @@
   <title>The Portfolio Reads True | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="3">
 <meta name="plan-modified" content="2026-10-10">
 </head>
 <body>
@@ -66,54 +66,71 @@
       plan-review reader documents (<code>reckon/crew/plan_review.py:122</code>); the authored meta stands only for a plan with no declarations, with
       <code>impl_source: authored</code>. A plan with an implementable declaration therefore never reads 1.0. <code>reckon audit-doc</code>
       reports <code>impl-meta-stale</code> (warn) when the meta on disk differs from the derived figure by more than 0.01, so a reader of the
-      file and a reader of the server agree once the next write lands.</p>
+      file and a reader of the server agree once the next write lands. Every caller of <code>derive_impl_from_sections</code> is moved
+      with it: both <code>impl_source</code> assignments in <code>reckon/_plan_html.py</code> (lines 1125 and 2234), the reader at line
+      1939, and the authoring refusal at <code>reckon/_store.py:2606</code>, which keeps refusing an authored impl only in the covered
+      case, so a coordinator's impl write on a partially recorded plan is still accepted and the audit flags it stale. The section adds
+      one schema value and one audit code; nothing retires, because no existing value or code reports a figure derived from
+      declarations.</p>
     <p><strong>Done when</strong> <code>tests/test_impl_derives_from_declarations.py</code> parses three temporary plans: one whose records
       cover its declarations (impl effort-weighted, source <code>computed</code>); one with authored meta 1.0, declarations
       <code>{s1: done, s2: implementable}</code> and a record for <code>s1</code> only (impl 0.5, source <code>declarations</code>); and one
       with no declarations (authored figure, source <code>authored</code>). <code>reckon audit-doc</code> on the second file reports
       <code>impl-meta-stale</code>. The negative control is executed and logged: with the coverage fallback returning the authored figure, the
       second plan reads 1.0 and the test fails. The tests importing <code>reckon._plan_html</code> pass, their list built at dispatch from the
-      head tree, and the schema validates a state carrying each of the three values. Write paths: <code>reckon/_plan_html.py</code>,
+      head tree, and the schema validates a state carrying each of the three values; an impl write on the second plan through the
+      store is accepted. Write paths: <code>reckon/_plan_html.py</code>, <code>reckon/_store.py</code>,
       <code>reckon/_schema.py</code>, <code>reckon/crew/plan_review.py</code>, <code>reckon/doccheck.py</code>,
       <code>tests/test_impl_derives_from_declarations.py</code>.</p>
 
     <h2 id="s3">§3 — Staleness counts from a plan's last commit</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> <code>reckon audit</code> computes a plan's age from the date of the last commit touching its file, read
-      with the git date cache the audit already keeps, falling back to <code>plan-modified</code> and only then to the file's mtime, and
-      names the source on the row. A non-shipped plan between 14 and 30 days old is reported <code>AGING</code> (info), and past 30 days
-      <code>STALE</code> as today.</p>
+    <p><strong>Deliverable.</strong> A plan's age has an owner, <code>derived_plan_age</code> (<code>reckon/doccheck.py:230</code>), which
+      resolves <code>plan-modified</code> then the file's mtime and is read by <code>reckon/archive.py:87</code> and
+      <code>reckon/roadmap.py:945</code>; the audit loop (<code>doccheck.py:531</code>) bypasses it and reads the mtime itself. This section
+      puts the last commit first in <code>derived_plan_age</code>, read through the existing last-commit lookup
+      <code>_git_last_committed</code> (<code>reckon/serve.py:1432</code>) rather than a new git reader, and routes the audit loop through
+      it, so the audit, the roadmap and the archive report one age with its source named on the row. The two other git-date readers
+      (<code>reckon/metadata_index.py:681</code>, <code>reckon/fleet_index.py:33</code>) are left as they are and listed in the manifest. A non-shipped plan between 14 and 30 days old is reported <code>AGING</code> (info), and past 30 days
+      <code>STALE</code> as today. The section adds one audit code, <code>AGING</code>; nothing retires, because no row reports
+      the 14 to 30 day band.</p>
     <p><strong>Done when</strong> <code>tests/test_staleness_counts_from_the_last_commit.py</code> builds a temporary git repository with
       a plan committed 20 days ago (by <code>GIT_COMMITTER_DATE</code>) and then touched on disk today, runs the audit, and asserts an
       <code>AGING</code> row with age 20 and source <code>commit</code>; a second plan committed 40 days ago reports <code>STALE</code>. The
       dates are derived from the fixture's own commit dates at assertion time, never written as literals. The negative control is executed
       and logged: with the age read from the mtime, the first plan reports age 0 and no row, and the test fails. Write paths:
-      <code>reckon/doccheck.py</code>, <code>tests/test_staleness_counts_from_the_last_commit.py</code>.</p>
+      <code>reckon/doccheck.py</code>, <code>tests/test_staleness_counts_from_the_last_commit.py</code>. This section runs after §2,
+      which also writes <code>doccheck.py</code>.</p>
 
     <h2 id="s4">§4 — The audit reports a sprint member list that disagrees with its plans</h2>
 <section data-reckon="section" data-id="s4" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
     <p><strong>Deliverable.</strong> <code>reckon audit</code> emits <code>SPRINT_MEMBERSHIP</code> for a plan whose <code>plan-sprint</code>
       names a sprint that does not list it, for a sprint member whose <code>plan-sprint</code> names another sprint, and, as info, for a
       shipped plan still listed by a sprint that is not closed. It reads membership through the sprint resource reader
-      <code>reckon/project_state.py</code> already provides.</p>
+      <code>reckon/project_state.py</code> already provides. It adds one audit code; nothing retires, because no row compares the two
+      sides of membership today.</p>
     <p><strong>Done when</strong> <code>tests/test_audit_reports_sprint_membership.py</code> builds a temporary project with one sprint
       listing plans <code>a</code> and <code>b</code>, where <code>a</code> carries that sprint, <code>b</code> carries another, and
       <code>c</code> carries the sprint without being listed, and asserts two warn rows (<code>b</code>, <code>c</code>) and none for
       <code>a</code>. The negative control is executed and logged: with the comparison reading only the plan side, the <code>b</code> row is
-      missing and the test fails. Write paths: <code>reckon/doccheck.py</code>, <code>tests/test_audit_reports_sprint_membership.py</code>.</p>
+      missing and the test fails. Write paths: <code>reckon/doccheck.py</code>, <code>tests/test_audit_reports_sprint_membership.py</code>. This section runs after
+      §3.</p>
 
     <h2 id="s5">§5 — A section-level relation counts as wiring</h2>
 <section data-reckon="section" data-id="s5" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
     <p><strong>Deliverable.</strong> <code>unwired_plan_finding</code> (<code>reckon/doccheck.py:874</code>) treats a plan as wired when it
       declares <code>plan-section-depends-on</code> or <code>plan-after</code>, or when another plan holds a gate whose required evidence
       names it, beside the links, gates and standalone reason it accepts today. The audit message and the reckon-create skill's wiring table
-      name the section-level forms, so the right wire is also the one that silences the finding.</p>
+      name the section-level forms, so the right wire is also the one that silences the finding. Its three callers pass the new inputs:
+      <code>reckon/doccheck.py:858</code>, <code>reckon/roadmap.py:1287</code> and <code>reckon/mcp_discovery.py:221</code>, the last of which
+      drives the new-plan refusal.</p>
     <p><strong>Done when</strong> <code>tests/test_section_relations_count_as_wiring.py</code> audits a temporary project in which plan
       <code>x</code> declares only <code>plan-section-depends-on</code> on <code>y#s2</code>, plan <code>y</code> is named only as the required
       evidence of a gate on <code>x</code>, and plan <code>z</code> declares nothing: <code>z</code> is reported unwired, <code>x</code> and
       <code>y</code> are not. The negative control is executed and logged: with the gate-evidence clause removed, <code>y</code> is reported
-      unwired and the test fails. Write paths: <code>reckon/doccheck.py</code>, <code>skills/reckon-create/SKILL.md</code>,
-      <code>tests/test_section_relations_count_as_wiring.py</code>.</p>
+      unwired and the test fails. Write paths: <code>reckon/doccheck.py</code>, <code>reckon/roadmap.py</code>,
+      <code>reckon/mcp_discovery.py</code>, <code>skills/reckon-create/SKILL.md</code>,
+      <code>tests/test_section_relations_count_as_wiring.py</code>. This section runs after §4.</p>
 
     <h2 id="s6">§6 — The first portfolio review prunes reckon</h2>
 <section data-reckon="section" data-id="s6" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>

@@ -26,7 +26,7 @@
   <title>The Suite Tests Behaviour | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="3">
 <meta name="plan-modified" content="2026-10-10">
 </head>
 <body>
@@ -46,8 +46,9 @@
           <code>~/.cache/ms-playwright/</code> is none of those</td><td><code>browser-probe.log</code>: 151 passed, 72 skipped</td></tr>
         <tr><td>Suite records that say so</td><td>None: the suite record has <code>passed</code>, <code>failed</code> and
           <code>collected</code> and no skip count</td><td><code>docs/state/reckon/suite-runs/</code></td></tr>
-        <tr><td>Test helpers that are whole copies of a helper in another test file</td><td>202 pairs; <code>config_home</code> and
-          <code>_spawn_runner</code> 20 each across 5 files, <code>_row</code> 14 across 6</td><td><code>clones.log</code>, <code>clones.json</code></td></tr>
+        <tr><td>Test helpers that are whole copies of a helper in another test file</td><td>202 cross-file pairs whose whole body is shared (containment 1.0 in the health review's clone analysis), e.g.
+          <code>config_home</code> and <code>_spawn_runner</code>; a name count is not the measure, because <code>_row</code> is defined in 39
+          test files, most of them different functions</td><td><code>clones.log</code>, <code>clones.json</code>; <code>grep -rlE "^def _row\(" tests/</code></td></tr>
         <tr><td>Assertions on source text rather than behaviour</td><td>37 sites in 24 files by <code>grep -rn -e inspect.getsource -e "__file__).read_text" tests/</code> at <code>646bbacf5</code> (the health review's wider pattern counted 60), e.g.
           <code>tests/test_the_unreconciled_count_has_one_composition.py:150</code> asserting a helper's name appears in
           <code>inspect.getsource</code> of its caller</td><td>grep over <code>tests/</code></td></tr>
@@ -78,8 +79,10 @@
 
     <h2 id="s3">§3 — The suite record carries its skips</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> The record <code>reckon crew suite run</code> writes gains <code>skipped</code> and <code>skipped_ids</code>,
-      parsed from the same pytest output it already reads, and the suite's summary line in the follower and the velocity view prints the
+    <p><strong>Deliverable.</strong> The record <code>reckon crew suite run</code> writes gains <code>skipped</code> and <code>skipped_ids</code>.
+      The count is already parsed and dropped: <code>_result_counts</code> (<code>reckon/crew/standing_suite.py:164</code>) maps the
+      <code>skipped</code> word and <code>_build_counts</code> (line 285) discards it, so the count is carried through rather than parsed again;
+      the ids extend the existing per-id extractor <code>_pytest_failure_ids</code> (line 335) to <code>SKIPPED</code> lines; and the suite's summary line in the follower and the velocity view prints the
       skip count beside passed and failed.</p>
     <p><strong>Done when</strong> <code>tests/test_suite_record_counts_skips.py</code> feeds the record writer a fixed pytest log ending
       <code>3 failed, 10 passed, 2 skipped</code> with two <code>SKIPPED</code> lines under <code>-rs</code>, and asserts
@@ -95,9 +98,10 @@
       <code>_seat_record</code> and the rest of that list) move to <code>tests/helpers/</code>, one module per subject, and every copy is
       replaced by an import. A copy that differs from the others in behaviour is left where it is and named in the manifest. Fixtures that
       must stay fixtures move to <code>tests/conftest.py</code> only when every importer is in the suite's root.</p>
-    <p><strong>Done when</strong> for each helper named above, the number of test files defining a module-level function of that name
-      (counted with <code>grep -rlE "^def &lt;name&gt;\(" tests/</code>, the counts summed) falls to at most one per helper outside
-      <code>tests/helpers/</code>, with the before and after sums in the manifest; the test files touched pass at the integrated head with the same pass
+    <p><strong>Done when</strong> the number of module-level test functions whose normalised body (<code>ast.dump</code> of the function with
+      its name removed) is identical to one in another test file falls to zero outside <code>tests/helpers/</code>, counted by a script the
+      node keeps beside its log, with the before and after counts in the manifest; same-named functions with different bodies are not
+      counted and are left alone; the test files touched pass at the integrated head with the same pass
       and fail ids as at base, the population built at dispatch; and the line delta over <code>tests/</code> is negative. The negative
       control is executed and logged: one replaced helper's import pointed at a stub that raises fails the tests that imported it.
       Write paths: <code>tests/helpers/</code>, <code>tests/conftest.py</code>, and the test files holding the copies, listed at dispatch
