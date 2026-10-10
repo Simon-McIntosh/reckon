@@ -29,6 +29,24 @@ def _milliseconds(started: float) -> float:
     return round((time.perf_counter() - started) * 1000, 3)
 
 
+def _template_digest() -> str:
+    """A digest of the templates that render a pick's state and questions.
+
+    A hold records this beside the state and questions it was shown, so a replay
+    can tell whether the same templates would produce the same request or
+    whether the guidance has since moved. Both templates are hashed in a fixed
+    order. The digest is a record, not a gate: a template whose file cannot be
+    read leaves the digest empty rather than failing the pick.
+    """
+    hasher = hashlib.sha256()
+    try:
+        for name in ("state.jinja", "questions.jinja"):
+            hasher.update(prompts.TEMPLATES_DIR.joinpath(name).read_bytes())
+    except OSError:
+        return ""
+    return hasher.hexdigest()
+
+
 def _dispatch_bound_seconds() -> float:
     """The dispatch timeout a pick's within-bound flag is measured against.
 
@@ -362,6 +380,10 @@ def pick(
     payload: dict[str, Any] = {}
     jev_ms = 0.0
     action = "route"
+    # The questions Jev was asked, held so a hold can record the exact request.
+    # The fallback paths ask nothing, and read as an empty mapping rather than a
+    # missing field.
+    questions: dict[str, Any] = {}
     if not offered:
         fallback_reason = "no-eligible-candidates"
     else:
@@ -435,4 +457,7 @@ def pick(
         jev_latency_ms=round(jev_ms, 3),
         answering_model=payload.get("model"),
         usage=payload.get("usage") or {},
+        rendered_state=rendered,
+        questions=questions,
+        template_digest=_template_digest(),
     )
