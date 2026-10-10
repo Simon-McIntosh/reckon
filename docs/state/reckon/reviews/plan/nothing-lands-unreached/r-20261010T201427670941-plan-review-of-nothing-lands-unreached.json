@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T20:22:48.850Z",
+  "dispatched_at": "2026-10-10T20:14:55Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/nothing-lands-unreached.html:124",
+      "id": "done_when-1",
+      "reason": "the node cannot satisfy the measure within scope, and the deliverable's \"a docstring or evidence record that names the old module path is updated\" points it at out-of-scope files where such a rewrite would falsify the provenance of evidence already produced; the grep must be scoped to `reckon/ tests/ scripts/` so the measure is achievable and the provenance records are left alone.",
+      "text": "\u00a74's done-when requires `git grep -n \"reckon.crew.carryover_census\\|reckon.crew.death\u2026\"` to return \"no hit outside the moved files\", but at this tree the same three dotted strings also live in files outside every declared write path: `docs/research/data/local-lane-deaths.json:11,14`, `docs/research/data/review-death-by-effort.json:19081`, `docs/research/local-lane-death-rate.html:87` and three `docs/state/reckon/reviews/**` records \u2014 and two of them are generated-provenance fields (`\"generated_by\": \"reckon.crew.death_census\"`) whose whole point is to name what produced the committed evidence.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/nothing-lands-unreached.html:123",
+      "id": "done_when-2",
+      "reason": "a green \u00a74 gate could ship four broken imports, and the deliverable names no import path for the modules once they leave the package, so the node has neither a measure nor a mechanism for the four callers outside the moved set.",
+      "text": "\u00a74's done-when makes only \"its moved tests\" pass at the new location, but four tests that stay in `tests/` import the three modules through their `reckon.crew` path: `tests/test_a_lift_reaches_every_budget_row.py:31` (`pace_replay`), `tests/test_ledger_files_and_index_agree.py:12` (`carryover_census`, `death_census`), `tests/test_writer_callers_first_wave.py:283` (`carryover\u2026`) and `tests/test_timestamp_callers_batch_a.py:36` (`pace_replay`); `scripts/` is not a package (no `__init__.py`), so those imports break on the move and the done-when stays green while the suite does not.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/nothing-lands-unreached.html:118",
+      "id": "reasoning-1",
+      "reason": "the cited model does not exhibit the parser that makes `--help` a real check, so a node mirroring `death_census.py` satisfies the measure with a script that mishandles the flag and fires an unwanted write during the gate; the done-when must require an actual parser when it asks the flag to exit 0.",
+      "text": "\u00a74 says `carryover_census.py` and `pace_replay.py` \"each gain a `main()` with an argument parser \u2026 as `death_census.py` already has\", but `death_census.py` carries no argument parser: `main(argv)` (line 342) treats `argv[0]` as an output path and never parses a flag, so the done-when's \"runs from `scripts/census/` with `--help` exiting 0\" passes for the model only by ignoring `--help`, running a full census, and writing a file literally named `--help` before returning 0.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "5f45fc20e5ebd923b1c802102a0f2be36665789de0dcab8092916657a486172a",
+  "plan_slug": "nothing-lands-unreached",
+  "plan_version": 6,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261010T201427670941-plan-review-of-nothing-lands-unreached",
+  "reviewed_blob_sha": "6a5d487f96a095b329f92414055bb16a14b98755",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/routing.py:3533` is the `:func:`reckon.crew.context_budget.refusal_census`` docstring line; `tests/test_routing_surface.py:14` imports `context_budget` and lines 731/732/771 exercise `refusal_census`; `reckon/crew_dispatch_commands.py:693` reads `estimated_context` (declared at :600) and `reckon/crew/picker/snapshot.py:385\u2013387` consumes it; the two \u00a74 research-script paths exist; the extensionless hrefs in the table resolve as `.html` by the house convention.",
+    "done_when": "a finding \u2014 \u00a74's done-when cannot be met within the node's write paths (the grep over-reaches into files it may not edit), and it covers only \"its moved tests\" while four other tests import the moved modules.",
+    "evidence_paths": "pass \u2014 the census the deletions are confirmed against lives under a durable report path (`~/.config/reckon/crew/reports/reckon/health-review-1010/health-reachability/reach_graph.log`, present), not a session scratchpad.",
+    "naming": "pass \u2014 the moved filenames are the modules' own names (`carryover_census.py`, `death_census.py`, `pace_replay.py`); no plan label, stage name, ticket number or version tag reaches a symbol or path.",
+    "reasoning": "a finding \u2014 \u00a74's claimed model for the new entry points (`death_census.py`, \"as it already has\") does not carry the argument parser the done-when's `--help` check needs, so the stated mechanism does not produce the measure.",
+    "single_goal": "pass \u2014 \u00a73 carries one goal (delete code nothing owns and nothing reaches), \u00a74 carries one goal (move one-off census modules out of the package).",
+    "wiring": "pass \u2014 the sections are serialised by followup f-nlu-002 (\u00a72, then \u00a73, then \u00a74), each writing the shared reach allowlist; \u00a73's \"runs after \u00a72\" and \u00a74's \"runs after \u00a73\" name no node that does not exist, and the standalone declaration's downstream gate resolves."
+  },
+  "section_digests": {
+    "_document": "13351dbde138aeb68206f8604e3d44d518bf7e59793cafbbebfdc90ee8902fc0",
+    "s1": "e0a15218687e5ca8207eca1ee8bbe8317a16d92d1864ef9c2b905c1e2443b5fd",
+    "s2": "5af896b6106e1d92e8b6b8ffe1f4aeffac2e91bddbc2afdbae9feeadafbc8740",
+    "s3": "6bb9cc6b8984fead7b347d5d5c61e872c1db89fa64b675b6d25a211f80bcb477",
+    "s4": "89935d51b2ee1558b174c2d79a600a1166dd6510df3babb22322d6ae04cac0c0"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T20:26:57.100503+00:00"
+}
