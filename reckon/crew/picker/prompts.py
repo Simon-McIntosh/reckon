@@ -259,47 +259,62 @@ def build_state(
 
 
 def option_key(candidate: Any) -> str:
-    """The key Jev chooses a candidate by: its lane and model joined as one pair.
+    """The key Jev chooses a candidate by: its lane, model and backend.
 
-    A pick has two linked parts, so an option is named ``<lane>:<model>``. A
-    candidate that names no model uses its backend name for the second part,
-    which keeps the pair form and keeps every offered key distinct.
+    A pick has two linked parts, so an option is named ``<lane>:<model>``. The
+    backend is always the last part, because two configured backends can share a
+    lane and a model -- one dialect running the same model on two accounts -- and
+    the pair alone would name neither of them, so a mapping keyed by it would
+    drop the second and Jev could never choose it. The backend is what a dispatch
+    launches and is unique per offering, so it is the part that keeps every key
+    distinct. A candidate that declares no model omits the model part entirely,
+    so its backend is never offered where a model belongs.
     """
 
     lane = getattr(candidate, "family", None) or getattr(candidate, "backend", "")
-    model = getattr(candidate, "model", None) or getattr(candidate, "backend", "")
-    return f"{lane}:{model}"
+    model = getattr(candidate, "model", None)
+    backend = getattr(candidate, "backend", "")
+    if model:
+        return f"{lane}:{model}:{backend}"
+    return str(lane)
 
 
 def build_questions(candidates: Sequence[Any]) -> dict[str, Any]:
     """Assemble the questions as one mapping.
 
-    The criteria carry one entry per offered lane-and-model pair plus the
-    ``hold`` guidance the template supplies; the entries are values of a
-    mapping keyed by that pair, so no candidate name can change the shape of
-    the questions. Each entry also names the pair's parts and its backend, so
-    a chosen pair resolves to exactly one candidate.
+    The criteria carry one entry per offered lane, model and backend plus the
+    ``hold`` guidance the template supplies; the entries are values of a mapping
+    keyed by that option, so no candidate name can change the shape of the
+    questions. Each entry also names the option's parts, so a chosen key resolves
+    to exactly one candidate. Two candidates under one key cannot be offered
+    separately, so offering one would silently drop the other; that is refused
+    rather than resolved to whichever candidate happened to be seen first.
     """
 
-    return {
-        "glossary": _GLOSSARY,
-        "criteria_entries": {
-            option_key(candidate): {
-                "backend": candidate.backend,
-                "lane": candidate.family,
-                "model": candidate.model,
-                "effort": candidate.effort,
-                "local": candidate.local,
-                "meaning": (
-                    "Execute the node as this lane and model pair; read the "
-                    "lane's shared pressure from the lanes block and this "
-                    "pair's own fit and serving observation from the candidate "
-                    "table."
-                ),
-            }
-            for candidate in candidates
-        },
-    }
+    entries: dict[str, Any] = {}
+    backends: dict[str, str] = {}
+    for candidate in candidates:
+        key = option_key(candidate)
+        if key in entries:
+            raise ValueError(
+                f"two candidates are offered under one option key {key!r}: "
+                f"{backends[key]!r} and {candidate.backend!r}"
+            )
+        backends[key] = candidate.backend
+        entries[key] = {
+            "backend": candidate.backend,
+            "lane": candidate.family,
+            "model": candidate.model,
+            "effort": candidate.effort,
+            "local": candidate.local,
+            "meaning": (
+                "Execute the node as this lane and model pair; read the "
+                "lane's shared pressure from the lanes block and this "
+                "pair's own fit and serving observation from the candidate "
+                "table."
+            ),
+        }
+    return {"glossary": _GLOSSARY, "criteria_entries": entries}
 
 
 def render(name: str, **context: Any) -> str:
