@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T19:14:50.795Z",
+  "dispatched_at": "2026-10-10T19:04:12Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/nothing-lands-unreached.html:84",
+      "id": "reasoning-1",
+      "reason": "a node following \u00a73 deletes schema slots whose own field description keeps them \"only so an existing host file that sets it keeps loading\", so with `extra=\"forbid\"` the host config stops loading and three test files the plan does not touch go red.",
+      "text": "\u00a73 deletes the four flight keys (`on_fail`, `reflex`, `spelling`, `max_concurrent_runs`) as \"declared and read by no code\" and confirms only against \"every `docs/state/*/flight.yaml` named by mounts.json\", but `max_concurrent_runs` is set in the host layer (`~/.config/reckon/flight.yaml:462` sets it to 64) and is asserted readable by `tests/test_backend_carries_no_worker_cap.py:249` (\"the key stays readable\") and `tests/test_lane_concurrency_ceiling.py:260`, while `on_fail` is set in the shipped defaults (`reckon/schema/flight-defaults.yaml:106`, `on_fail: hold`) and asserted resolvable by `tests/test_flight.py:879` (`resolved.origin(\"gates.on_fail\") == \"shipped\"`); the mounted-projects check reads none of those layers",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/nothing-lands-unreached.html:89",
+      "id": "done_when-1",
+      "reason": "the gate can report pass while the suite is red, so the measure cannot observe the breakage the section causes and does not gate the node.",
+      "text": "\u00a73's done-when builds its test list only from \"the tests importing the touched modules\", which excludes `tests/test_backend_carries_no_worker_cap.py`, `tests/test_lane_concurrency_ceiling.py` and `tests/test_flight.py` \u2014 the tests that assert the deleted flight keys survive",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/nothing-lands-unreached.html:72",
+      "id": "done_when-2",
+      "reason": "a worker completing \u00a72 cannot close it on its stated measure and must either guess \u00a74's outcome or re-open \u00a72 after \u00a74, an ordering the plan should settle rather than the worker.",
+      "text": "\u00a72's done-when requires the ratchet allowlist to be \"exactly the modules still unreached after \u00a73 and \u00a74\", but \u00a74 is declared to run \"after \u00a72\", so \u00a72 cannot satisfy its own measure until \u00a74 has run",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "4f4f72d7f4e53eba3e21035c001231c368f944a8344cadcb9ce66d9123ea8e59",
+  "plan_slug": "nothing-lands-unreached",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261010T190325251345-plan-review-of-nothing-lands-unreached",
+  "reviewed_blob_sha": "ed6d4e4fe0d2f4d5ed20e253b7cd2ceee4a83b60",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/budget.py:2651` is the `:mod:\\`reckon.crew.pace_replay\\`` docstring line and `reckon/crew/routing.py:3533` is the `:func:\\`reckon.crew.context_budget.refusal_census\\`` docstring line, both exact; every table href resolves (a-window-paces-the-lane.html, the-ledger-is-one-file-per-run.html), and `reckon/reach.py` is the not-yet-written deliverable, not a dangling citation.",
+    "done_when": "a finding \u2014 \u00a73's done-when scopes its test list to \"tests importing the touched modules\", so the tests that assert the keys it deletes are never run, and \u00a72's done-when requires an allowlist \"after \u00a73 and \u00a74\" while \u00a74 is declared to run after \u00a72.",
+    "evidence_paths": "pass \u2014 the cited health-review artifact lives under `~/.config/reckon/crew/reports/reckon/health-review-1010/health-reachability/` (reach_graph.py, reach_graph.json, flight_keys.log all present) and the node's gate logs go to its run report directory, both durable for a later reader.",
+    "naming": "pass \u2014 the new symbols and filenames (`reckon/reach.py`, `neighbourhood`, `tests/test_every_module_is_reached.py`, `tests/test_reach_graph.py`) are named by mechanism and carry no plan labels, stage names or ticket numbers.",
+    "reasoning": "a finding \u2014 \u00a73's premise that the four flight keys are \"declared and read by no code\" is falsified by the host flight layer and by tests that assert those keys are retained, and \u00a73's stated check reads only mounted projects' flight layers, so it cannot see them.",
+    "single_goal": "pass \u2014 each section names one deliverable (\u00a72 the reach instrument and its ratchet guard, \u00a73 the deletions, \u00a74 the census-module relocation).",
+    "wiring": "pass \u2014 the plan declares `plan-standalone` with a stated rationale, every cited plan (a-window-paces-the-lane, the-ledger-is-one-file-per-run, the-codebase-is-reviewed-between-nodes) resolves, and the downstream section gate `g-tcirbn-reach-instrument` it names exists on that plan's \u00a76, so no declared relation points at the wrong node."
+  },
+  "section_digests": {
+    "_document": "13351dbde138aeb68206f8604e3d44d518bf7e59793cafbbebfdc90ee8902fc0",
+    "s1": "44a7259ba572408f7ef6ec70443a9f45b410e202f73e4cc10d9221d3c36dd96a",
+    "s2": "14842b9136cd58b64b031611c17497506a72138e1ed0044f1f292a722413c56b",
+    "s3": "f686a39c447239ed187969a0be74ea84295a40e5e7a902d0bbabde16a7d9c94f",
+    "s4": "b9573aceeff07ccb269d7f1dd7cb603e2021c1b6150aee3dd294ef97bab77fef"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T19:21:04.426581+00:00"
+}
