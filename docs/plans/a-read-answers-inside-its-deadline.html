@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="reckon-tooling">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
   <meta name="plan-standalone" content="It restores what reckon-reads-answer-in-seconds shipped; that plan is complete, and no live plan&#x27;s section waits on read latency.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="12">
+<meta name="plan-version" content="13">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -91,7 +91,7 @@
       <code>tests/test_warm_roadmap_does_not_walk.py</code>.</p>
 
     <h2 id="s4">§4 — Git HEAD is resolved once per commit, not once per lookup</h2>
-<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> The node first confirms, from a warm-audit profile, which of the nine <code>git</code> processes
       are <code>rev-parse HEAD</code> calls from <code>_git_head</code> (<code>reckon/serve.py:1244</code>) and which are date queries the
       in-process maps (<code>_GIT_CREATION_CACHE</code>, <code>_GIT_LAST_MODIFIED_CACHE</code>) should have answered. It then memoises
@@ -170,6 +170,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261010T213605774740-review-of-git-head-resolved-once" data-who="reckon-build" data-when="2026-10-10T21:51:30.333Z">
     <div class="r-comment-body"><p>reckon:a-read-answers-inside-its-deadline §4 — independent review of r-20261010T212226904790-git-head-resolved-once at reviewed_base_sha 25b07c0dd / reviewed_head_sha 4685373af: total 99/120 (goal_fidelity 15, evidence 16, scope_discipline 20, durability 15, fit 15, reuse 18); 1 blocking regression (linked-worktree memo staleness: _head_identity never follows the worktree commondir, so _git_head returns the stale sha and the date maps freeze), plus 2 follow-ons and 1 record-fidelity finding; added-failure count unmeasured (the reviewed run recorded no baseline_suite/after_suite).</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-10-10T22:30:00Z">
+    <div class="r-comment-body"><p>§4 landed: git HEAD is resolved once per commit, including in linked worktrees (merged <code>5c09a1ef9</code>); review 115/120 after a repair round. The warm audit's remaining git processes are in <code>recovery_review_subject.py</code>, recorded in the evidence. <a href="/reckon/evidence/archive/a-read-answers-inside-its-deadline-landed.html#s4">evidence</a></p></div>
 </div>
 </section>
 </main>

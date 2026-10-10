@@ -30,6 +30,11 @@
     <p>Cause found: the discovery change signature (<code>serve._walk_discovery_signature</code> calling <code>metadata_index._covered_files</code>) called <code>_walk_covered</code> unconditionally and never reached <code>_reuse_covered</code>. Fixed inside <code>reckon/metadata_index.py</code>: the signature consults the recorded directory identities first and walks only a changed tree. Commit <code>95a58ef63</code>, merged at <code>5c4f67527</code>. <code>tests/test_warm_roadmap_does_not_walk.py</code>: 2 passed, EXIT=0; 48 related tests pass; negative control (<code>_reuse_covered</code> forced to decline) walks and fails. Review 114/120. Follow-ons: a roadmap read under a dispatch worktree or an unregistered checkout still walks, because <code>_docs_dir_project</code> resolves only a mounted docs tree (closing it needs <code>serve.py</code>); the discovery read now writes the index; and a newly seen file is counted as rebuilt rather than added.</p>
   </section>
 
+  <section id="s4">
+    <h2>§4 — Git HEAD is resolved once per commit</h2>
+    <p><code>_git_head</code> (<code>reckon/serve.py</code>) is memoised on the identity of the repository's <code>HEAD</code> file and the ref file it names, resolved through the common git directory in a linked worktree, so a read with no new commit starts no <code>git</code> process and a commit invalidates it. The profile's attribution was corrected on the way: none of the nine warm-audit <code>git</code> processes came from <code>_git_head</code>; seven were <code>git rev-parse HEAD</code> from <code>recovery_review_subject._reviewed_run_head</code> and two <code>rev-parse --verify</code> from <code>_resolve_commit</code>, both uncached per lookup, which is where the audit's remaining git cost lies. <code>_git_head</code> is the roadmap's cost. Commits <code>4685373af</code> and the repair <code>323a2a62f</code> (a worktree's ref was read from its private git directory, so its memo never saw a new commit), merged at <code>5c09a1ef9</code>; 19 tests pass, negative controls for the memo and for the worktree case fail as declared. Review 99/120, then 115/120.</p>
+  </section>
+
 </main>
 </body>
 </html>
