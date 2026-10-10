@@ -1275,6 +1275,27 @@ def _file_identity(path: Path) -> tuple[int, int, int] | None:
     return (stat.st_mtime_ns, stat.st_ino, stat.st_size)
 
 
+def _common_git_directory(git_dir: Path) -> Path:
+    """The git directory that holds a worktree's shared refs.
+
+    A linked worktree's own git directory names the main checkout's git
+    directory in ``commondir``; branch refs live there rather than in the
+    worktree's private directory. Without following it a worktree's ref file
+    reads as absent, so a new commit would leave the memo's sha frozen.
+    """
+
+    try:
+        text = (git_dir / "commondir").read_text(encoding="utf-8").strip()
+    except OSError:
+        return git_dir
+    if not text:
+        return git_dir
+    target = Path(text)
+    if not target.is_absolute():
+        target = git_dir / target
+    return target
+
+
 def _head_identity(repo_dir: Path) -> tuple | None:
     """An identity that changes exactly when the resolved commit changes.
 
@@ -1282,8 +1303,10 @@ def _head_identity(repo_dir: Path) -> tuple | None:
     files rather than by running git, so a warm lookup proves the commit has
     not moved without starting a process. The reference file's presence is
     part of the identity, so a loose ref written by a new commit changes it
-    even when ``HEAD`` itself does not. ``None`` means the identity cannot be
-    read, and a caller must resolve the head itself.
+    even when ``HEAD`` itself does not. A linked worktree resolves its ref
+    through the common git directory, where its shared refs actually live.
+    ``None`` means the identity cannot be read, and a caller must resolve the
+    head itself.
     """
 
     git_dir = _git_directory(repo_dir)
@@ -1295,7 +1318,9 @@ def _head_identity(repo_dir: Path) -> tuple | None:
     except OSError:
         return None
     ref_name = head_text[4:].strip() if head_text.startswith("ref:") else ""
-    ref_identity = _file_identity(git_dir / ref_name) if ref_name else None
+    ref_identity = (
+        _file_identity(_common_git_directory(git_dir) / ref_name) if ref_name else None
+    )
     return (_file_identity(head_path), head_text, ref_name, ref_identity)
 
 

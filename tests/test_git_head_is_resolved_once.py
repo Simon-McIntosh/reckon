@@ -18,6 +18,7 @@ from reckon import serve
 
 FIRST_DATE = "2023-11-14T22:13:20+00:00"
 SECOND_DATE = "2023-11-14T22:21:40+00:00"
+THIRD_DATE = "2023-11-14T22:30:00+00:00"
 FIRST_TS = 1_700_000_000
 SECOND_TS = 1_700_000_500
 _GIT_ENV = {
@@ -53,6 +54,18 @@ def _git(repo: Path, *args: str, env: dict[str, str] | None = None) -> None:
         check=True,
         env={**os.environ, **_GIT_ENV, **(env or {})},
     )
+
+
+def _rev(path: Path) -> str:
+    completed = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=path,
+        capture_output=True,
+        text=True,
+        check=True,
+        env={**os.environ, **_GIT_ENV},
+    )
+    return completed.stdout.strip()
 
 
 def _commit(repo: Path, when: str) -> None:
@@ -120,3 +133,39 @@ def test_lookups_resolve_head_once(tmp_path, monkeypatch):
     assert counter.git_calls > before, "a new commit did not force a re-resolution"
     assert times["docs/second.html"] == SECOND_TS
     assert times["docs/first.html"] == FIRST_TS
+
+
+def test_a_linked_worktree_resolves_a_new_commit(tmp_path, monkeypatch):
+    """A worktree's refs live in the common git directory, not its own.
+
+    Resolving the ref under the worktree's private git directory reads it as
+    absent, so a commit made in the worktree would leave the memo's sha frozen
+    and the date maps short-circuiting on the stale head.
+    """
+
+    repo, _docs = _make_repo(tmp_path)
+    _isolate_caches(monkeypatch)
+    counter = _CountingSubprocess(subprocess)
+    monkeypatch.setattr(serve, "subprocess", counter)
+
+    worktree = tmp_path / "linked"
+    _git(repo, "worktree", "add", "-q", "-b", "wtb", str(worktree))
+    docs = worktree / "docs"
+
+    head_before = serve._git_head(worktree)
+    assert head_before == _rev(worktree)
+
+    # An unchanged worktree reuses the memo.
+    baseline = counter.git_calls
+    assert serve._git_head(worktree) == head_before
+    assert counter.git_calls == baseline
+
+    # A commit in the worktree updates the common ref, so the next lookup
+    # resolves the new head rather than the memo's stale sha.
+    (docs / "third.html").write_text("<html>third</html>", encoding="utf-8")
+    _commit(worktree, THIRD_DATE)
+    after = counter.git_calls
+    head_after = serve._git_head(worktree)
+    assert counter.git_calls > after, "a worktree commit did not force a re-resolution"
+    assert head_after == _rev(worktree)
+    assert head_after != head_before
