@@ -18,6 +18,11 @@ Three facts are checked here, none inferred from another:
   negative control.
 * A fixed pytest log recorded under the ``browser`` population name writes a row
   that carries that name and the counts the log reports.
+* ``reckon crew suite run`` over a project declaring a standing suite and a
+  browser population writes one row for each, and the browser row's failure does
+  not hold a tier ``none`` promotion while the standing suite's does. The
+  population is fed through the flight resolver's own parser, so a second budget
+  shape cannot drift from the standing suite's.
 """
 
 from __future__ import annotations
@@ -182,3 +187,127 @@ def test_a_fixed_log_records_a_row_under_the_browser_population_name(tmp_path):
     assert Path(row_path).parent == standing_suite.suite_runs_dir(
         project_root, "reckon"
     )
+
+
+def _python(code: str) -> list[str]:
+    """A declared command that runs ``code`` under this test's interpreter."""
+    return [sys.executable, "-c", code]
+
+
+# A command that reports a passing run, and one that reports a collection
+# failure — the only failure a standing-suite hold is raised on.
+_PASSING = _python("print('3 passed in 0.01s')")
+_COLLECTION_FAILURE = _python(
+    "import sys; print('ERROR collecting tests/test_x.py'); sys.exit(2)"
+)
+
+
+def _declare_project(root: Path, project: str, standing: list[str], browser: list[str]):
+    """Write a project flight layer declaring a standing suite and a browser row."""
+    import yaml
+
+    state = root / "docs" / "state" / project
+    state.mkdir(parents=True, exist_ok=True)
+    data = {
+        "version": 1,
+        "review": {
+            "suite": {"command": standing, "budget": "20m"},
+            "populations": [
+                {"name": BROWSER_MARKER, "command": browser, "budget": "20m"}
+            ],
+        },
+    }
+    (state / "flight.yaml").write_text(yaml.safe_dump(data), encoding="utf-8")
+
+
+def _git_checkout(root: Path) -> None:
+    """A minimal git repository, so the suite record can read a revision."""
+    root.mkdir(parents=True, exist_ok=True)
+    (root / "README").write_text("x", encoding="utf-8")
+    for command in (
+        ["git", "init", "-q"],
+        ["git", "config", "user.email", "t@example.invalid"],
+        ["git", "config", "user.name", "t"],
+        ["git", "add", "README"],
+        ["git", "commit", "-qm", "init"],
+    ):
+        subprocess.run(command, cwd=root, check=True, capture_output=True)
+
+
+def _run_declared_suite(monkeypatch, tmp_path, project, root):
+    """Invoke ``reckon crew suite run`` against a temporary project and read the rows."""
+    from click.testing import CliRunner
+
+    from reckon import cli as cli_module
+
+    # The host layer is pointed at an empty temporary file, so the run reads no
+    # state outside the checkout under test.
+    host = tmp_path / "host-flight.yaml"
+    host.write_text("version: 1\n", encoding="utf-8")
+    monkeypatch.setenv("RECKON_FLIGHT_CONFIG", str(host))
+
+    result = CliRunner().invoke(
+        cli_module.main,
+        [
+            "crew",
+            "suite",
+            "run",
+            "--project",
+            project,
+            "--checkout-path",
+            str(root),
+        ],
+    )
+    # The exit verdict answers the standing suite, so a scenario whose standing
+    # suite fails to collect exits 1 while still emitting its JSON.
+    return json.loads(result.output), root
+
+
+def _rows_by_population(root: Path, project: str) -> dict:
+    from reckon.crew import standing_suite
+
+    rows = {}
+    for path in standing_suite.suite_runs_dir(root, project).glob("*.json"):
+        row = json.loads(path.read_text(encoding="utf-8"))
+        if row.get("kind") == "run":
+            rows[row.get("population")] = row
+    return rows
+
+
+def test_crew_suite_run_records_each_population_and_the_hold_reads_only_the_standing_row(
+    tmp_path, monkeypatch
+):
+    from reckon.crew import standing_suite
+
+    project = "tempsuite"
+
+    # The browser population fails to collect, the standing suite passes: two
+    # rows are written, and the browser row's failure does not hold a promotion.
+    root = tmp_path / "checkout-browser-fails"
+    _declare_project(root, project, _PASSING, _COLLECTION_FAILURE)
+    _git_checkout(root)
+    payload, root = _run_declared_suite(monkeypatch, tmp_path, project, root)
+
+    assert len(payload["populations"]) == 1
+    assert payload["populations"][0]["population"] == BROWSER_MARKER
+    rows = _rows_by_population(root, project)
+    assert set(rows) == {None, BROWSER_MARKER}
+    assert rows[BROWSER_MARKER]["collection_failed"] is True
+    assert rows[None]["collection_failed"] is False
+    assert standing_suite.hold_reason(root, "none", project) is None
+
+    # The standing suite fails to collect, the population passes: the hold fires
+    # on the standing row and, again, not on the population's.
+    failing_root = tmp_path / "checkout-standing-fails"
+    _declare_project(failing_root, project, _COLLECTION_FAILURE, _PASSING)
+    _git_checkout(failing_root)
+    payload, failing_root = _run_declared_suite(
+        monkeypatch, tmp_path, project, failing_root
+    )
+
+    assert len(payload["populations"]) == 1
+    rows = _rows_by_population(failing_root, project)
+    assert set(rows) == {None, BROWSER_MARKER}
+    assert rows[None]["collection_failed"] is True
+    assert rows[BROWSER_MARKER]["collection_failed"] is False
+    assert standing_suite.hold_reason(failing_root, "none", project) is not None

@@ -994,6 +994,18 @@ slots:
     range: ReviewSuite
     inlined: true
 
+  populations:
+    description: >-
+      Named extra populations of the project's suite, each with its own command
+      and whole-run budget and no default. A population runs beside the standing
+      suite and is recorded as its own row, so a slow or browser-driven
+      population keeps its time and its failure ids separable from the standing
+      suite's — it cannot spend the standing suite's budget and its failure does
+      not hold a promotion the standing suite would allow.
+    range: ReviewPopulation
+    multivalued: true
+    inlined_as_list: true
+
 # ── Classes ─────────────────────────────────────────────────────────────────
 
 classes:
@@ -1034,6 +1046,7 @@ classes:
     slots:
       - tiers
       - suite
+      - populations
 
   ReviewSuite:
     description: >-
@@ -1046,6 +1059,36 @@ classes:
         description: >-
           The suite command as an argument vector, run from the checkout root.
           The first entry is the executable, resolved against the working
+          directory and PATH the run is started in.
+        range: string
+        multivalued: true
+        required: true
+      budget:
+        description: >-
+          Whole-run wall-clock budget, written as an integer followed by a unit
+          — `s`, `m` or `h`. A run that exceeds it is stopped and recorded as
+          over budget rather than being left to hang.
+        pattern: "^[0-9]+[smh]$"
+        required: true
+
+  ReviewPopulation:
+    description: >-
+      One named population of a project's suite: the command that selects it and
+      the whole-run wall-clock budget it is held to, beside the name its row is
+      recorded under. It carries everything ReviewSuite carries plus the name,
+      so one population's row is told from another's and from the standing
+      suite's in the suite-runs directory.
+    attributes:
+      name:
+        description: >-
+          The population name, recorded on every row the population writes so a
+          reader tells it from the standing suite's rows.
+        range: string
+        required: true
+      command:
+        description: >-
+          The population's command as an argument vector, run from the checkout
+          root. The first entry is the executable, resolved against the working
           directory and PATH the run is started in.
         range: string
         multivalued: true
