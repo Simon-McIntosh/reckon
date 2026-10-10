@@ -34,7 +34,9 @@ ROOT = Path(__file__).resolve().parents[1]
 _WORD = re.compile(r"(?<![\w./-])reckon(?![\w./-])")
 
 #: A shell launcher that may precede a citation at the head of a span.
-_LAUNCHER = re.compile(r"^\s*(?:\$\s*|>\s*)?(?:uv|sudo|python3?|command|env|time|nohup)\b")
+_LAUNCHER = re.compile(
+    r"^\s*(?:\$\s*|>\s*)?(?:uv|sudo|python3?|command|env|time|nohup)\b"
+)
 
 #: One command word: lowercase, hyphenated, no placeholder punctuation.
 _CMD = re.compile(r"^[a-z][a-z0-9-]*$")
@@ -87,7 +89,7 @@ def _spans(text: str):
         fenced[i] = infence
 
     masked = "\n".join("" if fenced[i] else line for i, line in enumerate(lines))
-    for match in re.finditer(r"`([^`]*)`", masked, re.S):
+    for match in re.finditer(r"`([^`]*)`", masked, re.DOTALL):
         span = match.group(1)
         if _WORD.search(span):
             yield masked[: match.start()].count("\n") + 1, span
@@ -113,13 +115,20 @@ def _candidates(text: str):
             chain = _chain(segment)
             if not chain:
                 continue
-            yield line_no, chain, _flags(segment), span[: hit.start()], index == 0, segment
+            yield (
+                line_no,
+                chain,
+                _flags(segment),
+                span[: hit.start()],
+                index == 0,
+                segment,
+            )
 
 
 def _chain(segment: str) -> list[str]:
     chain: list[str] = []
-    for token in segment.split():
-        token = token.strip("`,;|&()[]")
+    for raw in segment.split():
+        token = raw.strip("`,;|&()[]")
         if _CMD.match(token):
             chain.append(token)
         else:
@@ -134,7 +143,7 @@ def _flags(segment: str) -> list[str]:
 class Citation:
     """One ``reckon`` invocation named in the corpus, with where it was seen."""
 
-    __slots__ = ("path", "line", "chain", "flags", "planned")
+    __slots__ = ("chain", "flags", "line", "path", "planned")
 
     def __init__(self, path, line, chain, flags, planned):
         self.path = path
@@ -202,15 +211,17 @@ def test_every_cited_command_and_flag_resolves():
     for cite in checked:
         command, bad = _resolve(cite.chain)
         if bad is not None:
-            problems.append(f"{cite.where}: unknown command {' '.join(cite.chain)} ({bad!r})")
+            problems.append(
+                f"{cite.where}: unknown command {' '.join(cite.chain)} ({bad!r})"
+            )
             continue
         if cite.flags and command is not None:
             help_text = _help(cite.chain[: _path_len(cite.chain)])
-            for flag in cite.flags:
-                if flag not in help_text:
-                    problems.append(
-                        f"{cite.where}: {' '.join(cite.chain)} has no {flag} in --help"
-                    )
+            problems.extend(
+                f"{cite.where}: {' '.join(cite.chain)} has no {flag} in --help"
+                for flag in cite.flags
+                if flag not in help_text
+            )
 
     print(
         f"citations={len(found)} checked={len(checked)} "
