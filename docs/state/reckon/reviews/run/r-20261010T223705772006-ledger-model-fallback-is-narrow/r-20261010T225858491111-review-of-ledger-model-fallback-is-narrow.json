@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "backend": "local",
+  "base_log_revision": null,
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/promotion.py:956"
+  ],
+  "completed_at": "2026-10-10T23:07:39.591Z",
+  "dispatched_at": "2026-10-10T22:59:39Z",
+  "findings": [
+    {
+      "file": "tests/test_ledger_model_fallback_is_narrow.py",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the done_when requires the gate log to be written once with EXIT=, but the manifest's test_logs gate-head.log is truncated at 62 dots with no summary and no EXIT= while the manifest records no baseline_suite/after_suite, so the added-failure count is unmeasured and the recorded evidence does not support the claimed 121 passed; I re-ran the module at head (2 passed, EXIT=0) so the tests are sound, but the recorded gate is incomplete."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read 023461df..72597fe53, one commit, three files, +101/-2; the sole source hunk narrows the except tuple and rewrites the surrounding comment, the new module adds two tests driving build_record, and the evidence fragment is a new three-line article.",
+    "done_when": "the evidence fence names the new test module plus tests/test_ledger.py, tests/test_dispatch_names_a_model.py, tests/test_ledger_declares_the_review_tier.py and tests/test_subscription_lanes_record_no_spend.py run in place with the venv interpreter and a log written once with EXIT=; the manifest records 121 passed EXIT=0 but the log it names (test_logs gate-head.log) is truncated at 62 dots with no pytest summary line and no EXIT=, and the manifest names no baseline_suite or after_suite, so the recorded gate does not support the claimed result.",
+    "goal": "the node goal is to narrow build_record's identity fallback so a malformed catalogue still writes the row with the pair unset while an ambiguous name surfaces; commit 72597fe53 narrows only the except tuple at reckon/ledger.py:2477 from (FlightConfigError, OSError, ValueError) to (FlightConfigError, OSError), and the sole raise ValueError inside normalize_identity is resolve_name's ambiguity refusal at reckon/ledger.py:261, so the change achieves exactly the goal.",
+    "manifest": "read; status complete, the tests line claims 121 passed EXIT=0, test_logs names gate-head.log, negative_control_log names a two-arm log whose arms each end EXIT=1; baseline_suite and after_suite are absent so the suite delta cannot be derived from the manifest.",
+    "write_paths": "the manifest declares four paths (reckon/ledger.py, tests/test_ledger_model_fallback_is_narrow.py, docs/evidence/fragments/lane-and-model-routing/ledger-model-fallback-is-narrow.html, a figures dir); git show --stat at 72597fe53 touches only ledger.py, the test module and the fragment, all inside the fence, and the figures dir is left unused."
+  },
+  "justifications": {
+    "durability": "the two tests at tests/test_ledger_model_fallback_is_narrow.py:27 and :60 are independent of the value under test \u2014 the negative control shows test 1 reddens when the fallback is removed and test 2 reddens when the catch is widened as it was on main \u2014 though the head gate log that should carry their recorded green is incomplete.",
+    "evidence": "the done_when requires a gate log written once with EXIT=, but the manifest's named test_logs gate-head.log is cut at 62 dots with no summary and no EXIT= and the manifest records no baseline_suite/after_suite, so added_failure_count is unmeasured and the recorded result does not back the claimed 121 passed.",
+    "fit": "the commit is a conventional fix subject with a body, carries no attribution trailer, names no plan, version or ticket label in reckon/ledger.py or the tests, and its added comment states the mechanism rather than the change history.",
+    "goal_fidelity": "reckon/ledger.py:261 is the only raise ValueError inside normalize_identity, so narrowing the catch at reckon/ledger.py:2477 lets exactly the ambiguity refusal surface while a FlightConfigError or OSError catalogue fault still leaves the pair unset.",
+    "reuse": "the change adds no definition and reuses the existing resolver normalize_identity/resolve_name at reckon/ledger.py:261 rather than forking a capability.",
+    "scope_discipline": "git show --stat at 72597fe53 touches only reckon/ledger.py, tests/test_ledger_model_fallback_is_narrow.py and the in-fence evidence fragment, and mutates no shared plan, index or sprint state."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to narrow build_record's identity fallback so a malformed catalogue still writes the row with the pair unset while an ambiguous name surfaces; commit 72597fe53 narrows only the except tuple at reckon/ledger.py:2477 from (FlightConfigError, OSError, ValueError) to (FlightConfigError, OSError), and the sole raise ValueError inside normalize_identity is resolve_name's ambiguity refusal at reckon/ledger.py:261, so the change achieves exactly the goal.\nVERDICT done_when: the evidence fence names the new test module plus tests/test_ledger.py, tests/test_dispatch_names_a_model.py, tests/test_ledger_declares_the_review_tier.py and tests/test_subscription_lanes_record_no_spend.py run in place with the venv interpreter and a log written once with EXIT=; the manifest records 121 passed EXIT=0 but the log it names (test_logs gate-head.log) is truncated at 62 dots with no pytest summary line and no EXIT=, and the manifest names no baseline_suite or after_suite, so the recorded gate does not support the claimed result.\nVERDICT write_paths: the manifest declares four paths (reckon/ledger.py, tests/test_ledger_model_fallback_is_narrow.py, docs/evidence/fragments/lane-and-model-routing/ledger-model-fallback-is-narrow.html, a figures dir); git show --stat at 72597fe53 touches only ledger.py, the test module and the fragment, all inside the fence, and the figures dir is left unused.\nVERDICT manifest: read; status complete, the tests line claims 121 passed EXIT=0, test_logs names gate-head.log, negative_control_log names a two-arm log whose arms each end EXIT=1; baseline_suite and after_suite are absent so the suite delta cannot be derived from the manifest.\nVERDICT diff: read 023461df..72597fe53, one commit, three files, +101/-2; the sole source hunk narrows the except tuple and rewrites the surrounding comment, the new module adds two tests driving build_record, and the evidence fragment is a new three-line article.\nCALL_SITES: reckon/crew/promotion.py:956\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/ledger.py:261 is the only raise ValueError inside normalize_identity, so narrowing the catch at reckon/ledger.py:2477 lets exactly the ambiguity refusal surface while a FlightConfigError or OSError catalogue fault still leaves the pair unset.\nSCORE evidence: 11\nJUSTIFICATION evidence: the done_when requires a gate log written once with EXIT=, but the manifest's named test_logs gate-head.log is cut at 62 dots with no summary and no EXIT= and the manifest records no baseline_suite/after_suite, so added_failure_count is unmeasured and the recorded result does not back the claimed 121 passed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat at 72597fe53 touches only reckon/ledger.py, tests/test_ledger_model_fallback_is_narrow.py and the in-fence evidence fragment, and mutates no shared plan, index or sprint state.\nSCORE durability: 17\nJUSTIFICATION durability: the two tests at tests/test_ledger_model_fallback_is_narrow.py:27 and :60 are independent of the value under test \u2014 the negative control shows test 1 reddens when the fallback is removed and test 2 reddens when the catch is widened as it was on main \u2014 though the head gate log that should carry their recorded green is incomplete.\nSCORE fit: 19\nJUSTIFICATION fit: the commit is a conventional fix subject with a body, carries no attribution trailer, names no plan, version or ticket label in reckon/ledger.py or the tests, and its added comment states the mechanism rather than the change history.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition and reuses the existing resolver normalize_identity/resolve_name at reckon/ledger.py:261 rather than forking a capability.\nFINDING tests/test_ledger_model_fallback_is_narrow.py:1 follow-on: the done_when requires the gate log to be written once with EXIT=, but the manifest's test_logs gate-head.log is truncated at 62 dots with no summary and no EXIT= while the manifest records no baseline_suite/after_suite, so the added-failure count is unmeasured and the recorded evidence does not support the claimed 121 passed; I re-ran the module at head (2 passed, EXIT=0) so the tests are sound, but the recorded gate is incomplete.\nreviewed_base_sha: 023461df90db117c4134910f969dde018808a0c6\nreviewed_head_sha: 72597fe53fe4ab1474abc181bbd86786250611d4\n",
+  "review_run_id": "r-20261010T225858491111-review-of-ledger-model-fallback-is-narrow",
+  "reviewed_base_sha": "023461df90db117c4134910f969dde018808a0c6",
+  "reviewed_head_sha": "72597fe53fe4ab1474abc181bbd86786250611d4",
+  "reviewed_run_id": "r-20261010T223705772006-ledger-model-fallback-is-narrow",
+  "scores": {
+    "durability": 17,
+    "evidence": 11,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T23:06:08.570134+00:00",
+  "total": 106
+}
