@@ -25,8 +25,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-north-star" content="unattended-execution">
-<meta name="plan-impl" content="0.8125">
-<meta name="plan-version" content="64">
+<meta name="plan-impl" content="0.875">
+<meta name="plan-version" content="65">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -317,6 +317,9 @@
 </div>
 <div class="r-comment" data-section="s15" data-id="c-close-s15" data-who="reckon-build" data-when="2026-10-10T23:25:00Z">
     <div class="r-comment-body"><p>§15 landed: the ledger fallback catches only catalogue faults, so an ambiguous name surfaces, and both branches are tested (merge <code>e75f1b406</code>, review 106, no failures added across an 85-file population). <a href="/reckon/evidence/archive/lane-and-model-routing-landed.html#s15">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s15" data-id="c-run-r-20261010T223705772006-ledger-model-fallback-is-narrow" data-who="reckon-build" data-when="2026-10-10T22:58:26.024Z">
+    <div class="r-comment-body"><p>narrowed build_record&#x27;s identity fallback to the catalogue&#x27;s fault vocabulary (FlightConfigError, OSError) so the resolver&#x27;s ValueError ambiguity refusal surfaces instead of being stored as an unset pair; new tests/test_ledger_model_fallback_is_narrow.py drives both branches through build_record; gate 121 passed</p></div>
 </div>
 </section>
 </main>
