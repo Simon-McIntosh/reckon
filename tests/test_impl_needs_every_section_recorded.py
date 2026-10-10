@@ -1,4 +1,4 @@
-"""impl is derived only when the records cover the plan's declared sections."""
+"""impl derives from the plan's declared sections when its records fall short."""
 
 from __future__ import annotations
 
@@ -58,17 +58,22 @@ def _write(tmp_path: Path, slug: str, text: str) -> Path:
     return path
 
 
-def test_a_declared_section_without_a_record_keeps_the_authored_impl(tmp_path):
+def test_a_declared_section_without_a_record_derives_the_by_declaration_impl(tmp_path):
     text = _plan([IMPLEMENTABLE])
     path = _write(tmp_path, "partial", text)
 
+    # Three declarations are done and one is implementable, so the count answers
+    # at 3/4 where the records cover only one section - the authored 0.57 meta
+    # cannot stand while a declared section is unrecorded.
+    expected = 3 / 4
     state = read_state(text)
-    assert state["impl"] == pytest.approx(AUTHORED)
-    assert state["impl_source"] == "authored"
-    assert parse_plan(path)["impl"] == pytest.approx(AUTHORED)
-    assert parse_plan(path)["impl_source"] == "authored"
-    assert parse_meta(path)["impl"] == pytest.approx(AUTHORED)
-    assert parse_meta(path)["impl_source"] == "authored"
+    assert state["impl"] == pytest.approx(expected)
+    assert state["impl_source"] == "declarations"
+    assert parse_plan(path)["impl"] == pytest.approx(expected)
+    assert parse_plan(path)["impl_source"] == "declarations"
+    assert parse_meta(path)["impl"] == pytest.approx(expected)
+    assert parse_meta(path)["impl_source"] == "declarations"
+    # The served figure moves; the authored meta on disk is untouched by a read.
     assert path.read_text(encoding="utf-8") == text
 
 

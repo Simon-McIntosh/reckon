@@ -252,9 +252,9 @@ def test_recurrence_counts_distinct_plans(tmp_path: Path) -> None:
 # Verbatim copies of live plans, so editing a live plan cannot move a case.
 # legacy_plan.html predates the named effort field (the parser derives its
 # effort from the legacy letter and reports it uncalibrated); current_plan.html
-# carries records short of its declarations, so its authored impl stands;
-# derived_impl_plan.html carries records covering its declarations, so its impl
-# is computed from them.
+# carries records short of its declarations, so its impl is the declaration
+# count and its plan-impl meta is inert; derived_impl_plan.html carries records
+# covering its declarations, so its impl is computed from them.
 FIXTURES = Path(__file__).resolve().parent / "fixtures" / "plan_review_store"
 LEGACY_PLAN = FIXTURES / "legacy_plan.html"
 CURRENT_PLAN = FIXTURES / "current_plan.html"
@@ -313,14 +313,24 @@ def test_real_plan_metadata_edits_keep_the_fingerprint_while_prose_moves_it() ->
         html = path.read_text(encoding="utf-8")
         base_state = _plan_html.read_state(html)
         base_fingerprint = module.plan_fingerprint(html)
+        # A derived impl is carried by the section records, so its plan-impl meta
+        # is inert: the edit lands in the file but the served figure does not
+        # move. An authored impl (a plan with no declarations) moves with it.
+        derived_impl = base_state.get("impl_source") in {"computed", "declarations"}
         for key, meta, value in _METADATA_EDITS:
             edited_html = _write_meta(html, meta, value)
             assert edited_html != html, f"{path.name}: the {meta} edit did not apply"
-            # The edit must actually have landed, or the stability check below
-            # would pass vacuously.
-            assert _plan_html.read_state(edited_html).get(key) != base_state.get(key), (
-                f"{path.name}: the {meta} edit did not reach the {key} state"
-            )
+            served = _plan_html.read_state(edited_html)
+            if key == "impl" and derived_impl:
+                assert served.get(key) == base_state.get(key), (
+                    f"{path.name}: the {meta} edit must not move a derived {key}"
+                )
+            else:
+                # The edit must actually have landed, or the stability check
+                # control below would pass vacuously.
+                assert served.get(key) != base_state.get(key), (
+                    f"{path.name}: the {meta} edit did not reach the {key} state"
+                )
             # ... and the fingerprint must not move: no review is due.
             assert module.plan_fingerprint(edited_html) == base_fingerprint, (
                 f"{path.name}: {key} is metadata, so the fingerprint must not move"

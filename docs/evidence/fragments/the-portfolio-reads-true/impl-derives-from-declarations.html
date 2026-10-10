@@ -46,15 +46,16 @@
   <code>test_an_impl_write_on_the_partial_plan_is_accepted</code> failing. The mutation was then
   reverted to the committed bytes.</p>
 
-  <h3>Superseded expectations, outside this node's write scope</h3>
+  <h3>Superseded expectations, updated in place</h3>
 
-  <p>Three existing test files assert the behaviour this section supersedes — that a partially
-  recorded plan keeps its authored figure with source <code>authored</code>. They are not in this
-  node's granted write paths, so they are reported rather than edited:</p>
+  <p>Four existing tests asserted the behaviour this section supersedes — that a partially
+  recorded plan keeps its authored figure with source <code>authored</code>. Each now asserts the
+  declaration-count figure instead:</p>
 
   <ul>
-    <li><code>tests/test_impl_needs_every_section_recorded.py::test_a_declared_section_without_a_record_keeps_the_authored_impl</code> — expects authored 0.57; the declarations now derive 0.75.</li>
-    <li><code>tests/test_impl_stays_authorable_while_records_are_partial.py::test_set_impl_succeeds_while_records_are_partial</code> — expects the written plan to read 0.25/<code>authored</code>; it now reads 0.5/<code>declarations</code>. Its authoring half stands; its served-figure half is superseded.</li>
-    <li><code>tests/test_bookkeeping_earns_no_review.py::test_setting_impl_on_a_plan_that_had_none_leaves_every_unit_covered</code> — asserts <code>"impl" not in read_state(bare)</code> for a plan with declarations and no records; that plan now reads 0.0/<code>declarations</code>.</li>
+    <li><code>tests/test_impl_needs_every_section_recorded.py</code> — its partial plan (three declarations done, one implementable, one record) now reads 0.75/<code>declarations</code>.</li>
+    <li><code>tests/test_impl_stays_authorable_while_records_are_partial.py</code> — the write is still accepted, but the served figure is 0.5/<code>declarations</code>.</li>
+    <li><code>tests/test_bookkeeping_earns_no_review.py</code> — a plan with declarations and no records reads 0.0/<code>declarations</code>, and coverage stays whole.</li>
+    <li><code>tests/test_plan_review_store.py</code> — a derived plan's <code>plan-impl</code> meta is inert: the edit lands in the file but does not move the served figure.</li>
   </ul>
 </section>
