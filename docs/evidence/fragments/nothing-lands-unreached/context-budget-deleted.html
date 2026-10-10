@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="nothing-lands-unreached">
+  <meta name="plan-evidence-for" content="reckon:nothing-lands-unreached">
+  <meta name="plan-verifies" content="reckon:nothing-lands-unreached#s3">
+  <meta name="plan-recorded-at" content="2026-10-10">
+  <meta name="plan-verdict" content="passed">
+  <title>Deleting the unreached context-budget module | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="context-budget-deleted-landing" data-node="context-budget-deleted" data-reckon="landed" data-when="2026-10-10">
+  <h2>The unreached context-budget census module and its tests are gone</h2>
+  <p><code>grep -rn context_budget reckon/ tests/ skills/</code> returns no hit. Deleted <code>reckon/crew/context_budget.py</code> and <code>tests/test_context_budget.py</code>, removed the <code>context_budget</code> import and the two refusal-census tests from <code>tests/test_routing_surface.py</code>, dropped the module's entry from the unreached-module allowlist in <code>tests/test_every_module_is_reached.py</code>, and removed the deleted name from the docstring in <code>reckon/crew/routing.py</code> that pointed at it. The commit removes 430 lines and adds 2. The negative control — the module restored in a scratch repo with no importer — makes the ratchet test fail by name.</p>
+</article>
+</body>
+</html>

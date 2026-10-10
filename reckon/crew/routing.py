@@ -3529,8 +3529,7 @@ def _context_fit_verdict(
     and the effective boundary the backend records for its lane. The two are
     different quantities: the declared window is what the configuration claims
     the endpoint accepts, while the effective boundary is the lowest input a
-    recorded refusal shows the endpoint actually rejected
-    (:func:`reckon.crew.context_budget.refusal_census`). A lane whose endpoint
+    recorded refusal shows the endpoint actually rejected. A lane whose endpoint
     refuses below its declared figure would otherwise pass this check and then
     die at the endpoint with three records and no deliverable, which is the
     loss this comparison exists to prevent.
