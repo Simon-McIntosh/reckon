@@ -28,7 +28,7 @@
 <meta name="plan-commits" content="505c690b,9701e873,c45e7bac,dd19e201,31509127">
 <meta name="plan-artifacts" content="reckon/review_tiers.py,reckon/schema/flight.yaml,reckon/schema/flight-defaults.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/flight.py,tests/test_review_tiers.py">
 <meta name="plan-impl" content="0.95">
-<meta name="plan-version" content="142">
+<meta name="plan-version" content="143">
 <meta name="plan-modified" content="2026-10-10">
 </head>
 <body>
@@ -645,6 +645,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-close-s8" data-who="reckon-build" data-when="2026-10-10T21:20:00Z">
     <div class="r-comment-body"><p>§8 landed: a read-only run's reflex review is composed and parsed under a claims rubric (merged <code>430105036</code>); review 117/120. The rubric text itself is not yet delivered to the reviewer; §9. <a href="/reckon/evidence/archive/a-review-is-sized-to-its-risk-landed.html#s8">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261010T202404794501-read-only-run-gets-claims-review" data-who="reckon-build" data-when="2026-10-10T20:55:07.769Z">
+    <div class="r-comment-body"><p>A read-only run&#x27;s review is now composed under a claims rubric in place of the landed-node rubric. `_review_reads_a_report` in recovery_review_subject.py classifies a run whose role is `investigate`, or whose node is brief-carried with no commit past its base, as read-only; `_review_dispatch_fields` then composes the claims done-when, which names the claims rubric and no added_failure_count and asks the reviewer to re-run the report&#x27;s three highest-ranked findings&#x27; cited commands from the report&#x27;s own directory and emit one CLAIM line each (reproduced / differs with both figures / not-runnable with the reason) plus a CLAIM_SUMMARY line checking the report&#x27;s summary against its table. review.py parses those lines into a record carrying `rubric: claims`, the claim verdicts and the summary verdict; a claims record carries no suite-delta field because `annotate_review_of_run` returns it untouched, and `_review_is_complete` measures it on its own terms (`_claims_review_is_complete`) rather than against the six dimensions a read-only run never scored. A landed implement run is unchanged: it keeps `added_failure_count`, the six dimensions, and its record carries no rubric key. The prompt lives in `reckon/crew/prompts/claims_review.md`. Measure: tests/test_a_read_only_run_gets_a_claims_review.py 5 passed; the focused review population 48 passed EXIT=0.</p></div>
 </div>
 </section>
 </main>
