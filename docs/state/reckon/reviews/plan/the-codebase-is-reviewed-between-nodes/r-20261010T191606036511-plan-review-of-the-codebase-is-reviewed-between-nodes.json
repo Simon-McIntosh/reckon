@@ -1,0 +1,71 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T19:22:04.686Z",
+  "dispatched_at": "2026-10-10T19:16:40Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/plan_review.py:1421",
+      "id": "reuse_search-1",
+      "reason": "\u00a73 should cite the by-type recurrence reader it is distinct from and reuse its counting helper, or state in one line why a second recurrence notion is required.",
+      "text": "\u00a73 states \"no reader of findings by path exists\" and cites only `reckon/crew/review.py` as prior art, but `plan_review.py` already reads findings from records and computes their recurrence: `declined_recurrence` (plan_review.py:1421, \"counts distinct plans per finding type\"), `_finding_type_recurrence` (plan_review.py:1609) and `unanswered_findings` (plan_review.py:1311). \u00a73's recurrence is keyed by file path rather than by finding type, so it is not clearly a duplicate, but the plan does not say so, and the author may re-implement a counting notion that exists one module away",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/plan_review.py",
+      "id": "duplicate_owner-1",
+      "reason": "the write path for \u00a75's parser should be `reckon/crew/review.py`, the module that owns the plan-review parser and its rubric item sets, not `plan_review.py`.",
+      "text": "\u00a75 says the health-review parser is installed \"beside the plan-review report parser in `reckon/crew/plan_review.py`\" and names `reckon/crew/plan_review.py` as its write path, but the parser it means, `parse_plan_review_report`, is at `reckon/crew/review.py:742`, and `plan_review.py:138` itself documents \"parser in reckon.crew.review, which owns the names and item sets\". Placing a new rubric parser in `plan_review.py` therefore forks the parser family away from its owner; note `plan_review.py` contains no `def parse*` at all",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-codebase-is-reviewed-between-nodes.html#s4",
+      "id": "interface_budget-1",
+      "reason": "the interface_budget rule requires each section that adds to a family to name what it retires or merges, or why nothing can be; \u00a74 and \u00a76 must each account for the CLI options they add.",
+      "text": "with `cli_options` 351 this week, \u00a74 adds `dispose --finding <n>` and \u00a76 adds `review --around <plan>` and `--path <path>` (plus keeping `--plan`); \u00a76 accounts for the verb count (\"the verb count is unchanged once the plan lands\") but no section accounts for the three added options \u2014 \u00a74 says only \"it adds one option and no verb\", and says nothing about what it retires or why nothing can be retired from that family",
+      "type": "interface_budget",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-codebase-is-reviewed-between-nodes.html#s7",
+      "id": "interface_budget-2",
+      "reason": "a removed verb whose callers are not all in the write paths breaks them at the integrated head; \u00a77 must either add these files to its scope or state that they stay on the alias.",
+      "text": "\u00a77 retires the `review-plan` verb (\"which removes \u00a76's alias\") but its write paths name only `tests/test_skill_contracts.py` among the tests, while these test modules invoke the verb and are not in any named write path: tests/test_review_plan_command.py:291, tests/test_the_surfaces_pass_the_plan.py:186, tests/test_plan_review_gate.py:672, tests/test_nothing_sweeps_old_plans.py:120, tests/test_an_edit_tells_its_author_a_review_is_owed.py:347. \u00a77's done-when greps only `skills/ reckon/`, so the test callers of the retired verb are uncounted",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "410f9eacebd8df4ed7063afc63bdf11ea514ce44c31a8eb226f5a92d624bd8bc",
+  "plan_slug": "the-codebase-is-reviewed-between-nodes",
+  "plan_version": 3,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261010T191606036511-plan-review-of-the-codebase-is-reviewed-between-nodes",
+  "reviewed_blob_sha": "10ce7f5465006c42f684bc329705825c929b55cc",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 `reckon/crew/findings.py` hides record reading, scope classification, per-path grouping and recurrence behind one view; \u00a75's parser and \u00a76's composer extend existing modules rather than spreading logic across many small wrappers.",
+    "duplicate_owner": "a finding \u2014 \u00a75 places the new health-review parser \"beside the plan-review report parser in `reckon/crew/plan_review.py`\", but that parser and the names and item sets it owns live in `reckon/crew/review.py`.",
+    "interface_budget": "a finding \u2014 `public_definitions` 1626, `cli_options` 351, `mcp_views` 33, `refusal_families` 23; \u00a73 accounts for its one MCP view (\"retires nothing, because no reader of findings by path exists\"), but \u00a74 (`dispose --finding`) and \u00a76 (`review --around`, `--path`) add CLI options with no section naming what those options retire or merge, or why nothing can be.",
+    "reuse_search": "a finding \u2014 the plan's reuse map (\u00a72) is real and names the mechanisms it extends, but \u00a73 adds a path-keyed findings reader without citing the findings-recurrence machinery that already exists in `reckon/crew/plan_review.py`.",
+    "thin_wrapper": "pass \u2014 \u00a74 extends the existing `dispose` writer and \u00a76 renames and extends the existing `crew_review_plan` composer rather than layering a parallel verb; the alias is an explicit transition, removed by \u00a77."
+  },
+  "section_digests": {
+    "_document": "a119118f3a121174cc53a956714d7060ca72e08ee320d9491a56345a2a3cde1b",
+    "s1": "9b90bb5d52612fe5176b665cf841e1e32b7f38a28ba1b61073a75cc3d069801a",
+    "s10": "fd23d07301f3cad0c97fef7db3a37873185ea49a190df387e6b4c9c4842520cc",
+    "s11": "9e366a36d7c955b9e20809f7f939f7e5341dea805985ebb4bbd30a8a826983f7",
+    "s2": "449650cf3f83a3d58ac9fd8300f391af35ba5aa8ae747d9364d73ed77c82aa7e",
+    "s3": "213cacec386f55129765363c630beca30bb1100dcfde028b717272ebfae1bc71",
+    "s4": "7a0b53d0ff3f7146988e01b7a6c950d7b68076661cb363cfc52fda4f04bd4fe4",
+    "s5": "2c4a07d840f50cb682865c953334858097b6e1b7792c859b32fac479a702704c",
+    "s6": "9d962bd7f7e5bd799d345fcfbe8ba6ed54ce6a693b86a367de9cacab683adaba",
+    "s7": "82720711e7d239fcdbce13849a996ea8fa493118642631084739b0cd17ea7768",
+    "s8": "1b50194c1f0c6912b871f624cbfcfc01fc0e693a036d87844203a29ba311f17b",
+    "s9": "f03878914cabdb64631b914dba06b3963c765228e774c1419ab91b13e71b1e9d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T19:24:51.753061+00:00"
+}
