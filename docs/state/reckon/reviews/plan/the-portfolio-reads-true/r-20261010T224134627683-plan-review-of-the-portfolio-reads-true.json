@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T22:49:03.186Z",
+  "dispatched_at": "2026-10-10T22:42:03Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-portfolio-reads-true.html:98",
+      "id": "reasoning-1",
+      "reason": "the omitted call site sits on the live fallback path (roadmap.py:3332 iterates every not-authorised non-terminal plan), so leaving it un-updated gives two ages across the surfaces, which is the defect the section is written to remove.",
+      "text": "\u00a73 says \"every caller of derived_plan_age passes the new arguments: the roadmap's first call, which passes no path today, and the archive's call\", but `_authorisation_age` (reckon/roadmap.py:941) holds TWO call sites \u2014 lines 945 (first, no path) and 968 (`fallback_path=resource.path`) \u2014 and the second returns the age for a plan with no recorded `modified`, exactly the mtime fallback \u00a73 exists to replace; the section's own goal (\"The audit, the roadmap and the archive then report one age\") is therefore not produced for that path, and a node following the enumeration leaves the roadmap reporting the mtime age while the audit reports the commit age",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-portfolio-reads-true.html:93",
+      "id": "reasoning-2",
+      "reason": "if the new parameters are required, those three tests fail at head and the node is fenced out of the file that repairs them; the plan must either add tests/test_doccheck.py to \u00a73's write paths or state that the new parameters are optional with defaults, and it says neither.",
+      "text": "\u00a73 changes `derived_plan_age` to \"take the repository and docs directories beside the plan path\" yet its write paths (line 109) list only doccheck.py, roadmap.py, archive.py and the new test file, omitting `tests/test_doccheck.py`, which holds three direct callers (`test_derived_plan_age_prefers_recorded_modification`, `..._uses_discovery_creation_time_without_modified`, `..._uses_file_mtime_as_last_available_source`, lines 118-154) that pass only the current arguments",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "3f2b8ed53797ab03dbd934413980e2946d887ac902d30f5f20c241743cbaa2e8",
+  "plan_slug": "the-portfolio-reads-true",
+  "plan_version": 12,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261010T224134627683-plan-review-of-the-portfolio-reads-true",
+  "reviewed_blob_sha": "2a558192cda7d6ecd48a756989b42c022452906f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `derived_plan_age` (reckon/doccheck.py:239), `_git_last_committed(repo_dir, docs_dir)` (reckon/serve.py:1532), `_commit_days` (reckon/fleet_index.py:45) and the archive/roadmap readers all resolve, and \u00a73 carries no hrefs.",
+    "done_when": "pass \u2014 \u00a73's done-when names its test file, a temporary git-repo fixture, an AGING row with age 20 and source commit plus a STALE row at 40 days, and an executed negative control (mtime read \u2192 age 0, no row, test fails).",
+    "evidence_paths": "pass \u2014 \u00a73's done-when writes no session-scratchpad path; its negative-control log lands on the node's run directory under the crew runs tree, which survives the run.",
+    "naming": "pass \u2014 \u00a73 carries no plan labels, stage names, ticket numbers or version tags; AGING and STALE are emitted audit codes, not symbols.",
+    "reasoning": "a finding \u2014 \u00a73's mechanism routes \"every caller\" of derived_plan_age through the commit read, but its enumeration of those callers omits the roadmap's second call, so the roadmap's fallback age path keeps reading mtime and reports a second age.",
+    "single_goal": "pass \u2014 \u00a73 carries one deliverable (age counts from a plan's last commit); the \"list every git-date reader it finds in its manifest\" clause is a survey note for a later review, not a second deliverable.",
+    "wiring": "pass \u2014 \u00a73 declares no outgoing dependency it needs beyond write-serialisation against \u00a72, and that ordering is carried by followup f-tprt-002 (\"\u00a72, \u00a73, \u00a74, \u00a75 in turn (each writes reckon/doccheck.py)\") while \u00a73's output feeds the gate g-tprt-age-honest that \u00a76 requires."
+  },
+  "section_digests": {
+    "_document": "a2e40a46ef8769d14f88fec5811bd50d0aa5fc6a7f36f66f1ebcba3a9533436a",
+    "s1": "56204248c9050844c40ac7e00bff909830602caaa4b95be87bacea51b1495a03",
+    "s2": "69b86246adb4ea89719f367ac57f43940ed14fb88c5c89408cf18a6b59911f57",
+    "s3": "9ec95e0455369716b6994da40037672bfeb6caeafa18969e24a464bf56ceca36",
+    "s4": "9280ec81cafc36b7de1295b0f22745c6162986e93d9731a8e8b99c51d658a217",
+    "s5": "6faa47a6baa98d4e30fc9ec11b4968f36696b381308a599ae91bf7eb75418236",
+    "s6": "3b386242a01bc207ce0810ef1ee5ccbd8a9d5ea78f77a5dd6fc61b2f207c53d0"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T22:54:47.787102+00:00"
+}
