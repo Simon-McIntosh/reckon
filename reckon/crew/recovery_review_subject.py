@@ -16,6 +16,12 @@ from reckon.crew.node import (
 
 
 
+# The role a read-only investigation is dispatched under. A run carrying it
+# writes a report and commits no source, so its review checks the report's
+# claims rather than a diff.
+_INVESTIGATE_ROLE = "investigate"
+
+
 def _is_review_node(record: Mapping[str, Any]) -> bool:
     """Whether a run was minted as some run's review.
 
@@ -277,6 +283,75 @@ def plan_review_subject(
     }
 
 
+def _run_made_no_commit(record: Mapping[str, Any]) -> bool:
+    """Whether a brief-carried run committed nothing past its base.
+
+    The count lives in the run's own git history, so it answers for a run whose
+    report is its only deliverable: an investigation that writes a report and
+    commits no source has zero commits past its base, whatever its manifest
+    says. The helper is imported locally because it lives beside the recovery
+    sweep that also reads it, and a module-level edge would tie this composer to
+    that surface.
+    """
+    from reckon.crew.recovery_watch import _commits_beyond_base
+
+    return _commits_beyond_base(record) == 0
+
+
+def _review_reads_a_report(record: Mapping[str, Any]) -> bool:
+    """Whether a run's review checks a report's claims rather than a diff.
+
+    A read-only run leaves no commit that a reviewer must read. Its role is
+    ``investigate``, or its node is brief-carried — it names a stored brief and
+    no plan section — and it committed nothing past its base. Neither case runs
+    a gate suite, so the landed-node rubric's six dimensions and its
+    added-failure count measure nothing the run did; the review re-runs the
+    commands the run's report cites and reports whether each claim reproduces.
+    """
+    from reckon.crew.recovery_watch import _pointer_role
+
+    if _pointer_role(record) == _INVESTIGATE_ROLE:
+        return True
+    # A brief-carried node names no plan section; a plan node is reviewed as a
+    # diff whatever it also carried, so its brief does not make it read-only.
+    node = record.get("node") or {}
+    brief = str(node.get("brief_path") or node.get("brief") or "").strip()
+    if not brief or str(node.get("plan") or "").strip():
+        return False
+    return _run_made_no_commit(record)
+
+
+def _claims_review_done_when(run_id: str) -> str:
+    """The done-when a read-only run's review is composed with.
+
+    It names the claims rubric and the record it asks for, so a reviewer told
+    to re-run the report's own claims emits CLAIM lines rather than the six
+    SCORE lines a landed diff would earn. It names the reviewed run's directory
+    so the reviewer re-runs each cited command from where the report was
+    written, and it asks for no added-failure count because no suite ran.
+    """
+    try:
+        report_directory = str(runs.run_dir(run_id))
+    except (OSError, ValueError):
+        report_directory = ""
+    where = (
+        f" from {report_directory}"
+        if report_directory
+        else " from the report's own directory"
+    )
+    return (
+        f"the review for {run_id} re-runs the claims its report cites and "
+        "stores a parsed record under the claims rubric: pick the three "
+        "findings the report ranks highest, re-run each cited command or "
+        f"script{where}, and emit one CLAIM line per finding recording "
+        "reproduced, differs with both figures, or not-runnable with the "
+        "reason; check the report's own summary line against its table and "
+        "emit it as a CLAIM_SUMMARY line. The record carries the claim verdicts "
+        "and no suite-delta fields; the turn ends once that record is stored "
+        "and the manifest reads complete"
+    )
+
+
 def _review_dispatch_fields(
     record: Mapping[str, Any],
     *,
@@ -461,13 +536,17 @@ def _review_dispatch_fields(
         # because a record that omits it cannot be told apart from one about
         # other code, and the ledger row records the pair a review stands for.
         "done_when": (
-            f"the review for {run_id} stores a parsed record scoring all "
-            f"{len(review_module.REVIEW_DIMENSIONS)} dimensions in the range "
-            f"0..{review_module.REVIEW_MAX_SCORE}, recording the revision it read as "
-            "reviewed_base_sha and reviewed_head_sha, and carrying "
-            "added_failure_count and added_failure_ids derived from the reviewed "
-            "run's own baseline_suite and after_suite gate logs; the turn ends "
-            "once that record is stored and the manifest reads complete"
+            _claims_review_done_when(run_id)
+            if _review_reads_a_report(record)
+            else (
+                f"the review for {run_id} stores a parsed record scoring all "
+                f"{len(review_module.REVIEW_DIMENSIONS)} dimensions in the range "
+                f"0..{review_module.REVIEW_MAX_SCORE}, recording the revision it "
+                "read as reviewed_base_sha and reviewed_head_sha, and carrying "
+                "added_failure_count and added_failure_ids derived from the "
+                "reviewed run's own baseline_suite and after_suite gate logs; the "
+                "turn ends once that record is stored and the manifest reads complete"
+            )
         ),
         "write_path": write_paths[0],
         "write_paths": write_paths,
@@ -697,9 +776,19 @@ def _stored_review(record: Mapping[str, Any]) -> tuple[dict[str, Any] | None, st
 
 
 def _review_is_complete(review: Mapping[str, Any] | None) -> bool:
-    """Whether a stored review contains every independently scored dimension."""
+    """Whether a stored review holds every measurement its rubric demands.
+
+    A landed-node record is complete when it scores all six dimensions with
+    none absent, so a reader hits the same arithmetic a reviewer read. A claims
+    record is complete on its own terms: it carries the verdicts for the
+    findings the review re-ran and the summary check, and is not measured
+    against the six dimensions a read-only run never scored. The rubric key
+    chooses the measure, so neither record is read as absent of the other's.
+    """
     if not review or review.get("status") != "parsed":
         return False
+    if review.get("rubric") == review_module.CLAIMS_RUBRIC:
+        return _claims_review_is_complete(review)
     scores = review.get("scores")
     return (
         isinstance(scores, Mapping)
@@ -707,6 +796,31 @@ def _review_is_complete(review: Mapping[str, Any] | None) -> bool:
         and not review.get("absent")
         and isinstance(review.get("total"), int)
         and not isinstance(review.get("total"), bool)
+    )
+
+
+def _claims_review_is_complete(review: Mapping[str, Any]) -> bool:
+    """Whether a claims record carries every verdict the rubric asks for.
+
+    The rubric asks for the three highest-ranked findings re-run and the
+    report's own summary line checked, so the record must carry at least that
+    many claims, each with a declared verdict, and a summary verdict. A claims
+    record below that count names a review that re-ran too little to stand in
+    for the report it reviews.
+    """
+    claims = review.get("claims")
+    if not isinstance(claims, list) or len(claims) < review_module.CLAIMS_REQUIRED:
+        return False
+    if not all(
+        isinstance(claim, Mapping)
+        and str(claim.get("verdict") or "") in review_module.CLAIM_VERDICTS
+        for claim in claims
+    ):
+        return False
+    summary = review.get("claim_summary")
+    return (
+        isinstance(summary, Mapping)
+        and str(summary.get("verdict") or "") in review_module.CLAIM_SUMMARY_VERDICTS
     )
 
 
