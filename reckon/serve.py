@@ -2171,14 +2171,10 @@ def _read_readiness_uncached(
     path: Path,
 ) -> tuple[list[dict], list[dict], list[dict]]:
     try:
-        text = path.read_text(encoding="utf-8", errors="replace")
-    except OSError:
-        return [], [], []
-    has_gates = 'data-reckon="gates"' in text or "data-reckon='gates'" in text
-    try:
-        state = _plan_html.read_state(text)
+        state, text = _plan_html.read_state_and_text_file(path)
     except ValueError as exc:
         raise PlanPageRefusalError(path, str(exc)) from exc
+    has_gates = 'data-reckon="gates"' in text or "data-reckon='gates'" in text
     gates = list(state.get("gates") or []) if has_gates else []
     decisions = state.get("decisions") or {}
     decision_rows = [

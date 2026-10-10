@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-read-answers-inside-its-deadline">
+  <meta name="plan-evidence-for" content="reckon:a-read-answers-inside-its-deadline">
+  <meta name="plan-verifies" content="reckon:a-read-answers-inside-its-deadline#s5">
+  <title>One parse serves every reader of a plan | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="one-parse-serves-every-reader-landing" data-node="one-parse-serves-every-reader" data-reckon="landed" data-when="2026-10-11">
+  <h2>Every plan reader derives from one parse</h2>
+  <p>Read the roadmap authored-section reader (<code>read_authored</code> in <code>reckon/roadmap.py</code>), the serve readiness reader (<code>_read_readiness_uncached</code> in <code>reckon/serve.py</code>) and the metadata index per-plan record (<code>_plan_record</code> in <code>reckon/metadata_index.py</code>) all derive from <code>read_state_and_text_file</code>'s path-keyed parse instead of parsing each file again under their own memo kind. A cold roadmap and then a discovery read of ten plans, the metadata index build included, count 10 <code>read_state</code> calls through a counting wrapper. The negative control — <code>read_authored</code> given back <code>read_state_file</code>, its own memo kind — counts 20 and both tests fail.</p>
+</article>
+</body>
+</html>

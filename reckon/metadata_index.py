@@ -653,24 +653,29 @@ def _plan_record(path: Path, archived: bool) -> dict:
 
     A file that cannot be read yields ``unreadable`` and no figure: a counted
     zero is indistinguishable from a plan that carries no open work, and the
-    plan inventory as a whole is unknown rather than shorter. The read here is
-    the file's own, not the memoised text parse_meta shares — that one reports
-    an unreadable file as an empty document, which is exactly the reading this
-    record exists to refuse.
+    plan inventory as a whole is unknown rather than shorter. The figures
+    derive from the shared per-file parse, so a plan another reader has already
+    parsed is not parsed again; a readability read refuses an unreadable file
+    first, because the shared parse reports one as an empty document — exactly
+    the reading this record exists to refuse.
     """
 
     from reckon._schema import plan_executable_remainder
 
     try:
         text = path.read_text(encoding="utf-8")
-        state = _plan_html.read_state(text)
     except (OSError, ValueError):
-        return {
-            "archived": archived,
-            "open_followups": None,
-            "implementable_sections": None,
-            "unreadable": True,
-        }
+        return _unreadable_record(archived)
+    try:
+        state, shared_text = _plan_html.read_state_and_text_file(path)
+        if shared_text != text:
+            # The shared text is a read taken while the file was unreadable, so
+            # it holds an empty document rather than this file's bytes; derive
+            # the figures from the bytes just read instead of reporting an
+            # empty plan.
+            state = _plan_html.read_state(text)
+    except ValueError:
+        return _unreadable_record(archived)
     followups = state.get("followups") or []
     return {
         "archived": archived,
@@ -681,6 +686,22 @@ def _plan_record(path: Path, archived: bool) -> dict:
         ),
         "implementable_sections": plan_executable_remainder(state),
         "unreadable": False,
+    }
+
+
+def _unreadable_record(archived: bool) -> dict:
+    """Return the record a plan file that cannot be read contributes.
+
+    No figure is reported and the entry keeps no plan record, so the next build
+    reads the file again rather than answering unknown for as long as the index
+    lives.
+    """
+
+    return {
+        "archived": archived,
+        "open_followups": None,
+        "implementable_sections": None,
+        "unreadable": True,
     }
 
 
