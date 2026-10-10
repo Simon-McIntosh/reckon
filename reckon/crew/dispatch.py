@@ -1360,6 +1360,11 @@ def dispatch(
             "brief": brief,
             "role": node.role,
             "backend": backend_name,
+            # The lane and model key the resolved backend serves, written beside
+            # ``backend`` so a reader of the pointer carries the catalogue pair
+            # without re-resolving a backend name that may since have retired.
+            "lane": backend.get("lane"),
+            "model_key": backend.get("model_key"),
             "requested_backend": resolution.requested_backend,
             "lane_declaration": resolution.lane_declaration,
             "lane_reading": resolution.lane_reading,
