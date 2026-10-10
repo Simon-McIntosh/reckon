@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "backend": "local",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/serve.py:1576 (discovery change signature walks the covered set)",
+    "reckon/metadata_index.py:199 (index_rows reuses the recorded shape)",
+    "reckon/metadata_index.py:494 (new _reuse_covered call inside _covered_files)"
+  ],
+  "completed_at": "2026-10-10T21:56:24.892Z",
+  "dispatched_at": "2026-10-10T21:42:30Z",
+  "findings": [
+    {
+      "file": "reckon/metadata_index.py",
+      "line": "553",
+      "severity": "follow-on",
+      "text": "follow-on: _record_covered_shape stores a file the index has not seen as a path-only entry ({\"path\": relative}) and the immediately following build_index reads that same persisted entry back, so metadata_index.py:363-366 counts the file as rebuilt rather than added; harmless today because only build.changed (metadata_index.py:102) reads those counters, but the added/rebuilt statistics become wrong."
+    },
+    {
+      "file": "reckon/metadata_index.py",
+      "line": "499",
+      "severity": "follow-on",
+      "text": "follow-on: _covered_files now writes the metadata index from the discovery read path (via _record_covered_shape -> _store_persisted), which previously only the index build wrote; _store_persisted swallows an OSError so a read in a read-only config home still succeeds, but the discovery read is now a cache writer and pays an extra _load_persisted plus a full index write on each walk."
+    },
+    {
+      "file": "reckon/metadata_index.py",
+      "line": "503",
+      "severity": "follow-on",
+      "text": "follow-on: _docs_dir_project returns None for a docs tree no mount names -- a dispatch worktree or an unregistered checkout -- so a roadmap read under such a tree still walks, which the reviewed manifest records and explains; passing the project through serve._walk_discovery_signature would close it but lies outside this node's write scope."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read 95a58ef against 25b07c0: three files, +235/-1; _covered_files rewritten to resolve the project and reuse the recorded shape, the new _docs_dir_project and _record_covered_shape helpers, a 106-line test module and a 55-line evidence fragment, and a conventional commit whose body states the cause and the mechanism.",
+    "done_when": "the done_when names tests/test_warm_roadmap_does_not_walk.py with a counting wrapper over _walk_covered, a second read entering it zero times and a third read after a plan is added walking and reporting the new plan, plus an executed negative control; I reproduced head 2 passed EXIT=0, the negative control (forcing _reuse_covered to decline) 1 failed EXIT=1, and a base arm at 25b07c0 where the same test file fails the walk assertion (walks==1, EXIT=1), so the test discriminates the change.",
+    "goal": "the node's goal is that a warm roadmap read answers from the metadata index's recorded tree shape instead of re-walking the covered tree; reckon/metadata_index.py:492-500 (_covered_files) now resolves the tree's project via _docs_dir_project (:503) from the mounts table, answers from _reuse_covered (:215) while every recorded directory identity matches, and otherwise walks and records the shape, so the only production caller, serve._walk_discovery_signature (reckon/serve.py:1576), stops entering _walk_covered on an unchanged tree.",
+    "manifest": "read; status complete, commit 95a58ef630307c7990981307a5be1a37cf4efe83 against base 25b07c0dd5f689cb08fc733d1a773a169b7c327d, head gate 2 passed EXIT=0, negative_control_log ending EXIT=1, changed_paths reconcile with the diffstat; baseline_suite and after_suite are null, so the reviewed run recorded no base/head gate-log pair and the added-failure count cannot be taken from its own evidence.",
+    "write_paths": "the reviewed manifest declares reckon/metadata_index.py, reckon/roadmap.py, reckon/mcp_views.py, tests/test_warm_roadmap_does_not_walk.py and the evidence fragment/figure paths; the diff touches only metadata_index.py, the test module and the evidence fragment, all inside the declaration."
+  },
+  "justifications": {
+    "durability": "tests/test_warm_roadmap_does_not_walk.py:91 asserts the second read enters _walk_covered zero times and :100 asserts a shape change still walks and reports the third plan, so both the skip and the walk-on-change directions are guarded, and the negative control reproduces the guard firing, but the new index write on the read path (:499) and the partial path-only entries _record_covered_shape stores (:553) are exercised only implicitly.",
+    "evidence": "the manifest records head 2 passed EXIT=0 and an executed negative control ending EXIT=1, and I independently reproduced the head gate (2 passed EXIT=0), the negative control (1 failed EXIT=1), a base arm at 25b07c0 (test reddens, walks==1) and the wider seven-file suite (48 passed EXIT=0) in scratch trees under $TMPDIR, but the reviewed manifest leaves baseline_suite and after_suite null so the added-failure count is unmeasured.",
+    "fit": "_covered_files, _docs_dir_project and _record_covered_shape are named by what they do, the docstrings explain the mechanism rather than the incident, the change reuses the module's existing Path and persisted-index idioms, and the commit carries a conventional subject with a body and no attribution or plan label.",
+    "goal_fidelity": "the change fixes the named cause -- _covered_files called _walk_covered unconditionally, so the discovery change signature never reached _reuse_covered -- and the test proves the warm read now enters _walk_covered zero times while a shape change still walks, but the reader now also writes the index from a read path (metadata_index.py:499 -> _store_persisted) and only a tree named by the mounts table benefits.",
+    "reuse": "the change reuses _reuse_covered, _dir_identity, _load_persisted and _store_persisted and adds no second directory-identity map, as the plan required, though _docs_dir_project re-resolves the mounts table and every mount path on each _covered_files call.",
+    "scope_discipline": "every path in the diff -- reckon/metadata_index.py, tests/test_warm_roadmap_does_not_walk.py and the evidence fragment -- is inside the reviewed manifest's declared write paths, and the change is two hunks of code against the base."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a warm roadmap read answers from the metadata index's recorded tree shape instead of re-walking the covered tree; reckon/metadata_index.py:492-500 (_covered_files) now resolves the tree's project via _docs_dir_project (:503) from the mounts table, answers from _reuse_covered (:215) while every recorded directory identity matches, and otherwise walks and records the shape, so the only production caller, serve._walk_discovery_signature (reckon/serve.py:1576), stops entering _walk_covered on an unchanged tree.\nVERDICT done_when: the done_when names tests/test_warm_roadmap_does_not_walk.py with a counting wrapper over _walk_covered, a second read entering it zero times and a third read after a plan is added walking and reporting the new plan, plus an executed negative control; I reproduced head 2 passed EXIT=0, the negative control (forcing _reuse_covered to decline) 1 failed EXIT=1, and a base arm at 25b07c0 where the same test file fails the walk assertion (walks==1, EXIT=1), so the test discriminates the change.\nVERDICT write_paths: the reviewed manifest declares reckon/metadata_index.py, reckon/roadmap.py, reckon/mcp_views.py, tests/test_warm_roadmap_does_not_walk.py and the evidence fragment/figure paths; the diff touches only metadata_index.py, the test module and the evidence fragment, all inside the declaration.\nVERDICT manifest: read; status complete, commit 95a58ef630307c7990981307a5be1a37cf4efe83 against base 25b07c0dd5f689cb08fc733d1a773a169b7c327d, head gate 2 passed EXIT=0, negative_control_log ending EXIT=1, changed_paths reconcile with the diffstat; baseline_suite and after_suite are null, so the reviewed run recorded no base/head gate-log pair and the added-failure count cannot be taken from its own evidence.\nVERDICT diff: read 95a58ef against 25b07c0: three files, +235/-1; _covered_files rewritten to resolve the project and reuse the recorded shape, the new _docs_dir_project and _record_covered_shape helpers, a 106-line test module and a 55-line evidence fragment, and a conventional commit whose body states the cause and the mechanism.\nVERDICT call_sites: the sole production caller of _covered_files is serve._walk_discovery_signature (reckon/serve.py:1576); _reuse_covered is reached from index_rows (reckon/metadata_index.py:199) and from the new _covered_files call (:494), and _record_covered_shape (:538) is reached only from _covered_files (:499).\nCALL_SITES: reckon/serve.py:1576 (discovery change signature walks the covered set), reckon/metadata_index.py:199 (index_rows reuses the recorded shape), reckon/metadata_index.py:494 (new _reuse_covered call inside _covered_files)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the change fixes the named cause -- _covered_files called _walk_covered unconditionally, so the discovery change signature never reached _reuse_covered -- and the test proves the warm read now enters _walk_covered zero times while a shape change still walks, but the reader now also writes the index from a read path (metadata_index.py:499 -> _store_persisted) and only a tree named by the mounts table benefits.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest records head 2 passed EXIT=0 and an executed negative control ending EXIT=1, and I independently reproduced the head gate (2 passed EXIT=0), the negative control (1 failed EXIT=1), a base arm at 25b07c0 (test reddens, walks==1) and the wider seven-file suite (48 passed EXIT=0) in scratch trees under $TMPDIR, but the reviewed manifest leaves baseline_suite and after_suite null so the added-failure count is unmeasured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff -- reckon/metadata_index.py, tests/test_warm_roadmap_does_not_walk.py and the evidence fragment -- is inside the reviewed manifest's declared write paths, and the change is two hunks of code against the base.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_warm_roadmap_does_not_walk.py:91 asserts the second read enters _walk_covered zero times and :100 asserts a shape change still walks and reports the third plan, so both the skip and the walk-on-change directions are guarded, and the negative control reproduces the guard firing, but the new index write on the read path (:499) and the partial path-only entries _record_covered_shape stores (:553) are exercised only implicitly.\nSCORE fit: 20\nJUSTIFICATION fit: _covered_files, _docs_dir_project and _record_covered_shape are named by what they do, the docstrings explain the mechanism rather than the incident, the change reuses the module's existing Path and persisted-index idioms, and the commit carries a conventional subject with a body and no attribution or plan label.\nSCORE reuse: 19\nJUSTIFICATION reuse: the change reuses _reuse_covered, _dir_identity, _load_persisted and _store_persisted and adds no second directory-identity map, as the plan required, though _docs_dir_project re-resolves the mounts table and every mount path on each _covered_files call.\nFINDING reckon/metadata_index.py:553 follow-on: _record_covered_shape stores a file the index has not seen as a path-only entry ({\"path\": relative}) and the immediately following build_index reads that same persisted entry back, so metadata_index.py:363-366 counts the file as rebuilt rather than added; harmless today because only build.changed (metadata_index.py:102) reads those counters, but the added/rebuilt statistics become wrong.\nFINDING reckon/metadata_index.py:499 follow-on: _covered_files now writes the metadata index from the discovery read path (via _record_covered_shape -> _store_persisted), which previously only the index build wrote; _store_persisted swallows an OSError so a read in a read-only config home still succeeds, but the discovery read is now a cache writer and pays an extra _load_persisted plus a full index write on each walk.\nFINDING reckon/metadata_index.py:503 follow-on: _docs_dir_project returns None for a docs tree no mount names -- a dispatch worktree or an unregistered checkout -- so a roadmap read under such a tree still walks, which the reviewed manifest records and explains; passing the project through serve._walk_discovery_signature would close it but lies outside this node's write scope.",
+  "review_run_id": "r-20261010T214206212121-review-of-warm-roadmap-takes-the-walk-skip",
+  "reviewed_base_sha": "25b07c0dd5f689cb08fc733d1a773a169b7c327d",
+  "reviewed_head_sha": "95a58ef630307c7990981307a5be1a37cf4efe83",
+  "reviewed_run_id": "r-20261010T212131119432-warm-roadmap-takes-the-walk-skip",
+  "rubric": "code",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T22:03:18.824220+00:00",
+  "total": 114
+}
