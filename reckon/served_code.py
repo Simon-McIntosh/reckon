@@ -33,6 +33,7 @@ import ast
 import copy
 import hashlib
 import os
+import re
 import subprocess
 import sys
 import threading
@@ -714,3 +715,344 @@ class ExecutedSource:
         monitoring.register_callback(self.tool, monitoring.events.PY_START, None)
         monitoring.free_tool_id(self.tool)
         self.tool = None
+
+
+# ── Reach graph ────────────────────────────────────────────────────────────
+#
+# A node's gate proves its code works when called; it does not prove anything
+# calls it. This resolves, for one revision's ``reckon/`` tree, which modules
+# and module-level definitions are reachable from the production entry points —
+# the console scripts in ``pyproject.toml``, the MCP server, the HTTP server and
+# every module launched by ``python -m`` from reckon's own source. It reads the
+# tree with ``ast`` and never imports the package, so a module that cannot be
+# imported safely is still measured.
+
+#: Modules that are production entry points by name. ``reckon.cli`` mounts the
+#: console script's Click verbs; ``reckon.cli_entry`` carries them; ``reckon.mcp``
+#: is the MCP server and its tool functions; ``reckon.serve`` is the HTTP server
+#: and its handlers.
+_ROOT_MODULES = ("reckon.cli", "reckon.cli_entry", "reckon.mcp", "reckon.serve")
+
+#: Hook modules are launched by the harness through ``python -m``.
+_HOOK_PREFIX = "reckon.hooks."
+
+#: A ``python -m reckon.<...>`` invocation in a source string is a production
+#: entry point, whether in code, a docstring or a usage message.
+_LAUNCH_RE = re.compile(r"""-m["'\s,]+(reckon[\w.]*)""")
+
+#: Decorators that register a definition with the framework that will call it,
+#: so a definition carrying one runs as soon as its module is imported.
+_REGISTRATION_MARKERS = (
+    ".command",
+    ".group",
+    ".tool",
+    ".route",
+    ".register",
+    ".handler",
+    ".resource",
+    ".prompt",
+    ".hook",
+)
+
+
+@dataclass(frozen=True)
+class Reach:
+    """The production modules and definitions reached from the entry points."""
+
+    #: Module names (``reckon.crew.runs``) reached through imports.
+    modules: frozenset[str]
+    #: ``<module>:<qualified name>`` for every module-level definition reached.
+    definitions: frozenset[str]
+    #: The entry points the walk started from.
+    roots: frozenset[str]
+
+
+def _package_snapshot(repo, revision) -> SourceSnapshot:
+    """Read one revision's ``reckon/`` tree into a snapshot keyed package-relative."""
+
+    from reckon.velocity import read_sources
+
+    sources: dict[str, str] = {}
+    files: dict[str, tuple[_Signature, str]] = {}
+    for path, text in read_sources(repo, revision, prefix="reckon").items():
+        relative = path.removeprefix("reckon/")
+        sources[relative] = text.decode("utf-8-sig")
+        files[relative] = ((0, 0, 0, 0, 0), "")
+    return SourceSnapshot(
+        root=Path("reckon"), files=files, sources=sources, revision=revision or None
+    )
+
+
+def _edges(tree, module: str, is_package: bool, known: frozenset[str]) -> set[str]:
+    """The package modules one ``tree`` imports, resolved to known modules.
+
+    Both ``import a.b`` and ``from a import b`` are edges; a relative import is
+    resolved against the file's package. A name imported from a package resolves
+    to the submodule it names when that submodule exists, and to the package
+    otherwise. An import that resolves to no module in the tree is ignored.
+    """
+
+    found: set[str] = set()
+
+    def resolve(name: str) -> str | None:
+        parts = name.split(".")
+        while parts:
+            candidate = ".".join(parts)
+            if candidate in known:
+                return candidate
+            parts.pop()
+        return None
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                target = resolve(alias.name)
+                if target is not None:
+                    found.add(target)
+        elif isinstance(node, ast.ImportFrom):
+            for _local, source, attribute in _import_targets(node, module, is_package):
+                if not source:
+                    continue
+                if attribute is not None:
+                    submodule = resolve(f"{source}.{attribute}")
+                    if submodule is not None:
+                        found.add(submodule)
+                        continue
+                target = resolve(source)
+                if target is not None:
+                    found.add(target)
+    return found
+
+
+def _console_script_modules(repo) -> dict[str, str]:
+    """Map each console script's module to the callable it names, from pyproject."""
+
+    import tomllib
+
+    try:
+        data = tomllib.loads((Path(repo) / "pyproject.toml").read_text("utf-8"))
+    except (OSError, tomllib.TOMLDecodeError):
+        return {}
+    scripts = data.get("project", {}).get("scripts", {})
+    modules: dict[str, str] = {}
+    for target in scripts.values():
+        if isinstance(target, str) and ":" in target:
+            module, _, callable_name = target.partition(":")
+            modules[module.strip()] = callable_name.strip()
+    return modules
+
+
+def _guard_mains(tree) -> set[str]:
+    """The bare names called under an ``if __name__ == "__main__"`` guard."""
+
+    mains: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.If) and "__name__" in ast.unparse(node.test):
+            for sub in ast.walk(node):
+                if isinstance(sub, ast.Call) and isinstance(sub.func, ast.Name):
+                    mains.add(sub.func.id)
+    return mains
+
+
+def _registered(node) -> bool:
+    """Whether a definition carries a registration decorator."""
+
+    joined = " ".join(ast.unparse(d) for d in node.decorator_list).lower()
+    return any(marker in joined for marker in _REGISTRATION_MARKERS)
+
+
+def _identifiers(tree) -> set[str]:
+    """Every bare name and attribute name the tree reads."""
+
+    names: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Name):
+            names.add(node.id)
+        elif isinstance(node, ast.Attribute):
+            names.add(node.attr)
+    return names
+
+
+def _imported_names(tree) -> set[str]:
+    """Every name imported by ``from ... import name`` in the tree."""
+
+    names: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom):
+            for alias in node.names:
+                names.add(alias.name)
+    return names
+
+
+def _entry_definitions(trees, module_of, roots, console_scripts) -> dict[str, set[str]]:
+    """Entry callables per module: console targets and ``__main__`` guard calls."""
+
+    entries: dict[str, set[str]] = {}
+    for module, callable_name in console_scripts.items():
+        relative = module_of.get(module)
+        if relative is not None:
+            entries.setdefault(relative, set()).add(callable_name)
+    for module in roots:
+        relative = module_of.get(module)
+        if relative is None:
+            continue
+        entries.setdefault(relative, set()).update(_guard_mains(trees[relative]))
+    return entries
+
+
+def _reach(repo, revision) -> Reach:
+    snapshot = _package_snapshot(repo, revision)
+    module_of = {
+        _module_name(snapshot.root.name, relative): relative
+        for relative in snapshot.sources
+    }
+    known = frozenset(module_of)
+    trees = {
+        relative: _index(snapshot, relative, text).tree
+        for relative, text in snapshot.sources.items()
+    }
+
+    console_scripts = _console_script_modules(repo)
+    roots: set[str] = {m for m in _ROOT_MODULES if m in known}
+    roots |= {m for m in known if m.startswith(_HOOK_PREFIX)}
+    roots |= {m for m in console_scripts if m in known}
+    for text in snapshot.sources.values():
+        for hit in _LAUNCH_RE.findall(text):
+            parts = hit.split(".")
+            while parts:
+                candidate = ".".join(parts)
+                if candidate in known and candidate != "reckon":
+                    roots.add(candidate)
+                    break
+                parts.pop()
+
+    edges = {
+        module: _edges(trees[relative], module, relative.endswith("__init__.py"), known)
+        for module, relative in module_of.items()
+    }
+
+    reached_modules: set[str] = set(roots)
+    queue = list(roots)
+    while queue:
+        module = queue.pop()
+        for target in edges.get(module, ()):
+            if target not in reached_modules:
+                reached_modules.add(target)
+                queue.append(target)
+        # Importing ``a.b`` runs ``a``'s ``__init__`` too, so a package is
+        # reached when any of its submodules is.
+        parts = module.split(".")
+        while len(parts) > 1:
+            parts.pop()
+            parent = ".".join(parts)
+            if parent in known and parent not in reached_modules:
+                reached_modules.add(parent)
+                queue.append(parent)
+
+    entries = _entry_definitions(trees, module_of, roots, console_scripts)
+
+    from reckon.interface_counts import definitions as enumerate_definitions
+
+    definitions: set[str] = set()
+    for module in sorted(reached_modules):
+        tree = trees[module_of[module]]
+        identifiers = _identifiers(tree)
+        imported = _imported_names(tree)
+        entry = entries.get(module_of[module], set())
+        for node, qualified, _public, nested in enumerate_definitions(tree):
+            if nested or "." in qualified:
+                continue
+            if (
+                qualified in entry
+                or _registered(node)
+                or node.name in identifiers
+                or node.name in imported
+            ):
+                definitions.add(f"{module}:{qualified}")
+
+    return Reach(
+        modules=frozenset(reached_modules),
+        definitions=frozenset(definitions),
+        roots=frozenset(roots),
+    )
+
+
+_REACH_MEMO: dict[tuple[str, str], Reach] = {}
+
+
+def reached(repo, revision) -> Reach:
+    """The production modules and definitions reachable at ``revision``.
+
+    The entry points are the console scripts in ``pyproject.toml`` and the Click
+    verbs they mount, the MCP tool functions, the ``serve.py`` handlers, and
+    every module launched by ``python -m`` from reckon's own source. Reach is the
+    transitive closure over imports; a module-level definition is reached when it
+    is an entry point, carries a registration decorator, or its name is read or
+    imported by reached code. The result is a pure function of the revision's
+    tree, so it is memoised by ``(repo, revision)``.
+    """
+
+    key = (str(Path(repo).resolve()), revision or "")
+    cached = _REACH_MEMO.get(key)
+    if cached is not None:
+        return cached
+    result = _reach(repo, revision)
+    _REACH_MEMO[key] = result
+    return result
+
+
+def package_modules(repo, revision) -> frozenset[str]:
+    """Every module name under ``reckon/`` at ``revision``."""
+
+    snapshot = _package_snapshot(repo, revision)
+    return frozenset(
+        _module_name(snapshot.root.name, relative) for relative in snapshot.sources
+    )
+
+
+def neighbourhood(repo, revision, paths) -> frozenset[str]:
+    """The production modules one import away from ``paths``, in either direction.
+
+    ``paths`` are module names or ``reckon/``-relative file paths. The result
+    holds every module that imports one of the named modules and every module one
+    of them imports, excluding the named modules themselves.
+    """
+
+    snapshot = _package_snapshot(repo, revision)
+    module_of = {
+        _module_name(snapshot.root.name, relative): relative
+        for relative in snapshot.sources
+    }
+    known = frozenset(module_of)
+
+    def as_module(name: str) -> str | None:
+        if name in module_of:
+            return name
+        candidate = name.removeprefix("reckon/").removesuffix(".py").replace("/", ".")
+        for probe in (candidate, f"{snapshot.root.name}.{candidate}"):
+            parts = probe.split(".")
+            while parts:
+                joined = ".".join(parts)
+                if joined in module_of:
+                    return joined
+                parts.pop()
+        return None
+
+    named = {m for m in (as_module(path) for path in paths) if m is not None}
+    if not named:
+        return frozenset()
+
+    edges = {
+        module: _edges(
+            ast.parse(snapshot.sources[relative]),
+            module,
+            relative.endswith("__init__.py"),
+            known,
+        )
+        for module, relative in module_of.items()
+    }
+    adjacent: set[str] = set()
+    for module in named:
+        adjacent |= edges.get(module, set())
+        adjacent |= {src for src, targets in edges.items() if module in targets}
+    return frozenset(adjacent - named)

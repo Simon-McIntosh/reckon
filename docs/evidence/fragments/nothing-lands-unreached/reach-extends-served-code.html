@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-slug" content="nothing-lands-unreached">
+  <meta name="plan-title" content="Nothing Lands Unreached">
+  <meta name="plan-evidence-for" content="reckon:nothing-lands-unreached">
+  <meta name="plan-verifies" content="reckon:nothing-lands-unreached#s2">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-10">
+  <title>The reach reader resolves production reachability | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="reach-extends-served-code">
+  <h2>The served-code module index answers production reachability</h2>
+
+  <p><strong>What changed.</strong> <code>reckon/served_code.py</code> gains a
+  reachability reader beside its existing module index, rather than a second
+  import graph. <code>reached(repo, revision)</code> resolves the production
+  entry points &mdash; the console scripts in <code>pyproject.toml</code> and the
+  Click verbs they mount, the MCP server, the <code>serve.py</code> handlers, and
+  every module launched by <code>python -m</code> from reckon's own source &mdash;
+  and returns the modules and module-level definitions reachable through imports
+  and attribute references, plus the roots it started from.
+  <code>neighbourhood(repo, revision, paths)</code> returns the production modules
+  one import away from the named paths in either direction. The reader reads one
+  revision's <code>reckon/</code> tree with <code>ast</code> and never imports the
+  package, reusing <code>velocity.read_sources</code>,
+  <code>interface_counts.definitions</code> and the module's own memo pattern.
+  Two tests are added: <code>tests/test_reach_graph.py</code> drives a throwaway
+  repository through a console script and a <code>python -m</code> launch, and
+  <code>tests/test_every_module_is_reached.py</code> is a ratchet whose
+  <code>ALLOWLIST</code> is exactly the seven modules unreached at this section's
+  base, each naming its owning plan.</p>
+
+  <p><strong>Measured.</strong> At the head revision
+  <code>1578a16e7</code>, <code>tests/test_reach_graph.py</code> and
+  <code>tests/test_every_module_is_reached.py</code> are 5 passed,
+  <code>EXIT=0</code>. The reader reports 159 of 167 modules reached and
+  <code>project_state_parity</code> and the six crew census/hold/origin modules
+  unreached &mdash; exactly the allowlist. The declared negative control was
+  observed to fail: an extra unimported module added to a scratch tree's
+  <code>reckon/</code> reds the ratchet by name
+  (<code>reckon.zzz_unreached_probe</code>, <code>1 failed</code>,
+  <code>EXIT=1</code>).</p>
+
+  <p><strong>Scope retained, deliberately.</strong> The driving followup stays
+  open and no terminal status is set: a worker knows its node landed, not whether
+  the section closed. &sect;3 and &sect;4, which run after this section, remove
+  their modules from the allowlist.</p>
+</section>
+</main>
+</body>
+</html>
