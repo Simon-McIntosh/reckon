@@ -25,8 +25,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-north-star" content="unattended-execution">
-<meta name="plan-impl" content="0.875">
-<meta name="plan-version" content="67">
+<meta name="plan-impl" content="0.8823529411764706">
+<meta name="plan-version" content="68">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -330,6 +330,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-close-s10" data-who="reckon-build" data-when="2026-10-10T23:45:00Z">
     <div class="r-comment-body"><p>§10 landed: a foreign <code>--repo</code> is refused naming both projects (merge <code>0e4b8adba</code>, review 112, no failures added). The consolidation follow-on is §16. <a href="/reckon/evidence/archive/lane-and-model-routing-landed.html#s10">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261010T223438073950-foreign-repo-is-refused" data-who="reckon-build" data-when="2026-10-10T22:59:45.411Z">
+    <div class="r-comment-body"><p>`_refuse_a_foreign_repository` in `reckon/crew_dispatch_commands.py` resolves the named `--repo` once before any route or worktree exists and refuses on the `dispatch-refused` channel naming the project the repository belongs to beside the project the dispatch named; the picker route previously reached the resolution before any handler, so a foreign repository raised an uncaught `CrewError` and a traceback reached stderr. Measure: gate 33 passed EXIT=0; negative control (guard removed) fails the new test on `Traceback` in stderr, 1 failed EXIT=1.</p></div>
 </div>
 </section>
 </main>
