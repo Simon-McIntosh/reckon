@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-10T19:21:30.174Z",
+  "dispatched_at": "2026-10-10T19:10:53Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/health-review-1010/health-review-yield/report.md",
+      "line": "20",
+      "severity": "follow-on",
+      "text": "follow-on: the census drops every .at-<sha> file as a \"snapshot variant\", but 56 reviewed runs have their only stored record in that head-keyed form (e.g. r-20260923T084257968937-newest-stream-is-read-everywhere.at-c23c83ab7475aeaee02837b2068806138c93d46c.json, status parsed with scores and findings), so every count in this report is about 4% low."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/health-review-1010/health-review-yield/report.md",
+      "line": "110",
+      "severity": "follow-on",
+      "text": "follow-on: the headline counts are literals taken over a live, growing store with no recorded snapshot digest, so the report's figures drift and a later reader cannot re-verify them from the stored artefacts \u2014 a re-run yields different numbers (store 3,200 to 3,211 files in ~2h)."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "The node is read-only and landed no commits (manifest records commits: none; the worktree .../health-review-1010/health-review-yield sits at its base d33407f58afee19c756aef1227c01f6a1bf7f342), so there is no repository diff; I read the produced artefacts instead \u2014 report.md, scan.py, control.py and scan_summary.json.",
+    "done_when": "The done_when requires report.md to end with the findings= line and every findings-table row to cite a path:line or a command figure; report.md:110 reads findings=8 high=2 mid=4 low=2 owned=3 regressed=0 unowned=5 and all eight rows at report.md:87-94 carry an evidence cell citing a path:line or a command.",
+    "goal": "The node goal is \"Report how many review findings become fixes\"; the report answers it with measured figures (1,213 landed reviews, 2,090 findings) and a mechanism, judged for the standing-review proposal at report.md:70.",
+    "manifest": "Read the reviewed manifest; it records the gate commands (scan.py, control.py), their logs, and the tail -1 done-when check, and its status is complete.",
+    "write_paths": "The node was fenced to /home/ITER/mcintos/.config/reckon/crew/reports/reckon/health-review-1010/health-review-yield; the reviewed manifest's changed_paths and a listing of that directory both show only report.md, scan.py, control.py and their outputs there."
+  },
+  "justifications": {
+    "durability": "no assertion guards report.md's figures \u2014 they are frozen literals over a store that grew from 3,200 to 3,211 files in the two hours after the report ran, so a later reader cannot re-derive the counts from the artefacts alone.",
+    "evidence": "the done_when line is present verbatim at report.md:110 and the headline figures reproduce within store growth (my independent counts: 1,369 non-at run records vs the report's 18:1,363; clone_matches list/dict 677/1,521 vs the report's 673/1,515; base rate 944/1,258 vs 945/1,257).",
+    "fit": "the scripts and report follow the surrounding idiom and name no plan label or version in a filename or symbol (scan.py, control.py, report.md, scan_summary.json).",
+    "goal_fidelity": "report.md:64 names the mechanism that answers the question \u2014 a round whose findings are all follow-ons is closed decline-only at reckon/crew/recovery_repair_dispatch.py:675, which I opened and confirmed.",
+    "reuse": "scan.py reads the review store through its own json.load rather than reckon/crew/review.py:1265 review_store_root, but this is read-only measurement rather than landed code, so the duplication falls outside the review's landed-change scope.",
+    "scope_discipline": "the reviewed manifest's changed_paths are all under the declared write path, and the node made no commit or edit in the repository."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is \"Report how many review findings become fixes\"; the report answers it with measured figures (1,213 landed reviews, 2,090 findings) and a mechanism, judged for the standing-review proposal at report.md:70.\nVERDICT done_when: The done_when requires report.md to end with the findings= line and every findings-table row to cite a path:line or a command figure; report.md:110 reads findings=8 high=2 mid=4 low=2 owned=3 regressed=0 unowned=5 and all eight rows at report.md:87-94 carry an evidence cell citing a path:line or a command.\nVERDICT write_paths: The node was fenced to /home/ITER/mcintos/.config/reckon/crew/reports/reckon/health-review-1010/health-review-yield; the reviewed manifest's changed_paths and a listing of that directory both show only report.md, scan.py, control.py and their outputs there.\nVERDICT manifest: Read the reviewed manifest; it records the gate commands (scan.py, control.py), their logs, and the tail -1 done-when check, and its status is complete.\nVERDICT diff: The node is read-only and landed no commits (manifest records commits: none; the worktree .../health-review-1010/health-review-yield sits at its base d33407f58afee19c756aef1227c01f6a1bf7f342), so there is no repository diff; I read the produced artefacts instead \u2014 report.md, scan.py, control.py and scan_summary.json.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: report.md:64 names the mechanism that answers the question \u2014 a round whose findings are all follow-ons is closed decline-only at reckon/crew/recovery_repair_dispatch.py:675, which I opened and confirmed.\nSCORE evidence: 17\nJUSTIFICATION evidence: the done_when line is present verbatim at report.md:110 and the headline figures reproduce within store growth (my independent counts: 1,369 non-at run records vs the report's 18:1,363; clone_matches list/dict 677/1,521 vs the report's 673/1,515; base rate 944/1,258 vs 945/1,257).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the reviewed manifest's changed_paths are all under the declared write path, and the node made no commit or edit in the repository.\nSCORE durability: 15\nJUSTIFICATION durability: no assertion guards report.md's figures \u2014 they are frozen literals over a store that grew from 3,200 to 3,211 files in the two hours after the report ran, so a later reader cannot re-derive the counts from the artefacts alone.\nSCORE fit: 18\nJUSTIFICATION fit: the scripts and report follow the surrounding idiom and name no plan label or version in a filename or symbol (scan.py, control.py, report.md, scan_summary.json).\nSCORE reuse: 19\nJUSTIFICATION reuse: scan.py reads the review store through its own json.load rather than reckon/crew/review.py:1265 review_store_root, but this is read-only measurement rather than landed code, so the duplication falls outside the review's landed-change scope.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/health-review-1010/health-review-yield/report.md:20 follow-on: the census drops every .at-<sha> file as a \"snapshot variant\", but 56 reviewed runs have their only stored record in that head-keyed form (e.g. r-20260923T084257968937-newest-stream-is-read-everywhere.at-c23c83ab7475aeaee02837b2068806138c93d46c.json, status parsed with scores and findings), so every count in this report is about 4% low.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/health-review-1010/health-review-yield/report.md:110 follow-on: the headline counts are literals taken over a live, growing store with no recorded snapshot digest, so the report's figures drift and a later reader cannot re-verify them from the stored artefacts \u2014 a re-run yields different numbers (store 3,200 to 3,211 files in ~2h).",
+  "review_run_id": "r-20261010T191021978449-review-of-health-review-yield",
+  "reviewed_base_sha": "d33407f58afee19c756aef1227c01f6a1bf7f342",
+  "reviewed_head_sha": "d33407f58afee19c756aef1227c01f6a1bf7f342",
+  "reviewed_run_id": "r-20261010T181926551457-health-review-yield",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T19:20:18.929670+00:00",
+  "total": 106
+}
