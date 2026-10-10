@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;: [&quot;every-module-fits-a-worker-window#s4&quot;], &quot;s10&quot;: [&quot;every-module-fits-a-worker-window#s4&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;}">
   <title>Lane And Model Routing | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="46">
-<meta name="plan-modified" content="2026-10-08">
+<meta name="plan-version" content="47">
+<meta name="plan-modified" content="2026-10-10">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
 <body>
@@ -83,7 +83,7 @@
 </section>
 
     <h2 id="s8">§8 — A lane-and-model key is unique and claims only what it carries</h2>
-<section data-reckon="section" data-id="s8" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links="one-typesafe-model-picker#s12"></section>
+<section data-reckon="section" data-id="s8" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links="one-typesafe-model-picker#s12"></section>
 <p>The reviews of §5 left two defects in <code>option_key</code> (<code>reckon/crew/picker/prompts.py</code>):</p><ol><li>Two backends that share a family and a model produce the same key. The questions are a mapping keyed by that pair, so the second candidate silently replaces the first, and Jev can never choose it. Make every offered key distinct, and refuse to offer two candidates under one key.</li><li>For a candidate with no model, the key's second part is the backend name. The questions then present it as a model. Name the part for what it is, or omit it.</li></ol><p>Write paths: <code>reckon/crew/picker/prompts.py</code> and its tests. The file is shared with <code>one-typesafe-model-picker</code> §12 and §19. Dispatch this section when neither holds a live claim on it.</p><p><strong>Done when</strong> tests prove both items. Two backends sharing a family and a model are each offered and each resolvable from Jev's answer. A modelless candidate's entry does not call its backend a model.</p>
 
     <h2 id="s9">§9 — Every entry built from a lane says where each key came from</h2>
@@ -258,7 +258,10 @@
     <div class="r-comment-body"><p>_record_provenance in reckon/flight.py now stamps every leaf by iterating _leaf_paths and holds no traversal of its own; the new leaf-rule test shows origin() and provenance_sources both follow a change to _leaf_paths alone; gate base 429 passed / head 430 passed, both EXIT=0.</p></div>
 </div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261008T130630211028-review-of-provenance-has-one-leaf-rule" data-who="reckon-build" data-when="2026-10-08T13:17:32.762Z">
-    <div class="r-comment-body"><p>review-of-provenance-has-one-leaf-rule attached an independent review for r-20261008T123138358445 at base 4f0bf656 / head 99b719788 — 6 dimensions scored, total 117/120, added_failure_count 0, one follow-on finding that the head gate log&#x27;s revision header reads the base 4f0bf656 &quot;(working tree, uncommitted fix)&quot; while the manifest&#x27;s after_suite claims the committed head a4ebec5a.</p></div>
+    <div class="r-comment-body"><p>review-of-provenance-has-one-leaf-rule attached an independent review for r-20261008T123138358445 at base 4f0bf656 / head 99b719788 — 6 dimensions scored, total 117/120, added_failure_count 0, one follow-on finding that the head gate log's revision header reads the base 4f0bf656 "(working tree, uncommitted fix)" while the manifest's after_suite claims the committed head a4ebec5a.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-close-s8" data-who="reckon-build" data-when="2026-10-10T19:55:00Z">
+    <div class="r-comment-body"><p>§8 landed: keys carry the backend, so shared-family backends are each offered (merge <code>9c4356047</code>, review 103, no failures added). <a href="/reckon/evidence/archive/lane-and-model-routing-landed.html#s8">evidence</a></p></div>
 </div>
 </section>
 </main>

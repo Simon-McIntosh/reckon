@@ -70,6 +70,11 @@
     <p><code>_record_provenance</code> in <code>reckon/flight.py</code> now stamps every leaf by iterating <code>_leaf_paths</code> and holds no traversal of its own, so provenance and the lane expansion share one leaf rule. A test changes the rule in <code>_leaf_paths</code> alone, treating an empty mapping as a non-leaf, and both <code>origin()</code> and <code>provenance_sources</code> follow it. Restoring the inline traversal makes the test fail.</p><p>Run <code>r-20261008T123138358445-provenance-has-one-leaf-rule</code>, commits <code>a4ebec5a3</code> and <code>99b719788</code>, merged at <code>d93d8918e</code>. The merge check covered 73 files that import <code>reckon.flight</code> or call <code>origin()</code>: base 1,206 and head 1,207 passed, both <code>EXIT=0</code>. A focused gate at the merged head passed 138 tests. Review 117 found no added failures. Its one note is that the worker's head gate log names the base revision, because it ran before the commit.</p>
   </section>
 
+  <section id="s8">
+    <h2>§8 — every lane-and-model key is unique (2026-10-10)</h2>
+    <p><code>option_key</code> in <code>reckon/crew/picker/prompts.py</code> names an offered candidate <code>&lt;lane&gt;:&lt;model&gt;:&lt;backend&gt;</code>. Two backends sharing a family and a model are each offered and each resolvable from Jev's answer. Before, the second replaced the first in the questions mapping. A modelless candidate is keyed by its lane and backend. Picker tests that pinned the old key form were updated under a widened fence; <code>tests/test_picker_pressure.py</code> was accepted beyond it. Dropping the backend from the key fails the shared-family test.</p><p>Run <code>r-20261010T184146434406-option-keys-are-unique</code>, commits <code>6dda5d969</code>, <code>2afbfd1ab</code> and <code>d5876990d</code>, review 103, merged at <code>9c4356047</code>, no failures added. Review follow-on: the modelless-candidate tests also pass at base, whose key already read <code>&lt;lane&gt;:&lt;backend&gt;</code>. So item 2's change in how the questions name that part has no test that fails without it.</p>
+  </section>
+
 </main>
 </body>
 </html>
