@@ -1,0 +1,43 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T20:24:39.131Z",
+  "dispatched_at": "2026-10-10T20:18:09Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-crew-contract-fits-one-read.html:78",
+      "id": "done_when-1",
+      "reason": "",
+      "text": "\u2014 \u00a75's done-when states the test \"reports the number of citations it checked, which equals the number of `reckon <verb>` occurrences an independent `grep -oE` over the same corpus finds at that head\"; but a raw `grep -oE 'reckon [a-z][a-z-]*'` over \u00a75's own corpus (skills/**/*.md, PLAN-FORMAT.md, the repo `AGENTS.md` files, reckon/crew/prompts/*.md) returns 327 occurrences and includes clear non-citations \u2014 e.g. `reckon itself` (AGENTS.md:184), `reckon resolves` (coordinator-reference.md:506), `reckon did` (:525), `reckon can` (worker-backends.md:28), `reckon skills` (reckon-sync/SKILL.md:109), `reckon prepares` (worker-backends.md:34) \u2014 while the source extractor counted only 261 command invocations by restricting to backtick spans, fenced lines and line-initial commands; so the equality is unattainable unless the grep is scoped exactly like the extractor, at which point it is no longer the \"independent\" control the done-when relies on and the plan names no grep pattern to scope it. WOULD_CHANGE_THE_PLAN: yes \u2014 REASON: this is the node's gating measure, so as written the worker either fails the gate or quietly constrains the \"independent\" grep until it agrees, which is the fail-open control the section exists to avoid; it is the residual of the earlier done_when-1 finding after its `grep -c`\u2192`grep -oE` edit, which fixed lines-vs-citations but left occurrences-vs-citations.",
+      "type": "done_when",
+      "would_change": null
+    }
+  ],
+  "plan_fingerprint": "55b23d8a20a9dc47f20ea710e6499e0e52a919c20f16825c01406a8d7f5a2e89",
+  "plan_slug": "the-crew-contract-fits-one-read",
+  "plan_version": 29,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261010T201730032224-plan-review-of-the-crew-contract-fits-one-read",
+  "reviewed_blob_sha": "0f01af29f9aa4dd4cc377c68603d18d30db4d20a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited anchor resolves: `PLAN-FORMAT.md:321/:330`, `sprint-orchestration.md:1011`, `coordinator-reference.md:593-614`, `SKILL.md:185-211`, the health-skill-drift report path, and commit `807053fb6`.",
+    "done_when": "a finding \u2014 \u00a75's positive control compares the test's command-citation count against an independent `grep -oE` occurrence count of `reckon <verb>` over the same corpus, but that grep counts non-citation prose occurrences too, so the two figures cannot reconcile as written.",
+    "evidence_paths": "pass \u2014 the test sits at `tests/test_cited_commands_exist.py`, the two control figures go into the run manifest, and the source report is cited at a durable path under `~/.config/reckon/crew/reports/`.",
+    "naming": "pass \u2014 the new artefact is mechanism-named (`test_cited_commands_exist.py`, \"every command a skill or format document cites exists\"); no plan label, ticket number or version tag reaches a symbol, and no changelog prose is introduced.",
+    "reasoning": "pass \u2014 the stated cause matches the cited evidence (the report confirms nothing fails on a renamed command and the three dead citations were found by reading), the mechanism (a corpus scan comparing verb chains and flags to each command's `--help`) can produce the done-when, and the mechanism runs on a real path (a committed pytest under `tests/`, collected by the suite with no new production caller needed).",
+    "single_goal": "pass \u2014 \u00a75 delivers one thing (a test asserting every cited `reckon` command exists, plus the repairs that make it pass); the test, the `PLAN-FORMAT.md` repair and the table replacement are facets of that one deliverable, not two deliverables.",
+    "wiring": "pass \u2014 \u00a75 declares its ordering against \u00a73 in prose (\"This section runs after \u00a73, which rewrites `SKILL.md` and the same references directory\u2026\"), resolving the earlier wiring-1 finding; the two evidence gates it sits beside gate s3 correctly and no relationship points at the wrong node."
+  },
+  "section_digests": {
+    "_document": "971e28a5e13a3c3a7a90171ee3b34a8ee93c6a73b132edf8b0c38109a08b8397",
+    "s1": "e03f606afdb78e6b308ef1299a7b868ec09052b4842de46205b30106103e5991",
+    "s2": "698a2a8583161b33608967bafc3c61641856bd4c995bb3e303796723932345e7",
+    "s3": "55c86e04c5aae2cb268f9567ce641cae99945fa16a350c250d4170d30ed1c947",
+    "s4": "bc54d1886f4d3949bffdaf93118a6be518f17b34653992dc9521ee8e03739257",
+    "s5": "530f7f93095774c543f853ff343de239e730cbca433ba72903d3cf3e6a9bb14d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T20:38:04.388388+00:00"
+}
