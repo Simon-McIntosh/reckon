@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The routing instructions name the serving lanes and the key form Jev is answered by</title>
+</head>
+<body>
+<article class="evidence-fragment" id="jev-hold-follows-its-instructions">
+  <h2 id="jev-hold-follows-its-instructions-title">The routing instructions name the serving lanes and the key form Jev is answered by</h2>
+
+  <p id="jev-hold-follows-its-instructions-defect">Section §26 replayed the two
+  recorded review holds with the serving-lane facts in the state and Jev still
+  held, at 0.87 and 0.89. Two causes sat in
+  <code>reckon/crew/picker/templates/questions.jinja</code>. The instructions
+  described each option key as <q>its lane and its model joined with a
+  colon</q>, but <code>option_key</code> returns <code>&lt;lane&gt;:&lt;model&gt;:&lt;backend&gt;</code>
+  — the backend is the part that keeps two configured backends sharing a lane
+  and a model distinct. The instructions also never named
+  <code>serving_lanes</code> or <code>hold_waits_for</code>, so a hold read as
+  <q>wait for any lane to free</q> even when one lane alone could run the node.</p>
+
+  <p id="jev-hold-follows-its-instructions-admission">Both recorded holds were
+  replayed from their run records
+  (<code>r-20261007T075608324298-review-of-subscription-lanes-record-no-spend</code>,
+  <code>r-20261008T023220940800-review-of-member-friction-asserts-its-own-writes</code>)
+  over a review config that withdraws every metered lane from review routing.
+  In both reconstructed states <code>local_lane.admission</code> reads
+  <strong>admitting</strong> (<code>headroom</code> 7), not full, paused or
+  unavailable, and <code>serving_lanes</code> is <code>["local"]</code> with
+  <code>hold_waits_for</code> naming <q>the local lane, the only lane that can
+  serve this node</q>. <strong>Verdict: the recorded holds were not the
+  instructed answer.</strong> The instructions reserve a hold for the local lane
+  only when admission is full, paused or unavailable; it was admitting, so the
+  instructed answer was to route, and the hold was driven by the missing facts
+  rather than by the admission rule.</p>
+
+  <p id="jev-hold-follows-its-instructions-change">The instructions now name
+  <code>serving_lanes</code> and <code>serving_lane_count</code>, state that a
+  lane absent from <code>serving_lanes</code> cannot run the node however much
+  pressure it shows, and state that when exactly one lane can serve the node a
+  hold waits for that lane alone. The option key is described as its lane, model
+  and backend joined with colons. Both the instructions and the hold criterion
+  carry the single-serving-lane rule.</p>
+
+  <p id="jev-hold-follows-its-instructions-replay">Four real Jev calls
+  (<code>typesafe/jev-1.13</code>, Decisions endpoint) replayed both held states
+  with the rest of the state held fixed, before and after the instruction change.
+  All four route the node to the one serving lane; no hold is selected. Before:
+  hold probability <strong>0.05</strong> (subscription) and <strong>0.03</strong>
+  (member-friction). After: <strong>0.15</strong> and <strong>0.13</strong>. The
+  recorded 0.83 and 0.84 do not reproduce under these reconstructed conditions,
+  and the instruction change leaves the pick a route while naming the lane a hold
+  would wait on.</p>
+
+  <p id="jev-hold-follows-its-instructions-evidence">Tests are in
+  <code>tests/test_jev_instructions_name_the_key_form.py</code>, and
+  <code>tests/test_jev_prompt_carries_what_it_weighs.py</code> now asserts the
+  instructions name <code>serving_lanes</code> and <code>hold_waits_for</code>.
+  The gate ran <strong>13 passed / EXIT=0 at the head</strong> against
+  <strong>4 failed, 9 passed / EXIT=1</strong> at the base revision, where the
+  key-form and serving-lane tests fail on main's <code>questions.jinja</code>.</p>
+</article>
+</body>
+</html>
