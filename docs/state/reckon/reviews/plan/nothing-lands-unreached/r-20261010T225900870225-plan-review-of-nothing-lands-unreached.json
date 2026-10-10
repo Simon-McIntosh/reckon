@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T23:06:17.804Z",
+  "dispatched_at": "2026-10-10T22:59:27Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/nothing-lands-unreached.html:129",
+      "id": "done_when-1",
+      "reason": "the \u00a74 node will either block on a non-empty grep or edit docs/research/scripts/ prose the deliverable says is not rewritten, so the exclusion must name the script-internal provenance strings and the docstring, or the grep scope must drop the research-script prose hits.",
+      "text": "\u00a74's done-when makes the grep `reckon[./]crew[./](carryover_census|death_census|pace_replay)` over \"the research scripts\" return no hit outside the moved files, but the deliverable removes only that script's import (docs/research/scripts/scan_local_lane_deaths.py:649) and exempts only \"a committed data file's generated_by or provenance field\"; the script keeps three hits the deliverable does not remove \u2014 the module-path docstring at line 17 and the \"method\" data strings at lines 909 and 913 \u2014 and the docstring clause at line 120 (\"code under reckon/, tests/ or scripts/\") does not cover docs/research/scripts/, while the section both lists that script as a write path and calls docs/ prose \"not rewritten\". The measure therefore cannot be met as written",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/nothing-lands-unreached.html:120",
+      "id": "reasoning-1",
+      "reason": "the caller is named and the importlib-by-path mechanism is already stated two sentences earlier for the same non-package destination, so a node reaches the right method without a plan edit.",
+      "text": "\u00a74 says the research scripts' \"imports move to the script path so the evidence they produced stays reproducible\", but scripts/ is not a package (no __init__.py; \u00a74 itself invokes this for the four tests), so there is no dotted \"script path\" to import from and the two callers (docs/research/scripts/scan_local_lane_deaths.py:649, docs/research/data/crew-pattern-review/worker-anatomy/anatomy_census.py:46) must be converted to importlib-by-path like the tests",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "39fd8febcce2ae0ddfd732ee08a5161888fad616357c2aecb1e7445e57081ff7",
+  "plan_slug": "nothing-lands-unreached",
+  "plan_version": 18,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261010T225900870225-plan-review-of-nothing-lands-unreached",
+  "reviewed_blob_sha": "840e224b5408d2af6db74f5d243a1ac5646f8876",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every \u00a74 anchor resolves: the three modules exist, death_census.main(argv) takes argv[0] as an output path and parses no flag (line 342), the four named tests exist and import the modules, both named research scripts exist, and scripts/ (absent at base) is the section's own deliverable.",
+    "done_when": "a finding \u2014 \u00a74's done-when requires the grep over \"the research scripts\" to return no hit outside the moved files, but the deliverable leaves three hits in docs/research/scripts/scan_local_lane_deaths.py (docstring line 17; \"method\" strings lines 909 and 913) that its own write-path clause does not remove.",
+    "evidence_paths": "pass \u2014 \u00a74 declares no scratchpad; its gate artifacts (the --help runs, the grep, the negative-control log) are node artifacts the harness writes to the run's durable paths.",
+    "naming": "pass \u2014 \u00a74's new files, symbols and comments carry no plan label, version tag or ticket number; the plan names it names (a-window-paces-the-lane) are relationship owners, not code identifiers.",
+    "reasoning": "pass \u2014 the premise (\"produced committed evidence once and are run by nothing\") is supported by \u00a71's grep and the reach allowlist; the mechanisms (a main() with argparse behind a __main__ guard; importlib-by-path for the non-package destination) are stated with their callers; the one gap, the research-script hits, is filed under done_when rather than duplicated here.",
+    "single_goal": "pass \u2014 \u00a74 carries one deliverable (move the three census modules to scripts/census/ with their tests); the hold.py/serving_origin.py sentence records what stays, not a second deliverable.",
+    "wiring": "pass \u2014 \u00a74 declares it \"runs after \u00a73, which writes the same allowlist\" and after \u00a72, matching the ordering followup f-nlu-002 (\"\u00a72; then \u00a73; then \u00a74\"); the plan is standalone and owes no plan-level relation."
+  },
+  "section_digests": {
+    "_document": "13351dbde138aeb68206f8604e3d44d518bf7e59793cafbbebfdc90ee8902fc0",
+    "s1": "e0a15218687e5ca8207eca1ee8bbe8317a16d92d1864ef9c2b905c1e2443b5fd",
+    "s2": "5af896b6106e1d92e8b6b8ffe1f4aeffac2e91bddbc2afdbae9feeadafbc8740",
+    "s3": "6bb9cc6b8984fead7b347d5d5c61e872c1db89fa64b675b6d25a211f80bcb477",
+    "s4": "8a5c6185730498427326f722dd6698d659333fc483c348f99724bef544aed6e2"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T23:07:22.840874+00:00"
+}
