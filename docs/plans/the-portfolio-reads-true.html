@@ -24,7 +24,7 @@
   <title>The Portfolio Reads True | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="13">
+<meta name="plan-version" content="14">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -98,7 +98,7 @@
       routed through it; every caller of <code>derived_plan_age</code> passes the new arguments: both calls in the roadmap's <code>_authorisation_age</code> (the
       first passes no path today, the second a fallback path), the archive's call, and the three direct callers in
       <code>tests/test_doccheck.py</code>. Functions are cited by name because line numbers in these modules moved during this sprint. The audit, the roadmap and the archive then report one age, with its source named on the row. Other git-date readers (for example <code>_commit_days</code> in <code>reckon/fleet_index.py</code>) are left as they are, and the
-      node lists every git-date reader it finds in its manifest for the code-mode review to take. A non-shipped plan between 14 and 30 days old is reported <code>AGING</code> (info), and past 30 days
+      node lists every git-date reader it finds in its manifest for the code-mode review to take. An active plan with impl below 1.0, the population <code>STALE</code> already covers, between 14 and 30 days old is reported <code>AGING</code> (info), and past 30 days
       <code>STALE</code> as today. The section adds one audit code, <code>AGING</code>; nothing retires, because no row reports
       the 14 to 30 day band.</p>
     <p><strong>Done when</strong> <code>tests/test_staleness_counts_from_the_last_commit.py</code> builds a temporary git repository with
@@ -126,7 +126,7 @@
 
     <h2 id="s5">§5 — A section-level relation counts as wiring</h2>
 <section data-reckon="section" data-id="s5" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> <code>unwired_plan_finding</code> (<code>reckon/doccheck.py:874</code>) treats a plan as wired when it
+    <p><strong>Deliverable.</strong> <code>unwired_plan_finding</code> (in <code>reckon/doccheck.py</code>) treats a plan as wired when it
       declares <code>plan-section-depends-on</code> or <code>plan-after</code>, or when another plan holds a gate whose required evidence
       names it, beside the links, gates and standalone reason it accepts today. The audit message and the reckon-create skill's wiring table
       name the section-level forms, so the right wire is also the one that silences the finding. Its three callers pass the new inputs:
