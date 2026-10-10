@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "backend": "local",
+  "base_log_revision": null,
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/roadmap.py:2429 (roadmap sprint read)",
+    "reckon/roadmap.py:2444 (roadmap blocker read)",
+    "reckon/_store.py:1487 (generic artifact read)",
+    "reckon/serve.py:3024 (HTTP handler read)",
+    "reckon/serve.py:3676 (HTTP state read)",
+    "reckon/mcp_views.py:1463 (MCP review read)"
+  ],
+  "completed_at": "2026-10-10T20:57:00.565Z",
+  "dispatched_at": "2026-10-10T20:45:23Z",
+  "findings": [
+    {
+      "file": "tests/test_a_read_takes_no_lock.py",
+      "line": "98",
+      "severity": "follow-on",
+      "text": "follow-on: the test docstrings (here and project_state.py:1951) say the refusal is EROFS, but a chmod'd tree yields EACCES (Errno 13) as the negative-control log shows, so the done_when's literal 'raises EROFS' is not reproduced, only the equivalent refusal; the wording could be corrected or a genuinely read-only tree used."
+    },
+    {
+      "file": "reckon/project_state.py",
+      "line": "1953",
+      "severity": "follow-on",
+      "text": "follow-on: the journal root and glob are written twice -- _pending_transaction_journals (:1953-1956) and recover_project_state_transactions (:1962,:1966); recovery could call the helper so a future journal name added to one cannot be silently skipped by the read-path guard."
+    },
+    {
+      "file": "reckon/project_state.py",
+      "line": "466",
+      "severity": "follow-on",
+      "text": "follow-on: the guard lists journals outside the lock and recovery re-lists only when entered, so a journal created between the listing and the recovery call is not recovered on this read; it is self-healing (the journal persists for the next read) and the move path holds resource locks, so this is non-blocking."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commit 8c4f4c60a against base a24f70707: three files, +203/-1; the guarded call at project_state.py:466, the new _pending_transaction_journals helper at :1946, the 170-line test module and the evidence fragment; nothing outside the declared scope.",
+    "done_when": "the done_when names tests/test_a_read_takes_no_lock.py with a read-only read returning the plans with no lock file, a writable-read no-lock case and a present-journal recovery, plus an executed negative control; the manifest records all three and I reproduced head 3 passed EXIT=0 and the negative control 2 failed, 1 passed EXIT=1 at 8c4f4c60a in scratch trees.",
+    "goal": "the node's goal is that the project-state read path takes no write lock when nothing needs recovering; reckon/project_state.py:466 guards the recovery call on _pending_transaction_journals(docs_dir) (project_state.py:1946), so a journal-free read opens no lock file and creates none.",
+    "manifest": "read; status complete, commit 8c4f4c60a, tests 3 passed EXIT=0, negative_control_log ending EXIT=1, changed_paths reconcile with the diffstat; baseline_suite and after_suite are present-but-null so the added-failure count is unmeasured.",
+    "write_paths": "read the reviewed manifest's declared paths (reckon/project_state.py, tests/test_a_read_takes_no_lock.py, the evidence fragment and a figures directory); every path in the diff is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_read_takes_no_lock.py:121 asserts the recovery lock is absent after a journal-free writable read and reddens when the guard is removed (reproduced: 2 failed EXIT=1), while :148 asserts a present journal is still recovered, so both the skip and the recover directions are guarded and the marker is created by the code rather than passed in.",
+    "evidence": "the done_when names tests/test_a_read_takes_no_lock.py, the manifest records 3 passed EXIT=0 and the negative control 2 failed EXIT=1, and I independently reproduced both at 8c4f4c60a (head 3 passed EXIT=0; guard removed 2 failed, 1 passed, EXIT=1) in scratch trees under $TMPDIR, though the refusal there is EACCES on a chmod'd tree, not the EROFS the done-when's wording names.",
+    "fit": "reckon/project_state.py:1946 names the helper by what it does, reuses the module's existing Path and lock idioms, and the commit carries a conventional subject with a body and no attribution or plan label.",
+    "goal_fidelity": "reckon/project_state.py:466 calls recover_project_state_transactions only when _pending_transaction_journals(docs_dir) (project_state.py:1946) is non-empty, and read_resource is the only production caller of recovery (grep over reckon/ finds no other), so the whole read path is covered.",
+    "reuse": "no capability is forked -- recovery keeps its own locking and the change adds only a lock-free listing -- but the journal root and glob are written twice (project_state.py:1953-1956 and :1962,:1966) rather than shared, so the two could drift.",
+    "scope_discipline": "every path in the diff -- reckon/project_state.py, tests/test_a_read_takes_no_lock.py and the evidence fragment -- is inside the reviewed manifest's declared write paths, and the code change is two hunks of +13 lines."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the project-state read path takes no write lock when nothing needs recovering; reckon/project_state.py:466 guards the recovery call on _pending_transaction_journals(docs_dir) (project_state.py:1946), so a journal-free read opens no lock file and creates none.\nVERDICT done_when: the done_when names tests/test_a_read_takes_no_lock.py with a read-only read returning the plans with no lock file, a writable-read no-lock case and a present-journal recovery, plus an executed negative control; the manifest records all three and I reproduced head 3 passed EXIT=0 and the negative control 2 failed, 1 passed EXIT=1 at 8c4f4c60a in scratch trees.\nVERDICT write_paths: read the reviewed manifest's declared paths (reckon/project_state.py, tests/test_a_read_takes_no_lock.py, the evidence fragment and a figures directory); every path in the diff is inside them.\nVERDICT manifest: read; status complete, commit 8c4f4c60a, tests 3 passed EXIT=0, negative_control_log ending EXIT=1, changed_paths reconcile with the diffstat; baseline_suite and after_suite are present-but-null so the added-failure count is unmeasured.\nVERDICT diff: read commit 8c4f4c60a against base a24f70707: three files, +203/-1; the guarded call at project_state.py:466, the new _pending_transaction_journals helper at :1946, the 170-line test module and the evidence fragment; nothing outside the declared scope.\nCALL_SITES: reckon/roadmap.py:2429 (roadmap sprint read), reckon/roadmap.py:2444 (roadmap blocker read), reckon/_store.py:1487 (generic artifact read), reckon/serve.py:3024 (HTTP handler read), reckon/serve.py:3676 (HTTP state read), reckon/mcp_views.py:1463 (MCP review read)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/project_state.py:466 calls recover_project_state_transactions only when _pending_transaction_journals(docs_dir) (project_state.py:1946) is non-empty, and read_resource is the only production caller of recovery (grep over reckon/ finds no other), so the whole read path is covered.\nSCORE evidence: 19\nJUSTIFICATION evidence: the done_when names tests/test_a_read_takes_no_lock.py, the manifest records 3 passed EXIT=0 and the negative control 2 failed EXIT=1, and I independently reproduced both at 8c4f4c60a (head 3 passed EXIT=0; guard removed 2 failed, 1 passed, EXIT=1) in scratch trees under $TMPDIR, though the refusal there is EACCES on a chmod'd tree, not the EROFS the done-when's wording names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff -- reckon/project_state.py, tests/test_a_read_takes_no_lock.py and the evidence fragment -- is inside the reviewed manifest's declared write paths, and the code change is two hunks of +13 lines.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_read_takes_no_lock.py:121 asserts the recovery lock is absent after a journal-free writable read and reddens when the guard is removed (reproduced: 2 failed EXIT=1), while :148 asserts a present journal is still recovered, so both the skip and the recover directions are guarded and the marker is created by the code rather than passed in.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/project_state.py:1946 names the helper by what it does, reuses the module's existing Path and lock idioms, and the commit carries a conventional subject with a body and no attribution or plan label.\nSCORE reuse: 18\nJUSTIFICATION reuse: no capability is forked -- recovery keeps its own locking and the change adds only a lock-free listing -- but the journal root and glob are written twice (project_state.py:1953-1956 and :1962,:1966) rather than shared, so the two could drift.\nFINDING tests/test_a_read_takes_no_lock.py:98 follow-on: the test docstrings (here and project_state.py:1951) say the refusal is EROFS, but a chmod'd tree yields EACCES (Errno 13) as the negative-control log shows, so the done_when's literal 'raises EROFS' is not reproduced, only the equivalent refusal; the wording could be corrected or a genuinely read-only tree used.\nFINDING reckon/project_state.py:1953 follow-on: the journal root and glob are written twice -- _pending_transaction_journals (:1953-1956) and recover_project_state_transactions (:1962,:1966); recovery could call the helper so a future journal name added to one cannot be silently skipped by the read-path guard.\nFINDING reckon/project_state.py:466 follow-on: the guard lists journals outside the lock and recovery re-lists only when entered, so a journal created between the listing and the recovery call is not recovered on this read; it is self-healing (the journal persists for the next read) and the move path holds resource locks, so this is non-blocking.",
+  "review_run_id": "r-20261010T204459845050-review-of-a-read-takes-no-lock",
+  "reviewed_base_sha": "a24f70707f3f041e85037383a6eeeb9b66b41df1",
+  "reviewed_head_sha": "8c4f4c60a0839bbf9a4c544a3fdbeebcdd30712c",
+  "reviewed_run_id": "r-20261010T203158076090-a-read-takes-no-lock",
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T20:56:02.964809+00:00",
+  "total": 116
+}
