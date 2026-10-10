@@ -1,0 +1,74 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T19:36:39.669Z",
+  "dispatched_at": "2026-10-10T19:32:11Z",
+  "findings": [
+    {
+      "anchor": "reckon/doccheck.py:531",
+      "id": "reuse_search-1",
+      "reason": "the section must cite the real owner (serve.py) or extend it, otherwise it forks a fourth git-date reader.",
+      "text": "\u00a73's premise \"read with the git date cache the audit already keeps\" is false: reckon/doccheck.py contains zero git references and the audit reads os.path.getmtime directly at line 531, while the git last-commit machinery it describes lives in reckon/serve.py:1432 (_git_last_committed) with its persisted _GIT_LAST_MODIFIED_CACHE at reckon/serve.py:1316; the plan is about to build the lookup it believes it is borrowing",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/doccheck.py:531",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a73 should thread the commit-date source through derived_plan_age so the audit and the roadmap/archive agree, naming reckon/serve.py:1432 as the git lookup to reuse, instead of adding a parallel read.",
+      "text": "the age owner to extend is derived_plan_age (reckon/doccheck.py:230), which already resolves plan-modified then file-mtime and is consumed by reckon/archive.py:87 and reckon/roadmap.py:945,968, and the audit loop at line 531 bypasses it entirely to read mtime itself; the census of git-date readers is burying this as a fifth: reckon/serve.py:1432 _git_last_committed, reckon/metadata_index.py:681 git_last, reckon/fleet_index.py:33 _commit_days, plus derived_plan_age",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_store.py:2606",
+      "id": "reuse_search-2",
+      "reason": "the write paths omit the callers the contract change reaches (_store.py, and the second _plan_html.py assignment), so the change would land half-applied and the write-refusal would change without being declared.",
+      "text": "\u00a72 changes derive_impl_from_sections so an uncovered plan returns a declarations-derived figure instead of None, but names only _plan_html.py in its write paths while the function is consumed at THREE further sites whose behaviour the change silently alters: reckon/_plan_html.py:1125 and reckon/_plan_html.py:2234 (both set impl_source, and both must learn the third value \"declarations\"), and reckon/_store.py:2606, which refuses authoring impl whenever the call is \"not None\" and so will start refusing impl writes on partially-recorded plans; reckon/_plan_html.py:1939 is a fourth caller reading the same None-contract",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/roadmap.py:1287",
+      "id": "reuse_search-3",
+      "reason": "two of the three callers live outside the declared write paths, so the wiring census is incomplete and the roadmap and new-plan refusal would keep reporting plans unwired that \u00a75 declares wired.",
+      "text": "\u00a75 rewrites unwired_plan_finding to accept section-level relations and gate-evidence, but lists only reckon/doccheck.py, skills/reckon-create/SKILL.md and the test in its write paths while the function is called from THREE sites that build its inputs and must pass the new ones: reckon/doccheck.py:858, reckon/roadmap.py:1287, reckon/mcp_discovery.py:221",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "the-portfolio-reads-true#s2",
+      "id": "interface_budget-1",
+      "reason": "the sections add audit/definition surface without accounting for it against the week's 1626 definitions / 23 refusal families, which the rubric holds each adding section to state.",
+      "text": "\u00a72 adds the enum value \"declarations\" to IMPL_SOURCE_ENUM (reckon/_schema.py:112) and the audit flag impl-meta-stale; \u00a73 adds AGING; \u00a74 adds SPRINT_MEMBERSHIP (census across s2/s3/s4) \u2014 and no section names what it retires or merges, or explains why nothing can be",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "492ec3e1e1e590fc1ba58276c8ca251780475c72a72957046fe0082edbc952e4",
+  "plan_slug": "the-portfolio-reads-true",
+  "plan_version": 2,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261010T193142290864-plan-review-of-the-portfolio-reads-true",
+  "reviewed_blob_sha": "f0ba97893aba41188cb94da6df4dac4a408263ef",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 no section proposes a new module; \u00a72\u2013\u00a75 each extend one existing function (derive_impl_from_sections, derived_plan_age/audit loop, unwired_plan_finding) behind the interface that already carries the behaviour.",
+    "duplicate_owner": "a finding \u2014 \u00a73 would resolve a plan's last-commit date inside the audit rather than extending the age owner derived_plan_age (reckon/doccheck.py:230) and the git last-commit owner _git_last_committed (reckon/serve.py:1432); three git-date mechanisms already coexist.",
+    "interface_budget": "a finding \u2014 public_definitions 1626, cli_options 351, mcp_views 33, refusal_families 23; \u00a72, \u00a73 and \u00a74 each add audit-flag surface (impl-meta-stale, AGING, SPRINT_MEMBERSHIP) and \u00a72 adds an enum value, and none of the three sections names what it retires or merges, or states why nothing can be.",
+    "reuse_search": "a finding \u2014 \u00a72 and \u00a74 correctly name the existing owners they extend (derive_impl_from_sections, IMPL_SOURCE_ENUM, project_state.read_resource), but \u00a73 credits the audit with a \"git date cache\" it does not keep, and \u00a75 changes a function whose other callers it never names.",
+    "thin_wrapper": "pass \u2014 the sections extend the existing functions in place rather than adding parallel wrappers over them; the one parallel-path risk (\u00a73's git read) is reported under reuse_search and duplicate_owner."
+  },
+  "section_digests": {
+    "_document": "a2e40a46ef8769d14f88fec5811bd50d0aa5fc6a7f36f66f1ebcba3a9533436a",
+    "s1": "56204248c9050844c40ac7e00bff909830602caaa4b95be87bacea51b1495a03",
+    "s2": "0a8c92d4fa5cb08cc79c9d094403aebcf98954150bd216f4e30540e544e8e5d5",
+    "s3": "8570cceee74e682a20e4d24e3794d125201fe70936a370d956b09f3c3513c714",
+    "s4": "4b258c0cf67b0bb77b734ea5408ae0b6e100a916cf2eb93cab6060a11e9bd7e3",
+    "s5": "89b18d17435bb96b3b5d98aa9c76f9e6e62028316fe963997c6b36c0afb247aa",
+    "s6": "3b386242a01bc207ce0810ef1ee5ccbd8a9d5ea78f77a5dd6fc61b2f207c53d0"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T19:48:05.291440+00:00"
+}
