@@ -1,0 +1,49 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T19:37:37.185Z",
+  "dispatched_at": "2026-10-10T19:32:44Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-crew-home-has-a-bound.html#s4",
+      "id": "duplicate_owner-1",
+      "reason": "the author would cite these four owners and either extend the bounded-log helper or state plainly why \u00a74's keep-head-and-tail policy cannot be built from the existing rotation and `line_boundary` primitives instead of re-deriving them.",
+      "text": "\u00a74's per-run-file size bound (`gc.run_file_max_mb`, keeping first and last megabyte around a size-and-sha256 marker) duplicates bounded-log machinery the repository already owns and the plan does not cite, at these sites: the service-log bound `reckon/crew/fleet_supervisor.py:223` (`SERVICE_LOG_LIMIT_BYTES`/`SERVICE_LOG_KEEP_BYTES`, truncation at `fleet_supervisor.py:540-574`); the rotating watch-log stream `reckon/crew/runs.py:3985` (`WATCH_LOG_MAX_BYTES`, `_open` at `runs.py:4005`); the shared line-boundary helper `reckon/crew/runs.py:1923` (`line_boundary`) that any keep-head-and-tail cut needs; and, for \"a file a ledger row names as a gate log\", the declared-path extractor `reckon/crew/promotion_release.py:127` (`_declared_arm_paths`, `_ARM_LOG_FIELDS` at `promotion_release.py:56`, mirrored at `reckon/crew/promotion_records.py:258`)",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-home-has-a-bound.html#s4",
+      "id": "reuse_search-1",
+      "reason": "adding the two-line \"searched X and Y, rejected because Z\" note \u00a74 is missing would let the author reconcile the new policy with `WATCH_LOG_MAX_BYTES` and `SERVICE_LOG_LIMIT_BYTES` before implementation.",
+      "text": "\u00a74 introduces a new run-file size-bounding mechanism without a reuse map over the codebase for it, unlike \u00a72/\u00a73/\u00a75 which each name the mechanism they extend; because the two existing bounded-log sites named above are unlisted, a reader cannot tell whether the new policy is a deliberate divergence from rotation-by-newest or an oversight",
+      "type": "reuse_search",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "9f2853c822cc17f70a75c72d3f52f34547935e9742cbb424fe1ea078ec05ca87",
+  "plan_slug": "the-crew-home-has-a-bound",
+  "plan_version": 2,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261010T193217835157-plan-review-of-the-crew-home-has-a-bound",
+  "reviewed_blob_sha": "bd13ba7883f313a24b49634fe04f4f6821bf910e",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the plan hides substantial behaviour behind one interface: `crew gc` reports and, with `--apply`, acts, and each new store is a row set on `garbage_collect` (`reckon/crew/routing.py:1520`) rather than a new module, so the surface does not grow with the behaviour.",
+    "duplicate_owner": "a finding \u2014 \u00a74 re-implements a bounded-log store and a declared-path extractor whose owners already exist; the finding below names each.",
+    "interface_budget": "public_definitions 1626, cli_options 351, mcp_views 33, refusal_families 23 \u2014 pass: no section adds a CLI option (all reuse the existing `--apply`), an MCP view or a refusal family, and \u00a73 retires surface rather than adding it by folding the plan-review raw-report sweep (`reckon/crew/routing.py:1431`) into the report row set.",
+    "reuse_search": "a finding \u2014 the plan searched and cites the owners it extends for the ledger index (`reckon/ledger.py:896`), the gc sweep (`reckon/crew/routing.py:1520`), the pointer lock (`reckon/crew/runs.py:549`) and the pick-input cache root (`reckon/capabilities.py:1177`), but \u00a74 adds a run-file size bound and a declared-gate-log lookup without citing the two mechanisms that already do those jobs.",
+    "thin_wrapper": "pass \u2014 no section adds a pass-through layer: \u00a72 records the indexed ledger path in the index's own `metadata` table (which already exists at `reckon/ledger.py:1104`), \u00a73 extends the existing `garbage_collect` row-set pattern, and \u00a74 says why the file is truncated rather than deleted, so each change extends an owner instead of wrapping it."
+  },
+  "section_digests": {
+    "_document": "af2eb26959b53991bcc26bda5e7e2c7192a91a8bc1db9f63e754d3f80cf66705",
+    "s1": "32d74b1202f967c9688afa80dbd94719f49d78f6a5afcc8d56d9c46602e1c0a5",
+    "s2": "9328c20a14a28cadebc0cf3424b9fa61772f8c3bea7e4f7b1e097571697c0369",
+    "s3": "42466bfb93ed68c3dcdb669550dae38d00ebbdea5e24407a7579076255209fbf",
+    "s4": "10592efc34537b92ff13d4e9de6ea330cdf819d867e3077e82e01e8635f48698",
+    "s5": "75a8a336e2ee62426e5a8c3ed3310e0cf614b82a8cf7ae6a5985fcb99f2b1648"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T19:51:11.841048+00:00"
+}
