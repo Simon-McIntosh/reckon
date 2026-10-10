@@ -229,6 +229,25 @@ PLAN_DESIGN_REVIEW_ITEMS: tuple[str, ...] = (
 # rubric name one list.
 PLAN_REVIEW_RUBRICS: tuple[str, ...] = ("plan_review", "plan_design_review")
 
+# ── The claims rubric ───────────────────────────────────────────────────────
+# A read-only run — an investigation or a brief-carried run with no commit past
+# its base — leaves no diff to read and runs no gate suite, so the landed-node
+# rubric's six dimensions and its added-failure count have nothing to measure.
+# Its review is composed under the claims rubric instead: the reviewer re-runs
+# the commands or scripts the report cites and records whether each claim
+# reproduces. A finding-bearing report ranks its findings, and the review reads
+# the top ones; the report is a text file under the run's directory, so the
+# report's own summary line is checked against the table beneath it. The
+# verdicts and the summary check are the record, and no suite-delta field is
+# carried because no suite ran.
+CLAIMS_RUBRIC = "claims"
+CLAIM_VERDICTS: tuple[str, ...] = ("reproduced", "differs", "not-runnable")
+# The verdicts the report's summary line is checked against: it either agrees
+# with the table beneath it or it does not, and a reviewer that cannot read the
+# table states that as ``not-runnable`` on the summary as well.
+CLAIM_SUMMARY_VERDICTS: tuple[str, ...] = ("agrees", "differs", "not-runnable")
+CLAIMS_REQUIRED = 3
+
 # ── The revision pair a review read ─────────────────────────────────────────
 # The store already carries these five spellings. Base spellings describe the
 # tree before the reviewed work; head spellings describe the landed work. A
@@ -263,6 +282,10 @@ _PLAN_REVIEW_PROMPT_PATH = (
 _PLAN_DESIGN_REVIEW_PROMPT_PATH = (
     Path(__file__).resolve().parent / "prompts" / "plan_design_review.md"
 )
+
+# The claims rubric prompt is the same shape: a versioned file beside the two
+# landed-node prompts, read from disk on every call.
+_CLAIMS_PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "claims_review.md"
 
 
 def _sha_from(value: Any) -> str | None:
@@ -411,6 +434,11 @@ def load_review_prompt() -> str:
     return _PROMPT_PATH.read_text(encoding="utf-8")
 
 
+def load_claims_review_prompt() -> str:
+    """Read the claims rubric prompt from disk at call time."""
+    return _CLAIMS_PROMPT_PATH.read_text(encoding="utf-8")
+
+
 def load_plan_review_prompt() -> str:
     """Read the plan-review rubric prompt from disk at call time."""
     return _PLAN_REVIEW_PROMPT_PATH.read_text(encoding="utf-8")
@@ -445,6 +473,18 @@ _VERDICT_RE = re.compile(
     r"^VERDICT\s+([A-Za-z_][A-Za-z0-9_]*)\s*:\s*(.*)$", re.IGNORECASE
 )
 _CALL_SITES_RE = re.compile(r"^CALL_SITES\s*:\s*(.*)$", re.IGNORECASE)
+# The claims rubric emits one line per re-run claim and one for the report's
+# own summary:
+#     CLAIM <rank>: <reproduced|differs|not-runnable>: <what the re-run showed>
+#     CLAIM_SUMMARY: <agrees|differs|not-runnable>: <the report's summary line and how it compares to its table>
+# The verdict is the second colon-delimited field; the detail is everything after
+# the third colon, so a detail may carry its own colons.
+_CLAIM_RE = re.compile(
+    r"^CLAIM\s+(\S+?)\s*:\s*([A-Za-z][A-Za-z-]*)\s*:\s*(.+)$", re.IGNORECASE
+)
+_CLAIM_SUMMARY_RE = re.compile(
+    r"^CLAIM_SUMMARY\s*:\s*([A-Za-z][A-Za-z-]*)\s*:\s*(.+)$", re.IGNORECASE
+)
 _FIND_RE = re.compile(r"^FINDING\s+(\S+)\s*(.*)$", re.IGNORECASE)
 _REVISION_RE = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)\s*:\s*(.*)$")
 
@@ -543,6 +583,8 @@ def parse_review(
     justifications: dict[str, str] = {}
     item_verdicts: dict[str, str] = {}
     findings: list[dict[str, str]] = []
+    claims: list[dict[str, str]] = []
+    claim_summary: dict[str, str] | None = None
     call_sites: list[str] = []
     call_sites_seen = False
     call_sites_emission: str | None = None
@@ -607,6 +649,27 @@ def parse_review(
                 head_carried = True
                 head_sha = _sha_from(value)
             continue
+        match = _CLAIM_SUMMARY_RE.match(line)
+        if match:
+            verdict = match.group(1).lower()
+            if verdict in CLAIM_SUMMARY_VERDICTS:
+                claim_summary = {
+                    "verdict": verdict,
+                    "detail": match.group(2).strip(),
+                }
+            continue
+        match = _CLAIM_RE.match(line)
+        if match:
+            verdict = match.group(2).lower()
+            if verdict in CLAIM_VERDICTS:
+                claims.append(
+                    {
+                        "rank": match.group(1),
+                        "verdict": verdict,
+                        "detail": match.group(3).strip(),
+                    }
+                )
+            continue
         match = _FIND_RE.match(line)
         if match:
             ref, finding_text = match.group(1), match.group(2).strip()
@@ -620,12 +683,13 @@ def parse_review(
             continue
     absent = [dim for dim in REVIEW_DIMENSIONS if dim not in scores]
     absent_items = [item for item in REVIEW_ITEMS if item not in item_verdicts]
-    if not scores:
+    claims_bearing = bool(claims) or claim_summary is not None
+    if not scores and not claims_bearing:
         status = "unparsed"
         total = None
     else:
         status = "parsed"
-        total = sum(scores.values()) if not absent else None
+        total = sum(scores.values()) if scores and not absent else None
     item_aggregate = None if absent_items else len(item_verdicts)
     record = {
         "status": status,
@@ -644,6 +708,14 @@ def parse_review(
         record["call_site_count"] = len(call_sites)
     if call_sites_emission == "empty":
         record["call_sites_emission"] = call_sites_emission
+    # A record carrying claim verdicts is a claims record and is read under that
+    # rubric: the landed-node dimensions are not what its reviewer measured, so
+    # a completeness check keyed to them would call it absent. The rubric key is
+    # written only for a claims record, so a landed-node record is unchanged.
+    if claims_bearing:
+        record["rubric"] = CLAIMS_RUBRIC
+        record["claims"] = claims
+        record["claim_summary"] = claim_summary
     if source_record is not None:
         carried_base, stored_base, carried_head, stored_head = carried_revision_pair(
             source_record
@@ -1749,7 +1821,14 @@ def annotate_review_of_run(
     Each log is read against the working directory its own arm's record names,
     so an arm run inside a scratch tree is compared with the arm at the
     repository root rather than under the tree's prefix.
+
+    A claims record is returned unchanged: a read-only run ran no gate suite,
+    so there is no base/head log pair to reduce. Annotating it would stamp an
+    ``added_failure_count`` and an ``added_failures_note`` onto a record whose
+    rubric never measured one, which reads as a suite delta the run never had.
     """
+    if record.get("rubric") == CLAIMS_RUBRIC:
+        return record
     run_directory = _run_directory(reviewed_run_id)
     if run_directory is None:
         return record
