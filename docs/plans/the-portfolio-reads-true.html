@@ -24,7 +24,7 @@
   <title>The Portfolio Reads True | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="10">
+<meta name="plan-version" content="11">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -92,14 +92,17 @@
       resolves <code>plan-modified</code> then the file's mtime and is read by <code>reckon/archive.py:87</code> and
       <code>reckon/roadmap.py:945</code>; the audit loop (<code>doccheck.py:531</code>) bypasses it and reads the mtime itself. This section
       puts the last commit first in <code>derived_plan_age</code>, read through the existing last-commit lookup
-      <code>_git_last_committed</code> (<code>reckon/serve.py:1432</code>) rather than a new git reader, and routes the audit loop through
-      it; the roadmap's first call (<code>reckon/roadmap.py:945</code>), which passes no path today, passes the plan's path so the commit
+      <code>_git_last_committed(repo_dir, docs_dir)</code> (<code>reckon/serve.py:1432</code>), which returns a map of repository-relative
+      path to last-commit time for the whole docs tree, rather than a new git reader: <code>derived_plan_age</code> takes the repository and
+      docs directories beside the plan path and looks the plan up in that map, which the audit loop builds once per run. The audit loop is
+      routed through it; the roadmap's first call (<code>reckon/roadmap.py:945</code>), which passes no path today, passes the plan's path so the commit
       is read first there too. The audit, the roadmap and the archive then report one age, with its source named on the row. The two other git-date readers
       (<code>reckon/metadata_index.py:681</code>, <code>reckon/fleet_index.py:33</code>) are left as they are and listed in the manifest. A non-shipped plan between 14 and 30 days old is reported <code>AGING</code> (info), and past 30 days
       <code>STALE</code> as today. The section adds one audit code, <code>AGING</code>; nothing retires, because no row reports
       the 14 to 30 day band.</p>
     <p><strong>Done when</strong> <code>tests/test_staleness_counts_from_the_last_commit.py</code> builds a temporary git repository with
-      a plan committed 20 days ago (by <code>GIT_COMMITTER_DATE</code>) and then touched on disk today, runs the audit, and asserts an
+      a plan committed 20 days ago (by <code>GIT_AUTHOR_DATE</code> and <code>GIT_COMMITTER_DATE</code> both, because the lookup reads the
+      author date, <code>%at</code>) and then touched on disk today, runs the audit, and asserts an
       <code>AGING</code> row with age 20 and source <code>commit</code>; a second plan committed 40 days ago reports <code>STALE</code>. The
       dates are derived from the fixture's own commit dates at assertion time, never written as literals. The negative control is executed
       and logged: with the age read from the mtime, the first plan reports age 0 and no row, and the test fails. Write paths:

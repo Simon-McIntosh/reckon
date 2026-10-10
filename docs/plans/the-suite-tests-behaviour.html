@@ -22,12 +22,12 @@
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-after" content="the-suite-is-green-at-head">
   <meta name="plan-standalone" content="It shares the suite with the-suite-is-green-at-head, which it is sequenced after, but no section of either waits on the other.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;deferred&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
   <title>The Suite Tests Behaviour | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="10">
-<meta name="plan-modified" content="2026-10-10">
+<meta name="plan-version" content="12">
+<meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
   <main class="plan-doc">
@@ -93,8 +93,8 @@
     <h2 id="s4">§4 — A helper copied across test files has one home</h2>
 <section data-reckon="section" data-id="s4" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
     <p><strong>Deliverable.</strong> A census by the coordinator at <code>646bbacf5</code> hashed the normalised body of every module-level
-      helper (every non-<code>test_</code> function) in <code>tests/</code>: 463 groups of identical bodies span 559 test files and 12,757
-      lines. That is too wide for one node and would collide with every node adding a test, so this section takes the three groups copied
+      helper (every non-<code>test_</code> function) in <code>tests/</code>: by the definition the done-when states, 476 groups of identical bodies span 563
+      test files and 12,859 lines. That is too wide for one node and would collide with every node adding a test, so this section takes the three groups copied
       into twenty or more files (126 files, 1,038 lines): two <code>_git</code> helpers, in 64 and 40 files, and a <code>home</code> fixture
       family in 22. Each moves to one module under <code>tests/helpers/</code>, or, for a pytest fixture, to <code>tests/conftest.py</code>,
       which every module under <code>tests/</code> sees, and every copy is replaced by an import or by the shared fixture. The remaining
@@ -102,7 +102,7 @@
     <p><strong>Done when</strong> a census script the node keeps beside its log, hashing the normalised body (<code>ast.dump</code> of the
       body, arguments and decorators) of every module-level non-<code>test_</code> function in <code>tests/</code>, reports the three groups
       with no copy outside <code>tests/helpers/</code> and <code>tests/conftest.py</code>, and reports the whole census before and after
-      (463 groups at <code>646bbacf5</code>) in the manifest; the test files touched pass at the integrated head with the same pass
+      (476 groups at <code>646bbacf5</code>) in the manifest; the test files touched pass at the integrated head with the same pass
       and fail ids as at base, the population built at dispatch; and the line delta over <code>tests/</code> is negative. The negative
       control is executed and logged: one replaced helper's import pointed at a stub that raises fails the tests that imported it.
       Write paths: <code>tests/helpers/</code>, <code>tests/conftest.py</code>, and the 126 test files holding the three groups' copies,
@@ -128,6 +128,10 @@
       done-when is written then against that figure.</p>
 
     
+    <h2 id="s7">§7 — The browser population runs as its own suite row</h2>
+<section data-reckon="section" data-id="s7" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p>§2's node made the browser harness find the installed headless shell, and the 56-id browser population then ran with no skip for a missing browser. It took 866.8 s against 190.3 s at the base, and 32 of its 33 failures were <code>Timeout (&gt;20.0s)</code> while the base arm ran at 60 s (comment <code>c-hold-s2-1010</code>). Merged as it stands, it would add that population to the standing suite, whose last run took 728 s of its 1,200 s budget, so §2's merge is held on this section.</p><p><strong>Deliverable.</strong> Every test that reaches <code>installed_browser_or_skip</code> carries a <code>browser</code> pytest marker, applied once in <code>tests/conftest.py</code> by the harness rather than test by test; reckon's declared standing-suite command excludes the marker; and the browser population is recorded as its own row by the standing-suite record (<code>reckon/crew/standing_suite.py</code>) with a population name, its own time bound and its own pass, fail and skip counts. A quiet-node measurement of the population, both arms at one timeout, is written to the run directory and its failing ids are recorded on <a href="/reckon/plans/the-suite-is-green-at-head.html">the-suite-is-green-at-head</a> by the coordinator.</p><p><strong>Done when</strong> <code>tests/test_browser_population_is_its_own_row.py</code> asserts a test reaching the harness carries the marker, the standing-suite command's collection excludes every marked test, and a fixed pytest log recorded under the browser population name writes a row with that name and its counts; the quiet-node measurement log records both arms at 60 s with their failing ids. The negative control is executed and logged: with the marker exclusion removed from the suite command, a marked test is collected and the test fails. Write paths: <code>tests/conftest.py</code>, <code>tests/spa_browser_harness.py</code>, <code>reckon/crew/standing_suite.py</code>, <code>docs/state/reckon/flight.yaml</code>, <code>tests/test_browser_population_is_its_own_row.py</code>. This section runs on §2's held head, so the node is based on it.</p>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-tstb-001" data-status="resolved" data-written-by="reckon-create" data-written-at="2026-10-10" data-recommends-skill="/reckon-build the-suite-tests-behaviour" data-resolved-at="2026-10-10T20:44:25+00:00" data-resolved-by="reckon-build coordinator (health-review-1010)">

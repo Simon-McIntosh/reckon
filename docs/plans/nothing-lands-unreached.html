@@ -25,7 +25,7 @@
   <title>Nothing Lands Unreached | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="13">
+<meta name="plan-version" content="14">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -114,21 +114,26 @@
 <section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
     <p><strong>Deliverable.</strong> <code>reckon/crew/carryover_census.py</code>, <code>reckon/crew/death_census.py</code> and
       <code>reckon/crew/pace_replay.py</code> produced committed evidence once and are run by nothing. They move to
-      <code>scripts/census/</code> as standalone scripts with their tests; <code>carryover_census.py</code> and <code>pace_replay.py</code>,
-      which carry no entry point, each gain a <code>main()</code> with an argument parser behind a <code>__main__</code> guard, as
-      <code>death_census.py</code> already has, so the evidence they produced stays reproducible and the package
-      loses three modules and their public definitions. A docstring or evidence record that names the old module path is updated to the
-      script path. <code>hold.py</code> and <code>serving_origin.py</code> stay in the package on the §2 allowlist with
+      <code>scripts/census/</code> as standalone scripts with their tests; all three get a <code>main()</code> with an <code>argparse</code> parser behind a
+      <code>__main__</code> guard (<code>death_census.main</code> today treats its first argument as an output path and parses no flag, so
+      it is brought to the same shape rather than copied), so the evidence they produced stays reproducible and the package
+      loses three modules and their public definitions. A docstring or prose that names the old module path is updated to the script path; a
+      committed data file's <code>generated_by</code> or provenance field keeps the name of what produced it, because it records history.
+      The four tests that stay in <code>tests/</code> and import the modules (<code>test_a_lift_reaches_every_budget_row.py</code>,
+      <code>test_ledger_files_and_index_agree.py</code>, <code>test_writer_callers_first_wave.py</code>,
+      <code>test_timestamp_callers_batch_a.py</code>) load them by path with <code>importlib</code>, since <code>scripts/</code> is not a
+      package, or drop the assertion if its subject was only the moved module. <code>hold.py</code> and <code>serving_origin.py</code> stay in the package on the §2 allowlist with
       <code>a-window-paces-the-lane</code> named as their owner, and the coordinator records a comment on that plan naming them as unwired.</p>
     <p><strong>Done when</strong> each script runs from <code>scripts/census/</code> with <code>--help</code> exiting 0, its moved tests pass
       from their new location, <code>git grep -n "reckon.crew.carryover_census\|reckon.crew.death_census\|reckon.crew.pace_replay"</code>
-      returns no hit outside the moved files, and §2's ratchet test passes with the three modules gone from its allowlist. The negative
+      over <code>reckon/ tests/ skills/ scripts/</code> and the research scripts returns no hit outside the moved files (committed data
+      provenance fields excluded, as above), and §2's ratchet test passes with the three modules gone from its allowlist. The negative
       control is executed and logged: with one moved module's old import left in a test, that test fails at collection. Write paths:
       <code>reckon/crew/carryover_census.py</code>, <code>reckon/crew/death_census.py</code>, <code>reckon/crew/pace_replay.py</code>,
       <code>reckon/budget.py</code>, <code>scripts/census/</code>, the committed research scripts that import two of them
       (<code>docs/research/scripts/scan_local_lane_deaths.py</code> and
       <code>docs/research/data/crew-pattern-review/worker-anatomy/anatomy_census.py</code>), whose imports move to the script path so the
-      evidence they produced stays reproducible, and the tests importing the three modules, <code>tests/test_every_module_is_reached.py</code>. This section runs after §3, which
+      evidence they produced stays reproducible, and the tests importing the three modules, including the four named above, <code>tests/test_every_module_is_reached.py</code>. This section runs after §3, which
       writes the same allowlist.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
@@ -178,7 +183,7 @@
     <div class="r-comment-body"><p>context-budget-deleted: deleted reckon/crew/context_budget.py and tests/test_context_budget.py, removed the context_budget import and the two refusal-census tests from tests/test_routing_surface.py, dropped the unreached-module allowlist entry and the routing docstring reference; grep -rn context_budget reckon/ tests/ skills/ returns no hit</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261010T214036684759-review-of-context-budget-deleted" data-who="reckon-build" data-when="2026-10-10T21:55:55.603Z">
-    <div class="r-comment-body"><p>independent review of run r-20261010T212341869211-context-budget-deleted stored as a parsed 6-dimension record, total 111/120 (goal_fidelity 20, evidence 19, scope_discipline 14, durability 18, fit 20, reuse 20), reviewed_base_sha 25b07c0dd5f689cb08fc733d1a773a169b7c327d and reviewed_head_sha d8e9fc2bc5daf6a1f33c2743a96c0adb2e94a131, added_failure_count 0 and added_failure_ids [] derived from the reviewed run&#x27;s own gate logs (base arm at 25b07c0, 15 passed EXIT=0; head arm gate-context-budget-deleted.log at cf12c1653, 13 passed EXIT=0), two follow-on findings and no blocking finding.</p></div>
+    <div class="r-comment-body"><p>independent review of run r-20261010T212341869211-context-budget-deleted stored as a parsed 6-dimension record, total 111/120 (goal_fidelity 20, evidence 19, scope_discipline 14, durability 18, fit 20, reuse 20), reviewed_base_sha 25b07c0dd5f689cb08fc733d1a773a169b7c327d and reviewed_head_sha d8e9fc2bc5daf6a1f33c2743a96c0adb2e94a131, added_failure_count 0 and added_failure_ids [] derived from the reviewed run's own gate logs (base arm at 25b07c0, 15 passed EXIT=0; head arm gate-context-budget-deleted.log at cf12c1653, 13 passed EXIT=0), two follow-on findings and no blocking finding.</p></div>
 </div>
 </section>
 </main>
