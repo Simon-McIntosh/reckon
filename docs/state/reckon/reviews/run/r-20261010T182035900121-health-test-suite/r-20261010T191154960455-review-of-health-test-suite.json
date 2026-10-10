@@ -1,0 +1,85 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "backend": "local",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/review.py:annotate_review_of_run",
+    "reckon/crew/review.py:store_review",
+    "reckon/crew/review.py:read_review"
+  ],
+  "completed_at": "2026-10-10T19:23:22.483Z",
+  "dispatched_at": "2026-10-10T19:12:22Z",
+  "findings": [
+    {
+      "file": "report.md",
+      "line": "T3 detail",
+      "severity": "mid",
+      "text": "the report states 'only 7 share three or more' windows while the node's own delivered clones.log prints pairs_ge3_windows=0 and clones.json has max(shared_windows)=1 over all 135736 pairs, so the sentence a reader would quote is unsupported by the data shipped beside it; the 202 cross-file containment==1.0 helpers themselves reproduce exactly."
+    },
+    {
+      "file": "report.md",
+      "line": "T5 evidence",
+      "severity": "mid",
+      "text": "T5's two supporting counts do not reproduce under the commands it cites: at 4aca668aa grep -rln '/proc/' tests/*.py is 36 (report says 43) and grep -rn 'subprocess.run|subprocess.Popen' tests/*.py is 977 (report says 993), so a conftest-narrowing plan sized from these numbers uses the wrong population; the non-count claims (17 autouse fixtures, 1231-line conftest) reproduce."
+    },
+    {
+      "file": "report.md",
+      "line": "T4 header",
+      "severity": "low",
+      "text": "T4 claims '60 sites in 40 test files' but the 60 sites live in 24 files naming inspect.getsource or __file__).read_text (47 if the ast.parse( union is counted); no reading of the cited command yields 40."
+    },
+    {
+      "file": "report.md",
+      "line": "T2 evidence",
+      "severity": "low",
+      "text": "T2 pairs the number 35 with grep -l installed_browser_or_skip tests/*.py, which yields 29; 35 is the set importing the browser harness. The substantive claim (223-test browser population, 72 always skipping) reproduces from browser-probe.log (151 passed, 72 skipped)."
+    },
+    {
+      "file": "tests/test_the_unreconciled_count_has_one_composition.py",
+      "line": "150",
+      "severity": "low",
+      "text": "T4 cites line 150 as asserting \"_drain_row\" in inspect.getsource(promotion._unreconciled_live_runs); line 150 asserts runs.drain and the named object is on line 151, an off-by-one citation for the example a reader would open to judge the finding."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "the reviewed node landed no commits against 4aca668aa; its output is the report and its instrument scripts, which I re-ran where the artefacts allowed.",
+    "done_when": "the brief asks for report.md with a method section, a findings table (id/class/severity/finding/evidence/remedy/est-lines/owner), a top-five list and a final findings= line; all four are present and the closing tally is internally consistent with its table.",
+    "goal": "the reviewed node's goal was to measure whether the test suite is a fast trustworthy guard or has accumulated machine-measuring, source-reading or duplicated tests; report.md and its instruments address all seven brief measures.",
+    "manifest": "read; status complete; it names report.md and the collect/browser/clone/inventory logs under test_logs and names no baseline_suite/after_suite gate logs because a read-only review node runs no pytest gate.",
+    "write_paths": "the reviewed node was read-only: its worktree at 4aca668aa is clean (status --porcelain empty, 0 commits beyond base) and every artefact sits under its declared reports path."
+  },
+  "justifications": {
+    "durability": "the instrument scripts are delivered beside the report and the clone scan re-runs from the shipped clones.json to the same counts, but the '7 share three or more' sentence contradicts the log shipped with it, so not every claim is verifiable as delivered.",
+    "evidence": "the headline findings reproduce exactly (T1 340709/162150 ratio 2.10, T3 202 cross-file full-body pairs, T6 record lacks skipped, T7 43/11), but four supporting counts do not reproduce under their own cited commands and one (the '7 share three or more') contradicts the node's own delivered log.",
+    "fit": "report.md carries the required method table, findings table with the eight named columns, a ranked top-five, and the exact closing findings= line, whose fields are internally consistent with the table above it.",
+    "goal_fidelity": "all seven brief measures (inventory, recorded result, source-reading tests, out-of-repo state, date fuses, skip/xfail, clone duplication) are addressed, and two findings are marked with plan owners and one as a regression against a shipped plan.",
+    "reuse": "the node used reckon.clones.clone_matches as the brief named rather than authoring a detector, drove inventory through ast, and added no forked capability.",
+    "scope_discipline": "the reviewed node was read-only: its worktree at 4aca668aa is clean with 0 commits beyond base, and every artefact is under reports/reckon/health-review-1010/health-test-suite."
+  },
+  "node": "review-of-health-test-suite",
+  "project": "reckon",
+  "review_run_id": "r-20261010T191154960455-review-of-health-test-suite",
+  "reviewed_base_sha": "4aca668aa4ca7d6186004d4b19952af2266342da",
+  "reviewed_head_sha": "4aca668aa4ca7d6186004d4b19952af2266342da",
+  "reviewed_run_id": "r-20261010T182035900121-health-test-suite",
+  "reviewer": "review-of-health-test-suite",
+  "scores": {
+    "durability": 14,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T19:22:35.279461+00:00",
+  "total": 99
+}
