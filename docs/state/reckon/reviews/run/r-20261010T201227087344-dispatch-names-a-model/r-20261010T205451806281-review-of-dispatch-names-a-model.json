@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 2,
+  "added_failure_ids": [
+    "tests/test_crew_dispatch_arming.py::test_a_peer_sessions_follower_does_not_admit_this_dispatch",
+    "tests/test_crew_dispatch_arming.py::test_dispatch_refuses_a_session_whose_runs_would_finish_unheard"
+  ],
+  "added_failures_note": "derived from the reviewed run's gate-base.log and gate-head.log, which its manifest names under test_logs; the manifest carries no baseline_suite or after_suite field, so the count was taken from the logs directly",
+  "backend": "local",
+  "base_log_revision": "c16b71de9724b9a3c1523c6effd18a2b45c6697d",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:797",
+    "reckon/crew_dispatch_commands.py:1110",
+    "reckon/crew_dispatch_commands.py:1760"
+  ],
+  "completed_at": "2026-10-10T21:04:40.194Z",
+  "dispatched_at": "2026-10-10T20:55:16Z",
+  "findings": [
+    {
+      "file": "reckon/crew_dispatch_commands.py",
+      "line": "483",
+      "severity": "follow-on",
+      "text": "follow-on: a model that is declared but not in a named --backend's lane (--backend codex --model opus) filters to no match and is refused with \"names no model, model id or alias the catalogue declares\", which misstates a name that is declared; the section asks a refusal to name the pair."
+    },
+    {
+      "file": "tests/test_dispatch_names_a_model.py",
+      "line": "127",
+      "severity": "follow-on",
+      "text": "follow-on: the equivalence test asserts the launch mode string but not the launch argv the done_when names, and no test covers --local --model or the run-pointer pair at reckon/crew/dispatch.py:1366."
+    },
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": "422",
+      "severity": "follow-on",
+      "text": "follow-on: the head gate added two failures here (\"producer seat held ... beyond 2s\") that reddened tests/test_crew_dispatch_arming.py; the cause is contention on the shared 'sample' seat, not this change, but the reviewed gate is not green."
+    }
+  ],
+  "head_log_revision": "dba1dbfaa8e1757d69c6cc3082e05bb8f33650b6",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read c16b71de9724b9a3c1523c6effd18a2b45c6697d..dba1dbfaa8e1757d69c6cc3082e05bb8f33650b6 commit by commit; four files, 316 insertions and 40 deletions, the deletions mostly one ruff-format blank-line sweep inside reckon/crew_dispatch_commands.py.",
+    "done_when": "the section's three measures are asserted by tests/test_dispatch_names_a_model.py:127 (equivalent backend, effort, model and launch for --backend claude --model opus against --backend claude-opus), :155 (an ambiguous bare model refused naming both lanes) and :184 (a promoted row carries lane and model_key).",
+    "goal": "the goal is that a dispatch can name a model within a lane; reckon/crew_dispatch_commands.py:1102 narrows --model to the backend serving that catalogue pair on dispatch, and :797 and :1760 do the same on preflight and shadow.",
+    "manifest": "read; status complete, commits 953906f0279d65ea0e1346497ad35a0ea3d6523c, 1e6b25e47e0e9058be52a67ff0f34ffdef58b67a and dba1dbfaa8e1757d69c6cc3082e05bb8f33650b6, but it carries no baseline_suite or after_suite field, so the added-failure count below was taken from the two gate logs directly rather than read back through the manifest.",
+    "write_paths": "the manifest declares reckon/crew_dispatch_commands.py, reckon/crew/dispatch.py, reckon/ledger.py, tests/test_dispatch_names_a_model.py and the evidence fragment; every path in the diff is inside that set."
+  },
+  "justifications": {
+    "durability": "tests/test_dispatch_names_a_model.py:127 reddens when the model narrowing is dropped, but the run-pointer lane and model_key write at reckon/crew/dispatch.py:1366 has no test that would fail if it regressed.",
+    "evidence": "the gate asserts each done_when item and dropping the narrowing reddens the equivalence test (negative-control.log, 7 failed, EXIT=1), but the head arm added 2 failures in tests/test_crew_dispatch_arming.py against a green base arm and the manifest omits its structured suite fields.",
+    "fit": "the docstring at reckon/crew_dispatch_commands.py:458 and the comment at :1103 explain the mechanism, and both commits carry conventional subjects and bodies with no attribution or plan label.",
+    "goal_fidelity": "reckon/crew_dispatch_commands.py:458 _model_narrowed_backend resolves the pair through ledger.resolve_name and reckon/crew/dispatch.py:1366 writes lane and model_key beside backend, so the section's surface and row changes land.",
+    "reuse": "the new resolver reuses ledger.resolve_name (reckon/ledger.py:221) rather than adding a second name resolver, and a search of reckon/ for a (lane, model_key)-to-backend lookup found none to extend.",
+    "scope_discipline": "every changed path is declared, but reckon/crew_dispatch_commands.py carries a roughly thirty-line blank-line removal sweep unrelated to naming a model."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a dispatch can name a model within a lane; reckon/crew_dispatch_commands.py:1102 narrows --model to the backend serving that catalogue pair on dispatch, and :797 and :1760 do the same on preflight and shadow.\nVERDICT done_when: the section's three measures are asserted by tests/test_dispatch_names_a_model.py:127 (equivalent backend, effort, model and launch for --backend claude --model opus against --backend claude-opus), :155 (an ambiguous bare model refused naming both lanes) and :184 (a promoted row carries lane and model_key).\nVERDICT write_paths: the manifest declares reckon/crew_dispatch_commands.py, reckon/crew/dispatch.py, reckon/ledger.py, tests/test_dispatch_names_a_model.py and the evidence fragment; every path in the diff is inside that set.\nVERDICT manifest: read; status complete, commits 953906f0279d65ea0e1346497ad35a0ea3d6523c, 1e6b25e47e0e9058be52a67ff0f34ffdef58b67a and dba1dbfaa8e1757d69c6cc3082e05bb8f33650b6, but it carries no baseline_suite or after_suite field, so the added-failure count below was taken from the two gate logs directly rather than read back through the manifest.\nVERDICT diff: read c16b71de9724b9a3c1523c6effd18a2b45c6697d..dba1dbfaa8e1757d69c6cc3082e05bb8f33650b6 commit by commit; four files, 316 insertions and 40 deletions, the deletions mostly one ruff-format blank-line sweep inside reckon/crew_dispatch_commands.py.\nCALL_SITES: reckon/crew_dispatch_commands.py:797, reckon/crew_dispatch_commands.py:1110, reckon/crew_dispatch_commands.py:1760\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew_dispatch_commands.py:458 _model_narrowed_backend resolves the pair through ledger.resolve_name and reckon/crew/dispatch.py:1366 writes lane and model_key beside backend, so the section's surface and row changes land.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate asserts each done_when item and dropping the narrowing reddens the equivalence test (negative-control.log, 7 failed, EXIT=1), but the head arm added 2 failures in tests/test_crew_dispatch_arming.py against a green base arm and the manifest omits its structured suite fields.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: every changed path is declared, but reckon/crew_dispatch_commands.py carries a roughly thirty-line blank-line removal sweep unrelated to naming a model.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_dispatch_names_a_model.py:127 reddens when the model narrowing is dropped, but the run-pointer lane and model_key write at reckon/crew/dispatch.py:1366 has no test that would fail if it regressed.\nSCORE fit: 19\nJUSTIFICATION fit: the docstring at reckon/crew_dispatch_commands.py:458 and the comment at :1103 explain the mechanism, and both commits carry conventional subjects and bodies with no attribution or plan label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the new resolver reuses ledger.resolve_name (reckon/ledger.py:221) rather than adding a second name resolver, and a search of reckon/ for a (lane, model_key)-to-backend lookup found none to extend.\nFINDING reckon/crew_dispatch_commands.py:483 follow-on: a model that is declared but not in a named --backend's lane (--backend codex --model opus) filters to no match and is refused with \"names no model, model id or alias the catalogue declares\", which misstates a name that is declared; the section asks a refusal to name the pair.\nFINDING tests/test_dispatch_names_a_model.py:127 follow-on: the equivalence test asserts the launch mode string but not the launch argv the done_when names, and no test covers --local --model or the run-pointer pair at reckon/crew/dispatch.py:1366.\nFINDING reckon/crew/recovery_watch.py:422 follow-on: the head gate added two failures here (\"producer seat held ... beyond 2s\") that reddened tests/test_crew_dispatch_arming.py; the cause is contention on the shared 'sample' seat, not this change, but the reviewed gate is not green.\nreviewed_base_sha: c16b71de9724b9a3c1523c6effd18a2b45c6697d\nreviewed_head_sha: dba1dbfaa8e1757d69c6cc3082e05bb8f33650b6",
+  "review_run_id": "r-20261010T205451806281-review-of-dispatch-names-a-model",
+  "reviewed_base_sha": "c16b71de9724b9a3c1523c6effd18a2b45c6697d",
+  "reviewed_head_sha": "dba1dbfaa8e1757d69c6cc3082e05bb8f33650b6",
+  "reviewed_run_id": "r-20261010T201227087344-dispatch-names-a-model",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T21:02:45.965529+00:00",
+  "total": 105
+}
