@@ -14,7 +14,10 @@ A finding whose path is not inside the repository — a report, a manifest, a
 staging store path — is kept, because it is still a finding, but under
 ``scope: artefact`` and out of the recurrence count: the paths such findings
 name do not live in the tree, so counting them against a repository path would
-report recurrence where none exists.
+report recurrence where none exists. The boundary that divides the two is
+measured against the project's mounted checkout when no root is named, and an
+absolute path inside it is reported repository-relative, so a reviewer that
+cites the whole path still counts toward the path's recurrence.
 
 Findings that declare a non-blocking severity are the ones most easily lost,
 so the reader pulls the record's findings whole — every severity, not only the
@@ -30,6 +33,7 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
+from reckon import _store
 from reckon.crew import repair as _repair
 from reckon.crew import review as _review
 
@@ -83,30 +87,65 @@ def _split_anchor(anchor: str) -> tuple[str, str]:
     return text, ""
 
 
-def _scope_of(raw_path: str, root: Path | None) -> str:
-    """Whether a finding's path lies inside the checkout, or names an artefact.
+def _repository_relative(raw_path: str, root: Path | None) -> str | None:
+    """The repository-relative form of a finding's path, or ``None`` outside.
 
-    A path inside the repository is the checkout root or something beneath it; a
-    path that resolves outside it — an absolute report or manifest path, a
-    home-relative store path, one that climbs above the root — is an artefact.
-    With no root to compare against, only a path that names itself relative (no
-    leading separator, no home anchor, no leading ``..``) can be a repository
-    path, because the repository's location is unknown.
+    A path inside the checkout is the root itself or something beneath it. An
+    absolute path under the root is returned relative to it, so a finding citing
+    ``/checkout/reckon/a.py`` groups with one citing ``reckon/a.py`` and both
+    count toward the same recurrence. Any path that resolves outside the tree --
+    an absolute report or manifest path, a home-relative store path, one that
+    climbs above the root — is no repository path and yields ``None``.
+
+    A path that names itself relative (no leading separator, no home anchor, no
+    leading ``..``) is already repository-relative and is returned unchanged,
+    whether or not a root is known: with no root the checkout's own location is
+    unknown, but the path's shape is not.
     """
     text = str(raw_path or "").strip()
     if not text:
-        return SCOPE_ARTEFACT
+        return None
     expanded = os.path.normpath(os.path.expanduser(text))
     if os.path.isabs(expanded):
         if root is None:
-            return SCOPE_ARTEFACT
+            return None
         base = os.path.normpath(str(root))
-        if expanded == base or expanded.startswith(base + os.sep):
-            return SCOPE_REPOSITORY
-        return SCOPE_ARTEFACT
+        if expanded == base:
+            return ""
+        if expanded.startswith(base + os.sep):
+            return expanded[len(base) + 1 :]
+        return None
     if expanded == ".." or expanded.startswith(".." + os.sep):
-        return SCOPE_ARTEFACT
-    return SCOPE_REPOSITORY
+        return None
+    return expanded
+
+
+def _scope_of(raw_path: str, root: Path | None) -> str:
+    """Whether a finding's path lies inside the checkout, or names an artefact."""
+    return (
+        SCOPE_REPOSITORY
+        if _repository_relative(raw_path, root) is not None
+        else SCOPE_ARTEFACT
+    )
+
+
+def _scope_root(project: str, root: str | Path | None) -> Path | None:
+    """The checkout the repository boundary is measured against.
+
+    ``root`` names it explicitly — a worker's worktree — so the boundary is that
+    worktree, not the registered checkout. Omitted, the committed tree
+    resolves through the project's mounted docs directory, so the boundary is
+    measured against that same mounted checkout and an absolute path inside it
+    is repository-scoped rather than read as an artefact. A project with no
+    resolvable docs directory has no boundary a path can be told against, and
+    ``None`` is returned.
+    """
+    if root is not None:
+        return Path(root).expanduser().resolve()
+    docs_dir = _store._docs_dir_for_project(project)
+    if docs_dir is None:
+        return None
+    return docs_dir.parent
 
 
 def _run_findings(record: Mapping[str, Any]) -> list[dict[str, Any]]:
@@ -196,9 +235,10 @@ def _record_rows(record: Mapping[str, Any], root: Path | None) -> list[dict[str,
     rows: list[dict[str, Any]] = []
     for index, finding in enumerate(_record_findings(record)):
         raw_path = str(finding.get("path") or "").strip()
+        relative = _repository_relative(raw_path, root)
         rows.append(
             {
-                "path": raw_path,
+                "path": relative if relative is not None else raw_path,
                 "line": str(finding.get("line") or "").strip(),
                 "scope": _scope_of(raw_path, root),
                 "severity": finding.get("severity") or None,
@@ -255,9 +295,11 @@ def findings_by_path(
     ``path``, when named, restricts the result to rows whose path begins with
     the named prefix; groups with no such row are omitted. ``root`` names the
     checkout the repository boundary and the committed tree are resolved
-    against — a worker's worktree — and defaults to the registered checkout.
+    against — a worker's worktree; omitted, both resolve against the project's
+    mounted checkout, so an absolute path inside it is read repository-relative
+    and counts toward recurrence rather than being kept as an artefact.
     """
-    root_path = Path(root).expanduser().resolve() if root is not None else None
+    root_path = _scope_root(project, root)
     prefix = str(path or "").strip()
 
     groups: dict[str, dict[str, Any]] = {}

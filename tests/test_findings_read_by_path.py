@@ -13,6 +13,7 @@ mutation this test's negative control applies.
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -52,6 +53,12 @@ def _report_path(checkout: Path) -> str:
 
 def _store(checkout: Path, record: dict) -> Path:
     return review_module.store_committed_review(record, root=checkout)
+
+
+def _mount(checkout: Path) -> None:
+    """Register the checkout's docs directory in mounts.json, as a clone has."""
+    config = Path(os.environ["RECKON_HOME"])
+    (config / "mounts.json").write_text(json.dumps({PROJECT: str(checkout / "docs")}))
 
 
 def _run_record(
@@ -207,3 +214,76 @@ def test_the_cli_prints_the_same_rows_as_json(checkout: Path) -> None:
         _key(r) for r in view_payload["rows"]
     )
     assert cli_payload["paths"] == view_payload["paths"]
+
+
+def _absolute_records(checkout: Path) -> None:
+    """Two reviews naming the same file by its absolute in-checkout path."""
+    absolute = str(checkout / FILE)
+    _store(
+        checkout,
+        _run_record(
+            RUN_A,
+            REVIEW_A,
+            [
+                {
+                    "file": absolute,
+                    "line": "12",
+                    "text": "unguarded index",
+                    "severity": "blocking",
+                }
+            ],
+        ),
+    )
+    _store(
+        checkout,
+        _run_record(
+            RUN_B,
+            REVIEW_B,
+            [
+                {
+                    "file": absolute,
+                    "line": "40",
+                    "text": "naming would read better",
+                    "severity": "follow-on",
+                }
+            ],
+        ),
+    )
+
+
+def test_the_default_boundary_reads_the_mounted_checkout(checkout: Path) -> None:
+    """No root named: the boundary comes from the project's mounted checkout.
+
+    The committed tree already resolves through the mounted docs directory, so
+    an absolute path inside that checkout must read repository-relative and
+    count as a recurrence rather than being kept as a scope artefact. Two
+    reviews name the same file by its absolute path, so the reader is told the
+    boundary without being handed a root.
+    """
+    _absolute_records(checkout)
+    _mount(checkout)
+
+    payload = findings_module.findings_by_path(PROJECT)
+
+    assert payload["artefacts"] == []
+    group = _group(payload, FILE)
+    assert group["scope"] == "repository"
+    assert group["recurrence"] == 2
+    assert {row["line"] for row in group["rows"]} == {"12", "40"}
+
+
+def test_the_cli_defaults_to_the_mounted_checkout(checkout: Path) -> None:
+    """The CLI with no checkout path reads the same mounted boundary as the view."""
+    _absolute_records(checkout)
+    _mount(checkout)
+
+    result = CliRunner().invoke(
+        cli_main,
+        ["crew", "ledger", "--project", PROJECT, "--view", "findings"],
+    )
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+
+    assert payload["artefacts"] == []
+    group = _group(payload, FILE)
+    assert group["recurrence"] == 2
