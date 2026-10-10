@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;done&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;done&quot;,&quot;s27&quot;:&quot;done&quot;,&quot;s28&quot;:&quot;done&quot;,&quot;s29&quot;:&quot;implementable&quot;,&quot;s30&quot;:&quot;done&quot;,&quot;s31&quot;:&quot;done&quot;,&quot;s32&quot;:&quot;done&quot;}">
 <meta name="plan-impl" content="0.96875">
-<meta name="plan-version" content="313">
+<meta name="plan-version" content="314">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -997,11 +997,14 @@
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261010T225605243406-headroom-agrees-with-the-gate" data-who="reckon-build" data-when="2026-10-10T23:09:13.115Z">
     <div class="r-comment-body"><p>§30 — a candidate block's estimated_tokens and headroom_pct now come from the context-window gate's per-backend estimate and its gating window, keeping the request figure and a null headroom for a windowless backend; new tests/test_headroom_agrees_with_the_gate.py fails on main (assert 55000 == 60000) and the picker gate is 284 passed, EXIT=0 at 0861e9ca2; fragment docs/evidence/fragments/one-typesafe-model-picker/headroom-agrees-with-the-gate.html.</p></div>
 </div>
+<div class="r-comment" data-section="s30" data-id="c-run-r-20261010T231045114491-review-of-headroom-agrees-with-the-gate" data-who="reckon-build" data-when="2026-10-10T23:22:23.441Z">
+    <div class="r-comment-body"><p>§30 review — an independent review of r-20261010T225605243406-headroom-agrees-with-the-gate is stored at the .at-56f394c0b staging path, parsed with all six dimensions (goal_fidelity 19, evidence 16, scope_discipline 19, durability 18, fit 18, reuse 20; total 110, absent []), reviewed_base_sha 0861e9ca2, reviewed_head_sha 56f394c0b, and one follow-on finding that both gate logs record the parent revision 0861e9ca2 rather than the landed commit.</p></div>
+</div>
 <div class="r-comment" data-section="s32" data-id="c-close-s32" data-who="reckon-build" data-when="2026-10-10T23:45:00Z">
     <div class="r-comment-body"><p>§32 landed: a hold row carries the exact state, questions and template digest, and <code>replay_hold</code> rebuilds them byte-identically (merge <code>0e4b8adba</code>, review 111, no failures added). <a href="/reckon/evidence/archive/one-typesafe-model-picker-landed.html#s32">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s32" data-id="c-run-r-20261010T225646738553-hold-records-its-state" data-who="reckon-build" data-when="2026-10-10T23:15:52.818Z">
-    <div class="r-comment-body"><p>§32 — a pick&#x27;s Selection now carries rendered_state, questions and template_digest, and record_picker_hold stores them in the hold row (inline ≤8 KiB, else beside the holds file behind payload_ref) tagged with a request digest; replay_hold rebuilds the state and questions byte-identically and refuses a digest mismatch. tests/test_hold_records_its_state.py fails on main (the row carries no state) and the stored size of one recorded hold is 8009 bytes of payload (8411 bytes as a row); the picker+dispatch gate ran 131 passed, EXIT=0 at 25195982b; fragment docs/evidence/fragments/one-typesafe-model-picker/hold-records-its-state.html.</p></div>
+    <div class="r-comment-body"><p>§32 — a pick's Selection now carries rendered_state, questions and template_digest, and record_picker_hold stores them in the hold row (inline ≤8 KiB, else beside the holds file behind payload_ref) tagged with a request digest; replay_hold rebuilds the state and questions byte-identically and refuses a digest mismatch. tests/test_hold_records_its_state.py fails on main (the row carries no state) and the stored size of one recorded hold is 8009 bytes of payload (8411 bytes as a row); the picker+dispatch gate ran 131 passed, EXIT=0 at 25195982b; fragment docs/evidence/fragments/one-typesafe-model-picker/hold-records-its-state.html.</p></div>
 </div>
 </section>
 <section data-reckon="followups" id="followups" class="r-followups">

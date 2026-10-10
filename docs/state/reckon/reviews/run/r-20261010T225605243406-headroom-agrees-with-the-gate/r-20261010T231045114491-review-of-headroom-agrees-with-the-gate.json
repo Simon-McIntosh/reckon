@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed manifest carries no baseline_suite/after_suite field, so the store's read-path annotation reports this count unmeasured; the count above was taken by reading the logs the manifest names under test_logs directly (gate.log as the head arm, 284 passed, no FAILED/ERROR ids; negative-control-on-main.log as the base arm, whose one failing id is tests/test_headroom_agrees_with_the_gate.py::test_block_estimate_and_headroom_are_the_gates_for_that_backend, the deliberately-reddened new test), so the head added no failing id.",
+  "backend": "clive",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/picker/snapshot.py:819",
+    "reckon/crew/picker/__init__.py:258",
+    "reckon/crew/picker/replay.py:45"
+  ],
+  "completed_at": "2026-10-10T23:22:23.441Z",
+  "dispatched_at": "2026-10-10T23:11:08Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/one-typesafe-model-picker/headroom-agrees-with-the-gate.html",
+      "line": "62",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment's Gate paragraph and the reviewed manifest both cite the gate as run at revision 0861e9ca2, which is the parent of the landed commit 56f394c0b, and both gate logs' own headers name that base revision (gate.log:3, negative-control-on-main.log:3) because the gate ran in the in-place worktree before the change was committed; nothing in the reviewed run's evidence therefore ties its 284-passed result to the promoted commit, so a reader comparing the recorded revision against the promoted commit sees a mismatch."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against 0861e9ca2; 56f394c0b changes only _context_block's docstring and body in snapshot.py plus three test updates and one evidence fragment, and the block's arithmetic is unchanged for the windowed and windowless cases.",
+    "done_when": "the done-when names a test offering two admitted backends whose standing chains differ; tests/test_headroom_agrees_with_the_gate.py:134-152 asserts each block equals its own chain's estimate, the headroom formula, and the third windowless block's request figure with a null headroom; I re-ran that module plus the two updated tests at 56f394c0b and got 11 passed, and the run's recorded negative control reddens the same assertion at assert 55000 == 60000 on main.",
+    "goal": "the node goal is that an offered candidate's context block renders the context-window gate's per-backend estimate and the headroom that estimate leaves; reckon/crew/picker/snapshot.py:244-254 sets estimated_tokens from context[\"estimated_tokens\"] and headroom_pct = 100*(window_tokens-estimated_tokens)/window_tokens, and snapshot.py:237-242 keeps the request figure with a null headroom when the verdict is None.",
+    "manifest": "read; it reports 284 passed EXIT=0 and 1 failed EXIT=1 for the negative control, names the commit 56f394c0b, and flags its own fenced-out follow-on (prompts.py) rather than hiding it; the gate revision it cites is the parent commit, which is the finding below.",
+    "write_paths": "the manifest declares seven paths; git diff --stat 0861e9ca2 56f394c0b lists five changed files, every one inside that fence, with routing.py declared and correctly untouched because the gate already returns its per-backend estimate."
+  },
+  "justifications": {
+    "durability": "tests/test_headroom_agrees_with_the_gate.py:134-152 compares each block against the chain literal supplied to the stubbed input, not a value handed to the code under test, and the run's negative control reddens it at assert 55000 == 60000 on main, so the assertion names the change that would falsify it.",
+    "evidence": "the new test asserts every clause of the done-when and I re-ran it green at 56f394c0b (11 passed), but both gate logs name the parent revision 0861e9ca2 (gate.log:3), so the recorded evidence does not tie the gate to the landed commit.",
+    "fit": "the new docstring at reckon/crew/picker/snapshot.py:220-236 and the new test names are by mechanism, with no plan label, ticket or version in any staged path or symbol.",
+    "goal_fidelity": "reckon/crew/picker/snapshot.py:244-249 renders the gate's per-backend estimate and derives headroom_pct from it, and snapshot.py:237-242 preserves the main behaviour for a windowless backend.",
+    "reuse": "reckon/crew/picker/snapshot.py:245 reads the estimate the routing gate already measured through _fit's verdict rather than measuring a second time (snapshot.py:398-401), so the change extends the owner and forks nothing.",
+    "scope_discipline": "git diff --stat 0861e9ca2 56f394c0b lists five changed files, every one inside the manifest's seven declared paths, with the declared routing.py correctly untouched."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that an offered candidate's context block renders the context-window gate's per-backend estimate and the headroom that estimate leaves; reckon/crew/picker/snapshot.py:244-254 sets estimated_tokens from context[\"estimated_tokens\"] and headroom_pct = 100*(window_tokens-estimated_tokens)/window_tokens, and snapshot.py:237-242 keeps the request figure with a null headroom when the verdict is None.\nVERDICT done_when: the done-when names a test offering two admitted backends whose standing chains differ; tests/test_headroom_agrees_with_the_gate.py:134-152 asserts each block equals its own chain's estimate, the headroom formula, and the third windowless block's request figure with a null headroom; I re-ran that module plus the two updated tests at 56f394c0b and got 11 passed, and the run's recorded negative control reddens the same assertion at assert 55000 == 60000 on main.\nVERDICT write_paths: the manifest declares seven paths; git diff --stat 0861e9ca2 56f394c0b lists five changed files, every one inside that fence, with routing.py declared and correctly untouched because the gate already returns its per-backend estimate.\nVERDICT manifest: read; it reports 284 passed EXIT=0 and 1 failed EXIT=1 for the negative control, names the commit 56f394c0b, and flags its own fenced-out follow-on (prompts.py) rather than hiding it; the gate revision it cites is the parent commit, which is the finding below.\nVERDICT diff: read commit by commit against 0861e9ca2; 56f394c0b changes only _context_block's docstring and body in snapshot.py plus three test updates and one evidence fragment, and the block's arithmetic is unchanged for the windowed and windowless cases.\nCALL_SITES: reckon/crew/picker/snapshot.py:819, reckon/crew/picker/__init__.py:258, reckon/crew/picker/replay.py:45\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/picker/snapshot.py:244-249 renders the gate's per-backend estimate and derives headroom_pct from it, and snapshot.py:237-242 preserves the main behaviour for a windowless backend.\nSCORE evidence: 16\nJUSTIFICATION evidence: the new test asserts every clause of the done-when and I re-ran it green at 56f394c0b (11 passed), but both gate logs name the parent revision 0861e9ca2 (gate.log:3), so the recorded evidence does not tie the gate to the landed commit.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 0861e9ca2 56f394c0b lists five changed files, every one inside the manifest's seven declared paths, with the declared routing.py correctly untouched.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_headroom_agrees_with_the_gate.py:134-152 compares each block against the chain literal supplied to the stubbed input, not a value handed to the code under test, and the run's negative control reddens it at assert 55000 == 60000 on main, so the assertion names the change that would falsify it.\nSCORE fit: 18\nJUSTIFICATION fit: the new docstring at reckon/crew/picker/snapshot.py:220-236 and the new test names are by mechanism, with no plan label, ticket or version in any staged path or symbol.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/picker/snapshot.py:245 reads the estimate the routing gate already measured through _fit's verdict rather than measuring a second time (snapshot.py:398-401), so the change extends the owner and forks nothing.\nFINDING docs/evidence/fragments/one-typesafe-model-picker/headroom-agrees-with-the-gate.html:62 follow-on: the fragment's Gate paragraph and the reviewed manifest both cite the gate as run at revision 0861e9ca2, which is the parent of the landed commit 56f394c0b, and both gate logs' own headers name that base revision (gate.log:3, negative-control-on-main.log:3) because the gate ran in the in-place worktree before the change was committed; nothing in the reviewed run's evidence therefore ties its 284-passed result to the promoted commit, so a reader comparing the recorded revision against the promoted commit sees a mismatch.\n",
+  "review_run_id": "r-20261010T231045114491-review-of-headroom-agrees-with-the-gate",
+  "reviewed_base_sha": "0861e9ca29b11b3d5a8d28a6bd2e0bf35a5e952e",
+  "reviewed_head_sha": "56f394c0b54c6c63de5776350110f635e0c7ddf3",
+  "reviewed_run_id": "r-20261010T225605243406-headroom-agrees-with-the-gate",
+  "reviewer_run_id": "r-20261010T231045114491-review-of-headroom-agrees-with-the-gate",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T23:20:34.093699+00:00",
+  "total": 110
+}
