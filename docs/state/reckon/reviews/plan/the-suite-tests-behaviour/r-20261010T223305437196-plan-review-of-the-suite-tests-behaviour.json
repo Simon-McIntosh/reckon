@@ -1,0 +1,61 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T22:39:03.353Z",
+  "dispatched_at": "2026-10-10T22:33:32Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-suite-tests-behaviour/r-20261010T223305437196-plan-review-of-the-suite-tests-behaviour/plan.html:133",
+      "id": "reasoning-1",
+      "reason": "the node must pick a mechanism \u00a77 does not give it, and the two available are both wrong here \u2014 marking whole modules silently drops non-browser tests from the standing suite the section exists to protect, and per-test source inspection reintroduces exactly the source-reading \u00a75 of this plan removes.",
+      "text": "\u00a77 requires the `browser` marker to be \"applied once in `tests/conftest.py` by the harness rather than test by test\", but `installed_browser_or_skip` (tests/spa_browser_harness.py:539) is a plain function called at test runtime from ~29 modules that also hold non-browser tests (tests/test_build.py carries 24 tests with 1 browser call; tests/test_spa_graph_authority.py 11 tests with 2), and \u00a77's write paths exclude those modules, so a collection-time conftest hook has no signal to identify the tests that reach the harness",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-suite-tests-behaviour/r-20261010T223305437196-plan-review-of-the-suite-tests-behaviour/plan.html:133",
+      "id": "done_when-1",
+      "reason": "the measure would go green on exactly the partial marking that leaves the population in the budget-blowing suite, which is the failure \u00a77's hold exists to prevent; it should assert the marked population equals the dispatch-built population id-for-id.",
+      "text": "the done-when asserts \"a test reaching the harness carries the marker\", an existential a single marked test satisfies, while the deliverable is \"Every test that reaches `installed_browser_or_skip`\", so a node can pass the measure with one marker and leave the other ~55 browser tests in the standing suite",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-suite-tests-behaviour/r-20261010T223305437196-plan-review-of-the-suite-tests-behaviour/plan.html:133",
+      "id": "wiring-1",
+      "reason": "a coordinator or roadmap reading \u00a72 alone or following the plan's own next-action (\u00a72) re-dispatches or merges delivered, held work instead of the \u00a77 node that must run first to unblock it.",
+      "text": "\u00a77 states it \"runs on \u00a72's held head\" and that \"\u00a72's merge is held on this section\", a real depends-on and a real gate, but the plan declares no relationship for either (data-links empty, no node table), the hold on \u00a72 lives only in \u00a77's prose and in comment c-hold-s2-1010 on \u00a72, and document meta still lists s2 as \"implementable\" and followup f-tstb-002 still recommends \u00a72",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "f345c57043a2c7d51526959446ae8875538efbc589f20a27855a6f5dd6e5d39f",
+  "plan_slug": "the-suite-tests-behaviour",
+  "plan_version": 12,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261010T223305437196-plan-review-of-the-suite-tests-behaviour",
+  "reviewed_blob_sha": "32093d0490ad0b28f3665832b61db3f42cf4b426",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 tests/conftest.py, tests/spa_browser_harness.py, reckon/crew/standing_suite.py and docs/state/reckon/flight.yaml (which carries the standing-suite command under review.suite.command) all resolve; the the-suite-is-green-at-head href carries its .html, and comment c-hold-s2-1010 exists.",
+    "done_when": "a finding \u2014 \u00a77's marker assertion is existential (\"a test reaching the harness carries the marker\") where the deliverable is universal, so one marked test satisfies the measure.",
+    "evidence_paths": "pass \u2014 the quiet-node measurement and the negative control are written to the node's run directory under the crew runs tree, a durable path a later reader can open.",
+    "naming": "pass \u2014 the `browser` marker and tests/test_browser_population_is_its_own_row.py are named by function, with no plan label, ticket or stage name.",
+    "reasoning": "a finding \u2014 \u00a77 says the marker is \"applied once in tests/conftest.py by the harness\", but installed_browser_or_skip is a plain runtime function reached from 29 mixed modules and the section's write paths exclude them, so no declared caller can identify the population.",
+    "single_goal": "pass \u2014 \u00a77 delivers one capability, the browser population recorded as its own suite row; the marker, the excluded command and the row are its means.",
+    "wiring": "a finding \u2014 \u00a77 is based on \u00a72's held, unmerged head and holds \u00a72's merge, but the plan declares no depends-on/gates relationship and the driving followup still names \u00a72."
+  },
+  "section_digests": {
+    "_document": "0ed0d58117d62471f0fbb7c8e45ae01f1c1945399a294f19276ce6874fa8e5f1",
+    "s1": "1d6184c53af837617ac7ee370d7b6d622f0b187f5ac5e8f8d90a1dda6a98b5b2",
+    "s2": "0a2190864603950ade3af9b2de4b53b463e747cc8dc4c1f6e9175cdd5a4ee623",
+    "s3": "b54ea6f02bf0468b0b6f22c4317ef1f30b269045ffcaa9c19ae6abd2d175e96b",
+    "s4": "0bbb53f80bd6f9eb08c166f5e54fdde7bd5678c29b455fd39e15555bcbc17e35",
+    "s5": "ab2721f7547c999de436c1bb3551c6fe1aff3bbe51e9d92c2f44f5f91ce4123d",
+    "s6": "2ab2547ce36adce1b8926643bbc4604f1d6d1695d52434c1e8849e50f80c4b9d",
+    "s7": "05fb619dccb3de94746955090184dd595d733c07063e2a54570c99927d339ae8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T22:45:20.379875+00:00"
+}
