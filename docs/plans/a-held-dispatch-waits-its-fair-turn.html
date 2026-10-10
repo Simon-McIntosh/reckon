@@ -24,7 +24,7 @@
   <title>A Held Dispatch Waits Its Fair Turn | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="17">
+<meta name="plan-version" content="18">
 <meta name="plan-modified" content="2026-10-10">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="3c837fc1">
@@ -177,6 +177,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261010T180138424332-review-of-a-requeue-racing-its-discard-queues-afresh" data-who="reckon-build" data-when="2026-10-10T18:11:54.342Z">
     <div class="r-comment-body"><p>Review §6 of r-20261008T104719513535-a-requeue-racing-its-discard-queues-afresh: the fix is correct and load-bearing; scored goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 19, reuse 20, total 117, added_failure_count 0, no blocking findings.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261008T104719513535-a-requeue-racing-its-discard-queues-afresh" data-who="reckon-build" data-when="2026-10-08T10:59:23.501Z">
+    <div class="r-comment-body"><p>§6 — queue_dispatch now treats a queued pointer discarded between the scan and the per-run lock as absent and writes one fresh queued pointer under the request&#x27;s own run id instead of raising &quot;no live run&quot;; new case removes the gate at that seam; gate 12 passed, EXIT=0.</p></div>
 </div>
 </section>
 </main>
