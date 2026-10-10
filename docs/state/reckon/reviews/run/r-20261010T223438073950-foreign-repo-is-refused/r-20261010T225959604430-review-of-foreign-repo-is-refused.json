@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "local",
+  "base_log_revision": "66337e223d713792524b53d04e5c66d0866f8e29",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:1282"
+  ],
+  "completed_at": "2026-10-10T23:12:46.332Z",
+  "dispatched_at": "2026-10-10T23:00:40Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/lane-and-model-routing/foreign-repo-is-refused.html",
+      "line": "2",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment and the reviewed manifest's baseline_suite label the negative-control arm 66337e22+guard-removed, but revision 66337e22 carries no guard to remove and the arm's tree is the head tree (77c628c8) with the guard call deleted, so the arm's recorded revision names the base while the code it measured is the head; the added-failure count it feeds is unaffected (0) but a reader tying the arm to a revision is misled."
+    },
+    {
+      "file": "reckon/crew_dispatch_commands.py",
+      "line": "518",
+      "severity": "follow-on",
+      "text": "follow-on: _repository_owning_projects is a third spelling of the repository-to-projects resolution, beside reckon/crew/dispatch.py:205 and reckon/crew/dispatch_sections.py:24; it correctly calls mounted_repository_projects and adds linked-worktree identity, so it does not fork an equivalent owner, but the three spellings are worth consolidating on one."
+    }
+  ],
+  "head_log_revision": "6479e3ed3e434e3ec0d78dfdff190660b25ffa74",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read 66337e22..77c628c8 change by change, two commits (fix, docs), +247/-0 across three files; the fix resolves the named repository once before any route and refuses on the dispatch-refused channel.",
+    "done_when": "the done-when asks for a test dispatching with a foreign repository, a non-zero exit, a one-line refusal naming both projects and no traceback, plus a negative control with the catch removed; the reviewed gate.log records the five gate modules at 33 passed EXIT=0 and negative_control.log records 1 failed, 1 passed, EXIT=1 with Traceback in stderr, and I independently reproduced both arms by re-running the named module at 77c628c8 (2 passed EXIT=0) and with the guard call removed (1 failed, 1 passed, EXIT=1 on assert 'Traceback' not in result.stderr).",
+    "goal": "the node goal is to refuse a dispatch whose --repo belongs to another project with a one-line refusal naming both projects rather than a traceback; reckon/crew_dispatch_commands.py:540 adds _refuse_a_foreign_repository, called before any route at reckon/crew_dispatch_commands.py:1282, and I re-ran tests/test_foreign_repo_is_refused.py at 77c628c8 (2 passed EXIT=0) showing the refusal names 'amber' and 'basalt' with no Traceback on stderr.",
+    "manifest": "the manifest status is complete, baseline_suite names rev 66337e22+guard-removed at negative_control.log (1 failed, EXIT=1) and after_suite names 6479e3ed at gate.log (33 passed, EXIT=0), both completed true, and negative_control_log names the scratch log.",
+    "write_paths": "the manifest declares four paths; git diff --stat 66337e22..77c628c8 touches only reckon/crew_dispatch_commands.py, tests/test_foreign_repo_is_refused.py and docs/evidence/fragments/lane-and-model-routing/foreign-repo-is-refused.html, leaving the declared figures directory unused."
+  },
+  "justifications": {
+    "durability": "removing the guard call reddens tests/test_foreign_repo_is_refused.py::test_a_foreign_repository_is_refused_naming_both_projects on Traceback in stderr (reproduced: 1 failed, 1 passed, EXIT=1), while tests/test_foreign_repo_is_refused.py:169 is a positive control asserting the function admits the mount's own repository.",
+    "evidence": "gate.log records 33 passed EXIT=0 and negative_control.log 1 failed/EXIT=1, both re-run by me at 77c628c8; one point withheld because the manifest's baseline_suite labels the negative-control arm with the base revision 66337e22, which carries no guard to remove.",
+    "fit": "both commits carry a conventional subject and a body with no attribution trailer and no plan or ticket label, and _refuse_a_foreign_repository at reckon/crew_dispatch_commands.py:540 is named by mechanism.",
+    "goal_fidelity": "the guard at reckon/crew_dispatch_commands.py:540 refuses on every route and names both projects, verified by re-running tests/test_foreign_repo_is_refused.py at 77c628c8.",
+    "reuse": "_repository_owning_projects at reckon/crew_dispatch_commands.py:518 reuses mounted_repository_projects and repository_identity rather than re-deriving ownership, though reckon/crew/dispatch.py:205 and reckon/crew/dispatch_sections.py:24 hold the same repository-to-project resolution in other spellings.",
+    "scope_discipline": "git diff --stat 66337e22..77c628c8 touches only reckon/crew_dispatch_commands.py, tests/test_foreign_repo_is_refused.py and the in-fence evidence fragment."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to refuse a dispatch whose --repo belongs to another project with a one-line refusal naming both projects rather than a traceback; reckon/crew_dispatch_commands.py:540 adds _refuse_a_foreign_repository, called before any route at reckon/crew_dispatch_commands.py:1282, and I re-ran tests/test_foreign_repo_is_refused.py at 77c628c8 (2 passed EXIT=0) showing the refusal names 'amber' and 'basalt' with no Traceback on stderr.\nVERDICT done_when: the done-when asks for a test dispatching with a foreign repository, a non-zero exit, a one-line refusal naming both projects and no traceback, plus a negative control with the catch removed; the reviewed gate.log records the five gate modules at 33 passed EXIT=0 and negative_control.log records 1 failed, 1 passed, EXIT=1 with Traceback in stderr, and I independently reproduced both arms by re-running the named module at 77c628c8 (2 passed EXIT=0) and with the guard call removed (1 failed, 1 passed, EXIT=1 on assert 'Traceback' not in result.stderr).\nVERDICT write_paths: the manifest declares four paths; git diff --stat 66337e22..77c628c8 touches only reckon/crew_dispatch_commands.py, tests/test_foreign_repo_is_refused.py and docs/evidence/fragments/lane-and-model-routing/foreign-repo-is-refused.html, leaving the declared figures directory unused.\nVERDICT manifest: the manifest status is complete, baseline_suite names rev 66337e22+guard-removed at negative_control.log (1 failed, EXIT=1) and after_suite names 6479e3ed at gate.log (33 passed, EXIT=0), both completed true, and negative_control_log names the scratch log.\nVERDICT diff: read 66337e22..77c628c8 change by change, two commits (fix, docs), +247/-0 across three files; the fix resolves the named repository once before any route and refuses on the dispatch-refused channel.\nCALL_SITES: reckon/crew_dispatch_commands.py:1282\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the guard at reckon/crew_dispatch_commands.py:540 refuses on every route and names both projects, verified by re-running tests/test_foreign_repo_is_refused.py at 77c628c8.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate.log records 33 passed EXIT=0 and negative_control.log 1 failed/EXIT=1, both re-run by me at 77c628c8; one point withheld because the manifest's baseline_suite labels the negative-control arm with the base revision 66337e22, which carries no guard to remove.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 66337e22..77c628c8 touches only reckon/crew_dispatch_commands.py, tests/test_foreign_repo_is_refused.py and the in-fence evidence fragment.\nSCORE durability: 19\nJUSTIFICATION durability: removing the guard call reddens tests/test_foreign_repo_is_refused.py::test_a_foreign_repository_is_refused_naming_both_projects on Traceback in stderr (reproduced: 1 failed, 1 passed, EXIT=1), while tests/test_foreign_repo_is_refused.py:169 is a positive control asserting the function admits the mount's own repository.\nSCORE fit: 19\nJUSTIFICATION fit: both commits carry a conventional subject and a body with no attribution trailer and no plan or ticket label, and _refuse_a_foreign_repository at reckon/crew_dispatch_commands.py:540 is named by mechanism.\nSCORE reuse: 18\nJUSTIFICATION reuse: _repository_owning_projects at reckon/crew_dispatch_commands.py:518 reuses mounted_repository_projects and repository_identity rather than re-deriving ownership, though reckon/crew/dispatch.py:205 and reckon/crew/dispatch_sections.py:24 hold the same repository-to-project resolution in other spellings.\nFINDING docs/evidence/fragments/lane-and-model-routing/foreign-repo-is-refused.html:2 follow-on: the fragment and the reviewed manifest's baseline_suite label the negative-control arm 66337e22+guard-removed, but revision 66337e22 carries no guard to remove and the arm's tree is the head tree (77c628c8) with the guard call deleted, so the arm's recorded revision names the base while the code it measured is the head; the added-failure count it feeds is unaffected (0) but a reader tying the arm to a revision is misled.\nFINDING reckon/crew_dispatch_commands.py:518 follow-on: _repository_owning_projects is a third spelling of the repository-to-projects resolution, beside reckon/crew/dispatch.py:205 and reckon/crew/dispatch_sections.py:24; it correctly calls mounted_repository_projects and adds linked-worktree identity, so it does not fork an equivalent owner, but the three spellings are worth consolidating on one.",
+  "review_run_id": "r-20261010T225959604430-review-of-foreign-repo-is-refused",
+  "reviewed_base_sha": "66337e223d713792524b53d04e5c66d0866f8e29",
+  "reviewed_head_sha": "77c628c85be7d673e8fc59385a2ddc90005a3eef",
+  "reviewed_run_id": "r-20261010T223438073950-foreign-repo-is-refused",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T23:10:59.042481+00:00",
+  "total": 112
+}
