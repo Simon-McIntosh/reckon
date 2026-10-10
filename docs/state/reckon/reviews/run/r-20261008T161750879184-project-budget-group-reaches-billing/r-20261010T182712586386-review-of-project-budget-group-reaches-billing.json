@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs: its baseline arm (gate-base.log, revision 889ed1b4d) completed at 140 passed EXIT=0 with no failing id, and its after arm (gate-head.log, revision 5b65a8494) shows no failing id in the portion it ran, so the set difference over pytest node ids is empty (0 added). The after arm's log is truncated mid-run (no summary, no EXIT) and the reviewed manifest left baseline_suite/after_suite empty, so this 0 rests on the base arm plus the reviewed manifest's recorded head result (142 passed, EXIT=0) and the stub-fix rerun (149 passed, EXIT=0), not on a head log that reaches a summary line.",
+  "base_log_revision": "889ed1b4d98b7d68d34d437b8c1777ae7718485f",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:_complete_locked",
+    "reckon/capabilities.py:_backend_billing",
+    "reckon/crew/picker/outcomes.py"
+  ],
+  "commits_read": [
+    "d379a89ba47abb4ef7adacc04802ba7270131182",
+    "5b65a84945b70cd7c76e96c59e28383e3469e258"
+  ],
+  "completed_at": "2026-10-10T18:41:51.450Z",
+  "dispatched_at": "2026-10-10T18:27:39Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "866",
+      "severity": "follow-on",
+      "text": "follow-on: _complete_locked calls ledger.build_record without project, so a written row's budget block is resolved from the shipped/host/catalogue layers only; the project override reaches the row at read time when a reader stamps _project, not at write time. Passing project=str(record.get('project') or '') would make the written row agree with the read surfaces."
+    },
+    {
+      "file": "reckon/crew/picker/outcomes.py",
+      "line": "373",
+      "severity": "follow-on",
+      "text": "follow-on: is_subscription_backend(backend) is called without a project, so the picker's per-backend subscription label ignores a project-layer budget_group override; passing the row's _project stamp would let a project that moved a lane into a subscription group be summarised that way."
+    },
+    {
+      "file": "r-20261008T161750879184-project-budget-group-reaches-billing/manifest.md",
+      "line": "19",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest leaves baseline_suite and after_suite empty and names its arm logs only under test_logs, so annotate_review_of_run finds no base gate log and the read path reports added_failure_count unmeasured regardless of what a stored record carries."
+    },
+    {
+      "file": "r-20261008T161750879184-project-budget-group-reaches-billing/gate-head.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed run's after-arm log on disk is truncated mid-run (the resume that re-ran the head arm was SIGKILLed), so it carries no pytest summary and no EXIT= line; the reviewed manifest's recorded head result (142 passed, EXIT=0) is not supported by the on-disk log, only by the manifest's prose and the stub-fix rerun log."
+    }
+  ],
+  "head_log_revision": "5b65a84945b70cd7c76e96c59e28383e3469e258",
+  "justifications": {
+    "durability": "the two new tests assert the outcome by value in both directions (None vs 1.61, subscription vs no billing key), and the recorded negative control re-resolving with no project reddens both (2 failed, 9 passed, EXIT=1), so the assertions guard the regression they name rather than rest on a count.",
+    "evidence": "the reviewed run's base arm log is complete (140 passed, EXIT=0) but its after arm log (gate-head.log) is truncated mid-run with no summary and no EXIT, and the manifest leaves the structured baseline_suite/after_suite fields empty, so the read path annotates the record unmeasured; the count had to be read from the arm logs named only under test_logs.",
+    "fit": "project is a keyword-only parameter added in place on backend_budget_group and is_subscription_backend, the flight layer cache key is extended in place rather than a second resolver added, and capabilities._run_project follows the module's reader idiom.",
+    "goal_fidelity": "the done-when asks for a project flight that moves a backend into a subscription group and records zero per-token spend on that project's rows and a kept figure on another's; tests/test_subscription_lanes_record_no_spend.py test_a_project_flight_moves_a_backend_into_a_subscription_group asserts cost_usd/cost_usd_cumulative None, cost_usd_imputed True and budget_group research-sub for project 'moved', and 1.61 kept with no billing key for 'elsewhere'; test_a_read_row_reads_its_project_layer asserts the same both ways through capabilities._backend_billing. The product threads project through ledger.build_record -> _label_unmetered_cost -> is_subscription_backend -> backend_budget_group -> _resolved flight with the project layer folded into the cache key, and capabilities reads the _project stamp. The one shortfall is that no production caller drives build_record with project (promotion.py) and the picker call site omits it, so the override is honoured at read time and in tests, not yet at write time end to end.",
+    "reuse": "every changed function extends the owner of its capability \u2014 the flight cache and the billing reader in ledger, the billing class reader in capabilities; the only new definition, capabilities._run_project, is a three-line reader of the _project stamp.",
+    "scope_discipline": "every changed path is inside the manifest's declared changed_paths; the product change is +184/-28 over base in reckon/ledger.py, reckon/capabilities.py and the billing test file, all inside the plan section's write paths. The stub widening at 5b65a8494 spans six further test files beyond the plan's three declared write paths, but it is a forced collateral of calling flight.resolve with a positional project argument and is declared in the manifest."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the done-when asks for a project flight that moves a backend into a subscription group and records zero per-token spend on that project's rows and a kept figure on another's; tests/test_subscription_lanes_record_no_spend.py test_a_project_flight_moves_a_backend_into_a_subscription_group asserts cost_usd/cost_usd_cumulative None, cost_usd_imputed True and budget_group research-sub for project 'moved', and 1.61 kept with no billing key for 'elsewhere'; test_a_read_row_reads_its_project_layer asserts the same both ways through capabilities._backend_billing. The product threads project through ledger.build_record -> _label_unmetered_cost -> is_subscription_backend -> backend_budget_group -> _resolved flight with the project layer folded into the cache key, and capabilities reads the _project stamp. The one shortfall is that no production caller drives build_record with project (promotion.py) and the picker call site omits it, so the override is honoured at read time and in tests, not yet at write time end to end.\nVERDICT evidence: the reviewed run's base arm log is complete (140 passed, EXIT=0) but its after arm log (gate-head.log) is truncated mid-run with no summary and no EXIT, and the manifest leaves the structured baseline_suite/after_suite fields empty, so the read path annotates the record unmeasured; the count had to be read from the arm logs named only under test_logs.\nVERDICT scope_discipline: every changed path is inside the manifest's declared changed_paths; the product change is +184/-28 over base in reckon/ledger.py, reckon/capabilities.py and the billing test file, all inside the plan section's write paths. The stub widening at 5b65a8494 spans six further test files beyond the plan's three declared write paths, but it is a forced collateral of calling flight.resolve with a positional project argument and is declared in the manifest.\nVERDICT durability: the two new tests assert the outcome by value in both directions (None vs 1.61, subscription vs no billing key), and the recorded negative control re-resolving with no project reddens both (2 failed, 9 passed, EXIT=1), so the assertions guard the regression they name rather than rest on a count.\nVERDICT fit: project is a keyword-only parameter added in place on backend_budget_group and is_subscription_backend, the flight layer cache key is extended in place rather than a second resolver added, and capabilities._run_project follows the module's reader idiom.\nVERDICT reuse: every changed function extends the owner of its capability \u2014 the flight cache and the billing reader in ledger, the billing class reader in capabilities; the only new definition, capabilities._run_project, is a three-line reader of the _project stamp.\nCALL_SITES: reckon/crew/promotion.py:_complete_locked, reckon/capabilities.py:_backend_billing, reckon/crew/picker/outcomes.py\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: the done-when asks for a project flight that moves a backend into a subscription group and records zero per-token spend on that project's rows and a kept figure on another's; tests/test_subscription_lanes_record_no_spend.py test_a_project_flight_moves_a_backend_into_a_subscription_group asserts cost_usd/cost_usd_cumulative None, cost_usd_imputed True and budget_group research-sub for project 'moved', and 1.61 kept with no billing key for 'elsewhere'; test_a_read_row_reads_its_project_layer asserts the same both ways through capabilities._backend_billing. The product threads project through ledger.build_record -> _label_unmetered_cost -> is_subscription_backend -> backend_budget_group -> _resolved flight with the project layer folded into the cache key, and capabilities reads the _project stamp. The one shortfall is that no production caller drives build_record with project (promotion.py) and the picker call site omits it, so the override is honoured at read time and in tests, not yet at write time end to end.\nSCORE evidence: 14\nJUSTIFICATION evidence: the reviewed run's base arm log is complete (140 passed, EXIT=0) but its after arm log (gate-head.log) is truncated mid-run with no summary and no EXIT, and the manifest leaves the structured baseline_suite/after_suite fields empty, so the read path annotates the record unmeasured; the count had to be read from the arm logs named only under test_logs.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: every changed path is inside the manifest's declared changed_paths; the product change is +184/-28 over base in reckon/ledger.py, reckon/capabilities.py and the billing test file, all inside the plan section's write paths. The stub widening at 5b65a8494 spans six further test files beyond the plan's three declared write paths, but it is a forced collateral of calling flight.resolve with a positional project argument and is declared in the manifest.\nSCORE durability: 18\nJUSTIFICATION durability: the two new tests assert the outcome by value in both directions (None vs 1.61, subscription vs no billing key), and the recorded negative control re-resolving with no project reddens both (2 failed, 9 passed, EXIT=1), so the assertions guard the regression they name rather than rest on a count.\nSCORE fit: 18\nJUSTIFICATION fit: project is a keyword-only parameter added in place on backend_budget_group and is_subscription_backend, the flight layer cache key is extended in place rather than a second resolver added, and capabilities._run_project follows the module's reader idiom.\nSCORE reuse: 18\nJUSTIFICATION reuse: every changed function extends the owner of its capability \u2014 the flight cache and the billing reader in ledger, the billing class reader in capabilities; the only new definition, capabilities._run_project, is a three-line reader of the _project stamp.\nFINDING reckon/crew/promotion.py:866 follow-on: _complete_locked calls ledger.build_record without project, so a written row's budget block is resolved from the shipped/host/catalogue layers only; the project override reaches the row at read time when a reader stamps _project, not at write time. Passing project=str(record.get('project') or '') would make the written row agree with the read surfaces.\nFINDING reckon/crew/picker/outcomes.py:373 follow-on: is_subscription_backend(backend) is called without a project, so the picker's per-backend subscription label ignores a project-layer budget_group override; passing the row's _project stamp would let a project that moved a lane into a subscription group be summarised that way.\nFINDING r-20261008T161750879184-project-budget-group-reaches-billing/manifest.md:19 follow-on: the reviewed manifest leaves baseline_suite and after_suite empty and names its arm logs only under test_logs, so annotate_review_of_run finds no base gate log and the read path reports added_failure_count unmeasured regardless of what a stored record carries.\nFINDING r-20261008T161750879184-project-budget-group-reaches-billing/gate-head.log:1 follow-on: the reviewed run's after-arm log on disk is truncated mid-run (the resume that re-ran the head arm was SIGKILLed), so it carries no pytest summary and no EXIT= line; the reviewed manifest's recorded head result (142 passed, EXIT=0) is not supported by the on-disk log, only by the manifest's prose and the stub-fix rerun log.\n",
+  "review_run_id": "r-20261010T182712586386-review-of-project-budget-group-reaches-billing",
+  "reviewed_base_sha": "889ed1b4d98b7d68d34d437b8c1777ae7718485f",
+  "reviewed_head_sha": "5b65a84945b70cd7c76e96c59e28383e3469e258",
+  "reviewed_run_id": "r-20261008T161750879184-project-budget-group-reaches-billing",
+  "role": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 18,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T18:39:16Z",
+  "total": 101
+}
