@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "backend": "local",
+  "base_log_revision": null,
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/mcp.py:1700 (MCP crew view=\"findings\")",
+    "reckon/mcp.py:1677 (admitted view name)",
+    "reckon/crew_run_commands.py:1936 (reckon crew ledger --view findings)",
+    "reckon/crew_run_commands.py:1909 (click choice)"
+  ],
+  "completed_at": "2026-10-10T21:24:05.095Z",
+  "dispatched_at": "2026-10-10T21:14:56Z",
+  "findings": [
+    {
+      "file": "reckon/crew/findings.py",
+      "line": "159",
+      "severity": "follow-on",
+      "text": "follow-on: finding_disposition's folded/exempted rendering is unguarded \u2014 tests/test_findings_read_by_path.py only ever asserts disposition \"open\" (:141, :175), so a regression that mis-rendered a fold or an exemption, or that broke the plan-record path (_plan_findings :130, _split_anchor :69) which no test builds a plan record for, would keep the suite green."
+    },
+    {
+      "file": "reckon/crew/findings.py",
+      "line": "232",
+      "severity": "follow-on",
+      "text": "follow-on: the walk couples to review's private helpers _committed_record_at and _INCOMPLETE_RECORD_MARK rather than a public committed-reader, so renaming either in review.py would silently break the walk (the mark check would admit .incomplete- records and the read would return None and be skipped) with no test covering that edge."
+    },
+    {
+      "file": "reckon/crew/findings.py",
+      "line": "260",
+      "severity": "follow-on",
+      "text": "follow-on: when no root/checkout-path is supplied, committed_review_root resolves the tree against the mounted checkout but the scope boundary is computed from root_path=None, so an absolute finding path inside the checkout is scoped artefact and contributes no recurrence in the default CLI/MCP invocation."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit 60f3619 against base fef8ae2: five files, +575/-5 \u2014 the new 308-line reckon/crew/findings.py, a findings entry in the mcp _crew view dispatch and in the crew ledger CLI, a 209-line test module and the evidence fragment; nothing outside the declared scope.",
+    "done_when": "the done_when names tests/test_findings_read_by_path.py with recurrence 2 for a path two reviews name, the artefact scope and CLI parity; the manifest records 4 passed EXIT=0 and I reproduced head 4 passed EXIT=0 at 60f3619 and the declared negative control 3 failed, 1 passed EXIT=1 in a scratch tree.",
+    "goal": "the node's goal is that every stored review finding is readable by the repository path it names; reckon/crew/findings.py:236 findings_by_path walks the committed run-review and plan-review records and groups rows by path with a recurrence count, keeping a path outside the checkout as scope:artefact, which is exactly the deliverable.",
+    "manifest": "read; status complete, commit 60f3619, tests record 4 passed EXIT=0 with the negative control at EXIT=1, and baseline_suite/after_suite are present-but-null so the added-failure count is unmeasured.",
+    "write_paths": "read the reviewed manifest's declared paths (reckon/crew/findings.py, reckon/mcp.py, reckon/crew_run_commands.py, tests/test_findings_read_by_path.py, the evidence fragment); every path in the diff fef8ae2..60f3619 is inside them and the figures directory is unpopulated."
+  },
+  "justifications": {
+    "durability": "the recurrence assertion (tests/test_findings_read_by_path.py:136) reddens under the declared mutation (reproduced 3 failed EXIT=1), but finding_disposition's folded/exempted branches (reckon/crew/findings.py:159) and the whole plan-record path (_plan_findings :130, _split_anchor :69) are exercised by no test, so a regression there would not redden any guard, as the finding at findings.py:159 records.",
+    "evidence": "tests/test_findings_read_by_path.py:136 asserts recurrence 2 and :144 the artefact scope, the manifest records 4 passed EXIT=0, and I reproduced head 4 passed EXIT=0 at 60f3619 plus the negative control 3 failed EXIT=1.",
+    "fit": "reckon/crew/findings.py follows the module's own idiom and names every symbol by mechanism, but the walk reaches into review's private helpers _committed_record_at and _INCOMPLETE_RECORD_MARK (findings.py:232, :268) rather than a named public reader.",
+    "goal_fidelity": "reckon/crew/findings.py:236 groups each stored record's findings by the path they name via _record_rows (:183) and counts the distinct reviews naming a path as recurrence (:296), which is the goal.",
+    "reuse": "the reader reuses the store's own owners \u2014 repair.review_findings for the findings (findings.py:123), review.committed_review_root and review._committed_record_at for the tree (:225, :268) and review.carried_revision_pair (:194) \u2014 and a search over reckon/ found no existing owner of a group-by-path reader (search: grep -rn 'def .*findings|by_path' reckon/ lands only on repair.py's per-record readers), so nothing is forked.",
+    "scope_discipline": "every path in git diff fef8ae2..60f3619 (findings.py, mcp.py, crew_run_commands.py, the test, the evidence fragment) is inside the reviewed manifest's declared write paths."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that every stored review finding is readable by the repository path it names; reckon/crew/findings.py:236 findings_by_path walks the committed run-review and plan-review records and groups rows by path with a recurrence count, keeping a path outside the checkout as scope:artefact, which is exactly the deliverable.\nVERDICT done_when: the done_when names tests/test_findings_read_by_path.py with recurrence 2 for a path two reviews name, the artefact scope and CLI parity; the manifest records 4 passed EXIT=0 and I reproduced head 4 passed EXIT=0 at 60f3619 and the declared negative control 3 failed, 1 passed EXIT=1 in a scratch tree.\nVERDICT write_paths: read the reviewed manifest's declared paths (reckon/crew/findings.py, reckon/mcp.py, reckon/crew_run_commands.py, tests/test_findings_read_by_path.py, the evidence fragment); every path in the diff fef8ae2..60f3619 is inside them and the figures directory is unpopulated.\nVERDICT manifest: read; status complete, commit 60f3619, tests record 4 passed EXIT=0 with the negative control at EXIT=1, and baseline_suite/after_suite are present-but-null so the added-failure count is unmeasured.\nVERDICT diff: read commit 60f3619 against base fef8ae2: five files, +575/-5 \u2014 the new 308-line reckon/crew/findings.py, a findings entry in the mcp _crew view dispatch and in the crew ledger CLI, a 209-line test module and the evidence fragment; nothing outside the declared scope.\nCALL_SITES: reckon/mcp.py:1700 (MCP crew view=\"findings\"), reckon/mcp.py:1677 (admitted view name), reckon/crew_run_commands.py:1936 (reckon crew ledger --view findings), reckon/crew_run_commands.py:1909 (click choice)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/findings.py:236 groups each stored record's findings by the path they name via _record_rows (:183) and counts the distinct reviews naming a path as recurrence (:296), which is the goal.\nSCORE evidence: 20\nJUSTIFICATION evidence: tests/test_findings_read_by_path.py:136 asserts recurrence 2 and :144 the artefact scope, the manifest records 4 passed EXIT=0, and I reproduced head 4 passed EXIT=0 at 60f3619 plus the negative control 3 failed EXIT=1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff fef8ae2..60f3619 (findings.py, mcp.py, crew_run_commands.py, the test, the evidence fragment) is inside the reviewed manifest's declared write paths.\nSCORE durability: 15\nJUSTIFICATION durability: the recurrence assertion (tests/test_findings_read_by_path.py:136) reddens under the declared mutation (reproduced 3 failed EXIT=1), but finding_disposition's folded/exempted branches (reckon/crew/findings.py:159) and the whole plan-record path (_plan_findings :130, _split_anchor :69) are exercised by no test, so a regression there would not redden any guard, as the finding at findings.py:159 records.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/findings.py follows the module's own idiom and names every symbol by mechanism, but the walk reaches into review's private helpers _committed_record_at and _INCOMPLETE_RECORD_MARK (findings.py:232, :268) rather than a named public reader.\nSCORE reuse: 20\nJUSTIFICATION reuse: the reader reuses the store's own owners \u2014 repair.review_findings for the findings (findings.py:123), review.committed_review_root and review._committed_record_at for the tree (:225, :268) and review.carried_revision_pair (:194) \u2014 and a search over reckon/ found no existing owner of a group-by-path reader (search: grep -rn 'def .*findings|by_path' reckon/ lands only on repair.py's per-record readers), so nothing is forked.\nFINDING reckon/crew/findings.py:159 follow-on: finding_disposition's folded/exempted rendering is unguarded \u2014 tests/test_findings_read_by_path.py only ever asserts disposition \"open\" (:141, :175), so a regression that mis-rendered a fold or an exemption, or that broke the plan-record path (_plan_findings :130, _split_anchor :69) which no test builds a plan record for, would keep the suite green.\nFINDING reckon/crew/findings.py:232 follow-on: the walk couples to review's private helpers _committed_record_at and _INCOMPLETE_RECORD_MARK rather than a public committed-reader, so renaming either in review.py would silently break the walk (the mark check would admit .incomplete- records and the read would return None and be skipped) with no test covering that edge.\nFINDING reckon/crew/findings.py:260 follow-on: when no root/checkout-path is supplied, committed_review_root resolves the tree against the mounted checkout but the scope boundary is computed from root_path=None, so an absolute finding path inside the checkout is scoped artefact and contributes no recurrence in the default CLI/MCP invocation.\nreviewed_base_sha: fef8ae2daa9a790de558740a9181bf09f38854b0\nreviewed_head_sha: 60f3619da5c9b3e70f0ab5ab7f0081f9013e91cc\n",
+  "review_run_id": "r-20261010T211428291671-review-of-findings-read-by-path",
+  "reviewed_base_sha": "fef8ae2daa9a790de558740a9181bf09f38854b0",
+  "reviewed_head_sha": "60f3619da5c9b3e70f0ab5ab7f0081f9013e91cc",
+  "reviewed_run_id": "r-20261010T203443911256-findings-read-by-path",
+  "scores": {
+    "durability": 15,
+    "evidence": 20,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T21:21:38.344073+00:00",
+  "total": 113
+}
