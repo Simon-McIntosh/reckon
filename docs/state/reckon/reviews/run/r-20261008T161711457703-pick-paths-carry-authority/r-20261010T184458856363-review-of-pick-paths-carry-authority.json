@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "2cd83ada349cc22edb0f997aab86667f0261a168",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch.py:644",
+    "reckon/crew_dispatch_commands.py:1203",
+    "reckon/crew/dispatch_picker.py:387"
+  ],
+  "completed_at": "2026-10-10T18:55:13.038Z",
+  "dispatched_at": "2026-10-10T18:45:26Z",
+  "findings": [
+    {
+      "file": "tests/test_pick_paths_carry_authority.py",
+      "line": "222",
+      "severity": "follow-on",
+      "text": "follow-on: the failure-reporting assertion compares selection['authority_error'] against the same literal 'CrewError: mounts unavailable' the test passed in as the authority_error argument, the two-sides-move-together shape the review prompt names; it catches only a dropped key and cannot detect the reason being altered or a real resolution failure being misreported, so reporting is not independently verified end to end."
+    },
+    {
+      "file": "reckon/crew/picker/snapshot.py",
+      "line": "234",
+      "severity": "follow-on",
+      "text": "follow-on: the candidate block now renders the harness-independent node_tokens while the context-fit window gate still keys its allowed/refusal on the per-backend estimate (reckon/crew/routing.py:3587-3590 sums standing_tokens from that backend's backend_settings), so on a lane whose standing chain exceeds the request's the block's headroom_pct overstates free window space; the gate refusal is preserved but Jev's headroom reading is no longer the figure the gate used."
+    }
+  ],
+  "head_log_revision": "d6e79cf34b2f9e335ba79ceb7d69c6ead6cfbcf2",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read the three commits against their bases; item 1 edits reckon/crew/dispatch_picker.py and reckon/crew_dispatch_commands.py, item 2 edits reckon/crew/picker/snapshot.py, beside the two test files and the evidence fragment and figure, and the branch merged origin/main at 1f171edfd between the two items.",
+    "done_when": "the done-when names two clauses proved by tests; item 1's 'reported' clause is asserted at tests/test_pick_paths_carry_authority.py:198 and driven through both paths at :116 and :160, and item 2's equality is asserted at tests/test_pick_paths_carry_authority.py:234; item 1's 'charged once' clause is not asserted by any test.",
+    "goal": "the node goal is to carry the dispatch authority on every pick path and use one backend-settings rule for the request estimate and the candidate blocks; reckon/crew/dispatch_picker.py:105 resolves the authority for the dry-run and shadow paths and reckon/crew/picker/snapshot.py:234 renders one figure in every candidate block.",
+    "manifest": "read; it records status complete, base 66ad94b2, head d6e79cf3, three commits, baseline_suite and after_suite carrying the two gate logs (74 and 79 passed, exit 0), and it self-declares the tests/test_jev_weighs_context.py deviation.",
+    "write_paths": "the seven paths fenced in the run manifest's orientation_write_paths contain every path the diff touches, though the manifest itself flags tests/test_jev_weighs_context.py as a deviation from the plan section's narrower write-path list."
+  },
+  "justifications": {
+    "durability": "negative-control.log and negative-control-2.log each redden one named test (EXIT=1), but the failure-reporting assertion at tests/test_pick_paths_carry_authority.py:222 compares the selection against the literal the test itself passed in, so it can only catch a dropped key.",
+    "evidence": "gate-base.log and gate-head.log record 74 and 79 passed at exit 0 with zero added failures, but the done-when's 'charged once' clause has no asserting test and 'reported' rests partly on the assertion at tests/test_pick_paths_carry_authority.py:222.",
+    "fit": "resolve_picker_authority and authority_error are named for the mechanism and follow the existing guarded-resolution idiom in reckon/crew/dispatch_picker.py:105.",
+    "goal_fidelity": "both done-when items are implemented - reckon/crew/dispatch_picker.py:105 resolves the authority for the two paths the section names and reckon/crew/picker/snapshot.py:234 unifies the figure.",
+    "reuse": "resolve_picker_authority wraps the existing resolve_dispatch_authority (reckon/crew/routing.py:2901) rather than re-implementing it, and _context_block deletes the per-backend branch rather than adding a second rule.",
+    "scope_discipline": "every diff path is inside the run manifest's fenced write paths, but the plan section's write-path list names neither reckon/crew/picker/snapshot.py nor tests/test_jev_weighs_context.py, which the manifest itself flags."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to carry the dispatch authority on every pick path and use one backend-settings rule for the request estimate and the candidate blocks; reckon/crew/dispatch_picker.py:105 resolves the authority for the dry-run and shadow paths and reckon/crew/picker/snapshot.py:234 renders one figure in every candidate block.\nVERDICT done_when: the done-when names two clauses proved by tests; item 1's 'reported' clause is asserted at tests/test_pick_paths_carry_authority.py:198 and driven through both paths at :116 and :160, and item 2's equality is asserted at tests/test_pick_paths_carry_authority.py:234; item 1's 'charged once' clause is not asserted by any test.\nVERDICT write_paths: the seven paths fenced in the run manifest's orientation_write_paths contain every path the diff touches, though the manifest itself flags tests/test_jev_weighs_context.py as a deviation from the plan section's narrower write-path list.\nVERDICT manifest: read; it records status complete, base 66ad94b2, head d6e79cf3, three commits, baseline_suite and after_suite carrying the two gate logs (74 and 79 passed, exit 0), and it self-declares the tests/test_jev_weighs_context.py deviation.\nVERDICT diff: read the three commits against their bases; item 1 edits reckon/crew/dispatch_picker.py and reckon/crew_dispatch_commands.py, item 2 edits reckon/crew/picker/snapshot.py, beside the two test files and the evidence fragment and figure, and the branch merged origin/main at 1f171edfd between the two items.\nCALL_SITES: reckon/crew/dispatch.py:644, reckon/crew_dispatch_commands.py:1203, reckon/crew/dispatch_picker.py:387\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: both done-when items are implemented - reckon/crew/dispatch_picker.py:105 resolves the authority for the two paths the section names and reckon/crew/picker/snapshot.py:234 unifies the figure.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-base.log and gate-head.log record 74 and 79 passed at exit 0 with zero added failures, but the done-when's 'charged once' clause has no asserting test and 'reported' rests partly on the assertion at tests/test_pick_paths_carry_authority.py:222.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every diff path is inside the run manifest's fenced write paths, but the plan section's write-path list names neither reckon/crew/picker/snapshot.py nor tests/test_jev_weighs_context.py, which the manifest itself flags.\nSCORE durability: 16\nJUSTIFICATION durability: negative-control.log and negative-control-2.log each redden one named test (EXIT=1), but the failure-reporting assertion at tests/test_pick_paths_carry_authority.py:222 compares the selection against the literal the test itself passed in, so it can only catch a dropped key.\nSCORE fit: 19\nJUSTIFICATION fit: resolve_picker_authority and authority_error are named for the mechanism and follow the existing guarded-resolution idiom in reckon/crew/dispatch_picker.py:105.\nSCORE reuse: 20\nJUSTIFICATION reuse: resolve_picker_authority wraps the existing resolve_dispatch_authority (reckon/crew/routing.py:2901) rather than re-implementing it, and _context_block deletes the per-backend branch rather than adding a second rule.\nFINDING tests/test_pick_paths_carry_authority.py:222 follow-on: the failure-reporting assertion compares selection['authority_error'] against the same literal 'CrewError: mounts unavailable' the test passed in as the authority_error argument, the two-sides-move-together shape the review prompt names; it catches only a dropped key and cannot detect the reason being altered or a real resolution failure being misreported, so reporting is not independently verified end to end.\nFINDING reckon/crew/picker/snapshot.py:234 follow-on: the candidate block now renders the harness-independent node_tokens while the context-fit window gate still keys its allowed/refusal on the per-backend estimate (reckon/crew/routing.py:3587-3590 sums standing_tokens from that backend's backend_settings), so on a lane whose standing chain exceeds the request's the block's headroom_pct overstates free window space; the gate refusal is preserved but Jev's headroom reading is no longer the figure the gate used.",
+  "review_run_id": "r-20261010T184458856363-review-of-pick-paths-carry-authority",
+  "reviewed_base_sha": "66ad94b21526c3d2d1ce6c79ad4098726c32fd0c",
+  "reviewed_head_sha": "d6e79cf34b2f9e335ba79ceb7d69c6ead6cfbcf2",
+  "reviewed_run_id": "r-20261008T161711457703-pick-paths-carry-authority",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T18:54:18.372675+00:00",
+  "total": 107
+}
