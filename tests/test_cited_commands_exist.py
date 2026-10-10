@@ -6,7 +6,8 @@ verbs and flags those invocations name still resolve, so a rename or a removal
 leaves the prose pointing at a command that exits non-zero and the drift is
 found only by reading. :func:`citations` extracts every such invocation, and
 :func:`test_every_cited_command_and_flag_resolves` resolves each verb chain and
-each flag against the command's own ``--help``.
+matches each flag against the command's own ``--help`` as a whole option token,
+so a flag that is only a prefix of a longer option does not resolve.
 
 Two kinds of text are exempt because they are not drift:
 
@@ -53,8 +54,8 @@ def corpus(root: Path) -> list[Path]:
     """The instruction files whose ``reckon`` citations are checked.
 
     Recursive by design: a reference nested under ``references/`` is as binding
-    as the skill body that links it, and the review that first found the energy
-    citations read a flat list that missed the nested ones.
+    as the skill body that links it, so the walk reaches both and a citation is
+    checked wherever it is filed.
     """
     found: list[Path] = []
     for pattern in _CORPUS_GLOBS:
@@ -203,6 +204,25 @@ def _help(path: list[str]) -> str:
     return result.output
 
 
+def _help_has_flag(help_text: str, flag: str) -> bool:
+    """True when ``flag`` appears in ``help_text`` as a whole option token.
+
+    A cited flag resolves only when the option name stands alone in the help
+    body: ``--time`` is not satisfied by ``--timeout``, because the option name
+    is bounded by anything that could extend it on either side.
+    """
+    return re.search(rf"(?<![\w-]){re.escape(flag)}(?![\w-])", help_text) is not None
+
+
+def _flag_problems(cite: Citation, help_text: str) -> list[str]:
+    """The flags of ``cite`` that ``help_text`` does not offer as whole tokens."""
+    return [
+        f"{cite.where}: {' '.join(cite.chain)} has no {flag} in --help"
+        for flag in cite.flags
+        if not _help_has_flag(help_text, flag)
+    ]
+
+
 def test_every_cited_command_and_flag_resolves():
     found = citations()
     checked = [c for c in found if not c.planned]
@@ -217,11 +237,7 @@ def test_every_cited_command_and_flag_resolves():
             continue
         if cite.flags and command is not None:
             help_text = _help(cite.chain[: _path_len(cite.chain)])
-            problems.extend(
-                f"{cite.where}: {' '.join(cite.chain)} has no {flag} in --help"
-                for flag in cite.flags
-                if flag not in help_text
-            )
+            problems.extend(_flag_problems(cite, help_text))
 
     print(
         f"citations={len(found)} checked={len(checked)} "
@@ -243,3 +259,22 @@ def _path_len(chain: list[str]) -> int:
         else:
             break
     return used
+
+
+def test_a_cited_flag_is_matched_as_a_whole_option_token():
+    """A cited flag that is only a substring of a real flag is reported.
+
+    ``crew dispatch`` offers ``--project`` but no ``--proj``, so a citation of
+    ``--proj`` must be named as a problem even though the option name occurs
+    inside a longer one. The flag arm resolves whole tokens, not substrings.
+    """
+    help_text = _help(["crew", "dispatch"])
+    real = max(sorted(_FLAG.findall(help_text)), key=len)
+    substring = real[:-1]
+    cite = Citation("skills/example/SKILL.md", 1, ["crew", "dispatch"], [substring], False)
+
+    assert _help_has_flag(help_text, real)
+    assert not _help_has_flag(help_text, substring)
+    problems = _flag_problems(cite, help_text)
+    assert problems, f"{substring} is inside {real} yet was reported as resolving"
+    assert substring in problems[0]
