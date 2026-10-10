@@ -58,6 +58,24 @@ def browser_free_path() -> str:
     )
 
 
+def browser_free_environment(tmp_path: Path) -> dict[str, str]:
+    """An environment in which no browser resolves, however the harness looks.
+
+    Stripping PATH alone is no longer enough: the harness also resolves
+    Playwright's headless shell under ``PLAYWRIGHT_BROWSERS_PATH`` or
+    ``~/.cache/ms-playwright``, so the no-browser case points both that
+    variable and HOME at an empty directory.
+    """
+
+    empty = tmp_path / "no-browsers"
+    empty.mkdir(exist_ok=True)
+    return {
+        "PATH": browser_free_path(),
+        "PLAYWRIGHT_BROWSERS_PATH": str(empty),
+        "HOME": str(empty),
+    }
+
+
 def stub_browser_directory(tmp_path: Path) -> Path:
     """One executable stub per browser name, so the guard resolves a browser."""
 
@@ -72,8 +90,10 @@ def stub_browser_directory(tmp_path: Path) -> Path:
 
 def test_the_guard_skips_and_names_the_binaries_without_a_browser(
     monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
 ) -> None:
-    monkeypatch.setenv("PATH", browser_free_path())
+    for variable, value in browser_free_environment(tmp_path).items():
+        monkeypatch.setenv(variable, value)
 
     with pytest.raises(SkipTest) as denial:
         installed_browser_or_skip()
@@ -91,6 +111,7 @@ def test_a_stub_browser_makes_a_planted_defect_fail_rather_than_skip(
     stub_directory = stub_browser_directory(tmp_path)
 
     environment = dict(os.environ)
+    environment.update(browser_free_environment(tmp_path))
     environment["PATH"] = os.pathsep.join([str(stub_directory), browser_free_path()])
     environment["PYTHONPATH"] = os.pathsep.join(
         [str(ROOT), environment.get("PYTHONPATH", "")]
