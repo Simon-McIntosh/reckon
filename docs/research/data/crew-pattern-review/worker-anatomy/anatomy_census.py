@@ -34,17 +34,38 @@ output if either proof run parses to zero turns or zero tool calls.
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import math
 import re
 import sqlite3
 import subprocess
+import sys
 from collections import Counter, defaultdict
 from datetime import datetime
 from pathlib import Path
 
-from reckon.crew.carryover_census import _dialect, _first_turn_input
-from reckon.crew.metering import run_streams
+
+def _load_census_script(name: str):
+    """Load a census script by path; ``scripts/`` is not a package."""
+    root = next(
+        parent
+        for parent in Path(__file__).resolve().parents
+        if (parent / "pyproject.toml").is_file()
+    )
+    path = root / "scripts" / "census" / f"{name}.py"
+    spec = importlib.util.spec_from_file_location(f"census_{name}", path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+_carryover_census = _load_census_script("carryover_census")
+_dialect = _carryover_census._dialect
+_first_turn_input = _carryover_census._first_turn_input
+
+from reckon.crew.metering import run_streams  # noqa: E402
 
 WINDOW_START = "2026-09-12T00:00:00"
 WINDOW_END = "2026-09-26T10:00:00"  # the window closes here; the population is pinned at this instant

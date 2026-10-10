@@ -21,6 +21,8 @@ that writes the plan's lift document reports on the machine and not on the code.
 
 from __future__ import annotations
 
+import importlib.util
+import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -28,13 +30,25 @@ import pytest
 
 from reckon import budget
 from reckon.crew import budget_lift as bl
-from reckon.crew import pace_replay
 from reckon.crew import reserve as reserve_module
 from reckon.crew import window_reading
 from reckon.crew.dispatch_admission import _refuse_against_the_bookend_reserve
 from reckon.crew.dispatch_sessions import _pace_readings
 from reckon.crew.node import CrewError
 from reckon.crew.routing import _budget_verdict
+
+
+def _load_census_script(name: str):
+    """Load a census script by path; ``scripts/`` is not a package."""
+    path = Path(__file__).resolve().parents[1] / "scripts" / "census" / f"{name}.py"
+    spec = importlib.util.spec_from_file_location(f"census_{name}", path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+pace_replay = _load_census_script("pace_replay")
 
 GROUP = "codex-sub"
 LANE = "codex-sub"

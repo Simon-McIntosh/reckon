@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import math
+import sys
 from collections import defaultdict
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
@@ -18,13 +19,18 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from reckon import budget as budget_module
-from reckon import ledger
-from reckon._timestamps import parse_utc
-from reckon.crew import pace as pace_module
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from reckon import budget as budget_module  # noqa: E402
+from reckon import ledger  # noqa: E402
+from reckon._timestamps import parse_utc  # noqa: E402
+from reckon.crew import pace as pace_module  # noqa: E402
 
 __all__ = [
     "load_committed_rows",
+    "main",
     "render_report",
     "replay",
     "replay_committed_rows",
@@ -850,3 +856,38 @@ def _same_value(left: Any, right: Any) -> bool:
     ):
         return math.isclose(left, right, rel_tol=1e-9, abs_tol=1e-12)
     return left == right
+
+
+def main(argv: list[str] | None = None) -> int:
+    """Replay one project's committed pace rows and print the report."""
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description=(
+            "Replay committed pace rows for a project and print the lane split "
+            "and hold evidence without consulting a stream or live receipt."
+        ),
+    )
+    parser.add_argument("project", help="project whose committed runs to replay")
+    parser.add_argument(
+        "--root",
+        default=".",
+        help="repository root holding docs/state/<project>/runs (default: cwd)",
+    )
+    parser.add_argument(
+        "--drain-lead-hours",
+        type=float,
+        default=None,
+        help="candidate drain lead, in hours, to replay against the recorded policy",
+    )
+    args = parser.parse_args(argv)
+
+    report = replay_project(
+        args.root, args.project, drain_lead_hours=args.drain_lead_hours
+    )
+    print(render_report(report))
+    return 0
+
+
+if __name__ == "__main__":  # pragma: no cover
+    raise SystemExit(main())

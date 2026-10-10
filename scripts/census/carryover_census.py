@@ -52,18 +52,23 @@ from __future__ import annotations
 
 import json
 import statistics
+import sys
 from collections import defaultdict
 from collections.abc import Iterable, Mapping
 from pathlib import Path
 from typing import Any
 
-from reckon._observations import optional_number
-from reckon.capabilities import (
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from reckon._observations import optional_number  # noqa: E402
+from reckon.capabilities import (  # noqa: E402
     _charged_input_from_usage,
     _cumulative_event_input,
     _message_usage,
 )
-from reckon.crew.runs import runs_dir
+from reckon.crew.runs import runs_dir  # noqa: E402
 
 #: The dialect lane a run belongs to, keyed by the harness grammar its stream
 #: opens with.  The claude-code dialect is served on the local clive lane and
@@ -576,3 +581,44 @@ def _dialect_notes(examples: Mapping[str, Any]) -> dict[str, str]:
             "figure for it rather than the contaminated sum."
         ),
     }
+
+
+def main(argv: list[str] | None = None) -> int:
+    """Write the session-inheritance census over the crew runs to JSON."""
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description=(
+            "Census each run's first-turn context and the history it inherited "
+            "from an earlier run's session, writing the result to JSON."
+        ),
+    )
+    parser.add_argument(
+        "--out",
+        default=str(ROOT / "docs/research/data/session-carryover.json"),
+        help="path to write the census JSON to",
+    )
+    parser.add_argument(
+        "--runs-dir",
+        default=None,
+        help="crew runs root to census (defaults to the resolved crew home)",
+    )
+    args = parser.parse_args(argv)
+
+    backends, members = recorded_dispatch_metadata()
+    census = carryover_census(
+        args.runs_dir,
+        recorded_backends=backends,
+        recorded_members=members,
+    )
+    out = Path(args.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(
+        json.dumps(census, indent=2, sort_keys=False) + "\n", encoding="utf-8"
+    )
+    print(f"wrote {out}: {len(census['runs'])} runs")
+    return 0
+
+
+if __name__ == "__main__":  # pragma: no cover
+    raise SystemExit(main())

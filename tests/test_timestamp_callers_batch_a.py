@@ -21,6 +21,8 @@ the base crash is quoted above the row.
 from __future__ import annotations
 
 import ast
+import importlib.util
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -33,7 +35,6 @@ from reckon.crew import (
     lane_document,
     lane_evidence,
     obligations,
-    pace_replay,
     paid_lanes,
     query,
     resumption,
@@ -44,6 +45,19 @@ from reckon.crew import (
     window_reading,
 )
 
+
+def _load_census_script(name: str):
+    """Load a census script by path; ``scripts/`` is not a package."""
+    path = Path(__file__).resolve().parents[1] / "scripts" / "census" / f"{name}.py"
+    spec = importlib.util.spec_from_file_location(f"census_{name}", path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+pace_replay = _load_census_script("pace_replay")
+
 FIXED_NOW = datetime(2026, 9, 29, 2, 0, 0, tzinfo=UTC)
 FIXED_NOW_SECONDS = FIXED_NOW.timestamp()
 
@@ -52,7 +66,6 @@ MODULES = (
     "lane_document",
     "lane_evidence",
     "obligations",
-    "pace_replay",
     "paid_lanes",
     "query",
     "resumption",
@@ -358,12 +371,15 @@ def test_every_caller_is_covered() -> None:
 def test_no_caller_parses_iso_strings_itself() -> None:
     """The batch parses through reckon._timestamps, not fromisoformat directly."""
     crew = Path(reckon.__file__).parent / "crew"
+    root = Path(reckon.__file__).resolve().parents[1]
+    sources = [(f"{module}.py", crew / f"{module}.py") for module in MODULES]
+    # The batch caller that moved out of the package is scanned where it now
+    # lives, beside the other census scripts.
+    sources.append(("pace_replay.py", root / "scripts" / "census" / "pace_replay.py"))
     offenders = [
-        f"{module}.py:{node.lineno}"
-        for module in MODULES
-        for node in ast.walk(
-            ast.parse((crew / f"{module}.py").read_text(), filename=f"{module}.py")
-        )
+        f"{label}:{node.lineno}"
+        for label, path in sources
+        for node in ast.walk(ast.parse(path.read_text(), filename=label))
         if isinstance(node, ast.Call)
         and isinstance(node.func, ast.Attribute)
         and node.func.attr == "fromisoformat"

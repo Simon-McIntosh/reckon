@@ -2648,7 +2648,7 @@ def _lift_history(
     A reset-anchored lift ends when a clock's utilisation falls between two
     observations, so the resolver needs the sequence and not only the newest
     figure. The sequence is the pace-bearing records the group's members own,
-    read exactly as :mod:`reckon.crew.pace_replay` reads a row's clocks, with the
+    read exactly as ``scripts/census/pace_replay.py`` reads a row's clocks, with the
     group's freshest reading appended so the group's position now is the last
     one the lift is judged against. The rows are then ordered by observation, so
     a fall between any two consecutive readings is visible to the resolver. An
