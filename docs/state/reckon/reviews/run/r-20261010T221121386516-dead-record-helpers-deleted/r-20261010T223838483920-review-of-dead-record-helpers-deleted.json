@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "local",
+  "base_log_revision": "3f9f84469bd00821a5484ead737e3e3acbc56acf",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:1111",
+    "reckon/crew/recovery_repair_dispatch.py:703",
+    "reckon/crew/reports.py:419",
+    "reckon/crew/placement.py:196"
+  ],
+  "completed_at": "2026-10-10T22:50:36.540Z",
+  "dispatched_at": "2026-10-10T22:39:01Z",
+  "findings": [
+    {
+      "file": "docs/plans/nothing-lands-unreached.html",
+      "line": "52",
+      "severity": "follow-on",
+      "text": "follow-on: the section-1 table lists 12 helpers with no reference at all including five reckon/_schema.py names, but each of _valid_status, _valid_links, _valid_capability, _consistent_section_records and _serialize_authored_transition is a live pydantic validator or serializer invoked by registration; I reproduced _valid_status firing (a SectionRecord with an off-enum status raises), so the plan's census cell needs correcting for these five."
+    },
+    {
+      "file": "reckon/crew/repair.py",
+      "line": "344",
+      "severity": "follow-on",
+      "text": "follow-on: the done_when clause that the tests importing the four modules pass with EXIT=0 is unmet at head, where orientation-gate.log records 5 failed and EXIT=1; the node's delta reading (0 added over a 6-failure base at gate-base.log) is the sound reading and is disclosed, but the gate the done_when names is red rather than green."
+    }
+  ],
+  "head_log_revision": "489e0ccdc9e8288c941b403636fe52693b1140ea",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read 3f9f84469..489e0ccd commit by commit, one commit, four files, +23/-66; the source hunks remove exactly the four dead helpers with no other change and no plan, version or ticket label in names or comments.",
+    "done_when": "the evidence fence asks grep -rnw for the nine names over reckon/ tests/ skills/ to return no call site, the importing tests to pass with EXIT=0, a negative line delta, a kept-and-reported name that gained a caller, and an executed negative control; I re-ran git grep at 489e0ccd over reckon/ tests/ skills/ and each deleted spelling returns nothing while the five _schema.py names return only their definition lines, the delta is -66/+0, and the negative control fires the grep, but the head gate is EXIT=1 (5 failed) not EXIT=0.",
+    "goal": "the node's goal is to delete eight unreferenced helpers the section-3 census lists in the schema, placement, repair and reports modules; commit 489e0ccd deletes four (reports.py::_is_quoted_scalar, repair.py::reviewed_run_test_paths with its private users _is_test_path and _TEST_PATH_PREFIX, placement.py::clear_reservation, placement.py::reservation_step_argv) and keeps five _schema.py names, reporting that they are live pydantic hooks; the deleted four are the genuinely-unreached ones and the kept five are correctly kept, but the landed count is four rather than the goal's eight.",
+    "manifest": "read the reviewed manifest; status complete, baseline_suite names rev 3f9f84469 at gate-base.log (6 failed/3654 passed, EXIT=1) and after_suite names rev 489e0ccd at orientation-gate.log (5 failed/3653 passed, EXIT=1), both completed true, and negative_control_log names the scratch grep that is non-empty at EXIT=0.",
+    "write_paths": "the brief grants six paths (_schema.py, crew/placement.py, crew/repair.py, crew/reports.py, the evidence fragment and a figures dir); git show --stat at 489e0ccd touches four files (crew/placement.py, crew/repair.py, crew/reports.py, the fragment), all inside the fence, and the figures dir is left unused as the small-node contract directs."
+  },
+  "justifications": {
+    "durability": "the deletions are pure removals of code with no caller, checked by git grep at head and by a negative control that proves the grep can fire, and no test guards reintroduction of the four names, though the five kept pydantic hooks remain covered by the existing schema tests.",
+    "evidence": "baseline_suite and after_suite are both completed true with logs naming revision, tree, command and module.__file__, their counts 6 and 5 reconcile, added_failure_ids is empty, and the negative control at negative-control.log fires the grep on a restored call site; one point withheld because the done_when's EXIT=0 clause is unmet at head and is answered by a delta argument rather than a green gate.",
+    "fit": "commit 489e0ccd is a conventional refactor subject with a body enumerating each deletion's reason, carries no attribution trailer, and adds no plan, version or ticket identifier in any name or comment.",
+    "goal_fidelity": "the four deleted helpers are the genuinely unreached ones in the node's four modules and git grep at 489e0ccd returns no hit for each over reckon/ tests/ skills/, but the goal names eight helpers including five in _schema.py which the node correctly kept after finding them live, so the landed count is four and the plan section-1 table still asserts those five are unreferenced.",
+    "reuse": "the change removes a duplicate (_is_quoted_scalar duplicated _strip_matching_quotes, still used at reports.py:419) and a superseded composer (reservation_step_argv beside the inlined step_prefix at dispatch_launch.py:1111), keeping the shared readers _run_fence and _strip_matching_quotes rather than forking them.",
+    "scope_discipline": "the single commit at 489e0ccd touches only crew/placement.py, crew/repair.py, crew/reports.py and the in-fence evidence fragment, mutates no shared plan, index or sprint state, and leaves the declared figures directory unused."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to delete eight unreferenced helpers the section-3 census lists in the schema, placement, repair and reports modules; commit 489e0ccd deletes four (reports.py::_is_quoted_scalar, repair.py::reviewed_run_test_paths with its private users _is_test_path and _TEST_PATH_PREFIX, placement.py::clear_reservation, placement.py::reservation_step_argv) and keeps five _schema.py names, reporting that they are live pydantic hooks; the deleted four are the genuinely-unreached ones and the kept five are correctly kept, but the landed count is four rather than the goal's eight.\nVERDICT done_when: the evidence fence asks grep -rnw for the nine names over reckon/ tests/ skills/ to return no call site, the importing tests to pass with EXIT=0, a negative line delta, a kept-and-reported name that gained a caller, and an executed negative control; I re-ran git grep at 489e0ccd over reckon/ tests/ skills/ and each deleted spelling returns nothing while the five _schema.py names return only their definition lines, the delta is -66/+0, and the negative control fires the grep, but the head gate is EXIT=1 (5 failed) not EXIT=0.\nVERDICT write_paths: the brief grants six paths (_schema.py, crew/placement.py, crew/repair.py, crew/reports.py, the evidence fragment and a figures dir); git show --stat at 489e0ccd touches four files (crew/placement.py, crew/repair.py, crew/reports.py, the fragment), all inside the fence, and the figures dir is left unused as the small-node contract directs.\nVERDICT manifest: read the reviewed manifest; status complete, baseline_suite names rev 3f9f84469 at gate-base.log (6 failed/3654 passed, EXIT=1) and after_suite names rev 489e0ccd at orientation-gate.log (5 failed/3653 passed, EXIT=1), both completed true, and negative_control_log names the scratch grep that is non-empty at EXIT=0.\nVERDICT diff: read 3f9f84469..489e0ccd commit by commit, one commit, four files, +23/-66; the source hunks remove exactly the four dead helpers with no other change and no plan, version or ticket label in names or comments.\nCALL_SITES: reckon/crew/dispatch_launch.py:1111, reckon/crew/recovery_repair_dispatch.py:703, reckon/crew/reports.py:419, reckon/crew/placement.py:196\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: the four deleted helpers are the genuinely unreached ones in the node's four modules and git grep at 489e0ccd returns no hit for each over reckon/ tests/ skills/, but the goal names eight helpers including five in _schema.py which the node correctly kept after finding them live, so the landed count is four and the plan section-1 table still asserts those five are unreferenced.\nSCORE evidence: 18\nJUSTIFICATION evidence: baseline_suite and after_suite are both completed true with logs naming revision, tree, command and module.__file__, their counts 6 and 5 reconcile, added_failure_ids is empty, and the negative control at negative-control.log fires the grep on a restored call site; one point withheld because the done_when's EXIT=0 clause is unmet at head and is answered by a delta argument rather than a green gate.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the single commit at 489e0ccd touches only crew/placement.py, crew/repair.py, crew/reports.py and the in-fence evidence fragment, mutates no shared plan, index or sprint state, and leaves the declared figures directory unused.\nSCORE durability: 17\nJUSTIFICATION durability: the deletions are pure removals of code with no caller, checked by git grep at head and by a negative control that proves the grep can fire, and no test guards reintroduction of the four names, though the five kept pydantic hooks remain covered by the existing schema tests.\nSCORE fit: 19\nJUSTIFICATION fit: commit 489e0ccd is a conventional refactor subject with a body enumerating each deletion's reason, carries no attribution trailer, and adds no plan, version or ticket identifier in any name or comment.\nSCORE reuse: 19\nJUSTIFICATION reuse: the change removes a duplicate (_is_quoted_scalar duplicated _strip_matching_quotes, still used at reports.py:419) and a superseded composer (reservation_step_argv beside the inlined step_prefix at dispatch_launch.py:1111), keeping the shared readers _run_fence and _strip_matching_quotes rather than forking them.\nFINDING docs/plans/nothing-lands-unreached.html:52 follow-on: the section-1 table lists 12 helpers with no reference at all including five reckon/_schema.py names, but each of _valid_status, _valid_links, _valid_capability, _consistent_section_records and _serialize_authored_transition is a live pydantic validator or serializer invoked by registration; I reproduced _valid_status firing (a SectionRecord with an off-enum status raises), so the plan's census cell needs correcting for these five.\nFINDING reckon/crew/repair.py:344 follow-on: the done_when clause that the tests importing the four modules pass with EXIT=0 is unmet at head, where orientation-gate.log records 5 failed and EXIT=1; the node's delta reading (0 added over a 6-failure base at gate-base.log) is the sound reading and is disclosed, but the gate the done_when names is red rather than green.\nreviewed_base_sha: 3f9f84469bd00821a5484ead737e3e3acbc56acf\nreviewed_head_sha: 489e0ccdc9e8288c941b403636fe52693b1140ea\n",
+  "review_run_id": "r-20261010T223838483920-review-of-dead-record-helpers-deleted",
+  "reviewed_base_sha": "3f9f84469bd00821a5484ead737e3e3acbc56acf",
+  "reviewed_head_sha": "489e0ccdc9e8288c941b403636fe52693b1140ea",
+  "reviewed_run_id": "r-20261010T221121386516-dead-record-helpers-deleted",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 16,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T22:48:33.009774+00:00",
+  "total": 109
+}
