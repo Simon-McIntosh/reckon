@@ -35,6 +35,11 @@
     <p><code>_git_head</code> (<code>reckon/serve.py</code>) is memoised on the identity of the repository's <code>HEAD</code> file and the ref file it names, resolved through the common git directory in a linked worktree, so a read with no new commit starts no <code>git</code> process and a commit invalidates it. The profile's attribution was corrected on the way: none of the nine warm-audit <code>git</code> processes came from <code>_git_head</code>; seven were <code>git rev-parse HEAD</code> from <code>recovery_review_subject._reviewed_run_head</code> and two <code>rev-parse --verify</code> from <code>_resolve_commit</code>, both uncached per lookup, which is where the audit's remaining git cost lies. <code>_git_head</code> is the roadmap's cost. Commits <code>4685373af</code> and the repair <code>323a2a62f</code> (a worktree's ref was read from its private git directory, so its memo never saw a new commit), merged at <code>5c09a1ef9</code>; 19 tests pass, negative controls for the memo and for the worktree case fail as declared. Review 99/120, then 115/120.</p>
   </section>
 
+  <section id="s5">
+    <h2>§5 — One parse serves every reader of a plan</h2>
+    <p><code>section_authored</code> (<code>reckon/roadmap.py</code>), <code>readiness_state</code> (<code>reckon/serve.py</code>) and the metadata index build's <code>_plan_record</code> derive their values from the shared per-file parse held by <code>read_state_and_text_file</code> instead of each parsing under its own memo kind. Commits <code>23ab68bc9</code>, <code>9a8ef9626</code>, merged at <code>d9210f0de</code>. <code>tests/test_every_plan_read_is_memoised.py</code>: 2 passed, a cold roadmap and discovery read of ten plans parse each once; 158 roadmap and audit tests pass; negative control (<code>read_authored</code> given back its own parse) exceeds ten and fails. Review 109/120. Its follow-ons: <code>_plan_record</code> still reads each file to probe readability before consulting the shared parse, and <code>parse_plan</code> and <code>list_followups_across</code> still parse under their own kinds on the MCP roadmap path; §6's measurement shows whether those matter.</p>
+  </section>
+
 </main>
 </body>
 </html>
