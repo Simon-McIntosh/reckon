@@ -287,3 +287,63 @@ def test_the_cli_defaults_to_the_mounted_checkout(checkout: Path) -> None:
     assert payload["artefacts"] == []
     group = _group(payload, FILE)
     assert group["recurrence"] == 2
+
+
+def test_a_symlinked_and_a_climbing_path_normalise_alike(checkout: Path) -> None:
+    """A symlinked spelling and a ``..``-bearing one resolve to one repository path.
+
+    The reader normalises through the dispatch scope reader's own function, so a
+    finding that reaches a file through a symlink and one that climbs and returns
+    name the same row rather than two: both are reported under the resolved path,
+    not the spelling the reviewer wrote, and both callers agree on it.
+    """
+    from reckon.crew import runs as runs_module
+
+    resolved = checkout.resolve()
+    (resolved / "reckon" / "sub").mkdir(parents=True)
+    (resolved / "reckon" / "a.py").write_text("")
+    (resolved / "alias").symlink_to(resolved / "reckon", target_is_directory=True)
+
+    symlinked = str(resolved / "alias" / "a.py")
+    climbing = str(resolved / "reckon" / "sub" / ".." / "a.py")
+
+    for raw in (symlinked, climbing):
+        assert runs_module._repository_relative_scope(raw, resolved) == FILE
+
+    _store(
+        checkout,
+        _run_record(
+            RUN_A,
+            REVIEW_A,
+            [
+                {
+                    "file": symlinked,
+                    "line": "12",
+                    "text": "unguarded index",
+                    "severity": "blocking",
+                }
+            ],
+        ),
+    )
+    _store(
+        checkout,
+        _run_record(
+            RUN_B,
+            REVIEW_B,
+            [
+                {
+                    "file": climbing,
+                    "line": "40",
+                    "text": "naming would read better",
+                    "severity": "follow-on",
+                }
+            ],
+        ),
+    )
+
+    payload = findings_module.findings_by_path(PROJECT, root=resolved)
+
+    group = _group(payload, FILE)
+    assert group["recurrence"] == 2
+    assert {row["line"] for row in group["rows"]} == {"12", "40"}
+    assert [item["path"] for item in payload["paths"]] == [FILE]

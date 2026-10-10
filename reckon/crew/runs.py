@@ -518,8 +518,29 @@ class _LiveScopeClaim:
         return claim
 
 
-def _repository_relative_scope(path: str, repo: Path) -> str | None:
-    """Normalize an in-repository scope to a repository-relative POSIX path."""
+def _repository_relative_scope(path: str, repo: Path | None) -> str | None:
+    """Normalize an in-repository scope to a repository-relative POSIX path.
+
+    A symlink anywhere under the path is followed and a ``..`` segment is
+    applied before the in-repository test, so a path that reaches a file
+    through a symlink and one that climbs and returns normalise to the same
+    spelling rather than the one the caller happened to write.
+
+    No repository named, the boundary cannot be measured: an absolute path,
+    which needs a boundary to be told against, yields ``None``; a path that is
+    already repository-relative or climbs above the root is read by its own
+    shape and returned normalized.
+    """
+    if repo is None:
+        if not str(path or "").strip():
+            return None
+        raw = Path(path).expanduser()
+        if raw.is_absolute():
+            return None
+        text = os.path.normpath(str(raw))
+        if text == ".." or text.startswith(".." + os.sep):
+            return None
+        return Path(text).as_posix()
     raw = Path(path).expanduser()
     resolved = (raw if raw.is_absolute() else repo / raw).resolve()
     try:
