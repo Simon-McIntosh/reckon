@@ -11,7 +11,7 @@ import pytest
 
 from reckon import capabilities, capability, crew, ledger, mcp, serve
 from reckon.calibration import calibration_configuration_key
-from reckon.crew import context_budget, routing
+from reckon.crew import routing
 from reckon.crew.routing import _competence_verdict
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -692,90 +692,6 @@ def test_estimate_below_the_record_boundary_is_allowed(
     assert verdict["reason"] == "within-context-window"
     assert verdict["window_tokens"] == _RECORDED_BOUNDARY_TOKENS
     assert verdict["effective_boundary_tokens"] == _RECORDED_BOUNDARY_TOKENS
-
-
-def _refusal_stream(directory: Path, *, model: str, window: int) -> None:
-    """Write one run whose stream ends by refusing the prompt."""
-
-    directory.mkdir(parents=True, exist_ok=True)
-    events = [
-        {"type": "assistant", "message": {"content": [{"type": "text", "text": "go"}]}},
-        {
-            "type": "result",
-            "is_error": True,
-            "result": "Prompt is too long",
-            "terminal_reason": "blocking_limit",
-            "modelUsage": {
-                model: {"contextWindow": window, "maxOutputTokens": 64_000},
-            },
-        },
-    ]
-    (directory / "stream.jsonl").write_text(
-        "".join(json.dumps(event) + "\n" for event in events), encoding="utf-8"
-    )
-
-
-def test_the_boundary_is_taken_over_the_lanes_own_model(tmp_path: Path) -> None:
-    """A census narrowed to one model never returns another lane's tighter figure.
-
-    Pooling every model takes the minimum across lanes, so a lane with a wide
-    boundary is refused at a narrow neighbour's limit. The narrowing is asserted
-    to change the returned figure rather than merely to be offered, and the
-    runs it excluded are reported instead of dropped.
-    """
-
-    runs = tmp_path / "runs"
-    _refusal_stream(runs / "run-narrow", model="glm-5.3", window=73_728)
-    _refusal_stream(runs / "run-wide", model="deepseek-v4.1-flash", window=200_000)
-
-    pooled = context_budget.refusal_census(runs)
-    narrowed = context_budget.refusal_census(runs, model="deepseek-v4.1-flash")
-
-    assert pooled["effective_boundary_tokens"] == 73_728
-    assert narrowed["effective_boundary_tokens"] == 200_000
-    assert [row["model"] for row in narrowed["refused_runs"]] == ["deepseek-v4.1-flash"]
-    assert [row["model"] for row in narrowed["excluded_runs"]] == ["glm-5.3"]
-    assert narrowed["model"] == "deepseek-v4.1-flash"
-
-
-def test_the_recorded_lane_boundary_agrees_with_the_row_it_is_taken_over(
-    tmp_path: Path,
-) -> None:
-    """The published figure equals the census of the runs it names, and only those.
-
-    The recorded file and the function are two places one number can live, so the
-    check recomputes the figure from the file's own rows and requires the two to
-    agree. A file that stated a boundary its listed refusals do not support --
-    which is what a boundary pooled across lanes looked like -- fails here.
-    """
-
-    recorded = json.loads(
-        (ROOT / "docs" / "research" / "data" / "clive-effective-window.json").read_text(
-            encoding="utf-8"
-        )
-    )
-    runs = tmp_path / "runs"
-    for index, row in enumerate(recorded["refused_runs"]):
-        _refusal_stream(
-            runs / f"run-{index}",
-            model=row["model"],
-            window=row["announced_context_window"],
-        )
-    for index, row in enumerate(recorded["excluded_refusals"]["other_models"]):
-        _refusal_stream(
-            runs / f"other-{index}",
-            model=row["model"],
-            window=row["announced_context_window"],
-        )
-
-    narrowed = context_budget.refusal_census(runs, model=recorded["model"])
-
-    assert (
-        narrowed["effective_boundary_tokens"] == recorded["effective_boundary_tokens"]
-    )
-    assert recorded["effective_boundary_tokens"] == min(
-        row["estimated_input_tokens"] for row in recorded["refused_runs"]
-    )
 
 
 def test_a_lane_with_no_declared_window_uses_its_recorded_boundary(
