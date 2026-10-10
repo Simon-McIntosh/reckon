@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The serving-lane facts are node-scoped and measured on Jev</title>
+</head>
+<body>
+<article class="evidence-fragment" id="serving-lanes-are-scoped-and-measured">
+  <h2 id="serving-lanes-are-scoped-and-measured-title">The serving-lane facts are node-scoped, grouped once, and replayed on Jev</h2>
+
+  <p id="serving-lanes-are-scoped-and-measured-scope">The review of the run that added
+  <code>serving_lanes</code>, <code>serving_lane_count</code> and <code>hold_waits_for</code>
+  found three gaps. This node closes all three: the facts described every lane that can serve
+  the node but were rendered inside the <code>local_lane</code> block, whose name scopes its
+  other contents to one lane; the lanes block and the serving-lane facts grouped the offered
+  candidates differently, and the lanes block dropped a candidate that declares no family; and
+  the replayed hold probability the earlier done-when asked for was never measured.</p>
+
+  <p id="serving-lanes-are-scoped-and-measured-scoping">The three keys now render in the
+  <code>node</code> block, the scope they describe, rather than under <code>local_lane</code>.
+  The golden rendered-state fixture in <code>tests/test_picker_helpers_have_one_owner.py</code>
+  moves the three keys with them, and the pinned node field set in
+  <code>tests/test_jev_prompt_carries_what_it_weighs.py</code> gains the same three, so the
+  shape the prompt-carries-what-it-weighs gate pins stays exact.</p>
+
+  <p id="serving-lanes-are-scoped-and-measured-grouping">One grouping now drives both blocks:
+  <code>lane_context.lane_groups</code> in <code>reckon/crew/picker/lane_context.py</code> keys
+  each offered candidate on its family, falling back to its backend when it declares none, so a
+  family-less candidate still counts as a lane. The <code>lanes</code> block is built from it and
+  <code>prompts._serving_lanes</code> reads its keys, so the two cannot disagree about which
+  lanes exist. Two cases prove it: a family-less candidate is counted in
+  <code>serving_lane_count</code> and carries its own entry in the <code>hold_waits_for</code>
+  block, and replacing the grouping moves both the <code>lanes</code> block and the serving
+  lanes together.</p>
+
+  <p id="serving-lanes-are-scoped-and-measured-replay">The two recorded holds were replayed
+  through real Jev calls on the state as it now renders. Each node's own definition was read
+  from its ledger run record, the state was rendered by the head code, and the picker's own
+  client (<code>reckon.crew.picker.client.ask</code>, model <code>typesafe/jev-1.13</code>)
+  answered. Both held again, over a state that now names the single serving lane:</p>
+
+  <table id="serving-lanes-are-scoped-and-measured-holds">
+    <thead><tr><th>Recorded hold</th><th>Recorded</th><th>Replayed</th><th>Confidence</th></tr></thead>
+    <tbody>
+      <tr><td><code>review-of-member-friction-asserts-its-own-writes</code></td>
+          <td>0.83</td><td><strong>0.87</strong></td><td>0.74</td></tr>
+      <tr><td><code>review-of-subscription-lanes-record-no-spend</code></td>
+          <td>0.84</td><td><strong>0.89</strong></td><td>0.78</td></tr>
+    </tbody>
+  </table>
+
+  <p id="serving-lanes-are-scoped-and-measured-command">Command:
+  <code>/home/ITER/mcintos/Code/reckon/.venv/bin/python
+  /home/ITER/mcintos/.config/reckon/crew/runs/r-20261010T194844732792-serving-lanes-are-scoped-and-measured/replay_holds.py</code>.
+  Each call returned <code>choice: hold</code> with distributions
+  <code>{"hold": 0.87, "local:deepseek-v4.1-flash:clive": 0.13}</code> and
+  <code>{"hold": 0.89, "local:deepseek-v4.1-flash:clive": 0.11}</code>, and the state it weighed
+  carried <code>serving_lanes == ["local"]</code> and
+  <code>hold_waits_for == "the local lane, the only lane that can serve this node"</code> under
+  the <code>node</code> block. Full response log:
+  <code>jev-replay.log</code> in the run directory.</p>
+
+  <p id="serving-lanes-are-scoped-and-measured-gate">Gate: that file,
+  <code>tests/test_picker_helpers_have_one_owner.py</code>,
+  <code>tests/test_option_keys_are_unique.py</code>, every <code>tests/test_picker*.py</code>
+  and <code>tests/test_jev_prompt_carries_what_it_weighs.py</code>. Head <strong>181 passed,
+  exit 0</strong>; base <strong>179 passed, exit 0</strong> — a delta of +2 tests, zero added
+  failures. The declared negative control — restore the family-less skip in the grouping —
+  makes <code>test_a_familyless_candidate_still_counts_as_a_lane</code> the only failure, at
+  <code>EXIT=1</code>.</p>
+</article>
+</body>
+</html>
