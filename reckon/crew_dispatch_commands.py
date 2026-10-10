@@ -1117,8 +1117,9 @@ def crew_dispatch(
     effective_route = resolve_dispatch_route(config, route)
     if effective_route == "picker" and (backend or local or model_name):
         raise click.UsageError(
-            "picker routing cannot be combined with --backend, --model or "
-            "--local; use --route deterministic to override routing.picker"
+            "picker routing cannot be combined with --backend or --local, and "
+            "a --model names the lane the same way; use --route deterministic "
+            "to override routing.picker"
         )
     if local:
         try:
