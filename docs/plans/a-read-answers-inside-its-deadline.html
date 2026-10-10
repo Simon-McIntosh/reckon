@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="reckon-tooling">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
   <meta name="plan-standalone" content="It restores what reckon-reads-answer-in-seconds shipped; that plan is complete, and no live plan&#x27;s section waits on read latency.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="5">
+<meta name="plan-version" content="6">
 <meta name="plan-modified" content="2026-10-10">
 </head>
 <body>
@@ -64,7 +64,7 @@
     </ul>
 
     <h2 id="s2">§2 — A read takes no write lock</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s2" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> The read path checks for a transaction journal without a lock and calls
       <code>recover_project_state_transactions</code> only when one exists. A read in a tree with no journal opens no lock file and creates
       none. Recovery of an existing journal keeps its exclusive lock.</p>
@@ -149,6 +149,9 @@
 <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s5" data-id="c-defer-s5-1010" data-who="reckon-build coordinator (health-review-1010)" data-when="2026-10-10T20:40:00Z">
     <div class="r-comment-body"><p>Before §5 is dispatched, apply the finding deferred from review <code>r-20261010T201610391921-plan-review-of-a-read-answers-inside-its-deadline</code>: <code>reasoning-1</code> (a cold roadmap read also parses every plan inside the metadata index build, <code>_plan_record</code> calling <code>_plan_html.read_state</code> at <code>reckon/metadata_index.py:593</code>, so the ten-parse bound either counts that path or the index build reads through the same memo).</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-10-10T21:00:00Z">
+    <div class="r-comment-body"><p>§2 landed: a read takes no write lock when no journal awaits recovery (commit <code>8c4f4c60a</code>, merged <code>2a2355057</code>); 3 tests pass, negative control fails as declared; review 116/120. <a href="/reckon/evidence/archive/a-read-answers-inside-its-deadline-landed.html#s2">evidence</a></p></div>
 </div>
 </section>
 </main>

@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-read-answers-inside-its-deadline-landed">
+  <meta name="plan-title" content="A Read Answers Inside Its Deadline — landed record">
+  <meta name="plan-summary" content="Closure synthesis for A Read Answers Inside Its Deadline: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="a-read-answers-inside-its-deadline">
+  <meta name="plan-verdict" content="qualified">
+  <title>A Read Answers Inside Its Deadline — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A Read Answers Inside Its Deadline — landed record</h1>
+  <p>Closure synthesis for A Read Answers Inside Its Deadline: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s2">
+    <h2>§2 — A read takes no write lock</h2>
+    <p><code>read_resource</code> (<code>reckon/project_state.py:466</code>) now calls <code>recover_project_state_transactions</code> only when <code>_pending_transaction_journals</code> finds a journal, listed without a lock; a journal-free read of a read-only tree returns the plans, raises nothing and creates no recovery lock file, and a present journal is still recovered under its lock. Commit <code>8c4f4c60a</code>, merged at <code>2a2355057</code>. <code>tests/test_a_read_takes_no_lock.py</code>: 3 passed, EXIT=0; negative control (journal check removed) 2 failed, EXIT=1. Independent review 116/120. Follow-ons from the review: the journal root and glob are written twice (the guard and recovery), the docstrings say <code>EROFS</code> where a chmod'd test tree raises <code>EACCES</code>, and a journal created between the lock-free listing and recovery waits for the next read.</p>
+  </section>
+
+</main>
+</body>
+</html>
