@@ -539,18 +539,37 @@ def _shadow_pick_deadline(run_id: str) -> float | None:
     """The monotonic instant the in-flight pick's bound expires, or None.
 
     None means no live pointer is present to attach an answer to, so there is
-    nothing to wait for. A pointer whose creation time cannot be read is given
+    nothing to wait for. The bound runs from the pick's own recorded start — the
+    spec file written immediately before it is launched — because the pick does
+    not begin until after the worker launch: a wait measured from the pointer's
+    created_at would spend a slow launch's seconds before the pick had started.
+    created_at is the fallback only for a pointer whose pick start is not
+    recorded, and a pointer whose creation time cannot be read either is given
     the full bound rather than skipped, because the pick's start is then unknown.
     """
     try:
         pointer = read_pointer(run_id)
     except CrewError:
         return None
-    started = parse_utc(pointer.get("created_at"))
+    started = _shadow_pick_started(run_id) or parse_utc(pointer.get("created_at"))
     if started is None:
         return time.monotonic() + _SHADOW_PICK_WAIT_SECONDS
     elapsed = (datetime.now(UTC) - started).total_seconds()
     return time.monotonic() + max(0.0, _SHADOW_PICK_WAIT_SECONDS - elapsed)
+
+
+def _shadow_pick_started(run_id: str) -> datetime | None:
+    """The instant the deferred pick was dispatched, or None.
+
+    The spec file is written by the dispatch immediately before it launches the
+    pick, and is only read thereafter, so its mtime is the pick's recorded start.
+    An absent or unreadable spec means no start was recorded.
+    """
+    try:
+        spec = (run_dir(run_id) / _SHADOW_PICK_SPEC_NAME).stat()
+    except OSError:
+        return None
+    return datetime.fromtimestamp(spec.st_mtime, tz=UTC)
 
 
 def _attach_shadow_pick_timeout(run_id: str) -> None:

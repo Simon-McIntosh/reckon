@@ -15,6 +15,7 @@ import os
 import subprocess
 import threading
 import time
+from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -355,3 +356,90 @@ def test_pick_outcomes_counts_an_overruled_hold_apart_from_shadow() -> None:
     modes = report["mechanics"]["route_modes"]
     assert modes["overridden-hold"] == 1
     assert modes["shadow"] == 1
+
+
+def _write_live_pointer(home: Path, run_id: str, **fields: object) -> None:
+    """Write one live pointer for a run whose dispatch is not exercised."""
+    from reckon.crew import runs
+
+    pointer = {
+        "run_id": run_id,
+        "project": PROJECT,
+        "created_at": datetime.now(tz=UTC).isoformat(),
+    }
+    pointer.update(fields)
+    path = runs.pointer_path(run_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(pointer), encoding="utf-8")
+
+
+def test_build_record_keeps_an_overridden_hold_route_mode(home) -> None:
+    """A row built through build_record keeps the overridden-hold route mode.
+
+    The dispatch records a shadow mode for a run it launched past a hold, and
+    promotion overwrites that with the overridden-hold value it derives from the
+    answer. A row built straight through build_record must read the mode the
+    pointer carries rather than drop it as unrecognised.
+    """
+    _write_live_pointer(home, "r-overridden-hold", route_mode="overridden-hold")
+
+    record = ledger.build_record(
+        run_id="r-overridden-hold", plan="plan-a", gate="not-run"
+    )
+
+    assert record["route_mode"] == "overridden-hold"
+
+
+def test_promotion_waits_from_the_pick_start_not_the_run_start(
+    home, repo, monkeypatch
+) -> None:
+    """A launch slower than the pick's bound still records the pick's selection.
+
+    The pick begins only after the worker launch, so a wait measured from the
+    pointer's created_at is already spent when a slow launch finishes. Measured
+    from the pick's own recorded start, the wait survives the launch and the
+    pick's answer lands on the row.
+    """
+    from reckon.crew import promotion as promotion_module
+
+    monkeypatch.setattr(promotion_module, "_SHADOW_PICK_WAIT_SECONDS", 2.0)
+    workers: list[threading.Thread] = []
+    _detached_picker_thread(monkeypatch, workers)
+    _pick(monkeypatch, _ROUTE_ANSWER, delay=1.0)
+
+    def slow_launch(plan, *, log_path, stderr_path, prompt_path):
+        # Longer than the pick's bound: measured from the run's start the wait
+        # would be over before the pick had begun.
+        time.sleep(2.5)
+        return os.getpid()
+
+    record = crew.dispatch(
+        node=_node(),
+        project=PROJECT,
+        repo=repo,
+        config=CONFIG,
+        session="sess-a",
+        launcher=slow_launch,
+        route="deterministic",
+        local=True,
+        check_budget=False,
+        watch_required=False,
+    )
+    _deliver(record)
+    work = _commit_work(repo)
+    _init_ledger(repo)
+    # The pick delays past promotion's arrival, so it is genuinely in flight and
+    # only a wait measured from the pick's own start lets it land.
+    assert read_pointer(record["run_id"])["picker_selection"] is None
+
+    row = crew.complete(
+        record["run_id"],
+        gate="passed",
+        commits=[work],
+        review_waiver=_UNREVIEWED_PROMOTION_WAIVED,
+    )["record"]
+
+    assert row["picker_selection"]["action"] == "route"
+    assert row["picker_selection"]["backend"] == "alpha"
+    for worker in workers:
+        worker.join(timeout=10)
