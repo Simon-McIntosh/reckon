@@ -1,10 +1,12 @@
-"""The authored impl stays authorable while the section records are partial.
+"""An impl write is accepted while the section records are partial.
 
-A plan whose section records do not cover its declarations keeps its authored
-impl — the derived figure cannot answer for it. The store nonetheless refused
-``set impl`` as soon as the plan carried any record at all, so the figure the
-plan was keeping could no longer be changed. The refusal belongs on the same
-coverage condition the derived figure answers on.
+A plan whose section records do not cover its declarations serves the
+declaration count as its impl, sourced ``declarations``. The store nonetheless
+refuses ``set impl`` only once the records cover the declarations, so an
+authored write on a partially recorded plan is accepted — the served figure
+stays the declaration count and the carried meta and the server disagree until
+the next landing. The refusal belongs on the same coverage condition the
+computed figure answers on.
 
 A plan also changes its impl rule silently on its first section record, so the
 append or insert that writes that record carries a warning naming the change.
@@ -122,8 +124,11 @@ def test_set_impl_succeeds_while_records_are_partial(tmp_path: Path) -> None:
 
     assert result["ok"] is True, result
     written = _plan_html.read_state(path.read_text(encoding="utf-8"))
-    assert written["impl"] == 0.25
-    assert written["impl_source"] == "authored"
+    # The write is accepted, but the served figure is the declaration count
+    # (one done of one done plus one implementable), so the carried meta and the
+    # server disagree until the next landing.
+    assert written["impl"] == 0.5
+    assert written["impl_source"] == "declarations"
 
 
 def test_set_impl_is_refused_when_records_cover_the_declarations(

@@ -119,15 +119,16 @@ PLAN_METADATA_SCALARS: tuple[str, ...] = (
 #                           rather than plan content; a warning about authored
 #                           content sits beside the key it concerns, which the
 #                           digest carries on its own.
-#   impl_source           - "computed" or "authored", set from whether the
-#                           parser derived ``impl`` from the section records or
-#                           read it from the ``plan-impl`` meta. It states how
-#                           the implementation fraction was supplied, not
-#                           authored content, and every plan's first landing
-#                           beat sets an impl on a plan that carried none while
-#                           a later write may flip it between authored and
-#                           computed — either would move the digest without an
-#                           authored change.
+#   impl_source           - "computed", "declarations" or "authored", set from
+#                           whether the parser derived ``impl`` from the section
+#                           records, derived it by count from the section
+#                           declarations while the records are partial, or read
+#                           it from the ``plan-impl`` meta. It states how the
+#                           implementation fraction was supplied, not authored
+#                           content, and every plan's first landing beat sets an
+#                           impl on a plan that carried none while a later write
+#                           may move it between the three — any of which would
+#                           move the digest without an authored change.
 PLAN_DERIVED_SCALARS: tuple[str, ...] = (
     "effort_calibrated",
     "compatibility_warnings",

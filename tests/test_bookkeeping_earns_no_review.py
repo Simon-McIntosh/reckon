@@ -251,12 +251,15 @@ def test_a_decision_edit_uncovers_the_document(store) -> None:
 # ── impl and its derived source ─────────────────────────────────────────────
 
 
-def test_setting_impl_on_a_plan_that_had_none_leaves_every_unit_covered(store) -> None:
+def test_setting_impl_meta_on_a_derived_plan_leaves_every_unit_covered(store) -> None:
+    # Both declarations are implementable and neither is recorded, so the count
+    # answers at zero: the impl key is present and sourced from the declarations.
     bare = _plan(sections=[])
-    assert "impl" not in _plan_html.read_state(bare)
+    assert _plan_html.read_state(bare)["impl"] == 0.0
+    assert _plan_html.read_state(bare)["impl_source"] == "declarations"
     _store_review(store, bare)
     with_impl = _plan(sections=[], impl=0.4)
-    assert _plan_html.read_state(with_impl).get("impl_source") == "authored"
+    assert _plan_html.read_state(with_impl).get("impl_source") == "declarations"
     assert _coverage(store, with_impl)[1] == set()
 
 

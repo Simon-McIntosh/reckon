@@ -843,6 +843,47 @@ def derive_impl_from_sections(sections, declarations=None) -> float | None:
     return done / total
 
 
+def derive_impl_from_declarations(declarations) -> float | None:
+    """impl by count over the declarations: done over done plus implementable.
+
+    The figure a plan carries before its section records answer for it. Each
+    declaration counts once, so a plan with any implementable section never
+    reaches 1.0. Deferred declarations sit outside the denominator, and a map
+    with no non-deferred declaration derives nothing — the caller keeps the
+    authored figure rather than reporting a fabricated zero.
+    """
+    done = 0
+    predicted = 0
+    for classification in (declarations or {}).values():
+        value = str(classification or "").strip()
+        if value == SECTION_DECLARATION_DONE:
+            done += 1
+        elif value == SECTION_DECLARATION_IMPLEMENTABLE:
+            predicted += 1
+    total = done + predicted
+    if total <= 0:
+        return None
+    return done / total
+
+
+def derive_impl_with_source(sections, declarations=None) -> tuple:
+    """The impl figure and the source it came from, in one read.
+
+    Records that cover every declaration answer with the effort-weighted figure
+    (``computed``). Records that do not fall back to the declaration count
+    (``declarations``), so a plan with an implementable declaration never reads
+    1.0 while its records are partial. A plan with no derivable figure returns
+    ``(None, None)`` and the caller keeps the authored meta (``authored``).
+    """
+    weighted = derive_impl_from_sections(sections, declarations)
+    if weighted is not None:
+        return weighted, "computed"
+    by_count = derive_impl_from_declarations(declarations)
+    if by_count is not None:
+        return by_count, "declarations"
+    return None, None
+
+
 def authored_section_headings(html_text: str) -> list:
     """Each authored section's heading record and identity, in document order.
 
@@ -1122,10 +1163,12 @@ def read_state(html_text: str) -> dict:
                 "object mapping section identities to classifications"
             )
     st["sections"] = _read_section_records(soup, st.get("section_declarations", {}))
-    derived = derive_impl_from_sections(st["sections"], st.get("section_declarations"))
-    if derived is not None:
+    derived, source = derive_impl_with_source(
+        st["sections"], st.get("section_declarations")
+    )
+    if source is not None:
         st["impl"] = derived
-        st["impl_source"] = "computed"
+        st["impl_source"] = source
     elif "impl" in st:
         st["impl_source"] = "authored"
     capability = _capability_from_values(
@@ -1927,8 +1970,9 @@ def _impl_is_carried_by_records(state: dict, html_text: str) -> bool:
 
     Records carry the figure exactly when the coverage rule answers: a plan
     whose records cover every declared non-deferred section holds its impl
-    there, and one whose records are partial keeps its authored figure, so the
-    meta write must proceed for it. A state naming no record leaves the
+    there, and one whose records are partial reads a figure derived from its
+    declarations instead, so an authored meta write must still proceed for it
+    and the audit reports the two figures as disagreeing. A state naming no record leaves the
     question to the document, where the parser's own selector settles it — a
     text match would also fire on prose that quotes the record syntax, and a
     plan documenting the contract would then lose an authored write it must
@@ -2222,16 +2266,16 @@ def _parse_meta_uncached(path: Path, slug: str | None) -> dict:
             parsed_state = read_state(text)
         except ValueError:
             parsed_state = None
-        derived = (
-            None
+        derived, source = (
+            (None, None)
             if parsed_state is None
-            else derive_impl_from_sections(
+            else derive_impl_with_source(
                 parsed_state.get("sections"), parsed_state.get("section_declarations")
             )
         )
-        if derived is not None:
+        if source is not None:
             rec["impl"] = derived
-            rec["impl_source"] = "computed"
+            rec["impl_source"] = source
         elif "plan-impl" in metas:
             rec["impl_source"] = "authored"
     authored_hours = "plan-effort-hours" in metas and "effort_hours" in rec
