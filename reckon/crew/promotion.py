@@ -83,6 +83,10 @@ from reckon.crew.node import (
     parse_duration,
     role_may_write_repository_paths,
 )
+from reckon.crew.picker.outcomes import (
+    OVERRIDDEN_HOLD_ROUTE_MODE,
+    overridden_hold,
+)
 from reckon.crew.plan_review import (
     RUN_COMMENT_PREFIX,
     _is_run_comment,
@@ -163,7 +167,11 @@ def complete(
     unplanned_reason: str = "",
     promoted_by: str = "",
 ) -> dict[str, Any]:
-    """Promote a run, or finish cleanup when its record already landed."""
+    """Promote a run, or finish cleanup when its record already landed.
+
+    A run whose dispatch started an advisory pick asynchronously is waited for,
+    up to the pick's own bound, so its answer reaches the committed row.
+    """
     verdict = str(gate).strip().lower()
     if verdict not in ledger.GATE_VERDICTS:
         raise ledger.LedgerError(
@@ -180,6 +188,11 @@ def complete(
     if verdict != "failed" and classification:
         raise CrewError("--failure-classification is valid only when --gate failed")
     commit_list = tuple(str(sha) for sha in commits if str(sha).strip())
+    # A run whose dispatch started an advisory pick asynchronously is promoted
+    # possibly before that pick has answered. Wait for it here — outside the
+    # pointer lock the picker itself must take — so the row carries the pick's
+    # answer instead of reading as one the picker never gave.
+    _await_in_flight_shadow_pick(run_id)
     with _pointer_lock(run_id):
         record = _read_pointer_or_rebuild(run_id, root=root)
         # A dispatch whose launch was refused leaves a run that names no
@@ -478,6 +491,83 @@ def complete(
         if commit_list_shortfall is not None:
             result["commit_list_shortfall"] = dict(commit_list_shortfall)
         return result
+
+
+# A deferred shadow pick is started detached by dispatch and attaches its answer
+# to the live pointer within its own bound. A promotion that lands inside that
+# window would otherwise record no picker_selection, and the row would read as
+# one the picker never answered rather than one whose pick had not finished.
+_SHADOW_PICK_SPEC_NAME = "shadow-picker.json"
+_SHADOW_PICK_WAIT_SECONDS = 5.0
+_SHADOW_PICK_POLL_SECONDS = 0.1
+
+
+def _await_in_flight_shadow_pick(run_id: str) -> None:
+    """Wait for a deferred shadow pick to attach, up to the pick's own bound.
+
+    Dispatch can only start the advisory pick after the run exists, so a run
+    promoted inside the pick's window carries no selection. The wait runs before
+    the pointer lock is taken — the detached picker needs that lock to publish
+    its answer — and on a timeout it names the timeout on the pointer, so the
+    ledger row says the pick did not finish rather than saying nothing. A run
+    whose dispatch launched no deferred pick, or whose pointer is already gone,
+    returns at once.
+    """
+    if not (run_dir(run_id) / _SHADOW_PICK_SPEC_NAME).exists():
+        return
+    deadline = _shadow_pick_deadline(run_id)
+    if deadline is None:
+        return
+    while time.monotonic() < deadline:
+        if not _pointer_awaits_shadow_pick(run_id):
+            return
+        time.sleep(_SHADOW_PICK_POLL_SECONDS)
+    if _pointer_awaits_shadow_pick(run_id):
+        _attach_shadow_pick_timeout(run_id)
+
+
+def _pointer_awaits_shadow_pick(run_id: str) -> bool:
+    """Whether the live pointer is still waiting for the deferred pick's answer."""
+    try:
+        pointer = read_pointer(run_id)
+    except CrewError:
+        return False
+    return pointer.get("picker_selection") is None
+
+
+def _shadow_pick_deadline(run_id: str) -> float | None:
+    """The monotonic instant the in-flight pick's bound expires, or None.
+
+    None means no live pointer is present to attach an answer to, so there is
+    nothing to wait for. A pointer whose creation time cannot be read is given
+    the full bound rather than skipped, because the pick's start is then unknown.
+    """
+    try:
+        pointer = read_pointer(run_id)
+    except CrewError:
+        return None
+    started = parse_utc(pointer.get("created_at"))
+    if started is None:
+        return time.monotonic() + _SHADOW_PICK_WAIT_SECONDS
+    elapsed = (datetime.now(UTC) - started).total_seconds()
+    return time.monotonic() + max(0.0, _SHADOW_PICK_WAIT_SECONDS - elapsed)
+
+
+def _attach_shadow_pick_timeout(run_id: str) -> None:
+    """Name the timeout on the pointer, unless the pick landed meanwhile."""
+    from reckon.crew.dispatch_picker import (
+        _picker_fallback,
+        _write_existing_pointer,
+    )
+
+    with _pointer_lock(run_id):
+        if not _pointer_awaits_shadow_pick(run_id):
+            return
+        pointer = read_pointer(run_id)
+        pointer["picker_selection"] = _picker_fallback(
+            "timeout", "the shadow pick did not finish before promotion"
+        )
+        _write_existing_pointer(run_id, pointer)
 
 
 def _complete_locked(
@@ -926,6 +1016,14 @@ def _complete_locked(
         clone_matches=clone_matches,
         promoted_by=promoted_by,
     )
+    # A hold and the dispatch that went past it are both known only here: the
+    # advisory pick lands after dispatch returns, so the run's route mode was
+    # recorded before the answer existed. A row carrying a holding answer is
+    # therefore one the operator overruled, and it is named with its own value
+    # rather than sharing the shadow picks, so a reader can count how often a
+    # hold is overruled.
+    if overridden_hold(run.get("picker_selection")):
+        run["route_mode"] = OVERRIDDEN_HOLD_ROUTE_MODE
     run["attempt"] = int(record.get("attempt") or 1)
     run["attempt_kind"] = str(record.get("attempt_kind") or "dispatch")
     # The worker's exit record rides the row verbatim, and the key is written
