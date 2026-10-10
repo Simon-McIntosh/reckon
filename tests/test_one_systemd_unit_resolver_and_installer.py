@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from reckon import service
-from reckon.crew import paid_lanes, runs
+from reckon.crew import paid_lanes, runs, watch_unit
 
 
 def test_service_and_watch_units_use_the_xdg_systemd_directory(
@@ -22,9 +22,9 @@ def test_service_and_watch_units_use_the_xdg_systemd_directory(
     executable.write_text("#!/bin/sh\n", encoding="utf-8")
     monkeypatch.setattr(service, "server_executable", lambda: executable)
     monkeypatch.setattr(service, "node_executable", lambda: executable)
-    monkeypatch.setattr(runs, "_reckon_console_script", lambda: str(executable))
+    monkeypatch.setattr(watch_unit, "_reckon_console_script", lambda: str(executable))
     monkeypatch.setattr(
-        runs,
+        watch_unit,
         "_watcher_service_environment",
         lambda _config: {"PATH": str(executable.parent)},
     )

@@ -21,7 +21,7 @@ from pathlib import Path
 import pytest
 
 from reckon import cli as cli_module
-from reckon.crew import runs
+from reckon.crew import follower_registration, runs
 
 # The reload's own line, written to the pane. It is about the follower rather
 # than the fleet, so the measured row reads below skip it — counting it would
@@ -156,7 +156,11 @@ def test_touching_a_follower_module_without_changing_it_does_not_move_the_stamp(
     (package / "cli.py").write_text("cli = 1\n")
     touched = package / "crew" / "paid_lanes.py"
     touched.write_text("lane = 1\n")
-    monkeypatch.setattr(runs, "__file__", str(package / "crew" / "runs.py"))
+    monkeypatch.setattr(
+        follower_registration,
+        "__file__",
+        str(package / "crew" / "follower_registration.py"),
+    )
 
     before = runs.follower_code_stamp()
 

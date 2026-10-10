@@ -27,11 +27,7 @@ BOUND = 50_000
 AREAS = ("reckon", "tests")
 
 # Modules above the bound when the bound was set, each scheduled for a split.
-ALLOWLIST = frozenset(
-    {
-        "reckon/crew/runs.py",
-    }
-)
+ALLOWLIST: frozenset[str] = frozenset()
 
 
 def _module_sizes(root: Path) -> dict[str, int]:
