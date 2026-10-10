@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "local",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-10T22:24:17.818Z",
+  "dispatched_at": "2026-10-10T22:14:29Z",
+  "findings": [
+    {
+      "file": "skills/reckon-sync/SKILL.md",
+      "line": "49",
+      "severity": "follow-on",
+      "text": "follow-on: \u00a75 lists skills/reckon-build/references/ but not skills/reckon-sync/SKILL.md, yet the diff edits the latter to repair the dead `migrate-project-state` citation; the edit is correct and disclosed in the manifest, but the plan's write paths under-state the corpus the done_when requires repairing."
+    },
+    {
+      "file": "tests/test_cited_commands_exist.py",
+      "line": "224",
+      "severity": "follow-on",
+      "text": "follow-on: the flag check is `flag not in help_text`, a substring test against the whole --help body, so a cited flag that is a substring of a real flag resolves without being a real flag; a token-boundary match would make the flag arm a true guard."
+    },
+    {
+      "file": "tests/test_cited_commands_exist.py",
+      "line": "57",
+      "severity": "follow-on",
+      "text": "follow-on: the docstring cites a prior incident (\"the review that first found the energy citations\") as the reason for the recursive glob, which is changelog provenance a reader without that history cannot use; state the mechanism (a nested reference is as binding as the skill body)."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read all three commits against base f29d9c2e3; it adds tests/test_cited_commands_exist.py (245 lines), rewrites the deleted-command paragraph in PLAN-FORMAT.md (36 lines), marks the two `crew census` citations planned, fixes skills/reckon-sync/SKILL.md:49, and adds a landing fragment; no product code changes.",
+    "done_when": "the corpus the test walks (tests/test_cited_commands_exist.py:49-70) is exactly the done_when's (skills/**/*.md, PLAN-FORMAT.md, every AGENTS.md, reckon/crew/prompts/*.md); I re-ran the gate at head and got citations=292 checked=290 planned=2 problems=0, EXIT=0, and the recorded base arm (base-arm.log) fails naming PLAN-FORMAT.md:321, PLAN-FORMAT.md:330 and sprint-orchestration.md:1011 among its six, so the gate asserts the measure.",
+    "goal": "\u00a75's goal is a guard that every `reckon` command cited in the instruction corpus resolves, plus repair of the three dead citations; tests/test_cited_commands_exist.py:206 adds that guard and the diff rewrites PLAN-FORMAT.md:318-336 and skills/reckon-sync/SKILL.md:49 to the surviving `reckon sync` path, so the deliverable is present.",
+    "manifest": "read; it records status complete, commits 3f3258bd0/b38a7a686/b69cbc6ddd, the head gate 1 passed EXIT=0 citations=292, the base arm EXIT=1 naming six dead citations, a negative control EXIT=1, and names its log paths.",
+    "write_paths": "\u00a75 names tests/test_cited_commands_exist.py, PLAN-FORMAT.md and skills/reckon-build/references/; the diff also edits skills/reckon-sync/SKILL.md:49 (disclosed in the manifest as `skills`) and writes a docs/evidence fragment (declared only in the manifest), so one edited file sits outside the plan's stated write paths."
+  },
+  "justifications": {
+    "durability": "the guard is the change, and base-arm.log shows it reddens on a removed verb chain while negative-control.log shows it reddens on a bogus flag by file and line, though tests/test_cited_commands_exist.py:224 tests flags by substring (`flag not in help_text`) so a wrong flag that is a substring of a real one would pass.",
+    "evidence": "I reproduced the head gate independently at b69cbc6ddd (citations=292 checked=290 planned=2 problems=0, EXIT=0) and base-arm.log and negative-control.log record the failures the done_when asks for, so the evidence is recorded rather than claimed.",
+    "fit": "the module follows the repo's pytest idiom and introduces no plan label, but the docstring at tests/test_cited_commands_exist.py:56-57 names a prior review's incident (\"the review that first found the energy citations\"), which is provenance the comment rules ask be stated as mechanism.",
+    "goal_fidelity": "tests/test_cited_commands_exist.py:206 implements the guard \u00a75 asks for and PLAN-FORMAT.md:321 and :330 are rewritten off the deleted `migrate-project-state`/`migrate-fleet`, though the goal named three dead citations and the diff repairs six by also marking two planned.",
+    "reuse": "I searched reckon/ for an existing command-citation extractor or click-tree walker and found none (reckon/doccheck.py:1 audits HTML plans, not markdown command citations), so the guard is the first owner of this capability and reuses reckon.cli.main and CliRunner.",
+    "scope_discipline": "every path in the diff is inside the manifest's declared set, but the plan's write paths omit skills/reckon-sync/SKILL.md:49, which the diff edits, and the docs/evidence fragment is declared only in the manifest."
+  },
+  "node": "review-of-cited-commands-exist",
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: f29d9c2e315fa046ddce92e40e534ce3c173c1cb\nreviewed_head_sha: b69cbc6ddd69f6fab3589de7553d9f72fb842019\nVERDICT goal: \u00a75's goal is a guard that every `reckon` command cited in the instruction corpus resolves, plus repair of the three dead citations; tests/test_cited_commands_exist.py:206 adds that guard and the diff rewrites PLAN-FORMAT.md:318-336 and skills/reckon-sync/SKILL.md:49 to the surviving `reckon sync` path, so the deliverable is present.\nVERDICT done_when: the corpus the test walks (tests/test_cited_commands_exist.py:49-70) is exactly the done_when's (skills/**/*.md, PLAN-FORMAT.md, every AGENTS.md, reckon/crew/prompts/*.md); I re-ran the gate at head and got citations=292 checked=290 planned=2 problems=0, EXIT=0, and the recorded base arm (base-arm.log) fails naming PLAN-FORMAT.md:321, PLAN-FORMAT.md:330 and sprint-orchestration.md:1011 among its six, so the gate asserts the measure.\nVERDICT write_paths: \u00a75 names tests/test_cited_commands_exist.py, PLAN-FORMAT.md and skills/reckon-build/references/; the diff also edits skills/reckon-sync/SKILL.md:49 (disclosed in the manifest as `skills`) and writes a docs/evidence fragment (declared only in the manifest), so one edited file sits outside the plan's stated write paths.\nVERDICT manifest: read; it records status complete, commits 3f3258bd0/b38a7a686/b69cbc6ddd, the head gate 1 passed EXIT=0 citations=292, the base arm EXIT=1 naming six dead citations, a negative control EXIT=1, and names its log paths.\nVERDICT diff: read all three commits against base f29d9c2e3; it adds tests/test_cited_commands_exist.py (245 lines), rewrites the deleted-command paragraph in PLAN-FORMAT.md (36 lines), marks the two `crew census` citations planned, fixes skills/reckon-sync/SKILL.md:49, and adds a landing fragment; no product code changes.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_cited_commands_exist.py:206 implements the guard \u00a75 asks for and PLAN-FORMAT.md:321 and :330 are rewritten off the deleted `migrate-project-state`/`migrate-fleet`, though the goal named three dead citations and the diff repairs six by also marking two planned.\nSCORE evidence: 19\nJUSTIFICATION evidence: I reproduced the head gate independently at b69cbc6ddd (citations=292 checked=290 planned=2 problems=0, EXIT=0) and base-arm.log and negative-control.log record the failures the done_when asks for, so the evidence is recorded rather than claimed.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: every path in the diff is inside the manifest's declared set, but the plan's write paths omit skills/reckon-sync/SKILL.md:49, which the diff edits, and the docs/evidence fragment is declared only in the manifest.\nSCORE durability: 18\nJUSTIFICATION durability: the guard is the change, and base-arm.log shows it reddens on a removed verb chain while negative-control.log shows it reddens on a bogus flag by file and line, though tests/test_cited_commands_exist.py:224 tests flags by substring (`flag not in help_text`) so a wrong flag that is a substring of a real one would pass.\nSCORE fit: 16\nJUSTIFICATION fit: the module follows the repo's pytest idiom and introduces no plan label, but the docstring at tests/test_cited_commands_exist.py:56-57 names a prior review's incident (\"the review that first found the energy citations\"), which is provenance the comment rules ask be stated as mechanism.\nSCORE reuse: 19\nJUSTIFICATION reuse: I searched reckon/ for an existing command-citation extractor or click-tree walker and found none (reckon/doccheck.py:1 audits HTML plans, not markdown command citations), so the guard is the first owner of this capability and reuses reckon.cli.main and CliRunner.\nFINDING skills/reckon-sync/SKILL.md:49 follow-on: \u00a75 lists skills/reckon-build/references/ but not skills/reckon-sync/SKILL.md, yet the diff edits the latter to repair the dead `migrate-project-state` citation; the edit is correct and disclosed in the manifest, but the plan's write paths under-state the corpus the done_when requires repairing.\nFINDING tests/test_cited_commands_exist.py:224 follow-on: the flag check is `flag not in help_text`, a substring test against the whole --help body, so a cited flag that is a substring of a real flag resolves without being a real flag; a token-boundary match would make the flag arm a true guard.\nFINDING tests/test_cited_commands_exist.py:57 follow-on: the docstring cites a prior incident (\"the review that first found the energy citations\") as the reason for the recursive glob, which is changelog provenance a reader without that history cannot use; state the mechanism (a nested reference is as binding as the skill body).\n",
+  "review_run_id": "r-20261010T221350174554-review-of-cited-commands-exist",
+  "reviewed_base_sha": "f29d9c2e315fa046ddce92e40e534ce3c173c1cb",
+  "reviewed_head_sha": "b69cbc6ddd69f6fab3589de7553d9f72fb842019",
+  "reviewed_run_id": "r-20261010T211817401976-cited-commands-exist",
+  "reviewer": "review-of-cited-commands-exist",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T22:24:47.648104+00:00",
+  "total": 105
+}
