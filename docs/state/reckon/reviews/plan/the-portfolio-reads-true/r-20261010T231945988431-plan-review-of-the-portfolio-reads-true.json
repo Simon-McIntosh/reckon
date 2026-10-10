@@ -1,0 +1,35 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T23:28:35.629Z",
+  "dispatched_at": "2026-10-10T23:20:14Z",
+  "findings": [],
+  "plan_fingerprint": "a3ea716e2b61402d0a7d7e293c63b36d75e21fb0ddea1f000c8213ae954aeda4",
+  "plan_slug": "the-portfolio-reads-true",
+  "plan_version": 15,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261010T231945988431-plan-review-of-the-portfolio-reads-true",
+  "reviewed_blob_sha": "8c2e6d8dfff740677e9d4e09318cd9e5bc2e4709",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 \u00a73 cites its callers by name (`derived_plan_age`, `_git_last_committed(repo_dir, docs_dir)`, `resolve_resource`) after the earlier line-number drift finding, and each resolves (`_git_last_committed` at `reckon/serve.py:1532`; `resolve_resource` at `reckon/resources.py:650`); the cross-plan hrefs `/reckon/plans/one-fact-has-one-reader.html` and gate evidence `the-codebase-is-reviewed-between-nodes#s8` both resolve. \u00a75's caller references at `reckon/doccheck.py:858`, `reckon/roadmap.py:1287`, `reckon/mcp_discovery.py:221` land inside the three wrapper functions that call `unwired_plan_finding` (the doccheck call itself is at 867, four lines below the wrapper's signature at 854), so the pointer locates the right caller even though the line is not the call.",
+    "done_when": "pass \u2014 \u00a73's done-when is measurable (an `AGING` row with age 20 and source `commit` from a fixture committed 20 days ago and touched today; a second plan committed 40 days ago reports `STALE`; dates derived from the fixture at assertion time, not literals) and names a negative control that can fail (with the age read from the mtime the first plan reports age 0 and no row, so the assertion fails). \u00a72/\u00a74/\u00a75/\u00a76 each name a negative control too.",
+    "evidence_paths": "pass \u2014 \u00a76's round records to `docs/state/reckon/review.html` and the gate evidence sits on plan `the-codebase-is-reviewed-between-nodes#s8`; no gate or evidence path names a scratchpad or node-local temporary directory.",
+    "naming": "pass \u2014 the reviewed unit introduces no symbol, file or comment carrying a plan label, stage name, ticket number or version tag; `AGING` is an audit-code data label emitted on a row, in the same class as the existing `STALE`/`MISSING_IMPL`.",
+    "reasoning": "pass \u2014 all three checks hold for the changed unit. The stated mechanism (commit-first age inside `derived_plan_age`, the map built by the existing `_git_last_committed`) matches its evidence: \u00a71 shows the audit reads the file mtime at `reckon/doccheck.py:540` and so reported 0 stale plans while 34 were 8-16 days past their last commit. The mechanism produces the done-when: routing the audit loop through a commit-first `derived_plan_age` yields an age-20 row with source `commit` for a plan touched today, which the mtime mutation removes. And it runs on the real code path with the caller named: `_authorisation_age` (`reckon/roadmap.py:941`) is correctly described as resolving the plan path through `resolve_resource` and passing it to both of its `derived_plan_age` calls (today's first call at 945 passes no path, the second at 968 receives the `resolve_resource`-derived `fallback_path`), and the sentence's fix \u2014 resolve once, before the first call \u2014 is exactly what the missing-path problem requires.",
+    "single_goal": "pass \u2014 each node carries one deliverable (\u00a72 impl derivation, \u00a73 staleness age owner, \u00a74 sprint-membership audit code, \u00a75 section-level wiring, \u00a76 the pruning round); \u00a71 is the why-record with `status: done`.",
+    "wiring": "pass \u2014 \u00a76 is gated by `g-tprt-impl-honest` (requires `#s2`) and `g-tprt-age-honest` (requires `#s3`) beside `g-tprt-portfolio-mode` (requires `the-codebase-is-reviewed-between-nodes#s8`, which resolves), so the \u00a72/\u00a73 -> \u00a76 dependency the earlier wiring finding named is now declared; \u00a73/\u00a74/\u00a75 carry no gate or `depends-on`, but their ordering is stated in the driving followup `f-tprt-002` and all three serialise on `reckon/doccheck.py`, and \u00a72 has since landed (`c6abb36b4`), so \u00a73's prose \"runs after \u00a72\" is already satisfied."
+  },
+  "section_digests": {
+    "_document": "a2e40a46ef8769d14f88fec5811bd50d0aa5fc6a7f36f66f1ebcba3a9533436a",
+    "s1": "56204248c9050844c40ac7e00bff909830602caaa4b95be87bacea51b1495a03",
+    "s2": "69b86246adb4ea89719f367ac57f43940ed14fb88c5c89408cf18a6b59911f57",
+    "s3": "5902125b920ccad233230b403ba1e4cb62c75743d8265014bc35f38e0c9915c3",
+    "s4": "9280ec81cafc36b7de1295b0f22745c6162986e93d9731a8e8b99c51d658a217",
+    "s5": "53d056457e8d9470758a7c7131caafc6fab7491610f7f3fcab1b958907a1e9b9",
+    "s6": "3b386242a01bc207ce0810ef1ee5ccbd8a9d5ea78f77a5dd6fc61b2f207c53d0"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T23:30:08.964716+00:00"
+}
