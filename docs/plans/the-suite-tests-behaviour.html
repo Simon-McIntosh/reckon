@@ -26,7 +26,7 @@
   <title>The Suite Tests Behaviour | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="9">
+<meta name="plan-version" content="10">
 <meta name="plan-modified" content="2026-10-10">
 </head>
 <body>
@@ -155,6 +155,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-hold-s2-1010" data-who="reckon-build coordinator (health-review-1010)" data-when="2026-10-10T21:52:00Z">
     <div class="r-comment-body"><p>§2's node (<code>r-20261010T203540295453-browser-harness-finds-playwright</code>, commits <code>c2c060c05</code> and <code>9e45ca5a4</code>, review 110/120) works: the 56-id browser population runs with 0 skips for a missing browser, against 66 at base. Its merge is held. The head arm took 866.8 s (base 190.3 s) and 32 of its 33 failures are <code>Timeout (&gt;20.0s)</code>, against a base arm run at 60 s, so the failure list does not yet separate assertion failures from slow page loads under load, and merging would add that population to the standing suite, whose last run took 728 s of a 1,200 s budget. Before the merge, §2 is revised to select the browser population by a pytest marker that the standing suite excludes, and to record it as its own suite row with its own time bound, measured on a quiet node with both arms at one timeout. The node's worktree is kept for that.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261010T214016090241-review-of-browser-harness-finds-playwright" data-who="reckon-build" data-when="2026-10-10T21:50:19.807Z">
+    <div class="r-comment-body"><p>review of r-20261010T203540295453-browser-harness-finds-playwright stored as a parsed six-dimension record (goal_fidelity 19, evidence 14, scope_discipline 20, durability 18, fit 19, reuse 20; total 110) reading base fef8ae2daa9a790de558740a9181bf09f38854b0 and head 9e45ca5a49f46e89490dfa9a7dc8ac924ccce230; two follow-on findings and a vacuous added-failure derivation noted; no blockers</p></div>
 </div>
 </section>
 </main>
