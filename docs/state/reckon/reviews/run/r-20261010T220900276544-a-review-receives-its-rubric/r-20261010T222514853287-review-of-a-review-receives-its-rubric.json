@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "backend": "local",
+  "base_log_revision": null,
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/obligations.py:143",
+    "reckon/crew/recovery_review_dispatch.py:283",
+    "reckon/crew/promotion_checks.py:724",
+    "reckon/crew/recovery_classification.py:550"
+  ],
+  "completed_at": "2026-10-10T22:38:42.399Z",
+  "dispatched_at": "2026-10-10T22:25:40Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_subject.py",
+      "line": "561",
+      "severity": "blocking",
+      "text": "blocking: _review_dispatch_fields defaults write=True and now writes review-brief.md into the reviewed run's directory on every composition, so obligations.py:143's read-only call mutates the run directory; tests/test_crew_obligations.py:275 fails at head (review-brief.md and classification.json appear) where it passes at base, and the node's done-when requires the obligation tests to pass."
+    },
+    {
+      "file": "tests/test_review_of_a_brief_run_names_its_brief.py",
+      "line": "128",
+      "severity": "follow-on",
+      "text": "follow-on: four cases (lines 128, 137, 147, 171) assert the pre-section contract and fail at head while passing at base, and the done-when requires the review dispatch tests to pass; the node was fenced to recovery_review_subject.py and its own new test, so it could not update this file and reported it instead."
+    },
+    {
+      "file": "tests/test_a_review_receives_its_rubric.py",
+      "line": "178",
+      "severity": "follow-on",
+      "text": "follow-on: this assertion compares Path(argv[...]).read_text() against fields[\"brief_text\"], both produced by the code under test, so it holds whatever the brief says and still passed under the negative control; the test reddens only on the independent SCORE assertion at line 179."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read 3f9f84469bd00821a5484ead737e3e3acbc56acf..53edcc8afdf401573205828ae7111a9249434b1f commit by commit; two files, +291/-23, the change being _review_brief_text/_review_brief_path added and _review_dispatch_fields/_review_dispatch_tokens reworked, plus the new test module.",
+    "done_when": "the done-when requires the new test passing (manifest log 5 passed EXIT=0), the review dispatch and obligation tests passing, and the negative control reddening; the new file and the negative control hold, but the obligation test does not - tests/test_crew_obligations.py:275 fails at head and passes at base.",
+    "goal": "the node's goal is to compose every run review's brief from its rubric text; reckon/crew/recovery_review_subject.py:362 _review_brief_text prepends load_review_prompt()/load_claims_review_prompt() to the reviewed run id and head, and _review_dispatch_tokens:650 emits --brief beside --plan/--section, so the goal is met but by a mechanism that writes on every composition.",
+    "manifest": "read the reviewed node's manifest; status complete, gate log rubric-gate-head.log 5 passed EXIT=0 and negative control 4 failed EXIT=1, but it names no baseline_suite/after_suite arm and does not report the obligation-test failure it caused.",
+    "write_paths": "read the declared paths (recovery_review_subject.py, recovery_classification.py, review.py, the new test, the reviewed node's evidence fragment and a figures dir); the diff touches recovery_review_subject.py and tests/test_a_review_receives_its_rubric.py, both inside scope."
+  },
+  "justifications": {
+    "durability": "the new module reddens under the negative control (rubric-gate-negative-control.log, 4 of 5 cases), but tests/test_a_review_receives_its_rubric.py:178 compares two products of the code under test and no case guards the read-only-obligation invariant the change broke.",
+    "evidence": "the recorded gate rubric-gate-head.log runs only tests/test_a_review_receives_its_rubric.py, while the done-when's clause that the review dispatch and obligation tests pass is false at head (tests/test_crew_obligations.py:275 red, base green).",
+    "fit": "the change edits existing functions in place with a conventional commit carrying a body, and adds no plan- or version-labelled symbol.",
+    "goal_fidelity": "reckon/crew/recovery_review_subject.py:362 composes the rubric and run identity as the goal asks, but it runs inside _review_dispatch_fields whose default write=True makes the composition mutate the run directory on every read.",
+    "reuse": "reckon/crew/recovery_review_subject.py:559 reuses the existing review_module.load_review_prompt/load_claims_review_prompt and runs.run_dir rather than forking them, extending the owner _review_dispatch_fields.",
+    "scope_discipline": "every path in the diff is inside the declared write paths; the only extra is a cosmetic reflow of the blob = subprocess.run(...) expression at reckon/crew/recovery_review_subject.py:455."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to compose every run review's brief from its rubric text; reckon/crew/recovery_review_subject.py:362 _review_brief_text prepends load_review_prompt()/load_claims_review_prompt() to the reviewed run id and head, and _review_dispatch_tokens:650 emits --brief beside --plan/--section, so the goal is met but by a mechanism that writes on every composition.\nVERDICT done_when: the done-when requires the new test passing (manifest log 5 passed EXIT=0), the review dispatch and obligation tests passing, and the negative control reddening; the new file and the negative control hold, but the obligation test does not - tests/test_crew_obligations.py:275 fails at head and passes at base.\nVERDICT write_paths: read the declared paths (recovery_review_subject.py, recovery_classification.py, review.py, the new test, the reviewed node's evidence fragment and a figures dir); the diff touches recovery_review_subject.py and tests/test_a_review_receives_its_rubric.py, both inside scope.\nVERDICT manifest: read the reviewed node's manifest; status complete, gate log rubric-gate-head.log 5 passed EXIT=0 and negative control 4 failed EXIT=1, but it names no baseline_suite/after_suite arm and does not report the obligation-test failure it caused.\nVERDICT diff: read 3f9f84469bd00821a5484ead737e3e3acbc56acf..53edcc8afdf401573205828ae7111a9249434b1f commit by commit; two files, +291/-23, the change being _review_brief_text/_review_brief_path added and _review_dispatch_fields/_review_dispatch_tokens reworked, plus the new test module.\nCALL_SITES: reckon/crew/obligations.py:143, reckon/crew/recovery_review_dispatch.py:283, reckon/crew/promotion_checks.py:724, reckon/crew/recovery_classification.py:550\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_subject.py:362 composes the rubric and run identity as the goal asks, but it runs inside _review_dispatch_fields whose default write=True makes the composition mutate the run directory on every read.\nSCORE evidence: 8\nJUSTIFICATION evidence: the recorded gate rubric-gate-head.log runs only tests/test_a_review_receives_its_rubric.py, while the done-when's clause that the review dispatch and obligation tests pass is false at head (tests/test_crew_obligations.py:275 red, base green).\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared write paths; the only extra is a cosmetic reflow of the blob = subprocess.run(...) expression at reckon/crew/recovery_review_subject.py:455.\nSCORE durability: 15\nJUSTIFICATION durability: the new module reddens under the negative control (rubric-gate-negative-control.log, 4 of 5 cases), but tests/test_a_review_receives_its_rubric.py:178 compares two products of the code under test and no case guards the read-only-obligation invariant the change broke.\nSCORE fit: 18\nJUSTIFICATION fit: the change edits existing functions in place with a conventional commit carrying a body, and adds no plan- or version-labelled symbol.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/crew/recovery_review_subject.py:559 reuses the existing review_module.load_review_prompt/load_claims_review_prompt and runs.run_dir rather than forking them, extending the owner _review_dispatch_fields.\nFINDING reckon/crew/recovery_review_subject.py:561 blocking: _review_dispatch_fields defaults write=True and now writes review-brief.md into the reviewed run's directory on every composition, so obligations.py:143's read-only call mutates the run directory; tests/test_crew_obligations.py:275 fails at head (review-brief.md and classification.json appear) where it passes at base, and the node's done-when requires the obligation tests to pass.\nFINDING tests/test_review_of_a_brief_run_names_its_brief.py:128 follow-on: four cases (lines 128, 137, 147, 171) assert the pre-section contract and fail at head while passing at base, and the done-when requires the review dispatch tests to pass; the node was fenced to recovery_review_subject.py and its own new test, so it could not update this file and reported it instead.\nFINDING tests/test_a_review_receives_its_rubric.py:178 follow-on: this assertion compares Path(argv[...]).read_text() against fields[\"brief_text\"], both produced by the code under test, so it holds whatever the brief says and still passed under the negative control; the test reddens only on the independent SCORE assertion at line 179.\nreviewed_base_sha: 3f9f84469bd00821a5484ead737e3e3acbc56acf\nreviewed_head_sha: 53edcc8afdf401573205828ae7111a9249434b1f\n",
+  "review_run_id": "r-20261010T222514853287-review-of-a-review-receives-its-rubric",
+  "reviewed_base_sha": "3f9f84469bd00821a5484ead737e3e3acbc56acf",
+  "reviewed_head_sha": "53edcc8afdf401573205828ae7111a9249434b1f",
+  "reviewed_run_id": "r-20261010T220900276544-a-review-receives-its-rubric",
+  "scores": {
+    "durability": 15,
+    "evidence": 8,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 18,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T22:36:45.304834+00:00",
+  "total": 92
+}
