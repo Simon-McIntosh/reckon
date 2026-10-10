@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T23:15:30.286Z",
+  "dispatched_at": "2026-10-10T23:08:28Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/nothing-lands-unreached.html#s4",
+      "id": "reasoning-1",
+      "reason": "the plan must settle whether the moved script's own generated_by literal is updated to the script path or deliberately retained, or a later reader reads the provenance as a claim about reachable code.",
+      "text": "the moved death_census carries `census[\"generated_by\"] = \"reckon.crew.death_census\"` (reckon/crew/death_census.py:357), and \u00a74's rule that a provenance field \"keeps the name of what produced it\" is written for an already-committed data file, not for the code that generates future output, while the moved-file exemption keeps the line out of the grep measure \u2014 so after the move the script emits a generated_by naming a module that no longer exists, with no measure seeing it",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/nothing-lands-unreached.html#s4",
+      "id": "done_when-1",
+      "reason": "the moved-tests-pass clause in the same done-when already forces the assertion's rewrite or removal, so a worker following \u00a74 cannot land a green measure with this left broken.",
+      "text": "the moved test tests/test_pace_replay.py:180 is `assert importlib.util.find_spec(\"reckon.crew.pace_replay\") is not None`, an assertion whose subject is the exact path \u00a74 removes, but \u00a74 says only that the modules move \"with their tests\" and scopes the \"drop the assertion if its subject was only the moved module\" clause to the four tests that stay",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "68603983dac0b42f7bdc9f33ff64e4a600cf91936ac8453a8825f797c03e3cbd",
+  "plan_slug": "nothing-lands-unreached",
+  "plan_version": 19,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261010T230759765305-plan-review-of-nothing-lands-unreached",
+  "reviewed_blob_sha": "b97366a074cebd899d1d64af03230d6bbc0dba33",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 carryover_census.py, death_census.py, pace_replay.py, budget.py:2651, docs/research/scripts/scan_local_lane_deaths.py:649, docs/research/data/crew-pattern-review/worker-anatomy/anatomy_census.py:46 and the four named tests all resolve; death_census.main at line 342 matches \u00a74's description exactly (argv[0] taken as an output path, no flag parsed).",
+    "done_when": "a finding \u2014 \u00a74's measure is falsifiable (executed negative control: one old import left in a test fails at collection), but \"its moved tests ... pass\" is read against test_pace_replay.py:180, which asserts the module is importable at the path the move removes.",
+    "evidence_paths": "pass \u2014 \u00a74 names no scratchpad or node-local path; the gate logs and negative-control log land on the run's durable evidence dir per the dispatch contract, as \u00a72's landed evidence already does.",
+    "naming": "pass \u2014 \u00a74 carries no ticket numbers, version tags or changelog prose; \u00a7-references are plan-structure ids, and the moved module names (census, replay) are mechanism words.",
+    "reasoning": "a finding \u2014 \u00a74's provenance rule covers a committed data file's generated_by but not the moved code that writes it, so the moved death_census would emit provenance naming a module path it no longer occupies.",
+    "single_goal": "pass \u2014 \u00a74 has one deliverable: take the three one-off census modules out of the package as scripts, with their tests.",
+    "wiring": "pass \u2014 \u00a74 declares it runs after \u00a73 (which shares \u00a72's ratchet allowlist), its write paths include tests/test_every_module_is_reached.py, and every node, plan and file it names resolves (the three modules, budget.py, the two research scripts, the four staying tests, \u00a72's ratchet)."
+  },
+  "section_digests": {
+    "_document": "13351dbde138aeb68206f8604e3d44d518bf7e59793cafbbebfdc90ee8902fc0",
+    "s1": "e0a15218687e5ca8207eca1ee8bbe8317a16d92d1864ef9c2b905c1e2443b5fd",
+    "s2": "5af896b6106e1d92e8b6b8ffe1f4aeffac2e91bddbc2afdbae9feeadafbc8740",
+    "s3": "6bb9cc6b8984fead7b347d5d5c61e872c1db89fa64b675b6d25a211f80bcb477",
+    "s4": "a33869224f107d4e62e5d1f5aa71b75dc4d60ef36ccfa1abf01b5e73346f64a7"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T23:17:05.297492+00:00"
+}
