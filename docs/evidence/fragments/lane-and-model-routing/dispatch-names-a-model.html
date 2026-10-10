@@ -1,0 +1,37 @@
+<article class="landed-report" data-run-id="r-20261010T201227087344-dispatch-names-a-model" data-node="dispatch-names-a-model">
+<h3 id="dispatch-names-a-model-summary">A dispatch can name a model inside a lane</h3>
+<p><code>crew dispatch --model KEY</code> resolves the name through the
+catalogue's one resolver (<code>reckon/ledger.py::resolve_name</code>) and
+narrows it to the backend whose expanded entry serves that
+<code>(lane, model_key)</code> pair. A model key, a model id and an alias all
+reach the same backend the legacy <code>&lt;lane&gt;-&lt;key&gt;</code> spelling
+names, so <code>--model opus</code> beside <code>--backend claude</code> is the
+same route as <code>--backend claude-opus</code>. A bare <code>--model</code>
+two lanes declare is refused naming both lanes; a name no lane declares is
+refused, never guessed. Because the narrowing happens on the request, a named
+lane or model stays authoritative and no shadow selection is recorded.</p>
+<p id="dispatch-names-a-model-siblings">The two sibling surfaces that already
+take <code>--backend</code> take <code>--model</code> as well.
+<code>crew preflight</code> resolves each named model to the backend that
+serves it and checks that backend's budget; <code>crew shadow</code> narrows a
+named model to the backend serving it before it builds the routing override,
+so a shadow re-run reaches the same configuration a caller would get from the
+legacy backend name.</p>
+<p id="dispatch-names-a-model-record">A promoted run row and its bytes now
+carry <code>lane</code> and <code>model_key</code> beside <code>backend</code>,
+resolved through the same catalogue resolver at record time, so a reader
+carries the pair without re-resolving a backend name that may since have
+retired.</p>
+<p id="dispatch-names-a-model-commits">Commits:
+<code>953906f0279d65ea0e1346497ad35a0ea3d6523c</code> (dispatch names a model),
+<code>1e6b25e47e0e9058be52a67ff0f34ffdef58b67a</code> (picker refusal wording),
+<code>dba1dbfaa8e1757d69c6cc3082e05bb8f33650b6</code> (preflight and shadow).
+</p>
+<table id="dispatch-names-a-model-gate">
+<thead><tr><th>Arm</th><th>Revision</th><th>Log summary</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td>Base</td><td><code>c16b71de9</code></td><td>GATE_BASE_SUMMARY</td><td>GATE_BASE_EXIT</td></tr>
+<tr><td>Head</td><td><code>dba1dbfa</code></td><td>GATE_HEAD_SUMMARY</td><td>GATE_HEAD_EXIT</td></tr>
+<tr><td>Negative control</td><td><code>1e6b25e4</code> with model narrowing dropped</td><td>7 failed, 1 passed; the model/legacy equivalence test fails</td><td>EXIT=1</td></tr>
+</tbody></table>
+</article>

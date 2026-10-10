@@ -120,6 +120,11 @@ RECORD_FIELDS = (
     "attempt",
     "member",
     "backend",
+    # The lane and model key the backend serves, resolved through the catalogue's
+    # one name resolver and written beside ``backend`` so a row stays attributable
+    # after a backend name retires. Null when the name resolves to no pair.
+    "lane",
+    "model_key",
     "local",
     "agent",
     "dispatched_at",
@@ -2457,10 +2462,18 @@ def build_record(
     # The lane and model key the recorded backend serves, resolved through the
     # catalogue's one name resolver so a stored row carries the pair beside
     # ``backend``. Reading it here keeps a row promoted after a backend name
-    # retires attributable to the lane and model it actually ran.
-    stored_identity = normalize_identity(
-        {"backend": str(backend), "agent": stored_agent}
-    )
+    # retires attributable to the lane and model it actually ran. A malformed
+    # catalogue must not turn a write into an error -- the same fallback the
+    # billing resolution takes leaves the pair unset rather than raising out
+    # of the ledger, so the row is still written.
+    from reckon import flight as flight_module
+
+    try:
+        stored_identity = normalize_identity(
+            {"backend": str(backend), "agent": stored_agent}
+        )
+    except (flight_module.FlightConfigError, OSError, ValueError):
+        stored_identity = {}
     # Completion consults the same accessor capability derivation will read
     # later, but the verdict lands as its own field rather than mutating the
     # lineage a caller (e.g. shadow dispatch) already holds a copy of.
