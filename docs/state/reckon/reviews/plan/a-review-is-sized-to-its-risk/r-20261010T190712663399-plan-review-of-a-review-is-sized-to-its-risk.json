@@ -1,0 +1,62 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T19:18:57.745Z",
+  "dispatched_at": "2026-10-10T19:07:41Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-is-sized-to-its-risk.html:147",
+      "id": "done_when-1",
+      "reason": "a node dispatched to close \u00a73 cannot satisfy the measure as written, so the done-when must be reworded; the coordinator's own note says the likely intent (\"no review draws more than one repair round\" or \"every review with a blocking finding draws exactly one\") is met by this census and the wording choice is the lead's.",
+      "text": "\u00a73's done-when (\"over a week of ledger rows every finding-bearing review has exactly one repair round, and no finding is left without either a repair commit or a declined-with-reason answer\") is unmet and unsatisfiable by the section's own mechanism: the repair-round census the plan records (c-arist-repair-round-census-result; c-arist-s3-census-reading) measures 41 of 664 finding-bearing reviews drawing one round, 623 drawing none, and 988 of 1,404 findings unanswered",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-is-sized-to-its-risk.html:171",
+      "id": "done_when-2",
+      "reason": "\u00a76 stays implementable but cannot be closed from reckon; the done-when must be reworded to the reckon half and the nova half recorded as an external dependency, or a node builds \u00a76 and then cannot close it.",
+      "text": "\u00a76's done-when requires \"reckon and nova each declare a suite command and budget \u2026 and one real wave close in each of the two projects records its counts\", a deliverable in the nova repository that this plan and project cannot produce (f-arist-012 records the nova half as \"nova-side edits that nova-f5 is landing\")",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-is-sized-to-its-risk.html:138",
+      "id": "reasoning-1",
+      "reason": "the mechanism and the measure disagree on every follow-on-only and non-implement review, so the section as written directs a node at a target the mechanism deliberately does not reach; rewording the measure, or widening the mechanism, is required before \u00a73 can close.",
+      "text": "\u00a73's mechanism (compose exactly one repair round per review, repaired only from the blocking findings of idle implement runs, declined when every finding is a follow-on) cannot produce the section's own measure, which counts every finding-bearing review",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "823ce2288bf0e721b6fbdadd1723f1709d01dd5a719636633bbd443e1151ee95",
+  "plan_slug": "a-review-is-sized-to-its-risk",
+  "plan_version": 141,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261010T190712663399-plan-review-of-a-review-is-sized-to-its-risk",
+  "reviewed_blob_sha": "81c68aeb84eb91967ee99f7c132309a9c08fcf8f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the research \u00a7-anchors (`orchestrator-crew-pattern-review#s3/#s4`, `review-node-utility#s6`), the evidence-archive anchors (`\u2026#s2`, `s4-\u2026`, `s5-\u2026`), every cited file, the `plan-commits` shas and the pinned `reckon/_plan_html.py:164` all resolve; extensionless hrefs resolve as `<path>.html`.",
+    "done_when": "a finding \u2014 \u00a73's ledger measure is unmet by the plan's own census, and \u00a76's done-when names a nova-repository deliverable this plan cannot produce.",
+    "evidence_paths": "pass \u2014 gates and evidence land under `docs/evidence/fragments/a-review-is-sized-to-its-risk/` and the crew reports root, not a session scratchpad.",
+    "naming": "pass \u2014 no plan labels, ticket numbers or version tags reach the proposed symbols; `f-arist-*` ids appear only in the followups prose, which the tracker owns.",
+    "reasoning": "a finding \u2014 \u00a73's mechanism cannot produce its own done-when; every other section's root-cause match, mechanism\u2192measure fit and named caller hold (\u00a71's 25%\u219257%, +77%/\u221227% and the 1-in-8 / 1-in-40 catch rates are exactly the figures cited in crew-pattern-review \u00a74 and review-node-utility \u00a76).",
+    "single_goal": "pass \u2014 each open section names one deliverable (\u00a73 a single repair round per review; \u00a76 a standing suite gate; \u00a78 a claims rubric for read-only runs).",
+    "wiring": "pass \u2014 the declared `plan-blocks: a-small-change-is-a-small-node` resolves to that plan, and \u00a72's dependency on `reckon/path_classes.py` (landed by the-fleet-reports-its-velocity \u00a72) is present in-tree."
+  },
+  "section_digests": {
+    "_document": "df4ea8918fbb1492e7b53056a8367f282984ca38c46bc831172948099d439f72",
+    "s1": "1bca4570a6dc141df8190260147c4603fdbd4e237bbd0fa1f635f166cdf5637b",
+    "s2": "d87e94711b1191be6062f6581f0bf3c2f7793876a327c35be59e3dd37bbe72c8",
+    "s3": "865c2c7d189405d6ba0566cebd8df5e459211cc93a64a9332de51cff756b47ac",
+    "s4": "834dc20a74581e06fc6c6b99a07ea7b628c9c36d7c390cee1b4e599eeec7b070",
+    "s5": "dd9455e66ea742a997a12400b194e02c6557b19217a06db0a58f82d7d82b8fde",
+    "s6": "cb4e838e28a346993a653862da66ac934c2c1b8e7e1aa1d7cb23c7082672067d",
+    "s7": "044f93aa0d0fd0aed5a7b5b535f5b7a2efacfc541ef12f41a04af14289440d7c",
+    "s8": "a12e7aff5d1cfd541706cc743c3d78ed9c0a96dba6af2c4f8b6dbb2309ea9582"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T19:29:38.506982+00:00"
+}
