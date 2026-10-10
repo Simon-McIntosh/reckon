@@ -12,7 +12,6 @@ from reckon import _plan_html
 from reckon.doccheck import derived_plan_age
 from reckon.resources import ResourceCollision, iter_resources
 
-
 ARCHIVABLE_STATUSES = frozenset({"done", "superseded"})
 ARCHIVABLE_TYPES = frozenset({"plan", "research", "evidence"})
 
@@ -86,7 +85,10 @@ def find_archive_candidates(
             continue
         age_days, age_source = derived_plan_age(
             state.get("modified"),
+            created_at=state.get("created"),
             fallback_path=resource.path,
+            repo_dir=docs_dir.parent,
+            docs_dir=docs_dir,
             today=today,
         )
         if age_days is None or age_days <= config.older_than_days:

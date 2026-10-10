@@ -11,8 +11,8 @@ from __future__ import annotations
 import re
 from collections import defaultdict
 from collections.abc import Callable, Iterable, Mapping
-from itertools import pairwise
 from datetime import UTC, datetime, timedelta
+from itertools import pairwise
 from pathlib import Path
 from typing import Any
 
@@ -26,7 +26,6 @@ from reckon._plan_html import (
     read_state,
     read_state_file,
 )
-from reckon._timestamps import parse_utc
 from reckon._schema import (
     GATE_TRANSITIONS,
     GRAPH_HANDLE_GRAMMAR,
@@ -44,14 +43,15 @@ from reckon._schema import (
     section_depends_on,
     standalone_reason,
 )
+from reckon._timestamps import parse_utc
 from reckon.doccheck import (
     _load_mounts,
     authorisation_staleness,
     derived_plan_age,
     unwired_plan_finding,
 )
-from reckon.followup_pointers import classify_followup
 from reckon.file_memo import memoized
+from reckon.followup_pointers import classify_followup
 from reckon.lifecycle import (
     COMPLETED_STATUSES,
     TERMINAL_STATUSES,
@@ -675,10 +675,7 @@ def _plan_dependency_satisfied(
     ):
         return False
     for section in open_sections(view):
-        if (
-            str(declarations.get(section) or "").strip()
-            != SECTION_DECLARATION_DEFERRED
-        ):
+        if str(declarations.get(section) or "").strip() != SECTION_DECLARATION_DEFERRED:
             return False
     declared = {str(section).strip() for section in declarations}
     for identity, _heading in authored_section_headings(
@@ -722,8 +719,7 @@ def _plan_dependency_judgment(
     if not isinstance(declarations, Mapping) or not declarations:
         return None
     if any(
-        str(declarations.get(section) or "").strip()
-        != SECTION_DECLARATION_DEFERRED
+        str(declarations.get(section) or "").strip() != SECTION_DECLARATION_DEFERRED
         for section in open_sections(view)
     ):
         return None
@@ -942,15 +938,8 @@ def _authorisation_age(
     project: str,
     plan: dict[str, Any],
 ) -> tuple[int | None, str]:
-    recorded_age = derived_plan_age(
-        plan.get("modified") or plan.get("last"),
-        created_at=plan.get("created"),
-    )
-    if recorded_age[0] is not None:
-        return recorded_age
-
-    fallback_path = None
     docs_dir = _load_mounts().get(project)
+    fallback_path = None
     if docs_dir is not None:
         from reckon.resources import resolve_resource
 
@@ -967,7 +956,10 @@ def _authorisation_age(
             fallback_path = resource.path
     return derived_plan_age(
         plan.get("modified") or plan.get("last"),
+        created_at=plan.get("created"),
         fallback_path=fallback_path,
+        repo_dir=docs_dir.parent if docs_dir is not None else None,
+        docs_dir=docs_dir,
     )
 
 
@@ -1099,9 +1091,7 @@ def _section_scoped_edges(
     rows: list[dict[str, Any]] = []
     findings: list[dict[str, Any]] = []
 
-    def target_row(
-        target_project: str, target_slug: str
-    ) -> Mapping[str, Any] | None:
+    def target_row(target_project: str, target_slug: str) -> Mapping[str, Any] | None:
         if not target_slug or target_project != project:
             return None
         row = all_plans.get(target_slug)
@@ -1707,7 +1697,11 @@ def _sprint_member_counts(members: list[Mapping[str, Any]]) -> tuple[int, int, f
     )
     if not members_count:
         return 0, 0, 0.0
-    return members_count, pending, round(100 * (members_count - pending) / members_count, 1)
+    return (
+        members_count,
+        pending,
+        round(100 * (members_count - pending) / members_count, 1),
+    )
 
 
 def _sprint_recent_days(project: str, docs_dir: str | Path | None) -> int:
@@ -1779,9 +1773,8 @@ def sprint_summary_rows(
         if not live and status not in SPRINT_FINISHED_STATUSES:
             include = True
         elif not live and status in SPRINT_FINISHED_STATUSES:
-            include = (
-                closed_at is not None
-                and moment - closed_at <= timedelta(days=max(0, recent_days))
+            include = closed_at is not None and moment - closed_at <= timedelta(
+                days=max(0, recent_days)
             )
         else:
             include = True
@@ -2250,10 +2243,7 @@ _DRIFT_MEMBER_PROGRESS_STORED = frozenset({"open", "active"})
 
 def _drift_is_member_progress(stored: str, derived: str) -> bool:
     """Return True when a member-derived label does not contradict the stored one."""
-    return (
-        derived == "in-progress"
-        and stored.lower() in _DRIFT_MEMBER_PROGRESS_STORED
-    )
+    return derived == "in-progress" and stored.lower() in _DRIFT_MEMBER_PROGRESS_STORED
 
 
 def _sprint_status_buckets(
@@ -2761,9 +2751,7 @@ def _build_roadmap(
                 )
                 if judgment is not None:
                     judgment_required_rows[slug].append(
-                        _judgment_member(
-                            project, slug, project, parsed.slug, judgment
-                        )
+                        _judgment_member(project, slug, project, parsed.slug, judgment)
                     )
             dependency_row = {
                 "ref": ref,
@@ -2862,9 +2850,7 @@ def _build_roadmap(
             dependency_rows[slug].extend(section_edge_rows)
             findings.extend(section_edge_findings)
 
-        gate_edge_rows = _gate_section_edges(
-            project, plan, slug, all_plans, docs_dir
-        )
+        gate_edge_rows = _gate_section_edges(project, plan, slug, all_plans, docs_dir)
         if gate_edge_rows:
             dependency_rows[slug].extend(gate_edge_rows)
             for edge_row in gate_edge_rows:

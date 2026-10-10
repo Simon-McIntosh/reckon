@@ -160,6 +160,7 @@ _FOLLOWUP_WORK_ITEM = re.compile(r"\(\s*\d+\s*\)\s*\S")
 FOLLOWUP_WORK_ITEMS_THRESHOLD = 2
 
 SEVERITIES = ("error", "warn", "info")
+ACTIVE_PLAN_AGING_AFTER_DAYS = 14
 ACTIVE_PLAN_STALE_AFTER_DAYS = 30
 OPEN_RESEARCH_STALE_AFTER_DAYS = 60
 UNAUTHORISED_PLAN_STALE_AFTER_DAYS = 60
@@ -185,6 +186,7 @@ class LifecycleFinding:
     impl: float | None
     last_modified: str
     summary_length: int | None = None
+    age_source: str = "unknown"
 
 
 @dataclass(frozen=True)
@@ -236,20 +238,65 @@ def modified_age_days(
     return max(0, ((today or date.today()) - modified).days)
 
 
+def _plan_last_committed(
+    repo_dir: Path,
+    docs_dir: Path,
+    path: Path,
+) -> int | None:
+    """Return the unix author-date of the last commit touching ``path``.
+
+    The lookup reuses the whole-tree commit map the server already builds, so
+    this is a dictionary read once that map is warm rather than a new git
+    reader, and one plan's commit history resolves alongside every other
+    document's.
+    """
+
+    from reckon.serve import _git_last_committed
+
+    times = _git_last_committed(repo_dir, docs_dir)
+    if not times:
+        return None
+    try:
+        key = path.resolve().relative_to(repo_dir.resolve()).as_posix()
+    except (OSError, ValueError):
+        return None
+    return times.get(key)
+
+
 def derived_plan_age(
     last_modified: str | None,
     *,
     created_at: float | str | None = None,
     fallback_path: Path | None = None,
+    repo_dir: Path | None = None,
+    docs_dir: Path | None = None,
     today: date | None = None,
 ) -> tuple[int | None, str]:
-    """Return plan age and the semantic or filesystem source used to derive it."""
+    """Return plan age and the source it was derived from.
+
+    The last commit is read first. A server write refreshes a plan's mtime
+    without any author touching the plan, so a filesystem date reports a
+    freshly-served plan as new while its work sits unchanged; the commit date
+    is the last time the plan actually changed. The remaining sources stay as
+    they were, for a plan outside a repository or one whose commit is unknown.
+    """
+
+    reference_day = today or date.today()
+
+    if fallback_path is not None and repo_dir is not None and docs_dir is not None:
+        committed = _plan_last_committed(repo_dir, docs_dir, fallback_path)
+        if committed is not None:
+            try:
+                committed_day = datetime.fromtimestamp(committed).date()
+            except (OSError, OverflowError, ValueError):
+                committed_day = None
+            if committed_day is not None:
+                return max(0, (reference_day - committed_day).days), "commit"
 
     age_days = modified_age_days(last_modified, today=today)
     if age_days is not None:
         return age_days, "plan-modified"
 
-    reference_day = today or date.today()
     if created_at not in (None, ""):
         try:
             created_day = datetime.fromtimestamp(float(created_at)).date()
@@ -366,6 +413,8 @@ def _read_lifecycle_state(path: Path) -> dict[str, Any]:
         "status": ((state.get("status") or "").strip().lower()),
         "impl": float(impl) if impl is not None else None,
         "summary": str(state.get("summary") or ""),
+        "modified": state.get("modified"),
+        "created": state.get("created"),
         "followups": state.get("followups") or [],
     }
 
@@ -521,24 +570,36 @@ def audit_lifecycle(
             mounts = {project: mounts[project]}
 
     current_ts = time.time() if now_ts is None else now_ts
+    today = date.fromtimestamp(current_ts)
     findings: list[LifecycleFinding | ForeignFollowupFinding] = []
     flag_order = {
         "MISSING_IMPL": 0,
         "SUMMARY_TOO_LONG": 1,
-        "STALE": 2,
-        "STALE_RCA": 3,
-        FOLLOWUP_FOREIGN_TERMINAL: 4,
-        FOLLOWUP_FOREIGN_UNMOUNTED: 5,
-        FOLLOWUP_FOREIGN_MISSING: 6,
+        "AGING": 2,
+        "STALE": 3,
+        "STALE_RCA": 4,
+        FOLLOWUP_FOREIGN_TERMINAL: 5,
+        FOLLOWUP_FOREIGN_UNMOUNTED: 6,
+        FOLLOWUP_FOREIGN_MISSING: 7,
     }
 
     for project_name, docs_dir in mounts.items():
         if not docs_dir.is_dir():
             continue
+        repo_dir = docs_dir.parent
         for html_file in _iter_doc_files(docs_dir, project_name):
             state = _read_lifecycle_state(html_file)
             modified_ts = os.path.getmtime(html_file)
-            age_days = max(0, int((current_ts - modified_ts) // 86400))
+            age_days, age_source = derived_plan_age(
+                state.get("modified"),
+                created_at=state.get("created"),
+                fallback_path=html_file,
+                repo_dir=repo_dir,
+                docs_dir=docs_dir,
+                today=today,
+            )
+            if age_days is None:
+                age_days = 0
             last_modified = datetime.fromtimestamp(modified_ts).strftime("%Y-%m-%d")
             status = state["status"]
             doc_type = state["type"]
@@ -562,6 +623,7 @@ def audit_lifecycle(
                             age_days=age_days,
                             impl=impl,
                             last_modified=last_modified,
+                            age_source=age_source,
                         )
                     )
                 continue
@@ -578,6 +640,7 @@ def audit_lifecycle(
                         impl=impl,
                         last_modified=last_modified,
                         summary_length=summary_length,
+                        age_source=age_source,
                     )
                 )
 
@@ -590,6 +653,23 @@ def audit_lifecycle(
                         age_days=age_days,
                         impl=impl,
                         last_modified=last_modified,
+                        age_source=age_source,
+                    )
+                )
+            elif (
+                status == "active"
+                and (impl or 0.0) < 1.0
+                and age_days >= ACTIVE_PLAN_AGING_AFTER_DAYS
+            ):
+                findings.append(
+                    LifecycleFinding(
+                        project=project_name,
+                        slug=state["slug"],
+                        flag="AGING",
+                        age_days=age_days,
+                        impl=impl,
+                        last_modified=last_modified,
+                        age_source=age_source,
                     )
                 )
             if status in {"shipped", "done"} and (impl is None or impl == 0.0):
@@ -601,6 +681,7 @@ def audit_lifecycle(
                         age_days=age_days,
                         impl=impl,
                         last_modified=last_modified,
+                        age_source=age_source,
                     )
                 )
             findings.extend(
