@@ -25,7 +25,7 @@
   <title>One Typesafe Model Picker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="288">
+<meta name="plan-version" content="289">
 <meta name="plan-modified" content="2026-10-10">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;done&quot;,&quot;s25&quot;:&quot;implementable&quot;,&quot;s26&quot;:&quot;done&quot;,&quot;s27&quot;:&quot;done&quot;}">
 </head>
@@ -939,6 +939,9 @@
 </div>
 <div class="r-comment" data-section="s26" data-id="c-close-s26" data-who="reckon-build" data-when="2026-10-10T20:35:00Z">
     <div class="r-comment-body"><p>§26 landed: the facts are node-scoped and come from one grouping. Real Jev replays still hold at 0.87 and 0.89, so the single-serving-lane fact does not explain the holds (review 117, no failures added). <a href="/reckon/evidence/archive/one-typesafe-model-picker-landed.html#s26">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s26" data-id="c-run-r-20261010T194844732792-serving-lanes-are-scoped-and-measured" data-who="reckon-build" data-when="2026-10-10T20:17:17.898Z">
+    <div class="r-comment-body"><p>serving_lanes/serving_lane_count/hold_waits_for render in the node block and both the lanes block and the serving lanes read one grouping lane_context.lane_groups keyed on family or backend; gate 181 passed head vs 179 base, +2 tests, zero added failures; replayed holds 0.87 and 0.89 against recorded 0.83 and 0.84.</p></div>
 </div>
 </section>
 <section data-reckon="followups" id="followups" class="r-followups">
