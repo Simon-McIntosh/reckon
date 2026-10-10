@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="reckon-tooling">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
   <meta name="plan-standalone" content="It restores what reckon-reads-answer-in-seconds shipped; that plan is complete, and no live plan&#x27;s section waits on read latency.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="8">
+<meta name="plan-version" content="9">
 <meta name="plan-modified" content="2026-10-10">
 </head>
 <body>
@@ -75,7 +75,7 @@
       <code>tests/test_a_read_takes_no_lock.py</code>.</p>
 
     <h2 id="s3">§3 — A warm roadmap takes the walk-skip the index already has</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> The metadata index already skips <code>_walk_covered</code> when every recorded directory identity
       matches (<code>_reuse_covered</code>, <code>reckon/metadata_index.py:215-240</code>; <code>_dir_identity</code>, 490; the persisted
       <code>dir_stamps</code>, 748 and 783), and the MCP path reaches it through <code>index_rows(..., revalidate=True)</code>
@@ -158,6 +158,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261010T204459845050-review-of-a-read-takes-no-lock" data-who="reckon-build" data-when="2026-10-10T20:57:00.565Z">
     <div class="r-comment-body"><p>reckon §2 review: parsed record stored scoring goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 20, reuse 18, total 116, over base a24f70707..head 8c4f4c60a; three non-blocking follow-ons; head gate 3 passed EXIT=0 and negative control 2 failed EXIT=1 both independently reproduced</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-10T22:05:00Z">
+    <div class="r-comment-body"><p>§3 landed: a warm roadmap read takes the existing walk-skip (merged <code>5c4f67527</code>); review 114/120. <a href="/reckon/evidence/archive/a-read-answers-inside-its-deadline-landed.html#s3">evidence</a></p></div>
 </div>
 </section>
 </main>

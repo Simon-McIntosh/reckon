@@ -25,6 +25,11 @@
     <p><code>read_resource</code> (<code>reckon/project_state.py:466</code>) now calls <code>recover_project_state_transactions</code> only when <code>_pending_transaction_journals</code> finds a journal, listed without a lock; a journal-free read of a read-only tree returns the plans, raises nothing and creates no recovery lock file, and a present journal is still recovered under its lock. Commit <code>8c4f4c60a</code>, merged at <code>2a2355057</code>. <code>tests/test_a_read_takes_no_lock.py</code>: 3 passed, EXIT=0; negative control (journal check removed) 2 failed, EXIT=1. Independent review 116/120. Follow-ons from the review: the journal root and glob are written twice (the guard and recovery), the docstrings say <code>EROFS</code> where a chmod'd test tree raises <code>EACCES</code>, and a journal created between the lock-free listing and recovery waits for the next read.</p>
   </section>
 
+  <section id="s3">
+    <h2>§3 — A warm roadmap takes the walk-skip the index already has</h2>
+    <p>Cause found: the discovery change signature (<code>serve._walk_discovery_signature</code> calling <code>metadata_index._covered_files</code>) called <code>_walk_covered</code> unconditionally and never reached <code>_reuse_covered</code>. Fixed inside <code>reckon/metadata_index.py</code>: the signature consults the recorded directory identities first and walks only a changed tree. Commit <code>95a58ef63</code>, merged at <code>5c4f67527</code>. <code>tests/test_warm_roadmap_does_not_walk.py</code>: 2 passed, EXIT=0; 48 related tests pass; negative control (<code>_reuse_covered</code> forced to decline) walks and fails. Review 114/120. Follow-ons: a roadmap read under a dispatch worktree or an unregistered checkout still walks, because <code>_docs_dir_project</code> resolves only a mounted docs tree (closing it needs <code>serve.py</code>); the discovery read now writes the index; and a newly seen file is counted as rebuilt rather than added.</p>
+  </section>
+
 </main>
 </body>
 </html>
