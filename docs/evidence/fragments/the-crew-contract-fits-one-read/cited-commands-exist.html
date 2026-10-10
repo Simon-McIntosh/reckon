@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-slug" content="the-crew-contract-fits-one-read">
+  <meta name="plan-title" content="The crew contract fits one read">
+  <meta name="plan-evidence-for" content="reckon:the-crew-contract-fits-one-read">
+  <meta name="plan-verifies" content="reckon:the-crew-contract-fits-one-read#s5">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-10">
+  <title>Every cited reckon command exists | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="cited-commands-exist-guard">
+  <h2>Every <code>reckon</code> command a skill or format document cites resolves</h2>
+
+  <p><strong>What changed.</strong>
+  <code>tests/test_cited_commands_exist.py</code> extracts every <code>reckon</code>
+  invocation from <code>skills/**/*.md</code> (recursive, so the nested
+  <code>references/</code> are reached), <code>PLAN-FORMAT.md</code>, every
+  <code>AGENTS.md</code> in the tree and <code>reckon/crew/prompts/*.md</code>,
+  then resolves each verb chain and each flag against that command's own
+  <code>--help</code>. A citation whose sentence marks it planned and binds it to
+  a plan slug (<code>planned in `&lt;slug&gt;`</code>) is allowed. Non-invocation
+  text &mdash; <code>reckon-build</code>, <code>reckon/crew/x.py</code>,
+  <code>a reckon SPA</code> &mdash; is excluded before any token is read. The
+  three dead citations and two the recursive corpus reached beyond the health
+  review's flat list were repaired: <code>PLAN-FORMAT.md</code> named the removed
+  <code>migrate-project-state</code>, <code>migrate-fleet</code> and
+  <code>migration-record</code> (the deleted fleet-migration section is now a
+  one-paragraph tombstone pointing at <code>reckon sync</code>), and
+  <code>reckon-sync/SKILL.md</code> named <code>migrate-project-state</code>;
+  both now describe the <code>reckon sync</code> activation path that exists. The
+  two <code>reckon crew census</code> citations name
+  <code>PLAN a-crew-process-ends-with-its-owner</code>, which owns the deferred
+  command.</p>
+
+  <p><strong>Measured.</strong> The gate is
+  <code>uv run pytest tests/test_cited_commands_exist.py</code>; at the head it
+  prints <code>citations=292 checked=290 planned=2 problems=0</code> and passes
+  (<code>EXIT=0</code>, <code>head-gate.log</code>). The citation count
+  reconciles with an independent extractor written as a separate implementation:
+  it emits 292 records whose sorted set is byte-identical to the test's
+  (<code>citation-reconciliation.diff</code>, <code>diff-exit=0</code>), and
+  292 &minus; 2 planned = 290 checked. The positive control is the same test file
+  run against this section's base revision
+  <code>f29d9c2e3</code> in a scratch export: it fails
+  (<code>EXIT=1</code>) naming the required
+  <code>PLAN-FORMAT.md:321</code> (<code>migrate-project-state docs</code>),
+  <code>PLAN-FORMAT.md:330</code> (<code>migrate-fleet</code>) and
+  <code>skills/reckon-build/references/sprint-orchestration.md:1011</code>
+  (<code>crew census</code>), plus three more dead citations the recursive corpus
+  reaches &mdash; <code>PLAN-FORMAT.md:346</code> (<code>migration-record</code>),
+  <code>skills/reckon-build/references/orchestrator-harness/claude-code.md:266</code>
+  (<code>crew census</code>) and <code>skills/reckon-sync/SKILL.md:49</code>
+  (<code>migrate-project-state</code>) (<code>base-arm.log</code>). Every one is
+  now repaired or marked planned. The declared negative control &mdash; a
+  temporary skill file citing <code>reckon crew dispatch --no-such-flag</code>
+  &mdash; fails by file and line
+  (<code>_negative_control_flag.md:1: crew dispatch has no --no-such-flag in
+  --help</code>, <code>EXIT=1</code>, <code>negative-control.log</code>), which
+  also shows the flag arm of the check is not vacuous.</p>
+
+  <p><strong>Scope retained, deliberately.</strong> The driving followup stays
+  open and no terminal status is set: a worker knows its node landed, not whether
+  the section closed. The command table in
+  <code>references/coordinator-reference.md</code> is left to the section that
+  rewrites that file. Logs and citation sets:
+  <code>~/.config/reckon/crew/runs/r-20261010T211817401976-cited-commands-exist/</code>
+  (<code>head-gate.log</code>, <code>base-arm.log</code>,
+  <code>negative-control.log</code>, <code>independent-citations.txt</code>,
+  <code>test-citations.txt</code>, <code>citation-reconciliation.diff</code>).</p>
+</section>
+</main>
+</body>
+</html>
