@@ -927,9 +927,7 @@ def _reach(repo, revision) -> Reach:
                 parts.pop()
 
     edges = {
-        module: _edges(
-            trees[relative], module, relative.endswith("__init__.py"), known
-        )
+        module: _edges(trees[relative], module, relative.endswith("__init__.py"), known)
         for module, relative in module_of.items()
     }
 
