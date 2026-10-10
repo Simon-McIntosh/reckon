@@ -1,0 +1,90 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T19:37:11.201Z",
+  "dispatched_at": "2026-10-10T19:33:16Z",
+  "findings": [
+    {
+      "anchor": "reckon/metadata_index.py:215",
+      "id": "reuse_search-1",
+      "reason": "the section must first state why the existing `_reuse_covered` path does not already skip the warm walk for the roadmap reader the profile measured (a bug in it, or a reader that never sets `revalidate=True`), or the section is building a second walk-skip beside a working one.",
+      "text": "\u00a73's premise, that the warm covered-tree walk runs `_walk_covered` on every call with nothing to skip it, misses the walk-avoidance already in the file: `_reuse_covered` (metadata_index.py:215-240) compares each recorded directory identity (`_dir_identity`, metadata_index.py:490) against the persisted `dir_stamps` and, when the tree shape is unchanged, hands `build_index` the file set (`covered=`/`dirs=`, metadata_index.py:306-325) so `_walk_covered` (metadata_index.py:423) is never called \u2014 reached on the MCP path at `mcp_views.py:1180` (`index_rows(..., revalidate=True)`).",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/serve.py:1279",
+      "id": "reuse_search-2",
+      "reason": "the section must reconcile with the existing in-process cache (the measured 6.4 s may be `_git_head`'s uncached `git rev-parse HEAD` at serve.py:1244, not the date maps), or it adds a third layer over the same answers.",
+      "text": "\u00a74 proposes \"an in-process memo keyed on the repository's `HEAD` and the path\" for git dates and does not cite the in-process HEAD-gated map already present: `_GIT_CREATION_CACHE` (serve.py:1279-1288, populated at serve.py:1311) returns `dict(cached.times)` with no git call when `cached.head == head`, and `_GIT_LAST_MODIFIED_CACHE` (serve.py:1316) mirrors it; both sit in front of the persistent caches at serve.py:1121 and serve.py:1324, exactly the two-level shape \u00a74 describes.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/roadmap.py:184",
+      "id": "reuse_search-3",
+      "reason": "the deliverable and its negative control are unsound as written \u2014 routing both through `read_state_and_text_file` is one way to unify the kind, but \"restore `read_authored` to its own read\" cannot make the parse count rise because it is already memoised, so the stated negative control would not fire.",
+      "text": "\u00a75's premise is false for both sites it names: `read_authored` already reads through the path-keyed memo (`memoized(\"section_authored\", path, read_authored)`, roadmap.py:184) and `_read_readiness_uncached` is already wrapped by `memoized(\"readiness_state\", path, ...)` (serve.py:2067); neither \"reads and parses itself\" outside `file_memo`. The real cost is that the same file is parsed once per distinct `kind` (`section_authored`, `readiness_state`, `read_state_and_text`) instead of once.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/metadata_index.py:215",
+      "id": "duplicate_owner-1",
+      "reason": "the honest change extends `_reuse_covered` in `metadata_index.py` (or fixes the reader that bypasses it), not a parallel identity map in `file_memo`.",
+      "text": "\u00a73 places the walk memo in `reckon/file_memo.py` keyed on directory stat identity, duplicating the owner of that mechanism: `_dir_identity` (metadata_index.py:490) + `_reuse_covered` (metadata_index.py:215) + the persisted `dir_stamps` (metadata_index.py:748, 783) already key the file set on exactly those mtimes/inodes; a second copy in `file_memo` means two directory-identity implementations that can drift.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/serve.py:1279",
+      "id": "duplicate_owner-2",
+      "reason": "the section should extend `_GIT_CREATION_CACHE`/`_GIT_LAST_MODIFIED_CACHE` (or memoise `_git_head`) rather than fork a second cache answering the same question.",
+      "text": "\u00a74 places the in-process git-date memo in `reckon/serve.py` beside the existing owner of that responsibility \u2014 `_GIT_CREATION_CACHE` / `_GIT_LAST_MODIFIED_CACHE` (serve.py:1279, 1316) \u2014 which already hold the HEAD-keyed answers the plan wants to add, so the plan would leave two in-process caches of the same git dates in one module.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/metadata_index.py:423",
+      "id": "thin_wrapper-1",
+      "reason": "the plan must justify the wrapper over extending the mechanism that already skips the walk, or delete it.",
+      "text": "\u00a73 adds a thin memo layer over `_walk_covered` without saying why `_walk_covered`'s existing caller-side skip (`_reuse_covered`) cannot be extended; the wrapper forwards the walk's result to a new store and adds surface without adding depth.",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/serve.py:1210",
+      "id": "thin_wrapper-2",
+      "reason": "the plan should extend the existing cache or memoise the uncached `_git_head` call, and say which, rather than add a parallel front layer.",
+      "text": "\u00a74 adds a thin memo layer in front of the git-date caches without saying why the existing in-process caches cannot be extended to cover the measured cost; the layer forwards to the same machinery.",
+      "type": "thin_wrapper",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "c4240675821a65a721b3fa8d3a01b7ced8ac364cf3b9ba3b968d3b4b991c6526",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 1,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261010T193250360293-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "8c05d9568ddd3a22f6e5dae7dbb93142c531e25e",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 no new module is proposed; \u00a72\u2013\u00a75 are point changes inside existing modules, so there is no new shallow-wrapper spread to weigh.",
+    "duplicate_owner": "a finding \u2014 \u00a73 re-owns directory-identity walk-avoidance already owned by `reckon/metadata_index.py`, and \u00a74 re-owns the HEAD-keyed git-date in-process cache already owned by `reckon/serve.py`.",
+    "interface_budget": "pass \u2014 public_definitions 1626, cli_options 351, mcp_views 33, refusal_families 23; no section adds a CLI option, MCP view, refusal family or public definition (each reuses the existing `file_memo.memoized`, `index_rows` and serve helpers), so no section owes a retirement or merge to account for.",
+    "reuse_search": "a finding \u2014 \u00a73, \u00a74 and \u00a75 each add a mechanism (walk memo, in-process git-date memo, per-file parse memo) whose equivalent already exists in the codebase they extend, and none cites it.",
+    "thin_wrapper": "a finding \u2014 \u00a73 and \u00a74 add thin memo layers in front of existing machinery (`_walk_covered`, the git-date caches) without saying why that machinery cannot simply be extended."
+  },
+  "section_digests": {
+    "_document": "ed56ddda67cab69463c811909740e400e27ec4661d29dba9a7afeb660333816e",
+    "s1": "08a7f1567b1e2d537c0f631e1c1a3d62e7f43443a0e0e28607b3bfd6e1a9b4f5",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s3": "62a02d300084d0c4ae811f3858562352d22bbb05b2bcbb683f921d062e56ea89",
+    "s4": "8c978f1a22b26865e4c7ff4527110f37c3b9f9210439517167afff5798e130f2",
+    "s5": "b2661f205f07607e4ee2631f583e213af1492f60439b8b64689707c929d4e01a",
+    "s6": "00db597c53dfd6e3d857f89ee748a8c6ecfe51576b2b66e64772393805c59b52"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T19:46:10.680676+00:00"
+}
