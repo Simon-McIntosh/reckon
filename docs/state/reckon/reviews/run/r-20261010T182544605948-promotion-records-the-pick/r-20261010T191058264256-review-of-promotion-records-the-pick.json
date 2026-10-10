@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: gate-base.log (revision 0c654ea1d, '4 failed, 147 passed') fails exactly the four new tests (test_promotion_waits_for_the_in_flight_pick_and_records_it, test_promotion_names_the_timeout_when_the_pick_never_lands, test_an_overruled_hold_records_its_own_route_mode, test_pick_outcomes_counts_an_overruled_hold_apart_from_shadow); gate-head.log (revision dd5169479, '151 passed') records no failing id, so the set difference head-minus-base is empty (0 added). Reproduced independently: the four ids fail against base product code in a git-archive scratch tree and the wait test passes at head.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:crew_complete -> reckon/crew/promotion.py:complete",
+    "reckon/crew_dispatch_commands.py:pick --outcomes -> reckon/crew/picker/outcomes.py:read_outcomes"
+  ],
+  "completed_at": "2026-10-10T19:29:20.139Z",
+  "dispatched_at": "2026-10-10T19:11:30Z",
+  "findings": [
+    {
+      "file": "tests/test_promotion_records_the_pick.py",
+      "line": "294",
+      "severity": "blocking",
+      "text": "blocking: test_promotion_names_the_timeout_when_the_pick_never_lands races its own fixture \u2014 the 2.0 s pick delay can elapse during the _commit_work/_init_ledger git work that runs before crew.complete, so the deferred pick has already attached its 'route' answer and the promoted row legitimately carries action 'route', failing the expected 'fallback'. Reproduced serially in a scratch tree at ec550c27f: the 4-test file failed this id once (105 s), the id alone failed 1 of 2 isolated runs, and with delay raised to 30.0 s it passed 3 of 3 \u2014 so the reviewed head gate's '151 passed' is not reproducible and the timeout clause of the done-when rests on an unsound test. Fix by making the pick's completion the controlled event (block on an event like the sibling test) rather than racing a wall-clock delay against the intervening git work."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "549",
+      "severity": "follow-on",
+      "text": "follow-on: _shadow_pick_deadline measures the wait window from the pointer's created_at, while the deferred pick's own bound runs from _start_shadow_picker_selection, which dispatch calls only after the worker launch (including worktree provisioning). When launch exceeds the bound, promotion can exhaust _SHADOW_PICK_WAIT_SECONDS and stamp a 'timeout' fallback while the pick is still inside its own bound; the later real answer overwrites the live pointer but not the already-committed row, so the row can report a timeout for a pick that in fact landed. The docstring says 'up to the pick's own bound'; record the pick's start stamp and measure from it."
+    },
+    {
+      "file": "reckon/ledger.py",
+      "line": "2181",
+      "severity": "follow-on",
+      "text": "follow-on: promoted_route_mode whitelists {picker, shadow, explicit} and returns None for the new 'overridden-hold' value, so any future row built through ledger.build_record:2528 rather than the post-hoc assignment at reckon/crew/promotion.py:1026 would silently drop it. The node records this in its manifest; extending the whitelist at reckon/ledger.py:2181 would remove the trap."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/cli.py crew_complete -> reckon/crew/promotion.py complete, and the pick --outcomes verb -> reckon/crew/picker/outcomes.py read_outcomes",
+    "diff": "read both commits against base 0c654ea1d141ce910c6b93c348a9646f4dba8208: dd5169479 adds _await_in_flight_shadow_pick and the overridden-hold mode, ec550c27f adds the evidence fragment.",
+    "done_when": "the done-when requires tests proving both items; tests/test_promotion_records_the_pick.py:241 proves the wait deterministically, tests/test_promotion_records_the_pick.py:311 the route mode, and tests/test_promotion_records_the_pick.py:328 the separate count, but the timeout clause at line 294 is a race.",
+    "goal": "\u00a714 asks promotion to wait for an in-flight shadow pick and to give an overruled hold its own route mode; reckon/crew/promotion.py:505 implements the wait and reckon/crew/promotion.py:1026 the mode, both reached from complete().",
+    "manifest": "read; it carries the two gate logs, a negative control, the base/head pair and a follow_ons entry for promoted_route_mode, all present on disk.",
+    "write_paths": "the manifest declares promotion.py, dispatch.py, outcomes.py and their tests; the diff touches promotion.py, outcomes.py and the new test file, and dispatch.py needed no edit because the answer lands after dispatch returns."
+  },
+  "justifications": {
+    "durability": "tests/test_promotion_records_the_pick.py:241 blocks the pick on an event and asserts the row carries it; the declared negative control reddens the same test \u2014 but the timeout guard at tests/test_promotion_records_the_pick.py:294 is timing-dependent and fails intermittently.",
+    "evidence": "reckon/crew/promotion.py:190's gate is the run's own arms; the base arm reproduces (4 failed at /tmp/rev-promotion-mcintos/base-tests.log) but the head arm is not reproducibly green (see FINDING tests/test_promotion_records_the_pick.py:294).",
+    "fit": "reckon/crew/promotion.py:556 reuses _picker_fallback and _write_existing_pointer from reckon/crew/dispatch_picker.py, matching the existing shadow-selection write path.",
+    "goal_fidelity": "reckon/crew/promotion.py:190 calls _await_in_flight_shadow_pick before building the row, and reckon/crew/promotion.py:1026 names overridden_hold via its own route mode, so both \u00a714 items are implemented.",
+    "reuse": "the new predicate overridden_hold (reckon/crew/picker/outcomes.py:46) and counter extend the existing outcomes summariser rather than forking a second route-mode reader.",
+    "scope_discipline": "git diff --stat 0c654ea1d141ce910c6b93c348a9646f4dba8208..ec550c27f201739f3cb3f85f4a998fa47cf13e22 touches only reckon/crew/promotion.py, reckon/crew/picker/outcomes.py, tests/test_promotion_records_the_pick.py and the landing fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a714 asks promotion to wait for an in-flight shadow pick and to give an overruled hold its own route mode; reckon/crew/promotion.py:505 implements the wait and reckon/crew/promotion.py:1026 the mode, both reached from complete().\nVERDICT done_when: the done-when requires tests proving both items; tests/test_promotion_records_the_pick.py:241 proves the wait deterministically, tests/test_promotion_records_the_pick.py:311 the route mode, and tests/test_promotion_records_the_pick.py:328 the separate count, but the timeout clause at line 294 is a race.\nVERDICT write_paths: the manifest declares promotion.py, dispatch.py, outcomes.py and their tests; the diff touches promotion.py, outcomes.py and the new test file, and dispatch.py needed no edit because the answer lands after dispatch returns.\nVERDICT manifest: read; it carries the two gate logs, a negative control, the base/head pair and a follow_ons entry for promoted_route_mode, all present on disk.\nVERDICT diff: read both commits against base 0c654ea1d141ce910c6b93c348a9646f4dba8208: dd5169479 adds _await_in_flight_shadow_pick and the overridden-hold mode, ec550c27f adds the evidence fragment.\nCALL_SITES: reckon/cli.py:crew_complete -> reckon/crew/promotion.py:complete, reckon/crew_dispatch_commands.py:pick --outcomes -> reckon/crew/picker/outcomes.py:read_outcomes\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:190 calls _await_in_flight_shadow_pick before building the row, and reckon/crew/promotion.py:1026 names overridden_hold via its own route mode, so both \u00a714 items are implemented.\nSCORE evidence: 15\nJUSTIFICATION evidence: reckon/crew/promotion.py:190's gate is the run's own arms; the base arm reproduces (4 failed at /tmp/rev-promotion-mcintos/base-tests.log) but the head arm is not reproducibly green (see FINDING tests/test_promotion_records_the_pick.py:294).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 0c654ea1d141ce910c6b93c348a9646f4dba8208..ec550c27f201739f3cb3f85f4a998fa47cf13e22 touches only reckon/crew/promotion.py, reckon/crew/picker/outcomes.py, tests/test_promotion_records_the_pick.py and the landing fragment, all inside the declared write paths.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_promotion_records_the_pick.py:241 blocks the pick on an event and asserts the row carries it; the declared negative control reddens the same test \u2014 but the timeout guard at tests/test_promotion_records_the_pick.py:294 is timing-dependent and fails intermittently.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/promotion.py:556 reuses _picker_fallback and _write_existing_pointer from reckon/crew/dispatch_picker.py, matching the existing shadow-selection write path.\nSCORE reuse: 19\nJUSTIFICATION reuse: the new predicate overridden_hold (reckon/crew/picker/outcomes.py:46) and counter extend the existing outcomes summariser rather than forking a second route-mode reader.\nFINDING tests/test_promotion_records_the_pick.py:294 blocking: test_promotion_names_the_timeout_when_the_pick_never_lands races its own fixture \u2014 the 2.0 s pick delay can elapse during the _commit_work/_init_ledger git work that runs before crew.complete, so the deferred pick has already attached its 'route' answer and the promoted row legitimately carries action 'route', failing the expected 'fallback'. Reproduced serially in a scratch tree at ec550c27f: the 4-test file failed this id once (105 s), the id alone failed 1 of 2 isolated runs, and with delay raised to 30.0 s it passed 3 of 3 \u2014 so the reviewed head gate's '151 passed' is not reproducible and the timeout clause of the done-when rests on an unsound test. Fix by making the pick's completion the controlled event (block on an event like the sibling test) rather than racing a wall-clock delay against the intervening git work.\nFINDING reckon/crew/promotion.py:549 follow-on: _shadow_pick_deadline measures the wait window from the pointer's created_at, while the deferred pick's own bound runs from _start_shadow_picker_selection, which dispatch calls only after the worker launch (including worktree provisioning). When launch exceeds the bound, promotion can exhaust _SHADOW_PICK_WAIT_SECONDS and stamp a 'timeout' fallback while the pick is still inside its own bound; the later real answer overwrites the live pointer but not the already-committed row, so the row can report a timeout for a pick that in fact landed. The docstring says 'up to the pick's own bound'; record the pick's start stamp and measure from it.\nFINDING reckon/ledger.py:2181 follow-on: promoted_route_mode whitelists {picker, shadow, explicit} and returns None for the new 'overridden-hold' value, so any future row built through ledger.build_record:2528 rather than the post-hoc assignment at reckon/crew/promotion.py:1026 would silently drop it. The node records this in its manifest; extending the whitelist at reckon/ledger.py:2181 would remove the trap.\n",
+  "review_run_id": "r-20261010T191058264256-review-of-promotion-records-the-pick",
+  "reviewed_base_sha": "0c654ea1d141ce910c6b93c348a9646f4dba8208",
+  "reviewed_head_sha": "ec550c27f201739f3cb3f85f4a998fa47cf13e22",
+  "reviewed_run_id": "r-20261010T182544605948-promotion-records-the-pick",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 13,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T19:27:00.592242+00:00",
+  "total": 102
+}
