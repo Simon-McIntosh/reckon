@@ -1,0 +1,51 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T22:38:35.955Z",
+  "dispatched_at": "2026-10-10T22:32:22Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-crew-home-has-a-bound.html:111",
+      "id": "anchors_resolve-1",
+      "reason": "the implementer sent to runs.py:1923 finds nothing, and the plan's whole \u201cforward snap of its own\u201d argument rests on that cited behaviour, so the pointer must be corrected to the definition.",
+      "text": "`line_boundary` is cited at `reckon/crew/runs.py:1923`, but the function is defined at `reckon/crew/runs.py:1665`; line 1923 sits inside an unrelated `except FlightConfigError` block and names none of the backward-only, offset-less behaviour",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-home-has-a-bound.html:114",
+      "id": "anchors_resolve-2",
+      "reason": "a pointer past EOF names nothing the node can open, and the watch-log bound the node must preserve lives in a different module than the one cited.",
+      "text": "`WATCH_LOG_MAX_BYTES` is cited at `reckon/crew/runs.py:3927`, but `runs.py` is 2,878 lines so that line does not exist; the constant is defined in `reckon/crew/watch_unit.py:621` and only re-exported from `runs.py:2844`",
+      "type": "anchors_resolve",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "2befea5050627c534c1dc821b0a61731a8d10a208b5f3d1359d2f32297a4100d",
+  "plan_slug": "the-crew-home-has-a-bound",
+  "plan_version": 8,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261010T223155058521-plan-review-of-the-crew-home-has-a-bound",
+  "reviewed_blob_sha": "cffbe0e573c728e95f3f69b609745a94ca095b17",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 two paths cited in \u00a74 do not resolve: `line_boundary` at `runs.py:1923` (defined at `runs.py:1665`) and `WATCH_LOG_MAX_BYTES` at `runs.py:3927` (a line that does not exist).",
+    "done_when": "pass \u2014 \u00a74 asserts a measurable bound (the log is at most the limit plus the marker, first and last line intact, original sha256 in the marker; the `.pt` reported and untouched; an unpromoted run untouched) and names a negative control that fires when the promoted check is removed.",
+    "evidence_paths": "pass \u2014 \u00a74's gate is the repo test `tests/test_gc_bounds_a_run_file.py` writing to a temporary run directory; the operational removals in \u00a75 log under the run directory.",
+    "naming": "pass \u2014 \u00a74 introduces `gc.run_file_max_mb` and mechanism-named symbols; no plan labels, ticket numbers or version tags reach the new names.",
+    "reasoning": "pass \u2014 \u00a74's root cause (unbounded per-run captured files, per \u00a71) matches its evidence; the half-plus-half-plus-marker mechanism produces the \u201climit plus the marker\u201d measure it asserts; and the caller is named (`garbage_collect`, the `reckon crew gc` path plus the service log's existing `trim_service_log` caller).",
+    "single_goal": "pass \u2014 \u00a74 carries one deliverable (a size bound on a promoted run's captured file), with the helper lift and the `gc.run_file_max_mb` flight key serving that one goal.",
+    "wiring": "pass \u2014 \u00a74 declares its ordering (\"runs after \u00a73, which writes the same module\") consistently with \u00a73's \"runs after \u00a72\" and \u00a75's \"after \u00a72 to \u00a74\", matching the followup order (\"\u00a72; \u00a73 then \u00a74 on routing.py; \u00a75 last\")."
+  },
+  "section_digests": {
+    "_document": "af2eb26959b53991bcc26bda5e7e2c7192a91a8bc1db9f63e754d3f80cf66705",
+    "s1": "32d74b1202f967c9688afa80dbd94719f49d78f6a5afcc8d56d9c46602e1c0a5",
+    "s2": "9328c20a14a28cadebc0cf3424b9fa61772f8c3bea7e4f7b1e097571697c0369",
+    "s3": "42466bfb93ed68c3dcdb669550dae38d00ebbdea5e24407a7579076255209fbf",
+    "s4": "ddd510c938a04fbcdcc1f6e63abf47b56378da18ff61393f266cffc4cb637a4e",
+    "s5": "75a8a336e2ee62426e5a8c3ed3310e0cf614b82a8cf7ae6a5985fcb99f2b1648"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T22:44:27.605967+00:00"
+}
