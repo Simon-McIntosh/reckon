@@ -1,0 +1,59 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T19:17:42.974Z",
+  "dispatched_at": "2026-10-10T19:05:47Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-crew-home-has-a-bound.html:64",
+      "id": "reasoning-1",
+      "reason": "a node implementing the change as written would silently move a second store it was neither told about nor scoped to verify, and the plan's write-path list would be incomplete.",
+      "text": "\u00a72 says \"The `pick-input` kind gets its own leaf under the cache root instead of the root itself (`reckon/_store.py:162`)\", but that leaf is shared by two stores: `reckon/capabilities.py:1190` also resolves `_store.cache_root(\"pick-input\")` for its `picker-<name>.json` files, so changing the leaf at `_store.py:162` relocates the picker-input cache as well as the ledger indexes, and `reckon/capabilities.py` is not among \u00a72's declared write paths",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-home-has-a-bound.html:63",
+      "id": "reasoning-2",
+      "reason": "the node would ship a shared index that re-runs the full aggregate load on each alternation between checkouts, so the sharing delivers one file but not the cached re-read the change exists to provide, and nothing in the done-when would catch it.",
+      "text": "\u00a72 makes a worktree and its main checkout \"share one index file\", but the index's freshness stamp stays per-checkout: `index_stamp` (`reckon/ledger.py:902-916`) and `aggregate_stamp` (`reckon/ledger.py:1076`) key on `_file_identity(ledger_path(project, root))`, and `_file_identity` (`reckon/ledger.py:850-855`) returns `(st_mtime_ns, st_ctime_ns, st_size, st_ino)` \u2014 the inode \u2014 so two checkouts with distinct ledger files (which is why `ledger_path` resolves under each checkout) produce distinct stamps and each invalidates the other's cached aggregate on every handoff",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-home-has-a-bound.html:68",
+      "id": "done_when-1",
+      "reason": "the gate cannot fail for the side effect the change introduces, so the node ships the picker-cache relocation unmeasured.",
+      "text": "\u00a72's done-when builds \"a temporary cache root seeded with three old-location files and one recent new-location index\" and asserts the real `~/.cache/reckon` is untouched, so it exercises only `ledger-*.sqlite` paths and passes regardless of whether the `picker-*.json` cache relocation caused by the leaf change is handled",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "250a17314d5af7e07393ac0eb3116f3a83c80336abfef21b63e4607787a3c970",
+  "plan_slug": "the-crew-home-has-a-bound",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261010T190515092623-plan-review-of-the-crew-home-has-a-bound",
+  "reviewed_blob_sha": "8d5631bc78567f8d60d049fced51164f9d857f08",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited anchor resolves: `reckon/ledger.py:896-899` (`_run_index_path`), `reckon/_store.py:162` (the `pick-input` leaf), `reckon/crew/routing.py:1431-1515` (`_plan_review_raw_reports`), `reckon/crew/routing.py:1520` (`garbage_collect`), `reckon/crew/routing.py:1764-1771` (the run-directory retention skip at line 1770), `reckon/crew/runs.py:549-559` (`_pointer_lock`).",
+    "done_when": "a finding \u2014 \u00a72's done-when seeds the temporary cache root with only `ledger-*.sqlite` files and asserts the real `~/.cache/reckon` is untouched, so it cannot fail for the picker-input relocation \u00a72's mechanism introduces.",
+    "evidence_paths": "pass \u2014 \u00a75 writes its removal log to the run's own log directory; \u00a71's evidence source (`~/.config/reckon/crew/reports/reckon/health-review-1010/health-state-hygiene/evidence.md`) exists on durable storage.",
+    "naming": "pass \u2014 the new test filenames and the `gc.run_file_max_mb` key are mechanism-named; no plan labels, stage names, ticket numbers or version tags reach code or symbols.",
+    "reasoning": "a finding \u2014 \u00a72's stated mechanism (change the `pick-input` cache leaf) has a second effect the plan does not name, and the shared index it creates is invalidated per-checkout rather than shared.",
+    "single_goal": "pass \u2014 each section names one deliverable, and \u00a74 explicitly declares it runs after \u00a73, which writes the same module.",
+    "wiring": "pass \u2014 the plan declares `plan-standalone` with an explicit reason, its one cross-plan link (`/reckon/plans/history-persists-as-detail-washes-out.html`) resolves to a real file, and \u00a75's \"gc --apply removes the 18 clean worktrees\" matches existing gc behaviour (`reckon/crew/routing.py:1590-1696` already removes clean integrated worktrees)."
+  },
+  "section_digests": {
+    "_document": "af2eb26959b53991bcc26bda5e7e2c7192a91a8bc1db9f63e754d3f80cf66705",
+    "s1": "32d74b1202f967c9688afa80dbd94719f49d78f6a5afcc8d56d9c46602e1c0a5",
+    "s2": "1cfd6b6770a2f38d3aba5b1dcaefe00a17a99dd929861ef7eec7bc7be4c4a0f8",
+    "s3": "c3d8b49a5e06b2fc207d5d8b100435a6c5a29b6e7336e4b16fcbc731c8d67f0c",
+    "s4": "10592efc34537b92ff13d4e9de6ea330cdf819d867e3077e82e01e8635f48698",
+    "s5": "41b55c007b0bcaac025cbd0d18bf3a14a3fbf5065f12cfef34ec527400cc202d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T19:26:53.650720+00:00"
+}
