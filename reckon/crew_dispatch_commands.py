@@ -28,7 +28,6 @@ def crew():
     """
 
 
-
 @crew.command(name="gate")
 @click.option("--pause", default=None, metavar="REASON")
 @click.option("--open", "open_gate", is_flag=True)
@@ -60,14 +59,12 @@ def crew_gate(pause, open_gate, pretty):
     )
 
 
-
 def _crew_modules():
     """Import the crew and flight helpers on demand."""
     from reckon import crew as crew_module
     from reckon import flight as flight_module
 
     return crew_module, flight_module
-
 
 
 class _OneDocumentStdout:
@@ -109,7 +106,6 @@ class _OneDocumentStdout:
         return sys.stderr.fileno()
 
 
-
 @contextlib.contextmanager
 def _single_document_stdout() -> Iterator[None]:
     """Hold stdout for one JSON document while a command runs.
@@ -121,7 +117,6 @@ def _single_document_stdout() -> Iterator[None]:
     channel = _OneDocumentStdout(sys.stdout)
     with contextlib.redirect_stdout(channel):
         yield
-
 
 
 def _holds_stdout_for_one_document(callback):
@@ -140,7 +135,6 @@ def _holds_stdout_for_one_document(callback):
     return run
 
 
-
 def _emit(payload, pretty: bool) -> None:
     """Print one JSON document, sorted so two runs diff only on real change."""
     stream = getattr(sys.stdout, "payload_stream", sys.stdout)
@@ -148,7 +142,6 @@ def _emit(payload, pretty: bool) -> None:
         json.dumps(payload, indent=2 if pretty else None, sort_keys=True),
         file=stream,
     )
-
 
 
 def _crew_result_ok(result: Mapping[str, Any], *, observation: bool = False) -> bool:
@@ -191,7 +184,6 @@ def _crew_result_ok(result: Mapping[str, Any], *, observation: bool = False) -> 
     )
 
 
-
 def _emit_crew_result(
     result: Mapping[str, Any],
     pretty: bool,
@@ -205,7 +197,6 @@ def _emit_crew_result(
     _emit(payload, pretty)
     if not payload["ok"]:
         raise click.exceptions.Exit(failure_exit)
-
 
 
 def _emit_dry_run_request_error(
@@ -228,7 +219,6 @@ def _emit_dry_run_request_error(
     )
 
 
-
 def _validation_detail(validation) -> str:
     """Render a node validation's findings as the detail of a refusal.
 
@@ -242,7 +232,6 @@ def _validation_detail(validation) -> str:
         for finding in validation.findings
     ]
     return "; ".join(findings) or "the node failed contract validation"
-
 
 
 def _lane_paused_detail(gate) -> str:
@@ -261,7 +250,6 @@ def _lane_paused_detail(gate) -> str:
     return f"the lane gate is {gate.get('state')!r}"
 
 
-
 def _resolved_flight(flight_module, project, checkout_path, overrides):
     """Resolve flight config for a dispatch, prompt overrides winning."""
     try:
@@ -274,7 +262,6 @@ def _resolved_flight(flight_module, project, checkout_path, overrides):
         raise click.ClickException(str(exc)) from exc
 
 
-
 def _dispatch_resolved_flight(flight_module, project, checkout_path, overrides):
     """Resolve dispatch flight data with its operator-facing recovery command."""
     from reckon.crew.refusals import format_refusal
@@ -285,7 +272,6 @@ def _dispatch_resolved_flight(flight_module, project, checkout_path, overrides):
         raise click.ClickException(format_refusal("D06", str(exc))) from exc
 
 
-
 def _flight_default_backend_override(flight_module, config, overrides):
     """Return the resolved default only when the prompt layer supplied it."""
     if not overrides:
@@ -294,7 +280,6 @@ def _flight_default_backend_override(flight_module, config, overrides):
     if "default_backend" not in prompt_layer:
         return None
     return str(config.get("default_backend") or "").strip() or None
-
 
 
 def _with_resolved_overrides(payload: dict, override_resolution: dict) -> dict:
@@ -309,7 +294,6 @@ def _with_resolved_overrides(payload: dict, override_resolution: dict) -> dict:
     return payload
 
 
-
 def _config_value_at(config, path: str):
     """Return the value a dotted flight-config path holds; None when unset."""
     node = config
@@ -320,7 +304,6 @@ def _config_value_at(config, path: str):
     return node
 
 
-
 def _layer_flight_config(flight_module, project, checkout_path):
     """Resolve the file layers alone, without this dispatch's prompt layer."""
     from reckon.crew.refusals import format_refusal
@@ -329,7 +312,6 @@ def _layer_flight_config(flight_module, project, checkout_path):
         return flight_module.resolve(project, checkout_path=checkout_path).config
     except flight_module.FlightConfigError as exc:
         raise click.ClickException(format_refusal("D06", str(exc))) from exc
-
 
 
 def _require_configured_override_paths(flight_module, overrides, base) -> None:
@@ -343,7 +325,6 @@ def _require_configured_override_paths(flight_module, overrides, base) -> None:
         _require_configured_override_path(
             flight_module, pair.partition("=")[0].strip(), base
         )
-
 
 
 def _require_configured_override_path(flight_module, path: str, base) -> None:
@@ -381,7 +362,6 @@ def _require_configured_override_path(flight_module, path: str, base) -> None:
         )
 
 
-
 def _dispatch_override_resolution(
     flight_module, overrides, resolved, base, *, local: bool
 ) -> dict:
@@ -412,7 +392,6 @@ def _dispatch_override_resolution(
     return resolution
 
 
-
 def _picker_routed_backend(config, selection):
     """The backend a picker selection sends the dispatch to, or ``""``.
 
@@ -430,7 +409,6 @@ def _picker_routed_backend(config, selection):
     if action in {"fallback", "refuse"}:
         return str(config.get("default_backend") or "")
     return ""
-
 
 
 def _model_availability_refusal(
@@ -477,6 +455,46 @@ def _model_availability_refusal(
     }
 
 
+def _model_narrowed_backend(config, model, backend, *, local):
+    """Resolve ``--model`` to the backend whose expanded entry serves that model.
+
+    The pair comes from the flight's own name resolver over the model
+    catalogue, so a model key, a model id and an alias all reach the same
+    ``(lane, model_key)``. A ``--backend`` already named constrains the match to
+    its lane, so a model two lanes declare stays resolvable when the lane is
+    given and is refused by name when it is not. ``--local`` constrains to the
+    local lane the same way. The backend that served the pair is returned, so
+    ``--backend claude...`` naming the pair routes exactly as the legacy
+    ``<lane>-<key>`` backend would. Returns ``(backend_name, lane, model_key)``.
+    """
+    from reckon import ledger
+
+    lane_filter = None
+    if backend:
+        lane_filter = ledger.resolve_name(backend)[0]
+    elif local:
+        local_backend = str(config.get("local_backend") or "").strip()
+        if local_backend:
+            lane_filter = ledger.resolve_name(local_backend)[0]
+    try:
+        lane, key = ledger.resolve_name(model, lane=lane_filter)
+    except ValueError as exc:
+        raise click.UsageError(str(exc)) from exc
+    if lane is None:
+        raise click.UsageError(
+            f"--model {model!r} names no model, model id or alias the catalogue "
+            "declares"
+        )
+    for name, entry in (config.get("backends") or {}).items():
+        if not isinstance(entry, Mapping):
+            continue
+        if str(entry.get("lane")) == lane and str(entry.get("model_key")) == key:
+            return str(name), lane, key
+    raise click.UsageError(
+        f"--model {model!r} resolves to lane {lane!r} model key {key!r}, which "
+        "no configured backend serves"
+    )
+
 
 def _repo_root(repo) -> Path:
     """Resolve the repository root a dispatch cuts its worktree from."""
@@ -495,7 +513,6 @@ def _repo_root(repo) -> Path:
             "not inside a git repository; pass --repo with the repository root"
         )
     return Path(result.stdout.strip()).resolve()
-
 
 
 def _resolved_gc_repo(
@@ -544,7 +561,6 @@ def _resolved_gc_repo(
     return _repo_root(None)
 
 
-
 def _peer_scopes(values) -> dict:
     """Parse repeated ``name=path[,path]`` peer scope declarations."""
     peers: dict[str, list[str]] = {}
@@ -558,7 +574,6 @@ def _peer_scopes(values) -> dict:
             part.strip() for part in paths.split(",") if part.strip()
         ]
     return peers
-
 
 
 def _parse_ready_node(statement: str) -> dict[str, Any]:
@@ -583,7 +598,6 @@ def _parse_ready_node(statement: str) -> dict[str, Any]:
             f"ready node {name.strip()!r} needs a numeric score, not {score!r}"
         ) from None
     return {"name": name.strip(), "group": group.strip(), "score": value}
-
 
 
 @crew.command(name="pick")
@@ -700,7 +714,6 @@ def crew_pick(
     _emit_crew_result(payload, pretty)
 
 
-
 @crew.command(name="preflight")
 @click.option("--project", required=True, help="Project whose run records are read.")
 @click.option(
@@ -796,7 +809,6 @@ def crew_preflight(
     raise click.exceptions.Exit(3 if report["held"] else 0)
 
 
-
 @crew.command(name="dispatch")
 @click.option("--project", required=True, help="Project owning the plan.")
 @click.option("--plan", "plan_slug", default="", help="Plan slug the node serves.")
@@ -817,6 +829,15 @@ def crew_preflight(
     "--backend",
     default="",
     help="Backend name resolved through flight config.",
+)
+@click.option(
+    "--model",
+    "model_name",
+    default="",
+    help=(
+        "Model key, model id or alias within a lane; resolved through the "
+        "catalogue and narrowed to --backend's lane when one is named."
+    ),
 )
 @click.option(
     "--route",
@@ -1004,6 +1025,7 @@ def crew_dispatch(
     section,
     role,
     backend,
+    model_name,
     route,
     comment,
     spec_level,
@@ -1065,6 +1087,14 @@ def crew_dispatch(
         config = _dispatch_resolved_flight(
             flight_module, project, checkout_path, overrides
         )
+        if model_name:
+            # A model named on the command line narrows to the backend that
+            # serves it, exactly as naming that backend would; the refusal for
+            # an ambiguous or unknown name rides the same channel every other
+            # request error does.
+            backend = _model_narrowed_backend(config, model_name, backend, local=local)[
+                0
+            ]
     except click.ClickException as exc:
         if not dry_run:
             raise
@@ -1085,10 +1115,10 @@ def crew_dispatch(
     if route is None and named_lane:
         route = "deterministic"
     effective_route = resolve_dispatch_route(config, route)
-    if effective_route == "picker" and (backend or local):
+    if effective_route == "picker" and (backend or local or model_name):
         raise click.UsageError(
-            "picker routing cannot be combined with --backend or --local; "
-            "use --route deterministic to override routing.picker"
+            "picker routing cannot be combined with --backend, --model or "
+            "--local; use --route deterministic to override routing.picker"
         )
     if local:
         try:
@@ -1652,7 +1682,6 @@ def crew_dispatch(
     _emit_crew_result(record, pretty)
 
 
-
 @crew.command(name="shadow")
 @click.option("--run", "run_id", required=True, help="Committed primary run id.")
 @click.option(
@@ -1787,7 +1816,6 @@ def crew_shadow(run_id, session, wave, backend, overrides, member, dry_run, pret
     _emit_crew_result(record, pretty)
 
 
-
 @crew.command(name="review-plan")
 @click.option("--project", required=True)
 @click.option("--plan", "plan_slug", required=True)
@@ -1883,7 +1911,6 @@ def crew_review_plan(
         raise click.exceptions.Exit(1) from exc
 
 
-
 @crew.command(name="attach")
 @click.option("--run", "run_id", required=True, help="Run id returned by dispatch.")
 @click.option("--task", required=True, help="The harness's own task identifier.")
@@ -1896,7 +1923,6 @@ def crew_attach(run_id, task, pretty):
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
     _emit_crew_result(record, pretty)
-
 
 
 def _resolved_session(run_id, record=None) -> dict[str, Any]:
@@ -1915,7 +1941,6 @@ def _resolved_session(run_id, record=None) -> dict[str, Any]:
         "session_source": answer["source"],
         "session_resolution": answer,
     }
-
 
 
 @crew.command(name="observe")
@@ -1944,4 +1969,3 @@ def crew_observe(run_id, project, pretty):
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
     _emit_crew_result({**record, **resolved}, pretty, observation=True)
-
