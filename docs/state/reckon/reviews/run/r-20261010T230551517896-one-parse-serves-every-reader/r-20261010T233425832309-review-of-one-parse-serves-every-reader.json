@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite/after_suite gate log (classification.json records both null), so the added-failure count was not taken; an independent broadened suite run in a scratch export is 191 passed at head and 191 passed at base, a delta of zero.",
+  "backend": "clive",
+  "base_log_revision": null,
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/roadmap.py:174",
+    "reckon/roadmap.py:1332",
+    "reckon/serve.py:2174",
+    "reckon/metadata_index.py:669"
+  ],
+  "completed_at": "2026-10-10T23:47:04.527Z",
+  "dispatched_at": "2026-10-10T23:34:51Z",
+  "findings": [
+    {
+      "file": "reckon/metadata_index.py",
+      "line": "669",
+      "severity": "follow-on",
+      "text": "follow-on: _plan_record probes readability with path.read_text(encoding=\"utf-8\") before consulting the shared parse, so every index build re-reads each plan file in full - a read the shared plan_text memo already holds - and the shared_text != text disagreement path calls _plan_html.read_state(text) uncached, bypassing the path-keyed memo it exists to reuse; on a strict-UTF-8-readable file that branch is unreachable (a strict read that succeeds means the errors=\"replace\" read yields the same text), so the fallback is defensive only and carries no test. The read cost is not a parse, so the gate's count is unaffected."
+    },
+    {
+      "file": "reckon/_plan_html.py",
+      "line": "2328",
+      "severity": "follow-on",
+      "text": "follow-on: parse_plan (memo kind parse_plan, _parse_plan_uncached at :2332) and reckon/_store.py:2146 list_followups_across re-parse each plan under their own kind on the mcp roadmap path, so those readers still parse a file the shared read_state_and_text memo already holds; the section's deliverable names only the three readers this node routed, and the node declared these two a follow-on outside its write scope."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s): reckon/roadmap.py:174, reckon/roadmap.py:1332, reckon/serve.py:2174, reckon/metadata_index.py:669",
+    "diff": "read aa1a81740de6684da6d468825d76c9e1ac5230e6..9a8ef962642042dc6c1389c96dcdbbb65db263e2 commit by commit; five files, +178/-25, routing read_authored, _plan_followups, _read_readiness_uncached and _plan_record through read_state_and_text_file and extracting _unreadable_record, plus the new test module and the evidence fragment.",
+    "done_when": "the done-when requires the new test passing, a negative control that fails (read_authored given back its own parse under its own kind, count exceeding ten), and the roadmap and audit tests passing; I reproduced the gate (2 passed, review-gate-head.log) and the negative control (20 parses, 2 failed, review-negctl.log), and ran a broadened roadmap+audit+metadata+memo suite green at head and at base (191 passed each, review-suite-head.log, review-suite-base.log).",
+    "goal": "the node's goal is that one parse of a plan file serves every reader of it; at head 9a8ef9626 the roadmap authored-section reader, the serve readiness reader and the metadata index per-plan record all derive their values from read_state_and_text_file's path-keyed parse, and an instrumented run counts exactly ten read_state calls for a ten-plan project across a cold roadmap, a discovery read and the metadata index build, so the goal is met.",
+    "manifest": "read the reviewed node's manifest; status complete, head gate log with a header naming revision 9a8ef9626/tree/command (2 passed), negative control log (EXIT=1, 20 parses for 10 plans); it names no baseline_suite/after_suite arm so no suite delta was taken, and it declares parse_plan/list_followups_across under follow_ons rather than repairing them.",
+    "write_paths": "read the declared section paths (reckon/roadmap.py, reckon/serve.py, reckon/metadata_index.py, tests/test_every_plan_read_is_memoised.py, the evidence fragment and a figures dir); the diff touches exactly the first four plus the evidence fragment, all inside them."
+  },
+  "justifications": {
+    "durability": "the guard has a driving test - giving read_authored back its own read_state_file parse makes both cases fail at 20 parses for 10 plans (reproduced, review-negctl.log, EXIT=1) while they pass at head; the count is asserted through a counting wrapper on _plan_html.read_state, so it flips when a reader reparses; one gap: the metadata index's fallback branch (shared_text != text -> uncached read_state(text)) carries no test, and on a strict-UTF-8-readable file it is unreachable, since a strict read that succeeds means the errors=\"replace\" read yields identical text.",
+    "evidence": "my independent re-run in a scratch export of head (module.__file__ under the scratch tree) reproduced the gate (2 passed, EXIT=0, review-gate-head.log) and the negative control (20 parses for 10 plans, 2 failed, EXIT=1, review-negctl.log), and a broadened 25-file roadmap+audit+metadata+memo suite is green at head (191 passed, review-suite-head.log) and at base (191 passed, review-suite-base.log), so no added failures; the reviewed manifest records no baseline_suite/after_suite arm (classification.json shows both null), so added_failure_count is unmeasured rather than measured zero, and the head gate log carries no header naming its revision/tree/command.",
+    "fit": "the change edits existing readers in place and routes them through the existing owner read_state_and_text_file rather than adding a parse path; the extracted helper _unreadable_record is named by what it does; the two commits carry conventional subjects with bodies and no AI attribution; the naming grep over the added lines finds no plan/phase/version label.",
+    "goal_fidelity": "the deliverable lands - reckon/roadmap.py:read_authored and _plan_followups, reckon/serve.py:_read_readiness_uncached and reckon/metadata_index.py:_plan_record each now call _plan_html.read_state_and_text_file (memo kind read_state_and_text) instead of path.read_text()+read_state(text) or read_state_file (kind read_state), so the three readers the section names all derive from the one path-keyed parse; my independent instrumented re-run at head 9a8ef9626 counts exactly PARSE_COUNT=10 for ten plans in both ask orders (probe.log), so a cold roadmap plus a discovery read plus the metadata index build parse each plan once.",
+    "reuse": "all three readers reuse the single existing owner read_state_and_text_file (reckon/_plan_html.py:1406) and its plan_text memo instead of keeping a second parse under read_state; _plan_record's unreadable case is de-duplicated into _unreadable_record and its readability probe reuses the file's own read, so no second copy of the empty-document refusal is added.",
+    "scope_discipline": "the two commits touch exactly reckon/roadmap.py, reckon/serve.py, reckon/metadata_index.py, tests/test_every_plan_read_is_memoised.py and the declared evidence fragment, all inside the section write paths; the declared docs/figures/... path is unused and nothing outside the fence is modified."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that one parse of a plan file serves every reader of it; at head 9a8ef9626 the roadmap authored-section reader, the serve readiness reader and the metadata index per-plan record all derive their values from read_state_and_text_file's path-keyed parse, and an instrumented run counts exactly ten read_state calls for a ten-plan project across a cold roadmap, a discovery read and the metadata index build, so the goal is met.\nVERDICT done_when: the done-when requires the new test passing, a negative control that fails (read_authored given back its own parse under its own kind, count exceeding ten), and the roadmap and audit tests passing; I reproduced the gate (2 passed, review-gate-head.log) and the negative control (20 parses, 2 failed, review-negctl.log), and ran a broadened roadmap+audit+metadata+memo suite green at head and at base (191 passed each, review-suite-head.log, review-suite-base.log).\nVERDICT write_paths: read the declared section paths (reckon/roadmap.py, reckon/serve.py, reckon/metadata_index.py, tests/test_every_plan_read_is_memoised.py, the evidence fragment and a figures dir); the diff touches exactly the first four plus the evidence fragment, all inside them.\nVERDICT manifest: read the reviewed node's manifest; status complete, head gate log with a header naming revision 9a8ef9626/tree/command (2 passed), negative control log (EXIT=1, 20 parses for 10 plans); it names no baseline_suite/after_suite arm so no suite delta was taken, and it declares parse_plan/list_followups_across under follow_ons rather than repairing them.\nVERDICT diff: read aa1a81740de6684da6d468825d76c9e1ac5230e6..9a8ef962642042dc6c1389c96dcdbbb65db263e2 commit by commit; five files, +178/-25, routing read_authored, _plan_followups, _read_readiness_uncached and _plan_record through read_state_and_text_file and extracting _unreadable_record, plus the new test module and the evidence fragment.\nVERDICT call_sites: verified 4 production call site(s)\nCALL_SITES: reckon/roadmap.py:174, reckon/roadmap.py:1332, reckon/serve.py:2174, reckon/metadata_index.py:669\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the deliverable lands - reckon/roadmap.py:read_authored and _plan_followups, reckon/serve.py:_read_readiness_uncached and reckon/metadata_index.py:_plan_record each now call _plan_html.read_state_and_text_file (memo kind read_state_and_text) instead of path.read_text()+read_state(text) or read_state_file (kind read_state), so the three readers the section names all derive from the one path-keyed parse; my independent instrumented re-run at head 9a8ef9626 counts exactly PARSE_COUNT=10 for ten plans in both ask orders (probe.log), so a cold roadmap plus a discovery read plus the metadata index build parse each plan once.\nSCORE evidence: 16\nJUSTIFICATION evidence: my independent re-run in a scratch export of head (module.__file__ under the scratch tree) reproduced the gate (2 passed, EXIT=0, review-gate-head.log) and the negative control (20 parses for 10 plans, 2 failed, EXIT=1, review-negctl.log), and a broadened 25-file roadmap+audit+metadata+memo suite is green at head (191 passed, review-suite-head.log) and at base (191 passed, review-suite-base.log), so no added failures; the reviewed manifest records no baseline_suite/after_suite arm (classification.json shows both null), so added_failure_count is unmeasured rather than measured zero, and the head gate log carries no header naming its revision/tree/command.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the two commits touch exactly reckon/roadmap.py, reckon/serve.py, reckon/metadata_index.py, tests/test_every_plan_read_is_memoised.py and the declared evidence fragment, all inside the section write paths; the declared docs/figures/... path is unused and nothing outside the fence is modified.\nSCORE durability: 17\nJUSTIFICATION durability: the guard has a driving test - giving read_authored back its own read_state_file parse makes both cases fail at 20 parses for 10 plans (reproduced, review-negctl.log, EXIT=1) while they pass at head; the count is asserted through a counting wrapper on _plan_html.read_state, so it flips when a reader reparses; one gap: the metadata index's fallback branch (shared_text != text -> uncached read_state(text)) carries no test, and on a strict-UTF-8-readable file it is unreachable, since a strict read that succeeds means the errors=\"replace\" read yields identical text.\nSCORE fit: 19\nJUSTIFICATION fit: the change edits existing readers in place and routes them through the existing owner read_state_and_text_file rather than adding a parse path; the extracted helper _unreadable_record is named by what it does; the two commits carry conventional subjects with bodies and no AI attribution; the naming grep over the added lines finds no plan/phase/version label.\nSCORE reuse: 19\nJUSTIFICATION reuse: all three readers reuse the single existing owner read_state_and_text_file (reckon/_plan_html.py:1406) and its plan_text memo instead of keeping a second parse under read_state; _plan_record's unreadable case is de-duplicated into _unreadable_record and its readability probe reuses the file's own read, so no second copy of the empty-document refusal is added.\nFINDING reckon/metadata_index.py:669 follow-on: _plan_record probes readability with path.read_text(encoding=\"utf-8\") before consulting the shared parse, so every index build re-reads each plan file in full - a read the shared plan_text memo already holds - and the shared_text != text disagreement path calls _plan_html.read_state(text) uncached, bypassing the path-keyed memo it exists to reuse; on a strict-UTF-8-readable file that branch is unreachable (a strict read that succeeds means the errors=\"replace\" read yields the same text), so the fallback is defensive only and carries no test. The read cost is not a parse, so the gate's count is unaffected.\nFINDING reckon/_plan_html.py:2328 follow-on: parse_plan (memo kind parse_plan, _parse_plan_uncached at :2332) and reckon/_store.py:2146 list_followups_across re-parse each plan under their own kind on the mcp roadmap path, so those readers still parse a file the shared read_state_and_text memo already holds; the section's deliverable names only the three readers this node routed, and the node declared these two a follow-on outside its write scope.\nreviewed_base_sha: aa1a81740de6684da6d468825d76c9e1ac5230e6\nreviewed_head_sha: 9a8ef962642042dc6c1389c96dcdbbb65db263e2\n",
+  "review_run_id": "r-20261010T233425832309-review-of-one-parse-serves-every-reader",
+  "reviewed_base_sha": "aa1a81740de6684da6d468825d76c9e1ac5230e6",
+  "reviewed_head_sha": "9a8ef962642042dc6c1389c96dcdbbb65db263e2",
+  "reviewed_run_id": "r-20261010T230551517896-one-parse-serves-every-reader",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T23:45:17.625187+00:00",
+  "total": 109
+}
