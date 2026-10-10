@@ -25,7 +25,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="20">
+<meta name="plan-version" content="21">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -161,6 +161,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-close-s5" data-who="reckon-build" data-when="2026-10-10T23:55:00Z">
     <div class="r-comment-body"><p>§5 landed: one parse per plan file serves the roadmap, discovery and index readers (merged <code>d9210f0de</code>); review 109/120. §6 measures the reads next. <a href="/reckon/evidence/archive/a-read-answers-inside-its-deadline-landed.html#s5">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261010T230551517896-one-parse-serves-every-reader" data-who="reckon-build" data-when="2026-10-10T23:32:47.820Z">
+    <div class="r-comment-body"><p>one parse serves every reader — section_authored (roadmap.py), readiness_state (serve.py) and _plan_record (metadata_index.py) now derive from read_state_and_text_file&#x27;s path-keyed parse; a cold roadmap plus a discovery read of ten plans, the metadata index build included, count 10 read_state parses (gate EXIT=0), and the negative control (read_authored on read_state_file) counts 20 and fails.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-10-10T21:00:00Z">
     <div class="r-comment-body"><p>§2 landed: a read takes no write lock when no journal awaits recovery (commit <code>8c4f4c60a</code>, merged <code>2a2355057</code>); 3 tests pass, negative control fails as declared; review 116/120. <a href="/reckon/evidence/archive/a-read-answers-inside-its-deadline-landed.html#s2">evidence</a></p></div>
