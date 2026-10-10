@@ -596,20 +596,29 @@ def queue_dispatch(record: dict[str, Any]) -> tuple[dict[str, Any], int]:
                 ),
                 None,
             )
-            run_id = str(
-                existing["run_id"] if existing is not None else record["run_id"]
-            )
-            with _pointer_lock(run_id):
-                if existing is not None:
-                    current = read_pointer(run_id)
-                    if current.get("phase") != "queued":
-                        raise CrewError(
-                            f"queued run {run_id!r} changed phase; retry dispatch"
-                        )
-                    record["run_id"] = run_id
-                    record["queued_at"] = current["queued_at"]
-                    record["created_at"] = current["created_at"]
-                _write_json(pointer_path(run_id), record)
+            existing_run_id = str(existing["run_id"]) if existing is not None else None
+            requeued = False
+            if existing_run_id is not None:
+                with _pointer_lock(existing_run_id):
+                    if pointer_path(existing_run_id).exists():
+                        current = read_pointer(existing_run_id)
+                        if current.get("phase") != "queued":
+                            raise CrewError(
+                                f"queued run {existing_run_id!r} changed phase; "
+                                "retry dispatch"
+                            )
+                        record["run_id"] = existing_run_id
+                        record["queued_at"] = current["queued_at"]
+                        record["created_at"] = current["created_at"]
+                        requeued = True
+                        _write_json(pointer_path(existing_run_id), record)
+                    # A pointer that vanished between the scan and this lock was
+                    # discarded underneath the re-queue: fall through and queue
+                    # afresh rather than reading a pointer that is gone.
+            if not requeued:
+                run_id = str(record["run_id"])
+                with _pointer_lock(run_id):
+                    _write_json(pointer_path(run_id), record)
             from reckon.crew.queue_order import admission_order
 
             live = _list_live_records(project=str(record["project"]))

@@ -250,6 +250,30 @@ def test_queued_write_obeys_the_per_run_pointer_lock(
     assert runs.read_pointer(run_id)["reason"] == "router still full"
 
 
+def test_requeue_racing_its_discard_queues_afresh(
+    dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    run_id = "r-racing"
+    runs.queue_dispatch(_queued_request("first", run_id))
+    original_lock = runs._pointer_lock
+
+    def discard_before_lock(target: str):
+        # The queued pointer is discarded between the scan (which still sees it)
+        # and the per-run pointer lock this dispatch is about to take.
+        if target == run_id:
+            runs.pointer_path(run_id).unlink()
+        return original_lock(target)
+
+    monkeypatch.setattr(runs, "_pointer_lock", discard_before_lock)
+    queued, position = runs.queue_dispatch(_queued_request("first", "r-fresh"))
+
+    assert queued["run_id"] == "r-fresh"
+    assert position == 1
+    pointers = runs.list_live(project="proj")
+    assert [pointer["run_id"] for pointer in pointers] == ["r-fresh"]
+    assert pointers[0]["phase"] == "queued"
+
+
 def test_queued_counter_is_waiting_and_never_working() -> None:
     assert recovery._fleet_counts({"run": {"state": "queued"}}) == {
         "working": 0,
