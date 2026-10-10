@@ -385,7 +385,7 @@ def summarize(
         {
             backend
             for (_project, backend, _role, _spec, _risk, _attribution) in groups
-            if ledger.is_subscription_backend(backend)
+            if ledger.is_subscription_backend(backend, project=_project)
         }
     )
     return {
