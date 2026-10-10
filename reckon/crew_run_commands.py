@@ -571,7 +571,7 @@ def crew_dispose(
         dispositions = (record or {}).get(
             review_module.DIMENSION_DISPOSITIONS_KEY
         ) or {}
-        entry = dispositions.get(named_dimension)
+        entry = dispositions.get(named_dimension.lower())
     else:
         # The disposition is rendered through the findings reader's own predicate,
         # so the receipt reports what a later read of the record reports.
