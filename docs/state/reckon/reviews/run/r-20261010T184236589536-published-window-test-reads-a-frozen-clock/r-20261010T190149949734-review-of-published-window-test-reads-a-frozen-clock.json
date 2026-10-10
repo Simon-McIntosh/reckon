@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite/base-gate.log reached its summary (160 passed) EXIT=0 at 9a9d3d3e with no failing id, and after_suite/head-gate.log reached its summary (160 passed) EXIT=0 at c1f845f3e with no failing id, so the set difference over pytest node ids is empty (0 added).",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-10T19:14:56.992Z",
+  "dispatched_at": "2026-10-10T19:02:47Z",
+  "findings": [
+    {
+      "file": "tests/test_picker_dispatch_pace.py",
+      "line": "251",
+      "severity": "follow-on",
+      "text": "follow-on: test_dispatch_uses_published_window_as_direct_pick_does still samples now = datetime.now(UTC) for both the reading's observed_at and the assertion budget_age_s == pytest.approx(0, abs=1) \u2014 the same two-read, sub-second-drift shape this node repaired for its neighbour \u2014 so it can flake identically under load; the same one-line _freeze_snapshot_clock call closes it."
+    },
+    {
+      "file": "docs/evidence/fragments/one-typesafe-model-picker/published-window-test-reads-a-frozen-clock.html",
+      "line": "39",
+      "severity": "follow-on",
+      "text": "follow-on: the Gate paragraph names the head arm as bc50c07c2 while logs/head-gate.log's own header records revision c1f845f3eb9b3d9fc10d6b3848f6e718ba8e8a77, the fragment's landing commit, so a reader tying the gate to a revision reads two heads for one measurement; the test content is identical at both, so no test change is lost."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read both commits against their common base 9a9d3d3ec; bc50c07c2 replaces `now = datetime.now(UTC)` with a fixed datetime(2026,5,5,12,0,0) and calls the existing _freeze_snapshot_clock helper, the same shape the neighbouring test_old_recorded_window_is_marked_stale already uses; c1f845f3e adds the evidence fragment.",
+    "done_when": "both clauses hold and are independently reproduced here \u2014 with the snapshot clock advanced one hour between the write and the read the head test still passes (EXPECT 0, run at the head worktree) and the un-pinned base fails with `assert 10800.0 == 7200 +/- 1` (my scratch reproduction at the base test body).",
+    "goal": "the node repairs the pre-existing flake in test_dispatch_marks_old_published_window_stale by pinning the picker snapshot module's wall clock to the test's captured moment, so the candidate budget_age_s is measured from one source rather than a second reading of datetime.now(UTC).",
+    "manifest": "read; it carries base/head gate logs, a reproduction log and a negative control, all present on disk with a bare first line naming revision, tree and command.",
+    "write_paths": "tests/test_picker_dispatch_pace.py is the declared path; the change touches only it (3 lines) plus the standard landing fragment docs/evidence/fragments/one-typesafe-model-picker/published-window-test-reads-a-frozen-clock.html; no product code changed, matching the plan's \"No product code changes\"."
+  },
+  "justifications": {
+    "durability": "logs/negative-control.log reddens exactly the repaired test id with EXIT=1 when the pin is released, so the fix is load-bearing rather than resting on the suite's green baseline.",
+    "evidence": "the run's own arms are readable \u2014 logs/head-gate.log ends \"160 passed\" EXIT=0 at c1f845f3e and logs/repro-hour-forward-base.log fails at 10800.0 \u2014 and I reproduced the head pass and the base failure independently.",
+    "fit": "the change is a two-line edit reusing the module-local helper tests/test_picker_domain.py is not touched by, keeping the file's existing frozen-clock convention.",
+    "goal_fidelity": "the test at tests/test_picker_dispatch_pace.py:297 now samples its clock once and pins the snapshot's, which is exactly what tests/test_picker_dispatch_pace.py:78 _freeze_snapshot_clock and the plan's \"do the same here\" name.",
+    "reuse": "it calls the existing _freeze_snapshot_clock at tests/test_picker_dispatch_pace.py:78 rather than adding a second clock-pinning mechanism.",
+    "scope_discipline": "git diff --stat 9a9d3d3e..c1f845f3e shows only tests/test_picker_dispatch_pace.py (3 lines) and the landing fragment, with no product file touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node repairs the pre-existing flake in test_dispatch_marks_old_published_window_stale by pinning the picker snapshot module's wall clock to the test's captured moment, so the candidate budget_age_s is measured from one source rather than a second reading of datetime.now(UTC).\nVERDICT done_when: both clauses hold and are independently reproduced here \u2014 with the snapshot clock advanced one hour between the write and the read the head test still passes (EXPECT 0, run at the head worktree) and the un-pinned base fails with `assert 10800.0 == 7200 +/- 1` (my scratch reproduction at the base test body).\nVERDICT write_paths: tests/test_picker_dispatch_pace.py is the declared path; the change touches only it (3 lines) plus the standard landing fragment docs/evidence/fragments/one-typesafe-model-picker/published-window-test-reads-a-frozen-clock.html; no product code changed, matching the plan's \"No product code changes\".\nVERDICT manifest: read; it carries base/head gate logs, a reproduction log and a negative control, all present on disk with a bare first line naming revision, tree and command.\nVERDICT diff: read both commits against their common base 9a9d3d3ec; bc50c07c2 replaces `now = datetime.now(UTC)` with a fixed datetime(2026,5,5,12,0,0) and calls the existing _freeze_snapshot_clock helper, the same shape the neighbouring test_old_recorded_window_is_marked_stale already uses; c1f845f3e adds the evidence fragment.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the test at tests/test_picker_dispatch_pace.py:297 now samples its clock once and pins the snapshot's, which is exactly what tests/test_picker_dispatch_pace.py:78 _freeze_snapshot_clock and the plan's \"do the same here\" name.\nSCORE evidence: 19\nJUSTIFICATION evidence: the run's own arms are readable \u2014 logs/head-gate.log ends \"160 passed\" EXIT=0 at c1f845f3e and logs/repro-hour-forward-base.log fails at 10800.0 \u2014 and I reproduced the head pass and the base failure independently.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 9a9d3d3e..c1f845f3e shows only tests/test_picker_dispatch_pace.py (3 lines) and the landing fragment, with no product file touched.\nSCORE durability: 18\nJUSTIFICATION durability: logs/negative-control.log reddens exactly the repaired test id with EXIT=1 when the pin is released, so the fix is load-bearing rather than resting on the suite's green baseline.\nSCORE fit: 20\nJUSTIFICATION fit: the change is a two-line edit reusing the module-local helper tests/test_picker_domain.py is not touched by, keeping the file's existing frozen-clock convention.\nSCORE reuse: 20\nJUSTIFICATION reuse: it calls the existing _freeze_snapshot_clock at tests/test_picker_dispatch_pace.py:78 rather than adding a second clock-pinning mechanism.\nFINDING tests/test_picker_dispatch_pace.py:251 follow-on: test_dispatch_uses_published_window_as_direct_pick_does still samples now = datetime.now(UTC) for both the reading's observed_at and the assertion budget_age_s == pytest.approx(0, abs=1) \u2014 the same two-read, sub-second-drift shape this node repaired for its neighbour \u2014 so it can flake identically under load; the same one-line _freeze_snapshot_clock call closes it.\nFINDING docs/evidence/fragments/one-typesafe-model-picker/published-window-test-reads-a-frozen-clock.html:39 follow-on: the Gate paragraph names the head arm as bc50c07c2 while logs/head-gate.log's own header records revision c1f845f3eb9b3d9fc10d6b3848f6e718ba8e8a77, the fragment's landing commit, so a reader tying the gate to a revision reads two heads for one measurement; the test content is identical at both, so no test change is lost.\n",
+  "review_run_id": "r-20261010T190149949734-review-of-published-window-test-reads-a-frozen-clock",
+  "reviewed_base_sha": "9a9d3d3ec57fd13abede528f6e57deda10a1f8c6",
+  "reviewed_head_sha": "c1f845f3eb9b3d9fc10d6b3848f6e718ba8e8a77",
+  "reviewed_run_id": "r-20261010T184236589536-published-window-test-reads-a-frozen-clock",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T19:10:25.903360+00:00",
+  "total": 116
+}

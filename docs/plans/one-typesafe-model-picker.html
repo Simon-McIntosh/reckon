@@ -25,7 +25,7 @@
   <title>One Typesafe Model Picker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="278">
+<meta name="plan-version" content="280">
 <meta name="plan-modified" content="2026-10-10">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;done&quot;,&quot;s25&quot;:&quot;implementable&quot;,&quot;s26&quot;:&quot;implementable&quot;,&quot;s27&quot;:&quot;done&quot;}">
 </head>
@@ -901,6 +901,9 @@
 <div class="r-comment" data-section="s1" data-id="c-health-pick-index-1010" data-who="reckon-build coordinator (health-review-1010)" data-when="2026-10-10T19:20:00Z">
     <div class="r-comment-body"><p>The <code>pick-input</code> ledger index (<code>reckon/ledger.py:896-899</code>) is keyed on the resolved ledger path, so every worktree builds its own full copy of the project ledger index: 1,629 files and 93 GB under <code>~/.cache/reckon/</code> on 2026-10-10, 1,444 of them written on 2026-10-08, and nothing removes them. <a href="/reckon/plans/the-crew-home-has-a-bound.html">the-crew-home-has-a-bound §2</a> keys it on the project and the repository's common git directory and sweeps the old files through <code>reckon crew gc</code>. It writes <code>reckon/ledger.py</code>, so a node of this plan holding that path will make its dispatch wait.</p></div>
 </div>
+<div class="r-comment" data-section="s1" data-id="c-health-pick-index-1010-correction" data-who="reckon-build coordinator (health-review-1010)" data-when="2026-10-10T19:30:00Z">
+    <div class="r-comment-body"><p>Correction to <code>c-health-pick-index-1010</code>: the-crew-home-has-a-bound §2 no longer re-keys the index. Its review found that one index shared by several checkouts would be invalidated on every switch (the stamp is the ledger file's identity) and that the <code>pick-input</code> cache root also holds this plan's <code>picker-*.json</code> files. The index stays keyed per checkout, records the ledger path it indexes, and <code>reckon crew gc</code> sweeps every <code>ledger-*.sqlite</code> whose checkout is gone; <code>picker-*.json</code> is untouched. It writes <code>reckon/ledger.py</code> and <code>reckon/crew/routing.py</code>.</p></div>
+</div>
 <div class="r-comment" data-section="s15" data-id="c-run-r-20261010T184458856363-review-of-pick-paths-carry-authority" data-who="reckon-build" data-when="2026-10-10T18:55:13.038Z">
     <div class="r-comment-body"><p>review record for r-20261008T161711457703-pick-paths-carry-authority stored under docs-review store keyed to base 66ad94b2 and head d6e79cf3, scoring all six dimensions (total 107) with two follow-on findings</p></div>
 </div>
@@ -908,7 +911,10 @@
     <div class="r-comment-body"><p>§27 landed: the staleness test pins its clock and no longer drifts under load (merge <code>c732de6ff</code>, review 116, no failures added). <a href="/reckon/evidence/archive/one-typesafe-model-picker-landed.html#s27">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s27" data-id="c-run-r-20261010T184236589536-published-window-test-reads-a-frozen-clock" data-who="reckon-build" data-when="2026-10-10T19:01:20.208Z">
-    <div class="r-comment-body"><p>Frozen the published-window staleness test&#x27;s clock — test_dispatch_marks_old_published_window_stale now pins the picker snapshot&#x27;s clock to the captured moment (as the neighbouring stale-recorded-window case does), so an hour of wall-clock drift between the write and the read can no longer move the candidate&#x27;s budget_age_s off its recorded observation; base 9a9d3d3ec fails the bound at 10800 s under that move, head passes, and the picker suite is 160 passed with 0 added failures.</p></div>
+    <div class="r-comment-body"><p>Frozen the published-window staleness test's clock — test_dispatch_marks_old_published_window_stale now pins the picker snapshot's clock to the captured moment (as the neighbouring stale-recorded-window case does), so an hour of wall-clock drift between the write and the read can no longer move the candidate's budget_age_s off its recorded observation; base 9a9d3d3ec fails the bound at 10800 s under that move, head passes, and the picker suite is 160 passed with 0 added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s27" data-id="c-run-r-20261010T190149949734-review-of-published-window-test-reads-a-frozen-clock" data-who="reckon-build" data-when="2026-10-10T19:14:56.992Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261010T184236589536-published-window-test-reads-a-frozen-clock (node published-window-test-reads-a-frozen-clock, plan §27) stored as a parsed six-dimension record at both granted paths: reviewed_base_sha 9a9d3d3ec, reviewed_head_sha c1f845f3e, scores goal_fidelity 20 evidence 19 scope_discipline 19 durability 18 fit 20 reuse 20 (total 116), added_failure_count 0 with added_failure_ids [] derived from the reviewed run&#x27;s own base/after arms, and two follow-on findings; the head test passes and the base test fails at 10800 s under an hour-forward clock, both reproduced independently.</p></div>
 </div>
 </section>
 <section data-reckon="followups" id="followups" class="r-followups">
