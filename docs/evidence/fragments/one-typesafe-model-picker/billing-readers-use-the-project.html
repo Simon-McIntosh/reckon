@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Every billing reader resolves with the row's project</title>
+</head>
+<body>
+<article class="evidence-fragment" id="billing-readers-use-the-project">
+  <h2 id="billing-readers-use-the-project-title">Every billing reader resolves with the row's project</h2>
+
+  <p id="billing-readers-use-the-project-change">The promotion writer
+  (<code>reckon/crew/promotion.py</code>, <code>_complete_locked</code>) now passes the
+  record's project into <code>ledger.build_record</code>, so the stored row's budget block
+  is resolved against that project's flight layer at write time. The picker's outcome
+  summary (<code>reckon/crew/picker/outcomes.py</code>) now passes each row group's project
+  into <code>ledger.is_subscription_backend</code>, so its per-backend subscription label
+  honours a project override. Tests are in
+  <code>tests/test_billing_readers_use_the_project.py</code>.</p>
+</article>
+</body>
+</html>

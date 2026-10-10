@@ -955,6 +955,7 @@ def _complete_locked(
             reviewed = committed_block
     run = ledger.build_record(
         run_id=run_id,
+        project=project,
         plan=str(node.get("plan") or ""),
         section=str(node.get("section") or ""),
         brief=brief_block,
