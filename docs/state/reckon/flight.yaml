@@ -76,7 +76,11 @@ default_backend: clive
 
 # The project's own suite: run once at the merged head with the root
 # environment's interpreter, eight workers, no cache, quiet, over tests/.
-# Twenty minutes is the whole-run ceiling; the wave close is what runs it.
+# Twenty minutes is the whole-run ceiling; the wave close is what runs it. The
+# browser population is deselected by the `not browser` marker: it runs
+# headless, takes far longer than the rest of the suite, and is recorded as its
+# own row under `populations` so its time and its failure ids stay separable
+# from the standing suite's.
 review:
   suite:
     command:
@@ -88,5 +92,26 @@ review:
       - -p
       - no:cacheprovider
       - -q
+      - -m
+      - not browser
       - tests/
     budget: 20m
+  # The browser population, selected by the marker every test in a module that
+  # imports tests/spa_browser_harness.py carries. It runs against the installed
+  # headless shell and gets its own time bound, so its page-load cost is not
+  # weighed against the standing suite's budget.
+  populations:
+    - name: browser
+      command:
+        - .venv/bin/python
+        - -m
+        - pytest
+        - -n
+        - "8"
+        - -p
+        - no:cacheprovider
+        - -q
+        - -m
+        - browser
+        - tests/
+      budget: 20m

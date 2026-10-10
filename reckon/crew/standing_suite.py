@@ -46,7 +46,7 @@ from reckon._store import state_path
 from reckon.crew.promotion import _RUNNER_SUMMARY
 from reckon.crew.review import _pytest_failure_ids
 from reckon.crew.routing import signal_worker
-from reckon.flight import SuiteDeclaration
+from reckon.flight import REVIEW_KEY, SuiteDeclaration
 
 # The two tiers the standing suite holds back. A full review reads the run for
 # itself, so it is not made to wait on the project's suite; a lighter review is
@@ -66,6 +66,19 @@ SUITE_RUNS_DIRNAME = "suite-runs"
 # reading the file name alone.
 RUN_KIND = "run"
 WAIVER_KIND = "waiver"
+
+# The key under ``review`` holding the named populations a project declares, each
+# a mapping of ``name``, ``command`` and ``budget``: everything ``review.suite``
+# carries, recorded as its own row rather than folded into the standing suite.
+POPULATIONS_KEY = "populations"
+
+# A run's trailing exit-status line, the form :func:`run` leaves and
+# :func:`record_from_log` reads.
+_EXIT_LINE_RE = re.compile(r"^EXIT=(\d+)\s*$", re.MULTILINE)
+
+# The budget form ``review.suite`` and each population declare: an integer and
+# one unit character.
+_BUDGET_RE = re.compile(r"[0-9]+[smh]")
 
 # The plain pytest collection line ("collected 12 items") and the pytest-xdist
 # form (`[12 items]`). Under `-q` — the form this repository's own suite
@@ -123,6 +136,62 @@ def suite_runs_dir(project_root: str | Path, project: str) -> Path:
         state_path(project, SUITE_RUNS_DIRNAME, root=project_root).parent
         / SUITE_RUNS_DIRNAME
     )
+
+
+def population_declarations(
+    config: Mapping[str, Any] | None,
+) -> list[tuple[str, SuiteDeclaration]]:
+    """The named populations a resolved config declares under ``review.populations``.
+
+    Each entry is a mapping carrying ``name``, ``command`` and ``budget`` — the
+    same two keys ``review.suite`` uses, plus the name the row is recorded under.
+    Absence (no ``review`` block, no ``populations`` key, or an in-process config
+    assembled by hand) is not an error and returns an empty list. A block present
+    but malformed is refused by name rather than silently ignored, so a
+    population that looks declared and never runs cannot read as one that was
+    never declared.
+    """
+    review = (config or {}).get(REVIEW_KEY)
+    populations = review.get(POPULATIONS_KEY) if isinstance(review, Mapping) else None
+    if populations is None:
+        return []
+    if not isinstance(populations, list):
+        raise StandingSuiteError(
+            f"flight config: {REVIEW_KEY}.{POPULATIONS_KEY} must be a list of "
+            "mappings carrying 'name', 'command' and 'budget'"
+        )
+    declared: list[tuple[str, SuiteDeclaration]] = []
+    for index, entry in enumerate(populations):
+        key = f"{REVIEW_KEY}.{POPULATIONS_KEY}[{index}]"
+        if not isinstance(entry, Mapping):
+            raise StandingSuiteError(f"flight config: {key} must be a mapping")
+        name = entry.get("name")
+        if not isinstance(name, str) or not name:
+            raise StandingSuiteError(
+                f"flight config: {key}.name must be a non-empty string"
+            )
+        command = entry.get("command")
+        if (
+            not isinstance(command, (list, tuple))
+            or not command
+            or any(not isinstance(part, str) for part in command)
+        ):
+            raise StandingSuiteError(
+                f"flight config: {key}.command must be a non-empty list of strings"
+            )
+        budget = entry.get("budget")
+        if not isinstance(budget, str) or _BUDGET_RE.fullmatch(budget) is None:
+            raise StandingSuiteError(
+                f"flight config: {key}.budget must be an integer followed by s, m or h"
+            )
+        declared.append((name, SuiteDeclaration(command=tuple(command), budget=budget)))
+    return declared
+
+
+def _exit_status(log_text: str) -> int | None:
+    """The exit status a log's trailing ``EXIT=`` line carries, or ``None``."""
+    matches = _EXIT_LINE_RE.findall(log_text)
+    return int(matches[-1]) if matches else None
 
 
 def _observed_at() -> str:
@@ -221,6 +290,8 @@ def run(
     project_root: str | Path,
     declaration: SuiteDeclaration,
     log_path: str | Path,
+    *,
+    population: str | None = None,
 ) -> dict[str, Any]:
     """Run ``declaration`` from ``project_root`` and record what its log shows.
 
@@ -229,7 +300,9 @@ def run(
     record carries the revision the run was taken at, the command, the exit
     status, the collected/passed/failed/skipped/errored counts and the failure
     and skip ids, the duration and budget, and the two failure flags a hold
-    reads.
+    reads. ``population`` names the suite row this run belongs to; the standing
+    suite leaves it ``None``, and a named population records under its own name
+    so the row is not read as the standing suite.
     """
     log_path = Path(log_path)
     log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -272,7 +345,42 @@ def run(
         duration_seconds=time.monotonic() - started,
         budget_seconds=budget_seconds,
         over_budget=over_budget,
+        population=population,
     )
+
+
+def record_from_log(
+    project_root: str | Path,
+    project: str,
+    log_path: str | Path,
+    *,
+    population: str,
+    declaration: SuiteDeclaration,
+    revision: str | None = None,
+) -> Path:
+    """Record a row under ``population`` for a log already on disk.
+
+    The form :func:`run` leaves a log in — pytest's output followed by an
+    ``EXIT=`` line — is read the same way whether the run was live or supplied,
+    so a caller holding a log (a fixed fixture, or a run taken by another
+    process) records the identical row. The exit status is taken from the log's
+    own trailing line when it carries one; a log without one is read from its
+    summary counts alone, which is why a caller need not synthesise one.
+    """
+    log_path = Path(log_path)
+    text = log_path.read_text(encoding="utf-8", errors="replace")
+    row = _build_record(
+        revision=revision if revision is not None else _revision(project_root),
+        command=list(declaration.command),
+        exit_status=_exit_status(text),
+        log_text=text,
+        log_path=log_path,
+        duration_seconds=0.0,
+        budget_seconds=declaration.budget_seconds(),
+        over_budget=False,
+        population=population,
+    )
+    return record(project_root, project, row)
 
 
 def _build_record(
@@ -285,11 +393,13 @@ def _build_record(
     duration_seconds: float,
     budget_seconds: int,
     over_budget: bool,
+    population: str | None = None,
 ) -> dict[str, Any]:
     """Assemble a run record from the parts the caller measured and the log."""
     counts = _build_counts(log_text, exit_status)
     return {
         "kind": RUN_KIND,
+        "population": population,
         "revision": revision,
         "command": command,
         "exit_status": exit_status,
@@ -370,15 +480,19 @@ def record(
     """Write one run record under the project's suite-runs directory.
 
     The file is named by the observation time, so a directory listing sorts by
-    when each run was taken. The write is atomic through the writer this
-    repository already uses for a JSON record, so a reader never sees a
-    half-written file.
+    when each run was taken. A named population's row carries its name in the
+    file name as well as in the record, so a standing-suite row and a
+    population row taken in the same second do not collide. The write is atomic
+    through the writer this repository already uses for a JSON record, so a
+    reader never sees a half-written file.
     """
     directory = suite_runs_dir(project_root, project)
     directory.mkdir(parents=True, exist_ok=True)
     stamp = str(run_record["observed_at"]).replace(":", "").replace("-", "")
     revision = str(run_record.get("revision") or "unknown")[:12]
-    path = directory / f"{stamp}-{revision}.json"
+    population = run_record.get("population")
+    suffix = f"-{population}" if population else ""
+    path = directory / f"{stamp}-{revision}{suffix}.json"
     _write_json(path, dict(run_record))
     return path
 
@@ -411,8 +525,19 @@ def record_waiver(
     return path
 
 
-def _latest_record(project_root: str | Path, project: str) -> dict[str, Any] | None:
-    """The record with the latest observation time, run or waiver, or ``None``."""
+def _latest_record(
+    project_root: str | Path,
+    project: str,
+    *,
+    population: str | None = None,
+) -> dict[str, Any] | None:
+    """The latest record for ``population``, run or waiver, or ``None``.
+
+    ``population`` defaults to ``None``, which selects the standing suite's own
+    rows and not a named population's: a browser population that failed must not
+    read as the standing suite's latest run and hold promotions, so the hold
+    reads only rows carrying its own population.
+    """
     directory = suite_runs_dir(project_root, project)
     if not directory.is_dir():
         return None
@@ -420,6 +545,8 @@ def _latest_record(project_root: str | Path, project: str) -> dict[str, Any] | N
     for path in sorted(directory.glob("*.json")):
         payload = _read_json(path)
         if not isinstance(payload, Mapping):
+            continue
+        if payload.get("population") != population:
             continue
         if latest is None or str(payload.get("observed_at") or "") > str(
             latest.get("observed_at") or ""
