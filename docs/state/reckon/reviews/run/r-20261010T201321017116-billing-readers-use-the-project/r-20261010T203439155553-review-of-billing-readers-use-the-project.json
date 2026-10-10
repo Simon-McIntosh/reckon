@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "local",
+  "base_log_revision": "c16b71de9724b9a3c1523c6effd18a2b45c6697d",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:456",
+    "reckon/crew_dispatch_commands.py:638"
+  ],
+  "completed_at": "2026-10-10T20:42:43.935Z",
+  "dispatched_at": "2026-10-10T20:35:06Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/one-typesafe-model-picker/billing-readers-use-the-project.html",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the dispatch declared docs/figures/one-typesafe-model-picker/billing-readers-use-the-project as a write path but the fragment carries no figure and the directory is empty, so the graphics expectation the dispatch named is unmet for this doc."
+    }
+  ],
+  "head_log_revision": "339d7d80689e21127ceb622ed0a1a45ad5a113e1",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read both commits against base c16b71de, promotion.py:958 adds project=project (+1), outcomes.py:388 adds project=_project (one line changed), a 277-line new test module and the evidence fragment, nothing outside the declared scope.",
+    "done_when": "the done_when names two cases, a promotion in a project whose flight moves its backend into a subscription group storing no per-token spend and the picker labelling that backend subscription for that project and metered for another; tests/test_billing_readers_use_the_project.py:214 and :244 supply exactly those two with the premise pinned at :264, and the manifest's gate logs record head 197 passed against base 194 (3 added) both ending EXIT=0.",
+    "goal": "the node's goal is that the promotion writer and the picker's outcome summary resolve billing with the row's project; reckon/crew/promotion.py:958 passes project=project into ledger.build_record inside _complete_locked and reckon/crew/picker/outcomes.py:388 passes project=_project into ledger.is_subscription_backend, so both billed writers now name the row's project.",
+    "manifest": "read; status complete, commits 3c4db71f5 and 339d7d806, baseline_suite 194 passed at c16b71de and after_suite 197 passed at 339d7d806 with empty failure_ids, negative_control_log ending EXIT=1 and naming the promotion test.",
+    "write_paths": "read the manifest's declared paths, reckon/crew/promotion.py, reckon/crew/picker/outcomes.py, tests/test_billing_readers_use_the_project.py, the evidence fragment and the figures directory; every path in the diff is inside them."
+  },
+  "justifications": {
+    "durability": "the negative control reverts the project pass and tests/test_billing_readers_use_the_project.py:214 reddens, so that assertion is a guard, while the picker case at :244 reddens by reading alone and its refusal was not demonstrated.",
+    "evidence": "the base and head gate logs reach their summary lines (194 passed at c16b71de, 197 passed at 339d7d806) and the negative-control log ends EXIT=1 with tests/test_billing_readers_use_the_project.py:214 failing, though the recorded mutation demonstrates only the promotion case.",
+    "fit": "the change passes a keyword argument the owners already accept (reckon/ledger.py:2279, :2350) and adds no new name, and both commits carry conventional subjects with bodies and no plan label or attribution.",
+    "goal_fidelity": "reckon/crew/promotion.py:958 and reckon/crew/picker/outcomes.py:388 pass the row's project into the two owners, so both writers resolve billing with it and the section's two items are met.",
+    "reuse": "no definition is added; the change calls the existing owners, build_record at reckon/ledger.py:2350 and is_subscription_backend at reckon/ledger.py:2279, the single owners of the billing capability.",
+    "scope_discipline": "every path in the diff, reckon/crew/promotion.py:958, reckon/crew/picker/outcomes.py:388, the new test module and the evidence fragment, is inside the manifest's declared write paths."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the promotion writer and the picker's outcome summary resolve billing with the row's project; reckon/crew/promotion.py:958 passes project=project into ledger.build_record inside _complete_locked and reckon/crew/picker/outcomes.py:388 passes project=_project into ledger.is_subscription_backend, so both billed writers now name the row's project.\nVERDICT done_when: the done_when names two cases, a promotion in a project whose flight moves its backend into a subscription group storing no per-token spend and the picker labelling that backend subscription for that project and metered for another; tests/test_billing_readers_use_the_project.py:214 and :244 supply exactly those two with the premise pinned at :264, and the manifest's gate logs record head 197 passed against base 194 (3 added) both ending EXIT=0.\nVERDICT write_paths: read the manifest's declared paths, reckon/crew/promotion.py, reckon/crew/picker/outcomes.py, tests/test_billing_readers_use_the_project.py, the evidence fragment and the figures directory; every path in the diff is inside them.\nVERDICT manifest: read; status complete, commits 3c4db71f5 and 339d7d806, baseline_suite 194 passed at c16b71de and after_suite 197 passed at 339d7d806 with empty failure_ids, negative_control_log ending EXIT=1 and naming the promotion test.\nVERDICT diff: read both commits against base c16b71de, promotion.py:958 adds project=project (+1), outcomes.py:388 adds project=_project (one line changed), a 277-line new test module and the evidence fragment, nothing outside the declared scope.\nCALL_SITES: reckon/crew/promotion.py:456, reckon/crew_dispatch_commands.py:638\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:958 and reckon/crew/picker/outcomes.py:388 pass the row's project into the two owners, so both writers resolve billing with it and the section's two items are met.\nSCORE evidence: 19\nJUSTIFICATION evidence: the base and head gate logs reach their summary lines (194 passed at c16b71de, 197 passed at 339d7d806) and the negative-control log ends EXIT=1 with tests/test_billing_readers_use_the_project.py:214 failing, though the recorded mutation demonstrates only the promotion case.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff, reckon/crew/promotion.py:958, reckon/crew/picker/outcomes.py:388, the new test module and the evidence fragment, is inside the manifest's declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: the negative control reverts the project pass and tests/test_billing_readers_use_the_project.py:214 reddens, so that assertion is a guard, while the picker case at :244 reddens by reading alone and its refusal was not demonstrated.\nSCORE fit: 20\nJUSTIFICATION fit: the change passes a keyword argument the owners already accept (reckon/ledger.py:2279, :2350) and adds no new name, and both commits carry conventional subjects with bodies and no plan label or attribution.\nSCORE reuse: 20\nJUSTIFICATION reuse: no definition is added; the change calls the existing owners, build_record at reckon/ledger.py:2350 and is_subscription_backend at reckon/ledger.py:2279, the single owners of the billing capability.\nFINDING docs/evidence/fragments/one-typesafe-model-picker/billing-readers-use-the-project.html:1 follow-on: the dispatch declared docs/figures/one-typesafe-model-picker/billing-readers-use-the-project as a write path but the fragment carries no figure and the directory is empty, so the graphics expectation the dispatch named is unmet for this doc.\nreviewed_base_sha: c16b71de9724b9a3c1523c6effd18a2b45c6697d\nreviewed_head_sha: 339d7d80689e21127ceb622ed0a1a45ad5a113e1\n",
+  "review_run_id": "r-20261010T203439155553-review-of-billing-readers-use-the-project",
+  "reviewed_base_sha": "c16b71de9724b9a3c1523c6effd18a2b45c6697d",
+  "reviewed_head_sha": "339d7d80689e21127ceb622ed0a1a45ad5a113e1",
+  "reviewed_run_id": "r-20261010T201321017116-billing-readers-use-the-project",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T20:42:02.163082+00:00",
+  "total": 118
+}
