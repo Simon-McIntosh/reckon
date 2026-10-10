@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite/after_suite arm (a non-armed node); the reviewed run's own head arm reproduced at cd4c688fb at 11 passed, EXIT=0, and the negative control at EXIT=1, and neither is a base/head pair.",
+  "backend": "local",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery_review_dispatch.py:1441",
+    "reckon/crew/obligations.py:143"
+  ],
+  "completed_at": "2026-10-10T23:50:32.389Z",
+  "dispatched_at": "2026-10-10T23:36:39Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "12",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed node's head-arm.log header records its command with a literal WORKTREE token in place of the tree path (PYTHONPATH=WORKTREE ...), so the gate log's own cmd line names no tree a reader can re-run; the manifest's tests field carries the resolved command, but a reader tying the arm to its own log is left with an unsubstituted placeholder."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read 453cd3ac7..cd4c688fb commit by commit; one commit, two files, +47/-19; the test file is rewritten from the retired contract (a review's --brief was the reviewed run's own stored brief and a plan-naming run carried no brief) to the rubric-carrying contract, keeping the dry-run acceptance case and the fields-composed-with-delta detail; the composer is peer node a-review-receives-its-rubric's scope and is not edited.",
+    "done_when": "the reviewed manifest's tests field runs both files and records 11 passed EXIT=0; the done-when asks the brief-run file to assert (1) a brief-carried run's composed brief names the stored brief path, (2) a plan-naming run's command carries --brief beside --plan and --section, and (3) reckon crew dispatch --dry-run accepts the composed command; I reproduced all three at head and independently reproduced the negative control (1 failed, 3 passed, EXIT=1) by mutating _review_dispatch_tokens to drop --brief when a plan is named, which reddens test_a_plan_carried_run_carries_the_brief_beside_its_plan with ValueError at argv.index('--brief'); the sibling file tests/test_a_review_receives_its_rubric.py passes inside the same 11.",
+    "goal": "the node's goal is to hold the review of a brief-carried run to the rubric-carrying contract, so tests/test_review_of_a_brief_run_names_its_brief.py composes a review whose brief carries the reviewer's rubric followed by the reviewed run's identity naming the reviewed run's stored brief path; at head cd4c688fb recovery._review_dispatch_fields returns a brief_text naming the reviewed brief and a brief distinct from it, and _review_dispatch_tokens emits --brief beside --plan/--section for a plan-naming run; I re-ran the file at cd4c688fb and its four cases pass inside the 11 passed, EXIT=0.",
+    "manifest": "status complete; the manifest names a single tests gate log (head-arm.log) and a negative_control_log and no baseline_suite/after_suite arm, so the added-failure count derives as unmeasured (null) rather than zero, which is the non-armed shape; the head-arm.log header records its command with a literal WORKTREE token in place of the tree path, so the log's own cmd line names no tree a reader can re-run even though the manifest tests field carries the resolved command.",
+    "write_paths": "the diff 453cd3ac7..cd4c688fb touches exactly tests/test_review_of_a_brief_run_names_its_brief.py and docs/evidence/fragments/a-review-is-sized-to-its-risk/brief-run-review-tests-follow-the-rubric.html, the two paths the manifest's changed_paths declares (its orientation_write_paths also names an unused figures directory); both changed paths sit inside the node's declared scope."
+  },
+  "justifications": {
+    "durability": "removing --brief for a plan-naming run (the composer mutation) reddens test_a_plan_carried_run_carries_the_brief_beside_its_plan, so the test pins the composer's contract and would catch the regression; the three other cases stay green, so it fails for the reason it names.",
+    "evidence": "the head arm reproduces (11 passed, EXIT=0) and the negative control reproduces (1 failed, 3 passed, EXIT=1, ValueError at argv.index('--brief')), but the run declares no baseline_suite/after_suite arm so the added-failure count is unmeasured, and its gate log header carries a literal WORKTREE token rather than the tree path.",
+    "fit": "the commit carries a conventional subject and a body explaining what changed and why, with no attribution trailer and no plan, sprint or ticket label, and the cases are named by the contract they hold.",
+    "goal_fidelity": "the rewritten file drives the rubric-carrying contract at head cd4c688fb, verified by re-running it (part of 11 passed, EXIT=0): a brief-carried run's composed brief names the stored brief path and differs from the reviewed brief, and a plan-naming run carries --brief beside --plan/--section.",
+    "reuse": "the file reuses the existing _review_dispatch_fields/_review_dispatch_argv composer and the project fixture rather than re-deriving composition, and edits no production module; the one point is held because the tests assert against internals of a peer module rather than through the dispatch entry point alone.",
+    "scope_discipline": "the diff touches only the test file and the in-scope evidence fragment, exactly the manifest's changed_paths; the composer and other \u00a79 source are untouched."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to hold the review of a brief-carried run to the rubric-carrying contract, so tests/test_review_of_a_brief_run_names_its_brief.py composes a review whose brief carries the reviewer's rubric followed by the reviewed run's identity naming the reviewed run's stored brief path; at head cd4c688fb recovery._review_dispatch_fields returns a brief_text naming the reviewed brief and a brief distinct from it, and _review_dispatch_tokens emits --brief beside --plan/--section for a plan-naming run; I re-ran the file at cd4c688fb and its four cases pass inside the 11 passed, EXIT=0.\nVERDICT done_when: the reviewed manifest's tests field runs both files and records 11 passed EXIT=0; the done-when asks the brief-run file to assert (1) a brief-carried run's composed brief names the stored brief path, (2) a plan-naming run's command carries --brief beside --plan and --section, and (3) reckon crew dispatch --dry-run accepts the composed command; I reproduced all three at head and independently reproduced the negative control (1 failed, 3 passed, EXIT=1) by mutating _review_dispatch_tokens to drop --brief when a plan is named, which reddens test_a_plan_carried_run_carries_the_brief_beside_its_plan with ValueError at argv.index('--brief'); the sibling file tests/test_a_review_receives_its_rubric.py passes inside the same 11.\nVERDICT write_paths: the diff 453cd3ac7..cd4c688fb touches exactly tests/test_review_of_a_brief_run_names_its_brief.py and docs/evidence/fragments/a-review-is-sized-to-its-risk/brief-run-review-tests-follow-the-rubric.html, the two paths the manifest's changed_paths declares (its orientation_write_paths also names an unused figures directory); both changed paths sit inside the node's declared scope.\nVERDICT manifest: status complete; the manifest names a single tests gate log (head-arm.log) and a negative_control_log and no baseline_suite/after_suite arm, so the added-failure count derives as unmeasured (null) rather than zero, which is the non-armed shape; the head-arm.log header records its command with a literal WORKTREE token in place of the tree path, so the log's own cmd line names no tree a reader can re-run even though the manifest tests field carries the resolved command.\nVERDICT diff: read 453cd3ac7..cd4c688fb commit by commit; one commit, two files, +47/-19; the test file is rewritten from the retired contract (a review's --brief was the reviewed run's own stored brief and a plan-naming run carried no brief) to the rubric-carrying contract, keeping the dry-run acceptance case and the fields-composed-with-delta detail; the composer is peer node a-review-receives-its-rubric's scope and is not edited.\nCALL_SITES: reckon/crew/recovery_review_dispatch.py:1441, reckon/crew/obligations.py:143\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the rewritten file drives the rubric-carrying contract at head cd4c688fb, verified by re-running it (part of 11 passed, EXIT=0): a brief-carried run's composed brief names the stored brief path and differs from the reviewed brief, and a plan-naming run carries --brief beside --plan/--section.\nSCORE evidence: 17\nJUSTIFICATION evidence: the head arm reproduces (11 passed, EXIT=0) and the negative control reproduces (1 failed, 3 passed, EXIT=1, ValueError at argv.index('--brief')), but the run declares no baseline_suite/after_suite arm so the added-failure count is unmeasured, and its gate log header carries a literal WORKTREE token rather than the tree path.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only the test file and the in-scope evidence fragment, exactly the manifest's changed_paths; the composer and other \u00a79 source are untouched.\nSCORE durability: 19\nJUSTIFICATION durability: removing --brief for a plan-naming run (the composer mutation) reddens test_a_plan_carried_run_carries_the_brief_beside_its_plan, so the test pins the composer's contract and would catch the regression; the three other cases stay green, so it fails for the reason it names.\nSCORE fit: 19\nJUSTIFICATION fit: the commit carries a conventional subject and a body explaining what changed and why, with no attribution trailer and no plan, sprint or ticket label, and the cases are named by the contract they hold.\nSCORE reuse: 18\nJUSTIFICATION reuse: the file reuses the existing _review_dispatch_fields/_review_dispatch_argv composer and the project fixture rather than re-deriving composition, and edits no production module; the one point is held because the tests assert against internals of a peer module rather than through the dispatch entry point alone.\nFINDING manifest.md:12 follow-on: the reviewed node's head-arm.log header records its command with a literal WORKTREE token in place of the tree path (PYTHONPATH=WORKTREE ...), so the gate log's own cmd line names no tree a reader can re-run; the manifest's tests field carries the resolved command, but a reader tying the arm to its own log is left with an unsubstituted placeholder.\n",
+  "review_run_id": "r-20261010T233558711864-review-of-brief-run-review-tests-follow-the-rubric",
+  "reviewed_base_sha": "453cd3ac7435c398cc9c92c7946d68eae0f7f40d",
+  "reviewed_head_sha": "cd4c688fb815007044b2b257f112a7f2eb635315",
+  "reviewed_run_id": "r-20261010T232745571218-brief-run-review-tests-follow-the-rubric",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T23:49:08.373471+00:00",
+  "total": 112
+}
