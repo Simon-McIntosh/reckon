@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "backend": "deepseek-v4.1-flash",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/_plan_html.py:1166 (read_state)",
+    "reckon/_plan_html.py:2272 (_parse_meta_uncached)",
+    "reckon/doccheck.py:1284 (audit_html)"
+  ],
+  "completed_at": "2026-10-10T21:12:40.934Z",
+  "dispatched_at": "2026-10-10T21:06:00Z",
+  "findings": [
+    {
+      "file": "tests/test_impl_needs_every_section_recorded.py",
+      "line": "61",
+      "severity": "blocking",
+      "text": "blocking: this test and three siblings (tests/test_impl_stays_authorable_while_records_are_partial.py:107, tests/test_bookkeeping_earns_no_review.py:254, tests/test_plan_review_store.py:298) assert the authored impl stands for a partially recorded plan, the behaviour this change supersedes; all four fail at head (confirmed by re-running them), so the done_when clause that the reckon._plan_html-importing tests pass is not met."
+    },
+    {
+      "file": "reckon/_plan_html.py",
+      "line": "869",
+      "severity": "follow-on",
+      "text": "follow-on: derive_impl_with_source annotates its return as a bare tuple rather than tuple[float | None, str | None], so the pairing of figure and source is unchecked by the surrounding typed signatures."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against 156ea48556; f52489ed6 adds derive_impl_from_declarations and derive_impl_with_source and moves the two impl_source assignments, and c50f84141 adds only the evidence fragment; nothing lands outside the declared scope.",
+    "done_when": "the done_when names tests/test_impl_derives_from_declarations.py with three temporary plans, an audit-doc impl-meta-stale case, a store-accept case and a logged negative control; the manifest records the gate green, but the done_when's clause that the tests importing reckon._plan_html pass is unmet - four such tests fail at the head (see FINDING).",
+    "goal": "the node derives a plan's impl from its section declarations when the records fall short; reckon/_plan_html.py:869 returns the effort-weighted figure when records cover the declarations and the declaration count otherwise, falling back to authored only with no declaration.",
+    "manifest": "read; it states the gate command and its result (8 passed, EXIT=0), names gate.log and impl-readers.log, records the negative control and its EXIT=1, and lists the out-of-scope superseded tests under follow_ons.",
+    "write_paths": "read the manifest's declared paths; every path in the base..head diff (reckon/_plan_html.py, reckon/_schema.py, reckon/crew/plan_review.py, reckon/doccheck.py, tests/test_impl_derives_from_declarations.py, docs/evidence/fragments/the-portfolio-reads-true/impl-derives-from-declarations.html) is inside them."
+  },
+  "justifications": {
+    "durability": "the negative control at negative-control.log reinstates the fallback regression and reddens 3 of the 8 added assertions, so those guards are shown to fail when the change regresses.",
+    "evidence": "tests/test_impl_derives_from_declarations.py passes 8/8 (gate.log EXIT=0) and the negative control reddens 3 assertions, but the done_when clause requiring the reckon._plan_html-importing tests to pass is false - 4 fail at head.",
+    "fit": "reckon/_plan_html.py:846 sits beside its sibling derive_impl_from_sections in the same module and reuses its SECTION_DECLARATION_* constants; derive_impl_with_source returns an untyped tuple at reckon/_plan_html.py:869.",
+    "goal_fidelity": "reckon/_plan_html.py:869 lands the three-source order exactly as the plan states, and reckon/_store.py:2606 still refuses an authored impl only in the covered case because it is left on derive_impl_from_sections.",
+    "reuse": "a repository search for a count-based done-over-done-plus-implementable mechanism found none - derive_impl_from_declarations is the first owner of that capability - and it extends rather than forks derive_impl_from_sections.",
+    "scope_discipline": "the diff touches only the declared write paths in the manifest, and the two evidence files are inside the granted scope."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node derives a plan's impl from its section declarations when the records fall short; reckon/_plan_html.py:869 returns the effort-weighted figure when records cover the declarations and the declaration count otherwise, falling back to authored only with no declaration.\nVERDICT done_when: the done_when names tests/test_impl_derives_from_declarations.py with three temporary plans, an audit-doc impl-meta-stale case, a store-accept case and a logged negative control; the manifest records the gate green, but the done_when's clause that the tests importing reckon._plan_html pass is unmet - four such tests fail at the head (see FINDING).\nVERDICT write_paths: read the manifest's declared paths; every path in the base..head diff (reckon/_plan_html.py, reckon/_schema.py, reckon/crew/plan_review.py, reckon/doccheck.py, tests/test_impl_derives_from_declarations.py, docs/evidence/fragments/the-portfolio-reads-true/impl-derives-from-declarations.html) is inside them.\nVERDICT manifest: read; it states the gate command and its result (8 passed, EXIT=0), names gate.log and impl-readers.log, records the negative control and its EXIT=1, and lists the out-of-scope superseded tests under follow_ons.\nVERDICT diff: read commit by commit against 156ea48556; f52489ed6 adds derive_impl_from_declarations and derive_impl_with_source and moves the two impl_source assignments, and c50f84141 adds only the evidence fragment; nothing lands outside the declared scope.\nCALL_SITES: reckon/_plan_html.py:1166 (read_state), reckon/_plan_html.py:2272 (_parse_meta_uncached), reckon/doccheck.py:1284 (audit_html)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/_plan_html.py:869 lands the three-source order exactly as the plan states, and reckon/_store.py:2606 still refuses an authored impl only in the covered case because it is left on derive_impl_from_sections.\nSCORE evidence: 12\nJUSTIFICATION evidence: tests/test_impl_derives_from_declarations.py passes 8/8 (gate.log EXIT=0) and the negative control reddens 3 assertions, but the done_when clause requiring the reckon._plan_html-importing tests to pass is false - 4 fail at head.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the diff touches only the declared write paths in the manifest, and the two evidence files are inside the granted scope.\nSCORE durability: 17\nJUSTIFICATION durability: the negative control at negative-control.log reinstates the fallback regression and reddens 3 of the 8 added assertions, so those guards are shown to fail when the change regresses.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/_plan_html.py:846 sits beside its sibling derive_impl_from_sections in the same module and reuses its SECTION_DECLARATION_* constants; derive_impl_with_source returns an untyped tuple at reckon/_plan_html.py:869.\nSCORE reuse: 19\nJUSTIFICATION reuse: a repository search for a count-based done-over-done-plus-implementable mechanism found none - derive_impl_from_declarations is the first owner of that capability - and it extends rather than forks derive_impl_from_sections.\nFINDING tests/test_impl_needs_every_section_recorded.py:61 blocking: this test and three siblings (tests/test_impl_stays_authorable_while_records_are_partial.py:107, tests/test_bookkeeping_earns_no_review.py:254, tests/test_plan_review_store.py:298) assert the authored impl stands for a partially recorded plan, the behaviour this change supersedes; all four fail at head (confirmed by re-running them), so the done_when clause that the reckon._plan_html-importing tests pass is not met.\nFINDING reckon/_plan_html.py:869 follow-on: derive_impl_with_source annotates its return as a bare tuple rather than tuple[float | None, str | None], so the pairing of figure and source is unchecked by the surrounding typed signatures.\n",
+  "review_run_id": "r-20261010T210538240807-review-of-impl-derives-from-declarations",
+  "reviewed_base_sha": "156ea4855617e2f1b4cba2d91ca184f91f3b4ff9",
+  "reviewed_head_sha": "c50f84141d862c2764f8e1ebabbb6a747378dbff",
+  "reviewed_run_id": "r-20261010T203035296182-impl-derives-from-declarations",
+  "scores": {
+    "durability": 17,
+    "evidence": 12,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T21:11:21.145002+00:00",
+  "total": 101
+}
