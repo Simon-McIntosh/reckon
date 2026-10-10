@@ -1,0 +1,112 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T21:25:39.153Z",
+  "dispatched_at": "2026-10-10T21:18:37Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/lane-and-model-routing.html#s10",
+      "id": "done_when-1",
+      "reason": "without a declared control (e.g. the un-caught path still raising a traceback) the node's gate cannot show its own guard fires.",
+      "text": "\u00a710's done-when asserts a non-zero exit, a one-line refusal naming both projects and no traceback on stderr, but names no negative control, so a test that passes because any error short-circuits the dispatch cannot be told from one that proves the new refusal path",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/lane-and-model-routing.html#s14",
+      "id": "single_goal-1",
+      "reason": "splitting the refusal fix from the test-coverage node lets each be reviewed and closed on one verdict, which the current combined measure cannot.",
+      "text": "\u00a714 bundles two independently verifiable deliverables, an out-of-lane refusal-message correction and new end-to-end coverage for --local --model and the run pointer's lane/model pair, so one gate must prove both and neither closes on its own verdict",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/lane-and-model-routing.html#s10",
+      "id": "anchors_resolve-1",
+      "reason": "a node dispatched to \u00a710 following the prose edits a module that no longer holds the dispatch command, and \u00a714 already names the correct module, so the plan contradicts itself on where the fix lands.",
+      "text": "\u00a710 states \"This section edits reckon/cli.py\" and lists reckon/cli.py in \u00a74's write paths, but after every-module-fits-a-worker-window \u00a74's split the dispatch command lives in reckon/crew_dispatch_commands.py (cli.py only imports from it; \u00a74's own commit dba1dbfaa changes only reckon/crew_dispatch_commands.py and tests/test_dispatch_names_a_model.py), so the named file cannot carry the change",
+      "type": "anchors_resolve",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "338773f1c0d595c2a619e5f9c49890b64917f8441ab1cd39ac236eb0b8e39bf1",
+  "plan_slug": "lane-and-model-routing",
+  "plan_version": 53,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-10T21:26:55.805376+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "anchors_resolve-1",
+      "reason": "",
+      "when": "2026-10-10T21:26:59.986969+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "single_goal-1",
+      "reason": "Both items close the one --model surface \u00a74 adds and share tests/test_dispatch_names_a_model.py; split, they would serialise two nodes on one file for no separate verdict, and \u00a714's done-when already names a clause for each.",
+      "when": "2026-10-10T21:27:04.602881+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-10T21:26:59.986969+00:00"
+    },
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-10T21:26:55.805376+00:00"
+    },
+    "single_goal-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "Both items close the one --model surface \u00a74 adds and share tests/test_dispatch_names_a_model.py; split, they would serialise two nodes on one file for no separate verdict, and \u00a714's done-when already names a clause for each.",
+      "when": "2026-10-10T21:27:04.602881+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-lane-and-model-routing.v53.json",
+  "review_run_id": "r-20261010T211808544614-plan-review-of-lane-and-model-routing",
+  "reviewed_blob_sha": "8f3c8a62b6deb0d2a5735046e96b788877dc0c51",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a710 and \u00a74 name reckon/cli.py as a write path, which no longer holds the dispatch command after the split.",
+    "done_when": "a finding \u2014 \u00a710's done-when names no negative control, so its gate cannot show the refusal fires.",
+    "evidence_paths": "pass \u2014 landed sections link to docs/evidence/archive/lane-and-model-routing-landed.html#sN and docs/evidence/fragments/lane-and-model-routing/*.html, and the cited design report ~/.config/reckon/crew/reports/reckon/lane-and-model-design/report.md resolves.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach code symbols or comments; the sections name mechanism (option_key, _leaf_paths, expand_lanes), not plan items.",
+    "reasoning": "pass \u2014 the cited root causes match their evidence (\u00a74's commit dba1dbfaa and review 105; the zero-provenance finding in \u00a79; the design report for \u00a70), each section's mechanism can produce its done-when, and the mechanism runs on the live path (crew_dispatch_commands.py for \u00a710/\u00a714, reckon/crew/picker/prompts.py for \u00a78/\u00a713, reckon/flight.py for \u00a79/\u00a712).",
+    "single_goal": "a finding \u2014 \u00a714 carries two deliverables (a refusal-message correction and end-to-end --model coverage).",
+    "wiring": "pass \u2014 every declared depends-on (s4 \u2192 every-module-fits-a-worker-window#s4, s10 \u2192 every-module-fits-a-worker-window#s4, s14 \u2192 lane-and-model-routing#s4) resolves to a node that exists and names the correct upstream node; \u00a75/\u00a78 cross-plan data-links to one-typesafe-model-picker#s6 and #s12 resolve."
+  },
+  "section_digests": {
+    "_document": "bb5810fae6673bd5c66f71bf506e59b90d1048ba8fcca2c804bbb10e06dead48",
+    "s0": "6abd05c88158370aa49f61907ce9d99c23f9e18eb4852891eae4e97e3fe00205",
+    "s1": "6760f63ebdb0d0db10c3c004f30d4f4253bfb7582bc7a0e4054fed73e017a02d",
+    "s10": "9d27e940f021242c82017cf503b8e3d3277451ecaef61d1887ae36cecf3eb5a7",
+    "s11": "2e566713b8ee8cbfcf94503cba2640bac78329b96f748ff0334a858e08287755",
+    "s12": "8a7841af15c5beacc75bf716eab0a317f722daab3a302ec190299ce0c3315350",
+    "s13": "6cc9f5f5d1d9a0d7a981363b2961d554bc1670d016cf5da011e18fd20d24b604",
+    "s14": "f4192a6b66ca1a9df3c0c8b84d6a76f9b7e2708145600fc43403217b7a52c540",
+    "s2": "0c6488cdae0f23d0600410d02191390e773858e9bc75008234f71cc66f01889b",
+    "s3": "6cb602347e0232fe459028eff2010884381d987053d550c4565f581c23032095",
+    "s4": "aa5a29a8662005607992ae17fc914d47e8e48c68b7e65395b4865f6d33ea37f4",
+    "s5": "2ffa1a3b1d2b09433f25a83f8a7a59b1774249bac29b945f2c2273ace57cb1ba",
+    "s6": "6c8117bcfdc7d4b0bafdc4fb2185779998c71b1730b07a0d900b543f02c08ec1",
+    "s7": "07952e2e354db24e76860530568500cc2066b69b4255c020db83677e46cb18e2",
+    "s8": "7ca129403c95fcbc111273a2b419b29279191bc54c157bb6f7d8de0d5b160d34",
+    "s9": "0c546f1c0ce99eb4f03333edf6955f597fcb37c49baa31305dfd52c6b03364d8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T21:26:53.501980+00:00"
+}
