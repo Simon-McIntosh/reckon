@@ -20,13 +20,14 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;: [&quot;every-module-fits-a-worker-window#s4&quot;], &quot;s10&quot;: [&quot;every-module-fits-a-worker-window#s4&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s0&quot;:&quot;done&quot;}">
   <title>Lane And Model Routing | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="49">
-<meta name="plan-modified" content="2026-10-10">
 <meta name="plan-north-star" content="unattended-execution">
+<meta name="plan-impl" content="0.7777777777777778">
+<meta name="plan-version" content="51">
+<meta name="plan-modified" content="2026-10-10">
 </head>
 <body>
   <main class="plan-doc">
@@ -101,6 +102,14 @@
     <h2 id="s12">§12 — One owner for the provenance leaf rule</h2>
 <section data-reckon="section" data-id="s12" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
 <p>The review of §9 (score 102) found that <code>_leaf_paths</code>, added by §9 in <code>reckon/flight.py</code>, is a second copy of the leaf-traversal rule that <code>_record_provenance</code> applies inline. Provenance is right only while the two agree on which paths are leaves, and a comment now asserts that agreement instead of the code holding it. Make <code>_record_provenance</code> walk the leaves through <code>_leaf_paths</code>, so the module has one owner for the rule.</p><p>Write paths: <code>reckon/flight.py</code> and its tests.</p><p><strong>Done when</strong> <code>_record_provenance</code> calls <code>_leaf_paths</code> and holds no traversal of its own. A test changes the leaf rule in <code>_leaf_paths</code> alone (treating an empty mapping as a non-leaf, which today is a leaf) and shows <code>origin()</code> and <code>provenance_sources</code> both follow it. Every existing <code>origin()</code> assertion still passes.</p>
+
+    <h2 id="s13">§13 — A modelless key&#x27;s naming has a test that fails without it</h2>
+<section data-reckon="section" data-id="s13" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p>§8's review found that <code>test_a_modelless_candidate_does_not_name_its_backend_a_model</code> and <code>test_two_modelless_backends_on_one_lane_are_both_offered</code> in <code>tests/test_option_keys_are_unique.py</code> also pass at §8's base, where the key already read <code>&lt;lane&gt;:&lt;backend&gt;</code>. So item 2's change, which stops the questions presenting a modelless candidate's backend as its model, has no guard. Assert what the questions say about that part, not only the key string.</p><p>Write paths: <code>tests/test_option_keys_are_unique.py</code>. No product code changes.</p><p><strong>Done when</strong> a test of the rendered questions for a modelless candidate fails when its backend is labelled as a model, and passes on main.</p>
+
+    <h2 id="s14">§14 — A declared model outside the named lane is refused by name, and --model is tested end to end</h2>
+<section data-reckon="section" data-id="s14" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p>§4's run (<code>r-20261010T201227087344-dispatch-names-a-model</code>, commit <code>dba1dbfaa</code>) adds <code>--model</code> to dispatch. Dispatch this section only after §4 lands. Its review (score 105) left two follow-ons:</p><ol><li><code>--backend codex --model opus</code> names a model the catalogue declares, but not in the codex lane. It is refused as naming "no model, model id or alias the catalogue declares", which misstates it. Refuse by naming the pair: the model is declared, in another lane.</li><li>The equivalence test asserts the launch mode, not the launch argv the done-when names. No test covers <code>--local --model</code>, or the lane and model pair recorded on the run pointer.</li></ol><p>Write paths: <code>reckon/crew_dispatch_commands.py</code> and <code>tests/test_dispatch_names_a_model.py</code>.</p><p><strong>Done when</strong> a test shows the out-of-lane refusal names the model and both lanes, and fails on the code §4 merges. The equivalence test compares launch argv. A test covers <code>--local --model</code> and the pointer's pair.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
