@@ -1240,7 +1240,80 @@ def _run_git(
     return result
 
 
+_GIT_HEAD_MEMO: dict[str, tuple[tuple, str]] = {}
+
+
+def _git_directory(repo_dir: Path) -> Path | None:
+    """A checkout's git directory, following the pointer a worktree writes.
+
+    A normal checkout's ``.git`` is the directory itself; a linked worktree's
+    is a file naming it. Reading both forms here keeps the HEAD memo working
+    whether the docs tree is served from a main checkout or a worktree.
+    """
+
+    marker = repo_dir / ".git"
+    if marker.is_dir():
+        return marker
+    try:
+        text = marker.read_text(encoding="utf-8").strip()
+    except OSError:
+        return None
+    prefix = "gitdir:"
+    if not text.startswith(prefix):
+        return None
+    target = Path(text[len(prefix) :].strip())
+    if not target.is_absolute():
+        target = repo_dir / target
+    return target
+
+
+def _file_identity(path: Path) -> tuple[int, int, int] | None:
+    try:
+        stat = path.stat()
+    except OSError:
+        return None
+    return (stat.st_mtime_ns, stat.st_ino, stat.st_size)
+
+
+def _head_identity(repo_dir: Path) -> tuple | None:
+    """An identity that changes exactly when the resolved commit changes.
+
+    Reads the git directory's ``HEAD`` and the reference file it names as
+    files rather than by running git, so a warm lookup proves the commit has
+    not moved without starting a process. The reference file's presence is
+    part of the identity, so a loose ref written by a new commit changes it
+    even when ``HEAD`` itself does not. ``None`` means the identity cannot be
+    read, and a caller must resolve the head itself.
+    """
+
+    git_dir = _git_directory(repo_dir)
+    if git_dir is None:
+        return None
+    head_path = git_dir / "HEAD"
+    try:
+        head_text = head_path.read_text(encoding="utf-8").strip()
+    except OSError:
+        return None
+    ref_name = head_text[4:].strip() if head_text.startswith("ref:") else ""
+    ref_identity = _file_identity(git_dir / ref_name) if ref_name else None
+    return (_file_identity(head_path), head_text, ref_name, ref_identity)
+
+
 def _git_head(repo_dir: Path) -> str | None:
+    """The repository's HEAD commit, resolved once per commit.
+
+    The sha is memoised on the identity of ``HEAD`` and the ref it names, so
+    repeated lookups against an unchanged checkout reuse the first answer and
+    start no git process. A new commit changes that identity, and the next
+    lookup resolves afresh.
+    """
+
+    key = str(repo_dir)
+    identity = _head_identity(repo_dir)
+    if identity is not None:
+        memo = _GIT_HEAD_MEMO.get(key)
+        if memo is not None and memo[0] == identity:
+            return memo[1]
     result = _run_git(["git", "rev-parse", "HEAD"], repo_dir, operation="HEAD lookup")
     if result is None:
         return None
@@ -1248,6 +1321,8 @@ def _git_head(repo_dir: Path) -> str | None:
     if not head:
         LOGGER.warning("Git HEAD lookup returned no commit in %s", repo_dir)
         return None
+    if identity is not None:
+        _GIT_HEAD_MEMO[key] = (identity, head)
     return head
 
 
