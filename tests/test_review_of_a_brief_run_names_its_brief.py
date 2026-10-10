@@ -1,13 +1,17 @@
 """A review of a brief-carried run names that run's stored brief as authority.
 
 A node dispatched with ``--brief`` names no committed plan section: its
-semantic authority is the stored brief its worker read. Composing the review of
-such a run from the node's plan and section alone left the review carrying no
-authority, and admission refused it as ``not-dispatchable`` — so the review of
-a brief-carried run could not be dispatched at all. These cases compose that
-review through :func:`recovery._review_dispatch_fields` and drive the composed
-dispatch through the dry run, asserting the reviewed run's stored brief stands
-in for the plan/section pair.
+semantic authority is the stored brief its worker read. The review of such a
+run carries the reviewer's rubric followed by the reviewed run's identity, and
+that identity names the stored brief path so the reviewer can open the same
+authority the worker did. A run that names a plan keeps the plan as its
+authority: its review's composed brief rides beside the ``--plan``/``--section``
+pair rather than replacing it, and dispatch accepts the two together.
+
+These cases compose the review through :func:`recovery._review_dispatch_fields`
+and drive the composed dispatch through the dry run, asserting the reviewed
+run's stored brief is named inside the composed brief and that a plan-naming
+run's command carries ``--brief`` beside ``--plan`` and ``--section``.
 """
 
 from __future__ import annotations
@@ -125,11 +129,15 @@ def _plan_carried_record(repo: Path, brief: Path) -> dict:
     }
 
 
-def test_a_brief_run_composes_its_stored_brief_as_the_authority(project):
+def test_a_brief_carried_run_names_its_stored_brief(project):
+    """The composed brief the review carries spells out the reviewed brief path."""
     _, repo, brief = project
     fields = recovery._review_dispatch_fields(_brief_carried_record(repo, brief))
 
-    assert fields["brief"] == str(brief)
+    assert str(brief) in fields["brief_text"]
+    # The review carries its own composed brief, distinct from the reviewed
+    # run's stored brief that its text names.
+    assert fields["brief"] != str(brief)
     assert fields["plan"] == ""
     assert fields["section"] == ""
 
@@ -137,9 +145,10 @@ def test_a_brief_run_composes_its_stored_brief_as_the_authority(project):
 def test_the_composed_argv_names_the_brief_and_not_the_plan(project):
     _, repo, brief = project
     record = _brief_carried_record(repo, brief)
+    fields = recovery._review_dispatch_fields(record)
     argv = recovery._review_dispatch_argv(record, config=CONFIG)
 
-    assert argv[argv.index("--brief") + 1] == str(brief)
+    assert argv[argv.index("--brief") + 1] == fields["brief"]
     assert "--plan" not in argv
     assert "--section" not in argv
 
@@ -147,7 +156,9 @@ def test_the_composed_argv_names_the_brief_and_not_the_plan(project):
 def test_the_composed_dispatch_dry_run_validates(project):
     _, repo, brief = project
     record = _brief_carried_record(repo, brief)
-    fields = recovery._review_dispatch_fields(record)
+    # The dispatch passes ``delta`` so the brief its command names is written
+    # before admission reads the digest of that path.
+    fields = recovery._review_dispatch_fields(record, delta=None)
 
     result = recovery._dispatch_composed_review(
         record,
@@ -164,20 +175,22 @@ def test_the_composed_dispatch_dry_run_validates(project):
     assert result["validation"]["ok"] is True
     argv = result["argv"]
     assert argv[argv.index("--brief")] == "--brief"
-    assert argv[argv.index("--brief") + 1] == str(brief)
+    assert argv[argv.index("--brief") + 1] == fields["brief"]
     assert "--plan" not in argv
 
 
-def test_a_plan_carried_run_still_names_its_plan(project):
+def test_a_plan_carried_run_carries_the_brief_beside_its_plan(project):
+    """A plan-naming run keeps its plan authority and gains a composed brief."""
     _, repo, brief = project
-    fields = recovery._review_dispatch_fields(_plan_carried_record(repo, brief))
+    record = _plan_carried_record(repo, brief)
+    fields = recovery._review_dispatch_fields(record, delta=None)
 
-    assert fields["brief"] == ""
     assert fields["plan"] == "fixture"
     assert fields["section"] == "delivery"
+    assert fields["brief"]
+    assert str(brief) in fields["brief_text"]
 
-    argv = recovery._review_dispatch_argv(
-        _plan_carried_record(repo, brief), config=CONFIG
-    )
+    argv = recovery._review_dispatch_argv(record, config=CONFIG)
+    assert argv[argv.index("--brief") + 1] == fields["brief"]
     assert argv[argv.index("--plan") + 1] == "fixture"
-    assert "--brief" not in argv
+    assert argv[argv.index("--section") + 1] == "delivery"

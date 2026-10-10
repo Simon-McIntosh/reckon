@@ -15,7 +15,6 @@ from reckon.crew.node import (
 )
 
 
-
 # The role a read-only investigation is dispatched under. A run carrying it
 # writes a report and commits no source, so its review checks the report's
 # claims rather than a diff.
@@ -352,10 +351,69 @@ def _claims_review_done_when(run_id: str) -> str:
     )
 
 
+# The name a run review's composed brief is written under, inside the reviewed
+# run's own directory. The reviewed run's directory is the one durable place
+# both consumers of its review already resolve, so keying the brief there lets
+# the printed command and the executed dispatch name one path without sharing a
+# value between them.
+_RUN_REVIEW_BRIEF_NAME = "review-brief.md"
+
+# Distinguishes a read from the composition that launches a review. The
+# run-review dispatch supplies ``delta`` — the commit delta, or None when the
+# run gained none — while every reader calls without it, so the fields know
+# whether the brief should be written to disk. A sentinel rather than a None
+# default, because the dispatch legitimately passes None and a read must not.
+_DELTA_UNSET: Any = object()
+
+
+def _review_brief_text(record: Mapping[str, Any], head: str) -> str:
+    """The rubric text and run identity a run review's brief carries.
+
+    A run review's worker reads the prompt it is handed and nothing else: the
+    rubric lives in ``reckon/crew/prompts/`` where a reviewer running inside
+    this repository finds it by search, but a reviewer in any other mounted
+    project has no such file in its worktree, so the reuse dimension, the
+    assertion-independence check and the claims grammar reach it only by
+    chance. The composed brief carries the rubric verbatim — the landed-node
+    rubric, or the claims rubric for a read-only run — followed by the identity
+    of the run under review: its id, the head it read, and, where the reviewed
+    run was dispatched with a stored brief, that brief's path, which is the
+    authority its own worker read.
+    """
+    rubric = (
+        review_module.load_claims_review_prompt()
+        if _review_reads_a_report(record)
+        else review_module.load_review_prompt()
+    )
+    run_id = str(record.get("run_id") or "")
+    node = record.get("node") or {}
+    brief_path = str(node.get("brief_path") or node.get("brief") or "").strip()
+    lines = [
+        f"Reviewed run: {run_id}",
+        f"Reviewed head: {head or '<unresolved>'}",
+    ]
+    if brief_path:
+        lines.append(f"Reviewed run's brief: {brief_path}")
+    return rubric.rstrip("\n") + "\n\n" + "\n".join(lines) + "\n"
+
+
+def _review_brief_path(record: Mapping[str, Any]) -> Path:
+    """Where a run review's composed brief is written.
+
+    Durable rather than a scratch copy so the two places a review is composed
+    from — the reflex dispatch and the ``review-missing`` obligation's next
+    command — name one path holding one text: a reader who retypes the printed
+    command opens the same brief the reflex would have carried. The path is
+    keyed on the reviewed run, so the two consumers of one run's review agree
+    without sharing a value between them.
+    """
+    return runs.run_dir(str(record.get("run_id") or "")) / _RUN_REVIEW_BRIEF_NAME
+
+
 def _review_dispatch_fields(
     record: Mapping[str, Any],
     *,
-    delta: Mapping[str, Any] | None = None,
+    delta: Any = _DELTA_UNSET,
     write: bool = True,
 ) -> dict[str, Any]:
     """The facts a scoring run's review dispatch is built from.
@@ -364,6 +422,15 @@ def _review_dispatch_fields(
     and the command the reflex runs come from one source: two compositions of
     the same dispatch is how a displayed command and an executed one drift
     apart while each stays correct when read on its own.
+
+    A run review's brief is materialized only when the fields are composed for
+    the dispatch that launches the review — ``delta`` is supplied — and not on a
+    read. The run-review dispatch passes ``delta`` (the commit delta when the
+    run gained commits since it was reviewed, and ``None`` when it did not, both
+    supplied); the obligation's next command, the in-flight check and every
+    other reader call without it. A read composes the same path and text but
+    writes nothing, so it never brings a run's directory into being and never
+    draws a classification memo into a home the run never had.
 
     The dispatch grants the head-keyed record path beside the legacy path, so
     the reviewer it composes for may write the record where the head it read is
@@ -387,6 +454,9 @@ def _review_dispatch_fields(
     find. The paths returned are the same ones a real dispatch writes, so the
     preview still names the command and the scope that dispatch would use.
     """
+    composing_for_dispatch = delta is not _DELTA_UNSET
+    if not composing_for_dispatch:
+        delta = None
     if record.get("subject") == "plan":
         from reckon import _plan_html
 
@@ -401,13 +471,17 @@ def _review_dispatch_fields(
         # a look-back at the record's ``reviewed_blob_sha`` can read the text a
         # review was taken against even after the plan is written past it or the
         # snapshot is gone: the digest alone names no bytes without the object.
-        blob = subprocess.run(
-            ["git", "hash-object", "-w", "--stdin"],
-            input=document_bytes,
-            capture_output=True,
-            check=True,
-            cwd=record["repo"],
-        ).stdout.decode("ascii").strip()
+        blob = (
+            subprocess.run(
+                ["git", "hash-object", "-w", "--stdin"],
+                input=document_bytes,
+                capture_output=True,
+                check=True,
+                cwd=record["repo"],
+            )
+            .stdout.decode("ascii")
+            .strip()
+        )
         rubric = record.get("rubric", "design")
         prompt = (
             review_module.load_plan_design_review_prompt()
@@ -493,21 +567,32 @@ def _review_dispatch_fields(
         )
     plan = str(node.get("plan") or "")
     section = str(node.get("section") or "")
-    # A brief-carried run names no plan section: its authority is the stored
-    # brief the reviewed worker read. Composing the review from a bare plan and
-    # section leaves it with no authority at all, which admission refuses as
-    # not-dispatchable, so the brief's stored copy stands in for the plan/section
-    # pair and the composed review is dispatchable as printed. A run that names
-    # a plan keeps the plan as its authority even when it also carried a brief,
-    # so the plan gates still run.
-    brief = "" if plan else str(node.get("brief_path") or node.get("brief") or "")
+    # A run review's brief is composed, not given: the rubric text followed by
+    # the identity of the run under review. The reviewed run's stored brief,
+    # when it carried one, is named inside that text rather than handed to the
+    # review as its own authority — a run that names a plan keeps the plan as
+    # its authority, and the composed brief rides beside the plan/section pair
+    # as coordinator instructions, so every plan gate still runs. Writing the
+    # brief here, before the lane decides, is what lets the printed
+    # ``review-missing`` command and the executed dispatch name one path.
+    brief_text = _review_brief_text(record, head)
+    brief_file = _review_brief_path(record)
+    # The brief is materialized only for the dispatch, never on a read: a read
+    # that composed it wrote review-brief.md into the reviewed run's directory,
+    # creating a directory behind a pointer that never had one and drawing the
+    # classification memo in after it. The dispatch passes ``delta``; every
+    # reader does not.
+    if write and composing_for_dispatch:
+        brief_file.parent.mkdir(parents=True, exist_ok=True)
+        brief_file.write_text(brief_text, encoding="utf-8")
     return {
         "run_id": run_id,
         "project": project,
         "head": head,
         "plan": plan,
         "section": section,
-        "brief": brief,
+        "brief": str(brief_file),
+        "brief_text": brief_text,
         "source_node": source_node,
         "node_id": f"{REVIEW_NODE_PREFIX}{source_node}",
         "session": str(record.get("session") or "<session>"),
@@ -589,17 +674,22 @@ def _review_dispatch_tokens(
     write_paths: list[str] = []
     for path in fields["write_paths"]:
         write_paths += ["--write-path", path]
-    return [
+    # The composed brief and the plan/section pair travel together when a run
+    # names a plan: the brief carries the reviewed worker's rubric and identity,
+    # and the plan stays the semantic authority so dispatch's plan gates still
+    # run. Dispatch accepts a brief beside a plan section, carrying it verbatim.
+    tokens = [
         "reckon",
         "crew",
         "dispatch",
         "--project",
         fields["project"],
-        *(
-            ["--brief", fields["brief"]]
-            if fields.get("brief")
-            else ["--plan", fields["plan"], "--section", fields["section"]]
-        ),
+    ]
+    if str(fields.get("brief") or ""):
+        tokens += ["--brief", str(fields["brief"])]
+    if str(fields.get("plan") or ""):
+        tokens += ["--plan", str(fields["plan"]), "--section", str(fields["section"])]
+    tokens += [
         "--role",
         "review",
         "--spec-level",
@@ -618,6 +708,7 @@ def _review_dispatch_tokens(
         "--allow-unreconciled-runs",
         *lane,
     ]
+    return tokens
 
 
 def _composed_review_lane(
