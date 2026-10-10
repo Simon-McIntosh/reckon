@@ -224,7 +224,7 @@ def test_every_resolved_backend_is_priced_with_a_date_or_explicitly_unpriced(
         "    model: gpt-resolved-unrated\n",
     )
     resolved = resolve_files(layers)
-    monkeypatch.setattr(flight, "resolve", lambda: resolved)
+    monkeypatch.setattr(flight, "resolve", lambda *args, **kwargs: resolved)
 
     statuses = backend_rate_statuses(anchor=date(2026, 6, 1))
 
@@ -248,7 +248,7 @@ def test_a_backend_added_to_a_layer_is_covered_without_editing_the_test(
 ):
     write(layers["host"], "version: 1\nbackends:\n  existing:\n    model: gpt-here\n")
     resolved = resolve_files(layers)
-    monkeypatch.setattr(flight, "resolve", lambda: resolved)
+    monkeypatch.setattr(flight, "resolve", lambda *args, **kwargs: resolved)
 
     def classify():
         statuses = backend_rate_statuses(anchor=date(2026, 6, 1))
@@ -275,7 +275,7 @@ def test_a_backend_added_to_a_layer_is_covered_without_editing_the_test(
         "    as_of: 2026-01-01\n",
     )
     resolved = resolve_files(layers)
-    monkeypatch.setattr(flight, "resolve", lambda: resolved)
+    monkeypatch.setattr(flight, "resolve", lambda *args, **kwargs: resolved)
 
     classify()
 

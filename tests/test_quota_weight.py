@@ -45,7 +45,9 @@ def configured_rates(monkeypatch: pytest.MonkeyPatch) -> None:
     }
     configured_backends["unpriced"] = {"model": "fixture-model-unpriced"}
     config = {"backends": configured_backends}
-    monkeypatch.setattr(flight, "resolve", lambda: SimpleNamespace(config=config))
+    monkeypatch.setattr(
+        flight, "resolve", lambda *args, **kwargs: SimpleNamespace(config=config)
+    )
 
 
 def _config() -> dict[str, Any]:
@@ -372,7 +374,9 @@ def test_configuration_with_no_rates_returns_unknown_without_raising(
             f"lane-{index}": {"model": model} for index, model in enumerate(models)
         }
     }
-    monkeypatch.setattr(flight, "resolve", lambda: SimpleNamespace(config=config))
+    monkeypatch.setattr(
+        flight, "resolve", lambda *args, **kwargs: SimpleNamespace(config=config)
+    )
 
     results = [quota_weight(model, ()) for model in models]
 
@@ -413,7 +417,9 @@ def test_a_backend_added_to_the_config_is_covered_without_editing_the_test(
         "output_rate_per_million": 9.0,
         "as_of": RATE_PUBLISHED,
     }
-    monkeypatch.setattr(flight, "resolve", lambda: SimpleNamespace(config=config))
+    monkeypatch.setattr(
+        flight, "resolve", lambda *args, **kwargs: SimpleNamespace(config=config)
+    )
 
     statuses = backend_rate_statuses(anchor=ANCHOR)
 
@@ -436,7 +442,9 @@ def test_a_rate_pair_without_an_as_of_date_is_explicitly_unpriced(
             }
         }
     }
-    monkeypatch.setattr(flight, "resolve", lambda: SimpleNamespace(config=config))
+    monkeypatch.setattr(
+        flight, "resolve", lambda *args, **kwargs: SimpleNamespace(config=config)
+    )
 
     status = backend_rate_statuses(anchor=ANCHOR)["undated"]
     result = quota_weight("fixture-model-undated", ())
@@ -457,7 +465,9 @@ def test_a_rate_older_than_the_staleness_horizon_carries_its_age(
     for backend in config["backends"].values():
         if "as_of" in backend:
             backend["as_of"] = old_published
-    monkeypatch.setattr(flight, "resolve", lambda: SimpleNamespace(config=config))
+    monkeypatch.setattr(
+        flight, "resolve", lambda *args, **kwargs: SimpleNamespace(config=config)
+    )
 
     statuses = backend_rate_statuses(anchor=stale_anchor)
 
@@ -479,7 +489,9 @@ def test_a_fresh_rate_is_reported_with_its_age_and_not_stale(
     for backend in config["backends"].values():
         if "as_of" in backend:
             backend["as_of"] = fresh_published
-    monkeypatch.setattr(flight, "resolve", lambda: SimpleNamespace(config=config))
+    monkeypatch.setattr(
+        flight, "resolve", lambda *args, **kwargs: SimpleNamespace(config=config)
+    )
 
     statuses = backend_rate_statuses(anchor=anchor)
 

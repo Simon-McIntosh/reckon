@@ -601,7 +601,9 @@ def test_a_promoted_run_on_a_dated_rate_lane_carries_the_notional_figure(
     wiring change and not a new identity lookup.
     """
     monkeypatch.setattr(
-        flight, "resolve", lambda: SimpleNamespace(config=_dated_rate_config())
+        flight,
+        "resolve",
+        lambda *args, **kwargs: SimpleNamespace(config=_dated_rate_config()),
     )
     session_id = "priced-session"
     _write_priced_rollout(rollout.CLIENT_SESSIONS_DIR, session_id)
@@ -638,7 +640,9 @@ def test_an_undated_rate_lane_promotes_with_the_explicit_unpriced_marker(
     lane from one that genuinely priced at nothing.
     """
     monkeypatch.setattr(
-        flight, "resolve", lambda: SimpleNamespace(config=_dated_rate_config())
+        flight,
+        "resolve",
+        lambda *args, **kwargs: SimpleNamespace(config=_dated_rate_config()),
     )
     session_id = "undated-session"
     _write_priced_rollout(rollout.CLIENT_SESSIONS_DIR, session_id)
@@ -672,7 +676,9 @@ def test_stored_receipt_and_lanes_view_price_the_same_run_in_one_assertion(
     comparing each separately would let a drifted copy pass in isolation.
     """
     monkeypatch.setattr(
-        flight, "resolve", lambda: SimpleNamespace(config=_dated_rate_config())
+        flight,
+        "resolve",
+        lambda *args, **kwargs: SimpleNamespace(config=_dated_rate_config()),
     )
     session_id = "both-surfaces-session"
     _write_priced_rollout(rollout.CLIENT_SESSIONS_DIR, session_id)

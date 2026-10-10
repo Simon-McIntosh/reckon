@@ -761,7 +761,11 @@ def test_a_run_on_a_dated_rate_lane_carries_a_surcharge_aware_notional_spend(
     load-bearing rather than cosmetic.
     """
     monkeypatch.setattr(rollout, "CLIENT_SESSIONS_DIR", tmp_path)
-    monkeypatch.setattr(flight, "resolve", lambda: SimpleNamespace(config=_dated_rate_config()))
+    monkeypatch.setattr(
+        flight,
+        "resolve",
+        lambda *args, **kwargs: SimpleNamespace(config=_dated_rate_config()),
+    )
     threshold = REQUEST_INPUT_CROSSING_THRESHOLD
     records = [
         _priced_token_record(
@@ -810,7 +814,9 @@ def test_an_undated_rate_pair_carries_the_explicit_unpriced_marker(
         }
     }
     monkeypatch.setattr(
-        flight, "resolve", lambda: SimpleNamespace(config=undated_config)
+        flight,
+        "resolve",
+        lambda *args, **kwargs: SimpleNamespace(config=undated_config),
     )
     records = [
         _priced_token_record(
