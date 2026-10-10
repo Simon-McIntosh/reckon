@@ -515,6 +515,64 @@ def _repo_root(repo) -> Path:
     return Path(result.stdout.strip()).resolve()
 
 
+def _repository_owning_projects(repo) -> tuple[str, ...]:
+    """The mounted projects whose registered repository the named path belongs to.
+
+    A dispatch cuts its worktree from the project's mount, so a ``--repo`` that
+    names a repository registered to another project cannot be honoured. Which
+    project owns a repository is read from the same mounted-project map every
+    other scope resolution consults, and the git common directory collapses a
+    linked worktree onto the same project as its main checkout.
+    """
+    from reckon.crew.node import repository_identity
+    from reckon.crew.routing import mounted_repository_projects
+
+    identity = repository_identity(repo)
+    if identity is None:
+        return ()
+    owners: list[str] = []
+    for root, projects in mounted_repository_projects().items():
+        if repository_identity(root) == identity:
+            owners.extend(projects)
+    return tuple(dict.fromkeys(owners))
+
+
+def _refuse_a_foreign_repository(crew_module, project, repo, pretty) -> None:
+    """Refuse a ``--repo`` belonging to another project, naming both.
+
+    The repository resolution raises when the named repository is not the
+    project's mount, but on the picker route it is reached before any handler
+    and the error surfaces as a traceback rather than a refusal. Resolving here
+    turns that into the same one-line dispatch refusal every other invalid
+    argument produces, and names the project the repository belongs to beside
+    the project the dispatch named so the caller can correct one of them.
+    """
+    if repo is None:
+        return
+    from reckon.crew.dispatch import resolve_project_repository
+
+    try:
+        resolve_project_repository(project, repo)
+    except crew_module.CrewError as exc:
+        named = Path(repo).expanduser().resolve()
+        try:
+            owners = _repository_owning_projects(named)
+        except crew_module.CrewError:
+            owners = ()
+        belongs_to = (
+            "project " + ", ".join(repr(owner) for owner in owners)
+            if owners
+            else f"a repository not registered to project {project!r}"
+        )
+        detail = (
+            f"--repo {named} belongs to {belongs_to}, not the project this "
+            f"dispatch named ({project!r})"
+        )
+        _emit({"ok": False, "error": "dispatch-refused", "detail": detail}, pretty)
+        click.echo(f"Error: {detail}", err=True)
+        raise click.exceptions.Exit(1) from exc
+
+
 def _resolved_gc_repo(
     crew_module, flight_module, repo, project, confirm_cross_repo
 ) -> Path:
@@ -1218,6 +1276,11 @@ def crew_dispatch(
     # fallback to the default, or the default the refusal falls through to — so
     # the picker route can never send a dispatch to a backend the deterministic
     # route would have refused.
+    # Resolve the named repository once, before any route or worktree exists,
+    # so a --repo belonging to another project is refused naming both projects
+    # on every route rather than raising as a traceback on the picker route.
+    _refuse_a_foreign_repository(crew_module, project, repo, pretty)
+
     picker_selection = None
     if effective_route == "picker":
         from reckon.crew.dispatch import (
