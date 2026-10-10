@@ -23,8 +23,7 @@ from reckon._plan_html import (
     SECTION_NUMBER_PATTERN,
     authored_section_headings,
     open_sections,
-    read_state,
-    read_state_file,
+    read_state_and_text_file,
 )
 from reckon._timestamps import parse_utc
 from reckon._schema import (
@@ -171,11 +170,7 @@ def _plan_authored_state(
         return view
 
     def read_authored() -> dict[str, Any]:
-        try:
-            text = path.read_text(encoding="utf-8", errors="replace")
-        except OSError:
-            return {}
-        state = read_state(text)
+        state, _text = read_state_and_text_file(path)
         return {
             "section_declarations": state.get("section_declarations"),
             "sections": state.get("sections"),
@@ -1334,7 +1329,7 @@ def _plan_followups(
     if path is None:
         return []
     try:
-        return list(read_state_file(path).get("followups") or [])
+        return list(read_state_and_text_file(path)[0].get("followups") or [])
     except Exception:  # noqa: BLE001 — an unreadable plan holds no readable row
         return []
 
