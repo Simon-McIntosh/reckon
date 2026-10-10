@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "backend": "local",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-10T21:01:12.967Z",
+  "dispatched_at": "2026-10-10T20:51:11Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/nothing-lands-unreached/reach-extends-served-code.html",
+      "line": "46",
+      "severity": "follow-on",
+      "text": "follow-on: the Measured paragraph states the reader reports 159 of 167 modules reached, but at head 0dc1ffaf5 the reader returns 160 reached of 167 (7 unreached, exactly the allowlist); the manifest's artifacts field repeats 159, so a headline figure a reader would quote is wrong by one."
+    },
+    {
+      "file": "docs/figures/nothing-lands-unreached/",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the dispatch declared docs/figures/nothing-lands-unreached as a write path but the directory is absent and the evidence document carries no figure, so the graphics expectation the dispatch named is unmet for this doc."
+    }
+  ],
+  "head_log_revision": "1578a16e7677287fdbc6de1e503a50dd8cbe3524",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read all four commits against base e586303b2; served_code.py adds the reach graph (+342), test_reach_graph.py (+99) and test_every_module_is_reached.py (+65) are new, and the evidence fragment is +61; nothing outside the declared scope.",
+    "done_when": "the done_when names the ratchet passing at the integrated head with an allowlist the plan permits and edge cases exercised by unit tests; test_every_module_is_reached.py asserts an allowlist of exactly the modules unreached at the section base in both directions (tests/test_every_module_is_reached.py:39), and test_reach_graph.py supplies the console-script closure, the unimported module, the neighbourhood direction and the python -m source-string cases (tests/test_reach_graph.py:52, :62, :72, :81); the gate is 5 passed, EXIT=0, and the negative control reds by name.",
+    "goal": "the node's goal is a reach reader in reckon/served_code.py that resolves production reachability from the module index plus a ratchet test; reached() and neighbourhood() are added at reckon/served_code.py:894 and :1013 and reuse _ModuleIndex, velocity.read_sources and interface_counts.definitions, so the section's two deliverables are met.",
+    "manifest": "read; status complete, commits f4e58f95a 53dffd031 1578a16e7 0dc1ffaf5, after_suite 0 failures at 1578a16e7, negative_control_log ending EXIT=1; baseline_suite is none.",
+    "write_paths": "read the manifest's declared paths and the diff; the four changed files (reckon/served_code.py, tests/test_reach_graph.py, tests/test_every_module_is_reached.py, docs/evidence/fragments/nothing-lands-unreached/reach-extends-served-code.html) are all inside the declared write paths."
+  },
+  "justifications": {
+    "durability": "the ratchet and the four graph cases are guards that fire, demonstrated by the reproduced negative control (one injected unreached module reds test_every_module_is_reached.py by name); the one recorded number that could be rechecked, the reached-module count, disagrees with the reader by one.",
+    "evidence": "I re-ran the gate at head 0dc1ffaf5 (5 passed, EXIT=0) and reproduced the ratchet's negative control by adding one unreached module to a copy of the head tree: exactly one failure, reckon.crew.zzz_unreached_probe, in tests/test_every_module_is_reached.py:65, which proves the guard fires; but the delivered evidence fragment:46 and the manifest's artifacts field both state 159 of 167 modules reached, while the reader at head reports 160 of 167.",
+    "fit": "the change extends served_code.py's existing module index rather than adding a second import graph, reuses _module_name/_index/_import_targets/velocity.read_sources/interface_counts.definitions, and the four commits carry conventional subjects with bodies and no plan label or attribution.",
+    "goal_fidelity": "reached() at reckon/served_code.py:894 and neighbourhood() at :1013 resolve the declared entry points (console scripts, MCP server, serve.py, python -m launches) through imports and attribute references, and the ratchet at tests/test_every_module_is_reached.py:39 holds the allowlist, so the section's two deliverables are present; the evidence's reach count is one below the measured value.",
+    "reuse": "no parallel capability is created; reached() consumes the same _ModuleIndex that _used_definitions already walks (reckon/served_code.py) and neighbourhood() reuses _edges, and the tests reuse package_modules rather than re-walking the tree.",
+    "scope_discipline": "every path in the diff (reckon/served_code.py, tests/test_reach_graph.py, tests/test_every_module_is_reached.py, docs/evidence/fragments/nothing-lands-unreached/reach-extends-served-code.html) is inside the manifest's declared write paths and nothing else changed."
+  },
+  "model": "deepseek-v4.1-flash",
+  "node": "review-of-reach-extends-served-code",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is a reach reader in reckon/served_code.py that resolves production reachability from the module index plus a ratchet test; reached() and neighbourhood() are added at reckon/served_code.py:894 and :1013 and reuse _ModuleIndex, velocity.read_sources and interface_counts.definitions, so the section's two deliverables are met.\nVERDICT done_when: the done_when names the ratchet passing at the integrated head with an allowlist the plan permits and edge cases exercised by unit tests; test_every_module_is_reached.py asserts an allowlist of exactly the modules unreached at the section base in both directions (tests/test_every_module_is_reached.py:39), and test_reach_graph.py supplies the console-script closure, the unimported module, the neighbourhood direction and the python -m source-string cases (tests/test_reach_graph.py:52, :62, :72, :81); the gate is 5 passed, EXIT=0, and the negative control reds by name.\nVERDICT write_paths: read the manifest's declared paths and the diff; the four changed files (reckon/served_code.py, tests/test_reach_graph.py, tests/test_every_module_is_reached.py, docs/evidence/fragments/nothing-lands-unreached/reach-extends-served-code.html) are all inside the declared write paths.\nVERDICT manifest: read; status complete, commits f4e58f95a 53dffd031 1578a16e7 0dc1ffaf5, after_suite 0 failures at 1578a16e7, negative_control_log ending EXIT=1; baseline_suite is none.\nVERDICT diff: read all four commits against base e586303b2; served_code.py adds the reach graph (+342), test_reach_graph.py (+99) and test_every_module_is_reached.py (+65) are new, and the evidence fragment is +61; nothing outside the declared scope.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reached() at reckon/served_code.py:894 and neighbourhood() at :1013 resolve the declared entry points (console scripts, MCP server, serve.py, python -m launches) through imports and attribute references, and the ratchet at tests/test_every_module_is_reached.py:39 holds the allowlist, so the section's two deliverables are present; the evidence's reach count is one below the measured value.\nSCORE evidence: 17\nJUSTIFICATION evidence: I re-ran the gate at head 0dc1ffaf5 (5 passed, EXIT=0) and reproduced the ratchet's negative control by adding one unreached module to a copy of the head tree: exactly one failure, reckon.crew.zzz_unreached_probe, in tests/test_every_module_is_reached.py:65, which proves the guard fires; but the delivered evidence fragment:46 and the manifest's artifacts field both state 159 of 167 modules reached, while the reader at head reports 160 of 167.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff (reckon/served_code.py, tests/test_reach_graph.py, tests/test_every_module_is_reached.py, docs/evidence/fragments/nothing-lands-unreached/reach-extends-served-code.html) is inside the manifest's declared write paths and nothing else changed.\nSCORE durability: 19\nJUSTIFICATION durability: the ratchet and the four graph cases are guards that fire, demonstrated by the reproduced negative control (one injected unreached module reds test_every_module_is_reached.py by name); the one recorded number that could be rechecked, the reached-module count, disagrees with the reader by one.\nSCORE fit: 20\nJUSTIFICATION fit: the change extends served_code.py's existing module index rather than adding a second import graph, reuses _module_name/_index/_import_targets/velocity.read_sources/interface_counts.definitions, and the four commits carry conventional subjects with bodies and no plan label or attribution.\nSCORE reuse: 20\nJUSTIFICATION reuse: no parallel capability is created; reached() consumes the same _ModuleIndex that _used_definitions already walks (reckon/served_code.py) and neighbourhood() reuses _edges, and the tests reuse package_modules rather than re-walking the tree.\nFINDING docs/evidence/fragments/nothing-lands-unreached/reach-extends-served-code.html:46 follow-on: the Measured paragraph states the reader reports 159 of 167 modules reached, but at head 0dc1ffaf5 the reader returns 160 reached of 167 (7 unreached, exactly the allowlist); the manifest's artifacts field repeats 159, so a headline figure a reader would quote is wrong by one.\nFINDING docs/figures/nothing-lands-unreached/:1 follow-on: the dispatch declared docs/figures/nothing-lands-unreached as a write path but the directory is absent and the evidence document carries no figure, so the graphics expectation the dispatch named is unmet for this doc.",
+  "review_run_id": "r-20261010T205047602467-review-of-reach-extends-served-code",
+  "reviewed_base_sha": "e586303b2e67d03d2c3402bbd96624e23ee13dd7",
+  "reviewed_head_sha": "0dc1ffaf5bfdcb7e649c3bd88055d68f203be7c7",
+  "reviewed_run_id": "r-20261010T202940865217-reach-extends-served-code",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T20:59:22.101030+00:00",
+  "total": 115
+}
