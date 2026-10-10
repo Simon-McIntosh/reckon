@@ -1,0 +1,87 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-10T23:39:55.443Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "suite-run-records-each-population",
+      "recorded_at": "2026-10-10T23:40:58.419065+00:00"
+    }
+  },
+  "dispatched_at": "2026-10-10T23:31:06Z",
+  "findings": [
+    {
+      "file": "reckon/crew/standing_suite.py",
+      "line": "141",
+      "severity": "follow-on",
+      "text": "follow-on: population_declarations has no caller anywhere in the tree, so the declared `browser` population is never run and its row is never recorded by any production path; crew_suite_run (reckon/crew_run_commands.py:1072) runs only flight.review_suite and iterates no declared population, and the node records the wiring as a follow-on because reckon/crew_run_commands.py is outside its declared write paths."
+    },
+    {
+      "file": "reckon/crew/standing_suite.py",
+      "line": "546",
+      "severity": "follow-on",
+      "text": "follow-on: the _latest_record population filter, whose docstring states a failed browser row must not hold promotions, is unguarded \u2014 no test records a row carrying a non-null `population` and asserts the standing-suite hold ignores it; the existing hold tests use rows with no population key, so the filter's `continue` branch is never exercised."
+    },
+    {
+      "file": "reckon/crew/standing_suite.py",
+      "line": "141",
+      "severity": "follow-on",
+      "text": "follow-on: the population parser duplicates the review-suite declaration parsing owned by reckon/flight.py:review_suite (line 843) \u2014 the same non-empty command vector and `[0-9]+[smh]` budget checks \u2014 and _BUDGET_RE (standing_suite.py:73) is a second copy of that regex; it constructs SuiteDeclaration rather than extending reckon/flight.py, and raises StandingSuiteError rather than FlightConfigError."
+    },
+    {
+      "file": "tests/test_browser_population_is_its_own_row.py",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the gate does not measure the done-when's quiet-node-measurement clause (the population's both-arms-at-60s log with its failing ids), so that clause of the measure is unmet in the run's own evidence and left to the coordinator."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read a0239cb7..7ec13a0e commit by commit; one commit, four files, +385/-9, applying the `browser` marker at collection, adding `-m not browser` and a `populations` block to flight.yaml, and threading a `population` name through standing_suite.run/_build_record/record and a new record_from_log, with _latest_record filtered by population.",
+    "done_when": "the gate tests/test_browser_population_is_its_own_row.py asserts that the marker set equals the harness-importing modules' tests exactly, that the declared standing-suite command collects no marked test, and that a fixed pytest log recorded under the browser population name writes a row with that name and its counts; I re-ran the named test at head and it passed (3 passed, EXIT=0, recheck-head.log), and the negative control is executed and logged (EXIT=1, negative-control.log); the done-when's fourth clause \u2014 the quiet-node measurement log recording both arms at 60 s with their failing ids \u2014 is not produced and the manifest records it under follow_ons.",
+    "goal": "the node goal is \"Run the browser population as its own marked suite row\"; at head 7ec13a0e the collection hook tests/conftest.py:340 marks every test in a module reaching tests/spa_browser_harness.py and docs/state/reckon/flight.yaml:96 carries `-m not browser` on the standing-suite command, so the population is marked and excluded; but the row itself is never produced in production \u2014 reckon/crew/standing_suite.py:141 population_declarations has no caller anywhere in the tree (positive control: standing_suite.run is called at reckon/crew_run_commands.py:1072), and crew_suite_run runs only flight.review_suite and iterates no declared population.",
+    "manifest": "read the reviewed manifest; status complete, gate log logs/gate.log (3 passed in 56.46s, EXIT=0), negative control logs/negative-control.log (1 failed / 2 passed, EXIT=1), adjacent logs/adjacent log logs/adjacent.log (66 passed); it carries no baseline_suite/after_suite arm, so no suite delta was taken, and it names the missing population wiring and the missing quiet-node measurement under follow_ons rather than claiming them.",
+    "write_paths": "the declared section paths are tests/conftest.py, tests/spa_browser_harness.py, reckon/crew/standing_suite.py, docs/state/reckon/flight.yaml and tests/test_browser_population_is_its_own_row.py; the single commit 7ec13a0e touches tests/conftest.py, reckon/crew/standing_suite.py, docs/state/reckon/flight.yaml and tests/test_browser_population_is_its_own_row.py, all inside them."
+  },
+  "justifications": {
+    "durability": "the three added assertions are independent of the values under test (the marker set is compared against a source-scan of the harness-importing modules, the command's collection against the marked set, and the recorded row's counts against a fixed log), and removing the command's `-m not browser` reddens test_the_standing_suite_command_collects_no_marked_test; but the _latest_record population filter (reckon/crew/standing_suite.py:546-549), whose stated purpose is to keep a failed browser row from holding promotions, and population_declarations' validation (reckon/crew/standing_suite.py:141) both ship with no test.",
+    "evidence": "the gate measures the marker set, the command exclusion and the fixed-log row and its result is recorded (logs/gate.log 3 passed EXIT=0, reproduced recheck-head.log), and the negative control is executed and red (negative-control.log EXIT=1), but the done-when's quiet-node-measurement clause is neither produced nor measured by the gate.",
+    "fit": "the change reuses the SuiteDeclaration dataclass, the atomic _write_json writer and the module's docstring idiom, and adds no plan- or version-labelled name; the only placement concern is that POPULATIONS_KEY and _BUDGET_RE (reckon/crew/standing_suite.py:73) declare review-block parsing beside the module rather than in its owner reckon/flight.py.",
+    "goal_fidelity": "the marked-population half of the goal is delivered and tested (tests/conftest.py:340, docs/state/reckon/flight.yaml:96), but the \"own suite row\" half is unwired \u2014 population_declarations (reckon/crew/standing_suite.py:141) has no caller and the production command reckon/crew_run_commands.py:1072 runs only review.suite \u2014 so the landed change implements the deliverable's mechanism without achieving its end-to-end goal.",
+    "reuse": "population_declarations (reckon/crew/standing_suite.py:141) re-implements the declaration parsing and validation that reckon/flight.py:review_suite (line 843) already owns \u2014 the same command/budget shape checks and the same budget regex (_BUDGET_RE at standing_suite.py:73 vs the inline re.fullmatch reused there) \u2014 so one added definition forks an owned capability without extending its owner, while the remaining additions (run/_build_record/record/_latest_record) do extend their owners; see the reuse finding.",
+    "scope_discipline": "the diff touches exactly the four declared write paths (tests/conftest.py, reckon/crew/standing_suite.py, docs/state/reckon/flight.yaml, tests/test_browser_population_is_its_own_row.py) and carries nothing the goal does not imply."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "REVIEW of run r-20261010T231215125913-browser-population-own-row\nplan reckon:the-suite-tests-behaviour \u00a77\nreviewed_base_sha: a0239cb70128eddbe31e9fd129a63312a2a251fb\nreviewed_head_sha: 7ec13a0ea0d37a92c5f02e217271f521d4008e3f\n\nVERDICT goal: the node goal is \"Run the browser population as its own marked suite row\"; at head 7ec13a0e the collection hook tests/conftest.py:340 marks every test in a module reaching tests/spa_browser_harness.py and docs/state/reckon/flight.yaml:96 carries `-m not browser` on the standing-suite command, so the population is marked and excluded; but the row itself is never produced in production \u2014 reckon/crew/standing_suite.py:141 population_declarations has no caller anywhere in the tree (positive control: standing_suite.run is called at reckon/crew_run_commands.py:1072), and crew_suite_run runs only flight.review_suite and iterates no declared population, so no production path runs the browser population or records its row.\nVERDICT done_when: the gate tests/test_browser_population_is_its_own_row.py asserts that the marker set equals the harness-importing modules' tests exactly (test_every_harness_test_is_marked_and_no_other_is), that the declared standing-suite command collects no marked test (test_the_standing_suite_command_collects_no_marked_test), and that a fixed pytest log recorded under the browser population name writes a row with that name and its counts (test_a_fixed_log_records_a_row_under_the_browser_population_name); I re-ran the named test at head and it passed (3 passed, EXIT=0, recheck-head.log), and the negative control is executed and logged (EXIT=1, negative-control.log); the done-when's fourth clause \u2014 the quiet-node measurement log recording both arms at 60 s with their failing ids \u2014 is not produced, and the manifest records it under follow_ons.\nVERDICT write_paths: the declared section paths are tests/conftest.py, tests/spa_browser_harness.py, reckon/crew/standing_suite.py, docs/state/reckon/flight.yaml and tests/test_browser_population_is_its_own_row.py; the single commit 7ec13a0e touches tests/conftest.py, reckon/crew/standing_suite.py, docs/state/reckon/flight.yaml and tests/test_browser_population_is_its_own_row.py, all inside them, and writes neither the fragment nor the figures path.\nVERDICT manifest: read the reviewed manifest; status complete, gate log logs/gate.log (3 passed in 56.46s, EXIT=0), negative control logs/negative-control.log (1 failed / 2 passed, EXIT=1), adjacent logs/adjacent.log (66 passed); it carries no baseline_suite/after_suite arm, so no suite delta was taken, and it names the missing population wiring and the missing quiet-node measurement under follow_ons rather than claiming them.\nVERDICT diff: read a0239cb7..7ec13a0e commit by commit; one commit, four files, +385/-9, applying the `browser` marker at collection, adding `-m not browser` and a `populations` block to flight.yaml, and threading a `population` name through standing_suite.run/_build_record/record and a new record_from_log, with _latest_record filtered by population so a named population's row is not read by the hold.\nCALL_SITES: none\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: the marked-population half of the goal is delivered and tested (tests/conftest.py:340, docs/state/reckon/flight.yaml:96), but the \"own suite row\" half is unwired \u2014 population_declarations (reckon/crew/standing_suite.py:141) has no caller and the production command reckon/crew_run_commands.py:1072 runs only review.suite \u2014 so the landed change implements the deliverable's mechanism without achieving its end-to-end goal.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate measures the marker set, the command exclusion and the fixed-log row and its result is recorded (logs/gate.log 3 passed EXIT=0, reproduced recheck-head.log), and the negative control is executed and red (negative-control.log EXIT=1), but the done-when's quiet-node-measurement clause is neither produced nor measured by the gate.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches exactly the four declared write paths (tests/conftest.py, reckon/crew/standing_suite.py, docs/state/reckon/flight.yaml, tests/test_browser_population_is_its_own_row.py) and carries nothing the goal does not imply.\nSCORE durability: 13\nJUSTIFICATION durability: the three added assertions are independent of the values under test (the marker set is compared against a source-scan of the harness-importing modules, the command's collection against the marked set, and the recorded row's counts against a fixed log), and removing the command's `-m not browser` reddens test_the_standing_suite_command_collects_no_marked_test; but the _latest_record population filter (reckon/crew/standing_suite.py:546-549), whose stated purpose is to keep a failed browser row from holding promotions, and population_declarations' validation (reckon/crew/standing_suite.py:141) both ship with no test.\nSCORE fit: 18\nJUSTIFICATION fit: the change reuses the SuiteDeclaration dataclass, the atomic _write_json writer and the module's docstring idiom, and adds no plan- or version-labelled name; the only placement concern is that POPULATIONS_KEY and _BUDGET_RE (reckon/crew/standing_suite.py:73) declare review-block parsing beside the module rather than in its owner reckon/flight.py.\nSCORE reuse: 8\nJUSTIFICATION reuse: population_declarations (reckon/crew/standing_suite.py:141) re-implements the declaration parsing and validation that reckon/flight.py:review_suite (line 843) already owns \u2014 the same command/budget shape checks and the same budget regex (_BUDGET_RE at standing_suite.py:73 vs the inline re.fullmatch reused there) \u2014 so one added definition forks an owned capability without extending its owner, while the remaining additions (run/_build_record/record/_latest_record) do extend their owners; see the reuse finding.\nFINDING reckon/crew/standing_suite.py:141: follow-on: population_declarations has no caller anywhere in the tree, so the declared `browser` population is never run and its row is never recorded by any production path; crew_suite_run (reckon/crew_run_commands.py:1072) runs only flight.review_suite and iterates no declared population, and the node records the wiring as a follow-on because reckon/crew_run_commands.py is outside its declared write paths.\nFINDING reckon/crew/standing_suite.py:546: follow-on: the _latest_record population filter, whose docstring states a failed browser row must not hold promotions, is unguarded \u2014 no test records a row carrying a non-null `population` and asserts the standing-suite hold ignores it; the existing hold tests use rows with no population key, so the filter's `continue` branch is never exercised.\nFINDING reckon/crew/standing_suite.py:141: follow-on: the population parser duplicates the review-suite declaration parsing owned by reckon/flight.py:review_suite (line 843) \u2014 the same non-empty command vector and `[0-9]+[smh]` budget checks \u2014 and _BUDGET_RE (standing_suite.py:73) is a second copy of that regex; it constructs SuiteDeclaration rather than extending reckon/flight.py, and raises StandingSuiteError rather than FlightConfigError.\nFINDING tests/test_browser_population_is_its_own_row.py:1: follow-on: the gate does not measure the done-when's quiet-node-measurement clause (the population's both-arms-at-60s log with its failing ids), so that clause of the measure is unmet in the run's own evidence and left to the coordinator.\n",
+  "review_run_id": "r-20261010T233043752280-review-of-browser-population-own-row",
+  "reviewed_base_sha": "a0239cb70128eddbe31e9fd129a63312a2a251fb",
+  "reviewed_head_sha": "7ec13a0ea0d37a92c5f02e217271f521d4008e3f",
+  "reviewed_run_id": "r-20261010T231215125913-browser-population-own-row",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 13,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 15,
+    "reuse": 8,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T23:38:36.124800+00:00",
+  "total": 88
+}
