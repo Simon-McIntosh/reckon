@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed node is read-only and its manifest names no baseline_suite/after_suite gate log (it ran no pytest gate), so no added-failure count can be derived",
+  "backend": "local",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-10T20:09:17.276Z",
+  "dispatched_at": "2026-10-10T19:59:38Z",
+  "findings": [
+    {
+      "file": "report.md",
+      "line": "F3",
+      "severity": "blocking",
+      "text": "blocking: F3 (rated high) rests on a premise the tree contradicts. It says `docs/state/reckon/index.json` (cited 'updated 2026-09-29') is a second live sprint store so 'every reader that lands on index.json sees active_sprint_id: S17 while crews work S25'. But the migration marker docs/.reckon/project-state-migration.json is present and `status: complete, format: distributed` (verified by cat), and reckon/_store.py:1479-1490 makes read_plan(project,'index') return compose_project_state(docs_dir,project) whenever project_state_mode is distributed -- so mcp.py:2417's index_data (the source of the audit's sprint rows at mcp.py:2450 and 2591) is the composed DISTRIBUTED state, not the legacy file. index.json is retained byte-for-byte as a historical receipt, exactly as report.md itself quotes project_state.py:1-14 stating; no live reader lands on S17. Second, the citation date is wrong: the file's embedded `updated` is 2026-09-04T10:10:00+02:00 (last commit 2026-09-04, ee3d75d80), not 2026-09-29. The remedy F3 proposes -- regenerate or delete the stale file -- actively conflicts with the preserved-receipt design. A coordinator acting on F3 would either delete a deliberately-preserved receipt or write a dual store the migration forbids."
+    },
+    {
+      "file": "report.md",
+      "line": "F6",
+      "severity": "follow-on",
+      "text": "follow-on: F6's close-set enumeration cites figures the delivered artefact does not carry. It writes 'section-contract-and-computed-impl (15/15 done)', but portfolio.json for that slug records sections_total 8 with section_status_counts {done: 8}; the 15 is the declaration count (r.declarations length 15), not a section count, so the two are conflated. The close disposition itself is defensible (derived 1.0, no implementable section), but the supporting figure is wrong on the artefact a reviewer would open."
+    },
+    {
+      "file": "report.md",
+      "line": "F6",
+      "severity": "follow-on",
+      "text": "follow-on: the close rule as stated ('impl >= 0.9 / derived 1.0, no implementable section left, remaining deferred at most') does not handle open followups, and one of its six rows breaks on that gap: a-plan-is-reviewed-before-it-is-built is marked close and listed under F6, yet portfolio.json records its authored impl 0.6 (raw <meta name=\"plan-impl\" content=\"0.6\">) and an open followup f-apirbiib-dry-run-gate-skip (followups_open non-empty). The row is close-worthy only on derived=1.0, and the open followup is left unaddressed. Applying the stated rule literally to impl_scan.json yields 8 candidates, not 6 (adding figures-are-allocated-by-topic-directory and rendered-evidence-on-this-host, both impl 0.9 with open decisions), so the close set is not reproducible from the delivered artefacts by the rule the report gives."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 4,
+  "item_verdicts": {
+    "cluster_merge": "the merge table names an absorber per cluster with a stated reason (live sprint, higher derived impl, newer mechanism) and flags the lane/model pair as a coordinator decision rather than folding two hot plans; sound, though the absorbers are not independently re-verified here.",
+    "done_when": "the brief asked for report.md with method, a findings table (id/class/severity/finding/evidence/remedy/est-lines/owner), a top-five list and a final `findings=...` line, plus portfolio.csv with a disposition per non-shipped plan; all are present, and the final line is internally consistent with its own table (findings=8 high=3 mid=4 low=1 owned=5 regressed=2 unowned=1).",
+    "goal": "the six brief items are each addressed: per-plan table (portfolio.json/csv), close candidates (F6), merge clusters, retire (clive-local-workers et al.), sprint structure (the S22-backlog verdict with its 37/6/12 composition) and the audit detect/miss question (doccheck vs compliance vs lifecycle).",
+    "sprint_structure": "S22 status planned, theme 'Open work carried from S16 to S20', no starts/ends, 55 members composed 37 active / 6 draft / 12 shipped -- all reproduced from sprints.json; the backlog-not-a-sprint verdict is well evidenced."
+  },
+  "justifications": {
+    "durability": "the instruments are delivered beside the report (extract_portfolio.py, extract_sprints.py, scan_impl.py, audit_output.txt, negative_control_membership.txt, portfolio.json, portfolio.csv, sprints.json, impl_scan.json) and I reproduced the headline figures independently: 164 plans with status composition 101/52/6/1/2/1/1, the 16-plan meta>=0.9-with-open-decl cohort, S22 = 37/6/12, the six close rows and the disposition mix (re-sprint 34, keep 16, close 6, merge-into 4, retire 3, total 63). Two citations do not reproduce (F3's index.json date, F6's 15/15), which lowers this below full.",
+    "evidence": "most claims verify against the tree: a-lane-can-say-where-it-stands meta 1.0 with s7 implementable (derive returns None on partial records); advise-the-lane-never-force-it disk meta 0.4 vs served 1.0; doccheck falls to os.path.getmtime with ACTIVE_PLAN_STALE_AFTER_DAYS 30 so 0 STALE is expected; the a-review-can-see-the-figure spot-check holds (_flight_schema.py:193 InputModality.image, flight.py:1641 figure->image, refusals 1665-1738, dispatch_launch.py's three 'figure' hits are all prose). Against that, F3's central premise is false, its date wrong, and F6 carries a wrong section count and an unreproducible close-set rule -- hence 13.",
+    "fit": "report.md follows the required shape and the reviewed node's own structure (method, tree spot-checks, clusters, sprint structure, audit detect/miss, findings table with every required column, ranked top five, final line); the final tally reconciles with the table row-for-row and the dispositions reconcile with portfolio.csv exactly. The only fit defect is F3 presenting a false premise as high-severity.",
+    "goal_fidelity": "all six brief items are answered, including the audit detect/miss question (doccheck vs compliance vs lifecycle) and the S22-is-a-backlog question, both with evidence.",
+    "reuse": "the node reused reckon._plan_html.parse_plan for impl derivation and the worktree's own `reckon audit`, and cited doccheck.py/compliance.py/lifecycle.py by path; but extract_portfolio.py re-implements section-record/meta parsing that _plan_html owns, and the membership check re-implements what mcp_discovery._audit_sprint_findings already provides -- a capability the report itself names -- so reuse is competent but not maximal.",
+    "scope_discipline": "the reviewed node was read-only: its worktree at d33407f58afee is clean (git status --porcelain empty, 0 commits beyond base) and every artefact sits under its declared reports/.../health-plan-portfolio path; the manifest records commits: none."
+  },
+  "node": "review-of-health-plan-portfolio",
+  "project": "reckon",
+  "review_run_id": "r-20261010T195911931072-review-of-health-plan-portfolio",
+  "reviewed_base_sha": "d33407f58afee19c756aef1227c01f6a1bf7f342",
+  "reviewed_head_sha": "d33407f58afee19c756aef1227c01f6a1bf7f342",
+  "reviewed_run_id": "r-20261010T181853153229-health-plan-portfolio",
+  "reviewer": "review-of-health-plan-portfolio",
+  "scores": {
+    "durability": 15,
+    "evidence": 13,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 13,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T20:22:06.501722+00:00",
+  "total": 98
+}
