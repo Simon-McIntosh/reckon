@@ -30,7 +30,7 @@ from types import SimpleNamespace
 import pytest
 
 from reckon import flight
-from reckon.crew import recovery
+from reckon.crew import recovery, runs
 from reckon.crew import review as review_module
 
 CONFIG = {
@@ -97,6 +97,15 @@ def _head(repo: Path) -> str:
     ).stdout.strip()
 
 
+def _compose(record: dict) -> dict:
+    """The fields a dispatch composes, distinguished from a read by ``delta``.
+
+    The run-review dispatch passes ``delta`` and materializes the brief; every
+    other caller reads the fields without it.
+    """
+    return recovery._review_dispatch_fields(record, delta=None)
+
+
 def _stored_brief(home: Path, run_id: str) -> Path:
     brief = home / "crew" / "runs" / run_id / "brief.md"
     brief.parent.mkdir(parents=True, exist_ok=True)
@@ -140,7 +149,7 @@ def _investigate_record(repository: Path, run_id: str) -> dict:
 def test_an_implement_run_review_carries_the_scoring_rubric(
     crew_home: Path, repository: Path
 ) -> None:
-    fields = recovery._review_dispatch_fields(
+    fields = _compose(
         _implement_record(repository, _stored_brief(crew_home, "r-implement-run"))
     )
 
@@ -169,7 +178,7 @@ def test_the_obligation_next_command_names_a_brief_with_the_same_text(
     crew_home: Path, repository: Path
 ) -> None:
     record = _implement_record(repository, _stored_brief(crew_home, "r-implement-run"))
-    fields = recovery._review_dispatch_fields(record)
+    fields = _compose(record)
 
     action = recovery._review_dispatch_action(record, config=CONFIG)
     argv = shlex.split(action)
@@ -179,6 +188,37 @@ def test_the_obligation_next_command_names_a_brief_with_the_same_text(
     assert "SCORE <dimension>: <integer 0..20>" in brief_path.read_text(
         encoding="utf-8"
     )
+
+
+def test_composing_a_review_for_a_home_less_run_creates_nothing(
+    crew_home: Path, repository: Path
+) -> None:
+    """A read that composes a review must not bring a run's home into being.
+
+    The ``review-missing`` obligation composes these fields to print the command
+    that dispatches the review, so that composition is a read: it materializes
+    no brief and creates no directory, because a directory created here would
+    also draw the classification memo into it. The path is still named; only the
+    dispatch that passes ``delta`` writes the file.
+    """
+    record = _investigate_record(repository, "r-no-home")
+
+    fields = recovery._review_dispatch_fields(record)
+
+    assert fields["brief"]
+    assert not Path(fields["brief"]).exists()
+    assert not runs.run_dir("r-no-home").exists()
+
+
+def test_composing_a_review_for_a_dispatch_writes_its_brief(
+    crew_home: Path, repository: Path
+) -> None:
+    """The dispatch that passes ``delta`` gets the brief its command names."""
+    record = _investigate_record(repository, "r-live-run")
+
+    fields = _compose(record)
+
+    assert Path(fields["brief"]).read_text(encoding="utf-8") == fields["brief_text"]
 
 
 def test_a_brief_carried_run_names_its_stored_brief(

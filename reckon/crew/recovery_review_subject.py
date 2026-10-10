@@ -358,6 +358,13 @@ def _claims_review_done_when(run_id: str) -> str:
 # value between them.
 _RUN_REVIEW_BRIEF_NAME = "review-brief.md"
 
+# Distinguishes a read from the composition that launches a review. The
+# run-review dispatch supplies ``delta`` — the commit delta, or None when the
+# run gained none — while every reader calls without it, so the fields know
+# whether the brief should be written to disk. A sentinel rather than a None
+# default, because the dispatch legitimately passes None and a read must not.
+_DELTA_UNSET: Any = object()
+
 
 def _review_brief_text(record: Mapping[str, Any], head: str) -> str:
     """The rubric text and run identity a run review's brief carries.
@@ -406,7 +413,7 @@ def _review_brief_path(record: Mapping[str, Any]) -> Path:
 def _review_dispatch_fields(
     record: Mapping[str, Any],
     *,
-    delta: Mapping[str, Any] | None = None,
+    delta: Any = _DELTA_UNSET,
     write: bool = True,
 ) -> dict[str, Any]:
     """The facts a scoring run's review dispatch is built from.
@@ -415,6 +422,15 @@ def _review_dispatch_fields(
     and the command the reflex runs come from one source: two compositions of
     the same dispatch is how a displayed command and an executed one drift
     apart while each stays correct when read on its own.
+
+    A run review's brief is materialized only when the fields are composed for
+    the dispatch that launches the review — ``delta`` is supplied — and not on a
+    read. The run-review dispatch passes ``delta`` (the commit delta when the
+    run gained commits since it was reviewed, and ``None`` when it did not, both
+    supplied); the obligation's next command, the in-flight check and every
+    other reader call without it. A read composes the same path and text but
+    writes nothing, so it never brings a run's directory into being and never
+    draws a classification memo into a home the run never had.
 
     The dispatch grants the head-keyed record path beside the legacy path, so
     the reviewer it composes for may write the record where the head it read is
@@ -438,6 +454,9 @@ def _review_dispatch_fields(
     find. The paths returned are the same ones a real dispatch writes, so the
     preview still names the command and the scope that dispatch would use.
     """
+    composing_for_dispatch = delta is not _DELTA_UNSET
+    if not composing_for_dispatch:
+        delta = None
     if record.get("subject") == "plan":
         from reckon import _plan_html
 
@@ -558,7 +577,12 @@ def _review_dispatch_fields(
     # ``review-missing`` command and the executed dispatch name one path.
     brief_text = _review_brief_text(record, head)
     brief_file = _review_brief_path(record)
-    if write:
+    # The brief is materialized only for the dispatch, never on a read: a read
+    # that composed it wrote review-brief.md into the reviewed run's directory,
+    # creating a directory behind a pointer that never had one and drawing the
+    # classification memo in after it. The dispatch passes ``delta``; every
+    # reader does not.
+    if write and composing_for_dispatch:
         brief_file.parent.mkdir(parents=True, exist_ok=True)
         brief_file.write_text(brief_text, encoding="utf-8")
     return {
