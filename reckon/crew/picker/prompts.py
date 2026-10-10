@@ -70,6 +70,18 @@ _GLOSSARY: dict[str, str] = {
         "models. Read a model's own serving observation from its candidate entry; "
         "read the shared spending policy from its lane."
     ),
+    "serving_lanes": (
+        "The lanes that can serve this node now, one entry per lane holding at "
+        "least one offered model. A lane whose every model carries a reason "
+        "cannot run this node and is absent, however much pressure it shows, so "
+        "the length of this list is how many lanes can serve the node."
+    ),
+    "hold_waits_for": (
+        "What a hold waits on. When exactly one lane can serve the node a hold "
+        "waits for that lane alone: waiting for any other lane to free changes "
+        "nothing, because it cannot run this node. Null when no lane can serve "
+        "the node."
+    ),
     "context": (
         "A candidate's context block. window_tokens is the input window that "
         "gates the lane; estimated_tokens is this node's deterministic input "
@@ -150,6 +162,41 @@ def _candidate_state(candidate: Any) -> dict[str, Any]:
     }
 
 
+def _serving_lanes(candidates: Sequence[Any]) -> list[str]:
+    """The lanes that can serve this node, one entry per lane.
+
+    A lane serves the node when at least one of its models is offered: a
+    candidate carrying a reason was removed because it cannot run, so the lanes
+    left across the offered candidates are the lanes a pick could send this node
+    to. The lane name is the candidate's family, falling back to its backend
+    when it declares none.
+    """
+
+    lanes: list[str] = []
+    for candidate in candidates:
+        lane = getattr(candidate, "family", None) or getattr(candidate, "backend", None)
+        if lane and str(lane) not in lanes:
+            lanes.append(str(lane))
+    return lanes
+
+
+def _hold_waits_for(serving_lanes: Sequence[str]) -> str | None:
+    """One line naming what a hold waits on, read from the serving lanes.
+
+    With a single serving lane a hold waits for that lane alone, because no
+    other can run the node; with several it waits for any one of them to have
+    room; with none there is nothing to wait for and the field is null.
+    """
+
+    if not serving_lanes:
+        return None
+    if len(serving_lanes) == 1:
+        return f"the {serving_lanes[0]} lane, the only lane that can serve this node"
+    return (
+        f"any one of {len(serving_lanes)} lanes that can serve this node to have room"
+    )
+
+
 def build_state(
     *,
     node: Any,
@@ -189,6 +236,7 @@ def build_state(
         "write_path_count": len(node.write_paths or []),
         "negative_control_declared": _negative_control_declared(node),
     }
+    serving_lanes = _serving_lanes(candidates)
     return {
         "node": node_state,
         "orchestrator_comment": comment,
@@ -197,7 +245,16 @@ def build_state(
         },
         "return_times": lane["return_times"],
         "lanes": lane["lanes"],
-        "local_lane": lane["local_lane"],
+        "local_lane": {
+            **lane["local_lane"],
+            # How many lanes can serve this node, and what a hold waits on. A
+            # node whose other lanes are excluded by role cannot be served by
+            # them however much pressure they show, so a hold that does not name
+            # the serving lane waits on nothing it can reach.
+            "serving_lanes": serving_lanes,
+            "serving_lane_count": len(serving_lanes),
+            "hold_waits_for": _hold_waits_for(serving_lanes),
+        },
     }
 
 
