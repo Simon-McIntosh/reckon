@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T22:46:49.358Z",
+  "dispatched_at": "2026-10-10T22:42:39Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-answers-inside-its-deadline.html:111",
+      "id": "reasoning-1",
+      "reason": "a node following \u00a75 literally removes a documented guard, and the done-when (a parse count) stays green while it does, so the plan must state that `_plan_record` keeps its own read to detect an unreadable file, or the behaviour is lost silently.",
+      "text": "\u00a75's deliverable says \"the metadata index build's per-plan parse (`_plan_record` \u2026) derive[s] their values from the parse the `read_state_and_text` memo already holds for the file\"; that memo is `read_state_and_text_file` (_plan_html.py:1418-1420), whose compute is `read_state(_read_plan_text(path))`, and `_read_plan_text` returns `\"\"` on `OSError` (_plan_html.py:2187-2191), so unifying `_plan_record` onto it would report an unreadable plan as a readable one with zero open work \u2014 the exact reading `_plan_record`'s docstring says the file's own read exists to refuse (metadata_index.py:654-659), and \u00a75's parse-count done-when cannot detect it",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-answers-inside-its-deadline.html:119",
+      "id": "anchors_resolve-1",
+      "reason": "\u00a75 invokes the function by name so a reader can grep it, and the citation's paragraph already states that line numbers in these modules moved, so the stale line changes no action.",
+      "text": "\u00a75 cites `_audit_plan_state` at `reckon/mcp.py:2246`, which is `\"reindexed\": False,`; the function definition is at `reckon/mcp.py:2249`, three lines below",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "3f9b8a55de10fd88b31116635d421ac7a99f4904be5ac93cbebe5ba16c5fa8b6",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 17,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261010T224210011604-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "6658c99664d65b5f72cae194971bd062c3d1402e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a75 cites `_audit_plan_state` at `reckon/mcp.py:2246`, but the function is at `reckon/mcp.py:2249` in the reviewed tree (line 2246 is `\"reindexed\": False,`); the name resolves, the line does not.",
+    "done_when": "pass \u2014 \u00a75's measure is a counting wrapper on `read_state` bounding ten parses for ten plans across a cold roadmap read, the index build and a discovery read, and it names a declared negative control (`read_authored` given back its own parse under its own kind), which raises the count past ten.",
+    "evidence_paths": "pass \u2014 \u00a75's gate is the repository test file `tests/test_every_plan_read_is_memoised.py`, a durable path, not a scratchpad.",
+    "naming": "pass \u2014 \u00a75 cites functions by name (`section_authored`, `reckon/roadmap.py`; `readiness_state`, `reckon/serve.py`; `_plan_record`, `reckon/metadata_index.py`) and carries no plan labels, ticket numbers or version tags into symbols.",
+    "reasoning": "a finding \u2014 \u00a75 tells the node to make `_plan_record` derive from the `read_state_and_text` memo, but that memo's compute reads through `_read_plan_text`, which returns `\"\"` on `OSError`, so an unreadable file parses as an empty document; `_plan_record`'s own docstring exists to refuse exactly that reading (metadata_index.py:654-659), and \u00a75 neither preserves nor mentions the `unreadable` figure its change would silently drop.",
+    "single_goal": "pass \u2014 \u00a75 carries one deliverable: unify the per-plan readers onto the `read_state_and_text` memo.",
+    "wiring": "pass \u2014 \u00a75's \"runs after \u00a73 (writes roadmap.py) and after \u00a74 (writes serve.py)\" matches the write paths it declares (roadmap.py, serve.py, metadata_index.py) and followup f-araiid-002's order \"\u00a75 after \u00a73 and \u00a74; \u00a76 last\"."
+  },
+  "section_digests": {
+    "_document": "ed56ddda67cab69463c811909740e400e27ec4661d29dba9a7afeb660333816e",
+    "s1": "71942607f4df4eca011a41734257645ef2adce9664dd45b628d96b066c34e813",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s3": "cbe34f619f869b3c3346239e8823a63a8de98dd92b7fb8ed5cfa2b8a4ab26a39",
+    "s4": "d2ec58f5ac4e72c5e8bcde1f156bdd4c85bde3848b4e3b6131e6112bb6395d49",
+    "s5": "1fa541277d35e10f8bd3266b784a7b7c1992620a553514ed21b276da8ae2ac15",
+    "s6": "00db597c53dfd6e3d857f89ee748a8c6ecfe51576b2b66e64772393805c59b52"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T22:53:55.511044+00:00"
+}
