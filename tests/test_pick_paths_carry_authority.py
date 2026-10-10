@@ -232,3 +232,128 @@ def test_the_resolver_reports_its_failure_instead_of_raising(repo, monkeypatch):
     authority, error = dispatch_picker_module.resolve_picker_authority("proj", repo)
     assert authority is None
     assert error == "CrewError: mounts unavailable"
+
+
+def test_two_backends_with_different_chains_share_the_request_figure(
+    tmp_path, monkeypatch
+):
+    """Every candidate block wears the request's figure, not its own backend's.
+
+    Two backends whose standing instruction chains differ — one cli/claude, one
+    codex — would, under a per-backend rule, render two different candidate
+    figures while the request wore a third. The standing chain is the
+    machine-read input, so it is stubbed to differ by a known amount, making
+    the divergence the one figure removes measurable: the claude candidate's
+    own chain still measures differently, yet its block must carry the request's
+    harness-independent figure exactly as the codex candidate's does.
+    """
+    from reckon.crew import picker, routing
+    from reckon.crew.picker import snapshot as snapshot_module
+
+    repo = tmp_path / "repo"
+    (repo / "src").mkdir(parents=True)
+    (repo / "src" / "target.py").write_text("x" * 400)
+
+    def fake_standing(_repo, backend):
+        tokens = 60000 if backend.get("command") == "claude" else 51000
+        return tokens, {"effective_tokens": tokens, "files": []}
+
+    monkeypatch.setattr(routing, "_standing_context_input", fake_standing)
+    monkeypatch.setattr(
+        snapshot_module.resumption,
+        "probe_lane_availability",
+        lambda project, name, backend, **k: {"status": "served"},
+    )
+    monkeypatch.setattr(
+        snapshot_module, "_dispatch_lane_gate", lambda backend: {"state": "open"}
+    )
+    monkeypatch.setattr(
+        snapshot_module, "_lane", lambda *a, **k: (3, {"waiting": 0}, {"held": False})
+    )
+    monkeypatch.setattr(
+        routing,
+        "_competence_verdict",
+        lambda **k: {"allowed": True, "reason": "", "context": None},
+    )
+
+    config = {
+        "default_backend": "claude_lane",
+        "roles": {"implement": {}},
+        "backends": {
+            "claude_lane": {
+                "launch": "cli",
+                "command": "claude",
+                "model": "claude-model",
+                "usable_input_window": 200000,
+                "sandbox": "worktree-full",
+            },
+            "codex_lane": {
+                "launch": "codex",
+                "model": "codex-model",
+                "usable_input_window": 200000,
+                "sandbox": "worktree-full",
+            },
+        },
+    }
+    node = TaskNode(
+        id="n",
+        goal="g",
+        plan="p",
+        role="implement",
+        spec_level="configuration",
+        done_when="PASS",
+        write_paths=["src/target.py"],
+        negative_control="none: nothing to refuse here",
+    )
+
+    seen: dict[str, object] = {}
+
+    def stub_ask(state, _questions, *, env_path):
+        seen["request"] = state["node"]["estimated_context"]
+        seen["blocks"] = {
+            name: entry["context"]["estimated_tokens"]
+            for name, entry in state["candidates"].items()
+        }
+        offered = list(state["candidates"])
+        split = round(1.0 / (len(offered) + 1), 4)
+        return {
+            "answers": {
+                "route": {
+                    "choice": offered[0],
+                    "confidence": 0.9,
+                    "probabilities": {
+                        **dict.fromkeys(offered, split),
+                        "hold": round(1.0 - split * len(offered), 4),
+                    },
+                }
+            }
+        }
+
+    monkeypatch.setitem(picker.pick.__kwdefaults__, "caller", stub_ask)
+
+    dispatch_picker_module.dispatch_picker_selection(
+        node=node, config=config, project="proj", repo=repo
+    )
+
+    blocks = seen["blocks"]
+    assert blocks, "the scan offered no candidate with a context block"
+    assert set(blocks) == {"claude_lane", "codex_lane"}
+    request = seen["request"]
+    assert request and request > 0
+    for name, figure in blocks.items():
+        assert figure == request, name
+
+    # Non-vacuity: the two chains genuinely differ, so a per-backend figure
+    # would have split the candidates. The claude candidate's own chain still
+    # measures away from the request; the block above nevertheless wears the
+    # request's figure, which is the rule this node puts in place.
+    claude_only = snapshot_module.estimated_context_tokens(
+        node, repo, backend_settings=config["backends"]["claude_lane"]
+    )
+    codex_only = snapshot_module.estimated_context_tokens(
+        node, repo, backend_settings=config["backends"]["codex_lane"]
+    )
+    assert claude_only != codex_only, "the two chains must differ to bite"
+    assert claude_only != request, "the claude chain must measure away from the request"
+    assert blocks["claude_lane"] == request
+    assert request == codex_only
