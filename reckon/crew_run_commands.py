@@ -1909,10 +1909,15 @@ def crew_member_list(project, checkout_path, pretty):
 @click.option("--project", required=True, help="Project whose ledger is read.")
 @click.option(
     "--view",
-    type=click.Choice(["summary", "records"]),
+    type=click.Choice(["summary", "records", "findings"]),
     default="summary",
     show_default=True,
-    help="Rolled-up measures, or every completed record.",
+    help="Rolled-up measures, every completed record, or stored review findings.",
+)
+@click.option(
+    "--path",
+    default=None,
+    help="Restrict the findings view to findings naming paths under this prefix.",
 )
 @click.option(
     "--checkout-path",
@@ -1921,11 +1926,17 @@ def crew_member_list(project, checkout_path, pretty):
     help="Repo root whose ledger is read (default: the registered checkout).",
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_ledger(project, view, checkout_path, pretty):
+def crew_ledger(project, view, path, checkout_path, pretty):
     """Read committed run records, not live run pointers."""
     ledger_module = _ledger_module()
     try:
-        if view == "records":
+        if view == "findings":
+            from reckon.crew import findings as findings_module
+
+            payload = findings_module.findings_by_path(
+                project, path=path, root=checkout_path
+            )
+        elif view == "records":
             # The committed rows as a reader receives them: each carries its
             # own wall time and the width of the fleet when it was dispatched.
             records, _version = ledger_module.read_records(project, checkout_path)

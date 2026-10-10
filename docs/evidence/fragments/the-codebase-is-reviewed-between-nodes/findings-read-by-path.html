@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-codebase-is-reviewed-between-nodes">
+  <meta name="plan-evidence-for" content="reckon:the-codebase-is-reviewed-between-nodes">
+  <meta name="plan-verifies" content="reckon:the-codebase-is-reviewed-between-nodes#s3">
+  <meta name="plan-recorded-at" content="2026-10-10">
+  <meta name="plan-verdict" content="passed">
+  <title>Findings readable by repository path | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="findings-read-by-path-landing" data-node="findings-read-by-path" data-reckon="landed" data-when="2026-10-10">
+  <h2>A stored finding is readable by the repository path it names</h2>
+  <p><code>reckon/crew/findings.py</code> walks a project's committed run-review and plan-review records, pulls every finding whole — blocking and follow-on alike — and groups the rows by the repository path each names with a recurrence count of the distinct reviews naming it; a path outside the checkout is kept as <code>scope: artefact</code> and adds no recurrence. It is served as the crew MCP view <code>crew(project, view="findings", path=&lt;prefix&gt;)</code> and as <code>reckon crew ledger --view findings [--path &lt;prefix&gt;]</code>. The gate <code>tests/test_findings_read_by_path.py</code> builds three committed run-review records — two naming <code>reckon/a.py</code> and one naming an absolute report path — and reads recurrence 2 for <code>reckon/a.py</code> with both rows <code>open</code>, the report row <code>scope artefact</code> with no recurrence, and the CLI printing the same rows; the declared negative control, the reader filtered through <code>repair.blocking_findings</code>, drops the follow-on row and fails three tests at <code>EXIT=1</code>. <code>tests/test_ledger.py</code> holds the MCP surface at five tools.</p>
+</article>
+</body>
+</html>

@@ -1515,6 +1515,7 @@ def _crew(
     view: str = "summary",
     checkout_path: str | None = None,
     plan: str | None = None,
+    path: str | None = None,
     since: str | None = None,
     until: str | None = None,
     limit: int | None = None,
@@ -1676,6 +1677,7 @@ def _crew(
         "velocity",
         "scores",
         "plan-review",
+        "findings",
     ):
         return {
             "ok": False,
@@ -1686,9 +1688,26 @@ def _crew(
                 "quota view, routing is the cross-ledger cost view, runs is the "
                 "compact joined view, scores is the per-dimension review view, "
                 "velocity is the delivery-rate view, and fleet is the "
-                "cross-project view; plan-review reads a plan review and its unanswered findings"
+                "cross-project view; plan-review reads a plan review and its unanswered findings; "
+                "findings reads stored review findings grouped by the repository "
+                "path they name"
             ),
         }
+    if view == "findings":
+        from reckon.crew import findings as findings_module
+
+        try:
+            payload = findings_module.findings_by_path(
+                project, path=path, root=checkout_path
+            )
+        except (OSError, ValueError) as exc:
+            return {
+                "ok": False,
+                "error": "crew_error",
+                "view": view,
+                "detail": str(exc),
+            }
+        return {"ok": True, "view": view, **payload}
     if view == "plan-review":
         from reckon.crew import plan_review
 
