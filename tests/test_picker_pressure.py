@@ -148,10 +148,10 @@ def test_review_node_is_never_offered_a_review_excluded_backend(
 
     def caller(state, questions, **kwargs):
         seen.append(questions["route"]["criteria"])
-        return _answer(fixtures.LOCAL_PAIR, questions["route"]["criteria"])
+        return _answer("local:local-model:clive", questions["route"]["criteria"])
 
     selection = pick(request_node, config, repo=tmp_path, records=[], caller=caller)
-    assert set(seen[0]) == {fixtures.LOCAL_PAIR, "hold"}
+    assert set(seen[0]) == {"local:local-model:clive", "hold"}
     assert {c["backend"] for c in selection.offered} == {"clive"}
     excluded = {c["backend"]: c["reasons"] for c in selection.excluded}
     assert excluded == {

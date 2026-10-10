@@ -267,8 +267,9 @@ def option_key(candidate: Any) -> str:
     the pair alone would name neither of them, so a mapping keyed by it would
     drop the second and Jev could never choose it. The backend is what a dispatch
     launches and is unique per offering, so it is the part that keeps every key
-    distinct. A candidate that declares no model omits the model part entirely,
-    so its backend is never offered where a model belongs.
+    distinct. A candidate that declares no model leaves the model part empty:
+    its second part is the backend itself, named as the backend it is, never
+    offered where a model belongs.
     """
 
     lane = getattr(candidate, "family", None) or getattr(candidate, "backend", "")
@@ -276,6 +277,8 @@ def option_key(candidate: Any) -> str:
     backend = getattr(candidate, "backend", "")
     if model:
         return f"{lane}:{model}:{backend}"
+    if lane != backend:
+        return f"{lane}:{backend}"
     return str(lane)
 
 

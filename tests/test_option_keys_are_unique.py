@@ -63,16 +63,38 @@ def test_two_backends_sharing_a_lane_and_a_model_are_both_offered():
         assert resolve(offered, key) is item
 
 
+def test_two_modelless_backends_on_one_lane_are_both_offered():
+    """Two backends with no model on one lane still get distinct options.
+
+    Both carry the same lane and neither carries a model, so a key of the lane
+    alone would name neither; the backend is the second part.
+    """
+    offered = [
+        candidate("amine", family="claude", model=None),
+        candidate("benzene", family="claude", model=None),
+    ]
+
+    keys = [prompts.option_key(item) for item in offered]
+    assert keys == ["claude:amine", "claude:benzene"]
+    assert len(set(keys)) == len(offered)
+
+    entries = prompts.build_questions(offered)["criteria_entries"]
+    assert set(entries) == set(keys)
+
+
 def test_a_modelless_candidate_does_not_name_its_backend_a_model():
-    """A candidate with no model offers a key that carries no model part."""
+    """A candidate with no model carries no model in its key or its entry."""
     modelless = candidate("amine", family="claude", model=None)
     entry = prompts.build_questions([modelless])["criteria_entries"]
     key = prompts.option_key(modelless)
 
     assert entry[key]["model"] is None
-    lane, _, model = key.partition(":")
+    assert entry[key]["backend"] == "amine"
+    lane, _, second = key.partition(":")
     assert lane == "claude"
-    assert model != "amine", "the key offers the backend where a model belongs"
+    # The second part is the candidate's backend, the backend it is, not a
+    # model name invented for it.
+    assert second == modelless.backend
 
 
 def test_two_candidates_under_one_key_are_refused_not_collapsed():
