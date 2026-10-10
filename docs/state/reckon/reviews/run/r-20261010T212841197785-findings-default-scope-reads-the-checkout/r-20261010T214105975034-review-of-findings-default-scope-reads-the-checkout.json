@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite and no after_suite gate log (both null), so the added-failure count was not taken",
+  "backend": "local",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_run_commands.py:1936",
+    "reckon/mcp.py:1700"
+  ],
+  "completed_at": "2026-10-10T21:52:28.620Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "findings-uses-the-scope-owner",
+      "recorded_at": "2026-10-10T21:54:18.933724+00:00"
+    }
+  },
+  "dispatched_at": "2026-10-10T21:41:30Z",
+  "findings": [
+    {
+      "file": "reckon/crew/findings.py",
+      "line": "90",
+      "severity": "follow-on",
+      "text": "follow-on: _repository_relative (reckon/crew/findings.py:90) re-implements the path-normalisation capability reckon/crew/runs.py:521 _repository_relative_scope already owns -- deciding whether a path lies inside a checkout and returning it repository-relative, or None outside -- but with a divergent mechanism (os.path.normpath + startswith versus Path.resolve + relative_to), so the two can disagree on symlinked or ..-bearing paths. The owner was not extended to a root-optional signature; reuse is therefore scored at most 5 and this is recorded rather than repaired."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read commit-by-commit against the commit 8c84f352; the single landed commit 7be328224 changes reckon/crew/findings.py (+62/-20), tests/test_findings_read_by_path.py (+80, 2 new tests) and adds a 22-line evidence fragment, all inside the declared write paths.",
+    "done_when": "the done_when names tests/test_findings_read_by_path.py with a reader test and a CLI test over a temporary mounted project whose findings name an absolute in-checkout path, asserting repository-relative scope with recurrence counted, EXIT=0, and a negative control that reports the path as a scope artefact and fails; all three are present and their results are recorded.",
+    "goal": "the node goal is 'Scope finding paths against the mounted checkout when no root is given'; _scope_root (reckon/crew/findings.py:132) resolves the boundary from the project's mounted checkout when root is None, which is exactly the goal.",
+    "manifest": "read; it records status complete, commit 7be328224, the gate tests/test_findings_read_by_path.py 6 passed EXIT=0, negative control 2 failed EXIT=1, and names its log paths; it declares no baseline_suite/after_suite (a focused test arm, not a suite).",
+    "write_paths": "read; the declared paths are reckon/crew/findings.py, tests/test_findings_read_by_path.py, the fragment html and a figures dir; every path in the diff is inside them and the worktree is clean."
+  },
+  "justifications": {
+    "durability": "the two added tests assert the reader's and the CLI's output against an independent expectation (repository-relative grouping with recurrence 2), and the recorded negative control shows both redden when the scope boundary is reverted to root None (gate-negative-findings.txt, 2 failed EXIT=1), so they guard the regressed behaviour rather than restating their own input.",
+    "evidence": "the gate is tests/test_findings_read_by_path.py; the manifest records 6 passed EXIT=0 and a re-run at head 7be328224 reproduced 6 passed EXIT=0, and the done_when's reader/CLI/mount/absolute-path assertions are all present in the diff; no baseline/after suite ran, so the added-failure count is unmeasured rather than zero.",
+    "fit": "the added names _repository_relative and _scope_root describe their mechanism and carry no plan label; the module docstring is updated in the same change and the idiom matches the surrounding readers in reckon/crew/findings.py.",
+    "goal_fidelity": "the landed change makes findings_by_path (reckon/crew/findings.py:276) resolve its scope boundary from _scope_root against the mounted checkout when no root is named, and reports absolute in-checkout paths repository-relative, which is the goal; the boundary couples to the mounted docs directory being named docs, which is the codebase's existing convention.",
+    "reuse": "_scope_root reuses _store._docs_dir_for_project for the mounted boundary, but _repository_relative (reckon/crew/findings.py:90) re-implements reckon/crew/runs.py:521 _repository_relative_scope without extending it, so reuse is scored at most 5.",
+    "scope_discipline": "every path in the diff is inside the declared write paths and the change carries nothing the goal does not imply; the worktree at 7be328224 is clean with no out-of-scope edits."
+  },
+  "node": "review-of-findings-default-scope-reads-the-checkout",
+  "project": "reckon",
+  "review_run_id": "r-20261010T214105975034-review-of-findings-default-scope-reads-the-checkout",
+  "reviewed_base_sha": "8c84f352d2af975d82515b82e3c7cfcb9d639348",
+  "reviewed_head_sha": "7be328224bf98af5664ebe1fd671b0a5cfc3350f",
+  "reviewed_run_id": "r-20261010T212841197785-findings-default-scope-reads-the-checkout",
+  "reviewer": "review-of-findings-default-scope-reads-the-checkout",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T21:50:28Z",
+  "total": 98
+}
