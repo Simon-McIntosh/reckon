@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-north-star" content="unattended-execution">
 <meta name="plan-impl" content="0.7777777777777778">
-<meta name="plan-version" content="54">
+<meta name="plan-version" content="55">
 <meta name="plan-modified" content="2026-10-10">
 </head>
 <body>
@@ -93,7 +93,7 @@
 
     <h2 id="s10">§10 — A foreign <code>--repo</code> is refused, not a traceback</h2>
 <section data-reckon="section" data-id="s10" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links="every-module-fits-a-worker-window#s4"></section>
-<p><code>reckon crew dispatch --repo &lt;path&gt;</code>, given a repository that belongs to another project, raises a Python traceback instead of the dispatch refusal every other invalid argument produces. Catch the condition where the repository is resolved and refuse with the project the repository belongs to and the project the dispatch named.</p><p>This section edits <code>reckon/cli.py</code>, so it waits until <code>every-module-fits-a-worker-window</code> §4 has split that module. Write paths: the module that holds the dispatch command after the split, and its tests.</p><p><strong>Done when</strong> a test dispatches with a foreign repository. The command then exits non-zero with a one-line refusal naming both projects, and no traceback reaches stderr.</p>
+<p><code>reckon crew dispatch --repo &lt;path&gt;</code>, given a repository that belongs to another project, raises a Python traceback instead of the dispatch refusal every other invalid argument produces. Catch the condition where the repository is resolved and refuse with the project the repository belongs to and the project the dispatch named.</p><p>Since <code>every-module-fits-a-worker-window</code> §4 split <code>reckon/cli.py</code>, the dispatch command lives in <code>reckon/crew_dispatch_commands.py</code>. Write paths: <code>reckon/crew_dispatch_commands.py</code> and its tests.</p><p><strong>Done when</strong> a test dispatches with a foreign repository. The command then exits non-zero with a one-line refusal naming both projects, and no traceback reaches stderr. Negative control: with the new catch removed, the same test fails because a traceback reaches stderr.</p>
 
     <h2 id="s11">§11 — The plan page shows gate evidence as it was written</h2>
 <section data-reckon="section" data-id="s11" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
