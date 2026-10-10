@@ -1,0 +1,67 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T19:15:16.675Z",
+  "dispatched_at": "2026-10-10T19:08:21Z",
+  "findings": [
+    {
+      "anchor": "the-crew-contract-fits-one-read.html:78",
+      "id": "wiring-1",
+      "reason": "a node running \u00a75 before \u00a73 points its table replacement at a SKILL.md command block the rewrite is about to shrink, and a node running \u00a75 after \u00a73 may find the \u2265250-citation count its done-when requires no longer met because \u00a73 deleted the prose the count is drawn from.",
+      "text": "\u00a75 edits `skills/reckon-build/references/` and replaces the coordinator-reference command table with a pointer to `SKILL.md:185-211`, while \u00a73 rewrites `SKILL.md` to at most 4,000 words and rewrites the same references directory; no dependency, gate or ordering between \u00a73 and \u00a75 is declared on either section element (`data-links=\"\"`).",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "the-crew-contract-fits-one-read.html:74",
+      "id": "done_when-1",
+      "reason": "a node cannot be dispatched, failed or closed against a done-when whose truth is decided entirely by \u00a72 and \u00a73 landing, so the section should either be given its own deliverable and measure or be dissolved into \u00a72/\u00a73.",
+      "text": "\u00a74's done-when is \"\u00a72 lands and \u00a73 starts only after both gates close and the lead has confirmed \u00a72's 'still wanted' column\"; it asserts a precondition on other nodes and an external confirmation rather than a measure of anything \u00a74 produces, and there is no risk of \u00a74's own work being wrong that this measure could detect.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "the-crew-contract-fits-one-read.html:72",
+      "id": "single_goal-1",
+      "reason": "a node carrying the same two goals as \u00a72 and \u00a73 cannot be reviewed or closed on one verdict, and its gate proves neither; the moved-from-a-followup provenance (f-tccfor-001 \u2192 \u00a74) suggests a container that the two real sections make redundant.",
+      "text": "\u00a74 is titled \"Classify, then rewrite, the build skill\" \u2014 exactly \u00a72 (\"Classify every rule\") followed by \u00a73 (\"Rewrite the core\") \u2014 and carries no `<strong>Deliverable.</strong>` paragraph, so it holds two deliverables already owned by two other nodes.",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "the-crew-contract-fits-one-read.html:64",
+      "id": "reasoning-1",
+      "reason": "dropping only the enforced rows cannot move a ~24,000-word reference set plus a 4,000-word core under a 12,000-word combined ceiling, so either \u00a73's mechanism must state that the references are rewritten to their own budget, or its done-when ceiling is unreachable as written.",
+      "text": "\u00a73's deliverable keeps the reference rules \u00a72 marked keep and the rows merged into them, while \u00a72's classification closes (per the plan's own \u00a72 comments, 2026-10-02) with 208 keep + 13 merge + 26 delete-as-enforced over the skill table and 303 rows over the reference files, and the recorded baseline puts SKILL.md + references at ~34,776 words (references alone ~23,726).",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "c86bc7f4999172e61789510d6cf3e54c3ed65bbbc82881b5c052178b53bf4e51",
+  "plan_slug": "the-crew-contract-fits-one-read",
+  "plan_version": 27,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261010T190747786296-plan-review-of-the-crew-contract-fits-one-read",
+  "reviewed_blob_sha": "963595bf7e28d06eb8b0fdf801ad449907be7aaf",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 verified in the worktree: `PLAN-FORMAT.md:321` and `:330` name `reckon migrate-project-state` and `reckon migrate-fleet`; `sprint-orchestration.md:1011` names `reckon crew census`; `coordinator-reference.md` carries the command block copied from `SKILL.md:185-211`; commit `807053fb6` (\"remove obsolete migration commands\") exists and the two commands are absent from `reckon --help`; `tests/test_skill_contract_parity.py` and `docs/research/orchestrator-crew-pattern-review.html` (ids `s3`, `s9`) resolve; the three `plan-after` targets all exist under `docs/plans/`.",
+    "done_when": "a finding \u2014 \u00a74's done-when (\"\u00a72 lands and \u00a73 starts only after both gates close and the lead has confirmed \u00a72's 'still wanted' column\") measures \u00a72 and \u00a73, not any deliverable \u00a74 owns, so it cannot fail on \u00a74's own work.",
+    "evidence_paths": "pass \u2014 \u00a72 lands its table in the plan's cumulative evidence record, \u00a75's gate writes `tests/test_cited_commands_exist.py`, `PLAN-FORMAT.md` and `skills/reckon-build/references/`, and the cited health-review directory `~/.config/reckon/crew/reports/reckon/health-review-1010/health-skill-drift/` exists on disk, all durable paths.",
+    "naming": "pass \u2014 \u00a75 proposes `tests/test_cited_commands_exist.py`, named by mechanism, and no plan labels, ticket numbers or version tags reach proposed symbols or filenames.",
+    "reasoning": "a finding \u2014 \u00a73's stated mechanism (references \"keep the rows \u00a72 marked keep and the rows merged into them\") is not shown capable of producing \u00a73's own done-when \u2014 the skill and its references at most 12,000 words combined \u2014 because \u00a72's own classification closes with the large majority of rows kept.",
+    "single_goal": "a finding \u2014 \u00a74's goal (\"Classify, then rewrite, the build skill\") restates \u00a72 (classify) plus \u00a73 (rewrite); the node has no deliverable of its own and cannot be closed on one verdict distinct from theirs.",
+    "wiring": "a finding \u2014 \u00a75 writes `skills/reckon-build/references/` and rewrites the coordinator-reference table to point at `SKILL.md:185-211`, yet \u00a73 also rewrites `SKILL.md` and the same references with no declared dependency or ordering between \u00a73 and \u00a75."
+  },
+  "section_digests": {
+    "_document": "971e28a5e13a3c3a7a90171ee3b34a8ee93c6a73b132edf8b0c38109a08b8397",
+    "s1": "e03f606afdb78e6b308ef1299a7b868ec09052b4842de46205b30106103e5991",
+    "s2": "698a2a8583161b33608967bafc3c61641856bd4c995bb3e303796723932345e7",
+    "s3": "55c86e04c5aae2cb268f9567ce641cae99945fa16a350c250d4170d30ed1c947",
+    "s4": "bc54d1886f4d3949bffdaf93118a6be518f17b34653992dc9521ee8e03739257",
+    "s5": "40496e6ea72c370a28eb7319e01fe0046b678d76473ba30004c2f35384ba79ca"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T19:22:32.655171+00:00"
+}
