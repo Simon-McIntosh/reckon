@@ -1,0 +1,112 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T21:13:32.123Z",
+  "dispatched_at": "2026-10-10T21:07:23Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/lane-and-model-routing.html:42",
+      "id": "reasoning-1",
+      "reason": "the enumeration is the reader's map of what remains and must read \"\u00a78\u2013\u00a714\"; the earlier version of this line was corrected for \u00a712 and has gone stale again as sections were added.",
+      "text": "the intro enumerates the follow-ons as \"\u00a78\u2013\u00a712\", but \u00a713 (from \u00a78's review) and \u00a714 (from \u00a74's review) are now follow-ons too, so the plan's own summary of its section set contradicts its section list",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/lane-and-model-routing.html:112",
+      "id": "wiring-1",
+      "reason": "unlike the \u00a74/\u00a710 pair (concurrent claims refused, either order correct), only one order is valid here \u2014 \u00a714 edits `--model` behaviour that \u00a74 introduces \u2014 so the dependency belongs in the wiring the coordinator reads, not in prose alone.",
+      "text": "\u00a714 says \"Dispatch this section only after \u00a74 lands\" and its done-when asserts a test that \"fails on the code \u00a74 merges\", but `plan-section-depends-on` (line 22) carries no `s14` entry and `s14` is declared `implementable` beside the also-unlanded `s4`, so the roadmap offers \u00a714 for dispatch before the `--model` code it refactors exists",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/lane-and-model-routing.html:182",
+      "id": "wiring-2",
+      "reason": "the open followup is what the coordinator acts on; pointing it at a done section wastes the next dispatch and leaves \u00a713/\u00a714 undispatched.",
+      "text": "the only open followup `f-lmr-006` recommends `/reckon-build lane-and-model-routing \u00a712`, which is declared `done` and landed at merge `d93d8918e` (line 263), and it does not name \u00a713 or \u00a714 at all, so the driving followup sends the next node at completed work and omits the sections this change adds",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "3ded5e960cf15a31e9542600c1881ffb36eca7a0d8b6983841e50378d40a85f1",
+  "plan_slug": "lane-and-model-routing",
+  "plan_version": 51,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-10T21:17:12.276159+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-10T21:17:16.295339+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "wiring-2",
+      "reason": "",
+      "when": "2026-10-10T21:17:20.331381+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-10T21:17:12.276159+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-10T21:17:16.295339+00:00"
+    },
+    "wiring-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-10T21:17:20.331381+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-lane-and-model-routing.v51.json",
+  "review_run_id": "r-20261010T210653408361-plan-review-of-lane-and-model-routing",
+  "reviewed_blob_sha": "f49b3fd04215e7f5c2bb9f09f28f6a01e63cea10",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `tests/test_option_keys_are_unique.py` and both named tests exist; `reckon/crew_dispatch_commands.py`, commit `dba1dbfaa`, run `r-20261010T201227087344-dispatch-names-a-model` and \u00a713/\u00a714 section ids all resolve; `tests/test_dispatch_names_a_model.py` is created by \u00a74, which \u00a714 requires first.",
+    "done_when": "pass \u2014 \u00a713 names a mutation control (\"fails when its backend is labelled as a model\") and \u00a714 names an unfixed-code control (\"fails on the code \u00a74 merges\"); both are measurable.",
+    "evidence_paths": "pass \u2014 \u00a713 and \u00a714 write only repository paths under `reckon/` and `tests/`; no evidence lands in a scratchpad or node-local temporary directory.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach \u00a713/\u00a714 titles or bodies; the run id and commit sha are evidence, not code naming.",
+    "reasoning": "a finding \u2014 the document's own section accounting at line 42 still reads \"\u00a78\u2013\u00a712 are follow-ons from their reviews\", omitting the two follow-ons this change adds.",
+    "single_goal": "pass \u2014 \u00a713 is one test guard and \u00a714's two items are the two halves of one `--model` deliverable sharing one module and one test file.",
+    "wiring": "a finding \u2014 \u00a714 states its prerequisite on \u00a74 only in prose and declares no `plan-section-depends-on` edge, while both `s4` and `s14` are declared `implementable`."
+  },
+  "section_digests": {
+    "_document": "bb5810fae6673bd5c66f71bf506e59b90d1048ba8fcca2c804bbb10e06dead48",
+    "s0": "16a4b2aedea4665c33a94bb3453f20d24fbd5286fb2035a368a4196d085128d1",
+    "s1": "6760f63ebdb0d0db10c3c004f30d4f4253bfb7582bc7a0e4054fed73e017a02d",
+    "s10": "9d27e940f021242c82017cf503b8e3d3277451ecaef61d1887ae36cecf3eb5a7",
+    "s11": "2e566713b8ee8cbfcf94503cba2640bac78329b96f748ff0334a858e08287755",
+    "s12": "8a7841af15c5beacc75bf716eab0a317f722daab3a302ec190299ce0c3315350",
+    "s13": "6cc9f5f5d1d9a0d7a981363b2961d554bc1670d016cf5da011e18fd20d24b604",
+    "s14": "f4192a6b66ca1a9df3c0c8b84d6a76f9b7e2708145600fc43403217b7a52c540",
+    "s2": "0c6488cdae0f23d0600410d02191390e773858e9bc75008234f71cc66f01889b",
+    "s3": "6cb602347e0232fe459028eff2010884381d987053d550c4565f581c23032095",
+    "s4": "aa5a29a8662005607992ae17fc914d47e8e48c68b7e65395b4865f6d33ea37f4",
+    "s5": "2ffa1a3b1d2b09433f25a83f8a7a59b1774249bac29b945f2c2273ace57cb1ba",
+    "s6": "6c8117bcfdc7d4b0bafdc4fb2185779998c71b1730b07a0d900b543f02c08ec1",
+    "s7": "07952e2e354db24e76860530568500cc2066b69b4255c020db83677e46cb18e2",
+    "s8": "7ca129403c95fcbc111273a2b419b29279191bc54c157bb6f7d8de0d5b160d34",
+    "s9": "0c546f1c0ce99eb4f03333edf6955f597fcb37c49baa31305dfd52c6b03364d8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T21:17:09.973355+00:00"
+}
