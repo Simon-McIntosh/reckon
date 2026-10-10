@@ -25,6 +25,8 @@
   <title>The Codebase Is Reviewed Between Nodes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-10-10">
 </head>
 <body>
   <main class="plan-doc">
@@ -50,8 +52,8 @@
         <tr><td>Verbatim repeats among those findings</td><td>0 of 55 on <code>dispatch.py</code>: a recurring fault is re-found in new
           words, so only a reader holding the earlier findings can tell new from known</td><td><code>health-review-yield/control_out.txt</code></td></tr>
         <tr><td>Plan-review findings with any answer</td><td>203 of 584 (34.8%)</td><td><code>health-review-yield/scan_summary.json</code></td></tr>
-        <tr><td>Duplicate function pairs inside <code>reckon/crew/</code></td><td>190 unique pairs; <code>promotion_scope.py</code> in 31</td>
-          <td><code>health-crew-surface/clone_scan.tsv</code></td></tr>
+        <tr><td>Function pairs in the promotion family sharing a six-line window with another function</td><td>107, 60 of them from <code>promotion_scope.py</code>; the detector reports one pair per shared window, so this counts shared idiom as well as copied capability, and the census by capability the crew-surface review was asked for was not completed</td>
+          <td><code>reckon.clones.clone_matches</code> over <code>promotion_scope.py</code>, <code>promotion_gate.py</code> and <code>promotion_checks.py</code> at <code>646bbacf5</code>, run by the coordinator after the crew-surface review's own clone table was found to hold placeholder rows</td></tr>
         <tr><td>Modules reached by no production entry point, only by tests</td><td>7, including <code>reckon/crew/hold.py</code>, merged
           2026-10-10 as <code>hold-names-the-serving-lane</code></td><td><code>health-reachability/reach_graph.log</code></td></tr>
         <tr><td>Non-shipped plans; members of the carry-over sprint S22</td><td>63; 55, of which 12 are shipped</td>
@@ -245,13 +247,13 @@
 <section data-reckon="section" data-id="s11" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
     <p><strong>Deliverable.</strong> The proving run. Run <code>/reckon-review --path reckon/crew/promotion_scope.py --path
       reckon/crew/promotion_gate.py --path reckon/crew/promotion_checks.py</code> once §3 to §7 have landed, and carry its treatment to a
-      promoted node. The health review of 2026-10-10 counted <code>promotion_scope.py</code> in 31 duplicate pairs and
-      <code>promotion_gate.py</code> in 23 (<code>health-crew-surface/clone_scan.tsv</code>); the review is expected to read those as known
-      and to choose among them.</p>
+      promoted node. The promotion family is the most-cited code in the review store (<code>promotion.py</code> named by 33 distinct reviews) and the
+      clone detector pairs 107 of its functions with another function at <code>646bbacf5</code>; whether those are copied capabilities or
+      shared idiom is the question the review's <code>duplicate_capability</code> census answers.</p>
     <p><strong>Done when</strong> the review record is stored and §3 serves it; every finding it read carries a disposition; its treatment
       is promoted with a passing gate and its own negative control, or the record states <code>TREATMENT: none</code> with a reason the
-      coordinator accepts in writing on this section; and <code>reckon/clones.py</code> run over the three modules at the integrated head
-      reports fewer duplicate pairs than at this plan's base, with both counts in the landing record. Write paths: the treatment node's own,
+      coordinator accepts in writing on this section; the promoted treatment's product line delta is negative; and <code>reckon.clones.clone_matches</code> over the three modules,
+      run the same way as the §1 figure, is reported at the integrated head beside the 107 measured at <code>646bbacf5</code>. Write paths: the treatment node's own,
       named by the review.</p>
 
     <section data-reckon="gates" id="gates" class="r-gates">
@@ -259,37 +261,36 @@
 <div class="r-gate" data-id="g-tcirbn-reach-instrument" data-section="s6" data-gated-sections="s6" data-status="open" data-verdict="">
     <h4 class="r-gate-measure">reckon/reach.py returns the production modules one import away from a named path, and its ratchet test passes at the integrated head</h4>
     <p class="r-gate-required-evidence">nothing-lands-unreached#s2</p>
-</div>
-    </section>
+    </div>
+</section>
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="review-shape" data-choice="skill-with-modes" data-by="reckon-build coordinator (health-review-1010)" data-when="2026-10-10">
-  <p class="r-dec-q">Should codebase health review be a node every coordinator dispatches, written into reckon-build, or a separate /reckon-review skill?</p>
-  <p class="r-dec-opts">
-    <button class="r-opt" data-value="skill-with-modes">A /reckon-review skill with code, plan and portfolio modes; reckon-build gains one step that calls it</button>
-    <button class="r-opt" data-value="coordinator-node">A node pattern written into reckon-build only</button>
-  </p>
-  <p class="r-dec-rat">Plan and sprint health need an entry point that is not a plan build, and reckon-build is being shrunk by the-crew-contract-fits-one-read. One skill serves the lead and the coordinator; the coordinator's obligation is one step that calls it (§9). The lead may reopen this.</p>
-</div>
+    <p class="r-dec-q">Should codebase health review be a node every coordinator dispatches, written into reckon-build, or a separate /reckon-review skill?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="skill-with-modes">A /reckon-review skill with code, plan and portfolio modes; reckon-build gains one step that calls it</button>
+      <button class="r-opt" data-value="coordinator-node">A node pattern written into reckon-build only</button>
+      </p>
+    <p class="r-dec-rat">Plan and sprint health need an entry point that is not a plan build, and reckon-build is being shrunk by the-crew-contract-fits-one-read. One skill serves the lead and the coordinator; the coordinator&#x27;s obligation is one step that calls it (§9). The lead may reopen this.</p>
+    </div>
 <div class="r-dec" data-key="treatments-per-review" data-choice="one" data-by="reckon-build coordinator (health-review-1010)" data-when="2026-10-10">
-  <p class="r-dec-q">How many treatment nodes may one code-mode review dispatch?</p>
-  <p class="r-dec-opts">
-    <button class="r-opt" data-value="one">One, chosen from deleting, narrowing, wiring or recurring-finding treatments</button>
-    <button class="r-opt" data-value="unbounded">As many as it finds</button>
-  </p>
-  <p class="r-dec-rat">An unbounded treatment list is how a health review becomes busy work and contends with the plan it runs beside. Every other finding is disposed, so it is not lost.</p>
-</div>
-    </section>
+    <p class="r-dec-q">How many treatment nodes may one code-mode review dispatch?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="one">One, chosen from deleting, narrowing, wiring or recurring-finding treatments</button>
+      <button class="r-opt" data-value="unbounded">As many as it finds</button>
+      </p>
+    <p class="r-dec-rat">An unbounded treatment list is how a health review becomes busy work and contends with the plan it runs beside. Every other finding is disposed, so it is not lost.</p>
+    </div>
+</section>
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-tcirbn-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-10-10" data-recommends-skill="/reckon-build the-codebase-is-reviewed-between-nodes">
-    <h3 class="r-fu-title">Build the health-review loop</h3>
+<article class="r-fu" data-id="f-tcirbn-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-10-10" data-recommends-skill="/reckon-build the-codebase-is-reviewed-between-nodes" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build the health-review loop</h4>
     <div class="r-fu-body"><p>§3 and §5 first; §4 after §3; §6 after §3 and the reachability instrument; §7, §8, §9 after §6; §10 beside them; §11 last.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-codebase-is-reviewed-between-nodes</pre>
-</article>
-    </section>
-  <section data-reckon="comments" id="comments" class="r-comments">
-  </section>
+    </article>
+</section>
+  
 </main>
 </body>
 </html>
