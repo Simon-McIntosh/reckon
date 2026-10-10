@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T22:37:43.122Z",
+  "dispatched_at": "2026-10-10T22:32:59Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:109",
+      "id": "anchors_resolve-1",
+      "reason": "a node sent to serve.py:2067 lands in the discovery cache, not the reader \u00a75 asks it to change, wasting its first read and inviting an edit to the wrong function.",
+      "text": "\u00a75 cites `readiness_state` at `reckon/serve.py:2067` and, at line 114, `_read_readiness_state` at `serve.py:1794` and `_plan_record`'s `read_state` call at `reckon/metadata_index.py:593`; at the reviewed tree these resolve to serve.py:2167, serve.py:2160 (call site 1894) and metadata_index.py:666 respectively \u2014 `serve.py:2067` is `_cache_discovery_result` and `metadata_index.py:593` is inside `_row_for`, so \u00a75, which runs after \u00a72\u2013\u00a74 rewrote serve.py and metadata_index.py, points its node at the wrong functions by construction",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:116",
+      "id": "reasoning-1",
+      "reason": "the ten-parse bound is unreachable as stated because the index build adds a parse per plan, and reaching it requires editing `reckon/metadata_index.py`, which \u00a75's write paths (roadmap.py, serve.py, the test) omit, so the node either fails its own gate or writes outside its scope.",
+      "text": "\u00a75's done-when asserts that the metadata index build's per-plan parse (\"`_plan_record` calling `_plan_html.read_state` \u2026 `reckon/metadata_index.py:593`\") \"reads through the same memo\", but at the reviewed tree `_plan_record` (metadata_index.py:645) reads the file itself (`text = path.read_text(...)`) and calls `_plan_html.read_state(text)` directly at line 666, and its own docstring (lines 656\u2013659) states the read is deliberately \"the file's own, not the memoised text parse_meta shares\"",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "2f7f97552c8dac0cec8d1268516a5ef36cfbf82c198c0e61a679c608d0e2585e",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 16,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261010T223229049720-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "8c8e7cd375f7581c7d0cecc28a59df21b25e5b10",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 three line anchors in \u00a75 no longer resolve in the tree a node will read.",
+    "done_when": "pass \u2014 \u00a75's done-when is a counting bound (at most ten `read_state` parses over ten plans across a cold roadmap read and a discovery read) and names a declared negative control (with `read_authored` restored to its own parse under its own kind, the count exceeds ten).",
+    "evidence_paths": "pass \u2014 \u00a75's evidence is a committed test (`tests/test_every_plan_read_is_memoised.py`) plus the roadmap/audit test results, none of it on a scratch or node-local path.",
+    "naming": "pass \u2014 the symbols \u00a75 names (`read_state_and_text`, `section_authored`, `readiness_state`, `read_authored`, `_plan_record`, `_audit_plan_state`) are mechanism-named and exist; no plan label, ticket number or version tag reaches a symbol or comment.",
+    "reasoning": "a finding \u2014 \u00a75 asserts the metadata index build's per-plan parse \"reads through the same memo\", but the cited code reads the file itself.",
+    "single_goal": "pass \u2014 \u00a75 carries one deliverable: the plan-parse memos are unified so one parse serves every reader.",
+    "wiring": "pass \u2014 \u00a75's text (\"runs after \u00a73, which writes roadmap.py, and after \u00a74, which writes serve.py\") agrees with followup f-araiid-002 (\"\u00a75 after \u00a73 and \u00a74\"), and both modules it names are written by those nodes."
+  },
+  "section_digests": {
+    "_document": "ed56ddda67cab69463c811909740e400e27ec4661d29dba9a7afeb660333816e",
+    "s1": "71942607f4df4eca011a41734257645ef2adce9664dd45b628d96b066c34e813",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s3": "cbe34f619f869b3c3346239e8823a63a8de98dd92b7fb8ed5cfa2b8a4ab26a39",
+    "s4": "d2ec58f5ac4e72c5e8bcde1f156bdd4c85bde3848b4e3b6131e6112bb6395d49",
+    "s5": "ceb3ac7a374c0bac7248e41e3ef4d800df7d290815d3aef8c5a887090241ef39",
+    "s6": "00db597c53dfd6e3d857f89ee748a8c6ecfe51576b2b66e64772393805c59b52"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T22:40:06.395483+00:00"
+}
