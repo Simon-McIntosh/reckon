@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "backend": "deepseek-v4.1-flash",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-10T21:56:57.432Z",
+  "dispatched_at": "2026-10-10T21:40:29Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-portfolio-reads-true/impl-derives-from-declarations.html",
+      "line": "",
+      "severity": "follow-on",
+      "text": "follow-on: three of the four test files this repair rewrites (tests/test_impl_needs_every_section_recorded.py, tests/test_bookkeeping_earns_no_review.py, tests/test_plan_review_store.py) are not named in the plan section's Write paths, which list only tests/test_impl_stays_authorable_while_records_are_partial.py among the tests; the edit rests on the done-when clause that the tests importing reckon._plan_html pass, their list built at dispatch, and on the manifest's changed_paths. Recorded so the coordinator can confirm the dispatch grant covered them rather than the plan text."
+    },
+    {
+      "file": "gate.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed run's gate.log opens its header with 'rev=<sha>' rather than the 'revision' token the store's reader matches, so the store's head_log_revision resolves to null for this review and the added-failure derivation cannot tie its count to a revision; the count is unmeasured for the independent reason that no baseline_suite is named."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "none: the delta changes only tests and an evidence fragment, so it names no production call site to verify.",
+    "diff": "read commit by commit against c50f84141; the sole gained commit b618d3738 rewrites the four tests the prior review named as encoding the superseded authored fallback - tests/test_impl_needs_every_section_recorded.py to 0.75/declarations, tests/test_impl_stays_authorable_while_records_are_partial.py to an accepted write that serves 0.5/declarations, tests/test_bookkeeping_earns_no_review.py to 0.0/declarations, tests/test_plan_review_store.py to treat a derived plan-impl meta as inert - and updates the evidence fragment; no production path changes.",
+    "done_when": "the repair's gate is green (gate.log: 25 passed, EXIT=0 at revision b618d3738), and this review re-ran the same four files against the reviewed tree's own module (module.__file__ under the reviewed worktree, derive_impl_from_declarations present) to 25 passed, EXIT=0; the four rewritten assertions match the declaration-count contract, and the negative control (revert b618d3738) reddens the four at EXIT=1.",
+    "goal": "the node's declaration-count derivation is unchanged by this delta; the gained commit exists to answer the prior review's blocking finding that four tests asserted the superseded authored figure for a partially recorded plan. The delta makes those tests assert the served declaration-count figure and its 'declarations' source instead.",
+    "manifest": "read; the reviewed manifest names after_suite (gate.log, revision b618d3738, 25 passed, EXIT=0, zero failure ids) and no baseline_suite; the store's own annotate_review_of_run over this manifest returns an unmeasured added-failure count, which this record carries.",
+    "write_paths": "read the manifest's declared paths; the delta touches the four test files and the evidence fragment, all five inside the manifest's changed_paths; three of the four tests are outside the plan section's Write paths but are the files the blocking finding named and the done-when's plan_html-importing clause requires (see follow-on finding)."
+  },
+  "justifications": {
+    "durability": "the rewritten tests assert exact figures and the impl_source value (0.75/declarations, 0.5/declarations, 0.0/declarations), so a regression back to the authored fallback reddens them; the negative control at the reviewed run's negative-control.log shows the four assertions failing (EXIT=1) when b618d3738 is reverted, so the guards are shown to fail when the behaviour is undone.",
+    "evidence": "the reviewed run's gate.log records 25 passed, EXIT=0 at b618d3738, and an independent re-run of the same four files by this review against the reviewed tree's module reproduced 25 passed, EXIT=0; the four rewritten tests encode the served figure rather than the superseded authored one, and a tree-wide check of tests asserting an impl_source of 'authored' found none on a plan carrying declarations (test_impl_is_computed.py's authored cases are on plans with no records). The gap: the manifest names no baseline_suite, so the added-failure count is unmeasured rather than a measured zero.",
+    "fit": "the rewritten tests keep the modules' existing idioms - the AUTHORED constant now names only the on-disk meta, the assertions read read_state/parse_plan/parse_meta as before, and tests/test_plan_review_store.py gates its impl case on a derived_impl flag whose rationale is stated in a comment - so the change matches the surrounding test style rather than restructuring it.",
+    "goal_fidelity": "the gained commit answers the prior review's blocking finding exactly: it updates the four tests the finding named to the declaration-count contract the plan section specifies (done over done plus implementable, deferred excluded), and rewrites the evidence fragment's 'Superseded expectations' section from 'reported rather than edited' to 'updated in place' with the four served figures, matching the code.",
+    "reuse": "the delta introduces no new mechanism; it edits four existing tests to the contract the production change already implements and edits the existing evidence fragment, so nothing is re-implemented or forked.",
+    "scope_discipline": "the diff touches only the four test files and the evidence fragment; no production path and no shared state moves. Three of the four test files are outside the plan section's declared Write paths but were the files the prior blocking finding named and the done-when requires green, and the manifest's changed_paths records all of them; the observation is recorded as a follow-on rather than a defect."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's declaration-count derivation is unchanged by this delta; the gained commit exists to answer the prior review's blocking finding that four tests asserted the superseded authored figure for a partially recorded plan. The delta makes those tests assert the served declaration-count figure and its 'declarations' source instead.\nVERDICT done_when: the repair's gate is green (gate.log: 25 passed, EXIT=0 at revision b618d3738), and this review re-ran the same four files against the reviewed tree's own module (module.__file__ under the reviewed worktree, derive_impl_from_declarations present) to 25 passed, EXIT=0; the four rewritten assertions match the declaration-count contract, and the negative control (revert b618d3738) reddens the four at EXIT=1.\nVERDICT write_paths: read the manifest's declared paths; the delta touches the four test files and the evidence fragment, all five inside the manifest's changed_paths; three of the four tests are outside the plan section's Write paths but are the files the blocking finding named and the done-when's plan_html-importing clause requires (see follow-on finding).\nVERDICT manifest: read; the reviewed manifest names after_suite (gate.log, revision b618d3738, 25 passed, EXIT=0, zero failure ids) and no baseline_suite; the store's own annotate_review_of_run over this manifest returns an unmeasured added-failure count, which this record carries.\nVERDICT diff: read commit by commit against c50f84141; the sole gained commit b618d3738 rewrites the four tests the prior review named as encoding the superseded authored fallback - tests/test_impl_needs_every_section_recorded.py to 0.75/declarations, tests/test_impl_stays_authorable_while_records_are_partial.py to an accepted write that serves 0.5/declarations, tests/test_bookkeeping_earns_no_review.py to 0.0/declarations, tests/test_plan_review_store.py to treat a derived plan-impl meta as inert - and updates the evidence fragment; no production path changes.\nCALL_SITES: none: the delta changes only tests and an evidence fragment, so it names no production call site to verify.\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the gained commit answers the prior review's blocking finding exactly: it updates the four tests the finding named to the declaration-count contract the plan section specifies (done over done plus implementable, deferred excluded), and rewrites the evidence fragment's 'Superseded expectations' section from 'reported rather than edited' to 'updated in place' with the four served figures, matching the code.\nSCORE evidence: 17\nJUSTIFICATION evidence: the reviewed run's gate.log records 25 passed, EXIT=0 at b618d3738, and an independent re-run of the same four files by this review against the reviewed tree's module reproduced 25 passed, EXIT=0; the four rewritten tests encode the served figure rather than the superseded authored one, and a tree-wide check of tests asserting an impl_source of 'authored' found none on a plan carrying declarations (test_impl_is_computed.py's authored cases are on plans with no records). The gap: the manifest names no baseline_suite, so the added-failure count is unmeasured rather than a measured zero.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: the diff touches only the four test files and the evidence fragment; no production path and no shared state moves. Three of the four test files are outside the plan section's declared Write paths but were the files the prior blocking finding named and the done-when requires green, and the manifest's changed_paths records all of them; the observation is recorded as a follow-on rather than a defect.\nSCORE durability: 17\nJUSTIFICATION durability: the rewritten tests assert exact figures and the impl_source value (0.75/declarations, 0.5/declarations, 0.0/declarations), so a regression back to the authored fallback reddens them; the negative control at the reviewed run's negative-control.log shows the four assertions failing (EXIT=1) when b618d3738 is reverted, so the guards are shown to fail when the behaviour is undone.\nSCORE fit: 18\nJUSTIFICATION fit: the rewritten tests keep the modules' existing idioms - the AUTHORED constant now names only the on-disk meta, the assertions read read_state/parse_plan/parse_meta as before, and tests/test_plan_review_store.py gates its impl case on a derived_impl flag whose rationale is stated in a comment - so the change matches the surrounding test style rather than restructuring it.\nSCORE reuse: 19\nJUSTIFICATION reuse: the delta introduces no new mechanism; it edits four existing tests to the contract the production change already implements and edits the existing evidence fragment, so nothing is re-implemented or forked.\nFINDING docs/evidence/fragments/the-portfolio-reads-true/impl-derives-from-declarations.html: follow-on: three of the four test files this repair rewrites (tests/test_impl_needs_every_section_recorded.py, tests/test_bookkeeping_earns_no_review.py, tests/test_plan_review_store.py) are not named in the plan section's Write paths, which list only tests/test_impl_stays_authorable_while_records_are_partial.py among the tests; the edit rests on the done-when clause that the tests importing reckon._plan_html pass, their list built at dispatch, and on the manifest's changed_paths.\nFINDING gate.log:1 follow-on: the reviewed run's gate.log opens its header with 'rev=<sha>' rather than the 'revision' token the store's reader matches, so the store's head_log_revision resolves to null for this review and the added-failure derivation cannot tie its count to a revision; the count is unmeasured for the independent reason that no baseline_suite is named.\n",
+  "review_run_id": "r-20261010T214004632599-review-of-impl-derives-from-declarations",
+  "reviewed_base_sha": "c50f84141d862c2764f8e1ebabbb6a747378dbff",
+  "reviewed_head_sha": "b618d37383198cdb124d1e4e66b3b323f0474573",
+  "reviewed_run_id": "r-20261010T203035296182-impl-derives-from-declarations",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T21:53:29.015647+00:00",
+  "total": 106
+}
