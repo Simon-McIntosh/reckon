@@ -26,8 +26,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;done&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;done&quot;,&quot;s27&quot;:&quot;done&quot;,&quot;s28&quot;:&quot;done&quot;,&quot;s29&quot;:&quot;implementable&quot;,&quot;s30&quot;:&quot;implementable&quot;,&quot;s31&quot;:&quot;done&quot;,&quot;s32&quot;:&quot;implementable&quot;}">
-<meta name="plan-impl" content="0.9032258064516129">
-<meta name="plan-version" content="305">
+<meta name="plan-impl" content="0.90625">
+<meta name="plan-version" content="306">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -984,6 +984,9 @@
 </div>
 <div class="r-comment" data-section="s28" data-id="c-close-s28" data-who="reckon-build" data-when="2026-10-10T22:40:00Z">
     <div class="r-comment-body"><p>§28 landed: the instructions name the current key form, <code>serving_lanes</code> and the single-serving-lane hold rule (merge <code>ec4f718a9</code>, review 106, no failures added). The rebuilt states did not reproduce the recorded holds, so they stay unexplained; §32 records the exact state with each hold. <a href="/reckon/evidence/archive/one-typesafe-model-picker-landed.html#s28">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s28" data-id="c-run-r-20261010T220735057264-jev-hold-follows-its-instructions" data-who="reckon-build" data-when="2026-10-10T22:17:49.384Z">
+    <div class="r-comment-body"><p>The routing instructions now name serving_lanes, serving_lane_count and hold_waits_for, state that a lane absent from serving_lanes cannot run the node, and describe the option key as &lt;lane&gt;:&lt;model&gt;:&lt;backend&gt;; both recorded review holds replay with local_lane.admission=admitting and serving_lanes=[&quot;local&quot;], so the holds were not the instructed answer; four real Jev calls (typesafe/jev-1.13) route both states before (hold 0.05, 0.03) and after (hold 0.15, 0.13); gate 13 passed EXIT=0 head vs 4 failed/9 passed EXIT=1 base.</p></div>
 </div>
 </section>
 <section data-reckon="followups" id="followups" class="r-followups">
