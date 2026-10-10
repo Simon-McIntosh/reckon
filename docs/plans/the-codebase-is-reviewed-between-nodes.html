@@ -25,7 +25,7 @@
   <title>The Codebase Is Reviewed Between Nodes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="8">
+<meta name="plan-version" content="9">
 <meta name="plan-modified" content="2026-10-10">
 </head>
 <body>
@@ -323,6 +323,9 @@
 <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-10T21:30:00Z">
     <div class="r-comment-body"><p>§3 landed: stored findings are readable by path through the crew view and the ledger CLI (merged <code>7766b3aa7</code>); review 113/120; one hot-path follow-on is being repaired. <a href="/reckon/evidence/archive/the-codebase-is-reviewed-between-nodes-landed.html#s3">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261010T203443911256-findings-read-by-path" data-who="reckon-build" data-when="2026-10-10T21:10:21.678Z">
+    <div class="r-comment-body"><p>findings-read-by-path — a new reader (reckon/crew/findings.py) walks a project&#x27;s committed run-review and plan-review records and groups every finding, blocking and follow-on alike, by the repository path it names, with recurrence 2 for a path two reviews name and a report path kept as scope:artefact adding no recurrence; served as crew(view=&quot;findings&quot;, path=prefix) and reckon crew ledger --view findings --path, with the declared negative control (the reader filtered through repair.blocking_findings) dropping the follow-on row and failing three tests at EXIT=1.</p></div>
 </div>
 </section>
 </main>
