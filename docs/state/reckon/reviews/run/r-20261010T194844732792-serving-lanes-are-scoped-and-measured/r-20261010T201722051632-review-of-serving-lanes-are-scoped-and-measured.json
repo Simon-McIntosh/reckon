@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "b718a35ab0d69b2130a9759ca0a6201a26f545a0",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:691",
+    "reckon/crew/dispatch_picker.py:301"
+  ],
+  "completed_at": "2026-10-10T20:27:29.760Z",
+  "dispatched_at": "2026-10-10T20:17:56Z",
+  "findings": [
+    {
+      "file": "reckon/crew/picker/templates/questions.jinja",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the routing instructions' closing sentence names the glossary terms Jev is told to consult and omits serving_lanes and hold_waits_for, so the node-scoped facts reach Jev in the state JSON and the glossary mapping but are never named in the instructions; this file is outside the node's write scope, and it is the plausible reason the replayed holds did not move (0.83 to 0.87, 0.84 to 0.89), so a coordinator should decide whether the section's item 3 is closed while the fact is carried but not pointed at."
+    }
+  ],
+  "head_log_revision": "0268785d74c2637b20497dcaa10deda0ee9d29c5",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read b718a35a..0268785d7 commit by commit; the two code commits move the three keys into the node block, replace _serving_lanes' inline grouping with lane_context.lane_groups, route lane_context.lanes through the same function, update the golden fixture and the pinned node field set, and add the two tests.",
+    "done_when": "the section asks a test with a family-less candidate to count it in serving_lane_count and show it in the lanes block, a second test replacing the grouping to move both, and both replayed hold probabilities from real Jev calls; tests/test_hold_names_the_serving_lane.py:246 and :279 supply the two tests, the manifest gives holds 0.87 and 0.89 at reckon/crew/picker/prompts.py:254, and manifest.md tests records head 181 passed / base 179 passed, both exit 0.",
+    "goal": "plan section 26 asks the serving-lane facts to be node-scoped, grouped once, and the two recorded holds replayed on Jev; commit 2ba94d5d9 moves serving_lanes/serving_lane_count/hold_waits_for from the local_lane block to the node block in reckon/crew/picker/prompts.py:254-256 and adds lane_context.lane_groups (reckon/crew/picker/lane_context.py:341) as the one grouping both readers use, and 0268785d7 records the Jev replay, so the three items are landed.",
+    "manifest": "read; status complete, commits 2ba94d5d9 and 0268785d7, baseline_suite 179 passed at b718a35a and after_suite 181 passed at 0268785d7 with empty failure_ids, negative_control_log ends EXIT=1, and measurement_module/cwd name the base scratch tree the base arm ran from.",
+    "write_paths": "the manifest declares reckon/crew/picker/prompts.py, reckon/crew/picker/lane_context.py, tests/test_hold_names_the_serving_lane.py, tests/test_picker_helpers_have_one_owner.py and the evidence fragment; the diff also touches tests/test_jev_prompt_carries_what_it_weighs.py, which manifest.md:23 records as a coordinator scope extension at 2026-10-10T20:14Z for a one-line NODE_FIELDS addition."
+  },
+  "justifications": {
+    "durability": "tests/test_hold_names_the_serving_lane.py:246 asserts a literal ['solo'] against the rendered state and reddens when lane_groups drops a family-less candidate, and :279 replaces lane_groups via monkeypatch and reddens if either the lanes block or prompts._serving_lanes stops reading it.",
+    "evidence": "the base and head arms both reached their summary lines at the revisions manifest.md names, I derived the added-failure set from gate-base.log/gate-head.log with reckon.crew.review.added_failures_from_gate_logs and it is empty, and the negative control log ends EXIT=1 with one failing id the head arm does not fail.",
+    "fit": "lane_groups' docstring at reckon/crew/picker/lane_context.py:341 states the mechanism, the added comment at reckon/crew/picker/prompts.py:238 explains the node scope, and both commits carry conventional subjects and bodies with no attribution or plan label.",
+    "goal_fidelity": "reckon/crew/picker/prompts.py:254 and reckon/crew/picker/lane_context.py:341 land all three section items; docked for the replay recording the holds but not isolating whether the node-scoped fact is what the two holds depended on.",
+    "reuse": "lane_groups at reckon/crew/picker/lane_context.py:341 is the single owner of the candidate-to-lane grouping and both reckon/crew/picker/prompts.py:165 and reckon/crew/picker/lane_context.py:379 read it; option_key at reckon/crew/picker/prompts.py:275 names one candidate rather than grouping, so no second grouping owner exists.",
+    "scope_discipline": "the diff's files are the declared paths plus tests/test_jev_prompt_carries_what_it_weighs.py, which manifest.md:23 records as an authorised extension for a one-line change the gate file at tests/test_jev_prompt_carries_what_it_weighs.py:33 pins exactly."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "\nVERDICT goal: plan section 26 asks the serving-lane facts to be node-scoped, grouped once, and the two recorded holds replayed on Jev; commit 2ba94d5d9 moves serving_lanes/serving_lane_count/hold_waits_for from the local_lane block to the node block in reckon/crew/picker/prompts.py:254-256 and adds lane_context.lane_groups (reckon/crew/picker/lane_context.py:341) as the one grouping both readers use, and 0268785d7 records the Jev replay, so the three items are landed.\nVERDICT done_when: the section asks a test with a family-less candidate to count it in serving_lane_count and show it in the lanes block, a second test replacing the grouping to move both, and both replayed hold probabilities from real Jev calls; tests/test_hold_names_the_serving_lane.py:246 and :279 supply the two tests, the manifest gives holds 0.87 and 0.89 at reckon/crew/picker/prompts.py:254, and manifest.md tests records head 181 passed / base 179 passed, both exit 0.\nVERDICT write_paths: the manifest declares reckon/crew/picker/prompts.py, reckon/crew/picker/lane_context.py, tests/test_hold_names_the_serving_lane.py, tests/test_picker_helpers_have_one_owner.py and the evidence fragment; the diff also touches tests/test_jev_prompt_carries_what_it_weighs.py, which manifest.md:23 records as a coordinator scope extension at 2026-10-10T20:14Z for a one-line NODE_FIELDS addition.\nVERDICT manifest: read; status complete, commits 2ba94d5d9 and 0268785d7, baseline_suite 179 passed at b718a35a and after_suite 181 passed at 0268785d7 with empty failure_ids, negative_control_log ends EXIT=1, and measurement_module/cwd name the base scratch tree the base arm ran from.\nVERDICT diff: read b718a35a..0268785d7 commit by commit; the two code commits move the three keys into the node block, replace _serving_lanes' inline grouping with lane_context.lane_groups, route lane_context.lanes through the same function, update the golden fixture and the pinned node field set, and add the two tests.\nCALL_SITES: reckon/crew_dispatch_commands.py:691, reckon/crew/dispatch_picker.py:301\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/picker/prompts.py:254 and reckon/crew/picker/lane_context.py:341 land all three section items; docked for the replay recording the holds but not isolating whether the node-scoped fact is what the two holds depended on.\nSCORE evidence: 19\nJUSTIFICATION evidence: the base and head arms both reached their summary lines at the revisions manifest.md names, I derived the added-failure set from gate-base.log/gate-head.log with reckon.crew.review.added_failures_from_gate_logs and it is empty, and the negative control log ends EXIT=1 with one failing id the head arm does not fail.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff's files are the declared paths plus tests/test_jev_prompt_carries_what_it_weighs.py, which manifest.md:23 records as an authorised extension for a one-line change the gate file at tests/test_jev_prompt_carries_what_it_weighs.py:33 pins exactly.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_hold_names_the_serving_lane.py:246 asserts a literal ['solo'] against the rendered state and reddens when lane_groups drops a family-less candidate, and :279 replaces lane_groups via monkeypatch and reddens if either the lanes block or prompts._serving_lanes stops reading it.\nSCORE fit: 20\nJUSTIFICATION fit: lane_groups' docstring at reckon/crew/picker/lane_context.py:341 states the mechanism, the added comment at reckon/crew/picker/prompts.py:238 explains the node scope, and both commits carry conventional subjects and bodies with no attribution or plan label.\nSCORE reuse: 20\nJUSTIFICATION reuse: lane_groups at reckon/crew/picker/lane_context.py:341 is the single owner of the candidate-to-lane grouping and both reckon/crew/picker/prompts.py:165 and reckon/crew/picker/lane_context.py:379 read it; option_key at reckon/crew/picker/prompts.py:275 names one candidate rather than grouping, so no second grouping owner exists.\nFINDING reckon/crew/picker/templates/questions.jinja:1 follow-on: the routing instructions' closing sentence names the glossary terms Jev is told to consult and omits serving_lanes and hold_waits_for, so the node-scoped facts reach Jev in the state JSON and the glossary mapping but are never named in the instructions; this file is outside the node's write scope, and it is the plausible reason the replayed holds did not move (0.83 to 0.87, 0.84 to 0.89), so a coordinator should decide whether the section's item 3 is closed while the fact is carried but not pointed at.\nreviewed_base_sha: b718a35ab0d69b2130a9759ca0a6201a26f545a0\nreviewed_head_sha: 0268785d74c2637b20497dcaa10deda0ee9d29c5\n",
+  "review_run_id": "r-20261010T201722051632-review-of-serving-lanes-are-scoped-and-measured",
+  "reviewed_base_sha": "b718a35ab0d69b2130a9759ca0a6201a26f545a0",
+  "reviewed_head_sha": "0268785d74c2637b20497dcaa10deda0ee9d29c5",
+  "reviewed_run_id": "r-20261010T194844732792-serving-lanes-are-scoped-and-measured",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T20:26:19.358824+00:00",
+  "total": 117
+}

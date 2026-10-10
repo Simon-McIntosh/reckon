@@ -34,6 +34,19 @@ SUCCESS_RULE = (
 BUCKETS = ("below_0.5", "0.5_to_0.7", "0.7_to_0.85", "0.85_and_above")
 BURN_LEVELS = ("below_1", "1_to_2", "2_to_4", "4_and_above", "unknown")
 
+# The route mode a run records when the picker held but the dispatch went ahead
+# anyway. A picker-routed dispatch refuses on a hold, so a run carrying a
+# holding selection only exists because the operator named a lane or forced
+# deterministic routing past the picker's answer; naming it apart lets a reader
+# count how often a hold is overruled instead of folding it into the shadow
+# picks.
+OVERRIDDEN_HOLD_ROUTE_MODE = "overridden-hold"
+
+
+def overridden_hold(selection: object) -> bool:
+    """Whether a recorded picker answer was a hold the dispatch went past."""
+    return isinstance(selection, Mapping) and selection.get("action") == "hold"
+
 
 def _success(row: Mapping[str, Any]) -> bool | None:
     gate = str(row.get("gate") or "").lower()
@@ -167,6 +180,7 @@ def summarize(
     if since and boundary is None:
         raise ValueError(f"since must be an ISO timestamp: {since!r}")
     actions: Counter[str] = Counter()
+    route_modes: Counter[str] = Counter()
     fallbacks: Counter[str] = Counter()
     latency: dict[str, list[float]] = defaultdict(list)
     groups: dict[tuple[str, str, str, str, str | None], list[dict[str, Any]]] = (
@@ -208,6 +222,7 @@ def summarize(
                 and selection.get("backend") == row.get("backend")
             )
             mode = row.get("route_mode")
+            route_modes[str(mode) if mode else "unrecorded"] += 1
             routed = matching_selection and mode == "picker"
             approximate = matching_selection and mode is None
             attribution = "approximate" if mode is None else "picker"
@@ -370,7 +385,7 @@ def summarize(
         {
             backend
             for (_project, backend, _role, _spec, _risk, _attribution) in groups
-            if ledger.is_subscription_backend(backend)
+            if ledger.is_subscription_backend(backend, project=_project)
         }
     )
     return {
@@ -380,7 +395,7 @@ def summarize(
             "burn": "[0,1), [1,2), [2,4), [4,infinity)",
             "burn_offer": "lowest offered codex burn_multiple; unknown when none was recorded",
             "actions": "selection actions on promoted rows; run-free holds appear separately",
-            "attribution": "routed outcomes, calibration and chosen metered spend require route mode picker and a matching selected backend; rows without route mode use the matching-backend rule in approximate_outcomes; shadow and explicit rows are excluded",
+            "attribution": "routed outcomes, calibration and chosen metered spend require route mode picker and a matching selected backend; rows without route mode use the matching-backend rule in approximate_outcomes; shadow, explicit and overridden-hold rows are excluded",
             "window": "since is inclusive on run completed_at and hold held_at",
             "latency": "p50 is median; p90 is nearest-rank percentile",
             "repair_or_resume": "attempt kind repair, resume, or redispatch, or a repair/resume remedy",
@@ -392,6 +407,20 @@ def summarize(
         "mechanics": {
             "actions": {
                 name: actions[name] for name in ("route", "hold", "fallback", "refuse")
+            },
+            # Rows carrying a picker answer, counted by the route mode their
+            # promotion recorded. An overridden hold is its own key rather than
+            # sharing the shadow picks, so a reader can count how often an
+            # operator overrules a hold.
+            "route_modes": {
+                name: route_modes.get(name, 0)
+                for name in (
+                    OVERRIDDEN_HOLD_ROUTE_MODE,
+                    "picker",
+                    "shadow",
+                    "explicit",
+                    "unrecorded",
+                )
             },
             "fallback_reasons": dict(sorted(fallbacks.items())),
             "latency_ms": {

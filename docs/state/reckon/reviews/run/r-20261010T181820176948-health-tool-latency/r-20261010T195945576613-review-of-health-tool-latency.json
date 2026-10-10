@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-10T20:08:06.048Z",
+  "dispatched_at": "2026-10-10T20:00:10Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/health-review-1010/health-tool-latency/report.md",
+      "line": "15",
+      "severity": "follow-on",
+      "text": "follow-on: the method profiles only three reads, so the brief's item-1 requirement to profile crew(view=\"live\") and crew(view=\"ledger\") is unmeasured, and report.md never states the omission \u2014 only the run manifest's follow_ons does, so a reader of the report alone cannot see that two of the four named reads were dropped."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/health-review-1010/health-tool-latency/report.md",
+      "line": "47",
+      "severity": "follow-on",
+      "text": "follow-on: the headline multiple \"13\u201320\u00d7 above\" overstates the lower bound \u2014 the roadmap arm is 12.450/1.33 = 9.4\u00d7, not 13\u00d7, so only the audit arm reaches the stated range."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "no commits, a read-only node; the landed artefact is report.md plus the re-runnable scripts/profile_reads.py and scripts/analyze_profiles.py and the .prof files beside it, reviewed in full.",
+    "done_when": "the done_when is that report.md ends with the findings= line with findings>=1 and every row citing a path:line or a figure; report.md:145 reads findings=6 high=4 mid=1 low=1 owned=2 regressed=1 unowned=3 and every one of the six rows carries a citation.",
+    "goal": "the node's goal is to report why the reckon read tools exceed their deadlines; report.md names the deadline constant (reckon/mcp_deadlines.py:44, READ_DEADLINE_SECONDS = 30.0) and attributes each overrun to tree-walk, git-subprocess and unmemoised-parse cost.",
+    "manifest": "read; the run manifest records status complete, the six findings and their receipts, and names the un-run crew live/ledger profiling under follow_ons.",
+    "write_paths": "the declared write path is the reports directory /home/ITER/mcintos/.config/reckon/crew/reports/reckon/health-review-1010/health-tool-latency; every changed path in the run manifest resolves inside it."
+  },
+  "justifications": {
+    "durability": "a read-only research node owes no regression guard; its durability is the re-runnable scripts/profile_reads.py and scripts/analyze_profiles.py left beside the report for a later reader to repeat.",
+    "evidence": "every cited line verifies at the reviewed head d33407f5 (mcp_deadlines.py:44, roadmap.py:173, metadata_index.py:423, _plan_html.py:1068) and the profiler artefacts sit under the write path beside report.md.",
+    "fit": "report.md follows the brief's required shape \u2014 a method section, a findings table with the named columns, a ranked top-five, and the exact final-line form.",
+    "goal_fidelity": "the report answers why the reads overrun (reckon/metadata_index.py:423 _walk_covered, reckon/project_state.py:1951 lock, reckon/roadmap.py:173 read_authored) but omits two reads the brief named, crew(view=\"live\") and crew(view=\"ledger\").",
+    "reuse": "no code was added; the report reads and cites the existing machinery (reckon/file_memo.py, reckon/metadata_index.py, reckon/fleet_index.py, reckon/mcp_deadlines.py) rather than proposing a parallel one.",
+    "scope_discipline": "report.md and all manifest changed paths resolve under the declared write path health-review-1010/health-tool-latency; no repository file was written or committed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to report why the reckon read tools exceed their deadlines; report.md names the deadline constant (reckon/mcp_deadlines.py:44, READ_DEADLINE_SECONDS = 30.0) and attributes each overrun to tree-walk, git-subprocess and unmemoised-parse cost.\nVERDICT done_when: the done_when is that report.md ends with the findings= line with findings>=1 and every row citing a path:line or a figure; report.md:145 reads findings=6 high=4 mid=1 low=1 owned=2 regressed=1 unowned=3 and every one of the six rows carries a citation.\nVERDICT write_paths: the declared write path is the reports directory /home/ITER/mcintos/.config/reckon/crew/reports/reckon/health-review-1010/health-tool-latency; every changed path in the run manifest resolves inside it.\nVERDICT manifest: read; the run manifest records status complete, the six findings and their receipts, and names the un-run crew live/ledger profiling under follow_ons.\nVERDICT diff: no commits, a read-only node; the landed artefact is report.md plus the re-runnable scripts/profile_reads.py and scripts/analyze_profiles.py and the .prof files beside it, reviewed in full.\nCALL_SITES: none\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: the report answers why the reads overrun (reckon/metadata_index.py:423 _walk_covered, reckon/project_state.py:1951 lock, reckon/roadmap.py:173 read_authored) but omits two reads the brief named, crew(view=\"live\") and crew(view=\"ledger\").\nSCORE evidence: 19\nJUSTIFICATION evidence: every cited line verifies at the reviewed head d33407f5 (mcp_deadlines.py:44, roadmap.py:173, metadata_index.py:423, _plan_html.py:1068) and the profiler artefacts sit under the write path beside report.md.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: report.md and all manifest changed paths resolve under the declared write path health-review-1010/health-tool-latency; no repository file was written or committed.\nSCORE durability: 18\nJUSTIFICATION durability: a read-only research node owes no regression guard; its durability is the re-runnable scripts/profile_reads.py and scripts/analyze_profiles.py left beside the report for a later reader to repeat.\nSCORE fit: 18\nJUSTIFICATION fit: report.md follows the brief's required shape \u2014 a method section, a findings table with the named columns, a ranked top-five, and the exact final-line form.\nSCORE reuse: 20\nJUSTIFICATION reuse: no code was added; the report reads and cites the existing machinery (reckon/file_memo.py, reckon/metadata_index.py, reckon/fleet_index.py, reckon/mcp_deadlines.py) rather than proposing a parallel one.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/health-review-1010/health-tool-latency/report.md:15 follow-on: the method profiles only three reads, so the brief's item-1 requirement to profile crew(view=\"live\") and crew(view=\"ledger\") is unmeasured, and report.md never states the omission \u2014 only the run manifest's follow_ons does, so a reader of the report alone cannot see that two of the four named reads were dropped.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/health-review-1010/health-tool-latency/report.md:47 follow-on: the headline multiple \"13\u201320\u00d7 above\" overstates the lower bound \u2014 the roadmap arm is 12.450/1.33 = 9.4\u00d7, not 13\u00d7, so only the audit arm reaches the stated range.\n",
+  "review_run_id": "r-20261010T195945576613-review-of-health-tool-latency",
+  "reviewed_base_sha": "d33407f58afee19c756aef1227c01f6a1bf7f342",
+  "reviewed_head_sha": "d33407f58afee19c756aef1227c01f6a1bf7f342",
+  "reviewed_run_id": "r-20261010T181820176948-health-tool-latency",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T20:06:15.613134+00:00",
+  "total": 111
+}

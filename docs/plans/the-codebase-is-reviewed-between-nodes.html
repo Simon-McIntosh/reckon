@@ -25,7 +25,7 @@
   <title>The Codebase Is Reviewed Between Nodes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="5">
+<meta name="plan-version" content="7">
 <meta name="plan-modified" content="2026-10-10">
 </head>
 <body>
@@ -155,7 +155,9 @@
     <p><strong>Done when</strong> <code>tests/test_health_review_parses.py</code> parses a fixed reviewer output through that parser
       and asserts six verdicts, the classed findings, one treatment with write paths and a done-when, and the
       <code>TREATMENT: none</code> form; an output with two <code>TREATMENT</code> lines, or a treatment naming no write path, is refused by
-      name. The negative control is executed and logged: with the one-treatment check removed, the two-treatment output parses and the test
+      name. The same test reads <code>reckon/crew/prompts/health_review.md</code> and asserts its <code>RUBRIC_ITEMS</code> line names
+      exactly the six items the parser requires and that the prompt states the one-treatment rule, so the rubric and its parser cannot
+      drift apart; a prompt with one item removed fails it. The negative control is executed and logged: with the one-treatment check removed, the two-treatment output parses and the test
       fails. Write paths: <code>reckon/crew/prompts/health_review.md</code>, <code>reckon/crew/review.py</code>,
       <code>tests/test_health_review_parses.py</code>. This section runs after §4, which also writes <code>review.py</code>.</p>
 
@@ -276,7 +278,7 @@
     <section data-reckon="gates" id="gates" class="r-gates">
 <h2><span class="sec">§</span> Evidence gates</h2>
 <div class="r-gate" data-id="g-tcirbn-reach-instrument" data-section="s6" data-gated-sections="s6" data-status="open" data-verdict="">
-    <h4 class="r-gate-measure">reckon/reach.py returns the production modules one import away from a named path, and its ratchet test passes at the integrated head</h4>
+    <h4 class="r-gate-measure">the reachability reader in reckon/served_code.py returns the production modules one import away from a named path, and the reach ratchet test passes at the integrated head</h4>
     <p class="r-gate-required-evidence">nothing-lands-unreached#s2</p>
     </div>
 <div class="r-gate" data-id="g-tcirbn-cited-commands" data-section="s7" data-gated-sections="s7" data-status="open" data-verdict="">
@@ -305,10 +307,16 @@
 </section>
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-tcirbn-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-10-10" data-recommends-skill="/reckon-build the-codebase-is-reviewed-between-nodes" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tcirbn-001" data-status="resolved" data-written-by="reckon-create" data-written-at="2026-10-10" data-recommends-skill="/reckon-build the-codebase-is-reviewed-between-nodes" data-resolved-at="2026-10-10T20:02:07+00:00" data-resolved-by="reckon-build coordinator (health-review-1010)">
     <h4 class="r-fu-title">Build the health-review loop</h4>
     <div class="r-fu-body"><p>§3 and §5 first; §4 after §3; §6 after §3 and the reachability instrument; §7, §8, §9 after §6; §10 beside them; §11 last.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-codebase-is-reviewed-between-nodes</pre>
+    <p class="r-fu-outcome"><p>Superseded by f-tcirbn-002: the build order changed after the content and design reviews (§5 now runs after §4, which writes the same module).</p></p>
+    </article>
+<article class="r-fu" data-id="f-tcirbn-002" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-build coordinator (health-review-1010)" data-written-at="2026-10-10" data-recommends-skill="/reckon-build the-codebase-is-reviewed-between-nodes §3" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build the health-review loop, starting with the findings reader</h4>
+    <div class="r-fu-body"><p>Order: §3; then §4; then §5; then §6 once the reach gate opens; then §7 (after its cited-commands gate), §8 and §9; §10 beside them; §11 last.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-codebase-is-reviewed-between-nodes §3</pre>
     </article>
 </section>
   

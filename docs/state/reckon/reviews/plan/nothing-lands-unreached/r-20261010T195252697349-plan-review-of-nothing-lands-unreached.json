@@ -1,0 +1,101 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T20:01:06.517Z",
+  "dispatched_at": "2026-10-10T19:53:19Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/nothing-lands-unreached.html:68",
+      "id": "wiring-1",
+      "reason": "a node landing \u00a72 produces the reader in `served_code.py`, so the gate that consumes this plan's evidence looks for a `reckon/reach.py` that never appears and its evidence requirement goes unmet.",
+      "text": "\u00a72 delivers the reachability reader in `reckon/served_code.py`, but the plan names gate `g-tcirbn-reach-instrument` as its one downstream consumer and that gate's measure is \"`reckon/reach.py` returns the production modules one import away from a named path\" (`the-codebase-is-reviewed-between-nodes.html:278`), a module \u00a72 never names and that does not exist at this revision",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/nothing-lands-unreached.html:90",
+      "id": "reasoning-1",
+      "reason": "as written the node cannot satisfy its own done-when without editing a file its scope excludes, so \u00a73 must widen its write scope to the importing test or preserve `refusal_census`.",
+      "text": "\u00a73 deletes `reckon/crew/context_budget.py` and scopes its test edits to \"the test files whose only subject is a deleted module\", but `tests/test_routing_surface.py:14` imports `context_budget` and lines 731\u2013771 exercise `context_budget.refusal_census`; that file's subject is the routing surface, so it lies outside \u00a73's write scope, yet \u00a73's done-when requires `grep -rn context_budget reckon/ tests/ skills/` to return no hit and \"the tests importing the touched modules\" to pass",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/nothing-lands-unreached.html:119",
+      "id": "reasoning-2",
+      "reason": "a worker following \u00a74 literally cannot make `--help` exit 0 for two of the three modules, so the section must either describe adding an entry point each script needs or drop the `--help` measure.",
+      "text": "\u00a74's done-when requires each moved module to run from `scripts/census/` with `--help`, but the deliverable describes only a move (\"They move to scripts/census/ as standalone scripts\"), and `reckon/crew/carryover_census.py` and `reckon/crew/pace_replay.py` carry no `__main__` guard and no argument parser (only `death_census.py` has a `__main__` calling `main()`), which \u00a71 itself notes (\"three of them carry a __main__ guard\", none of them these two)",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "8b3ac827f873f494474b62a96adf57d439381999fa00bbdeaebfcf25a4265931",
+  "plan_slug": "nothing-lands-unreached",
+  "plan_version": 4,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-10T20:04:45.936214+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-10T20:04:49.519081+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "",
+      "when": "2026-10-10T20:04:53.017912+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-10T20:04:49.519081+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-10T20:04:53.017912+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-10T20:04:45.936214+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/nothing-lands-unreached/r-20261010T195252697349-plan-review-of-nothing-lands-unreached.json",
+  "review_run_id": "r-20261010T195252697349-plan-review-of-nothing-lands-unreached",
+  "reviewed_blob_sha": "9b574bff449c95a3b19bc9fbde3a2c8ef6a4db3f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited symbol, line, plan href and the consumer gate resolve (`reckon/served_code.py` `_ModuleIndex`/`_module_name`/`_module_file`/`_import_targets`/`_used_definitions` at 180/194/201/213/405; `reckon/velocity.py:428`; `reckon/interface_counts.py:74`; `budget.py:2651`; `routing.py:3533`; the three `docs/plans/*.html` targets; gate `g-tcirbn-reach-instrument` at `the-codebase-is-reviewed-between-nodes.html:278`), with extensionless hrefs resolved as `<path>.html`.",
+    "done_when": "pass \u2014 each of \u00a72, \u00a73 and \u00a74 names a declared negative control (extra unreached module fails the ratchet; restored call site makes the grep non-empty; a left-behind old import fails collection) with a measurable positive.",
+    "evidence_paths": "pass \u2014 the sections start from the durable `~/.config/reckon/crew/reports/reckon/health-review-1010/health-reachability/` tree and log gates to the run manifest, not a session or node-local scratchpad.",
+    "naming": "pass \u2014 the new symbols are mechanism-named (`tests/test_reach_graph.py`, `tests/test_every_module_is_reached.py`, the reached set and `neighbourhood`); no plan labels, ticket numbers or version tags reach code and no changelog prose appears.",
+    "reasoning": "two findings \u2014 \u00a73 deletes a module a non-scoped test still imports, and \u00a74's `--help` measure is not produced by a plain move.",
+    "single_goal": "pass \u2014 \u00a72 is the reach instrument plus its ratchet guard, \u00a73 is deletion of unowned unreached code, \u00a74 is relocation of three one-off census modules; each closes on one verdict.",
+    "wiring": "a finding \u2014 the plan's declared consumer gate `g-tcirbn-reach-instrument` requires `reckon/reach.py`, but \u00a72 delivers the reachability reader in `reckon/served_code.py`."
+  },
+  "section_digests": {
+    "_document": "13351dbde138aeb68206f8604e3d44d518bf7e59793cafbbebfdc90ee8902fc0",
+    "s1": "e0a15218687e5ca8207eca1ee8bbe8317a16d92d1864ef9c2b905c1e2443b5fd",
+    "s2": "5af896b6106e1d92e8b6b8ffe1f4aeffac2e91bddbc2afdbae9feeadafbc8740",
+    "s3": "a9c4dc5bf63b6ecf7f78bbd4200a6590daccb5086e61556d99bbd3e305016c11",
+    "s4": "4fb63dc93009c3e935fa9562334efcf03069189b29072d2ab997d878494ab864"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T20:04:14.711381+00:00"
+}

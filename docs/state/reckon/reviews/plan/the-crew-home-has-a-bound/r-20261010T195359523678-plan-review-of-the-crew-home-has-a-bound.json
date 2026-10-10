@@ -1,0 +1,102 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T20:03:06.554Z",
+  "dispatched_at": "2026-10-10T19:54:26Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-crew-home-has-a-bound.html:103",
+      "id": "reasoning-1",
+      "reason": "the node is told to lift a head-and-tail helper \"both call\"; unless the plan states the cut is parameterised (service-log caller keeps zero head bytes), the node will either be unable to give the run file its head+tail or regress the service log.",
+      "text": "\u00a74 says \"the head-and-tail truncation behind the service-log bound ... is lifted into one helper both call\", but the cited `trim_service_log` (`reckon/crew/fleet_supervisor.py:548-574`, keyed by `SERVICE_LOG_LIMIT_BYTES`/`SERVICE_LOG_KEEP_BYTES at line 223) keeps only the newest bytes and drops the oldest \u2014 it is a tail-only cut, not head-and-tail \u2014 so one head-and-tail helper cannot serve both the service log and the run file without changing the service-log behaviour its own tests pin",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-home-has-a-bound.html:99",
+      "id": "reasoning-2",
+      "reason": "a \"size limit\" that can enlarge the file it bounds must tie the kept size to the limit (for example keep = limit/2); the node needs that spec decision to make the measure hold for a small limit.",
+      "text": "\u00a74 replaces an oversized file with \"its first and last megabyte\", a fixed 1 MB keep decoupled from the configured limit, so a file whose size sits between the limit and twice the keep is replaced by its overlapping halves plus the marker and does not shrink (a 1.5 MB log under a 1 MB limit becomes ~1.5 MB + marker); the done-when's 1 MB limit with a 3 MB file never exercises this and cannot distinguish keep = 1 MB from keep = limit",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-home-has-a-bound.html:107",
+      "id": "anchors_resolve-1",
+      "reason": "a line citation to the wrong construct is the \"worse than none\" case this item checks; correcting it to `runs.py:3927` is a one-line plan fix and restores consistency with the plan's other definition-line citations.",
+      "text": "the anchor `runs.py:3985` is cited as the home of `WATCH_LOG_MAX_BYTES`, but the constant is defined at `runs.py:3927`; line 3985 is a continuation line inside the `_WatchLogStream` docstring, so the citation names the class that uses the constant rather than the constant",
+      "type": "anchors_resolve",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "0e824b5ca04f58fbb41d6ba2a2db1bba0755101c656dd2062435b1cea93fbdb9",
+  "plan_slug": "the-crew-home-has-a-bound",
+  "plan_version": 4,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-10T20:09:00.751636+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "",
+      "when": "2026-10-10T20:09:03.830212+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "anchors_resolve-1",
+      "reason": "",
+      "when": "2026-10-10T20:09:07.214311+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-10T20:09:07.214311+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-10T20:09:00.751636+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-10T20:09:03.830212+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/the-crew-home-has-a-bound/r-20261010T195359523678-plan-review-of-the-crew-home-has-a-bound.json",
+  "review_run_id": "r-20261010T195359523678-plan-review-of-the-crew-home-has-a-bound",
+  "reviewed_blob_sha": "3f94bea1290eb3c4f9b158672e8ab472bedeef2d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 `reckon/crew/runs.py:3985` does not resolve to `WATCH_LOG_MAX_BYTES` (the constant is defined at `runs.py:3927`); the other \u00a74 anchors resolve (`fleet_supervisor.py:223` correct, `runs.py:1923` `line_boundary` correct, `promotion_release.py:127` `_declared_arm_paths` correct).",
+    "done_when": "pass \u2014 \u00a74:109-113 names `tests/test_gc_bounds_a_run_file.py` building a promoted temp run with a 3 MB log and a 3 MB `.pt` under a 1 MB limit, asserts the bounded log, the untouched `.pt`, and that an unpromoted run is untouched, and declares an executed negative control (\"with the promoted check removed, the unpromoted run's log is truncated and the test fails\") that reddens the test.",
+    "evidence_paths": "pass \u2014 the gate is a named test file under `tests/` and the negative-control log is held on the run record; no evidence is written to a session scratchpad or a node-local temp path.",
+    "naming": "pass \u2014 `gc.run_file_max_mb`, `line_boundary`, `_declared_arm_paths` and the reused `SERVICE_LOG_*` names carry no plan labels, stage names, ticket numbers or version tags, and no changelog prose.",
+    "reasoning": "a finding \u2014 \u00a74 describes the service-log bound as a \"head-and-tail truncation\" though `trim_service_log` keeps only the newest bytes and drops the oldest (tail-only); a second finding covers the replacement size not tracking the configured limit.",
+    "single_goal": "pass \u2014 one deliverable: bound and report an oversized file in a promoted run; the shared-helper lift, the `gc.run_file_max_mb` key and the tests are means to it, not a second outcome.",
+    "wiring": "pass \u2014 the plan is standalone (`plan-standalone` meta names no dependent plan) and \u00a74 declares no `depends-on`/`informs`/`gates` link it needs; its ordering after \u00a73 is stated in prose (\u00a74:114) and \u00a73 already owns `routing.py`, so no edge is missing or misdirected."
+  },
+  "section_digests": {
+    "_document": "af2eb26959b53991bcc26bda5e7e2c7192a91a8bc1db9f63e754d3f80cf66705",
+    "s1": "32d74b1202f967c9688afa80dbd94719f49d78f6a5afcc8d56d9c46602e1c0a5",
+    "s2": "9328c20a14a28cadebc0cf3424b9fa61772f8c3bea7e4f7b1e097571697c0369",
+    "s3": "42466bfb93ed68c3dcdb669550dae38d00ebbdea5e24407a7579076255209fbf",
+    "s4": "43ac8056669b289019733691c1ec14b1fdefcd3874e20ba86542094d56e84611",
+    "s5": "75a8a336e2ee62426e5a8c3ed3310e0cf614b82a8cf7ae6a5985fcb99f2b1648"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T20:08:29.224351+00:00"
+}

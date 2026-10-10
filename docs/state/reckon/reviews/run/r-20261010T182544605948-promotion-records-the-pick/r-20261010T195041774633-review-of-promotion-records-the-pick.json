@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: gate-base.log (revision 0c654ea1d, '4 failed, 147 passed') fails exactly the four new tests; gate-head.log (revision dd5169479, '151 passed') records no failing id, so the set difference head-minus-base is empty (0 added).",
+  "base_log_revision": "0c654ea1d",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:crew_complete -> reckon/crew_run_commands.py:1685 -> reckon/crew/promotion.py:complete",
+    "reckon/crew_dispatch_commands.py:638 pick --outcomes -> reckon/crew/picker/outcomes.py:474 read_outcomes"
+  ],
+  "completed_at": "2026-10-10T20:04:40.239Z",
+  "dispatched_at": "2026-10-10T19:51:04Z",
+  "findings": [],
+  "head_log_revision": "dd516947949582dd0473daa8bff20a577c19174f",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read ec550c27f..507205ef1 per-revision; one file changed, 27 insertions and 10 deletions, replacing the delay-racing timeout fixture with an event-gated blocked pick released in a finally block.",
+    "done_when": "the done-when requires tests proving both items; the gained commit makes tests/test_promotion_records_the_pick.py:301 deterministic by blocking the pick on a threading.Event so the timeout clause no longer races a 2.0 s wall-clock delay against the intervening git work.",
+    "goal": "the run's goal (\u00a714) is that a promotion landing inside a deferred shadow pick's window waits for the pick and that an overruled hold records its own route mode; the implementation (reckon/crew/promotion.py:505 and :1026) is unchanged by the gained commit, which repairs the test that proves the wait.",
+    "manifest": "read; it records the repair round, the base/head gate pair (gate-base.log at 0c654ea1d \"4 failed\", gate-head.log at dd5169479 \"151 passed\"), the 4-test result and the repair control.",
+    "write_paths": "the gained diff touches only tests/test_promotion_records_the_pick.py, inside the node's declared write paths (reckon/crew/promotion.py, reckon/crew/picker/outcomes.py, the client test file)."
+  },
+  "justifications": {
+    "durability": "tests/test_promotion_records_the_pick.py:318 asserts the fallback/timeout row and the run's repair control (negative-control-repair.log, wait neutralised at 507205ef1) reddens it, so the guard fails when the wait regresses.",
+    "evidence": "the reviewed run's own arms show 4 failed at base 0c654ea1d and 0 failed at head, and I independently reproduced the head green (4 passed in 66.89 s, and the timeout test 3 of 3 isolated) against the tree at 507205ef1.",
+    "fit": "the repaired fixture reuses the threading.Event idiom of the sibling test at tests/test_promotion_records_the_pick.py:236 rather than a wall-clock sleep.",
+    "goal_fidelity": "the gained commit leaves reckon/crew/promotion.py:505 (_await_in_flight_shadow_pick) and :1026 (overridden-hold route mode) intact and restores the timeout clause of the done-when by repairing its test at tests/test_promotion_records_the_pick.py:301.",
+    "reuse": "the commit adds no new definition; it edits one existing test to use the stdlib threading.Event already used by the neighbouring test, so there is no capability to fork.",
+    "scope_discipline": "git diff ec550c27f..507205ef1 touches only tests/test_promotion_records_the_pick.py, inside the node's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the run's goal (\u00a714) is that a promotion landing inside a deferred shadow pick's window waits for the pick and that an overruled hold records its own route mode; the implementation (reckon/crew/promotion.py:505 and :1026) is unchanged by the gained commit, which repairs the test that proves the wait.\nVERDICT done_when: the done-when requires tests proving both items; the gained commit makes tests/test_promotion_records_the_pick.py:301 deterministic by blocking the pick on a threading.Event so the timeout clause no longer races a 2.0 s wall-clock delay against the intervening git work.\nVERDICT write_paths: the gained diff touches only tests/test_promotion_records_the_pick.py, inside the node's declared write paths (reckon/crew/promotion.py, reckon/crew/picker/outcomes.py, the client test file).\nVERDICT manifest: read; it records the repair round, the base/head gate pair (gate-base.log at 0c654ea1d \"4 failed\", gate-head.log at dd5169479 \"151 passed\"), the 4-test result and the repair control.\nVERDICT diff: read ec550c27f..507205ef1 per-revision; one file changed, 27 insertions and 10 deletions, replacing the delay-racing timeout fixture with an event-gated blocked pick released in a finally block.\nCALL_SITES: reckon/cli.py:crew_complete -> reckon/crew_run_commands.py:1685 -> reckon/crew/promotion.py:complete, reckon/crew_dispatch_commands.py:638 pick --outcomes -> reckon/crew/picker/outcomes.py:474 read_outcomes\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the gained commit leaves reckon/crew/promotion.py:505 (_await_in_flight_shadow_pick) and :1026 (overridden-hold route mode) intact and restores the timeout clause of the done-when by repairing its test at tests/test_promotion_records_the_pick.py:301.\nSCORE evidence: 19\nJUSTIFICATION evidence: the reviewed run's own arms show 4 failed at base 0c654ea1d and 0 failed at head, and I independently reproduced the head green (4 passed in 66.89 s, and the timeout test 3 of 3 isolated) against the tree at 507205ef1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff ec550c27f..507205ef1 touches only tests/test_promotion_records_the_pick.py, inside the node's declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_promotion_records_the_pick.py:318 asserts the fallback/timeout row and the run's repair control (negative-control-repair.log, wait neutralised at 507205ef1) reddens it, so the guard fails when the wait regresses.\nSCORE fit: 19\nJUSTIFICATION fit: the repaired fixture reuses the threading.Event idiom of the sibling test at tests/test_promotion_records_the_pick.py:236 rather than a wall-clock sleep.\nSCORE reuse: 20\nJUSTIFICATION reuse: the commit adds no new definition; it edits one existing test to use the stdlib threading.Event already used by the neighbouring test, so there is no capability to fork.\n",
+  "review_run_id": "r-20261010T195041774633-review-of-promotion-records-the-pick",
+  "reviewed_base_sha": "ec550c27f201739f3cb3f85f4a998fa47cf13e22",
+  "reviewed_head_sha": "507205ef1d94decd2ba7261f13c29c29d11d18be",
+  "reviewed_run_id": "r-20261010T182544605948-promotion-records-the-pick",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T19:59:58.425373+00:00",
+  "total": 116
+}

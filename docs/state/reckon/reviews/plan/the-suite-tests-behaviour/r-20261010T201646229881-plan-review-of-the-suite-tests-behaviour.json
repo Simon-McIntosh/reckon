@@ -1,0 +1,61 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T20:26:44.662Z",
+  "dispatched_at": "2026-10-10T20:17:21Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-suite-tests-behaviour/r-20261010T201646229881-plan-review-of-the-suite-tests-behaviour/plan.html:104",
+      "id": "reasoning-1",
+      "reason": "the done-when measures \"the whole census before and after (463 groups at 646bbacf5)\" in the manifest, so a node whose faithful census reports 476 either records a before/after the plan calls wrong or, worse, edits its census to force 463 and corrupts the very instrument the measure rests on; the fix is to correct or drop the 463/559/12,757 baseline.",
+      "text": "the done-when pins the whole-census baseline as \"(463 groups at 646bbacf5)\" and \u00a74's prose (line 96-97) states \"463 groups of identical bodies span 559 test files and 12,757 lines\", but applying the section's own definition exactly to `tests/` at `646bbacf5` yields 476 groups, 563 files, 12,859 lines; the three-group figures the section actually builds on (64 + 40 + 22 files = 126 files, 1,038 lines) reproduce to the line, so the same instrument that produced the load-bearing numbers contradicts the headline total",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "bf9eb4057e08c30558ebec6b345ce441ef704d301aca30558873c1aa9e28058f",
+  "plan_slug": "the-suite-tests-behaviour",
+  "plan_version": 4,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "Valid; deferred to the revision of \u00a74 before it is dispatched, after the plan's first wave lands, because an edit now reopens the plan-wide review gate for sections this finding does not touch. Recorded in a comment on the section.",
+      "when": "2026-10-10T20:34:39.247170+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "Valid; deferred to the revision of \u00a74 before it is dispatched, after the plan's first wave lands, because an edit now reopens the plan-wide review gate for sections this finding does not touch. Recorded in a comment on the section.",
+      "when": "2026-10-10T20:34:39.247170+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/the-suite-tests-behaviour/r-20261010T201646229881-plan-review-of-the-suite-tests-behaviour.json",
+  "review_run_id": "r-20261010T201646229881-plan-review-of-the-suite-tests-behaviour",
+  "reviewed_blob_sha": "160ea2e9330d3996950c6d7ccf8fade30cc3d817",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `646bbacf5` resolves in this repository (\"plan the fixes a codebase health review found, in sprint S26\"), `tests/conftest.py` exists (1,231 lines), and `tests/helpers/` is a new directory the section creates; \u00a74 cites no href whose target would 404. (Context: \u00a71's cited `~/.config/reckon/crew/reports/reckon/health-review-1010/health-test-suite/` also exists.)",
+    "done_when": "pass \u2014 \u00a74's done-when is measurable (census reports the three groups with no copy outside `tests/helpers/` and `tests/conftest.py`; touched test files pass at head with base, built at dispatch; line delta over `tests/` negative) and declares an executed negative control (a replaced helper's import pointed at a raising stub fails its importers); I reproduced the section's load-bearing figures independently at `646bbacf5` and they match exactly.",
+    "evidence_paths": "pass \u2014 \u00a74's evidence (the census script the node writes beside its log, the before/after census in the manifest) and its write paths (`tests/helpers/`, `tests/conftest.py`, the 126 test files) are all in-repo durable paths; no session-scratchpad or node-local temporary path is named.",
+    "naming": "pass \u2014 \u00a74 introduces `tests/helpers/`, a capability name, and no plan label, stage name, ticket number or version tag reaches a file or symbol; the group names it cites (`_git`, `home`) are the code's own.",
+    "reasoning": "a finding \u2014 \u00a74's stated method (hash the normalised body, arguments and decorators of every module-level non-`test_` function in `tests/`) yields 476 groups spanning 563 files and 12,859 lines at `646bbacf5`, not the 463 / 559 / 12,757 the section asserts and pins into its done-when.",
+    "single_goal": "pass \u2014 \u00a74 carries one deliverable, deduplicating the three helper groups copied into \u226520 files, into one home each.",
+    "wiring": "pass \u2014 \u00a74 declares no depends-on/informs/gates of its own and needs none; the plan's sole relationship (`plan-after: the-suite-is-green-at-head`) is a sequencing that no \u00a74 section waits on, and \u00a74 names no cross-unit dependency it lacks."
+  },
+  "section_digests": {
+    "_document": "4d822237848d5605e94c6c3ff5445a796b353b59284a7a44b45375e30caccb49",
+    "s1": "1d6184c53af837617ac7ee370d7b6d622f0b187f5ac5e8f8d90a1dda6a98b5b2",
+    "s2": "0a2190864603950ade3af9b2de4b53b463e747cc8dc4c1f6e9175cdd5a4ee623",
+    "s3": "b54ea6f02bf0468b0b6f22c4317ef1f30b269045ffcaa9c19ae6abd2d175e96b",
+    "s4": "fc0a2e0705d92c30eccc44eac824c7c86bd3ee98a532a6ef28427940f8c32cd4",
+    "s5": "ab2721f7547c999de436c1bb3551c6fe1aff3bbe51e9d92c2f44f5f91ce4123d",
+    "s6": "2ab2547ce36adce1b8926643bbc4604f1d6d1695d52434c1e8849e50f80c4b9d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T20:34:08.027204+00:00"
+}

@@ -25,7 +25,7 @@
   <title>The Crew Home Has A Bound | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="7">
 <meta name="plan-modified" content="2026-10-10">
 </head>
 <body>
@@ -96,16 +96,24 @@
     <h2 id="s4">§4 — A run's captured file has a size limit</h2>
 <section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
     <p><strong>Deliverable.</strong> After a run is promoted, <code>gc</code> reports any file in its run directory over a configured size
-      (flight key <code>gc.run_file_max_mb</code>, default 256) and, with <code>--apply</code>, replaces it with its first and last megabyte
-      around a one-line marker naming the original size and sha256, so a log cited as evidence keeps its head, its tail and a verifiable
+      (flight key <code>gc.run_file_max_mb</code>, default 256) and, with <code>--apply</code>, replaces it with its first and last half of the limit
+      around a one-line marker naming the original size and sha256, so the result never exceeds the limit plus the marker, so a log cited as evidence keeps its head, its tail and a verifiable
       identity. A file a ledger row names as a gate log is truncated the same way, never deleted. Binary artefacts over the limit
-      (<code>*.pt</code>, <code>*.h5</code>, <code>*.npz</code>) are reported, not touched.</p>
+      (<code>*.pt</code>, <code>*.h5</code>, <code>*.npz</code>) are reported, not touched. The cut reuses what the repository already
+      owns: the service-log trim in <code>reckon/crew/fleet_supervisor.py</code> (<code>trim_service_log</code>, lines 548 to 574, bounded
+      by <code>SERVICE_LOG_LIMIT_BYTES</code> and <code>SERVICE_LOG_KEEP_BYTES</code> at line 223) keeps only the newest bytes; it is
+      lifted into one helper taking a head size and a tail size, the service log calling it with a head of zero so its behaviour and its
+      tests are unchanged, and the run-file bound with half the limit each side, both cutting on <code>line_boundary</code>
+      (<code>reckon/crew/runs.py:1923</code>) so no line is split; gate-log
+      paths are read with <code>_declared_arm_paths</code> (<code>reckon/crew/promotion_release.py:127</code>). The rotating watch log
+      (<code>WATCH_LOG_MAX_BYTES</code>, <code>runs.py:3927</code>) keeps its newest bytes because nothing cites its head; a run's log keeps
+      both ends because a gate's command and its verdict sit at opposite ends.</p>
     <p><strong>Done when</strong> <code>tests/test_gc_bounds_a_run_file.py</code> builds a promoted temporary run directory with a 3 MB log and a
-      3 MB <code>.pt</code> file under a 1 MB limit, and asserts <code>gc --apply</code> leaves the log at about 2 MB with the marker, its
+      3 MB <code>.pt</code> file under a 1 MB limit, and asserts <code>gc --apply</code> leaves the log at no more than 1 MB plus the marker, its
       first and last line intact and the original sha256 in the marker, and the <code>.pt</code> file unchanged and reported. A run that is
       not promoted is untouched. The negative control is executed and logged: with the promoted check removed, the unpromoted run's log is
-      truncated and the test fails. Write paths: <code>reckon/crew/routing.py</code>, <code>reckon/schema/</code>,
-      <code>tests/test_gc_bounds_a_run_file.py</code>. This section runs after §3, which writes the same module.</p>
+      truncated and the test fails. Write paths: <code>reckon/crew/routing.py</code>, <code>reckon/crew/fleet_supervisor.py</code>,
+      <code>reckon/schema/</code>, <code>tests/test_gc_bounds_a_run_file.py</code>; the fleet supervisor's own log tests pass. This section runs after §3, which writes the same module.</p>
 
     <h2 id="s5">§5 — The existing backlog is reclaimed</h2>
 <section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
@@ -124,13 +132,24 @@
     
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-tchhab-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-10-10" data-recommends-skill="/reckon-build the-crew-home-has-a-bound" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tchhab-001" data-status="resolved" data-written-by="reckon-create" data-written-at="2026-10-10" data-recommends-skill="/reckon-build the-crew-home-has-a-bound" data-resolved-at="2026-10-10T20:44:21+00:00" data-resolved-by="reckon-build coordinator (health-review-1010)">
     <h4 class="r-fu-title">Bound the crew home and caches</h4>
     <div class="r-fu-body"><p>§2 first (largest saving); §3 then §4 on <code>routing.py</code>; §5 last.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-crew-home-has-a-bound</pre>
+    <p class="r-fu-outcome"><p>Superseded by f-tchhab-002, which names the first section so the roadmap can dispatch it.</p></p>
+    </article>
+<article class="r-fu" data-id="f-tchhab-002" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build coordinator (health-review-1010)" data-written-at="2026-10-10" data-recommends-skill="/reckon-build the-crew-home-has-a-bound §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Bound the crew home and caches</h4>
+    <div class="r-fu-body"><p>Order: §2; §3 then §4 on <code>routing.py</code>; §5 last.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-crew-home-has-a-bound §2</pre>
     </article>
 </section>
   
+<section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s4" data-id="c-defer-s4-1010" data-who="reckon-build coordinator (health-review-1010)" data-when="2026-10-10T20:40:00Z">
+    <div class="r-comment-body"><p>Before §4 is dispatched, apply the two findings deferred from review <code>r-20261010T201537185527-plan-review-of-the-crew-home-has-a-bound</code>: <code>reasoning-1</code> (a new flight key needs a <code>gc</code> namespace in <code>reckon/schema/flight.yaml</code>, regeneration of <code>reckon/_flight_schema.py</code> and <code>docs/_shared/flight.schema.json</code> by <code>scripts/regen_flight_schema.py</code>, and those paths in scope, because <code>tests/test_flight.py</code> asserts the regeneration is byte-identical) and <code>reasoning-2</code> (<code>line_boundary</code> reads backward from the end of a whole file and takes no offset, so the head cut needs its own forward snap, as <code>trim_service_log</code> does at <code>fleet_supervisor.py:566-570</code>).</p></div>
+</div>
+</section>
 </main>
 </body>
 </html>

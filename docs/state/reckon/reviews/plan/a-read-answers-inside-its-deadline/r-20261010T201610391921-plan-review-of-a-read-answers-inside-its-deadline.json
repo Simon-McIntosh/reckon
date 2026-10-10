@@ -1,0 +1,61 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T20:24:04.640Z",
+  "dispatched_at": "2026-10-10T20:16:39Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html#s5",
+      "id": "reasoning-1",
+      "reason": "an implementer following \u00a75 as written either fails its own \u226410 gate, or must edit a file outside the section's write scope, so the plan as authored sends the node into a scope-blocked or unsatisfiable gate.",
+      "text": "\u00a75's mechanism unifies only `section_authored` (reckon/roadmap.py:184) and `readiness_state` (reckon/serve.py:2067) onto the `read_state_and_text` memo, but a cold roadmap read of a fresh project also parses every plan inside the metadata index build \u2014 `_plan_record` calls `_plan_html.read_state(text)` directly at reckon/metadata_index.py:593, and the index persists by content digest so a temporary project has no persisted entries to reuse. Plus `read_state_file` (memo kind `read_state`) is reachable on the roadmap path via `_plan_followups` (reckon/roadmap.py:1337). If only the named readers are unified, a cold roadmap read alone yields two parses per plan (index + section_authored) = twenty for ten plans, already above the asserted bound of ten before the discovery read is counted \u2014 and reaching ten would require editing `reckon/metadata_index.py`, which is not among \u00a75's declared write paths (`reckon/roadmap.py`, `reckon/serve.py`, the test).",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "1585740968e2a885eadc7045badcc189c52eb37b8be2612727126b30482fc2bc",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 4,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "Valid; deferred to the revision of this section before it is dispatched, after the plan's first wave lands, because an edit now reopens the plan-wide review gate for sections this finding does not touch. Recorded in a comment on the section.",
+      "when": "2026-10-10T20:29:28.546084+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "Valid; deferred to the revision of this section before it is dispatched, after the plan's first wave lands, because an edit now reopens the plan-wide review gate for sections this finding does not touch. Recorded in a comment on the section.",
+      "when": "2026-10-10T20:29:28.546084+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-read-answers-inside-its-deadline/r-20261010T201610391921-plan-review-of-a-read-answers-inside-its-deadline.json",
+  "review_run_id": "r-20261010T201610391921-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "acbd9a1bd8c7ec5a0ea2f3c243f7c4c4688f2a28",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `section_authored` (reckon/roadmap.py:184), `readiness_state` (reckon/serve.py:2067), `_read_readiness_state` call (reckon/serve.py:1794) and the `_audit_plan_state` parse (reckon/mcp.py:2246, the `from_html` lambda) all resolve; `read_authored` (roadmap.py:173) exists for the negative control.",
+    "done_when": "pass \u2014 \u00a75's done-when is a countable measure (at most ten `read_state` parses across a ten-plan roadmap + discovery read) with an executed negative control (read_authored given back its own memo kind) that makes the count exceed ten.",
+    "evidence_paths": "pass \u2014 \u00a75's evidence is a repo test under `tests/`, and its negative-control log is written by the run per the dispatch contract.",
+    "naming": "pass \u2014 \u00a75's symbols (`section_authored`, `readiness_state`, the test filename) name the mechanism, carry no plan label, ticket number or version tag.",
+    "reasoning": "a finding \u2014 the mechanism \u00a75 names cannot produce the done-when it asserts, because parse sites on the roadmap path outside the two named readers remain independent and one of them lives in a file \u00a75 does not list as a write path.",
+    "single_goal": "pass \u2014 one deliverable: one parse serves every reader of a plan.",
+    "wiring": "pass \u2014 \u00a75 declares it runs after \u00a73 (writes `reckon/roadmap.py`) and \u00a74 (writes `reckon/serve.py`), which are exactly its own write paths, and followup f-araiid-002 matches."
+  },
+  "section_digests": {
+    "_document": "ed56ddda67cab69463c811909740e400e27ec4661d29dba9a7afeb660333816e",
+    "s1": "71942607f4df4eca011a41734257645ef2adce9664dd45b628d96b066c34e813",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s3": "cbe34f619f869b3c3346239e8823a63a8de98dd92b7fb8ed5cfa2b8a4ab26a39",
+    "s4": "d2ec58f5ac4e72c5e8bcde1f156bdd4c85bde3848b4e3b6131e6112bb6395d49",
+    "s5": "c7c95ca9a21e2658e8be61919fc561ddc36a8b477f336178e5b0fef09905adc7",
+    "s6": "00db597c53dfd6e3d857f89ee748a8c6ecfe51576b2b66e64772393805c59b52"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T20:28:59.385174+00:00"
+}

@@ -1,0 +1,99 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T19:36:25.235Z",
+  "dispatched_at": "2026-10-10T19:31:36Z",
+  "findings": [
+    {
+      "anchor": "reckon/served_code.py:180",
+      "id": "reuse_search-1",
+      "reason": "\u00a72 would build machinery that already exists and \u00a73 lists `--estimated-context` for deletion though it is live and tested, so both sections would be rewritten.",
+      "text": "the plan's search for existing machinery is incomplete: it cites `reckon/velocity.py:428` `read_sources` and the `reckon/interface_counts.py:575` cache pattern but not `reckon/served_code.py`, whose `_ModuleIndex` (180), `_import_targets` (213), `_module_name` (194), `_module_file` (201) and `_used_definitions` (405) already resolve module names, parse imports and follow attribute references \u2014 the exact core `reach.py` proposes to build; and its census of existing usage in \u00a71 calls `reckon crew pick --estimated-context` \"used by no skill, test, ledger row, plan or source\" when the option is read at `reckon/crew_dispatch_commands.py:600` (definition), `:622` (parameter) and `:693` (passed into `PickRequest`) and consumed at `reckon/crew/picker/snapshot.py:387` and `:708`, with tests exercising it at `tests/test_picker.py:240`",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/served_code.py:180",
+      "id": "duplicate_owner-1",
+      "reason": "the honest change is to lift the index/closure out of `served_code.py` (or import it) so one owner serves both the served-code report and the reach guard, rather than adding a parallel graph.",
+      "text": "extend the existing owner rather than fork it: `reckon/reach.py` duplicates `reckon/served_code.py`'s `_ModuleIndex`/`_import_targets`/`_module_name`/`_module_file`/`_used_definitions` (a module index plus an import- and attribute-following worklist that closes transitively over definitions), and it duplicates the qualified-definition enumeration at `reckon/interface_counts.py:74` `definitions()`; a second import-graph core beside the live one drifts from it, and this repository already carries both",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/nothing-lands-unreached.html:63",
+      "id": "interface_budget-1",
+      "reason": "\u00a72 must account for the public surface it adds against the current 1626 public definitions, even if only to say the retirements in \u00a73/\u00a74 more than cover it.",
+      "text": "\u00a72 adds public definitions (`reckon/reach.py`: the production-entry-point reader, the reachable-set result and `neighbourhood`) and does not, in its own text, name what it retires or merges or say why nothing can be; the retirements all sit in \u00a73 and \u00a74, which the section-adding rule does not credit",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "ea3c3b2dffe0bf6a5e21a9478751f76a426b3560e8c9c896e56118f0fe8c572c",
+  "plan_slug": "nothing-lands-unreached",
+  "plan_version": 1,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reuse_search-1",
+      "reason": "",
+      "when": "2026-10-10T19:44:42.875750+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "duplicate_owner-1",
+      "reason": "",
+      "when": "2026-10-10T19:44:46.833093+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "interface_budget-1",
+      "reason": "",
+      "when": "2026-10-10T19:44:50.691478+00:00"
+    }
+  ],
+  "responses": {
+    "duplicate_owner-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-10T19:44:46.833093+00:00"
+    },
+    "interface_budget-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-10T19:44:50.691478+00:00"
+    },
+    "reuse_search-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-10T19:44:42.875750+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/nothing-lands-unreached/r-20261010T193106507556-plan-review-of-nothing-lands-unreached.json",
+  "review_run_id": "r-20261010T193106507556-plan-review-of-nothing-lands-unreached",
+  "reviewed_blob_sha": "a26f7c8b5f1aff7badad3eb3337dfa21a379df51",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the proposed `reckon/reach.py` hides entry-point resolution, the import graph and the attribute-reference closure behind a reachable-set result and one `neighbourhood(paths)` function; a single module carries the behaviour rather than a spread of shallow wrappers.",
+    "duplicate_owner": "a finding \u2014 `reckon/reach.py` re-implements the module-index, import-resolution and attribute-reference-closure core that `reckon/served_code.py` already owns, and duplicates the definition-enumeration walk that `reckon/interface_counts.py` already owns. The plan names neither.",
+    "interface_budget": "a finding \u2014 public_definitions 1626, cli_options 351, mcp_views 33, refusal_families 23; \u00a72 adds `reckon/reach.py` (a new module of public definitions) without naming in its own text what it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 the plan cites `reckon/velocity.py` `read_sources` and the `reckon/interface_counts.py` cache pattern, but its search for existing machinery missed `reckon/served_code.py` (a live module index that already resolves imports and follows attribute references), and its census of existing *usage* declares `--estimated-context` reached by no source though it is wired through `crew pick` into the picker.",
+    "thin_wrapper": "pass \u2014 the plan extends an existing reader (`read_sources`) rather than layering a thin wrapper over it; the added behaviour (entry-point resolution, reach closure) lives in the new module itself, so there is no wrapper lacking justification."
+  },
+  "section_digests": {
+    "_document": "13351dbde138aeb68206f8604e3d44d518bf7e59793cafbbebfdc90ee8902fc0",
+    "s1": "4f7d8d0b01bd29cdc1e596dd9e7cd8d262cf2f816273f6d4dd6fccd20cfaac11",
+    "s2": "bed10d6309bca1394b16eb9f11f6f7594967a27dcc0322b79f8cc92ca9c7abd1",
+    "s3": "e5057e2926872d8311bc041a4b31b355b5be6035256676b63be43a48a18d6861",
+    "s4": "93e03c9de2ea1b391b9c5154797e2dafdb0a5ea7d3a9143bdfdd9d12fbf7682a"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T19:44:13.057217+00:00"
+}

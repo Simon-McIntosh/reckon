@@ -1,0 +1,60 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T20:04:41.338Z",
+  "dispatched_at": "2026-10-10T19:56:07Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-crew-contract-fits-one-read.html:78",
+      "id": "done_when-1",
+      "reason": "an unsatisfiable control either blocks the node on its own done-when or invites the worker to fudge the reported count; restating it as an occurrence count (`grep -o \"reckon \" \u2026 | wc -l`) or a per-citation counter makes the reconciliation meaningful.",
+      "text": "\u00a75's positive control asserts the test's checked-citation count equals `grep -c \"reckon \"` over the corpus less the planned citations it names, but `grep -c` counts matching LINES while the test counts CITATIONS, and the corpus holds lines carrying two or three citations (skills/reckon-build/SKILL.md:196 holds `reckon crew follow`, `reckon crew gc` and `reckon crew ledger`; :198 and :206 hold three each), so the two figures cannot be made equal as written",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "97061ad7561910eedbf8f9f5f2c333bff1aed1b6df089eeb6a5fc4d5a62cef9d",
+  "plan_slug": "the-crew-contract-fits-one-read",
+  "plan_version": 28,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-10T20:11:29.551305+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-10T20:11:29.551305+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/the-crew-contract-fits-one-read/r-20261010T195540262289-plan-review-of-the-crew-contract-fits-one-read.json",
+  "review_run_id": "r-20261010T195540262289-plan-review-of-the-crew-contract-fits-one-read",
+  "reviewed_blob_sha": "0dce3d5ef3d8db3c3069f973cad7882b75a5c8e1",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every \u00a75 anchor resolves at the reviewed head: the review directory exists, `PLAN-FORMAT.md:321`/`:330` carry the cited commands, `807053fb6` exists (2026-08-24), `sprint-orchestration.md:1011` and `coordinator-reference.md:593-614` match, and `SKILL.md:178-211` is the cited table; the five-verb drift (\u00a75 says \"five live commands\") reproduces exactly.",
+    "done_when": "a finding \u2014 \u00a75's positive control reconciles the test's citation count against `grep -c \"reckon \"`, an instrument that counts matching lines, not citations; the corpus carries lines holding two or three citations, so the asserted equality cannot hold.",
+    "evidence_paths": "pass \u2014 the cited review lives under `~/.config/reckon/crew/reports/.../health-skill-drift/` (durable), the guard is a tracked repository test, and the done-when's figures go in the durable manifest; no scratchpad or node-local temp path.",
+    "naming": "pass \u2014 the new artifact `tests/test_cited_commands_exist.py` and the \u00a75 title carry no plan labels, stage names, ticket numbers or version tags.",
+    "reasoning": "pass \u2014 the stated root cause (\"nothing fails when a cited command is renamed or removed, so each of these was found by reading\") matches the cited evidence (three dead citations and a drifted table, all found by reading), and a discovered pytest guard reaches the real path; the one mechanism/measure mismatch is the positive control, filed under done_when.",
+    "single_goal": "pass \u2014 \u00a75 carries one deliverable: a citation-existence guard plus the three stale-citation repairs and the copied-table replacement, all serving one goal with one gate.",
+    "wiring": "pass \u2014 \u00a75's ordering dependency on \u00a73 is declared (\"This section runs after \u00a73\u2026\") with a fallback if \u00a73 has not started, and the two s3 gates are declared in the gates block; no relationship points at the wrong node."
+  },
+  "section_digests": {
+    "_document": "971e28a5e13a3c3a7a90171ee3b34a8ee93c6a73b132edf8b0c38109a08b8397",
+    "s1": "e03f606afdb78e6b308ef1299a7b868ec09052b4842de46205b30106103e5991",
+    "s2": "698a2a8583161b33608967bafc3c61641856bd4c995bb3e303796723932345e7",
+    "s3": "55c86e04c5aae2cb268f9567ce641cae99945fa16a350c250d4170d30ed1c947",
+    "s4": "bc54d1886f4d3949bffdaf93118a6be518f17b34653992dc9521ee8e03739257",
+    "s5": "10f17458304bc850b4df6e7138573192d8883bfa6f96bf9da7230274d1b992ce"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T20:10:56.701164+00:00"
+}

@@ -1,0 +1,122 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T19:37:17.630Z",
+  "dispatched_at": "2026-10-10T19:33:49Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/standing_suite.py:164",
+      "id": "reuse_search-1",
+      "reason": "the section should say it carries an already-parsed field, so a worker does not add a second parser and the interface delta is stated honestly.",
+      "text": "\u00a73 states the record \"gains `skipped` and `skipped_ids`, parsed from the same pytest output it already reads\", but the count is already produced: `_result_counts()` maps the `skipped` token via `_RESULT_WORDS` (reckon/crew/standing_suite.py:102) and `_build_counts()` (reckon/crew/standing_suite.py:285) computes `results = _result_counts(...)` then drops `results[\"skipped\"]` when building its return dict. Only carrying that already-computed value into `_build_counts`/`_build_record` (standing_suite.py:253) is new for the count; the plan cites neither function.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/standing_suite.py:335",
+      "id": "reuse_search-2",
+      "reason": "naming the existing extractor turns a new parser into a small extension, which is the reuse census this item exists to force.",
+      "text": "\u00a73's `skipped_ids` should extend the existing per-id extractor `_pytest_failure_ids` (already used to populate `failure_ids` at standing_suite.py:335) rather than introduce a parallel SKIPPED-line parser; the plan names no such reuse. The census of pytest-log parsers in this owner is: `_result_counts` (standing_suite.py:164), `_pytest_failure_ids` (standing_suite.py:335), and the shared `_RUNNER_SUMMARY` (promotion_evidence.py:1000) \u2014 the last is already reused and only the middle is unmentioned.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "tests/",
+      "id": "reuse_search-3",
+      "reason": "a `helpers/` package is a defensible consolidation and the author may prefer it to the flat layout; this is a placement note, not a design change.",
+      "text": "\u00a74 introduces a new `tests/helpers/` package without noting the established shared-test-module convention: six non-test modules already live flat at tests/ root (`tests/spa_browser_harness.py`, `tests/spa_containment_harness.py`, `tests/spa_module_eval.py`, `tests/spa_parity_harness.py`, `tests/fleet_supervisor_requests.py`, `tests/mcp_family_reload.py`), and no `tests/helpers/` directory exists today.",
+      "type": "reuse_search",
+      "would_change": false
+    },
+    {
+      "anchor": "tests/",
+      "id": "reuse_search-4",
+      "reason": "the mismatch sits in \u00a71's cited health-review figure, not in \u00a74's gate, which recomputes before/after sums; worth reconciling the citation but it does not change the design.",
+      "text": "\u00a71's table records `config_home` as \"20 each across 5 files\", but the \u00a74 done-when's own command `grep -rlE \"^def <name>\\(\" tests/` at HEAD yields a different census: `config_home` 12 files, `_spawn_runner` 5, `_row` 39, `checkout` 8, `_placed_backend` 5, `_replace_stream` 3.",
+      "type": "reuse_search",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "4f8cb872eb99b8d4e5e541c9c79a5d9ef5aff667d0ecb369587e8d7d876fbf53",
+  "plan_slug": "the-suite-tests-behaviour",
+  "plan_version": 2,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reuse_search-1",
+      "reason": "",
+      "when": "2026-10-10T19:50:13.586680+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reuse_search-2",
+      "reason": "",
+      "when": "2026-10-10T19:50:17.358434+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "reuse_search-3",
+      "reason": "A tests/helpers package keeps the consolidated helpers out of the collection root's namespace beside 1,091 test files; the six flat harness modules stay where they are, and the reviewer marked this a placement note that would not change the design.",
+      "when": "2026-10-10T19:50:21.341786+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reuse_search-4",
+      "reason": "",
+      "when": "2026-10-10T19:50:25.048101+00:00"
+    }
+  ],
+  "responses": {
+    "reuse_search-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-10T19:50:13.586680+00:00"
+    },
+    "reuse_search-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-10T19:50:17.358434+00:00"
+    },
+    "reuse_search-3": {
+      "action": "declined",
+      "by": "",
+      "reason": "A tests/helpers package keeps the consolidated helpers out of the collection root's namespace beside 1,091 test files; the six flat harness modules stay where they are, and the reviewer marked this a placement note that would not change the design.",
+      "when": "2026-10-10T19:50:21.341786+00:00"
+    },
+    "reuse_search-4": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-10T19:50:25.048101+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/the-suite-tests-behaviour/r-20261010T193322565348-plan-review-of-the-suite-tests-behaviour.json",
+  "review_run_id": "r-20261010T193322565348-plan-review-of-the-suite-tests-behaviour",
+  "reviewed_blob_sha": "21e6a991e33062aadd87fa96232c13c2508c0434",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a72 extends the single existing resolver `installed_browser()` (tests/spa_browser_harness.py:532), hiding the resolution order behind it; \u00a74 consolidates 202 clone pairs into subject modules rather than layering wrappers over them; nothing new here spreads shallow surface.",
+    "duplicate_owner": "pass \u2014 no shared mechanism is forked: \u00a73 reuses the shared runner-summary parser `_RUNNER_SUMMARY` (reckon/crew/promotion_evidence.py:1000, imported at standing_suite.py:46), \u00a72 extends the sole browser resolver, and \u00a75 rewrites call sites rather than adding an owner.",
+    "interface_budget": "pass \u2014 public_definitions 1626, cli_options 351, mcp_views 33, refusal_families 23; no section adds to any of the four families (\u00a72 adds an env var, \u00a73 adds record data fields), so nothing needs a retire/merge justification.",
+    "reuse_search": "a finding \u2014 \u00a73's skip *count* and per-id extraction already exist inside `reckon/crew/standing_suite.py` and the plan cites neither, presenting already-parsed data as new machinery.",
+    "thin_wrapper": "pass \u2014 \u00a72 and \u00a73 extend the mechanisms they name (the browser resolver, the suite-record writer) rather than wrapping them, and each states the existing function it changes."
+  },
+  "section_digests": {
+    "_document": "4d822237848d5605e94c6c3ff5445a796b353b59284a7a44b45375e30caccb49",
+    "s1": "6a9c3c40e4c564a7779b5a9847e5725c722c337499c7d82ee5988f5699b18e11",
+    "s2": "0a2190864603950ade3af9b2de4b53b463e747cc8dc4c1f6e9175cdd5a4ee623",
+    "s3": "ed79195504e9d8f3eab3a67593faee861dfabc2252cff4d67c2a2e8d15f505cd",
+    "s4": "ee849771f9dde8ee16f2b8169b6e327719997def3a74ac631e801d47eb811f40",
+    "s5": "ab2721f7547c999de436c1bb3551c6fe1aff3bbe51e9d92c2f44f5f91ce4123d",
+    "s6": "2ab2547ce36adce1b8926643bbc4604f1d6d1695d52434c1e8849e50f80c4b9d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T19:49:40.282954+00:00"
+}

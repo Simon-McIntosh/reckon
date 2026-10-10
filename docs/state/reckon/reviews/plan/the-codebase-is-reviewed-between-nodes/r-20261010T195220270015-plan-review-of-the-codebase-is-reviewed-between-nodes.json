@@ -1,0 +1,87 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T19:59:08.808Z",
+  "dispatched_at": "2026-10-10T19:52:46Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-codebase-is-reviewed-between-nodes.html:160",
+      "id": "wiring-1",
+      "reason": "the plan states two different orders for two nodes that write one file, so a coordinator following the followup violates \u00a75's own prerequisite and cannot tell which order is intended.",
+      "text": "\u00a75 was changed to write reckon/crew/review.py and to state it \"runs after \u00a74, which also writes review.py\", but the followup at :310 orders \"\u00a73 and \u00a75 first; \u00a74 after \u00a73\", so the driving prompt builds \u00a75 before the prerequisite the section now declares, against a module both nodes edit",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-codebase-is-reviewed-between-nodes.html:155",
+      "id": "done_when-1",
+      "reason": "the section's primary artefact has no measure at all, so its gate can pass on a rubric that contradicts the parser shipped beside it, and the gap is what \u00a711 (last) would otherwise be forced to catch at runtime.",
+      "text": "the done-when parses a fixed reviewer output through the parser and never reads reckon/crew/prompts/health_review.md, the section's named deliverable and the artefact \u00a76 composes with, \u00a77 and \u00a79 invoke, and \u00a711 runs; a rubric prompt missing one of the six items, or the one-treatment constraint, still passes the gate",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "7098694307609f416ec7c1a93461089ab9f804dcbfd046e692729b8e139a86ee",
+  "plan_slug": "the-codebase-is-reviewed-between-nodes",
+  "plan_version": 5,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-10T20:03:18.173342+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-10T20:03:22.025775+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-10T20:03:22.025775+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-10T20:03:18.173342+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/the-codebase-is-reviewed-between-nodes/r-20261010T195220270015-plan-review-of-the-codebase-is-reviewed-between-nodes.json",
+  "review_run_id": "r-20261010T195220270015-plan-review-of-the-codebase-is-reviewed-between-nodes",
+  "reviewed_blob_sha": "d4ff90d7ae6835c8d873aa87b181f878bf8b2e44",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 parse_plan_review_report resolves at reckon/crew/review.py:742, and reckon/interface_counts.py and reckon/clones.py exist, with counts() returning exactly the four figures \u00a75 names.",
+    "done_when": "a finding \u2014 \u00a75's gate (line 155) parses a fixed reviewer output through the parser and never reads the section's named deliverable, the rubric prompt at reckon/crew/prompts/health_review.md, so the headline artefact is unmeasured.",
+    "evidence_paths": "pass \u2014 the gate is a committed pytest file (tests/test_health_review_parses.py); no scratchpad or node-local path is named.",
+    "naming": "pass \u2014 the new names (health_review.md, the six rubric items, the health parser) carry no plan labels, ticket numbers or version tags.",
+    "reasoning": "pass \u2014 the six items and the one-treatment rule are what the parser enforces, the four interface figures are reckon/interface_counts.py's four counted families, and \u00a76 is named as the caller that composes the brief.",
+    "single_goal": "pass \u2014 \u00a75 names one deliverable family, the health-review rubric and the parser of its output landing together, closed by one parse gate.",
+    "wiring": "a finding \u2014 \u00a75 now declares it \"runs after \u00a74, which also writes review.py\" (line 160), but the driving followup seeds \u00a75 into the first wave with \u00a73 while placing \u00a74 only \"after \u00a73\" (line 310), and the two nodes edit the same module."
+  },
+  "section_digests": {
+    "_document": "a119118f3a121174cc53a956714d7060ca72e08ee320d9491a56345a2a3cde1b",
+    "s1": "9b90bb5d52612fe5176b665cf841e1e32b7f38a28ba1b61073a75cc3d069801a",
+    "s10": "fd23d07301f3cad0c97fef7db3a37873185ea49a190df387e6b4c9c4842520cc",
+    "s11": "9e366a36d7c955b9e20809f7f939f7e5341dea805985ebb4bbd30a8a826983f7",
+    "s2": "449650cf3f83a3d58ac9fd8300f391af35ba5aa8ae747d9364d73ed77c82aa7e",
+    "s3": "2c449e0173e76fffe6ccc80b5373b095fe1d7916e7948747fa0976dfb315f33e",
+    "s4": "d90c4e0ae9e513908951452540ead3c635b9c43faa46f9400dd8449543cce1d6",
+    "s5": "9891a2ba10759cbe80d28e6bffae160d568861520992dfde4aaab5c19345f925",
+    "s6": "cff9b0b879d09b64cc4138b82c72e4814e531c6cf053920f3c05931bbf43abc4",
+    "s7": "d4bab6166d5c436fc12815244f86a04121deb2ca67fc71c1fd66d0498d89fbcf",
+    "s8": "1b50194c1f0c6912b871f624cbfcfc01fc0e693a036d87844203a29ba311f17b",
+    "s9": "f03878914cabdb64631b914dba06b3963c765228e774c1419ab91b13e71b1e9d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T20:02:44.391074+00:00"
+}

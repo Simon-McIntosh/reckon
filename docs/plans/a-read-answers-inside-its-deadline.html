@@ -25,7 +25,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="5">
 <meta name="plan-modified" content="2026-10-10">
 </head>
 <body>
@@ -53,12 +53,14 @@
         runs on the read path and takes an exclusive <code>flock</code> on <code>docs/.reckon/locks/reckon-transactions-recovery.lock</code>;
         in a read-only tree the read dies with <code>EROFS</code> after 42 s of work.</li>
       <li>The warm roadmap re-walks the covered tree on every call: 8,200 <code>scandir</code> and 5,728 <code>stat</code> calls, 6.5 s of
-        12.45 s, through <code>_walk_covered</code> (<code>reckon/metadata_index.py:423</code>), although every parse was a memo hit.</li>
-      <li>The warm audit spends 6.4 s in nine <code>git</code> subprocesses whose answers the persistent git-date cache would have held,
-        but that cache sits under <code>~/.config/reckon/cache</code> and is skipped when it cannot be written.</li>
-      <li>A cold audit parses plans 1,192 times from six call sites; two of them, <code>read_authored</code> (<code>reckon/roadmap.py:173</code>)
-        and <code>_read_readiness_uncached</code> (<code>reckon/serve.py:2070</code>), read and parse the file themselves instead of
-        through the path-keyed memo, 63 s between them.</li>
+        12.45 s, through <code>_walk_covered</code> (<code>reckon/metadata_index.py:423</code>), although every parse was a memo hit and the index
+        already carries a walk-skip for an unchanged tree (<code>_reuse_covered</code>, line 215) that should have answered the call.</li>
+      <li>The warm audit spends 6.4 s in nine <code>git</code> subprocesses. The git-date answers are already cached in process, keyed on
+        <code>HEAD</code> (<code>_GIT_CREATION_CACHE</code> and <code>_GIT_LAST_MODIFIED_CACHE</code>, <code>reckon/serve.py:1279</code> and
+        1316), but finding <code>HEAD</code> is itself an uncached <code>git rev-parse</code> per lookup (<code>_git_head</code>, line 1244).</li>
+      <li>A cold audit parses plans 1,192 times from six call sites. Each reader is memoised, but under its own kind
+        (<code>section_authored</code> at <code>reckon/roadmap.py:184</code>, <code>readiness_state</code> at <code>reckon/serve.py:2067</code>,
+        and <code>read_state_and_text</code>), so one unchanged file is parsed once per kind.</li>
     </ul>
 
     <h2 id="s2">§2 — A read takes no write lock</h2>
@@ -72,43 +74,51 @@
       removed, the read-only read raises <code>EROFS</code> and the test fails. Write paths: <code>reckon/project_state.py</code>,
       <code>tests/test_a_read_takes_no_lock.py</code>.</p>
 
-    <h2 id="s3">§3 — The covered-tree walk is memoised on the tree's identity</h2>
+    <h2 id="s3">§3 — A warm roadmap takes the walk-skip the index already has</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> <code>_walk_covered</code> keeps its result in <code>reckon/file_memo.py</code>, keyed on the stat
-      identity (mtime and inode) of each covered directory, so a warm call whose directories have not changed issues one <code>stat</code>
-      per directory and no <code>scandir</code>. A file added, removed or renamed in a covered directory changes that directory's mtime and
-      re-walks it.</p>
-    <p><strong>Done when</strong> <code>tests/test_covered_walk_is_memoised.py</code> walks a temporary tree twice and asserts, by counting
-      calls through a patched <code>os.scandir</code>, that the second walk issues none; after a file is added to one directory, the third
-      walk re-scans that directory alone and returns the new file. The negative control is executed and logged: with the memo key ignoring
-      directory mtime, the added file is missing and the test fails. Write paths: <code>reckon/metadata_index.py</code>,
-      <code>reckon/file_memo.py</code>, <code>tests/test_covered_walk_is_memoised.py</code>.</p>
+    <p><strong>Deliverable.</strong> The metadata index already skips <code>_walk_covered</code> when every recorded directory identity
+      matches (<code>_reuse_covered</code>, <code>reckon/metadata_index.py:215-240</code>; <code>_dir_identity</code>, 490; the persisted
+      <code>dir_stamps</code>, 748 and 783), and the MCP path reaches it through <code>index_rows(..., revalidate=True)</code>
+      (<code>reckon/mcp_views.py:1180</code>). The profile nonetheless shows a warm roadmap entering <code>_walk_covered</code> twice. The node
+      first establishes, with a counting wrapper, which reader on the roadmap path reaches the walk and why <code>_reuse_covered</code> does
+      not answer it (a reader that bypasses <code>index_rows</code>, or a stamp that never matches), records that cause in its manifest, and
+      fixes it in that reader or in <code>metadata_index.py</code>. It adds no second directory-identity map.</p>
+    <p><strong>Done when</strong> <code>tests/test_warm_roadmap_does_not_walk.py</code> runs the roadmap read twice in one process on a
+      temporary project and asserts, through a counting wrapper, that the second call enters <code>_walk_covered</code> zero times; after a
+      plan file is added, the third call walks and reports the new plan. The negative control is executed and logged: with
+      <code>_reuse_covered</code> forced to decline, the second call walks and the test fails. Write paths:
+      <code>reckon/metadata_index.py</code>, <code>reckon/roadmap.py</code>, <code>reckon/mcp_views.py</code>,
+      <code>tests/test_warm_roadmap_does_not_walk.py</code>.</p>
 
-    <h2 id="s4">§4 — A git answer is asked once per process</h2>
+    <h2 id="s4">§4 — Git HEAD is resolved once per commit, not once per lookup</h2>
 <section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> The git-date lookups behind the audit and roadmap (<code>_run_git</code> and the creation and last-modified
-      caches in <code>reckon/serve.py</code>, lines 1116 to 1468) read through an in-process memo keyed on the repository's
-      <code>HEAD</code> and the path, in front of the persistent cache under <code>~/.config/reckon/cache/git-creation/</code> they use
-      today, so a resident server asks git once per
-      revision and a fenced or read-only home still benefits. The persistent cache stays the second level.</p>
-    <p><strong>Done when</strong> <code>tests/test_git_dates_are_asked_once.py</code> calls the lookup three times for one path in a temporary
-      repository with the persistent cache directory read-only and asserts, through a counting wrapper on the subprocess call, one
-      <code>git</code> invocation; after a new commit, the next call asks again. The negative control is executed and logged: with the
-      memo key omitting <code>HEAD</code>, the post-commit call returns the stale date and the test fails. Write paths:
-      <code>reckon/serve.py</code>, <code>tests/test_git_dates_are_asked_once.py</code>.</p>
+    <p><strong>Deliverable.</strong> The node first confirms, from a warm-audit profile, which of the nine <code>git</code> processes
+      are <code>rev-parse HEAD</code> calls from <code>_git_head</code> (<code>reckon/serve.py:1244</code>) and which are date queries the
+      in-process maps (<code>_GIT_CREATION_CACHE</code>, <code>_GIT_LAST_MODIFIED_CACHE</code>) should have answered. It then memoises
+      <code>_git_head</code> on the identity (mtime and inode) of the repository's <code>HEAD</code> file and the ref file it names, so a
+      warm read with no new commit starts no <code>git</code> process, and, if date queries remain, extends those two maps rather than
+      adding a layer in front of them.</p>
+    <p><strong>Done when</strong> <code>tests/test_git_head_is_resolved_once.py</code> calls the creation and last-modified lookups three
+      times each for one path in a temporary repository and asserts, through a counting wrapper on the subprocess call, no
+      <code>git</code> process after the first pair; after a new commit, the next call starts one and returns the new date. The negative
+      control is executed and logged: with the <code>HEAD</code> memo keyed on nothing, every call starts a process and the test fails.
+      Write paths: <code>reckon/serve.py</code>, <code>tests/test_git_head_is_resolved_once.py</code>.</p>
 
-    <h2 id="s5">§5 — Every plan read goes through the parse memo</h2>
+    <h2 id="s5">§5 — One parse serves every reader of a plan</h2>
 <section data-reckon="section" data-id="s5" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> <code>read_authored</code> (<code>reckon/roadmap.py:173</code>) and <code>_read_readiness_uncached</code>
-      (<code>reckon/serve.py:2070</code>) read through <code>read_state_and_text_file</code>, the path-keyed memo the other readers use,
-      instead of reading and parsing the file themselves. The other four call sites the profile names are checked and routed the same way
-      where they bypass it.</p>
-    <p><strong>Done when</strong> <code>tests/test_every_plan_read_is_memoised.py</code> runs one cold audit of a temporary project holding
-      ten plans and asserts, through a counting wrapper on <code>read_state</code>, at most ten parses, against six per plan before. The
-      negative control is executed and logged: with <code>read_authored</code> restored to its own read, the count exceeds ten and the test
-      fails. The roadmap and audit tests pass, their list built at dispatch from the head tree. Write paths: <code>reckon/roadmap.py</code>,
-      <code>reckon/serve.py</code>, <code>reckon/project_state.py</code>, <code>tests/test_every_plan_read_is_memoised.py</code>. This
-      section runs after §2, which writes <code>project_state.py</code>, and after §4, which writes <code>serve.py</code>.</p>
+    <p><strong>Deliverable.</strong> The readers <code>section_authored</code> (<code>reckon/roadmap.py:184</code>) and
+      <code>readiness_state</code> (<code>reckon/serve.py:2067</code>) derive their values from the parse the
+      <code>read_state_and_text</code> memo already holds for the file, instead of each parsing it under its own memo kind; a memo entry
+      they keep holds only the derived value. The other call sites the profile names are checked the same way.</p>
+    <p><strong>Done when</strong> <code>tests/test_every_plan_read_is_memoised.py</code> runs, in one process, a cold roadmap read and then a
+      discovery read (<code>_discover_*</code> in <code>reckon/serve.py</code>, which reaches <code>readiness_state</code> through
+      <code>_read_readiness_state</code> at line 1794) of a temporary project holding ten plans, and asserts, through a counting wrapper on
+      <code>read_state</code>, at most ten parses across both reads. The audit is not the measure, because its per-plan parse
+      (<code>_audit_plan_state</code>, <code>reckon/mcp.py:2246</code>) reaches neither changed reader. The
+      negative control is executed and logged: with <code>read_authored</code> given back its own parse under its own kind, the count exceeds
+      ten and the test fails. The roadmap and audit tests pass, their list built at dispatch from the head tree. Write paths: <code>reckon/roadmap.py</code>,
+      <code>reckon/serve.py</code>, <code>tests/test_every_plan_read_is_memoised.py</code>. This section runs after §3, which writes
+      <code>roadmap.py</code>, and after §4, which writes <code>serve.py</code>.</p>
 
     <h2 id="s6">§6 — The reads are measured inside their deadline</h2>
 <section data-reckon="section" data-id="s6" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
@@ -123,13 +133,24 @@
     
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-araiid-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-10-10" data-recommends-skill="/reckon-build a-read-answers-inside-its-deadline" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-araiid-001" data-status="resolved" data-written-by="reckon-create" data-written-at="2026-10-10" data-recommends-skill="/reckon-build a-read-answers-inside-its-deadline" data-resolved-at="2026-10-10T20:06:47+00:00" data-resolved-by="reckon-build coordinator (health-review-1010)">
     <h4 class="r-fu-title">Make the first reads answer</h4>
     <div class="r-fu-body"><p>§2, §3 and §4 in parallel; §5 after §2; §6 last.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-read-answers-inside-its-deadline</pre>
+    <p class="r-fu-outcome"><p>Superseded by f-araiid-002: §5 now runs after §3 and §4, whose modules it writes.</p></p>
+    </article>
+<article class="r-fu" data-id="f-araiid-002" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build coordinator (health-review-1010)" data-written-at="2026-10-10" data-recommends-skill="/reckon-build a-read-answers-inside-its-deadline §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Make the first reads answer, starting with the read lock</h4>
+    <div class="r-fu-body"><p>Order: §2, §3 and §4 in parallel; §5 after §3 and §4; §6 last.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-read-answers-inside-its-deadline §2</pre>
     </article>
 </section>
   
+<section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s5" data-id="c-defer-s5-1010" data-who="reckon-build coordinator (health-review-1010)" data-when="2026-10-10T20:40:00Z">
+    <div class="r-comment-body"><p>Before §5 is dispatched, apply the finding deferred from review <code>r-20261010T201610391921-plan-review-of-a-read-answers-inside-its-deadline</code>: <code>reasoning-1</code> (a cold roadmap read also parses every plan inside the metadata index build, <code>_plan_record</code> calling <code>_plan_html.read_state</code> at <code>reckon/metadata_index.py:593</code>, so the ten-parse bound either counts that path or the index build reads through the same memo).</p></div>
+</div>
+</section>
 </main>
 </body>
 </html>

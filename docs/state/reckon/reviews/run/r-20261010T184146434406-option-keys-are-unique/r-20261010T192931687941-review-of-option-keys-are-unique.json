@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "9a9d3d3ec57fd13abede528f6e57deda10a1f8c6",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/picker/__init__.py:229 _answer",
+    "reckon/crew/picker/__init__.py:386 selected resolution"
+  ],
+  "completed_at": "2026-10-10T19:37:11.898Z",
+  "dispatched_at": "2026-10-10T19:30:17Z",
+  "findings": [
+    {
+      "file": "tests/test_option_keys_are_unique.py",
+      "line": "85",
+      "severity": "follow-on",
+      "text": "follow-on: test_a_modelless_candidate_does_not_name_its_backend_a_model and test_two_modelless_backends_on_one_lane_are_both_offered (line 66) pass unchanged against the base revision, whose option_key also yields claude:amine for a modelless candidate, so neither reddens when the item-2 behaviour regresses and item 2's guard is not independent of the fix it claims to lock."
+    },
+    {
+      "file": "tests/test_picker_pressure.py",
+      "line": "151",
+      "severity": "follow-on",
+      "text": "follow-on: the diff edits three test files outside the reviewed prompt's four-path FENCE - SCOPE and the manifest discloses only tests/test_picker_pressure.py, asserting the granted scope named seven files where the fence named four, so the scope accounting a coordinator ratifies rests on a count the prompt does not support."
+    }
+  ],
+  "head_log_revision": "2afbfd1ab24b035a97b4ccaa34b404e9e2d51e0f",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base 9a9d3d3; 6 files, 183 insertions and 37 deletions - prompts.py (option_key and build_questions), the new 106-line test file, two one-line pinned-key updates and one two-line pinned-key update in sibling picker tests, and a 22-line evidence fragment.",
+    "done_when": "the done-when names tests/test_option_keys_are_unique.py; its 4 tests exist and the manifest records the head gate at 2afbfd1ab as 203 passed EXIT=0 against a base of 199 passed EXIT=0.",
+    "goal": "the node's goal is that every lane-and-model key Jev is offered is unique and claims only what it carries; reckon/crew/picker/prompts.py:261 option_key now emits <lane>:<model>:<backend> with a model and <lane>:<backend> without one, so two backends sharing a lane and a model are distinct, and build_questions raises ValueError rather than collapse two candidates under one key.",
+    "manifest": "read at the run directory; status complete, commits 6dda5d9/2afbfd1a/d5876990 named, both gate logs and the negative-control log named on disk, and the out-of-scope tests/test_picker_pressure.py edit disclosed in the deviations field.",
+    "write_paths": "the manifest declares the fence as prompts.py, tests/test_option_keys_are_unique.py and the evidence fragment; the diff additionally edits tests/test_picker.py, tests/test_estimate_stage_times_the_estimate.py and tests/test_picker_pressure.py, which the reviewed prompt's FENCE - SCOPE does not list."
+  },
+  "justifications": {
+    "durability": "the item-1 guard test_two_backends_sharing_a_lane_and_a_model_are_both_offered at tests/test_option_keys_are_unique.py:45 reddens under the mutation that drops the backend (negative control EXIT=1), but the two item-2 tests at :66 and :85 assert keys the base revision also produces (claude:amine/claude:benzene) and pass unchanged against the base option_key, so they do not redden when item 2 regresses.",
+    "evidence": "the head gate (tests/test_option_keys_are_unique.py plus every tests/test_picker*.py plus tests/test_jev_prompt_carries_what_it_weighs.py and tests/test_hold_names_the_serving_lane.py) records 203 passed EXIT=0 at 2afbfd1a and the base 199 passed EXIT=0 at 9a9d3d3, both logs on disk; the head arm ran at the code commit 2afbfd1a while the landed head d5876990 adds only the evidence doc.",
+    "fit": "the new branches follow the module's existing getattr-with-fallback style at reckon/crew/picker/prompts.py:265 and the docstrings name the mechanism, and the commit bodies carry no plan, ticket or attribution text.",
+    "goal_fidelity": "reckon/crew/picker/prompts.py:271 now returns the backend as the last part so two backends on one lane and model are distinct, and build_questions at :287 refuses two candidates under one key; held back because item 2's own key string is unchanged, its honesty resting on the new three-part convention rather than on any change to the modelless key itself.",
+    "reuse": "option_key and build_questions at reckon/crew/picker/prompts.py:261 and :282 are the owners of the offered-option capability and the diff extends them in place; a search of reckon/crew/picker for another key builder found none.",
+    "scope_discipline": "the diff edits three test files (tests/test_picker.py, tests/test_estimate_stage_times_the_estimate.py, tests/test_picker_pressure.py) outside the four paths the reviewed prompt's FENCE - SCOPE lists, and the manifest names only one of them (tests/test_picker_pressure.py) while asserting the granted scope named seven files; the edits are two-to-three-line pinned-key updates no concurrent node holds, and the plan's section 8 write scope reads reckon/crew/picker/prompts.py and its tests."
+  },
+  "node": "option-keys-are-unique",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that every lane-and-model key Jev is offered is unique and claims only what it carries; reckon/crew/picker/prompts.py:261 option_key now emits <lane>:<model>:<backend> with a model and <lane>:<backend> without one, and build_questions raises ValueError rather than collapse two candidates under one key.\nVERDICT done_when: the done-when names tests/test_option_keys_are_unique.py; its 4 tests exist and the manifest records the head gate at 2afbfd1ab as 203 passed EXIT=0 against a base of 199 passed EXIT=0.\nVERDICT write_paths: the manifest declares the fence as prompts.py, tests/test_option_keys_are_unique.py and the evidence fragment; the diff additionally edits tests/test_picker.py, tests/test_estimate_stage_times_the_estimate.py and tests/test_picker_pressure.py, which the reviewed prompt's FENCE - SCOPE does not list.\nVERDICT manifest: read at the run directory; status complete, commits 6dda5d9/2afbfd1a/d5876990 named, both gate logs and the negative-control log named on disk, and the out-of-scope tests/test_picker_pressure.py edit disclosed in the deviations field.\nVERDICT diff: read commit by commit against base 9a9d3d3; 6 files, 183 insertions and 37 deletions - prompts.py (option_key and build_questions), the new 106-line test file, two one-line pinned-key updates and one two-line pinned-key update in sibling picker tests, and a 22-line evidence fragment.\nCALL_SITES: reckon/crew/picker/__init__.py:229 _answer, reckon/crew/picker/__init__.py:386 selected resolution\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/picker/prompts.py:271 now returns the backend as the last part so two backends on one lane and model are distinct, and build_questions at :287 refuses two candidates under one key; held back because item 2's own key string is unchanged, its honesty resting on the new three-part convention rather than on any change to the modelless key itself.\nSCORE evidence: 18\nJUSTIFICATION evidence: the head gate (tests/test_option_keys_are_unique.py plus every tests/test_picker*.py plus tests/test_jev_prompt_carries_what_it_weighs.py and tests/test_hold_names_the_serving_lane.py) records 203 passed EXIT=0 at 2afbfd1a and the base 199 passed EXIT=0 at 9a9d3d3, both logs on disk; the head arm ran at the code commit 2afbfd1a while the landed head d5876990 adds only the evidence doc.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: the diff edits three test files (tests/test_picker.py, tests/test_estimate_stage_times_the_estimate.py, tests/test_picker_pressure.py) outside the four paths the reviewed prompt's FENCE - SCOPE lists, and the manifest names only one of them (tests/test_picker_pressure.py) while asserting the granted scope named seven files; the edits are two-to-three-line pinned-key updates no concurrent node holds, and the plan's section 8 write scope reads reckon/crew/picker/prompts.py and its tests.\nSCORE durability: 14\nJUSTIFICATION durability: the item-1 guard test_two_backends_sharing_a_lane_and_a_model_are_both_offered at tests/test_option_keys_are_unique.py:45 reddens under the mutation that drops the backend (negative control EXIT=1), but the two item-2 tests at :66 and :85 assert keys the base revision also produces (claude:amine/claude:benzene) and pass unchanged against the base option_key, so they do not redden when item 2 regresses.\nSCORE fit: 18\nJUSTIFICATION fit: the new branches follow the module's existing getattr-with-fallback style at reckon/crew/picker/prompts.py:265 and the docstrings name the mechanism, and the commit bodies carry no plan, ticket or attribution text.\nSCORE reuse: 20\nJUSTIFICATION reuse: option_key and build_questions at reckon/crew/picker/prompts.py:261 and :282 are the owners of the offered-option capability and the diff extends them in place; a search of reckon/crew/picker for another key builder found none.\nFINDING tests/test_option_keys_are_unique.py:85 follow-on: test_a_modelless_candidate_does_not_name_its_backend_a_model and test_two_modelless_backends_on_one_lane_are_both_offered (line 66) pass unchanged against the base revision, whose option_key also yields claude:amine for a modelless candidate, so neither reddens when the item-2 behaviour regresses and item 2's guard is not independent of the fix it claims to lock.\nFINDING tests/test_picker_pressure.py:151 follow-on: the diff edits three test files outside the reviewed prompt's four-path FENCE - SCOPE and the manifest discloses only tests/test_picker_pressure.py, asserting the granted scope named seven files where the fence named three test files plus prompts.py, so the scope accounting a coordinator ratifies rests on a count the prompt does not support.",
+  "review_run_id": "r-20261010T192931687941-review-of-option-keys-are-unique",
+  "reviewed_base_sha": "9a9d3d3ec57fd13abede528f6e57deda10a1f8c6",
+  "reviewed_head_sha": "d5876990dabc51e9afc31f5de58ba73831e21527",
+  "reviewed_run_id": "r-20261010T184146434406-option-keys-are-unique",
+  "scores": {
+    "durability": 14,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T19:40:00+00:00",
+  "total": 103
+}

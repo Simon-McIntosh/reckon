@@ -1,0 +1,82 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T20:03:09.635Z",
+  "dispatched_at": "2026-10-10T19:55:00Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:135",
+      "id": "wiring-1",
+      "reason": "gating \u00a75 on \u00a72 alone lets it start while \u00a73 and \u00a74 still hold those files, so the ordering must name \u00a73 and \u00a74 as prerequisites.",
+      "text": "the build followup reads \"\u00a72, \u00a73 and \u00a74 in parallel; \u00a75 after \u00a72; \u00a76 last\", but \u00a75 declares it runs after \u00a73 (writes reckon/roadmap.py) and after \u00a74 (writes reckon/serve.py), and \u00a75's own write paths are reckon/roadmap.py and reckon/serve.py",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:113",
+      "id": "reasoning-1",
+      "reason": "a measure that runs a path which does not reach the changed reader passes whether or not the fix is made, so the done-when must name the read whose parses it counts (roadmap and discovery, not the audit).",
+      "text": "\u00a75 changes readiness_state (reckon/serve.py:2067), whose only caller is _read_readiness_state inside _discover_* (serve.py:1794, the discovery read), yet the done-when measures \"one cold audit\" whose per-plan parse is _audit_plan_state \u2192 from_html (reckon/mcp.py:2246) and which never enters the discovery path",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "bf1cd32125d3e66c30cfe0480c90a160f2a00aa5420699685ad9f780c2487add",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 2,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-10T20:07:39.784199+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-10T20:07:43.471624+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-10T20:07:43.471624+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-10T20:07:39.784199+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-read-answers-inside-its-deadline/r-20261010T195432818333-plan-review-of-a-read-answers-inside-its-deadline.json",
+  "review_run_id": "r-20261010T195432818333-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "af176c5e62b69631b0fc4f5578f4ee6de66b0373",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 \u00a73 (metadata_index.py:215-240/490/748/783, mcp_views.py:1180), \u00a74 (serve.py:1244) and \u00a75 (roadmap.py:184, serve.py:2067, the read_state_and_text memo at _plan_html.py:1379) all resolve in the head tree.",
+    "done_when": "pass \u2014 \u00a72\u2013\u00a76 each state a measurable done-when and a declared negative control (a forced-decline or forced-fail mutation, and the base revision measured the same way for \u00a76).",
+    "evidence_paths": "pass \u2014 the gates are committed test files under tests/, and \u00a76 writes its measurement log under the run directory rather than a scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 the new test filenames and the symbols the sections name are named by mechanism; no plan labels, stage names or ticket numbers.",
+    "reasoning": "a finding \u2014 \u00a75's done-when runs \"one cold audit\", but one reader it changes (readiness_state) is reached only from the discovery path, so the measure can pass without the change being entered.",
+    "single_goal": "pass \u2014 each section carries one deliverable with one verdict.",
+    "wiring": "a finding \u2014 the build followup orders the sections so that \u00a75 runs after \u00a72 alone, while \u00a75's own prose requires it after \u00a73 and \u00a74 and its write paths are the files those two sections write."
+  },
+  "section_digests": {
+    "_document": "ed56ddda67cab69463c811909740e400e27ec4661d29dba9a7afeb660333816e",
+    "s1": "71942607f4df4eca011a41734257645ef2adce9664dd45b628d96b066c34e813",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s3": "cbe34f619f869b3c3346239e8823a63a8de98dd92b7fb8ed5cfa2b8a4ab26a39",
+    "s4": "d2ec58f5ac4e72c5e8bcde1f156bdd4c85bde3848b4e3b6131e6112bb6395d49",
+    "s5": "9e073fc0181c88a2e967d07abc76039e2a478351008bea4b24701b2f8f5fa98b",
+    "s6": "00db597c53dfd6e3d857f89ee748a8c6ecfe51576b2b66e64772393805c59b52"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T20:07:08.544590+00:00"
+}
