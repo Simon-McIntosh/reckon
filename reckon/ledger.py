@@ -2465,14 +2465,17 @@ def build_record(
     # retires attributable to the lane and model it actually ran. A malformed
     # catalogue must not turn a write into an error -- the same fallback the
     # billing resolution takes leaves the pair unset rather than raising out
-    # of the ledger, so the row is still written.
+    # of the ledger, so the row is still written. The catch is the catalogue's
+    # own fault vocabulary, not every failure a resolver can raise: an
+    # ambiguous name is refused as a ValueError and must surface, so a row is
+    # never written with an unset pair standing in for a name two lanes claim.
     from reckon import flight as flight_module
 
     try:
         stored_identity = normalize_identity(
             {"backend": str(backend), "agent": stored_agent}
         )
-    except (flight_module.FlightConfigError, OSError, ValueError):
+    except (flight_module.FlightConfigError, OSError):
         stored_identity = {}
     # Completion consults the same accessor capability derivation will read
     # later, but the verdict lands as its own field rather than mutating the
