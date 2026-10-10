@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T19:10:50.291Z",
+  "dispatched_at": "2026-10-10T19:05:07Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-portfolio-reads-true.html:66",
+      "id": "reasoning-1",
+      "reason": "a node implementing \u00a72 literally writes `sections`, contradicting the \"unchanged\" covered-case claim and the `impl_source` vocabulary the plan-review reader consumes, and it lacks the write scope to add the value to the schema.",
+      "text": "\u00a72's done-when asserts the covered case parses with \"source `sections`\", but the deliverable says that case \"stays \u2026 as it is today\" and the code that produces it emits `impl_source = \"computed\"` (`reckon/_plan_html.py:1128`), while the schema enumerates only `[\"computed\", \"authored\"]` (`reckon/_schema.py:112`) and the reader documents exactly those two (`reckon/crew/plan_review.py:122`); the new `declarations` value is likewise absent from that enum and `reckon/_schema.py` is not among \u00a72's write paths",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-portfolio-reads-true.html:115",
+      "id": "wiring-1",
+      "reason": "\u00a76's done-when measures a fall in the non-shipped count attributable to honest readings, so with the precondition unenforced \u00a76 can open its gate and run against the same dishonest impl/staleness figures it exists to correct.",
+      "text": "\u00a76 states \"Once \u00a72 and \u00a73 have landed, so the readings it starts from are honest\", but no section-level `depends-on` links \u00a76 to \u00a72/\u00a73 and its gate `g-tprt-portfolio-mode` requires only `the-codebase-is-reviewed-between-nodes#s8` (the command's existence), not \u00a72/\u00a73 landing",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "5c2bcb30397309c5dd9d14885eb75863f1b09f2ce5d1d7ec78a6cd63a9d3dcc8",
+  "plan_slug": "the-portfolio-reads-true",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261010T190428486084-plan-review-of-the-portfolio-reads-true",
+  "reviewed_blob_sha": "0947aa40461352a8d5cd300a268bf0c72cdcd92c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/_plan_html.py:800-841` (`derive_impl_from_sections`, returns `None` on uncovered declarations), `reckon/doccheck.py:531` (getmtime) and `:154` (`ACTIVE_PLAN_STALE_AFTER_DAYS = 30`), `reckon/doccheck.py:874-901` (`unwired_plan_finding`), `reckon/project_state.py` (Sprint reader), `one-fact-has-one-reader.html`, `the-codebase-is-reviewed-between-nodes.html#s8`, and `docs/state/reckon/review.html` all resolve.",
+    "done_when": "pass \u2014 each of \u00a72\u2013\u00a76 names an executed negative control and a measurable assertion, and each names a control whose failure is a named wrong reading (coverage fallback returning the authored figure, mtime-read age, plan-side-only comparison, gate-evidence clause removed, the 2026-10-10 63-plan baseline).",
+    "evidence_paths": "pass \u2014 tests sit under `tests/`, the round record under `docs/state/reckon/review.html` (present in the tree), and no gate writes to a scratchpad or node-local temp path.",
+    "naming": "pass \u2014 the done-whens name test files by mechanism (`test_impl_derives_from_declarations.py`, `test_staleness_counts_from_the_last_commit.py`, \u2026); no plan label, ticket number or version tag reaches a symbol, and no changelog prose.",
+    "reasoning": "a finding \u2014 \u00a72's mechanism sets impl_source for the covered case to today's value, but its done-when asserts a different source string; and \u00a76's stated precondition is unenforced (below).",
+    "single_goal": "pass \u2014 \u00a72\u2013\u00a75 each carry one deliverable; \u00a76 is one proving-run deliverable (its several dispositions are one round).",
+    "wiring": "a finding \u2014 \u00a76 declares it runs \"Once \u00a72 and \u00a73 have landed\", but head carries no `plan-section-depends-on` and the plan's only gate (`g-tprt-portfolio-mode`) names `the-codebase-is-reviewed-between-nodes#s8` as its required evidence, so nothing encodes the \u00a72/\u00a73 precondition \u00a76 states."
+  },
+  "section_digests": {
+    "_document": "37000ce6ea59f96aca14df42ed2c196e03dd5bf465e31ab9b7d2904ec15edb3a",
+    "s1": "56204248c9050844c40ac7e00bff909830602caaa4b95be87bacea51b1495a03",
+    "s2": "6938443a0119eb1b416802fc455b39d3903ce38aa63b548db55db715cb6dbc35",
+    "s3": "8570cceee74e682a20e4d24e3794d125201fe70936a370d956b09f3c3513c714",
+    "s4": "4b258c0cf67b0bb77b734ea5408ae0b6e100a916cf2eb93cab6060a11e9bd7e3",
+    "s5": "89b18d17435bb96b3b5d98aa9c76f9e6e62028316fe963997c6b36c0afb247aa",
+    "s6": "db26c9412a54af29a665695b4f842a89fda7a8fe305252f12e6d0becee7e3bf6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T19:18:13.832313+00:00"
+}
