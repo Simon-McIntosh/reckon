@@ -25,7 +25,7 @@
   <title>The Crew Home Has A Bound | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="4">
+<meta name="plan-version" content="5">
 <meta name="plan-modified" content="2026-10-10">
 </head>
 <body>
@@ -96,18 +96,20 @@
     <h2 id="s4">§4 — A run's captured file has a size limit</h2>
 <section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
     <p><strong>Deliverable.</strong> After a run is promoted, <code>gc</code> reports any file in its run directory over a configured size
-      (flight key <code>gc.run_file_max_mb</code>, default 256) and, with <code>--apply</code>, replaces it with its first and last megabyte
-      around a one-line marker naming the original size and sha256, so a log cited as evidence keeps its head, its tail and a verifiable
+      (flight key <code>gc.run_file_max_mb</code>, default 256) and, with <code>--apply</code>, replaces it with its first and last half of the limit
+      around a one-line marker naming the original size and sha256, so the result never exceeds the limit plus the marker, so a log cited as evidence keeps its head, its tail and a verifiable
       identity. A file a ledger row names as a gate log is truncated the same way, never deleted. Binary artefacts over the limit
       (<code>*.pt</code>, <code>*.h5</code>, <code>*.npz</code>) are reported, not touched. The cut reuses what the repository already
-      owns: the head-and-tail truncation behind the service-log bound in <code>reckon/crew/fleet_supervisor.py</code>
-      (<code>SERVICE_LOG_LIMIT_BYTES</code> and <code>SERVICE_LOG_KEEP_BYTES</code>, line 223; the cut at lines 540 to 574) is lifted into
-      one helper both call, cutting on <code>line_boundary</code> (<code>reckon/crew/runs.py:1923</code>) so no line is split; gate-log
+      owns: the service-log trim in <code>reckon/crew/fleet_supervisor.py</code> (<code>trim_service_log</code>, lines 548 to 574, bounded
+      by <code>SERVICE_LOG_LIMIT_BYTES</code> and <code>SERVICE_LOG_KEEP_BYTES</code> at line 223) keeps only the newest bytes; it is
+      lifted into one helper taking a head size and a tail size, the service log calling it with a head of zero so its behaviour and its
+      tests are unchanged, and the run-file bound with half the limit each side, both cutting on <code>line_boundary</code>
+      (<code>reckon/crew/runs.py:1923</code>) so no line is split; gate-log
       paths are read with <code>_declared_arm_paths</code> (<code>reckon/crew/promotion_release.py:127</code>). The rotating watch log
-      (<code>WATCH_LOG_MAX_BYTES</code>, <code>runs.py:3985</code>) keeps its newest bytes because nothing cites its head; a run's log keeps
+      (<code>WATCH_LOG_MAX_BYTES</code>, <code>runs.py:3927</code>) keeps its newest bytes because nothing cites its head; a run's log keeps
       both ends because a gate's command and its verdict sit at opposite ends.</p>
     <p><strong>Done when</strong> <code>tests/test_gc_bounds_a_run_file.py</code> builds a promoted temporary run directory with a 3 MB log and a
-      3 MB <code>.pt</code> file under a 1 MB limit, and asserts <code>gc --apply</code> leaves the log at about 2 MB with the marker, its
+      3 MB <code>.pt</code> file under a 1 MB limit, and asserts <code>gc --apply</code> leaves the log at no more than 1 MB plus the marker, its
       first and last line intact and the original sha256 in the marker, and the <code>.pt</code> file unchanged and reported. A run that is
       not promoted is untouched. The negative control is executed and logged: with the promoted check removed, the unpromoted run's log is
       truncated and the test fails. Write paths: <code>reckon/crew/routing.py</code>, <code>reckon/crew/fleet_supervisor.py</code>,

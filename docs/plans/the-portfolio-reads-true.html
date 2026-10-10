@@ -24,7 +24,7 @@
   <title>The Portfolio Reads True | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="4">
 <meta name="plan-modified" content="2026-10-10">
 </head>
 <body>
@@ -81,7 +81,10 @@
       head tree, and the schema validates a state carrying each of the three values; an impl write on the second plan through the
       store is accepted. Write paths: <code>reckon/_plan_html.py</code>, <code>reckon/_store.py</code>,
       <code>reckon/_schema.py</code>, <code>reckon/crew/plan_review.py</code>, <code>reckon/doccheck.py</code>,
-      <code>tests/test_impl_derives_from_declarations.py</code>.</p>
+      <code>tests/test_impl_derives_from_declarations.py</code>, and <code>tests/test_impl_stays_authorable_while_records_are_partial.py</code>,
+      which pins the behaviour this section supersedes: it asserts the authored figure stands for a partially recorded plan (lines 114 to
+      126), the case in which <code>a-lane-can-say-where-it-stands</code> reads 1.0 over an open section. Its authoring half stays true and
+      stays asserted; its served-figure half is rewritten to the declarations figure.</p>
 
     <h2 id="s3">§3 — Staleness counts from a plan's last commit</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
@@ -90,7 +93,8 @@
       <code>reckon/roadmap.py:945</code>; the audit loop (<code>doccheck.py:531</code>) bypasses it and reads the mtime itself. This section
       puts the last commit first in <code>derived_plan_age</code>, read through the existing last-commit lookup
       <code>_git_last_committed</code> (<code>reckon/serve.py:1432</code>) rather than a new git reader, and routes the audit loop through
-      it, so the audit, the roadmap and the archive report one age with its source named on the row. The two other git-date readers
+      it; the roadmap's first call (<code>reckon/roadmap.py:945</code>), which passes no path today, passes the plan's path so the commit
+      is read first there too. The audit, the roadmap and the archive then report one age, with its source named on the row. The two other git-date readers
       (<code>reckon/metadata_index.py:681</code>, <code>reckon/fleet_index.py:33</code>) are left as they are and listed in the manifest. A non-shipped plan between 14 and 30 days old is reported <code>AGING</code> (info), and past 30 days
       <code>STALE</code> as today. The section adds one audit code, <code>AGING</code>; nothing retires, because no row reports
       the 14 to 30 day band.</p>
@@ -99,7 +103,7 @@
       <code>AGING</code> row with age 20 and source <code>commit</code>; a second plan committed 40 days ago reports <code>STALE</code>. The
       dates are derived from the fixture's own commit dates at assertion time, never written as literals. The negative control is executed
       and logged: with the age read from the mtime, the first plan reports age 0 and no row, and the test fails. Write paths:
-      <code>reckon/doccheck.py</code>, <code>tests/test_staleness_counts_from_the_last_commit.py</code>. This section runs after §2,
+      <code>reckon/doccheck.py</code>, <code>reckon/roadmap.py</code>, <code>tests/test_staleness_counts_from_the_last_commit.py</code>. This section runs after §2,
       which also writes <code>doccheck.py</code>.</p>
 
     <h2 id="s4">§4 — The audit reports a sprint member list that disagrees with its plans</h2>

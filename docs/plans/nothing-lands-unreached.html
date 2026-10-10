@@ -25,7 +25,7 @@
   <title>Nothing Lands Unreached | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="4">
+<meta name="plan-version" content="6">
 <meta name="plan-modified" content="2026-10-10">
 </head>
 <body>
@@ -105,14 +105,18 @@
       <code>reckon/crew/context_budget.py</code>, <code>reckon/_schema.py</code>,
       <code>reckon/crew/placement.py</code>, <code>reckon/serve.py</code>, <code>reckon/crew/repair.py</code>,
       <code>reckon/crew/reports.py</code>, <code>reckon/crew_dispatch_commands.py</code>, <code>reckon/crew/session_host.py</code>,
-      <code>reckon/crew/routing.py</code>, <code>reckon/crew_dispatch_commands.py</code>, <code>tests/test_every_module_is_reached.py</code>, and
-      the test files whose only subject is a deleted module. This section runs after §2.</p>
+      <code>reckon/crew/routing.py</code>, <code>reckon/crew_dispatch_commands.py</code>, <code>tests/test_every_module_is_reached.py</code>,
+      <code>tests/test_routing_surface.py</code> (which imports <code>context_budget</code> at line 14 and exercises
+      <code>refusal_census</code> at lines 731 to 771; those tests go with the module), and the test files whose only subject is a deleted
+      module. This section runs after §2.</p>
 
     <h2 id="s4">§4 — One-off census modules move out of the package</h2>
 <section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
     <p><strong>Deliverable.</strong> <code>reckon/crew/carryover_census.py</code>, <code>reckon/crew/death_census.py</code> and
       <code>reckon/crew/pace_replay.py</code> produced committed evidence once and are run by nothing. They move to
-      <code>scripts/census/</code> as standalone scripts with their tests, so the evidence they produced stays reproducible and the package
+      <code>scripts/census/</code> as standalone scripts with their tests; <code>carryover_census.py</code> and <code>pace_replay.py</code>,
+      which carry no entry point, each gain a <code>main()</code> with an argument parser behind a <code>__main__</code> guard, as
+      <code>death_census.py</code> already has, so the evidence they produced stays reproducible and the package
       loses three modules and their public definitions. A docstring or evidence record that names the old module path is updated to the
       script path. <code>hold.py</code> and <code>serving_origin.py</code> stay in the package on the §2 allowlist with
       <code>a-window-paces-the-lane</code> named as their owner, and the coordinator records a comment on that plan naming them as unwired.</p>
@@ -141,10 +145,16 @@
 </section>
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-nlu-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-10-10" data-recommends-skill="/reckon-build nothing-lands-unreached" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-nlu-001" data-status="resolved" data-written-by="reckon-create" data-written-at="2026-10-10" data-recommends-skill="/reckon-build nothing-lands-unreached" data-resolved-at="2026-10-10T20:03:53+00:00" data-resolved-by="reckon-build coordinator (health-review-1010)">
     <h4 class="r-fu-title">Build the reach guard and clear the unreached code</h4>
     <div class="r-fu-body"><p>§2 and §3 in parallel; §4 after §2.</p></div>
     <pre class="r-fu-prompt">/reckon-build nothing-lands-unreached</pre>
+    <p class="r-fu-outcome"><p>Superseded by f-nlu-002: the content review serialised the sections, which share the reach allowlist.</p></p>
+    </article>
+<article class="r-fu" data-id="f-nlu-002" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build coordinator (health-review-1010)" data-written-at="2026-10-10" data-recommends-skill="/reckon-build nothing-lands-unreached §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build the reach guard, then clear the unreached code</h4>
+    <div class="r-fu-body"><p>Order: §2; then §3; then §4. Each writes the reach allowlist.</p></div>
+    <pre class="r-fu-prompt">/reckon-build nothing-lands-unreached §2</pre>
     </article>
 </section>
   

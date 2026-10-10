@@ -26,7 +26,7 @@
   <title>The Suite Tests Behaviour | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="4">
 <meta name="plan-modified" content="2026-10-10">
 </head>
 <body>
@@ -92,20 +92,21 @@
 
     <h2 id="s4">§4 — A helper copied across test files has one home</h2>
 <section data-reckon="section" data-id="s4" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> The helpers the health review found copied whole across three or more test files
-      (<code>config_home</code>, <code>_spawn_runner</code>, <code>_row</code>, <code>checkout</code>, <code>_placed_backend</code>,
-      <code>_replace_stream</code>, <code>_start_worker</code>, <code>assert_untouched</code>, <code>_git_env</code>,
-      <code>_seat_record</code> and the rest of that list) move to <code>tests/helpers/</code>, one module per subject, and every copy is
-      replaced by an import. A copy that differs from the others in behaviour is left where it is and named in the manifest. Fixtures that
-      must stay fixtures move to <code>tests/conftest.py</code> only when every importer is in the suite's root.</p>
-    <p><strong>Done when</strong> the number of module-level test functions whose normalised body (<code>ast.dump</code> of the function with
-      its name removed) is identical to one in another test file falls to zero outside <code>tests/helpers/</code>, counted by a script the
-      node keeps beside its log, with the before and after counts in the manifest; same-named functions with different bodies are not
-      counted and are left alone; the test files touched pass at the integrated head with the same pass
+    <p><strong>Deliverable.</strong> A census by the coordinator at <code>646bbacf5</code> hashed the normalised body of every module-level
+      helper (every non-<code>test_</code> function) in <code>tests/</code>: 463 groups of identical bodies span 559 test files and 12,757
+      lines. That is too wide for one node and would collide with every node adding a test, so this section takes the three groups copied
+      into twenty or more files (126 files, 1,038 lines): two <code>_git</code> helpers, in 64 and 40 files, and a <code>home</code> fixture
+      family in 22. Each moves to one module under <code>tests/helpers/</code>, or, for a pytest fixture, to <code>tests/conftest.py</code>,
+      which every module under <code>tests/</code> sees, and every copy is replaced by an import or by the shared fixture. The remaining
+      groups are left for the code-mode health review to take in the neighbourhood of later work.</p>
+    <p><strong>Done when</strong> a census script the node keeps beside its log, hashing the normalised body (<code>ast.dump</code> of the
+      body, arguments and decorators) of every module-level non-<code>test_</code> function in <code>tests/</code>, reports the three groups
+      with no copy outside <code>tests/helpers/</code> and <code>tests/conftest.py</code>, and reports the whole census before and after
+      (463 groups at <code>646bbacf5</code>) in the manifest; the test files touched pass at the integrated head with the same pass
       and fail ids as at base, the population built at dispatch; and the line delta over <code>tests/</code> is negative. The negative
       control is executed and logged: one replaced helper's import pointed at a stub that raises fails the tests that imported it.
-      Write paths: <code>tests/helpers/</code>, <code>tests/conftest.py</code>, and the test files holding the copies, listed at dispatch
-      from the clone report.</p>
+      Write paths: <code>tests/helpers/</code>, <code>tests/conftest.py</code>, and the 126 test files holding the three groups' copies,
+      listed at dispatch by the census script.</p>
 
     <h2 id="s5">§5 — An assertion on source text becomes an assertion on behaviour, or is deleted</h2>
 <section data-reckon="section" data-id="s5" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>

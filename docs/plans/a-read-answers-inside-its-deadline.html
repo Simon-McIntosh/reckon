@@ -25,7 +25,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="4">
 <meta name="plan-modified" content="2026-10-10">
 </head>
 <body>
@@ -110,8 +110,11 @@
       <code>readiness_state</code> (<code>reckon/serve.py:2067</code>) derive their values from the parse the
       <code>read_state_and_text</code> memo already holds for the file, instead of each parsing it under its own memo kind; a memo entry
       they keep holds only the derived value. The other call sites the profile names are checked the same way.</p>
-    <p><strong>Done when</strong> <code>tests/test_every_plan_read_is_memoised.py</code> runs one cold audit of a temporary project holding
-      ten plans and asserts, through a counting wrapper on <code>read_state</code>, at most ten parses, against six per plan before. The
+    <p><strong>Done when</strong> <code>tests/test_every_plan_read_is_memoised.py</code> runs, in one process, a cold roadmap read and then a
+      discovery read (<code>_discover_*</code> in <code>reckon/serve.py</code>, which reaches <code>readiness_state</code> through
+      <code>_read_readiness_state</code> at line 1794) of a temporary project holding ten plans, and asserts, through a counting wrapper on
+      <code>read_state</code>, at most ten parses across both reads. The audit is not the measure, because its per-plan parse
+      (<code>_audit_plan_state</code>, <code>reckon/mcp.py:2246</code>) reaches neither changed reader. The
       negative control is executed and logged: with <code>read_authored</code> given back its own parse under its own kind, the count exceeds
       ten and the test fails. The roadmap and audit tests pass, their list built at dispatch from the head tree. Write paths: <code>reckon/roadmap.py</code>,
       <code>reckon/serve.py</code>, <code>tests/test_every_plan_read_is_memoised.py</code>. This section runs after §3, which writes
@@ -130,10 +133,16 @@
     
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-araiid-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-10-10" data-recommends-skill="/reckon-build a-read-answers-inside-its-deadline" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-araiid-001" data-status="resolved" data-written-by="reckon-create" data-written-at="2026-10-10" data-recommends-skill="/reckon-build a-read-answers-inside-its-deadline" data-resolved-at="2026-10-10T20:06:47+00:00" data-resolved-by="reckon-build coordinator (health-review-1010)">
     <h4 class="r-fu-title">Make the first reads answer</h4>
     <div class="r-fu-body"><p>§2, §3 and §4 in parallel; §5 after §2; §6 last.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-read-answers-inside-its-deadline</pre>
+    <p class="r-fu-outcome"><p>Superseded by f-araiid-002: §5 now runs after §3 and §4, whose modules it writes.</p></p>
+    </article>
+<article class="r-fu" data-id="f-araiid-002" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build coordinator (health-review-1010)" data-written-at="2026-10-10" data-recommends-skill="/reckon-build a-read-answers-inside-its-deadline §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Make the first reads answer, starting with the read lock</h4>
+    <div class="r-fu-body"><p>Order: §2, §3 and §4 in parallel; §5 after §3 and §4; §6 last.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-read-answers-inside-its-deadline §2</pre>
     </article>
 </section>
   
