@@ -24,7 +24,7 @@
   <title>The Portfolio Reads True | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="14">
+<meta name="plan-version" content="15">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -95,8 +95,8 @@
       <code>_git_last_committed(repo_dir, docs_dir)</code> (<code>reckon/serve.py</code>), which returns a map of repository-relative
       path to last-commit time for the whole docs tree, rather than a new git reader: <code>derived_plan_age</code> takes the repository and
       docs directories beside the plan path and looks the plan up in that map, which the audit loop builds once per run. The audit loop is
-      routed through it; every caller of <code>derived_plan_age</code> passes the new arguments: both calls in the roadmap's <code>_authorisation_age</code> (the
-      first passes no path today, the second a fallback path), the archive's call, and the three direct callers in
+      routed through it; every caller of <code>derived_plan_age</code> passes the new arguments: the roadmap's <code>_authorisation_age</code>, which resolves the plan's path
+      through <code>resolve_resource</code> once, before its first call, as its second call already does, and passes it to both, the archive's call, and the three direct callers in
       <code>tests/test_doccheck.py</code>. Functions are cited by name because line numbers in these modules moved during this sprint. The audit, the roadmap and the archive then report one age, with its source named on the row. Other git-date readers (for example <code>_commit_days</code> in <code>reckon/fleet_index.py</code>) are left as they are, and the
       node lists every git-date reader it finds in its manifest for the code-mode review to take. An active plan with impl below 1.0, the population <code>STALE</code> already covers, between 14 and 30 days old is reported <code>AGING</code> (info), and past 30 days
       <code>STALE</code> as today. The section adds one audit code, <code>AGING</code>; nothing retires, because no row reports
