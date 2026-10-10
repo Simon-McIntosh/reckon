@@ -26,7 +26,7 @@
   <title>The Suite Tests Behaviour | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="17">
+<meta name="plan-version" content="18">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -170,7 +170,10 @@
     <div class="r-comment-body"><p>review of r-20261010T203540295453-browser-harness-finds-playwright stored as a parsed six-dimension record (goal_fidelity 19, evidence 14, scope_discipline 20, durability 18, fit 19, reuse 20; total 110) reading base fef8ae2daa9a790de558740a9181bf09f38854b0 and head 9e45ca5a49f46e89490dfa9a7dc8ac924ccce230; two follow-on findings and a vacuous added-failure derivation noted; no blockers</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261010T231215125913-browser-population-own-row" data-who="reckon-build" data-when="2026-10-10T23:29:47.149Z">
-    <div class="r-comment-body"><p>Marked the browser population at collection (223 tests in modules importing tests/spa_browser_harness.py now carry the `browser` marker) and gave it its own suite row: the standing-suite command in flight.yaml deselects the marker and a log recorded under the `browser` population name writes a row carrying that name, its own budget and its pass/fail/skip counts, while the promotion hold reads only the standing suite&#x27;s own rows.</p></div>
+    <div class="r-comment-body"><p>Marked the browser population at collection (223 tests in modules importing tests/spa_browser_harness.py now carry the `browser` marker) and gave it its own suite row: the standing-suite command in flight.yaml deselects the marker and a log recorded under the `browser` population name writes a row carrying that name, its own budget and its pass/fail/skip counts, while the promotion hold reads only the standing suite's own rows.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-s7-part1-1010" data-who="reckon-build" data-when="2026-10-10T23:45:00Z">
+    <div class="r-comment-body"><p>First node of §7 landed (commit <code>7ec13a0ea</code>, merged <code>deee128d0</code>; review 88/120): every test in a module importing the browser harness is marked <code>browser</code> at collection, and the declared standing-suite command deselects it, so the browser population no longer rides the standing suite's budget. Dispatched on main rather than on §2's held head, because the marker and its exclusion do not need the harness change. Its <code>review.populations</code> block in <code>docs/state/reckon/flight.yaml</code> was not declared in the flight schema, so <code>flight.resolve</code> failed for the reckon project and every dispatch, preflight and plan review failed for about three minutes until the block was removed at <code>6d11e5045</code>. The review found <code>population_declarations</code> reached by no caller and a second copy of the suite parser (reuse 8); node <code>suite-run-records-each-population</code> declares the schema slot, wires <code>reckon crew suite run</code> to record each population, and parses through <code>flight.review_suite</code>. The quiet-node measurement follows it.</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
