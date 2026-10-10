@@ -289,23 +289,40 @@ def test_promotion_names_the_timeout_when_the_pick_never_lands(
     from reckon.crew import promotion as promotion_module
 
     monkeypatch.setattr(promotion_module, "_SHADOW_PICK_WAIT_SECONDS", 0.4)
+    entered = threading.Event()
+    release = threading.Event()
+
+    def blocked_pick(*_args, **_kwargs):
+        entered.set()
+        assert release.wait(30), "the advisory pick was never released"
+        return SimpleNamespace(as_dict=lambda: dict(_ROUTE_ANSWER))
+
+    monkeypatch.setattr(picker_module, "pick", blocked_pick)
     workers: list[threading.Thread] = []
     _detached_picker_thread(monkeypatch, workers)
-    _pick(monkeypatch, _ROUTE_ANSWER, delay=2.0)
     record = _dispatch_override(repo)
     _deliver(record)
     work = _commit_work(repo)
     _init_ledger(repo)
+    # The pick is held open, so it cannot answer during the git work above or
+    # while the promotion runs: the wait must time out rather than racing a
+    # wall-clock delay against the intervening work.
+    assert entered.wait(5), "the advisory pick never started"
+    assert read_pointer(record["run_id"])["picker_selection"] is None
+    try:
+        row = crew.complete(
+            record["run_id"],
+            gate="passed",
+            commits=[work],
+            review_waiver=_UNREVIEWED_PROMOTION_WAIVED,
+        )["record"]
 
-    row = crew.complete(
-        record["run_id"],
-        gate="passed",
-        commits=[work],
-        review_waiver=_UNREVIEWED_PROMOTION_WAIVED,
-    )["record"]
-
-    assert row["picker_selection"]["action"] == "fallback"
-    assert "timeout" in str(row["picker_selection"]["fallback_reason"])
+        assert row["picker_selection"]["action"] == "fallback"
+        assert "timeout" in str(row["picker_selection"]["fallback_reason"])
+    finally:
+        release.set()
+    for worker in workers:
+        worker.join(timeout=10)
 
 
 def test_an_overruled_hold_records_its_own_route_mode(home, repo, monkeypatch) -> None:
