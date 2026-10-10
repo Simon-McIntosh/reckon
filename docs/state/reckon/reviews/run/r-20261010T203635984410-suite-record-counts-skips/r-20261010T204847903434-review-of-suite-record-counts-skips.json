@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "backend": "local",
+  "base_log_revision": null,
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew_run_commands.py:1018"
+  ],
+  "completed_at": "2026-10-10T20:57:23.597Z",
+  "dispatched_at": "2026-10-10T20:49:12Z",
+  "findings": [
+    {
+      "file": "reckon/crew/standing_suite.py",
+      "line": "205",
+      "severity": "follow-on",
+      "text": "follow-on: the plan directs that the ids extend the existing per-id extractor _pytest_failure_ids (reckon/crew/standing_suite.py:332 imports it for FAILED/ERROR) to SKIPPED lines, but the change adds a separate _pytest_skipped_ids loop rather than extending that owner, so per-item id extraction from a pytest short summary now has two implementations to keep in step."
+    },
+    {
+      "file": "docs/plans/the-suite-tests-behaviour.html",
+      "line": "86",
+      "severity": "follow-on",
+      "text": "follow-on: section 3's third clause, that the follower and the velocity summary line print the skip count beside passed and failed, is unmet; the node was fenced out of reckon/crew/follower*.py and the velocity view and records it as a follow-on, so the section is delivered in part."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read f52d76424 against fef8ae2da; reckon/crew/standing_suite.py gains _SKIPPED_ID_RE, _pytest_skipped_ids and the skipped/skipped_ids emissions (33 added, 2 removed) and tests/test_suite_record_counts_skips.py is new, both inside the declared scope.",
+    "done_when": "the done_when names tests/test_suite_record_counts_skips.py with a fixed log ending 3 failed, 10 passed, 2 skipped asserting skipped==2 with both SKIPPED locations and a no-skip log asserting 0 and an empty list; head-gate.log records that file 2 passed EXIT=0 at f52d764 and negative-control.log records EXIT=1 with assert 0 == 2, and both reproduce in a scratch extraction of the head tree.",
+    "goal": "the node goal is to carry the skipped count and ids into the standing suite record; reckon/crew/standing_suite.py carries skipped in _build_record from the count _result_counts already parses, and adds skipped_ids from the new _pytest_skipped_ids, so the record gains both fields.",
+    "manifest": "read; status complete, commit f52d764245d610fed89af9ab2d13e8e438fa9098, baseline_suite and after_suite both not-armed, negative_control_log ending EXIT=1 and naming test_a_record_carries_the_skipped_count_and_both_ids.",
+    "write_paths": "the manifest declares reckon/crew/standing_suite.py and tests/test_suite_record_counts_skips.py; the diff touches exactly those two, and the declared fragment and figures paths are correctly empty because the dispatch contract states the done-when names no artifact and the node writes neither."
+  },
+  "justifications": {
+    "durability": "tests/test_suite_record_counts_skips.py compares record[\"skipped\"] and record[\"skipped_ids\"] against literals read from a fixed log rather than values passed to the code under test, and the negative control shows the count assertion reddens at assert 0 == 2; the ids assertion is not separately demonstrated but reddens on a full revert.",
+    "evidence": "tests/test_suite_record_counts_skips.py passes EXIT=0 at f52d764 in head-gate.log and reddens EXIT=1 under the forced skipped=0 mutation in negative-control.log, both reproduced independently; the manifest's applied mutation differs in wording from the done-when's \"skip clause dropped from the summary\" but is the same defect.",
+    "fit": "_SKIPPED_ID_RE and _pytest_skipped_ids at reckon/crew/standing_suite.py:107 mirror the _GATE_FAILURE_RE and _pytest_failure_ids idiom at reckon/crew/review.py:827, comments state the mechanism without plan labels or tracker references, and the commit carries a conventional subject and body.",
+    "goal_fidelity": "reckon/crew/standing_suite.py emits skipped from _result_counts and skipped_ids from _pytest_skipped_ids in _build_record, so the node goal of carrying both into the record is met, while the plan section's follower/velocity clause is outside the node's fenced paths.",
+    "reuse": "plan section 3 names _pytest_failure_ids at reckon/crew/review.py:1049 as the extractor to extend to SKIPPED lines, but the change adds a parallel SKIPPED match-loop in a second module; no owner for skip extraction existed, yet per-item id extraction now has two implementations.",
+    "scope_discipline": "every path in the diff (reckon/crew/standing_suite.py, tests/test_suite_record_counts_skips.py) is inside the manifest's declared write paths, and the declared fragment and figures paths are correctly unwritten per the dispatch's no-artifact clause."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to carry the skipped count and ids into the standing suite record; reckon/crew/standing_suite.py carries skipped in _build_record from the count _result_counts already parses, and adds skipped_ids from the new _pytest_skipped_ids, so the record gains both fields.\nVERDICT done_when: the done_when names tests/test_suite_record_counts_skips.py with a fixed log ending 3 failed, 10 passed, 2 skipped asserting skipped==2 with both SKIPPED locations and a no-skip log asserting 0 and an empty list; head-gate.log records that file 2 passed EXIT=0 at f52d764 and negative-control.log records EXIT=1 with assert 0 == 2, and both reproduce in a scratch extraction of the head tree.\nVERDICT write_paths: the manifest declares reckon/crew/standing_suite.py and tests/test_suite_record_counts_skips.py; the diff touches exactly those two, and the declared fragment and figures paths are correctly empty because the dispatch contract states the done-when names no artifact and the node writes neither.\nVERDICT manifest: read; status complete, commit f52d764245d610fed89af9ab2d13e8e438fa9098, baseline_suite and after_suite both not-armed, negative_control_log ending EXIT=1 and naming test_a_record_carries_the_skipped_count_and_both_ids.\nVERDICT diff: read f52d76424 against fef8ae2da; reckon/crew/standing_suite.py gains _SKIPPED_ID_RE, _pytest_skipped_ids and the skipped/skipped_ids emissions (33 added, 2 removed) and tests/test_suite_record_counts_skips.py is new, both inside the declared scope.\nCALL_SITES: reckon/crew_run_commands.py:1018\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/standing_suite.py emits skipped from _result_counts and skipped_ids from _pytest_skipped_ids in _build_record, so the node goal of carrying both into the record is met, while the plan section's follower/velocity clause is outside the node's fenced paths.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_suite_record_counts_skips.py passes EXIT=0 at f52d764 in head-gate.log and reddens EXIT=1 under the forced skipped=0 mutation in negative-control.log, both reproduced independently; the manifest's applied mutation differs in wording from the done-when's \"skip clause dropped from the summary\" but is the same defect.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff (reckon/crew/standing_suite.py, tests/test_suite_record_counts_skips.py) is inside the manifest's declared write paths, and the declared fragment and figures paths are correctly unwritten per the dispatch's no-artifact clause.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_suite_record_counts_skips.py compares record[\"skipped\"] and record[\"skipped_ids\"] against literals read from a fixed log rather than values passed to the code under test, and the negative control shows the count assertion reddens at assert 0 == 2; the ids assertion is not separately demonstrated but reddens on a full revert.\nSCORE fit: 19\nJUSTIFICATION fit: _SKIPPED_ID_RE and _pytest_skipped_ids at reckon/crew/standing_suite.py:107 mirror the _GATE_FAILURE_RE and _pytest_failure_ids idiom at reckon/crew/review.py:827, comments state the mechanism without plan labels or tracker references, and the commit carries a conventional subject and body.\nSCORE reuse: 16\nJUSTIFICATION reuse: plan section 3 names _pytest_failure_ids at reckon/crew/review.py:1049 as the extractor to extend to SKIPPED lines, but the change adds a parallel SKIPPED match-loop in a second module; no owner for skip extraction existed, yet per-item id extraction now has two implementations.\nFINDING reckon/crew/standing_suite.py:205 follow-on: the plan directs that the ids extend the existing per-id extractor _pytest_failure_ids (reckon/crew/standing_suite.py:332 imports it for FAILED/ERROR) to SKIPPED lines, but the change adds a separate _pytest_skipped_ids loop rather than extending that owner, so per-item id extraction from a pytest short summary now has two implementations to keep in step.\nFINDING docs/plans/the-suite-tests-behaviour.html:86 follow-on: section 3's third clause, that the follower and the velocity summary line print the skip count beside passed and failed, is unmet; the node was fenced out of reckon/crew/follower*.py and the velocity view and records it as a follow-on, so the section is delivered in part.\nreviewed_base_sha: fef8ae2daa9a790de558740a9181bf09f38854b0\nreviewed_head_sha: f52d764245d610fed89af9ab2d13e8e438fa9098",
+  "review_run_id": "r-20261010T204847903434-review-of-suite-record-counts-skips",
+  "reviewed_base_sha": "fef8ae2daa9a790de558740a9181bf09f38854b0",
+  "reviewed_head_sha": "f52d764245d610fed89af9ab2d13e8e438fa9098",
+  "reviewed_run_id": "r-20261010T203635984410-suite-record-counts-skips",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T20:56:13.715314+00:00",
+  "total": 111
+}
