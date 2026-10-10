@@ -25,7 +25,7 @@
   <title>Nothing Lands Unreached | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="18">
+<meta name="plan-version" content="19">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -126,13 +126,13 @@
       <code>a-window-paces-the-lane</code> named as their owner, and the coordinator records a comment on that plan naming them as unwired.</p>
     <p><strong>Done when</strong> each script runs from <code>scripts/census/</code> with <code>--help</code> exiting 0, its moved tests and the four rewritten tests that stay in <code>tests/</code> pass
       from their new location, <code>git grep -nE "reckon[./]crew[./](carryover_census|death_census|pace_replay)"</code>, which also catches a path-style import,
-      over <code>reckon/ tests/ skills/ scripts/</code> and the research scripts returns no hit outside the moved files (committed data
+      over <code>reckon/ tests/ skills/ scripts/</code> returns no hit outside the moved files (committed data
       provenance fields excluded, as above), and §2's ratchet test passes with the three modules gone from its allowlist. The negative
       control is executed and logged: with one moved module's old import left in a test, that test fails at collection. Write paths:
       <code>reckon/crew/carryover_census.py</code>, <code>reckon/crew/death_census.py</code>, <code>reckon/crew/pace_replay.py</code>,
       <code>reckon/budget.py</code>, <code>scripts/census/</code>, the committed research scripts that import two of them
       (<code>docs/research/scripts/scan_local_lane_deaths.py</code> and
-      <code>docs/research/data/crew-pattern-review/worker-anatomy/anatomy_census.py</code>), whose imports move to the script path so the
+      <code>docs/research/data/crew-pattern-review/worker-anatomy/anatomy_census.py</code>), whose imports of the moved modules become path loads through <code>importlib</code> (as the four tests' do, since <code>scripts/</code> is not a package), each script still importing at the integrated head, so the
       evidence they produced stays reproducible, and the tests importing the three modules, including the four named above, <code>tests/test_every_module_is_reached.py</code>. This section runs after §3, which
       writes the same allowlist.</p>
 
