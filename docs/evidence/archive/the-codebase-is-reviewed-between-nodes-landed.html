@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-codebase-is-reviewed-between-nodes-landed">
+  <meta name="plan-title" content="The Codebase Is Reviewed Between Nodes — landed record">
+  <meta name="plan-summary" content="Closure synthesis for The Codebase Is Reviewed Between Nodes: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="the-codebase-is-reviewed-between-nodes">
+  <meta name="plan-verdict" content="qualified">
+  <title>The Codebase Is Reviewed Between Nodes — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>The Codebase Is Reviewed Between Nodes — landed record</h1>
+  <p>Closure synthesis for The Codebase Is Reviewed Between Nodes: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s3">
+    <h2>§3 — Every stored finding is readable by the path it names</h2>
+    <p><code>reckon/crew/findings.py</code> walks a project's committed run-review and plan-review records and groups every finding, blocking and follow-on alike, by the repository path it names, with a recurrence count and a disposition (<code>open</code>, <code>folded:&lt;node&gt;</code> or <code>exempted:&lt;reason&gt;</code>, read from a record's <code>finding_dispositions</code> map, keyed by finding index, which §4's writer uses). Served as <code>crew(view="findings", path=&lt;prefix&gt;)</code> and <code>reckon crew ledger --view findings --path</code>; the MCP surface stays at five tools. Commit <code>60f3619da</code>, merged at <code>7766b3aa7</code>. <code>tests/test_findings_read_by_path.py</code>: 4 passed, EXIT=0; negative control (reader filtered through <code>repair.blocking_findings</code>) 3 failed, EXIT=1; <code>tests/test_ledger.py</code> EXIT=0. Review 113/120. Its follow-ons: the default invocation computes the scope boundary with no root, so an absolute in-checkout path is scoped as an artefact and adds no recurrence (repaired by a node of its own); folded and exempted rendering and plan-record findings are untested (§4's done-when covers the first); the walk uses two private helpers of <code>review.py</code>.</p>
+  </section>
+
+</main>
+</body>
+</html>
