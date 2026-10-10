@@ -1,0 +1,68 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T19:16:32.203Z",
+  "dispatched_at": "2026-10-10T19:07:04Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-suite-tests-behaviour/r-20261010T190629079461-plan-review-of-the-suite-tests-behaviour/plan.html:64",
+      "id": "done_when-1",
+      "reason": "the done-when's \"so tests/test_browser_skip_is_not_vacuous.py keeps its meaning\" is false, and the node cannot repair a failing test outside its scope, so \u00a72 cannot reach green as written.",
+      "text": "\u00a72 adds a Playwright clause reading `~/.cache/ms-playwright/chromium_headless_shell-*/chrome-headless-shell-linux64/chrome-headless-shell`, which exists on this host (verified: `/home/ITER/mcintos/.cache/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-linux64/chrome-headless-shell`); `tests/test_browser_skip_is_not_vacuous.py::test_the_guard_skips_and_names_the_binaries_without_a_browser` strips only `PATH` and asserts `installed_browser_or_skip()` raises `SkipTest`, so once the Playwright clause resolves the guard no longer skips and that test fails \u2014 yet \u00a72's write paths (line 72) name only `tests/spa_browser_harness.py` and `tests/test_browser_harness_finds_playwright.py`, fencing the node out of the test its own change breaks",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-suite-tests-behaviour/r-20261010T190629079461-plan-review-of-the-suite-tests-behaviour/plan.html:107",
+      "id": "done_when-2",
+      "reason": "the node cannot establish its baseline with the command the done-when names, so a reduction \"to 15 against 60\" is measured against a population that command does not produce.",
+      "text": "\u00a75's done-when targets \"at most 15 sites ... against 60 on 2026-10-10\" using `grep -rn -e inspect.getsource -e \"__file__).read_text\" tests/`, which yields 37 today (19 + 18) and also 37 at the health-review revision `4aca668a`; \u00a71 repeats \"60 sites in 40 files\", and even the review report's own printed three-pattern command reproduces 37, not 60",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-suite-tests-behaviour/r-20261010T190629079461-plan-review-of-the-suite-tests-behaviour/plan.html:93",
+      "id": "reasoning-1",
+      "reason": "the mechanism as written does not produce the measure its done-when asserts, so a worker driving `clone_matches` alone sees per-window matches (135,736) rather than the 202-into-40 population.",
+      "text": "\u00a74's done-when says \"`reckon/clones.py` over `tests/` reports at most 40 cross-file full-body helper pairs, against 202\", but `reckon/clones.py` exposes only `clone_matches`/`promotion_clone_matches` (changed-functions-against-corpus matchers) and no whole-tree pair-census entry point; the 202 came from the health-review `clones_driver.py` plus `clones_analyse.py` filtering `containment == 1.0` to cross-file pairs, a filter the plan never names",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-suite-tests-behaviour/r-20261010T190629079461-plan-review-of-the-suite-tests-behaviour/plan.html:57",
+      "id": "wiring-1",
+      "reason": "a reader of the-suite-is-green-at-head cannot see the incoming work this plan creates for it, so the handoff the sections assert is invisible on the plan graph.",
+      "text": "\u00a71 states the-suite-is-green-at-head owns keeping the suite green and \u00a72 says the browser tests that then fail are \"recorded on the-suite-is-green-at-head\", which is this plan feeding findings to that plan (an `informs` edge); the plan declares no `informs`/`gates` relationship, only `plan-after`",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "891599666c4c6174694d5f379d9b7985df3059ac2c1e391bc51648bb38698319",
+  "plan_slug": "the-suite-tests-behaviour",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261010T190629079461-plan-review-of-the-suite-tests-behaviour",
+  "reviewed_blob_sha": "0775642f81fb3c8fe6991b90a4744f967fd85364",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited file resolves (tests/spa_browser_harness.py, tests/test_browser_skip_is_not_vacuous.py, reckon/crew/standing_suite.py, reckon/clones.py, the cited test line 150, the health-review directory, and the sibling plan href resolved as `.html`).",
+    "done_when": "a finding \u2014 \u00a72's done-when claims the existing skip test \"keeps its meaning\" while its own fix invalidates that test's precondition, and \u00a75's baseline \"60\" is not what the done-when's own command measures.",
+    "evidence_paths": "pass \u2014 gates log to the node manifest and the health-review evidence directory, no node-local temporary path is named.",
+    "naming": "pass \u2014 the plan carries no plan labels, ticket numbers or version tags into symbols or comments; dates and helper names are mechanism.",
+    "reasoning": "a finding \u2014 \u00a74's done-when names `reckon/clones.py` as the instrument that reports the cross-file full-body pair count, but that figure was produced by the health-review driver and analysis, not by any entry point the module exposes.",
+    "single_goal": "pass \u2014 each of \u00a72, \u00a73, \u00a74 and \u00a75 names one deliverable; \u00a76 is deferred with no measure of its own.",
+    "wiring": "a finding \u2014 the plan declares only `plan-after the-suite-is-green-at-head` and a `plan-standalone`, but \u00a71 and \u00a72 assert a real handoff (failed browser-test ids are recorded on that sibling), an `informs` edge the plan never declares."
+  },
+  "section_digests": {
+    "_document": "c8e56b00b4b9730fd9e23464939d27c4c64f265bfe49d05b34b5856beaed9fe8",
+    "s1": "b40b3b6074b17525878efd6a0933655688435f3607aeb2a733f9d6e9291f7fea",
+    "s2": "0b5d3b9267816f2848c07fe993ce421b64b31f04f31ba871a97c2be2e359aeb5",
+    "s3": "ed79195504e9d8f3eab3a67593faee861dfabc2252cff4d67c2a2e8d15f505cd",
+    "s4": "dfda6ed5bdfccaff12a47d47d20d22716b24715ef3d8f64d527bde91b4f04f81",
+    "s5": "a9de85ade497b80ac2344f362e7025140a9e165cb42a0be3e5935f9c46ad0d04",
+    "s6": "2ab2547ce36adce1b8926643bbc4604f1d6d1695d52434c1e8849e50f80c4b9d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T19:28:27.348553+00:00"
+}
