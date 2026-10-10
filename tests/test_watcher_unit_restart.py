@@ -24,7 +24,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 # test_a_generator_renders_restart_always_with_a_brief_delay, and the tree scan
 # requires the set to equal what the source carries, so a generator added
 # elsewhere fails both halves until it is listed here and rendered.
-RESTART_POLICY_UNITS = ("reckon/crew/runs.py", "reckon/service.py")
+RESTART_POLICY_UNITS = ("reckon/crew/watch_unit.py", "reckon/service.py")
 
 # A timer-activated oneshot unit runs once per activation and exits, and
 # systemd refuses to apply a Restart= policy to Type=oneshot. The refresh
@@ -53,7 +53,7 @@ def _rendered_units(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str
     binary.parent.mkdir(parents=True, exist_ok=True)
     binary.write_text("#!/bin/sh\n")
     return {
-        "reckon/crew/runs.py": crew_runs.render_watch_unit(
+        "reckon/crew/watch_unit.py": crew_runs.render_watch_unit(
             "demo", environment={"PATH": "/usr/bin:/bin"}, executable=str(binary)
         ),
         "reckon/service.py": service.render_unit(executable=binary, node=binary),
@@ -113,5 +113,5 @@ def test_every_unit_template_in_the_tree_is_covered_here():
 def test_the_config_home_redirect_reaches_the_rendered_path(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
-    unit = _rendered_units(tmp_path, monkeypatch)["reckon/crew/runs.py"]
+    unit = _rendered_units(tmp_path, monkeypatch)["reckon/crew/watch_unit.py"]
     assert str(tmp_path / "config") in unit
