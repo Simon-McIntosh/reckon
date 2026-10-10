@@ -117,7 +117,7 @@ def repository(isolated_reckon_home: Path, tmp_path: Path, monkeypatch) -> Path:
     monkeypatch.setattr(
         flight,
         "resolve",
-        lambda **kw: SimpleNamespace(config={"default_backend": "worker"}),
+        lambda *args, **kw: SimpleNamespace(config={"default_backend": "worker"}),
     )
     return root
 

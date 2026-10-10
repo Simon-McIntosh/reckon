@@ -224,6 +224,20 @@ def _coordinator_input_tokens(run: Mapping[str, Any]) -> float | None:
     return _measured_number(tokens.get("input_tokens"))
 
 
+def _run_project(run: Mapping[str, Any]) -> str | None:
+    """The project a committed row belongs to, as the reader stamps it.
+
+    Rows are read out of per-project ledgers, and the reader that pools them
+    stamps each with ``_project`` so a resolution can fold that project's
+    layer in. A row handed in without the stamp — a bare stored block under
+    test, or one read from a surface that names no project — carries no
+    project, and the billing resolution then speaks from the shipped, host and
+    catalogue layers alone.
+    """
+    project = str(run.get("_project") or "").strip()
+    return project or None
+
+
 def _backend_billing(run: Mapping[str, Any]) -> str | None:
     """The billing class the catalogue declares for a run's backend.
 
@@ -231,10 +245,12 @@ def _backend_billing(run: Mapping[str, Any]) -> str | None:
     flat subscription, ``"unmetered"`` for a lane the harness's own backend set
     marks locally served; ``None`` for a lane metered per token. Read from the
     catalogue at read time, so a committed row written before the declaration
-    existed is reinterpreted rather than rewritten.
+    existed is reinterpreted rather than rewritten. The row's own project layer
+    is folded in, so a project that moved one of its lanes into a subscription
+    group is billed that way on its rows and not on another project's.
     """
     backend = str(run.get("backend") or "").strip()
-    if ledger.is_subscription_backend(backend):
+    if ledger.is_subscription_backend(backend, project=_run_project(run)):
         return "subscription"
     if ledger.is_unmetered_backend(backend):
         return "unmetered"

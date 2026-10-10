@@ -24,7 +24,9 @@ def configured_model(monkeypatch: pytest.MonkeyPatch) -> None:
             },
         }
     }
-    monkeypatch.setattr(flight, "resolve", lambda: SimpleNamespace(config=config))
+    monkeypatch.setattr(
+        flight, "resolve", lambda *args, **kwargs: SimpleNamespace(config=config)
+    )
 
 
 def _configured_model_identifier() -> str:
