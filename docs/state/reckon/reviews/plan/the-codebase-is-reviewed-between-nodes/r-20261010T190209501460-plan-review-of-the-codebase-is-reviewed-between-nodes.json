@@ -1,0 +1,81 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T19:13:53.296Z",
+  "dispatched_at": "2026-10-10T19:03:09Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-codebase-is-reviewed-between-nodes.html:187",
+      "id": "wiring-1",
+      "reason": "the roadmap schedules \u00a77 as ready with no prerequisite gate, so a \u00a77 node is dispatched with a done-when it cannot satisfy and its failure is attributed to the node rather than the missing wiring.",
+      "text": "\u00a77's done-when (\"the cited-command test the-crew-contract-fits-one-read \u00a75 delivers passes with the new skill in its corpus\") depends on that section landing, but plan-section-depends-on lists only s6\u2192nothing-lands-unreached#s2; the prerequisite test tests/test_cited_commands_exist.py does not exist in the tree and the-crew-contract-fits-one-read is active at impl 0.35",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-codebase-is-reviewed-between-nodes.html:191",
+      "id": "done_when-1",
+      "reason": "the section's own measure cannot pass within its declared scope; the node must either be granted those paths or the done-when narrowed, and refusals.py/coordinator_obligations.py genuinely must follow the rename or the picker misroutes a composed `review` command.",
+      "text": "\u00a77's done-when requires `grep -rn \"review-plan\" skills/ reckon/` to return no hit, but `review-plan` also appears in reckon/crew/refusals.py:90 (the D23 refusal message), reckon/hooks/coordinator_obligations.py:502 (_NEW_WORK_SUBCOMMANDS), reckon/schema/flight-defaults.yaml:152 and reckon/crew_dispatch_commands.py:1782, none of which are in \u00a77's write paths",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-codebase-is-reviewed-between-nodes.html:170",
+      "id": "reasoning-1",
+      "reason": "a node editing the named file changes nothing observable, so `reckon crew review-plan --help` still succeeds and the rename gate fails on a path the plan told it to take.",
+      "text": "\u00a76 (and \u00a77) name reckon/crew_run_commands.py as a write path for renaming `review-plan` to `review`, but the verb is `@crew.command(name=\"review-plan\") def crew_review_plan` at reckon/crew_dispatch_commands.py:1782, imported by reckon/cli.py:224; crew_run_commands.py holds the ledger/run commands (its `ledger` command at :1908 is what \u00a73 correctly targets)",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-codebase-is-reviewed-between-nodes.html:289",
+      "id": "wiring-2",
+      "reason": "\u00a75 cannot be closed before \u00a76, so the stated build order dispatches \u00a75 to author a test importing a parser that does not yet exist, and the two sections double-claim one test file.",
+      "text": "the followup orders \"\u00a73 and \u00a75 first; \u2026 \u00a76 after \u00a73\", but \u00a75's done-when parses a reviewer output \"through the parser \u00a76 installs\" and both \u00a75 (line 150) and \u00a76 (line 172) list tests/test_health_review_parses.py as a write path",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-codebase-is-reviewed-between-nodes.html:51",
+      "id": "anchors_resolve-1",
+      "reason": "both figures are correctly drawn from the health-review-1010 evidence directory and the miscited filenames do not alter any section's mechanism or measure, so only the citation text would be corrected.",
+      "text": "the 45.3% (650 of 1,434) repeat-citation figure is attributed to health-review-yield/scan_summary.json, but that file holds no such figure (it is in health-review-yield/control_summary.json \"recurrence_pre\": first_citation 784 + repeat_citation 650 = 1,434), and the same table's \"S22, 55 members\" cell is cited to portfolio.csv, whose S22 rows number 43 (55 is the member count in sprints.json and docs/sprints/S22.html)",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "f86ab797e5094376f108aa39bd83e2020df4da7f468f9617dd0ae9fe3f1cc93f",
+  "plan_slug": "the-codebase-is-reviewed-between-nodes",
+  "plan_version": 1,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261010T190209501460-plan-review-of-the-codebase-is-reviewed-between-nodes",
+  "reviewed_blob_sha": "a3f9a3e7e037426208508c245a8bda743a93735f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the \u00a71 table's 45.3% figure is cited to health-review-yield/scan_summary.json, which does not contain it (it is in control_summary.json/control_out.txt), and the \"S22, 55 members\" cell is cited to portfolio.csv, which holds 43 S22 rows.",
+    "done_when": "a finding \u2014 \u00a73\u2013\u00a710 each name a declared negative control (verified present in the snapshot), but \u00a77's negative-control-adjacent grep done-when (`grep -rn \"review-plan\" skills/ reckon/` returns no hit) cannot pass within its declared write paths.",
+    "evidence_paths": "pass \u2014 no gate or evidence is written to a session scratchpad or node-local temp; \u00a711's evidence is the committed review record and the treatment node's own gate, and \u00a73\u2013\u00a710 write repository test files and crew report paths that survive the run.",
+    "naming": "pass \u2014 the proposed symbols and files (reckon/crew/findings.py, health_review.md, portfolio_review.md, test_dispatch_names_the_health_review.py) carry no plan labels, stage names, ticket numbers or version tags; FINDING/TREATMENT/DISPOSITION are emitted output tokens, not symbol names.",
+    "reasoning": "a finding \u2014 \u00a76 and \u00a77 declare reckon/crew_run_commands.py as the write path for renaming the `review-plan` verb, but the reviewer and I verified the verb is defined at reckon/crew_dispatch_commands.py:1782, so the mechanism is aimed at a module that does not contain the code it must change.",
+    "single_goal": "pass \u2014 each section names one deliverable (a reader, a dispose option, a prompt, a verb, a skill, a portfolio rubric, a dispatch block, a velocity field, a proving run).",
+    "wiring": "a finding \u2014 plan-section-depends-on declares only s6\u2192nothing-lands-unreached#s2, but \u00a77's done-when requires the cited-command test delivered by the-crew-contract-fits-one-read#s5, a dependency the plan needs and does not declare."
+  },
+  "section_digests": {
+    "_document": "6f2aa8543eb92ddc08019c06bf1b8fbd7d09fcf7e36b4385478994efe0bdc900",
+    "s1": "845f3ee2bd984a46ee2ee500d83edae3f756b9b3d8b8bfb8b1d52f467109f1c2",
+    "s10": "fd23d07301f3cad0c97fef7db3a37873185ea49a190df387e6b4c9c4842520cc",
+    "s11": "9e366a36d7c955b9e20809f7f939f7e5341dea805985ebb4bbd30a8a826983f7",
+    "s2": "449650cf3f83a3d58ac9fd8300f391af35ba5aa8ae747d9364d73ed77c82aa7e",
+    "s3": "213cacec386f55129765363c630beca30bb1100dcfde028b717272ebfae1bc71",
+    "s4": "7a0b53d0ff3f7146988e01b7a6c950d7b68076661cb363cfc52fda4f04bd4fe4",
+    "s5": "7bc1a3d763058b1e710aac7e0af030dc1dbbc5600bc4d29bc5803e28a714e41a",
+    "s6": "3b499074b9ff6395d2e713aa8aa46bc1d417f249b9557db936509f8fa3305d8b",
+    "s7": "ac37878fc877adca27c203de6cec6bd05931dba7ab17e04e494576bb5e8b922f",
+    "s8": "1b50194c1f0c6912b871f624cbfcfc01fc0e693a036d87844203a29ba311f17b",
+    "s9": "f03878914cabdb64631b914dba06b3963c765228e774c1419ab91b13e71b1e9d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T19:14:59.142948+00:00"
+}
