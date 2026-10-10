@@ -294,7 +294,8 @@ def test_dispatch_uses_published_window_as_direct_pick_does(monkeypatch, tmp_pat
 
 
 def test_dispatch_marks_old_published_window_stale(monkeypatch, tmp_path):
-    now = datetime.now(UTC)
+    now = datetime(2026, 5, 5, 12, 0, 0, tzinfo=UTC)
+    _freeze_snapshot_clock(monkeypatch, now)
     observed = now - timedelta(hours=2)
     reading = window_reading.WindowReading(
         figures=(
