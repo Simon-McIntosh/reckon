@@ -25,7 +25,7 @@
   <title>One Typesafe Model Picker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="277">
+<meta name="plan-version" content="278">
 <meta name="plan-modified" content="2026-10-10">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;done&quot;,&quot;s25&quot;:&quot;implementable&quot;,&quot;s26&quot;:&quot;implementable&quot;,&quot;s27&quot;:&quot;done&quot;}">
 </head>
@@ -906,6 +906,9 @@
 </div>
 <div class="r-comment" data-section="s27" data-id="c-close-s27" data-who="reckon-build" data-when="2026-10-10T19:15:00Z">
     <div class="r-comment-body"><p>§27 landed: the staleness test pins its clock and no longer drifts under load (merge <code>c732de6ff</code>, review 116, no failures added). <a href="/reckon/evidence/archive/one-typesafe-model-picker-landed.html#s27">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s27" data-id="c-run-r-20261010T184236589536-published-window-test-reads-a-frozen-clock" data-who="reckon-build" data-when="2026-10-10T19:01:20.208Z">
+    <div class="r-comment-body"><p>Frozen the published-window staleness test&#x27;s clock — test_dispatch_marks_old_published_window_stale now pins the picker snapshot&#x27;s clock to the captured moment (as the neighbouring stale-recorded-window case does), so an hour of wall-clock drift between the write and the read can no longer move the candidate&#x27;s budget_age_s off its recorded observation; base 9a9d3d3ec fails the bound at 10800 s under that move, head passes, and the picker suite is 160 passed with 0 added failures.</p></div>
 </div>
 </section>
 <section data-reckon="followups" id="followups" class="r-followups">
