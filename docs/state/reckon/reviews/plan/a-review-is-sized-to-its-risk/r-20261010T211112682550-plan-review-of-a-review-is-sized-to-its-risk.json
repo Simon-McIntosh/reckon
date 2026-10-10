@@ -1,0 +1,55 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T21:18:07.567Z",
+  "dispatched_at": "2026-10-10T21:11:43Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-is-sized-to-its-risk.html:185",
+      "id": "anchors_resolve-1",
+      "reason": "`load_review_prompt` is unambiguous and found by name in the same module, so the stale line number does not misdirect the node's mechanism.",
+      "text": "\u00a79 cites `load_review_prompt` at `reckon/crew/review.py:411`; line 411 is blank at the reviewed revision and the function is defined at `review.py:432`",
+      "type": "anchors_resolve",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/a-review-is-sized-to-its-risk.html:185",
+      "id": "reasoning-1",
+      "reason": "the plan names the wrong module as a composition site and as a write path; because both the reflex dispatch and the obligation's next command derive their brief from the one `_review_dispatch_fields` function, the plan's \"both composition sites \u2026 in obligations.py\" is really a single site in recovery_review_subject.py, so correcting it changes which file the node edits and drops obligations.py from the needed scope.",
+      "text": "\u00a79 states \"the `review-missing` obligation's next command in `reckon/crew/obligations.py`, which today passes the reviewed run's own brief as the review's brief\", but obligations.py contains zero occurrences of \"brief\" and composes no command: the obligation's `next_command` is `row.get(\"next_action\")` (`_live_item`, obligations.py:243), which is composed by `_review_dispatch_action` in `reckon/crew/recovery_classification.py:550` from `_review_dispatch_fields`/`_review_dispatch_tokens` in `reckon/crew/recovery_review_subject.py` (where `--brief <reviewed run's brief>` is built at line 599; `brief` is set from the reviewed node's own brief at line 503)",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "f0d0843f995ee7d1112447b1e77b7e94bf1fd75d0f98f7aa42cdd5085a9155cc",
+  "plan_slug": "a-review-is-sized-to-its-risk",
+  "plan_version": 142,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261010T211112682550-plan-review-of-a-review-is-sized-to-its-risk",
+  "reviewed_blob_sha": "dce6638bc9496316bd6d4d9031a378d46c5b9bd1",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a79 cites reckon/crew/review.py:411 for load_review_prompt, but that line is blank and the function is defined at review.py:432.",
+    "done_when": "pass \u2014 \u00a79's done-when names tests/test_a_review_receives_its_rubric.py, asserts the rubric text in the reflex briefs of an implement and an investigate run, checks the obligation's next command, and declares a negative control (\"with the brief composed from the reviewed run's brief alone, the first assertion fails\") that is executed and logged.",
+    "evidence_paths": "pass \u2014 the cited evidence (the 141-line prompt.txt under the run directory) and the write paths are durable repository/config paths, not a scratchpad.",
+    "naming": "pass \u2014 \u00a79's only symbolic tokens (SCORE <dimension>, CLAIM) are parser grammar, not plan labels; no ticket numbers or version tags reach code.",
+    "reasoning": "a finding \u2014 \u00a79 names reckon/crew/obligations.py as the second composition site, but that module composes no brief; the review-missing obligation's next command is built in recovery_classification.py from _review_dispatch_fields/_review_dispatch_tokens in recovery_review_subject.py.",
+    "single_goal": "pass \u2014 \u00a79 carries one deliverable, a run review's brief composed from its rubric, reached at the two stated composition sites.",
+    "wiring": "pass \u2014 \u00a79 introduces no cross-plan edge (its only dependency is the in-plan \u00a78, already landed); the plan's one declared relationship (plan-blocks a-small-change-is-a-small-node) resolves, and no depends-on/informs/gates the changed units need is missing."
+  },
+  "section_digests": {
+    "_document": "559cec5332c4e2772f0c8bb42b10af28b4a6c6214163ada0e79741c0481d484f",
+    "s1": "1bca4570a6dc141df8190260147c4603fdbd4e237bbd0fa1f635f166cdf5637b",
+    "s2": "d87e94711b1191be6062f6581f0bf3c2f7793876a327c35be59e3dd37bbe72c8",
+    "s3": "865c2c7d189405d6ba0566cebd8df5e459211cc93a64a9332de51cff756b47ac",
+    "s4": "834dc20a74581e06fc6c6b99a07ea7b628c9c36d7c390cee1b4e599eeec7b070",
+    "s5": "dd9455e66ea742a997a12400b194e02c6557b19217a06db0a58f82d7d82b8fde",
+    "s6": "cb4e838e28a346993a653862da66ac934c2c1b8e7e1aa1d7cb23c7082672067d",
+    "s7": "044f93aa0d0fd0aed5a7b5b535f5b7a2efacfc541ef12f41a04af14289440d7c",
+    "s8": "a12e7aff5d1cfd541706cc743c3d78ed9c0a96dba6af2c4f8b6dbb2309ea9582",
+    "s9": "5df42e7ab2c8cb694c9706c70b576606f5934a594bea66483476e6e048826acd"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T21:19:53.646185+00:00"
+}
