@@ -1,0 +1,52 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite (base-gate.log, 614b2efe, 49 passed EXIT=0) and after_suite (head-gate.log, e6a820455, 50 passed EXIT=0) via reckon.crew.review.added_failures_from_gate_logs; neither log reports a FAILED or ERROR line, and the count is 0 with no added ids.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch_claims.py:1533",
+    "reckon/crew/dispatch_claims.py:1622"
+  ],
+  "completed_at": "2026-10-08T17:05:15.986Z",
+  "dispatched_at": "2026-10-08T16:51:25Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "base 614b2efe to head e6a820455 removes the RACING_WINNER_WAIT_SECONDS assignment from dispatch_claims.py and its re-export line from dispatch.py, and adds test_the_grace_is_derived_through_the_run_store_index (62 lines, of which the resumed commit e6a820455 contributes the fallback-blinding); nothing else moves.",
+    "done_when": "grep for RACING_WINNER_WAIT_SECONDS over head's reckon/ and tests/ returns nothing (exit 1, no matches) and dispatch.py no longer re-exports it, so no module exports the floor under a grace-shaped name; and test_the_grace_is_derived_through_the_run_store_index fails when the indexed branch returns no run names -- verified independently by blinding the fallback scan and breaking the run-store SELECT (1 failed, assert 5.0 == 30.0, EXIT=1) and by making _recent_run_names return no names (1 failed, assert 5.0 == 30.0, EXIT=1), while unmutated head passes (1 passed, EXIT=0).",
+    "goal": "the pin's goal is to remove RACING_WINNER_WAIT_SECONDS, which had come to equal CLAIM_GRACE_FLOOR_SECONDS while still being re-exported through reckon.crew.dispatch, so no exported name would read as the grace but hold the floor, and to add a test that derives the grace through the run-store index branch which fails when that branch returns no run names; head removes the alias and its re-export, and the resumed commit e6a820455 hardens the indexed-branch test so the run-store index is the sole source of the names.",
+    "manifest": "read; status complete, commits 8f80cfff15e0cbc12d7068f631a0c2021f7b5e5b and e6a820455dae116bd2b0708d93c3d6fb3e2a805a, gate base 49 passed / head 50 passed with 0 failures added, two negative_control_log paths, measurement_module and measurement_cwd for the base scratch arm, and no plan edit.",
+    "write_paths": "head e6a820455 touches reckon/crew/dispatch_claims.py, reckon/crew/dispatch.py, tests/test_claim_grace_follows_live_launches.py and docs/evidence/fragments/one-typesafe-model-picker/claim-grace-has-one-name.html, all inside the node's declared write paths; no plan meta line changes and no figure path moves."
+  },
+  "justifications": {
+    "durability": "the alias and its sole re-export are removed in place with no compatibility shim, and the hardened test is a permanent pytest case; the index pin now holds under the narrower mutation that previously left it green, so the guard is durable rather than merely passing.",
+    "evidence": "the reviewed run's own arms show base 49 passed EXIT=0 (base-gate.log, 614b2efe) and head 50 passed EXIT=0 (head-gate.log, e6a820455), so head adds one passing case and no failure; I reproduced the head arm (50 passed EXIT=0) and the base arm (49 passed EXIT=0) independently from git archive, and reproduced both declared negative controls red (index-only break and no-names break, each 1 failed assert 5.0 == 30.0 EXIT=1), so the negative controls now match the claim exactly.",
+    "fit": "the test reuses the existing reckon.run_store.RunStore, the file's monkeypatch fixture style and the production claim_grace_seconds as its oracle, the blinding os shim is documented by its docstring and by the test's own docstring, the commit carries a conventional subject with a body stating the mechanism, and RACING_WINNER_POLL_SECONDS, which names a poll not the grace, is correctly retained.",
+    "goal_fidelity": "both done-when clauses are met and were reproduced: RACING_WINNER_WAIT_SECONDS is absent from head's reckon/ and tests/ and unexported from dispatch.py, and the new test fails when the indexed branch names no runs (index-SELECT break and whole-function break both red), so the clause the prior review found only partly met is now genuinely pinned.",
+    "reuse": "no mechanism is re-implemented: the test builds its store with the existing RunStore and asserts against the existing claim_grace_seconds and recent_claim_grace_seconds, and the alias is deleted rather than replaced by a second floor constant, leaving one name for the floor and one derivation for the grace.",
+    "scope_discipline": "e6a820455 changes exactly tests/test_claim_grace_follows_live_launches.py and its 8f80cfff1 parent changed dispatch_claims.py, dispatch.py, that test module and a one-line evidence fragment, all inside the node's declared write paths; no plan meta line changes and no figure directory is written."
+  },
+  "node": "review-of-claim-grace-has-one-name",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the pin's goal is to remove RACING_WINNER_WAIT_SECONDS, which had come to equal CLAIM_GRACE_FLOOR_SECONDS while still being re-exported through reckon.crew.dispatch, so no exported name would read as the grace but hold the floor, and to add a test that derives the grace through the run-store index branch which fails when that branch returns no run names; head removes the alias and its re-export, and the resumed commit e6a820455 hardens the indexed-branch test so the run-store index is the sole source of the names.\nVERDICT done_when: grep for RACING_WINNER_WAIT_SECONDS over head's reckon/ and tests/ returns nothing (exit 1, no matches) and dispatch.py no longer re-exports it, so no module exports the floor under a grace-shaped name; and test_the_grace_is_derived_through_the_run_store_index fails when the indexed branch returns no run names -- verified independently by blinding the fallback scan and breaking the run-store SELECT (1 failed, assert 5.0 == 30.0, EXIT=1) and by making _recent_run_names return no names (1 failed, assert 5.0 == 30.0, EXIT=1), while unmutated head passes (1 passed, EXIT=0).\nVERDICT write_paths: head e6a820455 touches reckon/crew/dispatch_claims.py, reckon/crew/dispatch.py, tests/test_claim_grace_follows_live_launches.py and docs/evidence/fragments/one-typesafe-model-picker/claim-grace-has-one-name.html, all inside the node's declared write paths; no plan meta line changes and no figure path moves.\nVERDICT manifest: read; status complete, commits 8f80cfff15e0cbc12d7068f631a0c2021f7b5e5b and e6a820455dae116bd2b0708d93c3d6fb3e2a805a, gate base 49 passed / head 50 passed with 0 failures added, two negative_control_log paths, measurement_module and measurement_cwd for the base scratch arm, and no plan edit.\nVERDICT diff: base 614b2efe to head e6a820455 removes the RACING_WINNER_WAIT_SECONDS assignment from dispatch_claims.py and its re-export line from dispatch.py, and adds test_the_grace_is_derived_through_the_run_store_index (62 lines, of which the resumed commit e6a820455 contributes the fallback-blinding); nothing else moves.\nCALL_SITES: reckon/crew/dispatch_claims.py:1533, reckon/crew/dispatch_claims.py:1622\n\n\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: both done-when clauses are met and were reproduced: RACING_WINNER_WAIT_SECONDS is absent from head's reckon/ and tests/ and unexported from dispatch.py, and the new test fails when the indexed branch names no runs (index-SELECT break and whole-function break both red), so the clause the prior review found only partly met is now genuinely pinned.\nSCORE evidence: 19\nJUSTIFICATION evidence: the reviewed run's own arms show base 49 passed EXIT=0 (base-gate.log, 614b2efe) and head 50 passed EXIT=0 (head-gate.log, e6a820455), so head adds one passing case and no failure; I reproduced the head arm (50 passed EXIT=0) and the base arm (49 passed EXIT=0) independently from git archive, and reproduced both declared negative controls red (index-only break and no-names break, each 1 failed assert 5.0 == 30.0 EXIT=1), so the negative controls now match the claim exactly.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: e6a820455 changes exactly tests/test_claim_grace_follows_live_launches.py and its 8f80cfff1 parent changed dispatch_claims.py, dispatch.py, that test module and a one-line evidence fragment, all inside the node's declared write paths; no plan meta line changes and no figure directory is written.\nSCORE durability: 19\nJUSTIFICATION durability: the alias and its sole re-export are removed in place with no compatibility shim, and the hardened test is a permanent pytest case; the index pin now holds under the narrower mutation that previously left it green, so the guard is durable rather than merely passing.\nSCORE fit: 19\nJUSTIFICATION fit: the test reuses the existing reckon.run_store.RunStore, the file's monkeypatch fixture style and the production claim_grace_seconds as its oracle, the blinding os shim is documented by its docstring and by the test's own docstring, the commit carries a conventional subject with a body stating the mechanism, and RACING_WINNER_POLL_SECONDS, which names a poll not the grace, is correctly retained.\nSCORE reuse: 20\nJUSTIFICATION reuse: no mechanism is re-implemented: the test builds its store with the existing RunStore and asserts against the existing claim_grace_seconds and recent_claim_grace_seconds, and the alias is deleted rather than replaced by a second floor constant, leaving one name for the floor and one derivation for the grace.\n",
+  "review_run_id": "r-20261008T165058880133-review-of-claim-grace-has-one-name",
+  "reviewed_base_sha": "614b2efedd81a05ad56b33a4dedfd0c2e951430e",
+  "reviewed_head_sha": "e6a820455dae116bd2b0708d93c3d6fb3e2a805a",
+  "reviewed_run_id": "r-20261008T161322288767-claim-grace-has-one-name",
+  "reviewer_run_id": "r-20261008T165058880133-review-of-claim-grace-has-one-name",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T17:02:24.882477+00:00",
+  "total": 117
+}

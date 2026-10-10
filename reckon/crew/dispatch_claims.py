@@ -1451,8 +1451,6 @@ def recent_claim_grace_seconds(root: Path | None = None) -> float:
     return grace
 
 
-# Kept for callers displaying a default bound; admission reads the live value.
-RACING_WINNER_WAIT_SECONDS = CLAIM_GRACE_FLOOR_SECONDS
 RACING_WINNER_POLL_SECONDS = 0.25
 
 
