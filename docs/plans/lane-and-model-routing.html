@@ -20,13 +20,13 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;: [&quot;every-module-fits-a-worker-window#s4&quot;], &quot;s10&quot;: [&quot;every-module-fits-a-worker-window#s4&quot;], &quot;s14&quot;: [&quot;lane-and-model-routing#s4&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s0&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s0&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;implementable&quot;}">
   <title>Lane And Model Routing | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-north-star" content="unattended-execution">
 <meta name="plan-impl" content="0.8">
-<meta name="plan-version" content="58">
+<meta name="plan-version" content="59">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -60,7 +60,7 @@
   <p class="landed-summary">The host flight declares one <code>lanes.claude</code> block with sonnet, opus and haiku inside it; opus keeps its 40-minute budget as a per-model override, and the claude-opus backend block is retired. Every scope resolves as before, plus the lane annotations. <a href="/reckon/evidence/archive/lane-and-model-routing-landed.html#s3">full record</a></p>
 </section>
 
-    <h2 id="s4" data-reckon="section" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links="">§4 — Dispatch names a model within a lane</h2>
+    <h2 id="s4" data-reckon="section" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links="">§4 — Dispatch names a model within a lane</h2>
     <p>Add <code>--model KEY</code> to <code>crew dispatch</code> and its sibling surfaces that already take <code>--backend</code>. <code>KEY</code> matches a model key first, then a model id, then an alias. <code>--backend claude</code> alone takes the lane's default model. A model named alone implies its lane when exactly one lane declares it; when two lanes declare it, dispatch refuses and names both. <code>--local --model KEY</code> narrows to a model of the local lane. A named lane or model stays authoritative: it implies the deterministic route, and only a shadow selection is recorded. Run and ledger rows gain <code>lane</code> and <code>model_key</code> beside <code>backend</code>. Refusals name the pair.</p>
     <p><strong>Write paths:</strong> the module that holds the dispatch command once <code>every-module-fits-a-worker-window</code> §4 has split <code>reckon/cli.py</code>, <code>reckon/crew/dispatch.py</code>, <code>reckon/ledger.py</code>, <code>tests/test_dispatch_names_a_model.py</code>.</p>
     <p><strong>Done when:</strong> dry runs of <code>--backend claude --model opus</code> and of the legacy <code>--backend claude-opus</code> resolve to the same backend, effort and launch argv; an ambiguous bare <code>--model</code> is refused naming both lanes; a promoted row carries <code>lane</code> and <code>model_key</code>. Negative control: dropping the model narrowing makes the claude-opus equivalence test fail.</p>
@@ -110,6 +110,10 @@
     <h2 id="s14">§14 — A declared model outside the named lane is refused by name, and --model is tested end to end</h2>
 <section data-reckon="section" data-id="s14" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
 <p>§4's run (<code>r-20261010T201227087344-dispatch-names-a-model</code>, commit <code>dba1dbfaa</code>) adds <code>--model</code> to dispatch. Dispatch this section only after §4 lands. Its review (score 105) left two follow-ons:</p><ol><li><code>--backend codex --model opus</code> names a model the catalogue declares, but not in the codex lane. It is refused as naming "no model, model id or alias the catalogue declares", which misstates it. Refuse by naming the pair: the model is declared, in another lane.</li><li>The equivalence test asserts the launch mode, not the launch argv the done-when names. No test covers <code>--local --model</code>, or the lane and model pair recorded on the run pointer.</li></ol><p>Write paths: <code>reckon/crew_dispatch_commands.py</code> and <code>tests/test_dispatch_names_a_model.py</code>.</p><p><strong>Done when</strong> a test shows the out-of-lane refusal names the model and both lanes, and fails on the code §4 merges. The equivalence test compares launch argv. A test covers <code>--local --model</code> and the pointer's pair.</p>
+
+    <h2 id="s15">§15 — The ledger&#x27;s model fallback is tested and lets an ambiguous name through</h2>
+<section data-reckon="section" data-id="s15" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p>§4's repair made <code>build_record</code> in <code>reckon/ledger.py</code> fall back to an unset <code>lane</code> and <code>model_key</code> when resolving the backend raises <code>FlightConfigError</code>, <code>OSError</code> or <code>ValueError</code>. Its re-review (score 107) found two gaps. No test drives that fallback, so removing it leaves the suite green. And <code>resolve_name</code> raises its ambiguity refusal as a <code>ValueError</code>, so an ambiguous identity is silently stored as an unset pair instead of surfacing.</p><ol><li>Narrow the fallback to the malformed-catalogue errors, so the ambiguity refusal is not caught.</li><li>Test both branches through <code>build_record</code>.</li></ol><p>Write paths: <code>reckon/ledger.py</code> and a new test module.</p><p><strong>Done when</strong> a test builds a row through <code>build_record</code> against a malformed catalogue and shows the row is written with <code>lane</code> and <code>model_key</code> unset. It fails when the fallback is removed. A second test makes the resolver raise its ambiguity refusal and shows <code>build_record</code> raises it, naming the lanes. It fails on main, where the pair is stored unset.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -287,6 +291,9 @@
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261010T205451806281-review-of-dispatch-names-a-model" data-who="reckon-build" data-when="2026-10-10T21:04:40.194Z">
     <div class="r-comment-body"><p>stored an independent review of r-20261010T201227087344-dispatch-names-a-model reading c16b71de9724b9a3c1523c6effd18a2b45c6697d..dba1dbfaa8e1757d69c6cc3082e05bb8f33650b6</p></div>
 </div>
+<div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-10-10T22:30:00Z">
+    <div class="r-comment-body"><p>§4 landed: <code>--model</code> resolves through the catalogue's one resolver on dispatch, preflight and shadow, and run rows carry <code>lane</code> and <code>model_key</code> (merge <code>a58f9efb8</code>, re-review 107, no failures added). Follow-ons are §15. <a href="/reckon/evidence/archive/lane-and-model-routing-landed.html#s4">evidence</a></p></div>
+</div>
 <div class="r-comment" data-section="s13" data-id="c-close-s13" data-who="reckon-build" data-when="2026-10-10T22:15:00Z">
     <div class="r-comment-body"><p>§13 closed with no defect: <code>test_a_modelless_candidate_does_not_name_its_backend_a_model</code> already guards the modelless key. The run's added test duplicated it (review 80), so it was not merged. <a href="/reckon/evidence/archive/lane-and-model-routing-landed.html#s13">evidence</a></p></div>
 </div>
@@ -294,7 +301,7 @@
     <div class="r-comment-body"><p>tests/test_option_keys_are_unique.py adds test_the_rendered_questions_name_a_modelless_key_part_as_its_backend, which renders the questions for a modelless candidate and asserts the key's second part is the backend and no model is named for it; gate 194 passed on head vs 193 on base, and the test fails (EXIT=1) when the backend is labelled as its model.</p></div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261010T220057743239-review-of-modelless-key-naming-is-tested" data-who="reckon-build" data-when="2026-10-10T22:08:48.366Z">
-    <div class="r-comment-body"><p>stored a parsed review of run r-20261010T215157026672-modelless-key-naming-is-tested (base 52e9eeaa, head 764b203d) scoring 6/6 dimensions, total 80/120, added_failure_count 0 with no added ids; the landed test tests/test_option_keys_are_unique.py:102 is green and reddens under the run&#x27;s mutation, but it duplicates the guard already at line 87 and passes at §8&#x27;s base 9a9d3d3ec, so §13&#x27;s premise is unsupported (2 follow-on findings, no blocking).</p></div>
+    <div class="r-comment-body"><p>stored a parsed review of run r-20261010T215157026672-modelless-key-naming-is-tested (base 52e9eeaa, head 764b203d) scoring 6/6 dimensions, total 80/120, added_failure_count 0 with no added ids; the landed test tests/test_option_keys_are_unique.py:102 is green and reddens under the run's mutation, but it duplicates the guard already at line 87 and passes at §8's base 9a9d3d3ec, so §13's premise is unsupported (2 follow-on findings, no blocking).</p></div>
 </div>
 </section>
 </main>
