@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "backend": "local",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:461",
+    "reckon/crew_run_commands.py:556"
+  ],
+  "completed_at": "2026-10-10T22:02:38.088Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "one-disposition-writer",
+      "recorded_at": "2026-10-10T22:07:44.591588+00:00"
+    }
+  },
+  "dispatched_at": "2026-10-10T21:56:57Z",
+  "findings": [
+    {
+      "file": "reckon/crew/review.py",
+      "line": "3333",
+      "severity": "follow-on",
+      "text": "follow-on: FINDING_DISPOSITIONS_KEY is re-declared here although reckon/crew/findings.py:42 already owns the same string for the reader, so the writer and the reader now key the store by two independent copies of one name; a drift between them leaves every disposed finding reading open and no test covers the pair."
+    },
+    {
+      "file": "reckon/crew/review.py",
+      "line": "3375",
+      "severity": "follow-on",
+      "text": "follow-on: record_finding_disposition re-implements the disposition entry-validation and build block record_dimension_disposition:3258-3315 already owns -- the folded-carries-a-reason and exempted-names-a-node refusals and the {kind, recorded_at, node|reason} build -- rather than sharing one helper, so reuse is scored at most 5."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base 924fdde86; f18038051 adds the --finding option and record_finding_disposition, d73be2ffd lower-cases the dimension key when rendering a disposition receipt; four files changed, every one inside the declared scope.",
+    "done_when": "the done_when names tests/test_dispose_a_finding.py with a two-finding record, a fold read back folded:fix-a with finding 0 open, and three write-nothing refusals; all are present and their results recorded (gate-head.log 47 passed EXIT=0; negative-control.log 3 failed EXIT=1).",
+    "goal": "the node goal is \"Record a disposition on one review finding through crew dispose\"; the landed --finding option (reckon/crew_run_commands.py:427) writes record['finding_dispositions'][index] through record_finding_disposition (reckon/crew/review.py:3336), which is exactly the goal.",
+    "manifest": "read; it records status complete, commits f18038051 d73be2ffd, the focused gate 47 passed EXIT=0, and the negative control 3 failed EXIT=1, and names its two log paths; it declares no baseline_suite/after_suite because the arms are focused, not a suite.",
+    "write_paths": "read the manifest's declared write paths; the diff touches reckon/crew_run_commands.py, reckon/crew/review.py, tests/test_dispose_a_finding.py and the landing fragment under docs/evidence, all inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_dispose_a_finding.py:195 fails when the finding branch is reverted to the dimension slot, shown red in negative-control.log (3 failed EXIT=1), and it asserts the independent findings reader's output rather than a value it passed in.",
+    "evidence": "the gate tests/test_dispose_a_finding.py:185 asserts finding 1 reads folded:fix-a and finding 0 stays open, and its refusal cases assert the record bytes are unchanged; the manifest records 47 passed EXIT=0 at d73be2ffd.",
+    "fit": "the additions record_finding_disposition, FINDING_DISPOSITIONS_KEY and finding_index describe their mechanism and carry no plan label, and the function mirrors the surrounding store writers in reckon/crew/review.py.",
+    "goal_fidelity": "record_finding_disposition (reckon/crew/review.py:3336) writes the closed-set entry under the finding_dispositions key keyed by the index the findings reader prints (reckon/crew/findings.py:198), which is the goal.",
+    "reuse": "record_finding_disposition (reckon/crew/review.py:3375) re-implements the entry-validation and build block record_dimension_disposition:3258 already owns and re-declares the FINDING_DISPOSITIONS_KEY constant reckon/crew/findings.py:42 already owns, so reuse is scored at most 5.",
+    "scope_discipline": "every path in the diff is inside the manifest's declared write paths and the change carries nothing the goal does not imply; the worktree is clean."
+  },
+  "node": "review-of-dispose-a-finding",
+  "project": "reckon",
+  "raw_text": "\nVERDICT goal: the node goal is \"Record a disposition on one review finding through crew dispose\"; the landed --finding option (reckon/crew_run_commands.py:427) writes record['finding_dispositions'][index] through record_finding_disposition (reckon/crew/review.py:3336), which is exactly the goal.\nVERDICT done_when: the done_when names tests/test_dispose_a_finding.py with a two-finding record, a fold read back folded:fix-a with finding 0 open, and three write-nothing refusals; all are present and their results recorded (gate-head.log 47 passed EXIT=0; negative-control.log 3 failed EXIT=1).\nVERDICT write_paths: read the manifest's declared write paths; the diff touches reckon/crew_run_commands.py, reckon/crew/review.py, tests/test_dispose_a_finding.py and the landing fragment under docs/evidence, all inside them.\nVERDICT manifest: read; it records status complete, commits f18038051 d73be2ffd, the focused gate 47 passed EXIT=0, and the negative control 3 failed EXIT=1, and names its two log paths; it declares no baseline_suite/after_suite because the arms are focused, not a suite.\nVERDICT diff: read commit by commit against base 924fdde86; f18038051 adds the --finding option and record_finding_disposition, d73be2ffd lower-cases the dimension key when rendering a disposition receipt; four files changed, every one inside the declared scope.\nCALL_SITES: reckon/cli.py:461, reckon/crew_run_commands.py:556\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: record_finding_disposition (reckon/crew/review.py:3336) writes the closed-set entry under the finding_dispositions key keyed by the index the findings reader prints (reckon/crew/findings.py:198), which is the goal.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate tests/test_dispose_a_finding.py:185 asserts finding 1 reads folded:fix-a and finding 0 stays open, and its refusal cases assert the record bytes are unchanged; the manifest records 47 passed EXIT=0 at d73be2ffd.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff is inside the manifest's declared write paths and the change carries nothing the goal does not imply; the worktree is clean.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_dispose_a_finding.py:195 fails when the finding branch is reverted to the dimension slot, shown red in negative-control.log (3 failed EXIT=1), and it asserts the independent findings reader's output rather than a value it passed in.\nSCORE fit: 18\nJUSTIFICATION fit: the additions record_finding_disposition, FINDING_DISPOSITIONS_KEY and finding_index describe their mechanism and carry no plan label, and the function mirrors the surrounding store writers in reckon/crew/review.py.\nSCORE reuse: 5\nJUSTIFICATION reuse: record_finding_disposition (reckon/crew/review.py:3375) re-implements the entry-validation and build block record_dimension_disposition:3258 already owns and re-declares the FINDING_DISPOSITIONS_KEY constant reckon/crew/findings.py:42 already owns, so reuse is scored at most 5.\nFINDING reckon/crew/review.py:3333 follow-on: FINDING_DISPOSITIONS_KEY is re-declared here although reckon/crew/findings.py:42 already owns the same string for the reader, so the writer and the reader now key the store by two independent copies of one name; a drift between them leaves every disposed finding reading open and no test covers the pair.\nFINDING reckon/crew/review.py:3375 follow-on: record_finding_disposition re-implements the disposition entry-validation and build block record_dimension_disposition:3258-3315 already owns -- the folded-carries-a-reason and exempted-names-a-node refusals and the {kind, recorded_at, node|reason} build -- rather than sharing one helper, so reuse is scored at most 5.\n",
+  "review_run_id": "r-20261010T215635151749-review-of-dispose-a-finding",
+  "reviewed_base_sha": "924fdde86fe0df558ee745d2439c159ff5fcc385",
+  "reviewed_head_sha": "d73be2ffd4f17bcd3f9cfe917768e87e95975cbb",
+  "reviewed_run_id": "r-20261010T213058386352-dispose-a-finding",
+  "reviewer": "review-of-dispose-a-finding",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T00:05:00Z",
+  "total": 101
+}
