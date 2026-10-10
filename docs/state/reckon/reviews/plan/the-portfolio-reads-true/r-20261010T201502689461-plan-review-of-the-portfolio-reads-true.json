@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T20:20:19.078Z",
+  "dispatched_at": "2026-10-10T20:15:31Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-portfolio-reads-true.html:96",
+      "id": "reasoning-1",
+      "reason": "a node implementing \u00a73 as written cannot call the named helper from the caller the plan names and must invent the parameter shape (add repo_dir/docs_dir to derived_plan_age or resolve them internally), so the plan under-specifies the one interface the change turns on.",
+      "text": "\u00a73 routes the commit read \"through the existing last-commit lookup _git_last_committed (reckon/serve.py:1432)\", but that function's signature is _git_last_committed(repo_dir: Path, docs_dir: Path) and it returns a whole-docs-dir mapping keyed by repo-relative path, while derived_plan_age takes a single fallback_path and \u00a73 says only that \"the roadmap's first call (reckon/roadmap.py:945) \u2026 passes the plan's path\" \u2014 a plan path supplies neither repo_dir nor docs_dir",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-portfolio-reads-true.html:102",
+      "id": "reasoning-2",
+      "reason": "the mechanism (author date) and the measure (committer date) disagree on which git date is the age source, so the graded test cannot succeed until the fixture sets GIT_AUTHOR_DATE too or the reader selects %ct.",
+      "text": "the done-when backdates the fixture commit \"by GIT_COMMITTER_DATE\" only, but _git_last_committed sources its timestamp from git log \"--format=COMMIT %at\" (author date, reckon/serve.py:1455), so a commit whose committer date is 20 days old but whose author date is now reads as age 0 and produces no AGING row, and the test cannot pass as written",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "3c08c656e9795d336d4e21ee64a80d48731e84268e34ca0f8c34177ff605eee6",
+  "plan_slug": "the-portfolio-reads-true",
+  "plan_version": 4,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261010T201502689461-plan-review-of-the-portfolio-reads-true",
+  "reviewed_blob_sha": "5fe583397f2ea2fb1cd1139600eedb79dbc35d4b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 derived_plan_age (doccheck.py:230), the audit loop's own-mtime read (doccheck.py:531), archive.py:87, roadmap.py:945, _git_last_committed (serve.py:1432), ACTIVE_PLAN_STALE_AFTER_DAYS (line 154), metadata_index.py:681 and fleet_index.py:33 all resolve.",
+    "done_when": "pass \u2014 \u00a73's done-when names a runnable test, both fixtures, the specific rows asserted, and an executed negative control (mtime-read \u2192 age 0, no row).",
+    "evidence_paths": "pass \u2014 evidence is an in-tree test file (tests/test_staleness_counts_from_the_last_commit.py); no session scratchpad or node-local path is named.",
+    "naming": "pass \u2014 AGING is an audit-code output label, not a plan label in code; no ticket numbers, version tags or changelog prose reach symbols or comments.",
+    "reasoning": "a finding \u2014 the mechanism names _git_last_committed as its reader, but that helper cannot be reached from derived_plan_age's caller shape, and it reads a different git date than the done-when's fixture sets.",
+    "single_goal": "pass \u2014 \u00a73 has one deliverable: staleness reads from the last commit, with the AGING band as part of the same age reading.",
+    "wiring": "pass \u2014 \u00a73 declares no dependency of its own, and the gate that gates it (g-tprt-age-honest) correctly requires the-portfolio-reads-true#s3; the \"runs after \u00a72\" serialisation is carried by followup f-tprt-001."
+  },
+  "section_digests": {
+    "_document": "a2e40a46ef8769d14f88fec5811bd50d0aa5fc6a7f36f66f1ebcba3a9533436a",
+    "s1": "56204248c9050844c40ac7e00bff909830602caaa4b95be87bacea51b1495a03",
+    "s2": "69b86246adb4ea89719f367ac57f43940ed14fb88c5c89408cf18a6b59911f57",
+    "s3": "4a09d54ed9fba7c8f5ba84962c39bc26616d1ede7936564b4861f4946fd9ddfa",
+    "s4": "9280ec81cafc36b7de1295b0f22745c6162986e93d9731a8e8b99c51d658a217",
+    "s5": "6faa47a6baa98d4e30fc9ec11b4968f36696b381308a599ae91bf7eb75418236",
+    "s6": "3b386242a01bc207ce0810ef1ee5ccbd8a9d5ea78f77a5dd6fc61b2f207c53d0"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T20:25:55.425984+00:00"
+}
