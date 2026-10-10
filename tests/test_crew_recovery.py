@@ -19,7 +19,14 @@ from click.testing import CliRunner
 import reckon.crew.dispatch_sessions as dispatch_sessions_module
 from reckon import _backends, _plan_html, crew, ledger
 from reckon import cli as cli_module
-from reckon.crew import recovery, reports, runs
+from reckon.crew import (
+    recovery,
+    recovery_review_delivery,
+    recovery_stream,
+    recovery_watch,
+    reports,
+    runs,
+)
 from reckon.crew import ticker as ticker_module
 
 # Recorded worker event streams, read as repository fixtures so a refusal is
@@ -380,7 +387,7 @@ def test_cli_follow_streams_each_event_as_one_json_document(home, monkeypatch) -
         {"project": "proj", "event": "terminal", "run_id": run_id}
         for run_id in ("r-one", "r-two")
     )
-    monkeypatch.setattr(recovery, "watch_follow", lambda *_args, **_kwargs: events)
+    (monkeypatch.setattr(recovery_watch, "watch_follow", lambda *_args, **_kwargs: events), monkeypatch.setattr(recovery, "watch_follow", lambda *_args, **_kwargs: events))
 
     result = CliRunner().invoke(
         cli_module.main,
@@ -2865,11 +2872,19 @@ def test_watchdog_still_stops_a_live_over_grace_worker_with_a_token_budget(
         "log_path": str(Path("/nonexistent/stream.jsonl")),
     }
     signalled: list[tuple[int, str]] = []
-    monkeypatch.setattr(
-        recovery,
+    (monkeypatch.setattr(
+        recovery_review_delivery,
         "_signal_process_group",
         lambda pid, started_at, *, reason="", **kwargs: signalled.append((pid, reason)),
-    )
+    ), monkeypatch.setattr(
+        recovery_stream,
+        "_signal_process_group",
+        lambda pid, started_at, *, reason="", **kwargs: signalled.append((pid, reason)),
+    ), monkeypatch.setattr(
+        recovery_watch,
+        "_signal_process_group",
+        lambda pid, started_at, *, reason="", **kwargs: signalled.append((pid, reason)),
+    ))
     config = {"fences": {"enforce_budget_watchdog": True, "budget_grace_multiple": 2.0}}
 
     recovery._apply_budget_watchdog(record, config)

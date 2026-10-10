@@ -21,13 +21,13 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-standalone" content="No plan waits on this one as a whole: §6 of the-fleet-moves-to-a-new-node is held because its node does not fit the local lane, and it can run either on a larger-window lane or once §3 and §4 here land, so neither a blocks edge nor a gate on that section is true.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
   <title>Every Module Fits A Worker Window | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-impl" content="0.76">
-<meta name="plan-version" content="34">
-<meta name="plan-modified" content="2026-10-08">
+<meta name="plan-impl" content="0.95">
+<meta name="plan-version" content="41">
+<meta name="plan-modified" content="2026-10-09">
 </head>
 <body>
   <main class="plan-doc">
@@ -79,13 +79,12 @@
   <p class="landed-summary"><code>reckon/cli.py</code> went from about 103k estimated tokens to six command modules and a 5.8k-token import surface, the largest module about 32.7k. Every command's help text is unchanged. <a href="/reckon/evidence/archive/every-module-fits-a-worker-window-landed.html#s4">full record</a></p>
 </section>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-08</span>
     <h2 id="s5">§5 — Split <code>reckon/crew/recovery.py</code></h2>
-<section data-reckon="section" data-id="s5" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-context="extended" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> The same two nodes as §3, for <code>reckon/crew/recovery.py</code>, with the map at
-      <code>docs/evidence/fragments/every-module-fits-a-worker-window/recovery-split-map.html</code>. Its four
-      banners mark seams already: interrupted-orchestrator recovery, the delivered-review turn end, the review reflex
-      and the classification memo.</p>
-    <p><strong>Done when</strong> the §3 conditions hold for <code>recovery.py</code>.</p>
+<section data-reckon="section" data-id="s5" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-context="extended" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section></header>
+  <p class="landed-summary"><code>reckon/crew/recovery.py</code> went from about 151k estimated tokens to twelve sibling modules and a 6.2k-token import surface, the largest about 31.4k, as a verified pure move with no added failure across the whole suite. <a href="/reckon/evidence/archive/every-module-fits-a-worker-window-landed.html#s5">full record</a></p>
+</section>
 
     <section class="section-landed">
   <header><span class="badge badge-shipped">&#10003; landed 2026-10-08</span>
@@ -183,10 +182,16 @@
     <pre class="r-fu-prompt">/reckon-build every-module-fits-a-worker-window §9</pre>
     <p class="r-fu-outcome">§9 landed at 54e451998 (review 112/120, stamps unchanged on an unchanged tree). The recovery.py and promotion.py maps are written and under review; the moves are next.</p>
     </article>
-<article class="r-fu" data-id="f-emfww-004" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="9cf43820" data-written-at="2026-10-08" data-recommends-skill="/reckon-build every-module-fits-a-worker-window §5" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-emfww-004" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="9cf43820" data-written-at="2026-10-08" data-recommends-skill="/reckon-build every-module-fits-a-worker-window §5" data-resolved-at="2026-10-08T17:03:10+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Move recovery.py, then promotion.py, each in a window with no live claim on the module</h4>
     <div class="r-fu-body"><p>Both maps are written at base <code>0d925378c</code>. The recovery map places 353 statements across eleven siblings; the promotion map places 241 across six. Land each map after its review. Then dispatch each move only when <code>crew(view="scopes")</code> shows no live claim on the module. The move re-derives its census at its own base, and is reviewed, merged and pushed in one sitting.</p></div>
     <pre class="r-fu-prompt">/reckon-build every-module-fits-a-worker-window §5</pre>
+    <p class="r-fu-outcome">Both moves landed: promotion.py (§6, 68a481af7) and recovery.py (§5, c2a363fbc). §7's _backends.py fence move landed at f54d91722; mcp.py and runs.py remain.</p>
+    </article>
+<article class="r-fu" data-id="f-emfww-005" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="9cf43820" data-written-at="2026-10-08" data-recommends-skill="/reckon-build every-module-fits-a-worker-window §7" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Split mcp.py and runs.py, each in a window with no live claim on the module</h4>
+    <div class="r-fu-body"><p>The last two modules over the bound. Each is one node that moves out the cohesive groups that bring it under 40,000, with its map in the landing fragment. Moves run one at a time, because every move edits the guard's allowlist and <code>shared-write-paths.json</code>. Build the census with the AST walk over <code>setattr</code>, <code>patch.object</code> and direct attribute rebinding, and keep the gate's basetemp on node-local <code>/tmp</code>.</p></div>
+    <pre class="r-fu-prompt">/reckon-build every-module-fits-a-worker-window §7</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -253,6 +258,12 @@
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261008T090328069164-review-of-recovery-split-map" data-who="reckon-build" data-when="2026-10-08T09:17:28.351Z">
     <div class="r-comment-body"><p>The delta review scores the repaired patch census at r-20261008T081335142620-recovery-split-map head 7d06af35; stored parsed record total 110 over the six dimensions, base 60eafa7e head 7d06af35, with the eight previously omitted mp.setattr sites now recorded and independently confirmed.</p></div>
 </div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261008T132203835853-recovery-module-split-moved" data-who="reckon-build" data-when="2026-10-08T15:10:28Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/every-module-fits-a-worker-window/recovery-module-split-moved.html; 353/353 statements preserved, max 31,356 estimated tokens, mapped census zero added failures (711 passed, two base failures).</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261008T165104031794-review-of-recovery-module-split-moved" data-who="reckon-build" data-when="2026-10-08T17:01:22.951Z">
+    <div class="r-comment-body"><p>review record stored for r-20261008T132203835853-recovery-module-split-moved at reviews/reckon/r-20261008T132203835853-recovery-module-split-moved.at-db118d34f67322de43d3bb6c79b459b0cf495074.json: goal_fidelity 19, evidence 17, scope_discipline 20, durability 18, fit 18, reuse 20, total 112; two follow-on findings (the 40,000 produced-module target is unguarded by the 50,000 ratchet; shared-write-paths.json drops recovery.py with no produced-module replacement).</p></div>
+</div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261008T110649115065-review-of-backends-fence-moved-out" data-who="reckon-build" data-when="2026-10-08T11:26:15.335Z">
     <div class="r-comment-body"><p>Stored an independent parsed review for r-20261008T102640390312-backends-fence-moved-out at head 033515037b13141055343758b983908dff9bf339 scored over all six dimensions (goal_fidelity 18, evidence 16, scope_discipline 19, durability 12, fit 17, reuse 20; total 102), with two blocking findings on missed repointing of moved names in test patches.</p></div>
 </div>
@@ -264,6 +275,18 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261008T125320223828-review-of-backends-fence-moved-out" data-who="reckon-build" data-when="2026-10-08T13:10:22.900Z">
     <div class="r-comment-body"><p>Reviewed r-20261008T102640390312-backends-fence-moved-out at base f4d5cc60 head 7acf321f; stored a parsed six-dimension record (goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 20, reuse 20; total 118) with no blocking findings; the two prior blocking repointing findings are repaired and each guard reddens under reversal.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261008T232250175924-review-of-mcp-module-split-moved" data-who="reckon-build" data-when="2026-10-08T23:40:43.311Z">
+    <div class="r-comment-body"><p>review-of-mcp-module-split-moved - an independent review attached to run r-20261008T220009884737-mcp-module-split-moved at reviewed_base_sha 75514321 / reviewed_head_sha 0e6b2578; the move is pure and the gate delta is 0; total 115/120</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-20261009-mcp-split" data-who="reckon-build" data-when="2026-10-09T01:45:00Z">
+    <div class="r-comment-body"><p>The second of the three modules has landed. <code>reckon/mcp.py</code> is at 32,130 estimated tokens after its storage deadlines, <code>edit_plan</code> tool and discovery helpers moved into three siblings, merged at <code>7ae0a1525</code>. <a href="/reckon/evidence/archive/every-module-fits-a-worker-window-landed.html#s7-mcp">Record</a>. <code>reckon/crew/runs.py</code> remains, held by the fleet-move session's unpromoted run on it.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261008T220009884737-mcp-module-split-moved" data-who="reckon-build" data-when="2026-10-09T00:27:27.498Z">
+    <div class="r-comment-body"><p>mcp-module-split-moved - the MCP server's storage deadlines, its edit_plan tool and the helpers they read now live in reckon/mcp_deadlines.py, reckon/mcp_discovery.py and reckon/mcp_edit_plan.py; 28 test modules reload the whole tool family with the store through one helper, so no module keeps a stale store exception class; the move is pure-verified and both the 26-file gate and the whole-family reload proof add no failure over the base</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261009T011931684633-review-of-mcp-module-split-moved" data-who="reckon-build" data-when="2026-10-09T01:38:17.145Z">
+    <div class="r-comment-body"><p>review-of-mcp-module-split-moved - independent review of r-20261008T220009884737 at head d11f64b72 stored as a parsed record (6 dimensions, total 113, added_failure_count 0) in r-20261008T220009884737-mcp-module-split-moved.json and its .at-d11f64b72e8d9d9d65dbae2872b901ac8e554b53.json snapshot; the split reproduces (pure move 0 problems, sizes under bound, guard green) and the mid-flight 57-failure whole-suite regression is repaired at the reviewed head.</p></div>
 </div>
 </section>
 </main>

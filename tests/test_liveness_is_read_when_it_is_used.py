@@ -28,7 +28,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import recovery
+from reckon.crew import recovery, recovery_liveness, recovery_repair_dispatch
 
 
 def _pid_max() -> int:
@@ -230,7 +230,9 @@ def test_unmatched_host_carries_the_stored_answer_without_a_lookup(
     def _forbidden_lookup(pid):
         raise AssertionError(f"process lookup performed for foreign pid {pid!r}")
 
-    monkeypatch.setattr(recovery, "process_alive", _forbidden_lookup)
+    # Liveness calls the primitive directly; repair dispatch keeps its imported binding.
+    for module in (recovery_liveness, recovery_repair_dispatch):
+        monkeypatch.setattr(module, "process_alive", _forbidden_lookup)
     row = recovery.classify_pointer(
         _pointer(
             tmp_path,
@@ -259,7 +261,9 @@ def test_unrecorded_host_is_not_proven_either(
             f"process lookup performed without a recorded host {pid!r}"
         )
 
-    monkeypatch.setattr(recovery, "process_alive", _forbidden_lookup)
+    # Liveness calls the primitive directly; repair dispatch keeps its imported binding.
+    for module in (recovery_liveness, recovery_repair_dispatch):
+        monkeypatch.setattr(module, "process_alive", _forbidden_lookup)
     row = recovery.classify_pointer(
         _pointer(
             tmp_path,

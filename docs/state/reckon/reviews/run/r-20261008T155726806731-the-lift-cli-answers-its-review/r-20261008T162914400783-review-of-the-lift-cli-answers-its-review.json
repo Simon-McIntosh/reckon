@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "83be597cfdf604be83b3ef2dabd8212a66ee7348",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_run_commands.py:crew_budget_lift",
+    "reckon/crew/budget_group.py:reserve_block_for_group"
+  ],
+  "completed_at": "2026-10-08T16:37:32.245Z",
+  "dispatched_at": "2026-10-08T16:29:36Z",
+  "findings": [],
+  "head_log_revision": "bec90f99b54cf6ecfec38bdbf8f6f3cdee69371e",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base 83be597cf; bec90f99b changes four files (+169/-11) all inside scope, and d7ababa49 adds the 58-line evidence fragment.",
+    "done_when": "the done_when names the four gate files and its clauses hold; tests/test_skill_contracts.py:546 asserts reserve_block_for_group returns 0.0 for an all-excluded group and 0.2 otherwise, the CLI tests at tests/test_crew_budget_lift_cli.py:284 cover --from-in-future, --until ISO and duration, --clock five_hour, --session scope and the --global/--session refusal, and the manifest records the run.",
+    "goal": "the node's goal is to correct the reckon-build budget fence so it states the review-excluded bookend rule the way the fence code enforces it and to answer the lift CLI's review follow-ons; the diff at reckon/crew_run_commands.py:2101 and skills/reckon-build/SKILL.md:450 does exactly that.",
+    "manifest": "read; it records commits bec90f99b and d7ababa49, baseline 114 passed EXIT=0 and head 122 passed EXIT=0 with zero added failures, and a negative control EXIT=1; I re-identical the baseline_suite/after_suite arms against the run's own logs.",
+    "write_paths": "read the manifest's declared paths (skills/reckon-build/SKILL.md, reckon/crew_run_commands.py, tests/test_crew_budget_lift_cli.py, tests/test_skill_contracts.py, docs/evidence/fragments/a-window-paces-the-lane/the-lift-cli-answers-its-review.html); every path in both commits is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_skill_contracts.py:546 fails if the fence sentence reverts (confirmed by the negative control), and tests/test_crew_budget_lift_cli.py:284 asserts inert-before/active-after and the refusal leaves budget-lifts.json absent; a few CLI assertions (starts_at == starts, scope == session:<id>) echo their own input but each test also carries an independent arm.",
+    "evidence": "logs/head.log records \"# revision: bec90f99b\" 122 passed EXIT=0 and logs/baseline.log \"# revision: 83be597cf\" 114 passed EXIT=0, and logs/negative-control.log reddens the fence test 1 failed 64 passed EXIT=1; the head arm was taken at the code commit bec90f99b rather than the docs-only head d7ababa, so the evidence predates the evidence fragment by one commit.",
+    "fit": "_lift_ends at reckon/crew_run_commands.py:2101 keeps the surrounding keyword-only style and its docstring now describes only the reset-vs-pinned end, and no added name carries a plan, sprint or ticket label.",
+    "goal_fidelity": "reckon/crew_run_commands.py:2304 calls the de-parameterised _lift_ends and skills/reckon-build/SKILL.md:453 now reads \"is not withheld on a group whose every member review_excluded_backends lists\", matching reserve_block_for_group at reckon/crew/budget_group.py:178.",
+    "reuse": "the new tests import the existing owner reserve_block_for_group at reckon/crew/budget_group.py:163 rather than reimplementing it, and the code change removes an unread parameter instead of adding a definition.",
+    "scope_discipline": "both commits touch only the five declared write paths (git show --stat bec90f99b d7ababa49), and the evidence fragment lands under docs/evidence/fragments/a-window-paces-the-lane/."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to correct the reckon-build budget fence so it states the review-excluded bookend rule the way the fence code enforces it and to answer the lift CLI's review follow-ons; the diff at reckon/crew_run_commands.py:2101 and skills/reckon-build/SKILL.md:450 does exactly that.\nVERDICT done_when: the done_when names the four gate files and its clauses hold; tests/test_skill_contracts.py:546 asserts reserve_block_for_group returns 0.0 for an all-excluded group and 0.2 otherwise, the CLI tests at tests/test_crew_budget_lift_cli.py:284 cover --from-in-future, --until ISO and duration, --clock five_hour, --session scope and the --global/--session refusal, and the manifest records the run.\nVERDICT write_paths: read the manifest's declared paths (skills/reckon-build/SKILL.md, reckon/crew_run_commands.py, tests/test_crew_budget_lift_cli.py, tests/test_skill_contracts.py, docs/evidence/fragments/a-window-paces-the-lane/the-lift-cli-answers-its-review.html); every path in both commits is inside them.\nVERDICT manifest: read; it records commits bec90f99b and d7ababa49, baseline 114 passed EXIT=0 and head 122 passed EXIT=0 with zero added failures, and a negative control EXIT=1; I re-identical the baseline_suite/after_suite arms against the run's own logs.\nVERDICT diff: read commit by commit against base 83be597cf; bec90f99b changes four files (+169/-11) all inside scope, and d7ababa49 adds the 58-line evidence fragment.\nCALL_SITES: reckon/crew_run_commands.py:crew_budget_lift, reckon/crew/budget_group.py:reserve_block_for_group\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew_run_commands.py:2304 calls the de-parameterised _lift_ends and skills/reckon-build/SKILL.md:453 now reads \"is not withheld on a group whose every member review_excluded_backends lists\", matching reserve_block_for_group at reckon/crew/budget_group.py:178.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/head.log records \"# revision: bec90f99b\" 122 passed EXIT=0 and logs/baseline.log \"# revision: 83be597cf\" 114 passed EXIT=0, and logs/negative-control.log reddens the fence test 1 failed 64 passed EXIT=1; the head arm was taken at the code commit bec90f99b rather than the docs-only head d7ababa, so the evidence predates the evidence fragment by one commit.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both commits touch only the five declared write paths (git show --stat bec90f99b d7ababa49), and the evidence fragment lands under docs/evidence/fragments/a-window-paces-the-lane/.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_skill_contracts.py:546 fails if the fence sentence reverts (confirmed by the negative control), and tests/test_crew_budget_lift_cli.py:284 asserts inert-before/active-after and the refusal leaves budget-lifts.json absent; a few CLI assertions (starts_at == starts, scope == session:<id>) echo their own input but each test also carries an independent arm.\nSCORE fit: 20\nJUSTIFICATION fit: _lift_ends at reckon/crew_run_commands.py:2101 keeps the surrounding keyword-only style and its docstring now describes only the reset-vs-pinned end, and no added name carries a plan, sprint or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the new tests import the existing owner reserve_block_for_group at reckon/crew/budget_group.py:163 rather than reimplementing it, and the code change removes an unread parameter instead of adding a definition.",
+  "review_run_id": "r-20261008T162914400783-review-of-the-lift-cli-answers-its-review",
+  "reviewed_base_sha": "83be597cfdf604be83b3ef2dabd8212a66ee7348",
+  "reviewed_head_sha": "d7ababa491ec545b6c55df4719a67140acfe3c5e",
+  "reviewed_run_id": "r-20261008T155726806731-the-lift-cli-answers-its-review",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T16:36:04.326465+00:00",
+  "total": 118
+}

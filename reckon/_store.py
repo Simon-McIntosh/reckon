@@ -1374,7 +1374,7 @@ def _write_state_locked(
     ):
         _require_transition_verdict(new_data, "plan-terminal")
         if requested_status in _LANDED_STATUSES:
-            _require_every_section_ticked(new_data)
+            _require_every_section_ticked(new_data, text)
         _require_terminal_evidence(project, slug, requested_status, root)
     if state_type == "plan":
         _validate_decision_transitions(new_data, cur_state)
@@ -1415,6 +1415,15 @@ def _write_state_locked(
     if state_type == "plan":
         _require_heading_for_section_records(source_text, new_data.get("sections"))
     new_text = _plan_html.write_state(source_text, new_data)
+    if state_type == "plan":
+        # The coverage half reads the declarations the write produces, carried by
+        # the rendered HTML, and compares them against the stored plan as it
+        # stood when the write began: a heading and its declaration added in one
+        # call hold the new declaration only once write_state has rendered it,
+        # and a gap the plan already carried is not this write's to answer for.
+        _require_heading_for_section_records(
+            new_text, new_data.get("sections"), before_text=text
+        )
 
     # Idempotency guard: if the patch carries no real content change (e.g. a
     # no-op edit or a round-trip through BeautifulSoup entity-normalisation),
@@ -1660,38 +1669,133 @@ def _carries_authored_prose(item: dict) -> bool:
     return "body" in item
 
 
-def _require_heading_for_section_records(html_text: str, sections: Any) -> None:
-    """Refuse a typed record whose id has no authored h2 to attach to.
+def section_coverage_gaps(
+    html_text: str, declarations: Any
+) -> tuple[list[str], list[str]]:
+    """Authored headings and their declarations that fail to pair up.
+
+    Returns ``(undeclared, orphaned)``: the ids of authored section headings
+    carrying no declaration, and the declared ids naming no authored heading,
+    both sorted. One comparison, read by the write guard and by ``reckon
+    audit-doc``, so the audit's report of a gap and the write's refusal of one
+    cannot disagree. The headings come from ``authored_section_headings`` — the
+    single reader of a plan's section ids — and the declarations are the keys of
+    the ``section_declarations`` map the document carries.
+    """
+    from reckon import _plan_html
+
+    headings = {
+        identity for identity, _ in _plan_html.authored_section_headings(html_text)
+    }
+    declared = {str(key) for key in (declarations or {})}
+    return sorted(headings - declared), sorted(declared - headings)
+
+
+def _coverage_gaps_of(html_text: str | None) -> tuple[list[str], list[str]]:
+    """Both gap lists a document carries, read from its own declarations map."""
+    from reckon import _plan_html
+
+    if not html_text:
+        return [], []
+    try:
+        declarations = (
+            _plan_html.read_state(html_text).get("section_declarations") or {}
+        )
+    except ValueError:
+        # Malformed state is refused elsewhere; compare what can be read rather
+        # than masking the parse failure.
+        declarations = {}
+    return section_coverage_gaps(html_text, declarations)
+
+
+def new_section_coverage_gaps(
+    before_html: str | None, after_html: str
+) -> tuple[list[str], list[str]]:
+    """Gaps the after document carries that the before document did not.
+
+    A plan that already carries a gap stays writable: most live plans predate
+    section declarations entirely, so refusing every gapped plan would refuse
+    much of the corpus at its next write. ``reckon audit-doc`` reports such a
+    gap; only a gap the write itself introduces is refused. A plan with no prior
+    document has an empty before set.
+    """
+    before_undeclared, before_orphaned = _coverage_gaps_of(before_html)
+    after_undeclared, after_orphaned = _coverage_gaps_of(after_html)
+    return (
+        sorted(set(after_undeclared) - set(before_undeclared)),
+        sorted(set(after_orphaned) - set(before_orphaned)),
+    )
+
+
+def _require_no_new_section_coverage_gaps(
+    before_html: str | None, after_html: str
+) -> None:
+    """Refuse a write that newly leaves a heading and its declaration unpaired.
+
+    A heading with no declaration has no todo item to tick
+    (``section-without-todo``); a declaration naming no heading points at a
+    section the reader cannot open (``todo-without-section``). Only the ids the
+    write added to either set are named, so a plan that already carried a gap is
+    not refused over it.
+    """
+    undeclared, orphaned = new_section_coverage_gaps(before_html, after_html)
+    if undeclared:
+        raise OpError(
+            f"authored section heading {undeclared[0]!r} carries no "
+            "section_declarations entry (section-without-todo); every authored "
+            "section needs a declaration, so tick it in the same write that adds it"
+        )
+    if orphaned:
+        raise OpError(
+            f"section_declarations names {orphaned[0]!r} but the plan carries no "
+            "authored section heading with that id (todo-without-section); remove "
+            "the stale declaration or restore the heading"
+        )
+
+
+def _require_heading_for_section_records(
+    html_text: str, sections: Any, *, before_text: str | None = None
+) -> None:
+    """Refuse a typed record whose id has no authored h2 to attach to, and — when
+    a prior document is given — a heading/declaration gap the write introduced.
 
     A record rides with a ``section`` heading: the write regenerates the record
     span beside it and leaves the heading's text and the prose around it
     byte-identical, so an id with no heading has nothing to attach to. The
     refusal names the id, because the writer's next move — authoring the
     heading and prose — is a different call from the one it attempted.
+
+    ``before_text`` is the document as it stood when the write started: the
+    current file on the text path, the stored plan the state path read. The
+    coverage half compares the gaps of the HTML the write produced against that
+    document's, so a plan already carrying a gap stays writable while a write
+    that adds one is refused. Pass ``None`` to run only the record half.
     """
     from reckon import _plan_html
 
-    if not isinstance(sections, list):
-        return
-    heading_ids = {
-        heading.own_id
-        for heading in _plan_html.plan_headings(html_text)
-        if heading.level == 2 and heading.own_id is not None
-    }
-    missing = sorted(
-        str(record.get("id"))
-        for record in sections
-        if isinstance(record, dict) and str(record.get("id")) not in heading_ids
-    )
-    if missing:
-        raise OpError(
-            _section_contract_refusal(
-                f"no authored h2 heading with id {missing[0]!r} to attach a section "
-                "record to (a record rides with an existing section heading; supply "
-                "'title' and 'body' in the same append to write the heading and "
-                "prose as well)"
-            )
+    if isinstance(sections, list):
+        heading_ids = {
+            heading.own_id
+            for heading in _plan_html.plan_headings(html_text)
+            if heading.level == 2 and heading.own_id is not None
+        }
+        missing = sorted(
+            str(record.get("id"))
+            for record in sections
+            if isinstance(record, dict) and str(record.get("id")) not in heading_ids
         )
+        if missing:
+            raise OpError(
+                _section_contract_refusal(
+                    f"no authored h2 heading with id {missing[0]!r} to attach a "
+                    "section record to (a record rides with an existing section "
+                    "heading; supply 'title' and 'body' in the same append to write "
+                    "the heading and prose as well)"
+                )
+            )
+
+    if before_text is not None:
+        _require_no_new_section_coverage_gaps(before_text, html_text)
 
 
 def _require_new_section_contracts(before_html: str, after_html: str) -> None:
@@ -1906,6 +2010,18 @@ def _replace_plan_text(
         stamped_state["modified"] = date.today().isoformat()
         stamped_state["version"] = current_version + 1
         rendered = _plan_html.write_state(replaced, stamped_state)
+        if str(current_state.get("type", "plan") or "plan") == "plan":
+            # A text replacement never enters _write_state_locked, so the same
+            # heading/declaration coverage guard runs here, against the rendered
+            # document and the file as it stood when the write began. The text
+            # path's callers catch ValueError; the guard raises OpError for the
+            # state path.
+            try:
+                _require_heading_for_section_records(
+                    rendered, current_state.get("sections"), before_text=text
+                )
+            except OpError as exc:
+                raise ValueError(str(exc)) from exc
         write_atomically(html_file, lambda handle: handle.write(rendered))
         return current_version + 1, html_file
 
@@ -3303,34 +3419,98 @@ def _status_before_the_patch(state: dict[str, Any]) -> str:
     return str(stored.get("status") or "").strip().lower()
 
 
-def _require_every_section_ticked(state: dict[str, Any]) -> None:
+def _require_every_section_ticked(
+    state: dict[str, Any], html_text: str | None = None
+) -> None:
     """Refuse a landing while any section is still declared open.
 
     A plan reaches ``shipped`` or ``done`` only when every section's
     declaration is ``done``. An ``implementable`` or ``deferred`` section leaves
     the plan open, so the refusal names the sections still open, in the order
     their declarations were written.
+
+    An authored heading with no declaration is counted as open too, beside
+    those: the declaration map alone cannot see it, and a heading nothing
+    declares has no item to tick, so reading the map alone lets a plan land with
+    a section nobody ever answered for. The headings come from the plan's HTML,
+    which the write paths hold; without it the check stays the declaration-map
+    one it was.
     """
     from reckon import _plan_html
 
-    open_ids = _plan_html.open_sections(state)
-    if not open_ids:
+    open_ids = list(_plan_html.open_sections(state))
+    undeclared = _undeclared_headings(state, html_text)
+    if not open_ids and not undeclared:
         return
-    named = ", ".join(open_ids)
+    reasons = []
+    if open_ids:
+        reasons.append(f"{len(open_ids)} section(s) still open ({', '.join(open_ids)})")
+    if undeclared:
+        reasons.append(
+            "authored heading(s) with no section_declarations entry "
+            f"({', '.join(undeclared)}) count as open"
+        )
     raise OpError(
-        f"terminal status refused: {len(open_ids)} section(s) still open "
-        f"({named}) — tick each open section's declaration to 'done' before "
-        "the plan can land"
+        "terminal status refused: "
+        + "; ".join(reasons)
+        + " — every section needs a declaration ticked to 'done' before the "
+        "plan can land"
     )
 
 
-def validate_landing_patch(state: dict[str, Any], patch: dict[str, Any]) -> None:
+def _plan_html_text(state: dict[str, Any]) -> str | None:
+    """The plan's own HTML as it stands on disk, or None if it is not one.
+
+    A caller holding the document passes it, which is the accurate reading on
+    every write path. One that holds only the state dict — the op batch before
+    the state is written back — reads the file the ops were applied to, whose
+    headings are the headings the write produces: an inserted section carries
+    its declaration in the same op.
+    """
+    if str(state.get("type", "plan") or "plan") != "plan":
+        return None
+    project = str(state.get("project") or "")
+    slug = str(state.get("slug") or "")
+    if not project or not slug:
+        return None
+    try:
+        html_file = _resolve_html_file(project, slug)
+        if html_file is None or not html_file.is_file():
+            return None
+        return html_file.read_text(encoding="utf-8")
+    except OSError:
+        return None
+
+
+def _undeclared_headings(state: dict[str, Any], html_text: str | None) -> list[str]:
+    """Authored section headings of the plan that carry no declaration."""
+    from reckon import _plan_html
+
+    if html_text is None:
+        html_text = _plan_html_text(state)
+    if not html_text:
+        return []
+    declared = {str(key) for key in (state.get("section_declarations") or {})}
+    return sorted(
+        str(identity)
+        for identity, _ in _plan_html.authored_section_headings(html_text)
+        if str(identity) not in declared
+    )
+
+
+def validate_landing_patch(
+    state: dict[str, Any], patch: dict[str, Any], html_text: str | None = None
+) -> None:
     """Refuse a merge patch that lands a plan without naming a continuation.
 
     Deliberately keyed to the *write* rather than to the resulting state. A
     state-level invariant would retroactively lock every plan already recorded
     as shipped without a followup — measured at 155 of 202 across the mounted
     projects — so history stays editable and only a new landing owes an answer.
+
+    ``html_text`` is the plan's HTML as it stands when the patch is applied, so
+    the section check can see an authored heading nothing declares; a caller
+    without the document still gets the declaration-map check.
     """
     if str(state.get("type", "plan") or "plan") != "plan":
         return
@@ -3339,7 +3519,7 @@ def validate_landing_patch(state: dict[str, Any], patch: dict[str, Any]) -> None
     if requested_status in _LANDED_STATUSES and (
         _status_before_the_patch(state) not in TERMINAL_STATUSES
     ):
-        _require_every_section_ticked(state)
+        _require_every_section_ticked(state, html_text)
     if requested_status in TERMINAL_STATUSES:
         _require_transition_verdict(state, "plan-terminal")
         project = str(state.get("project") or "")
@@ -3423,13 +3603,18 @@ def _validate_continuation(working: dict, ops: list[dict]) -> None:
     raise OpError(CONTINUATION_REQUIRED)
 
 
-def apply_ops(working: dict, ops: list[dict], is_index: bool) -> list[str]:
+def apply_ops(
+    working: dict, ops: list[dict], is_index: bool, html_text: str | None = None
+) -> list[str]:
     """Apply ``ops`` IN ORDER to the working DICT in place.
 
     ``working`` is the read_state dict (plan) or the index ``data`` sub-object.
     Returns accumulated non-fatal warnings (e.g. double-active-sprint).
     Raises :class:`OpError` on any structurally invalid op — the caller then
     rejects WITHOUT writing. Pure: never touches disk or version fields.
+
+    ``html_text`` is the plan's HTML as it stands, read only by the terminal
+    check so the section check can see an authored heading nothing declares.
     """
     if not isinstance(ops, list):
         raise OpError("ops must be a list")
@@ -3457,7 +3642,7 @@ def apply_ops(working: dict, ops: list[dict], is_index: bool) -> list[str]:
         # An already-terminal plan is not re-judged: the guard keys on the
         # transition into a terminal status, not on a terminal status itself.
         if landing and previous_status not in TERMINAL_STATUSES:
-            _require_every_section_ticked(working)
+            _require_every_section_ticked(working, html_text)
         if any(
             op.get("op") == "set"
             and op.get("path") == "status"

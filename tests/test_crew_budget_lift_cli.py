@@ -280,3 +280,114 @@ def test_budget_lifts_lists_active_and_recent_newest_first(fleet):
 
     all_rows = json.loads(_invoke("budget-lifts").output)
     assert all_rows["count"] >= 2
+
+
+def _config() -> dict:
+    """A minimal resolved-flight backend map for the group the host layer declares."""
+    return {"budget": {}, "backends": {BACKEND: {"budget_group": GROUP}}}
+
+
+def test_grant_from_the_future_is_recorded_inert_until_then(fleet):
+    starts = datetime.now(UTC) + timedelta(days=1)
+    result = _invoke(
+        "budget-lift",
+        "--group", GROUP,
+        "--multiple", "1.8",
+        "--from", starts.isoformat(),
+        "--reason", "start tomorrow",
+    )
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    landed = payload["lift"]
+    assert datetime.fromisoformat(landed["starts_at"]) == starts
+
+    config = _config()
+    readings = bl.published_readings(config, group=GROUP)
+    before = bl.effective_budget(
+        config, group=GROUP, readings=readings, now=datetime.now(UTC)
+    )
+    assert "lift_id" not in before, "a lift from the future is inert before it starts"
+    after = bl.effective_budget(
+        config, group=GROUP, readings=readings, now=starts + timedelta(minutes=1)
+    )
+    assert after["lift_id"] == payload["lift_id"]
+    assert after["pace_multiple"] == pytest.approx(1.8)
+    assert after["bookend_reserve_pct"] == 0.0
+
+
+def test_until_an_iso_time_pins_the_lift_end(fleet):
+    end = datetime.now(UTC) + timedelta(hours=3)
+    result = _invoke(
+        "budget-lift",
+        "--group", GROUP,
+        "--multiple", "1.8",
+        "--until", end.isoformat(),
+        "--reason", "end at three",
+    )
+    assert result.exit_code == 0, result.output
+    ends = json.loads(result.output)["lift"]["ends"]
+    assert ends["kind"] == "at"
+    assert datetime.fromisoformat(ends["at"]) == end
+
+
+def test_until_a_duration_pins_the_lift_end(fleet):
+    before = datetime.now(UTC)
+    result = _invoke(
+        "budget-lift",
+        "--group", GROUP,
+        "--multiple", "1.8",
+        "--until", "12h",
+        "--reason", "twelve hours from grant",
+    )
+    assert result.exit_code == 0, result.output
+    ends = json.loads(result.output)["lift"]["ends"]
+    assert ends["kind"] == "at"
+    landed = datetime.fromisoformat(ends["at"])
+    assert before + timedelta(hours=12) <= landed <= datetime.now(UTC) + timedelta(
+        hours=12
+    )
+
+
+def test_clock_five_hour_anchors_the_lift_to_that_window(fleet):
+    result = _invoke(
+        "budget-lift",
+        "--group", GROUP,
+        "--multiple", "1.8",
+        "--clock", "five_hour",
+        "--reason", "ride the five-hour window",
+    )
+    assert result.exit_code == 0, result.output
+    ends = json.loads(result.output)["lift"]["ends"]
+    assert ends["kind"] == "reset"
+    assert ends["clock"] == "five_hour"
+    assert ends["resets_at"] == fleet.five_reset.isoformat()
+    assert ends["utilisation"] == pytest.approx(0.05)
+
+
+def test_session_grant_is_scoped_to_that_session(fleet):
+    session = "sess-abc123"
+    result = _invoke(
+        "budget-lift",
+        "--group", GROUP,
+        "--multiple", "1.8",
+        "--session", session,
+        "--reason", "only this session may spend",
+    )
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["scope"] == f"session:{session}"
+    assert payload["lift"]["scope"] == f"session:{session}"
+
+
+def test_global_and_session_together_are_refused(fleet):
+    result = _invoke(
+        "budget-lift",
+        "--group", GROUP,
+        "--multiple", "1.8",
+        "--global",
+        "--session", "sess-abc123",
+        "--reason", "both scopes at once",
+    )
+    assert result.exit_code != 0
+    assert "mutually exclusive" in result.output
+    assert not (fleet.home / bl.LIFTS_LEAF).exists()

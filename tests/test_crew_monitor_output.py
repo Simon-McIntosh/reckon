@@ -26,6 +26,7 @@ def _append_line(path: Path, line: str) -> None:
 def test_three_followers_receive_each_subsequent_transition_once(
     tmp_path, monkeypatch
 ) -> None:
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
     stream_path = tmp_path / "project.events"
     stream_path.touch()
     active = True
@@ -122,21 +123,13 @@ def test_three_followers_receive_each_subsequent_transition_once(
         assert not reader.is_alive()
 
     rendered = [recovery.format_watch_transition(event) for event in transitions]
-    baselines = [
-        recovery.format_watch_transition(
-            {
-                "node": f"baseline-{number}",
-                "to_state": "working",
-                "observed_at": "2026-08-26T10:00:00Z",
-            }
-        )
-        for number in (1, 2, 3)
-    ]
     assert failures == []
+    # Working rows are observer context; the pane reports the block and its
+    # completion to every follower attached when each action happened.
     assert outputs == [
-        [baselines[0], *rendered],
-        [baselines[1], *rendered[1:]],
-        [baselines[2], rendered[2]],
+        [rendered[1], rendered[2]],
+        [rendered[1], rendered[2]],
+        [rendered[2]],
     ]
 
 

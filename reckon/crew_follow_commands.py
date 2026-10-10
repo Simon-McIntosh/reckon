@@ -2244,10 +2244,15 @@ def crew_follow(
     produces lines and does not exit, so a mechanism that reports only on exit
     delivers nothing at all.
 
-    Every transition in the fleet is delivered, starts and recoveries
-    included; there is deliberately no option to narrow to the action states,
-    because a filter that hides a run's recovery hides the news the reader is
-    waiting for.
+    Every change that asks the coordinator for action, or that reverses an
+    action row the pane was already shown, is delivered; a row that asks for
+    nothing and reverses nothing is held back. So a start, a bare
+    re-announcement of a state the pane already shows, and the terminal echo of
+    the coordinator's own command do not reach the pane, while a run that
+    leaves a state the pane was shown -- a recovery, a repair, a return to
+    working -- does. The hold hides no recovery, which is why no option exists
+    to widen or narrow it: a reader who wants every row reads the producer's
+    log, which keeps the complete stream.
 
     ``observe_sessions`` names other sessions delivered for oversight beside
     the owning one. Only the owning session is registered — an observed

@@ -12,14 +12,13 @@ published schemas still declare the arguments as lists.
 from __future__ import annotations
 
 import asyncio
-import importlib
 import json
 
 import pytest
 
-import reckon._store as store_module
 import reckon.mcp as mcp_module
 import reckon.serve as serve_module
+from tests.mcp_family_reload import reload_mcp_family
 
 # ── Fixtures ────────────────────────────────────────────────────────────────
 
@@ -88,8 +87,7 @@ def setup(tmp_path, monkeypatch):
 
     serve_module._MOUNTS_FILE = mounts_file
     serve_module._STATE_ROOT = state_root
-    importlib.reload(store_module)
-    importlib.reload(mcp_module)
+    reload_mcp_family()
     return docs_dir, project
 
 

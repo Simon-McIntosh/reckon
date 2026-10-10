@@ -26,7 +26,7 @@ from pathlib import Path
 import pytest
 
 from reckon import __version__
-from reckon.crew import recovery, runs
+from reckon.crew import recovery, recovery_watch, runs
 
 
 @pytest.fixture()
@@ -194,6 +194,7 @@ def test_replacement_goes_through_the_existing_unwatch_path(
         calls.append(project)
         return real_unwatch(project)
 
+    monkeypatch.setattr(recovery_watch, "unwatch", spy)
     monkeypatch.setattr(recovery, "unwatch", spy)
 
     result = runs.replace_stale_watch_seat("proj")

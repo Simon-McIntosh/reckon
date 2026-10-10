@@ -11,6 +11,7 @@ from click.testing import CliRunner
 
 from reckon import _plan_html
 from reckon.cli import main
+from tests.mcp_family_reload import reload_mcp_family
 
 
 def _write_html_resource(
@@ -186,11 +187,9 @@ def test_audit_rename_invocation_is_executable(
     monkeypatch.setenv("RECKON_MOUNTS_PATH", str(mounts_file))
 
     importlib.invalidate_caches()
-    import reckon._store as store_module
     import reckon.mcp as mcp_module
 
-    importlib.reload(store_module)
-    importlib.reload(mcp_module)
+    reload_mcp_family()
 
     report = mcp_module._audit(project)
     assert "findings" in report, report

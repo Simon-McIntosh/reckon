@@ -29,6 +29,18 @@ CREW = REPO_ROOT / "reckon" / "crew"
 # pid primitive and the accessor, so it is not in this list.
 LIVENESS_MODULES = (
     "recovery.py",
+    "recovery_classification.py",
+    "recovery_liveness.py",
+    "recovery_memo.py",
+    "recovery_repair_dispatch.py",
+    "recovery_review_acceptance.py",
+    "recovery_review_delivery.py",
+    "recovery_review_dispatch.py",
+    "recovery_review_subject.py",
+    "recovery_stream.py",
+    "recovery_vocabulary.py",
+    "recovery_wait.py",
+    "recovery_watch.py",
     "dispatch.py",
     "resumption.py",
     "promotion.py",

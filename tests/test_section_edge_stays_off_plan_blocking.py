@@ -2,15 +2,14 @@
 
 from __future__ import annotations
 
-import importlib
 import json
 from html import escape
 from pathlib import Path
 
 import pytest
 
-import reckon._store as store_module
 import reckon.mcp as mcp_module
+from tests.mcp_family_reload import reload_mcp_family
 
 
 @pytest.fixture()
@@ -31,8 +30,7 @@ def project_docs(tmp_path, monkeypatch):
 
     serve_module._MOUNTS_FILE = mounts_file
     serve_module._STATE_ROOT = state_root
-    importlib.reload(store_module)
-    importlib.reload(mcp_module)
+    reload_mcp_family()
     return docs_dir, project
 
 

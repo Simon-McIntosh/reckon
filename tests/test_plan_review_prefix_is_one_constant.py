@@ -15,7 +15,7 @@ def test_plan_review_prefix_has_one_definition():
         for line in path.read_text().splitlines()
         if "plan-review-of-" in line
     ]
-    assert matches == [("recovery.py", 'PLAN_REVIEW_NODE_PREFIX = "plan-review-of-"')]
+    assert matches == [("recovery_vocabulary.py", 'PLAN_REVIEW_NODE_PREFIX = "plan-review-of-"')]
 
 
 @pytest.mark.parametrize("promoted", [False, True])

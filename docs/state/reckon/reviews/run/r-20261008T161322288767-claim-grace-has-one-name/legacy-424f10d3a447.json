@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite (base-gate.log, 614b2efe, 49 passed EXIT=0) and after_suite (head-gate.log, 8f80cfff1, 50 passed EXIT=0) via reckon.crew.review.added_failures_from_gate_logs; neither log reports a FAILED or ERROR line.",
+  "base_log_revision": "614b2efedd81a05ad56b33a4dedfd0c2e951430e",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch_claims.py:1533",
+    "reckon/crew/dispatch_claims.py:1622"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-08T16:13:53Z",
+  "findings": [
+    {
+      "file": "tests/test_claim_grace_follows_live_launches.py",
+      "line": "179",
+      "severity": "follow-on",
+      "text": "follow-on: the new test does not require the run-store index branch it claims to exercise, because it builds the run directories under the directory recent_claim_grace_seconds scans as a fallback, so breaking only the indexed DB read leaves the test green (EXIT=0) and only a mutation making _recent_run_names return no run names at all reddens it (EXIT=1, assert 5.0 == 30.0); place the receipts where the directory scan cannot name them so the run_store rows are the sole source of the names."
+    }
+  ],
+  "head_log_revision": "8f80cfff15e0cbc12d7068f631a0c2021f7b5e5b",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "8f80cfff1 against base 614b2efe removes the RACING_WINNER_WAIT_SECONDS assignment line from dispatch_claims.py and its re-export from dispatch.py, and adds 41 lines to tests/test_claim_grace_follows_lowest... nothing else moves.",
+    "done_when": "grep for RACING_WINNER_WAIT_SECONDS over head's reckon/ and tests/ returns nothing, so no module exports the floor under a grace-shaped name, and the new test reaches recent_claim_grace_seconds() with root=None; the second clause, that the test fails when the indexed branch returns no run names, holds only for a whole-function failure and not for the indexed DB read.",
+    "goal": "the goal is to delete RACING_WINNER_WAIT_SECONDS, which had come to equal CLAIM_GRACE_FLOOR_SECONDS while still being re-exported through reckon.crew.dispatch, so no exported name would read as the grace but hold the floor, and to add a test that derives the grace through the run-store index branch; head removes the alias and its re-export, and adds a root=None derivation test.",
+    "manifest": "read; status complete, commit 8f80cfff15e0cbc12d7068f631a0c2021f7b5e5b, gate base 49 passed / head 50 passed with 0 failures added, a negative_control_log path, measurement_module and measurement_cwd for the base scratch arm, and no plan edit.",
+    "write_paths": "8f80cfff1 touches reckon/crew/dispatch_claims.py, reckon/crew/dispatch.py, tests/test_claim_grace_follows_live_launches.py and docs/evidence/fragments/one-typesafe-model-picker/claim-grace-has-one-name.html, all inside the declared write paths; no plan meta line and no figure path moves."
+  },
+  "justifications": {
+    "durability": "the alias deletion is permanent, the name is gone and its sole re-export line removed, and the added test is a permanent pytest case through the root=None production path; the gap is precision rather than durability, because the test keeps passing whether or not the indexed read works.",
+    "evidence": "the reviewed run's own arms show base 49 passed EXIT=0 (base-gate.log, 614b2efe) and head 50 passed EXIT=0 (head-gate.log, 8f80cfff1), so head adds one passing case and no failure; I reproduced the head arm independently in a scratch tree from git archive of 8f80cfff1 (50 passed EXIT=0) and reproduced the declared negative control reddening the new test (1 failed EXIT=1); but the test claims more than it shows, since a narrower mutation of just the indexed DB read leaves it green.",
+    "fit": "the alias line and its re-export are removed in place with no compatibility shim, the new test reuses the file's fixture style and the production claim_grace_seconds as its oracle, no plan or ticket identifier reaches the code or the test name, the commit carries a conventional subject with a body stating the mechanism, and RACING_WINNER_POLL_SECONDS, which names a poll not the grace, is correctly retained.",
+    "goal_fidelity": "head removes RACING_WINNER_WAIT_SECONDS entirely (grep finds no reference in head's reckon/ or tests/ and dispatch.py no longer re-exports it), so no name that reads as the grace holds the floor, while the operative value is still derived by recent_claim_grace_seconds at dispatch_claims.py:1533 and :1622; the clause to add a test through the indexed branch is only partly met, so this is short of full marks rather than a divergence.",
+    "reuse": "no mechanism is re-implemented; the test builds its run store with the existing reckon.run_store.RunStore and asserts against the existing claim_grace_seconds, and the alias is deleted rather than replaced by a second floor constant, leaving one name for the floor and one derivation for the grace.",
+    "scope_discipline": "8f80cfff1 changes exactly dispatch_claims.py, dispatch.py, the claim-grace test module and a one-line evidence fragment, all inside the node's declared write paths; no plan meta line changes and no figure directory is written."
+  },
+  "node": "review-of-claim-grace-has-one-name",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to delete RACING_WINNER_WAIT_SECONDS, which had come to equal CLAIM_GRACE_FLOOR_SECONDS while still being re-exported through reckon.crew.dispatch, so no exported name would read as the grace but hold the floor, and to add a test that derives the grace through the run-store index branch; head removes the alias and its re-export, and adds a root=None derivation test.\nVERDICT done_when: grep for RACING_WINNER_WAIT_SECONDS over head's reckon/ and tests/ returns nothing, so no module exports the floor under a grace-shaped name, and the new test reaches recent_claim_grace_seconds() with root=None; the second clause, that the test fails when the indexed branch returns no run names, holds only for a whole-function failure and not for the indexed DB read.\nVERDICT write_paths: 8f80cfff1 touches reckon/crew/dispatch_claims.py, reckon/crew/dispatch.py, tests/test_claim_grace_follows_live_launches.py and docs/evidence/fragments/one-typesafe-model-picker/claim-grace-has-one-name.html, all inside the declared write paths; no plan meta line and no figure path moves.\nVERDICT manifest: read; status complete, commit 8f80cfff15e0cbc12d7068f631a0c2021f7b5e5b, gate base 49 passed / head 50 passed with 0 failures added, a negative_control_log path, measurement_module and measurement_cwd for the base scratch arm, and no plan edit.\nVERDICT diff: 8f80cfff1 against base 614b2efe removes the RACING_WINNER_WAIT_SECONDS assignment line from dispatch_claims.py and its re-export from dispatch.py, and adds 41 lines to tests/test_claim_grace_follows_live_launches.py (plus a one-line evidence fragment); nothing else moves.\nCALL_SITES: reckon/crew/dispatch_claims.py:1533, reckon/crew/dispatch_claims.py:1622\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: head removes RACING_WINNER_WAIT_SECONDS entirely (grep finds no reference in head's reckon/ or tests/ and dispatch.py no longer re-exports it), so no name that reads as the grace holds the floor, while the operative value is still derived by recent_claim_grace_seconds at dispatch_claims.py:1533 and :1622; the clause to add a test through the indexed branch is only partly met, so this is short of full marks rather than a divergence.\nSCORE evidence: 15\nJUSTIFICATION evidence: the reviewed run's own arms show base 49 passed EXIT=0 (base-gate.log, 614b2efe) and head 50 passed EXIT=0 (head-gate.log, 8f80cfff1), so head adds one passing case and no failure; I reproduced the head arm independently in a scratch tree from git archive of 8f80cfff1 (50 passed EXIT=0) and reproduced the declared negative control reddening the new test (1 failed EXIT=1); but the test claims more than it shows, since a narrower mutation of just the indexed DB read leaves it green.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: 8f80cfff1 changes exactly dispatch_claims.py, dispatch.py, the claim-grace test module and a one-line evidence fragment, all inside the node's declared write paths; no plan meta line changes and no figure directory is written.\nSCORE durability: 18\nJUSTIFICATION durability: the alias deletion is permanent, the name is gone and its sole re-export line removed, and the added test is a permanent pytest case through the root=None production path; the gap is precision rather than durability, because the test keeps passing whether or not the indexed read works.\nSCORE fit: 19\nJUSTIFICATION fit: the alias line and its re-export are removed in place with no compatibility shim, the new test reuses the file's fixture style and the production claim_grace_seconds as its oracle, no plan or ticket identifier reaches the code or the test name, the commit carries a conventional subject with a body stating the mechanism, and RACING_WINNER_POLL_SECONDS, which names a poll not the grace, is correctly retained.\nSCORE reuse: 19\nJUSTIFICATION reuse: no mechanism is re-implemented; the test builds its run store with the existing reckon.run_store.RunStore and asserts against the existing claim_grace_seconds, and the alias is deleted rather than replaced by a second floor constant, leaving one name for the floor and one derivation for the grace.\nFINDING tests/test_claim_grace_follows_live_launches.py:179 follow-on: the new test does not require the run-store index branch it claims to exercise, because it builds the run directories under the directory recent_claim_grace_seconds scans as a fallback, so breaking only the indexed DB read leaves the test green (EXIT=0) and only a mutation making _recent_run_names return no run names at all reddens it (EXIT=1, assert 5.0 == 30.0); place the receipts where the directory scan cannot name them so the run_store rows are the sole source of the names.",
+  "review_run_id": "legacy-424f10d3a447",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "614b2efedd81a05ad56b33a4dedfd0c2e951430e",
+  "reviewed_head_sha": "8f80cfff15e0cbc12d7068f631a0c2021f7b5e5b",
+  "reviewed_run_id": "r-20261008T161322288767-claim-grace-has-one-name",
+  "reviewer_run_id": "r-20261008T162751383842-review-of-claim-grace-has-one-name",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-08T16:41:57.928405+00:00",
+  "total": 108
+}

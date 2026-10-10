@@ -193,7 +193,7 @@ def test_server_refuses_a_lazy_import_from_new_source(tmp_path: Path) -> None:
 
             # recovery is already in memory. The new roadmap imports a name
             # that appears only in the replacement source on disk.
-            recovery = package / "crew" / "recovery.py"
+            recovery = package / "crew" / "recovery_liveness.py"
             source = recovery.read_text()
             needle = "    return alive, proven\n\n\ndef live_worker_pid"
             assert source.count(needle) == 1
@@ -204,14 +204,14 @@ def test_server_refuses_a_lazy_import_from_new_source(tmp_path: Path) -> None:
                 + "\nstale_code_probe = True\n"
             )
             with (package / "roadmap.py").open("a") as source:
-                source.write("\nfrom reckon.crew.recovery import stale_code_probe\n")
+                source.write("\nfrom reckon.crew.recovery_liveness import stale_code_probe\n")
 
             status, body, headers = _request_details(port, "/_discover/sample")
             payload = json.loads(body)
             assert status == 503, (status, payload)
             assert payload["error"] == "stale-code"
             assert payload["running_code_stamp"] != payload["disk_code_stamp"]
-            assert "crew/recovery.py" in payload["changed_files"]
+            assert "crew/recovery_liveness.py" in payload["changed_files"]
             assert headers["Retry-After"] == "5"
         finally:
             process.terminate()

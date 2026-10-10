@@ -55,6 +55,8 @@ PACE_FIELDS = {
     "node",
     "score",
     "recorded_at",
+    "session",
+    "lift_id",
     "policy",
     "hold",
     "group",

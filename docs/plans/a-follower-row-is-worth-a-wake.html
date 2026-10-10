@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-follower-row-is-worth-a-wake">
   <meta name="plan-title" content="A Follower Row Is Worth A Wake">
   <meta name="plan-summary" content="Every ticker row wakes the coordinator; deliver a settled change only when it asks for action or is news nobody caused, never starts, echoes or replays.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="6.5">
   <meta name="plan-capability-version" content="1.0">
@@ -21,14 +21,14 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="a-follower-outlives-its-monitor">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;}">
   <title>A Follower Row Is Worth A Wake | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-impl" content="0.75">
-<meta name="plan-version" content="44">
-<meta name="plan-modified" content="2026-10-08">
-<meta name="plan-commits" content="ed3d6ffc">
+<meta name="plan-impl" content="1.0">
+<meta name="plan-version" content="49">
+<meta name="plan-modified" content="2026-10-09">
+<meta name="plan-commits" content="ed3d6ffc,5536407a">
 </head>
 <body>
   <main class="plan-doc">
@@ -85,7 +85,7 @@
       Starts, terminal echoes and attach re-announcements are observer context, and the gap replay
       (<code>_follow_gap_rows</code>) still let 446 bare rows through. This plan changes one decision in the
       existing policy: on the coordinator's pane, observer context is held back. It adds no second policy.</p>
-    <p><code>crew_follow</code>'s docstring in <code>reckon/cli.py</code> says every transition is
+    <p><code>crew_follow</code>'s docstring in <code>reckon/crew_follow_commands.py</code> says every transition is
       delivered and that no option narrows to action states, because hiding a recovery hides the news a
       reader is waiting for. This plan keeps that guarantee in a different form. Every change that asks for action or
       reverses an action row the reader was shown is delivered, and only rows that ask for nothing and
@@ -103,21 +103,12 @@
   <p class="landed-summary">RowPolicy holds observer-context rows back on the coordinator pane; coordinator, recovery and needs-action rows still print. Review 115; 55-module population green at the merged head. <a href="/reckon/evidence/archive/a-follower-row-is-worth-a-wake-landed.html#s2-row-policy-holds-observer-context">full record</a></p>
 </section>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-08</span>
     <h2 id="s3">§3 — The follower delivers through the policy</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> §2's merge (<code>79d3a5458</code>) already wires the follower through the coordinator pane:
-      <code>follower_row_path</code> in <code>reckon/crew_follow_commands.py</code> builds a <code>PaneRowPath</code> with observer
-      context held, and the follower's wait pass calls <code>path.flush(now=clock())</code>, so a held row whose settle window elapses is
-      released without a later transition. What remains is the reader's contract and its proof. The docstring paragraph of
-      <code>crew_follow</code> that says every transition is delivered is rewritten to state the guarantee §1 gives, and to name the
-      producer's log as the full stream. No option is added to <code>crew follow</code>: a human who wants every row reads the producer's
-      log, which already prints each one.</p>
-    <p><strong>Done when</strong> <code>tests/test_follow_settled_rows.py</code> runs the real follower over a fixture stream for one
-      session holding two runs. The first goes dispatched, working, complete and recorded. The second goes working, exited-unfinished and
-      blocked two seconds apart. The pane receives exactly two rows, the complete and the blocked, and a completion with no later transition
-      is delivered within the settle window plus one poll interval. A negative control is executed and logged: with the follower building
-      its row path with observer context shown, the first assertion fails. The write paths are
-      <code>reckon/crew_follow_commands.py</code> and <code>tests/test_follow_settled_rows.py</code>.</p>
+<section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">The crew follow docstring states the delivered-row contract and an end-to-end test proves only the complete and the blocked reach the pane. Review 118 after repair. <a href="/reckon/evidence/archive/a-follower-row-is-worth-a-wake-landed.html#s3-follower-delivers-settled-rows">full record</a></p>
+</section>
 
     <section class="section-landed">
   <header><span class="badge badge-shipped">&#10003; landed 2026-10-08</span>
@@ -147,10 +138,11 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-afrw-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-08" data-recommends-skill="/reckon-build a-follower-row-is-worth-a-wake" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-afrw-001" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-08" data-recommends-skill="/reckon-build a-follower-row-is-worth-a-wake" data-resolved-at="2026-10-08T22:50:05+00:00" data-resolved-by="s25-quiet-mcp">
     <h4 class="r-fu-title">Build the row policy, then deliver and attach through it</h4>
     <div class="r-fu-body"><p>Plan authored from the 2026-10-08 measurement of delivered rows. §2 lands first; §3 and §4 both edit the follower in <code>reckon/cli.py</code> and run in sequence after it; §5 measures the merged result.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-follower-row-is-worth-a-wake</pre>
+    <p class="r-fu-outcome">done — no followup. Plan shipped: §2 holds observer context back on the coordinator pane (79d3a5458), §3 states and proves the delivered-row contract, §4 found the re-announcement path, §5 measured 54% fewer rows over the week with no action state held back. This followup's mention of reckon/cli.py predates the cli split; the follower lives in reckon/crew_follow_commands.py.</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -186,6 +178,18 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261008T143744525473-replay-the-week-through-the-policy" data-who="reckon-build" data-when="2026-10-08T15:26:25.160Z">
     <div class="r-comment-body"><p>replayed every watch stream 2026-10-05..2026-10-08 (35 per-session panes) through the merged RowPolicy: 9038 rows today vs 4154 under the policy (-54.0%), zero settled action states held back, longest action-row delay 300 s (allowance 420 s), positive control within 0.3% after subtracting restored rows</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261008T173455654506-review-of-follower-delivers-settled-rows" data-who="reckon-build" data-when="2026-10-08T17:41:43.266Z">
+    <div class="r-comment-body"><p>review-of-follower-delivers-settled-rows: the §3 delivery record for run r-20261008T170021237082-follower-delivers-settled-rows is stored as a parsed review scoring all six dimensions (goal_fidelity 19, evidence 14, scope_discipline 20, durability 19, fit 14, reuse 16; total 102) over reviewed_base_sha 2e8c6fa7483d448296df74016b6d02f6b5e27cb7 and reviewed_head_sha 778219ba2ec1588d228c687b24084d5f64d666d5, carrying added_failure_count 0 and added_failure_ids []; the head gate (3 passed EXIT=0) and the declared observer-shown mutation (2 failed EXIT=1) were both reproduced, and two follow-ons are recorded — a plan-document name and section label in the new test's module docstring, and a base arm whose named log is a head run mislabelled as the base revision.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261008T223703597260-review-of-follower-delivers-settled-rows" data-who="reckon-build" data-when="2026-10-08T22:49:07.541Z">
+    <div class="r-comment-body"><p>the independent review of run r-20261008T170021237082-follower-delivers-settled-rows covers only its gained delta 778219ba2..5536407a7 (tests/test_follow_settled_rows.py) and scores 118/120 - goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 20, reuse 20 - with the head gate (3 passed, EXIT=0) and the declared observer-shown mutation (2 failed, EXIT=1) reproduced in scratch trees; the delta is a clean docstring rewrite.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-s3-landed" data-who="reckon-build" data-when="2026-10-08T22:55:00Z">
+    <div class="r-comment-body"><p>gate passed (3 passed EXIT=0; importer suite 219 at base, 222 at head; 17 modules pass at the merged head; review 118/120); section 3 closed and with it the plan.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261008T170021237082-follower-delivers-settled-rows" data-who="reckon-build" data-when="2026-10-08T22:36:10.652Z">
+    <div class="r-comment-body"><p>follower-delivers-settled-rows: the crew_follow docstring states the delivered-row contract (a change that asks the coordinator for action and any reversal of an action row already shown print; a start, a bare re-announcement and a terminal echo are held) and names the producer&#x27;s log as the full stream. The test module docstring states the same contract in mechanism terms with no plan or section reference. tests/test_follow_settled_rows.py drives the real follower over a one-session two-run fixture and proves exactly two rows reach the pane (the complete and the blocked) with a completion released on its own within the settle window plus one poll interval (3 passed EXIT=0); the declared observer-shown mutation turns the two-row assertion red (2 failed EXIT=1).</p></div>
 </div>
 </section>
 </main>

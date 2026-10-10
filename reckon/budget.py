@@ -1583,6 +1583,7 @@ def preflight(
     records: Iterable[Mapping[str, Any]] | None = None,
     document: Mapping[str, Any] | None = None,
     document_path: str | Path | None = None,
+    session: str | None = None,
 ) -> dict[str, Any]:
     """Decide, per backend, whether a wave may open, and at what pace.
 
@@ -1744,6 +1745,7 @@ def preflight(
         ready=ready,
         records=_runway_records(project, records, root=root),
         now=moment,
+        session=session,
     )
     if window_sources:
         # Name the source only where a figure exists to name one for. A report
@@ -1994,14 +1996,21 @@ def _scale_for_banked_reset(
     one window — a group carries at most one banked reset.
 
     A group with no banked reset is returned byte for byte as it was derived:
-    ``reset_available`` is added only when a reset is counted, so the allowance
-    a group without one carries is unchanged and stays equal to the allowance a
-    replay recomputes from the same row.
+    ``reset_available`` and ``reset_factor`` are added only when a reset is
+    counted, so the allowance a group without one carries is unchanged and stays
+    equal to the allowance a replay recomputes from the same row. ``reset_factor``
+    is the exact figure the burn was divided by, recorded so a reader needing the
+    number rather than the flag reads it from one place.
     """
     credit = max(0.0, min(1.0, float(credit)))
     if credit > 0:
         allowance["reset_available"] = True
         factor = 1.0 + credit
+        # The factor is recorded beside the flag so the reader that needs the
+        # numeric scaling — the pace hold's release instant — reads it from here
+        # rather than keeping a second copy of the constant that could drift
+        # from the one the burn was actually divided by.
+        allowance["reset_factor"] = factor
         derived = allowance.get("derived")
         if isinstance(derived, (int, float)) and not isinstance(derived, bool):
             scaled = float(derived) * factor
@@ -2593,6 +2602,135 @@ def _group_bar(
     }
 
 
+def _lift_resolved_config(
+    config: Mapping[str, Any],
+    *,
+    group: str,
+    members: Iterable[str],
+    reading: window_reading.WindowReading,
+    records: Iterable[Mapping[str, Any]],
+    moment: datetime,
+    session: str | None,
+) -> Mapping[str, Any]:
+    """Substitute a group's budget block with the one a lift puts in force.
+
+    A lift has no single reader: it raises the pace multiple, releases all three
+    reserves, and carries either a drain-by line or an uncapped release. Rather
+    than teach each consumer of the budget block about lifts, the block is
+    resolved once here through :func:`reckon.crew.budget_lift.effective_budget`
+    and the substituted configuration is handed to every consumer, which is the
+    one seam placed before ``pace.policy``. A group no lift covers keeps the
+    configuration unchanged, so nothing downstream reads a substituted block
+    that says the same thing.
+    """
+    from reckon.crew import budget_lift
+
+    history = _lift_history(
+        records, members=set(members), reading=reading, moment=moment
+    )
+    block = budget_lift.effective_budget(
+        config, group=group, readings=history, now=moment, session=session
+    )
+    if block is config.get("budget"):
+        return config
+    return {**config, "budget": block}
+
+
+def _lift_history(
+    records: Iterable[Mapping[str, Any]],
+    *,
+    members: set[str],
+    reading: window_reading.WindowReading,
+    moment: datetime,
+) -> list[Mapping[str, Any]]:
+    """A group's window readings in observed order, for a lift's expiry read.
+
+    A reset-anchored lift ends when a clock's utilisation falls between two
+    observations, so the resolver needs the sequence and not only the newest
+    figure. The sequence is the pace-bearing records the group's members own,
+    read exactly as :mod:`reckon.crew.pace_replay` reads a row's clocks, with the
+    group's freshest reading appended so the group's position now is the last
+    one the lift is judged against. The rows are then ordered by observation, so
+    a fall between any two consecutive readings is visible to the resolver. An
+    empty sequence is an honest absence: a lift then holds on its own record and
+    clock alone, exactly as when no history was requested.
+    """
+    history: list[Mapping[str, Any]] = []
+    for record in records:
+        if not isinstance(record, Mapping):
+            continue
+        if _run_backend(record) not in members:
+            continue
+        entry = _record_lift_reading(record)
+        if entry is not None:
+            history.append(entry)
+    if reading.known:
+        current = _reading_lift_entry(reading)
+        if current is not None:
+            history.append(current)
+    history.sort(key=_lift_order)
+    return history
+
+
+def _record_lift_reading(record: Mapping[str, Any]) -> dict[str, Any] | None:
+    """One record's own clocks as a lift reading, or ``None``.
+
+    A pace-bearing run record carries the clocks it paced against, so the row
+    pace replay reads is the row read here: an observed clock contributes its
+    utilisation and reset, an unobserved one contributes nothing, and a record
+    carrying no observed clock yields no reading rather than a zero.
+    """
+    pace_row = record.get("pace")
+    if not isinstance(pace_row, Mapping):
+        return None
+    clocks = pace_row.get("clocks")
+    if not isinstance(clocks, Mapping):
+        return None
+    entry: dict[str, Any] = {"observed_at": pace_row.get("recorded_at")}
+    found = False
+    for period in (CLOCK_FIVE_HOUR, CLOCK_SEVEN_DAY):
+        clock = clocks.get(period)
+        if not isinstance(clock, Mapping) or clock.get("state") != OBSERVED:
+            continue
+        utilisation = clock.get("utilisation")
+        if isinstance(utilisation, bool) or not isinstance(utilisation, (int, float)):
+            continue
+        entry[period] = {
+            "utilisation": float(utilisation),
+            "resets_at": clock.get("resets_at"),
+        }
+        found = True
+    return entry if found else None
+
+
+def _reading_lift_entry(
+    reading: window_reading.WindowReading,
+) -> dict[str, Any] | None:
+    """The group's freshest window reading in the lift resolver's own shape."""
+    entry: dict[str, Any] = {
+        "observed_at": (
+            reading.observed_at.isoformat() if reading.observed_at else None
+        )
+    }
+    found = False
+    for period in (CLOCK_FIVE_HOUR, CLOCK_SEVEN_DAY):
+        figure = reading.figure(period)
+        if figure is None:
+            continue
+        entry[period] = {
+            "utilisation": float(figure.utilisation),
+            "resets_at": figure.resets_at,
+        }
+        found = True
+    return entry if found else None
+
+
+def _lift_order(entry: Mapping[str, Any]) -> datetime:
+    """An observation instant for ordering lift readings, undated first."""
+    moment = _parse_stamp(entry.get("observed_at"))
+    return moment if moment is not None else datetime.min.replace(tzinfo=UTC)
+
+
 def group_pace(
     config: Mapping[str, Any],
     *,
@@ -2600,6 +2738,7 @@ def group_pace(
     ready: Iterable[Mapping[str, Any]] = (),
     records: Iterable[Mapping[str, Any]] = (),
     now: datetime | None = None,
+    session: str | None = None,
 ) -> list[dict[str, Any]]:
     """Report the pace of every declared budget group, one entry each.
 
@@ -2617,9 +2756,19 @@ def group_pace(
     open-endedness. A node naming a group that is not declared is refused rather
     than dropped, because a ready node silently missing from the admitted set is
     exactly the failure a pre-flight exists to prevent.
+
+    Each group's budget block is resolved through
+    :func:`reckon.crew.budget_lift.effective_budget` before its allowance is
+    derived, so a lift in force raises the multiple the allowance is derived
+    against. ``session`` is the dispatching session, threaded to that resolver
+    so a session-scoped lift governs its own dispatch and no other. A group
+    under a lift carries the lift and how it withholds inside the allowance the
+    entry already reports, so a reader sees the lift without re-reading the
+    document and a group under no lift reports the allowance it always has.
     """
     moment = _now(now)
     readings = windows if isinstance(windows, Mapping) else {}
+    records = list(records)
     groups = budget_group.declared_groups(config)
     empty = window_reading.WindowReading()
 
@@ -2660,7 +2809,47 @@ def group_pace(
             period: _clock(reading, period)
             for period in (CLOCK_FIVE_HOUR, CLOCK_SEVEN_DAY)
         }
-        runway = _group_runway(group, members, clocks, records, config, moment=moment)
+        # One resolution per group, and every figure below reads the block it
+        # returns: the allowance's multiple, the hold's own rule, and the
+        # reserve the group's ceiling is measured against all come from here.
+        effective = _lift_resolved_config(
+            config,
+            group=group,
+            members=members,
+            reading=reading,
+            records=records,
+            moment=moment,
+            session=session,
+        )
+        effective_block = effective.get("budget") or {}
+        runway = _group_runway(group, members, clocks, records, effective, moment=moment)
+        allowance = _group_allowance(group, reading, clocks, effective, moment=moment)
+        lift_id = effective_block.get("lift_id")
+        session_lift = None
+        if lift_id:
+            # ``lift_id`` is set only by the resolver, and only when a lift
+            # governs. The block's ``lift`` key is not that signal: resolved
+            # flight config declares the lift ceilings under ``budget.lift``, so
+            # that key is present whenever a configuration states them and a
+            # group under no lift would otherwise report the ceilings as a lift.
+            # The lift rides inside the allowance the entry already carries, so
+            # the group block's own key set does not grow a case per lift form;
+            # a group under no lift keeps the allowance it always has.
+            allowance = {
+                **allowance,
+                "lift": effective_block.get("lift"),
+                "lift_hold": effective_block.get("pace_hold"),
+            }
+        else:
+            session_lift = _other_session_lift(
+                config,
+                group=group,
+                session=session,
+                readings=_lift_history(
+                    records, members=set(members), reading=reading, moment=moment
+                ),
+                moment=moment,
+            )
         report.append(
             {
                 "group": group,
@@ -2668,9 +2857,7 @@ def group_pace(
                 "member": member,
                 "state": OBSERVED if freshest is not None else UNKNOWN,
                 "clocks": clocks,
-                "allowance": _group_allowance(
-                    group, reading, clocks, config, moment=moment
-                ),
+                "allowance": allowance,
                 "bar": _group_bar(
                     clocks,
                     nodes_by_group[group],
@@ -2679,7 +2866,42 @@ def group_pace(
                 ),
             }
         )
+        if session_lift is not None:
+            report[-1]["session_lift"] = session_lift
     return report
+
+
+def _other_session_lift(
+    config: Mapping[str, Any],
+    *,
+    group: str,
+    session: str | None,
+    readings: Sequence[Mapping[str, Any]],
+    moment: datetime,
+) -> Mapping[str, Any] | None:
+    """The in-force session lift on ``group`` that another session owns.
+
+    A session lift decides who may spend past pace, not whose budget is spent,
+    so a session that is not the one named still reports it: the entry names the
+    lift and its session without applying it, so a lane emptying faster than
+    pace is never a surprise. The lift is reported only while it is in force.
+    """
+    from reckon.crew import budget_lift
+
+    prefix = budget_lift.SESSION_PREFIX
+    for lift in budget_lift.list_lifts(group=group):
+        scope = str(lift.get("scope") or "")
+        if not scope.startswith(prefix):
+            continue
+        owner = scope[len(prefix):]
+        if not owner or owner == str(session or ""):
+            continue
+        block = budget_lift.effective_budget(
+            config, group=group, readings=readings, now=moment, session=owner
+        )
+        if block.get("lift_id") == lift.get("id"):
+            return block.get("lift")
+    return None
 
 
 def _pace_releases_at(
@@ -2715,6 +2937,31 @@ def _pace_releases_at(
     window = timedelta(minutes=float(minutes))
     share = min(1.0, max(0.0, utilisation / (multiple * factor)))
     return _iso(reset_moment - window + window * share)
+
+
+def _banked_reset_factor(allowance: Mapping[str, Any]) -> float:
+    """The banked-reset factor a scaled allowance was divided by, else ``1.0``.
+
+    Read from the figure :func:`_scale_for_banked_reset` records as it scales the
+    burn, so the release instant divides by the same factor the derivation did
+    rather than a second copy of the constant kept here. An allowance carrying
+    no scaled factor was not scaled, so its factor is one.
+    """
+    factor = allowance.get("reset_factor")
+    if (
+        isinstance(factor, (int, float))
+        and not isinstance(factor, bool)
+        and float(factor) > 0
+    ):
+        return float(factor)
+    return 1.0
+
+
+def _lift_label(allowance: Mapping[str, Any]) -> str:
+    """A short parenthetical naming the lift a group is under, for a reason."""
+    lift = allowance.get("lift")
+    lift_id = lift.get("id") if isinstance(lift, Mapping) else None
+    return f"(lift {lift_id})" if lift_id else "(the lift in force)"
 
 
 def pace_hold(entry: Mapping[str, Any], role: str | None) -> dict[str, Any]:
@@ -2775,11 +3022,34 @@ def pace_hold(entry: Mapping[str, Any], role: str | None) -> dict[str, Any]:
                 "no overspend can be measured and nothing is held"
             ),
         }
-    held = (not bookend) and float(burn) > float(multiple)
+    from reckon.crew import budget_lift
+
+    # A lift changes what the hold compares. The multiple form has already
+    # raised ``pace_multiple`` in the allowance this entry carries, so the burn
+    # comparison below judges the lifted figure with no branch of its own. The
+    # other two forms keep the configured multiple and mark themselves in
+    # ``lift_hold``: a drain-by lift holds only while the utilisation stands
+    # above the line from grant to its target, and an uncapped lift holds nothing.
+    lift_hold = allowance.get("lift_hold")
+    lift_hold = lift_hold if isinstance(lift_hold, Mapping) else {}
+    lift_kind = str(lift_hold.get("kind") or "")
+    raw_line = lift_hold.get("line")
+    drain_line = (
+        float(raw_line)
+        if isinstance(raw_line, (int, float)) and not isinstance(raw_line, bool)
+        else None
+    )
+    if not bookend and lift_kind == budget_lift.UNCAPPED:
+        held = False
+    elif not bookend and lift_kind == budget_lift.DRAIN_BY:
+        held = drain_line is not None and float(utilisation) > drain_line
+    else:
+        held = (not bookend) and float(burn) > float(multiple)
     # The reported burn has already been scaled by the banked-reset factor, so
-    # the release instant must divide by the same factor or it would name an
-    # instant the hold does not actually release at.
-    factor = 2.0 if allowance.get("reset_available") else 1.0
+    # the release instant must divide by the same factor, read from where
+    # ``_scale_for_banked_reset`` recorded it, or it would name an instant the
+    # hold does not actually release at.
+    factor = _banked_reset_factor(allowance)
     releases_at = None
     if bookend:
         reason = (
@@ -2788,6 +3058,30 @@ def pace_hold(entry: Mapping[str, Any], role: str | None) -> dict[str, Any]:
             f"{float(utilisation) * 100:g}% against a {float(derived) * 100:g}% "
             "allowance"
         )
+    elif lift_kind == budget_lift.UNCAPPED:
+        reason = (
+            f"the {entry.get('group')!r} group is under an uncapped lift "
+            f"{_lift_label(allowance)}, so no pace hold applies and a {role} "
+            "dispatch is admitted at any reported burn"
+        )
+    elif lift_kind == budget_lift.DRAIN_BY:
+        if held:
+            reason = format_refusal(
+                "D02",
+                f"the {entry.get('group')!r} group reports utilisation "
+                f"{float(utilisation) * 100:g}%, above the "
+                f"{drain_line * 100:g}% drain-by line {_lift_label(allowance)}, so a "
+                f"{role} dispatch is held until the utilisation falls to or below "
+                f"that line, with the window resetting at "
+                f"{resets_at or 'an unstated time'}",
+            )
+        else:
+            reason = (
+                f"the {entry.get('group')!r} group reports utilisation "
+                f"{float(utilisation) * 100:g}%, at or below the "
+                f"{drain_line * 100:g}% drain-by line {_lift_label(allowance)}, so a "
+                f"{role} dispatch is admitted"
+            )
     elif held:
         releases_at = _pace_releases_at(
             allowance,
@@ -2906,6 +3200,7 @@ def pace_row(
     root: str | Path | None = None,
     hold: Mapping[str, Any] | None = None,
     now: datetime | None = None,
+    session: str | None = None,
 ) -> dict[str, Any]:
     """Record one dispatch's pace, from the wallet that paced it.
 
@@ -2945,6 +3240,16 @@ def pace_row(
         "node": node,
         "score": float(score),
         "recorded_at": moment.isoformat(),
+        # The dispatching session rides the row so a session-scoped lift governs
+        # this dispatch and no other: the pace is resolved for the session the
+        # dispatch named, and the reserve refusal reads that same session off the
+        # row rather than resolving it a second time and risking a disagreement.
+        "session": session,
+        # A row made under a lift carries the lift id beside the multiple in
+        # force: the replay reads the multiple each row recorded, and the id says
+        # whether a lift set it. None is a group under no lift, and it rides the
+        # row for every group so the absence is stated rather than inferred.
+        "lift_id": None,
         "policy": {
             "drain_lead_hours": float(policy_block.drain_lead_hours),
             "pace_multiple": float(policy_block.pace_multiple),
@@ -2996,6 +3301,7 @@ def pace_row(
             windows=readings,
             ready=[{"name": node, "group": group, "score": float(score)}],
             now=moment,
+            session=session,
         )
         if item["group"] == group
     )
@@ -3036,6 +3342,17 @@ def pace_row(
             "reason": None,
         }
     )
+    # The lift a governing block names, recorded beside the multiple in force so
+    # a replay reads the multiple the dispatch was actually judged at. A lift
+    # raises the multiple, so the row's stored policy is the lifted one when a
+    # lift governs and the configured one otherwise; the id tells the two apart.
+    allowance = entry["allowance"]
+    lift_block = allowance.get("lift") if isinstance(allowance, Mapping) else None
+    if isinstance(lift_block, Mapping):
+        row["lift_id"] = lift_block.get("id")
+        multiple = allowance.get("pace_multiple")
+        if isinstance(multiple, (int, float)) and not isinstance(multiple, bool):
+            row["policy"]["pace_multiple"] = float(multiple)
     return row
 
 

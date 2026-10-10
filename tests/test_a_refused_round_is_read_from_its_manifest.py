@@ -28,7 +28,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import recovery, runs
+from reckon.crew import recovery, recovery_repair_dispatch, runs
 from tests.test_the_reflex_resumes_an_unpromoted_run import (  # noqa: F401
     CONFIG,
     FINDING,
@@ -100,7 +100,7 @@ def _declared_negative_control(monkeypatch: pytest.MonkeyPatch) -> None:
     """Apply the declared mutation when its environment variable is set."""
     if os.environ.get(MUTATION_ENV) == "1":
         monkeypatch.setattr(
-            recovery, "_reviewed_run_refused_the_round", _token_only_refusal
+            recovery_repair_dispatch, "_reviewed_run_refused_the_round", _token_only_refusal
         )
 
 

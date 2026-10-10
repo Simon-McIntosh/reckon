@@ -51,6 +51,26 @@ from reckon.crew.runs import (
 )
 
 
+def _pace_readings(record: Mapping[str, Any]) -> list[Mapping[str, Any]] | None:
+    """The run's own pace-row clocks as one lift reading, or ``None``.
+
+    A reset-anchored lift ends when a clock's utilisation falls between two
+    observations, so the budget verdict a resume or a lane change takes is
+    judged against the clocks the run was paced by rather than a fresh reading
+    that could have moved under it: the row carries the clocks the dispatch was
+    judged against, which is exactly the reading a lift's recorded reset is
+    compared to. A run carrying no pace row, or one whose clocks were not read,
+    contributes no reading rather than an empty one.
+    """
+    pace_row = record.get("pace")
+    if not isinstance(pace_row, Mapping):
+        return None
+    clocks = pace_row.get("clocks")
+    if not isinstance(clocks, Mapping) or not clocks:
+        return None
+    return [clocks]
+
+
 # Workers launch inside the fence. Every worker launch — a fresh dispatch, an
 # in-place resume and a lane-change redispatch alike — sits behind a read-only
 # overlay of the operator's dot directories, so a worker cannot write the
@@ -1035,6 +1055,8 @@ def resume_plan(
         backend_name=str(record.get("backend") or ""),
         backend=backend,
         purpose="resume",
+        session=session_id or None,
+        readings=_pace_readings(record),
     )
     if verdict["held"]:
         raise _actionable_budget_hold(verdict, config=config)
@@ -1442,6 +1464,8 @@ def change_lane(
         backend_name=resolution.backend,
         backend=backend,
         purpose="dispatch",
+        session=str(record.get("session") or "") or None,
+        readings=_pace_readings(record),
     )
     if verdict["held"]:
         raise _actionable_budget_hold(verdict, config=config)

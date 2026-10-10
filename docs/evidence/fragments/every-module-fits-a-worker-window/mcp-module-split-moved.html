@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-module-fits-a-worker-window">
+  <meta name="plan-title" content="MCP module split">
+  <meta name="plan-evidence-for" content="reckon:every-module-fits-a-worker-window">
+  <meta name="plan-verifies" content="reckon:every-module-fits-a-worker-window#s7">
+  <meta name="plan-recorded-at" content="2026-10-08">
+  <meta name="plan-verdict" content="passed">
+  <title>MCP module split — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="mcp-module-split-moved-landing" data-node="mcp-module-split-moved" data-reckon="landed" data-when="2026-10-08">
+  <h2 id="mcp-module-split-moved-title">MCP module split</h2>
+  <p id="mcp-module-split-moved-summary">The MCP server moved its storage deadlines, its edit_plan tool and the helpers they read into three sibling modules as a pure move, with every patch that read a moved name repointed at the module which now defines it. The tests that point storage at a temporary project reload the whole tool family with the store through one shared helper, so a tool module never keeps a stale store exception class.</p>
+  <table id="mcp-module-split-moved-measures">
+    <tbody>
+      <tr><th scope="row">Pure move</th><td>134 statements moved; 76 new import lines; 0 problems; EXIT=0</td></tr>
+      <tr><th scope="row">Produced modules</th><td>mcp_deadlines 9,913 / mcp_discovery 8,246 / mcp_edit_plan 14,825 estimated tokens</td></tr>
+      <tr><th scope="row">mcp.py after the split</th><td>32,118 estimated tokens</td></tr>
+      <tr><th scope="row">Registered tool surface</th><td>names and parameter schemas identical at base and head (audit, crew, edit_plan, read_plan, roadmap)</td></tr>
+      <tr><th scope="row">26-file gate</th><td>2 failed / 259 passed; EXIT=1, parity with the base two failures</td></tr>
+      <tr><th scope="row">Whole-family reload proof</th><td>head-fail files plus the 28 reloading modules: 16 failed / 546 passed at -n 12, none absent from the base failure list</td></tr>
+      <tr><th scope="row">Module-size guard</th><td>4 passed; EXIT=0</td></tr>
+      <tr><th scope="row">Declared size mutation</th><td>1 failed; EXIT=1</td></tr>
+    </tbody>
+  </table>
+  <h3 id="mcp-module-split-moved-placement">Placement</h3>
+  <table id="mcp-module-split-moved-placement-map">
+    <thead><tr><th scope="col">Produced module</th><th scope="col">Moved definition</th></tr></thead>
+    <tbody>
+      <tr id="mcp-module-split-moved-mcp_deadlines"><td><code>reckon/mcp_deadlines.py</code></td><td><code>DEADLINE_ENV</code></td></tr>
+      <tr><td></td><td><code>LANDING_GRACE_ENV</code></td></tr>
+      <tr><td></td><td><code>LANDING_POLL_SECONDS</code></td></tr>
+      <tr><td></td><td><code>LANDING_STAT_MARGIN_SECONDS</code></td></tr>
+      <tr><td></td><td><code>READ_DEADLINE_ENV</code></td></tr>
+      <tr><td></td><td><code>READ_DEADLINE_SECONDS</code></td></tr>
+      <tr><td></td><td><code>RUN_ID_ENV</code></td></tr>
+      <tr><td></td><td><code>WRITE_DEADLINE_ENV</code></td></tr>
+      <tr><td></td><td><code>WRITE_DEADLINE_SECONDS</code></td></tr>
+      <tr><td></td><td><code>WRITE_LANDING_GRACE_SECONDS</code></td></tr>
+      <tr><td></td><td><code>_CLI_ANSWER_COMMANDS</code></td></tr>
+      <tr><td></td><td><code>_COMPUTING_WORK_FLOOR_SECONDS</code></td></tr>
+      <tr><td></td><td><code>_COMPUTING_WORK_FRACTION</code></td></tr>
+      <tr><td></td><td><code>_GUARDED_WRITE_HINT</code></td></tr>
+      <tr><td></td><td><code>_UNSET</code></td></tr>
+      <tr><td></td><td><code>_await_body</code></td></tr>
+      <tr><td></td><td><code>_bounded_landing</code></td></tr>
+      <tr><td></td><td><code>_cause_of_timeout</code></td></tr>
+      <tr><td></td><td><code>_conflict_response</code></td></tr>
+      <tr><td></td><td><code>_crew_call_kind</code></td></tr>
+      <tr><td></td><td><code>_deadline_seconds</code></td></tr>
+      <tr><td></td><td><code>_deadline_tool</code></td></tr>
+      <tr><td></td><td><code>_document_path_hint</code></td></tr>
+      <tr><td></td><td><code>_edit_success_response</code></td></tr>
+      <tr><td></td><td><code>_file_fingerprint</code></td></tr>
+      <tr><td></td><td><code>_forget_read</code></td></tr>
+      <tr><td></td><td><code>_landing_grace_seconds</code></td></tr>
+      <tr><td></td><td><code>_landing_state</code></td></tr>
+      <tr><td></td><td><code>_op_error_response</code></td></tr>
+      <tr><td></td><td><code>_plan_path_hint</code></td></tr>
+      <tr><td></td><td><code>_positive_seconds</code></td></tr>
+      <tr><td></td><td><code>_read_join_key</code></td></tr>
+      <tr><td></td><td><code>_read_joining_running</code></td></tr>
+      <tr><td></td><td><code>_resolved_signature</code></td></tr>
+      <tr><td></td><td><code>_resource_reference</code></td></tr>
+      <tr><td></td><td><code>_resource_title</code></td></tr>
+      <tr><td></td><td><code>_review_owed_fields</code></td></tr>
+      <tr><td></td><td><code>_run_scoped_checkout</code></td></tr>
+      <tr><td></td><td><code>_run_scoped_read_root</code></td></tr>
+      <tr><td></td><td><code>_run_scoped_refusal</code></td></tr>
+      <tr><td></td><td><code>_run_scoped_write_guard</code></td></tr>
+      <tr><td></td><td><code>_run_under_deadline</code></td></tr>
+      <tr><td></td><td><code>_run_worktree</code></td></tr>
+      <tr><td></td><td><code>_stale_plan_review</code></td></tr>
+      <tr><td></td><td><code>_start_body</code></td></tr>
+      <tr><td></td><td><code>_thread_cpu_seconds</code></td></tr>
+      <tr><td></td><td><code>_thread_run_wait_seconds</code></td></tr>
+      <tr><td></td><td><code>_written_path</code></td></tr>
+      <tr><td></td><td><code>class _InflightBody</code></td></tr>
+      <tr id="mcp-module-split-moved-mcp_discovery"><td><code>reckon/mcp_discovery.py</code></td><td><code>_STANDALONE_SET_PATH</code></td></tr>
+      <tr><td></td><td><code>_aggregate_version</code></td></tr>
+      <tr><td></td><td><code>_apply_standalone_meta</code></td></tr>
+      <tr><td></td><td><code>_audit_sprint_findings</code></td></tr>
+      <tr><td></td><td><code>_bounded_edit_distance</code></td></tr>
+      <tr><td></td><td><code>_discover_project</code></td></tr>
+      <tr><td></td><td><code>_discovery_state_root</code></td></tr>
+      <tr><td></td><td><code>_discovery_summary</code></td></tr>
+      <tr><td></td><td><code>_extract_standalone_declaration</code></td></tr>
+      <tr><td></td><td><code>_filter_inventory</code></td></tr>
+      <tr><td></td><td><code>_finding</code></td></tr>
+      <tr><td></td><td><code>_index_discovery</code></td></tr>
+      <tr><td></td><td><code>_index_project_summary</code></td></tr>
+      <tr><td></td><td><code>_inventory_row</code></td></tr>
+      <tr><td></td><td><code>_list_plans</code></td></tr>
+      <tr><td></td><td><code>_matches_search</code></td></tr>
+      <tr><td></td><td><code>_plan_html_text</code></td></tr>
+      <tr><td></td><td><code>_rollup_counts</code></td></tr>
+      <tr><td></td><td><code>_sprint_item_slug</code></td></tr>
+      <tr><td></td><td><code>_summary_sprint_rows</code></td></tr>
+      <tr><td></td><td><code>_tag_audit_findings</code></td></tr>
+      <tr><td></td><td><code>_tag_inventory</code></td></tr>
+      <tr><td></td><td><code>_unwired_plan_refusal</code></td></tr>
+      <tr id="mcp-module-split-moved-mcp_edit_plan"><td><code>reckon/mcp_edit_plan.py</code></td><td><code>_add_research</code></td></tr>
+      <tr><td></td><td><code>_add_sprint_item</code></td></tr>
+      <tr><td></td><td><code>_append_comment</code></td></tr>
+      <tr><td></td><td><code>_append_followup</code></td></tr>
+      <tr><td></td><td><code>_create_sprint</code></td></tr>
+      <tr><td></td><td><code>_edit_plan</code></td></tr>
+      <tr><td></td><td><code>_edit_plan_prose</code></td></tr>
+      <tr><td></td><td><code>_edit_plan_tool</code></td></tr>
+      <tr><td></td><td><code>_list_followups</code></td></tr>
+      <tr><td></td><td><code>_list_projects</code></td></tr>
+      <tr><td></td><td><code>_list_questions</code></td></tr>
+      <tr><td></td><td><code>_list_sprints</code></td></tr>
+      <tr><td></td><td><code>_lock_decision</code></td></tr>
+      <tr><td></td><td><code>_move_sprint_item</code></td></tr>
+      <tr><td></td><td><code>_patch_plan</code></td></tr>
+      <tr><td></td><td><code>_pending_limit_warning</code></td></tr>
+      <tr><td></td><td><code>_pending_plan_limit</code></td></tr>
+      <tr><td></td><td><code>_pending_plans</code></td></tr>
+      <tr><td></td><td><code>_plans_nearest_to_closing</code></td></tr>
+      <tr><td></td><td><code>_project_manifest</code></td></tr>
+      <tr><td></td><td><code>_resolve_followup</code></td></tr>
+      <tr><td></td><td><code>_resolve_question</code></td></tr>
+      <tr><td></td><td><code>_set_impl</code></td></tr>
+      <tr><td></td><td><code>_set_status</code></td></tr>
+      <tr><td></td><td><code>_update_inventory_item</code></td></tr>
+      <tr><td></td><td><code>_update_sprint</code></td></tr>
+      <tr><td></td><td><code>_validate_working</code></td></tr>
+    </tbody>
+  </table>
+  <p id="mcp-module-split-moved-placement-note">Each produced module is named for what it holds; the row group runs to the next named module.</p>
+</article>
+</body>
+</html>

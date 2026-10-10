@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:a-plan-is-done-when-every-section-is-ticked">
+  <meta name="plan-verifies" content="reckon:a-plan-is-done-when-every-section-is-ticked#s5">
+  <meta name="evidence-commit" content="06b37a794cb96b3e914193ce8374db8b741b5df5">
+  <meta name="evidence-date" content="2026-10-08">
+  <meta name="evidence-verdict" content="pass">
+</head>
+<body>
+<main class="plan-doc">
+<section id="every-section-has-a-declaration">
+  <h2>Every section has a declaration</h2>
+  <p id="every-section-has-a-declaration-census">Census of every mounted project's live (non-terminal) plans for a heading/declaration coverage gap, counted 2026-10-08: <strong>109</strong> gapped of <strong>214</strong> live plans. A gap a plan already carries is not refused: the write guard compares the gaps after a write with the gaps the plan carried before it and refuses only when the write adds one (decision <code>coverage-gap-scope</code> = <code>refuse-new-gaps</code>). The 109 are reported by <code>reckon audit-doc</code> as <code>section-without-todo</code> or <code>todo-without-section</code>, and stay writable; a plan that would acquire a gap it did not have is refused at that write, naming only the new id.</p>
+  <p id="every-section-has-a-declaration-terminal">A gap a plan already carries cannot be used to land it. At the transition into <code>shipped</code> or <code>done</code> an authored heading with no declaration is counted as open beside the sections declared <code>implementable</code> or <code>deferred</code>, and the refusal names it; the headings are read from the plan's HTML, so a heading nothing declares has an answer owed. The check applies wherever a landing can be written: the state write, the landing patch, and the op batch that applies before either. A plan already stored at a terminal status is not re-judged, so history stays editable.</p>
+  <p id="every-section-has-a-declaration-patch-route"><code>POST /plan/&lt;project&gt;/&lt;slug&gt;</code> patches state and renders the file itself, reaching neither store write path, so it runs the same coverage comparison on the text it read and the HTML it is about to write. A patch that would drop a declaration or introduce a heading without one is refused with <code>400 section_coverage</code>, naming the new ids, and the file is left unchanged.</p>
+  <table id="every-section-has-a-declaration-per-project">
+    <thead><tr><th>project</th><th>live</th><th>gapped</th></tr></thead>
+    <tbody>
+      <tr><td>hanney</td><td>3</td><td>1</td></tr>
+      <tr><td>helix</td><td>1</td><td>1</td></tr>
+      <tr><td>imas-ambix</td><td>34</td><td>25</td></tr>
+      <tr><td>imas-codex</td><td>24</td><td>12</td></tr>
+      <tr><td>imas-efit</td><td>57</td><td>26</td></tr>
+      <tr><td>imas-standard-names</td><td>2</td><td>2</td></tr>
+      <tr><td>norma</td><td>1</td><td>1</td></tr>
+      <tr><td>nova</td><td>27</td><td>14</td></tr>
+      <tr><td>reckon</td><td>61</td><td>25</td></tr>
+      <tr><td>tessera</td><td>3</td><td>2</td></tr>
+    </tbody>
+  </table>
+  <figure id="every-section-has-a-declaration-figure">
+    <img src="/reckon/figures/a-plan-is-done-when-every-section-is-ticked/every-section-has-a-declaration/coverage_census.svg" alt="Per-project count of live plans, with the share carrying a heading/declaration coverage gap shaded, counted 2026-10-08.">
+    <figcaption>Live plans per mounted project, of which the shaded share carries a heading with no declaration, or a declaration naming no heading. Projects are ordered by live-plan count; the shaded figure is written inside each bar and the live total at its end.</figcaption>
+  </figure>
+  <ul id="every-section-has-a-declaration-slugs">
+    <li>hanney/financial-spa-redesign (undeclared=7, orphan=0)</li>
+    <li>helix/bootstrap (undeclared=4, orphan=0)</li>
+    <li>imas-ambix/absolute-geometry-token-substrate (undeclared=5, orphan=0)</li>
+    <li>imas-ambix/channel-uncertainty-management (undeclared=3, orphan=0)</li>
+    <li>imas-ambix/closed-loop-latent-filter (undeclared=5, orphan=0)</li>
+    <li>imas-ambix/controllable-forecast-and-gate (undeclared=5, orphan=0)</li>
+    <li>imas-ambix/equilibrium-topology-fidelity (undeclared=12, orphan=0)</li>
+    <li>imas-ambix/gs-grounded-latent-engine (undeclared=5, orphan=0)</li>
+    <li>imas-ambix/interior-closure-hardening (undeclared=5, orphan=0)</li>
+    <li>imas-ambix/internal-current-diagnostics-v0 (undeclared=7, orphan=0)</li>
+    <li>imas-ambix/joint-multimodal-plasma-wm (undeclared=7, orphan=0)</li>
+    <li>imas-ambix/learned-closure-current-diffusion-v0 (undeclared=7, orphan=0)</li>
+    <li>imas-ambix/learned-equilibrium-operator (undeclared=6, orphan=0)</li>
+    <li>imas-ambix/machine-agnostic-latent-world-model (undeclared=16, orphan=0)</li>
+    <li>imas-ambix/mast-machine-configuration-map (undeclared=5, orphan=0)</li>
+    <li>imas-ambix/mse-free-current-recovery-v0 (undeclared=8, orphan=0)</li>
+    <li>imas-ambix/nova-physics-consumer-integration (undeclared=8, orphan=0)</li>
+    <li>imas-ambix/physics-carried-playable-plasma (undeclared=9, orphan=0)</li>
+    <li>imas-ambix/physics-world-model-strategy (undeclared=13, orphan=0)</li>
+    <li>imas-ambix/agent-sessions-live-on-the-fleet-node (undeclared=9, orphan=0)</li>
+    <li>imas-ambix/iter-first-plasma-rehearsal (undeclared=3, orphan=0)</li>
+    <li>imas-ambix/local-lane-admission-control (undeclared=3, orphan=0)</li>
+    <li>imas-ambix/magnetics-free-equilibrium-recovery (undeclared=9, orphan=0)</li>
+    <li>imas-ambix/sophelio-entry-master (undeclared=5, orphan=0)</li>
+    <li>imas-ambix/playable-plasma-wm-v0 (undeclared=14, orphan=0)</li>
+    <li>imas-ambix/sequential-current-da-v1 (undeclared=8, orphan=0)</li>
+    <li>imas-ambix/world-model-prototype (undeclared=8, orphan=0)</li>
+    <li>imas-codex/dd-defect-upstreaming (undeclared=5, orphan=0)</li>
+    <li>imas-codex/host-dashboard-covers-every-agent-process (undeclared=7, orphan=0)</li>
+    <li>imas-codex/mast-semantic-source-repair (undeclared=1, orphan=0)</li>
+    <li>imas-codex/migration-project-state (undeclared=4, orphan=0)</li>
+    <li>imas-codex/signed-repair-snapshot-cost (undeclared=3, orphan=0)</li>
+    <li>imas-codex/sn-catalog-audit-instrument (undeclared=7, orphan=0)</li>
+    <li>imas-codex/sn-identity-adjudication-residue (undeclared=4, orphan=0)</li>
+    <li>imas-codex/sn-origin-provenance-backfill (undeclared=4, orphan=0)</li>
+    <li>imas-codex/sn-regeneration-decision (undeclared=3, orphan=0)</li>
+    <li>imas-codex/sn-release-readiness (undeclared=19, orphan=0)</li>
+    <li>imas-codex/sn-west-catalog-release (undeclared=4, orphan=0)</li>
+    <li>imas-codex/unbound-source-backlog (undeclared=1, orphan=0)</li>
+    <li>imas-efit/disabled-tests-lift (undeclared=0, orphan=8)</li>
+    <li>imas-efit/raw-ids-pipeline (undeclared=1, orphan=11)</li>
+    <li>imas-efit/config-yaml-migration (undeclared=4, orphan=0)</li>
+    <li>imas-efit/all-machine-validation-extension (undeclared=0, orphan=9)</li>
+    <li>imas-efit/anderson-mixing-reassessment (undeclared=7, orphan=0)</li>
+    <li>imas-efit/ids-geometry-defaults (undeclared=1, orphan=0)</li>
+    <li>imas-efit/in-vessel-null-containment (undeclared=8, orphan=0)</li>
+    <li>imas-efit/iter-edge-basis-recovery (undeclared=6, orphan=0)</li>
+    <li>imas-efit/lcfs-topology-resolution-fix-2026-06-02 (undeclared=6, orphan=0)</li>
+    <li>imas-efit/magnetics-machine-pulse-split (undeclared=1, orphan=0)</li>
+    <li>imas-efit/response-function-cache-serialisation-rehome (undeclared=6, orphan=0)</li>
+    <li>imas-efit/test-pipeline-netcdf-to-hdf5-rewrite (undeclared=6, orphan=0)</li>
+    <li>imas-efit/routine-reconstruction-path (undeclared=9, orphan=0)</li>
+    <li>imas-efit/solver-rcond-floor (undeclared=8, orphan=0)</li>
+    <li>imas-efit/uda-removal-preset-unification (undeclared=1, orphan=0)</li>
+    <li>imas-efit/validation-like-for-like-audit (undeclared=0, orphan=6)</li>
+    <li>imas-efit/wall-containment-psi-gate-2026-06-02 (undeclared=7, orphan=0)</li>
+    <li>imas-efit/imas-efit-development-review (undeclared=31, orphan=0)</li>
+    <li>imas-efit/jt60sa-input-data-rca (undeclared=2, orphan=0)</li>
+    <li>imas-efit/plan-lifecycle-hygiene (undeclared=4, orphan=0)</li>
+    <li>imas-efit/fleet-handoff-replan (undeclared=3, orphan=0)</li>
+    <li>imas-efit/local-lane-work-critical-review (undeclared=1, orphan=0)</li>
+    <li>imas-efit/residual-machine-literal-reduction (undeclared=5, orphan=0)</li>
+    <li>imas-efit/source-comment-and-filename-hygiene (undeclared=6, orphan=0)</li>
+    <li>imas-efit/startup-ramp-reconstruction-fidelity (undeclared=1, orphan=0)</li>
+    <li>imas-efit/topology-consolidation (undeclared=7, orphan=0)</li>
+    <li>imas-standard-names/grammar-release-and-downstream-pin (undeclared=3, orphan=0)</li>
+    <li>imas-standard-names/systematic-review-remediation (undeclared=7, orphan=0)</li>
+    <li>norma/norma-standalone-package (undeclared=5, orphan=0)</li>
+    <li>nova/mast-catalog-gpu-solve (undeclared=5, orphan=0)</li>
+    <li>nova/contour-tree-topology-authority (undeclared=2, orphan=0)</li>
+    <li>nova/converged-forward-solve (undeclared=6, orphan=0)</li>
+    <li>nova/cut-cell-current-attribution (undeclared=4, orphan=0)</li>
+    <li>nova/diiid-pulse-replay (undeclared=3, orphan=0)</li>
+    <li>nova/dual-branch-selection (undeclared=8, orphan=0)</li>
+    <li>nova/efit-baseline-demonstration (undeclared=4, orphan=0)</li>
+    <li>nova/ensemble-forward-seam (undeclared=5, orphan=0)</li>
+    <li>nova/forward-solver-route-integrity (undeclared=2, orphan=0)</li>
+    <li>nova/labeller-throughput-and-shape-inverse (undeclared=2, orphan=0)</li>
+    <li>nova/separatrix-spline-extraction (undeclared=4, orphan=0)</li>
+    <li>nova/shafranov-observed-side (undeclared=2, orphan=0)</li>
+    <li>nova/single-grid-solver-cutover (undeclared=5, orphan=0)</li>
+    <li>nova/topology-read-containment-and-rebank (undeclared=2, orphan=0)</li>
+    <li>reckon/_exemplar-plan (undeclared=4, orphan=0)</li>
+    <li>reckon/a-brief-should-not-cost-what-it-names (undeclared=7, orphan=0)</li>
+    <li>reckon/a-live-worker-can-be-reached (undeclared=6, orphan=0)</li>
+    <li>reckon/a-plan-is-reviewed-before-it-is-built (undeclared=3, orphan=0)</li>
+    <li>reckon/a-window-paces-the-lane (undeclared=1, orphan=0)</li>
+    <li>reckon/a-worker-is-charged-to-a-job (undeclared=3, orphan=0)</li>
+    <li>reckon/advise-the-lane-never-force-it (undeclared=7, orphan=0)</li>
+    <li>reckon/agent-plan-authoring (undeclared=9, orphan=0)</li>
+    <li>reckon/an-orchestrator-can-discharge-a-refusal (undeclared=8, orphan=0)</li>
+    <li>reckon/background-agent-fitness-and-dispatch-scope (undeclared=7, orphan=0)</li>
+    <li>reckon/crew-observability-truth (undeclared=11, orphan=0)</li>
+    <li>reckon/crew-runtime-positive-controls (undeclared=2, orphan=0)</li>
+    <li>reckon/derived-gate-state (undeclared=4, orphan=0)</li>
+    <li>reckon/execution-orchestration-hardening (undeclared=4, orphan=0)</li>
+    <li>reckon/figures-are-allocated-by-topic-directory (undeclared=4, orphan=0)</li>
+    <li>reckon/history-persists-as-detail-washes-out (undeclared=7, orphan=0)</li>
+    <li>reckon/lane-and-model-routing (undeclared=1, orphan=0)</li>
+    <li>reckon/one-fact-has-one-reader (undeclared=5, orphan=0)</li>
+    <li>reckon/plan-lifecycle-hygiene (undeclared=6, orphan=0)</li>
+    <li>reckon/rendered-evidence-on-this-host (undeclared=6, orphan=0)</li>
+    <li>reckon/roadmap-answers-both-shapes (undeclared=5, orphan=0)</li>
+    <li>reckon/scoring-should-stop-a-promotion (undeclared=14, orphan=0)</li>
+    <li>reckon/section-contract-and-computed-impl (undeclared=2, orphan=0)</li>
+    <li>reckon/work-scheduling-surface (undeclared=6, orphan=0)</li>
+    <li>reckon/worker-authors-its-own-record (undeclared=4, orphan=0)</li>
+    <li>tessera/document-content-pipeline (undeclared=4, orphan=0)</li>
+    <li>tessera/tessera-interface-traceability (undeclared=9, orphan=0)</li>
+  </ul>
+</section>
+</main>
+</body>
+</html>

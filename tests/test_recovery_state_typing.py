@@ -8,7 +8,15 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import recovery, resumption
+from reckon.crew import (
+    recovery,
+    recovery_classification,
+    recovery_liveness,
+    recovery_stream,
+    recovery_wait,
+    recovery_watch,
+    resumption,
+)
 from reckon.crew.ticker import Ticker
 
 
@@ -30,7 +38,7 @@ def _pointer(tmp_path: Path, run_id: str, *, alive: bool = False) -> dict:
 @pytest.fixture(autouse=True)
 def _no_external_session_reads(monkeypatch) -> None:
     monkeypatch.setattr(
-        recovery,
+        recovery_classification,
         "_blocked_session_resolution",
         lambda _record, _run_id: {
             "resolved": True,
@@ -59,7 +67,7 @@ def _typed_examples(tmp_path: Path, monkeypatch) -> dict[str, dict]:
             }
         return original_stream_budget(record)
 
-    monkeypatch.setattr(recovery, "_stream_budget", stream_budget)
+    (monkeypatch.setattr(recovery_stream, "_stream_budget", stream_budget), monkeypatch.setattr(recovery_wait, "_stream_budget", stream_budget), monkeypatch.setattr(recovery_classification, "_stream_budget", stream_budget))
 
     answer_pointer = _pointer(tmp_path, "answer")
     _manifest(
@@ -80,8 +88,8 @@ def _typed_examples(tmp_path: Path, monkeypatch) -> dict[str, dict]:
 
     stalled_pointer = _pointer(tmp_path, "stalled", alive=True)
     Path(stalled_pointer["log_path"]).write_text("{}\n", encoding="utf-8")
-    monkeypatch.setattr(recovery, "_stream_quiet_seconds", lambda *_a, **_k: 901)
-    monkeypatch.setattr(recovery, "_stall_wait_reason", lambda _record: None)
+    monkeypatch.setattr(recovery_liveness, "_stream_quiet_seconds", lambda *_a, **_k: 901)
+    monkeypatch.setattr(recovery_watch, "_stall_wait_reason", lambda _record: None)
 
     return {
         "held": recovery.classify_pointer(held_pointer),
@@ -114,15 +122,31 @@ def test_a_lane_hold_always_states_its_reset(
     tmp_path: Path, monkeypatch, reset: str | None
 ) -> None:
     pointer = _pointer(tmp_path, "held-reset")
-    monkeypatch.setattr(
-        recovery,
+    (monkeypatch.setattr(
+        recovery_stream,
         "_stream_budget",
         lambda _record: {
             "refusal": True,
             "rate_limit_type": "quota",
             "resets_at": reset,
         },
-    )
+    ), monkeypatch.setattr(
+        recovery_wait,
+        "_stream_budget",
+        lambda _record: {
+            "refusal": True,
+            "rate_limit_type": "quota",
+            "resets_at": reset,
+        },
+    ), monkeypatch.setattr(
+        recovery_classification,
+        "_stream_budget",
+        lambda _record: {
+            "refusal": True,
+            "rate_limit_type": "quota",
+            "resets_at": reset,
+        },
+    ))
 
     row = recovery.classify_pointer(pointer)
 

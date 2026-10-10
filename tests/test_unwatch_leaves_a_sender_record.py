@@ -21,7 +21,14 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import recovery, routing, runs
+from reckon.crew import (
+    recovery,
+    recovery_review_delivery,
+    recovery_stream,
+    recovery_watch,
+    routing,
+    runs,
+)
 
 PROJECT = "unwatch-sender-sample"
 LEASE_SECONDS = 60
@@ -183,7 +190,7 @@ def test_unwatch_refusal_leaves_one_refused_record(
     def stale(pid, start_time, **kwargs):
         return real(pid, "0", **kwargs)
 
-    monkeypatch.setattr(recovery, "_signal_process_group", stale)
+    (monkeypatch.setattr(recovery_review_delivery, "_signal_process_group", stale), monkeypatch.setattr(recovery_stream, "_signal_process_group", stale), monkeypatch.setattr(recovery_watch, "_signal_process_group", stale))
 
     with pytest.raises(routing.CrewError):
         recovery.unwatch(PROJECT)

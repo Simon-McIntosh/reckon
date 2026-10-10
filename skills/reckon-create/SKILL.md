@@ -390,6 +390,9 @@ one-paragraph or one-table file merely because one plan section changed.
 ### Step 3 — Write the HTML
 
 Use the Write tool to create the canonical typed path from the template below.
+Every authored section heading needs an entry in `plan-section-declarations`,
+because a write that adds a heading with no declaration is refused (and a
+declaration naming no heading is refused too).
 Then, optionally, use `edit_plan(create=True)` to register initial state
 via the version-safe MCP path (required if other agents may be writing
 concurrently to the same project's index).
@@ -462,6 +465,7 @@ edit_plan(
   <meta name="plan-owner"     content="Simon McIntosh">
   <meta name="plan-tags"      content="plasma-control,imas-data">
   <meta name="plan-depends-on" content="tokenizer-eval,data-curation">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;}">
   <!-- plan-impl / plan-version / plan-modified: server-owned — do NOT author -->
   <title>Plasma Decoder Fine-tune | imas-ambix</title>
   <link rel="stylesheet" href="/_shared/foundation.css">

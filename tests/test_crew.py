@@ -25,10 +25,9 @@ from click.testing import CliRunner
 
 import reckon.crew.dispatch_plan as dispatch_plan_module
 import reckon.crew.dispatch_sessions as dispatch_sessions_module
-import reckon.crew.recovery as recovery_module
 from reckon import cli as cli_module
 from reckon import crew, crew_dispatch_commands, crew_run_commands, flight, ledger
-from reckon.crew import recovery, review, runs
+from reckon.crew import recovery, recovery_stream, review, runs
 from reckon.crew.dispatch import shadow as dispatch_shadow
 from reckon.crew.refusals import format_refusal
 from tests import test_a_live_run_never_reads_dead as liveness
@@ -3734,7 +3733,7 @@ def test_opt_in_budget_watchdog_stops_and_records_the_run_phase(
     signalled = []
     monkeypatch.setattr(dispatch_sessions_module, "process_alive", lambda pid: True)
     monkeypatch.setattr(
-        recovery_module,
+        recovery_stream,
         "_signal_process_group",
         lambda pid, started_at, *, reason="", **kwargs: signalled.append((pid, reason)),
     )

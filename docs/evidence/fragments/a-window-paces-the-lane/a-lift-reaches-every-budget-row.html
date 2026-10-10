@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-window-paces-the-lane">
+  <meta name="plan-title" content="Every budget row a dispatch reaches takes the dispatching session">
+  <meta name="plan-summary" content="A session-scoped pace lift now reaches every budget reader a dispatch composes: budget.pace_row records the dispatching session beside the lift id and the multiple in force, dispatch_admission reads the session off the pace row it is already handed, dispatch_sessions hands the run's session and its own pace-row clocks to routing, and another session's pre-flight names the lift without applying it. pace_replay reads the two new keys as known fields.">
+  <meta name="plan-evidence-for" content="reckon:a-window-paces-the-lane">
+  <meta name="plan-node" content="a-lift-reaches-every-budget-row">
+  <meta name="plan-recorded-at" content="2026-10-08">
+  <meta name="plan-environment" content="Linux compute node; Python 3.14 venv; pytest; synthesised flight layers under a temporary RECKON_HOME">
+  <title>Every budget row a dispatch reaches takes the dispatching session &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>Every budget row a dispatch reaches takes the dispatching session</h1>
+    <p class="plan-summary">A session-scoped lift governs which dispatch may spend past pace, so
+    the dispatching session has to ride every row a dispatch composes. The pace row carries it
+    beside the lift id and the multiple in force, the bookend refusal reads it back off the pace
+    row it is already handed, and routing judges a resume or a lane change against the clocks the
+    run was paced by.</p>
+  </header>
+
+  <section id="a-lift-reaches-every-budget-row-landing">
+    <h2>Landing</h2>
+
+    <p><code>budget.pace_row</code> takes the dispatching session and passes it to
+    <code>budget.group_pace</code>, and the row records it as <code>pace.session</code> beside
+    <code>pace.lift_id</code> and the multiple in force. A row made under a session lift carries
+    the lift id and the lifted multiple; a row made under no lift, or for another session, carries
+    <code>pace.lift_id None</code> and the configured multiple. The multiple a lift raises is
+    written into <code>pace.policy.pace_multiple</code>, so a replay reads the multiple the
+    dispatch was actually judged at.</p>
+
+    <p><code>dispatch_admission._refuse_against_the_bookend_reserve</code> reads the session off
+    the pace row it is already handed, so a session lift releases that session's bookend reserve
+    and holds another session's on the same reading. <code>dispatch_sessions</code> hands the run's
+    session and its own pace-row clocks to <code>routing._budget_verdict</code>, so a resume or a
+    lane change is judged against the clocks the run was paced by and a reading whose seven-day
+    reset has moved ends a reset-anchored lift on that path. <code>budget.preflight</code> names
+    another session's lift on the shared group under <code>session_lift</code>, with its session,
+    without applying it: the lifting session's report carries the lift block as applied. And
+    <code>pace_replay</code> reads <code>session</code> and <code>lift_id</code> as known fields
+    rather than damage, keeping replay reading the multiple each row recorded.</p>
+
+    <p>All figures are derived from fixtures at assertion time &mdash; 21% of a 168&nbsp;h window
+    spent after 22.0&nbsp;h against a 1.1x configured multiple, lifted to 1.8 &mdash; and every
+    case asserts the workstation's own <code>budget-lifts.json</code> is untouched afterwards.</p>
+
+    <figure>
+      <img src="/reckon/figures/a-window-paces-the-lane/a-lift-reaches-every-budget-row/one-session-reaches-every-row.svg"
+           alt="One session lift reaching the pace row, the bookend refusal, the routing verdict and another session's pre-flight">
+      <figcaption>One session-scoped lift and the four budget readers it reaches. The pace row
+      records the session and the lift id; the bookend refusal reads the session back off the row;
+      routing judges the row's clocks, so a moved reset ends a reset-anchored lift; another
+      session's pre-flight names the lift without applying it.</figcaption>
+    </figure>
+  </section>
+
+  <section id="a-lift-reaches-every-budget-row-evidence">
+    <h2>Evidence</h2>
+
+    <p>The negative control &mdash; <em>make budget.pace_row pass session None to group_pace</em>
+    &mdash; was applied on a scratch copy: the pace-row lift-id assertion then fails
+    (<code>assert None == 'codex-sub-...'</code>), 2 failed, exit 1. At head the node's own test
+    file passes and the gate passed 145 tests with exit 0; the base arm over the pre-existing gate
+    files passed with exit 0, so the node adds no failure by id.</p>
+  </section>
+</main>
+</body>
+</html>

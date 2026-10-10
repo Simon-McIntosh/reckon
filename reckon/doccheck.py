@@ -60,6 +60,7 @@ from reckon._store import (
     _mounts_path,
     _section_contract_refusal,
     plan_summary_length,
+    section_coverage_gaps,
 )
 from reckon.lifecycle import TERMINAL_STATUSES
 
@@ -125,6 +126,11 @@ _SECTION_WITHOUT_CONTRACT = "section-without-contract"
 _FOLLOWUP_DESCRIBES_SECTION_WORK = "followup-describes-section-work"
 _SECTION_RECORD_INVALID = "section-record-invalid"
 _PLAN_REF_COULD_BE_SECTION_REF = "plan-ref-could-be-section-ref"
+# An authored section heading and its ``section_declarations`` entry must
+# cover each other: a heading with no declaration has no item to tick, and a
+# declaration naming no heading points at a section the reader cannot open.
+_SECTION_WITHOUT_TODO = "section-without-todo"
+_TODO_WITHOUT_SECTION = "todo-without-section"
 
 # Section identities are numbered from one: s0 states why the plan exists and
 # carries no work.
@@ -1081,6 +1087,50 @@ def _section_contract_findings(
     ]
 
 
+def _section_coverage_findings(
+    doc_type: str,
+    state: Mapping[str, Any],
+    html_text: str,
+) -> list[Finding]:
+    """Report an authored heading and a declaration that fail to pair up.
+
+    The same comparison the write guard refuses on: an authored section heading
+    with no ``section_declarations`` entry (``section-without-todo``) and a
+    declared id naming no authored heading (``todo-without-section``). Severity
+    follows the plan's own state, as the section-contract finding does: a plan
+    that already declares sections is held at ``error``, and one carrying no
+    declaration at all predates the vocabulary and is reported at ``warn``.
+    """
+
+    if doc_type != "plan":
+        return []
+    declarations = state.get("section_declarations")
+    severity = "error" if declarations else "warn"
+    undeclared, orphaned = section_coverage_gaps(html_text, declarations)
+    out: list[Finding] = []
+    for sid in undeclared:
+        out.append(
+            Finding(
+                severity,
+                _SECTION_WITHOUT_TODO,
+                f"section {sid!r} is an authored heading with no "
+                "section_declarations entry; declare it (done, implementable or "
+                "deferred) so the plan's todo list can carry it",
+            )
+        )
+    for sid in orphaned:
+        out.append(
+            Finding(
+                severity,
+                _TODO_WITHOUT_SECTION,
+                f"section_declarations names {sid!r} but the plan has no authored "
+                "section heading with that id; remove the stale declaration or "
+                "restore the heading",
+            )
+        )
+    return out
+
+
 def _followup_section_findings(
     doc_type: str, state: Mapping[str, Any]
 ) -> list[Finding]:
@@ -1220,6 +1270,7 @@ def audit_html(html_text: str, *, project: str | None = None) -> list[Finding]:
     # Section contract — the unit that carries effort, capability and a route.
     declared_type = ((rt.get("content") if rt else "") or "").strip().lower()
     out.extend(_section_contract_findings(declared_type, state, soup, html_text))
+    out.extend(_section_coverage_findings(declared_type, state, html_text))
     out.extend(_followup_section_findings(declared_type, state))
 
     # A plan-level ref that one of the plan's own sections already declares is

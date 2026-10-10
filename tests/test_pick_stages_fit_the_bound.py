@@ -248,3 +248,23 @@ def test_a_moved_plan_file_is_not_served_stale(
     _, state = _run_pick(repo)
     assert state["node"]["estimated_hours"] == 7.0
     assert state["node"]["estimated_hours_source"] == "section"
+
+
+def test_a_renamed_plan_file_is_not_served_stale(repo: Path) -> None:
+    """A resolution whose file moved is re-resolved, not served from the cache.
+
+    The in-place rewrite above cannot show that the stamp moved: the resolved
+    path is unchanged, so the hours are re-read from the same file whether or
+    not the stamp is checked. A rename is the case the stamp exists for — the
+    cached resolution names a file that no longer holds the plan, so a cache
+    that ignored its stamp would serve that dead path and the section's own
+    effort would no longer be found.
+    """
+
+    _run_pick(repo)
+    plans = repo / "docs" / "plans"
+    (plans / "probe.html").rename(plans / "relocated-probe.html")
+
+    _, state = _run_pick(repo)
+    assert state["node"]["estimated_hours"] == 10.0
+    assert state["node"]["estimated_hours_source"] == "section"

@@ -54,10 +54,10 @@ def _release_at(*, factor: float = 1.0) -> datetime:
 def _entry(moment: datetime, *, factor: float = 1.0) -> dict:
     """A group entry as ``group_pace`` emits it, read at ``moment``.
 
-    The burn is the utilisation over the elapsed fraction at ``moment``, divided
-    by the banked-reset factor exactly as ``budget._scale_for_banked_reset``
-    divides the reported figure, so the entry paces by the number the derivation
-    would emit at that instant.
+    The burn is the raw utilisation over the elapsed fraction at ``moment``,
+    passed through ``budget._scale_for_banked_reset`` so the entry paces by the
+    number the derivation itself emits, and the factor the release instant
+    divides by is read from where that function records it, not kept here.
     """
     start, reset = _window()
     elapsed_fraction = _elapsed_fraction(moment)
@@ -66,14 +66,14 @@ def _entry(moment: datetime, *, factor: float = 1.0) -> dict:
         "utilisation": UTILISATION,
         "derived": min(1.0, elapsed_fraction * MULTIPLE),
         "pace_multiple": MULTIPLE,
-        "burn_multiple": (UTILISATION / elapsed_fraction) / factor,
+        "burn_multiple": UTILISATION / elapsed_fraction,
         "window_minutes": WEEK_MINUTES,
         "resets_at": budget._iso(reset),
         "elapsed_hours": (moment - start).total_seconds() / 3600.0,
         "elapsed_fraction": elapsed_fraction,
     }
     if factor != 1.0:
-        allowance["reset_available"] = True
+        allowance = budget._scale_for_banked_reset(allowance, credit=factor - 1.0)
     return {"group": "codex-sub", "allowance": allowance}
 
 
@@ -136,37 +136,43 @@ def test_the_release_accounts_for_a_banked_reset() -> None:
     assert abs((_parsed(banked["releases_at"]) - scaled).total_seconds()) < 1.0
 
 
-def test_the_release_routes_through_the_banked_reset_scaling() -> None:
-    """The instant follows ``_scale_for_banked_reset``, not a private copy.
+def test_the_release_reads_the_recorded_banked_reset_factor() -> None:
+    """The instant divides by the factor ``_scale_for_banked_reset`` recorded.
 
-    The entry's burn is the raw burn passed through the real scaling function,
-    so the release the hold names is pinned to that function's factor rather
-    than to a number this test invented.
+    A fractional credit gives a factor that is not the whole extra window a
+    reader might restate, so an implementation pinned to a private 2.0 would name
+    the wrong instant here. The instant is instead pinned to the figure the
+    scaling function itself recorded on the allowance.
     """
-    start, reset = _window()
-    moment = _release_at(factor=2.0) - timedelta(minutes=1)
-    elapsed_fraction = _elapsed_fraction(moment)
-    raw = {
-        "group": "codex-sub",
-        "utilisation": UTILISATION,
-        "derived": min(1.0, elapsed_fraction * MULTIPLE),
-        "pace_multiple": MULTIPLE,
-        "burn_multiple": UTILISATION / elapsed_fraction,
-        "window_minutes": WEEK_MINUTES,
-        "resets_at": budget._iso(reset),
-        "elapsed_hours": (moment - start).total_seconds() / 3600.0,
-        "elapsed_fraction": elapsed_fraction,
-    }
-    scaled = budget._scale_for_banked_reset(dict(raw), credit=1.0)
-    assert scaled["reset_available"] is True
+    factor = 1.5
+    moment = _release_at(factor=factor) - timedelta(minutes=1)
+    entry = _entry(moment, factor=factor)
+    recorded = entry["allowance"]["reset_factor"]
+    assert recorded == pytest.approx(factor)
 
-    verdict = budget.pace_hold({"group": "codex-sub", "allowance": scaled}, "implement")
+    verdict = budget.pace_hold(entry, "implement")
 
     assert verdict["held"] is True
     assert (
-        abs((_parsed(verdict["releases_at"]) - _release_at(factor=2.0)).total_seconds())
+        abs((_parsed(verdict["releases_at"]) - _release_at(factor=factor)).total_seconds())
         < 1.0
     )
+
+
+def test_an_unplaceable_window_yields_no_release_instant() -> None:
+    """An allowance whose window cannot be placed names no release instant.
+
+    The hold still applies -- the burn comparison needs no reset -- but the
+    instant it would release at cannot be derived without the window's own
+    length and reset, so it is an honest absence rather than a fabricated time.
+    """
+    entry = _entry(NOW)
+    entry["allowance"].pop("resets_at")
+
+    verdict = budget.pace_hold(entry, "implement")
+
+    assert verdict["held"] is True
+    assert verdict["releases_at"] is None
 
 
 def test_an_admitted_or_bookend_verdict_carries_no_release_instant() -> None:

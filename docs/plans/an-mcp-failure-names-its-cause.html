@@ -21,14 +21,14 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="reckon-reads-answer-in-seconds">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;}">
   <title>An MCP Failure Names Its Cause | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-impl" content="0.73">
-<meta name="plan-version" content="79">
-<meta name="plan-modified" content="2026-10-08">
-<meta name="plan-commits" content="cff2bbed,e52b056f,abb84ca7">
+<meta name="plan-impl" content="0.75">
+<meta name="plan-version" content="87">
+<meta name="plan-modified" content="2026-10-09">
+<meta name="plan-commits" content="cff2bbed,e52b056f,abb84ca7,7057e247">
 </head>
 <body>
   <main class="plan-doc">
@@ -95,39 +95,12 @@
   <p class="landed-summary">Measured: a one-plan read walks the corpus (26,858 scandir calls, still running at 180 s); warm read_plan and roadmap never answer within 30 s; a fenced worker cannot read crew live. Became §9 and §10. Review 108/120. <a href="/reckon/evidence/archive/an-mcp-failure-names-its-cause-landed.html#s4-read-time-profile">full record</a></p>
 </section>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-08</span>
     <h2 id="s5">§5 — reckon doctor flags any MCP launch that would sync or resolve from its working directory</h2>
-<section data-reckon="section" data-id="s5" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> <code>reckon doctor</code> reads every stdio MCP server registered for
-      Claude Code: the user-scope entries in <code>~/.claude.json</code> and the <code>.mcp.json</code> at the root of each
-      mounted project's checkout, the repository that holds the mount's <code>docs/</code> directory, since a mount
-      names the docs directory and not the checkout. It flags a launch that runs <code>uv run</code> without <code>--no-sync</code>, or that
-      names no absolute <code>--project</code> and so resolves its project from whatever directory the session
-      started in. A worker's worktree is the case that fails. For each flagged launch it prints the corrected
-      command, <code>uv run --no-sync --project &lt;checkout&gt; …</code>. The checkout is written so it
-      names no single user's home: through a variable Claude Code expands in MCP configuration, such as
-      <code>${HOME}</code> or a project-specific variable with a default. A launch whose arguments carry a
-      literal <code>/home/&lt;user&gt;</code> path is flagged too. So is a launch whose <code>--project</code> or
-      <code>--directory</code> names a path that does not exist, judged after expanding the variables Claude Code
-      expands in MCP configuration, such as <code>${HOME}</code>: §6 found 467 imas-cx launches lost to exactly that. Doctor exits non-zero when any launch is
-      flagged. The
-      existing environment-drift check stays beside it, because a launch that no longer syncs depends on the
-      shared environment being kept current, which is already every agent's job. reckon edits no other
-      project's <code>.mcp.json</code>. Those edits belong to their repositories and are recorded as followups
-      naming each one.</p>
-    <p><strong>Done when</strong> <code>tests/test_doctor_mcp_launch.py</code> gives doctor a fixture user
-      config and three fixture projects. One project launches with <code>uv run imas-codex serve</code>, one with
-      <code>uv run --no-sync --project ${HOME}/Code/imas-codex imas-codex serve</code> where the test creates that
-      directory under the temporary home, one with <code>uv run --no-sync --project ${HOME}/Code/absent serve</code> naming
-      a directory that does not exist, and the user-scope reckon
-      entry launches with <code>uv run --project /home/someone/Code/reckon reckon mcp</code>. Doctor flags the first
-      project and the third, the third for its missing directory, and flags the user-scope entry three times (it syncs, it names one user's home, and that path does not exist). It prints a
-      corrected command for each, passes the second project, and exits non-zero. A
-      negative control is executed and logged: with the <code>--no-sync</code> check removed, the user-scope
-      entry is flagged only for its path and the test fails; a second, with the missing-directory check removed,
-      passes the third project and the test fails. Every <code>reckon sync</code> and <code>reckon doctor</code> test that
-      reads a config resolves it under a temporary home, and the test asserts the real
-      <code>~/.claude.json</code> is untouched. The write paths are <code>reckon/project_maintenance_commands.py</code>, where <code>reckon doctor</code> is defined, and
-      <code>tests/test_doctor_mcp_launch.py</code>.</p>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">reckon doctor flags MCP launches that sync, name a user's home, or name a missing project, and prints the corrected command. Five launches flagged on this workstation. Review 108. <a href="/reckon/evidence/archive/an-mcp-failure-names-its-cause-landed.html#s5-doctor-launch-check">full record</a></p>
+</section>
 
     <section class="section-landed">
   <header><span class="badge badge-shipped">&#10003; landed 2026-10-08</span>
@@ -199,6 +172,25 @@
   <p class="landed-summary">The summary view of one plan reads its inventory from the metadata index: 0 directory scans at 5 and 60 plans, against 33 and 198 before; 96 importer modules green at the merged head. <a href="/reckon/evidence/archive/an-mcp-failure-names-its-cause-landed.html#s12-summary-view-index">full record</a></p>
 </section>
 
+    <h2 id="s13">§13 — The census partitions failures and reads in seconds</h2>
+<section data-reckon="section" data-id="s13" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p><strong>Deliverable.</strong> §2's census counts a failed connection once for every cause its log carries, so the cause counts
+      do not partition <code>failed</code>: imas-cx shows 2,697 cause hits over 1,635 failed connections. Each failed connection is now
+      attributed to one cause, the first in the census module's own <code>CAUSES</code> order that its log carries, and the census reports how many failures also carried each later
+      signature, so the cause counts sum to <code>failed</code>. <code>directory_kind</code>, which no caller outside the module uses, becomes
+      private, so the module keeps the one public function §2 declared. The block takes 50 to 126 s on GPFS, most of it a 21 s walk of the
+      log directories: the census skips a working-directory log directory whose modification time predates the window, and opens only log files
+      modified inside it. The doctor block states its <code>storage-slow</code> rule, a result whose payload names the error, beside the
+      count.</p>
+    <p><strong>Done when</strong> <code>tests/test_mcp_census.py</code> also passes three new cases with EXIT=0 in a logged run: a connection
+      whose log carries both a <code>CONNECT_TIMEOUT</code> and the package-metadata line counts once, under <code>CONNECT_TIMEOUT</code>,
+      which comes first in <code>CAUSES</code>, and the cause counts sum to <code>failed</code>; a log directory whose
+      modification time predates the window is never opened; and the doctor block names its <code>storage-slow</code> rule. The census over the
+      real log tree for 2026-10-01T01:00:00Z to 2026-10-08T01:00:00Z finishes in under 20 s, timed in a log in the run directory. The negative
+      control is executed and logged: with every-cause counting restored, the sum assertion fails. The write paths are
+      <code>reckon/mcp_census.py</code>, <code>reckon/project_maintenance_commands.py</code> and <code>tests/test_mcp_census.py</code>; it runs
+      after §5, which edits the doctor module too.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="launch-form" data-choice="uv-no-sync" data-by="Simon McIntosh" data-when="2026-10-08T01:52:37+00:00">
@@ -230,6 +222,11 @@
     <div class="r-fu-body"><p>§10 (<code>reckon/crew/runs.py</code>) and §12 (<code>reckon/mcp.py</code>, <code>reckon/metadata_index.py</code>) can run together. §2 and then §5 edit the CLI and run in sequence once no other live claim holds it. §11 admits <code>worker_mcp_servers</code> as a reckon-owned flight key.</p></div>
     <pre class="r-fu-prompt">/reckon-build an-mcp-failure-names-its-cause §2</pre>
     <p class="r-fu-outcome">§2 landed at abb84ca78: reckon doctor names every MCP failure's cause.</p>
+    </article>
+<article class="r-fu" data-id="f-amfc-004" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-08" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Make the census a partition and fast</h4>
+    <div class="r-fu-body"><p>§2's review and run named four follow-ons; §13 folds them.</p></div>
+    <pre class="r-fu-prompt">/reckon-build an-mcp-failure-names-its-cause §13</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -297,7 +294,22 @@
     <div class="r-comment-body"><p>gate passed (6 passed EXIT=0; 20 importer modules, 348 passed at the merged head; review 115/120, zero added); section 2 closed. Follow-ons folded into §13.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261008T152434093834-doctor-names-every-mcp-failure" data-who="reckon-build" data-when="2026-10-08T16:03:51.571Z">
-    <div class="r-comment-body"><p>reckon doctor now names every MCP connection failure&#x27;s cause through a new census function in reckon/mcp_census.py; the fixture gate passes 6/6 EXIT=0 and the real-tree census for 2026-10-01T01:00Z–2026-10-08T01:00Z reads imas-cx CONNECTION_CLOSED 1065 against section 1&#x27;s 1068 (0.28%, within 5%).</p></div>
+    <div class="r-comment-body"><p>reckon doctor now names every MCP connection failure's cause through a new census function in reckon/mcp_census.py; the fixture gate passes 6/6 EXIT=0 and the real-tree census for 2026-10-01T01:00Z–2026-10-08T01:00Z reads imas-cx CONNECTION_CLOSED 1065 against section 1's 1068 (0.28%, within 5%).</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261008T160609527755-review-of-doctor-names-every-mcp-failure" data-who="reckon-build" data-when="2026-10-08T16:16:46.500Z">
+    <div class="r-comment-body"><p>attached the independent review of r-20261008T152434093834-doctor-names-every-mcp-failure at reviewed_base_sha a7c06655d4eeb52633b366d67ce939a39a3b8d7f / reviewed_head_sha abb84ca783dfcd99886b2a2e93d6767030560822: a parsed 6-dimension record stored at both granted paths, total 115 (goal_fidelity 19, evidence 19, scope_discipline 20, durability 18, fit 19, reuse 20), added_failure_count 0 with added_failure_ids [] off the run's own after_suite (its manifest carries no baseline_suite), two follow-on findings, no blocking finding; the section's gate, negative control and real-tree figure each reproduced independently.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261008T170309233488-review-of-doctor-flags-unsafe-mcp-launches" data-who="reckon-build" data-when="2026-10-08T17:14:18.330Z">
+    <div class="r-comment-body"><p>review of run r-20261008T161825478049-doctor-flags-unsafe-mcp-launches stored at /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261008T161825478049-doctor-flags-unsafe-mcp-launches.at-7057e247491b826b22b0d20dae2f502b6c62f576.json — 6 dimensions total 108/120 (goal_fidelity 19, evidence 17, scope_discipline 19, durability 18, fit 19, reuse 16), reviewed e22aa6f96685e3d0653a8b0e6f95e5cc224539e5..7057e247491b826b22b0d20dae2f502b6c62f576, 3 follow-on findings, added_failure_count unmeasured</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-s5-landed" data-who="reckon-build" data-when="2026-10-08T22:05:00Z">
+    <div class="r-comment-body"><p>gate passed (3 passed EXIT=0; 6 importer modules, 63 passed at the merged head; review 108/120); section 5 closed. Doctor flags five launches here; the imas-codex and imas-efit entries belong to those repositories.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261008T161825478049-doctor-flags-unsafe-mcp-launches" data-who="reckon-build" data-when="2026-10-08T17:02:03.888Z">
+    <div class="r-comment-body"><p>§5 doctor now reads the user-scope stdio entries in ~/.claude.json and the .mcp.json at each mounted checkout, flags a uv run launch that omits --no-sync, names no absolute --project, carries a literal /home/&lt;user&gt; path, or names a missing --project directory, prints a corrected uv run --no-sync --project &lt;checkout&gt; command, and exits non-zero; tests/test_doctor_mcp_launch.py 3 passed EXIT=0</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-s5-flag-correction" data-who="reckon-build" data-when="2026-10-08T22:12:00Z">
+    <div class="r-comment-body"><p>Correction to the §5 landing record, which said three imas-codex entries. The five launches doctor flags are: the user-scope <code>reckon</code> entry in <code>~/.claude.json</code> (syncs, names one user's home); the <code>imas-cx</code> server as launched from three repositories' <code>.mcp.json</code>, imas-ambix (syncs, names one user's home), imas-codex (syncs, resolves from its working directory) and nova (syncs, names one user's home); and imas-efit's <code>efit</code> (syncs, resolves from its working directory). Each fix is <code>uv run --no-sync --project ${HOME}/Code/&lt;repo&gt; …</code>.</p></div>
 </div>
 </section>
 </main>

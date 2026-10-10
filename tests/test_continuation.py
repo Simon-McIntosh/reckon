@@ -9,7 +9,6 @@ the whole chain from a worker manifest to a sprint rollup.
 from __future__ import annotations
 
 import http.client
-import importlib
 import json
 import threading
 from pathlib import Path
@@ -20,6 +19,7 @@ import reckon._store as _store_module
 import reckon.mcp as mcp_module
 from reckon import crew
 from reckon.roadmap import build_roadmap
+from tests.mcp_family_reload import reload_mcp_family
 
 
 # ── Fixtures ────────────────────────────────────────────────────────────────
@@ -41,8 +41,7 @@ def setup(tmp_path, monkeypatch):
 
     serve_mod._MOUNTS_FILE = mounts_file
     serve_mod._STATE_ROOT = state_root
-    importlib.reload(_store_module)
-    importlib.reload(mcp_module)
+    reload_mcp_family()
     return docs_dir, state_root, project
 
 

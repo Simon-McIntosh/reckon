@@ -29,9 +29,7 @@ AREAS = ("reckon", "tests")
 # Modules above the bound when the bound was set, each scheduled for a split.
 ALLOWLIST = frozenset(
     {
-        "reckon/crew/recovery.py",
         "reckon/crew/runs.py",
-        "reckon/mcp.py",
     }
 )
 

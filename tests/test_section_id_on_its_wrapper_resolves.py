@@ -7,7 +7,6 @@ read locate such a section, and both keep locating one whose id sits on its h2.
 
 from __future__ import annotations
 
-import importlib
 import json
 from copy import deepcopy
 from pathlib import Path
@@ -15,10 +14,10 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-import reckon._store as store_module
 import reckon.mcp as mcp_module
 from reckon._plan_html import read_state, write_state
 from reckon.cli import main
+from tests.mcp_family_reload import reload_mcp_family
 
 PROJECT = "wrapper-project"
 WRAPPED = "wrapped-shape"
@@ -108,8 +107,7 @@ def checkout(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
     serve_module._MOUNTS_FILE = mounts_file
     serve_module._STATE_ROOT = state_root
-    importlib.reload(store_module)
-    importlib.reload(mcp_module)
+    reload_mcp_family()
 
     for slug, authored in ((WRAPPED, WRAPPED_AUTHORED), (HEADED, HEADED_AUTHORED)):
         (docs_dir / "plans" / f"{slug}.html").write_text(
