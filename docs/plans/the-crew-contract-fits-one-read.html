@@ -21,13 +21,13 @@
   <meta name="plan-tags" content="crew,reckon-tooling,documentation">
   <meta name="plan-after" content="a-review-is-sized-to-its-risk,a-refusal-is-about-the-work,a-small-change-is-a-small-node">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;}">
   <title>The Crew Contract Fits One Read | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.35">
-<meta name="plan-version" content="33">
-<meta name="plan-modified" content="2026-10-10">
+<meta name="plan-version" content="34">
+<meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
   <main class="plan-doc">
@@ -74,7 +74,7 @@
 <p>§2 can start now; §3 starts once both gates close and the lead has confirmed §2's "still wanted" column.</p><p><strong>Done when</strong> §2 lands and §3 starts only after both gates close and the lead has confirmed §2's "still wanted" column.</p><p>Moved from followup f-tccfor-001 on the-crew-contract-fits-one-read by work-is-a-section-not-a-followup §4; evidence against main at 1135b00d9 (line numbers may have moved since): plan <code>active</code> impl 0.35</p>
 
     <h2 id="s5">§5 — Every command a skill or format document cites exists</h2>
-<section data-reckon="section" data-id="s5" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
 <p>The skill-drift health review of 2026-10-10 (<code>~/.config/reckon/crew/reports/reckon/health-review-1010/health-skill-drift/</code>) extracted 261 <code>reckon</code> command citations from the skills, their references, the AGENTS files, <code>PLAN-FORMAT.md</code> and the crew prompts, and ran <code>--help</code> for every verb they name. Three citations name commands that do not exist: <code>PLAN-FORMAT.md:321</code> and <code>:330</code> prescribe <code>reckon migrate-project-state</code> and <code>reckon migrate-fleet</code>, deleted on 2026-08-24 in <code>807053fb6</code>, and <code>skills/reckon-build/references/sprint-orchestration.md:1011</code> names <code>reckon crew census</code>. The command table in <code>references/coordinator-reference.md:593-614</code> is a copy of <code>SKILL.md:185-211</code> that has already lost five live commands. Nothing fails when a cited command is renamed or removed, so each of these was found by reading.</p><p><strong>Deliverable.</strong> <code>tests/test_cited_commands_exist.py</code> extracts every <code>reckon</code> command form cited in <code>skills/**/*.md</code>, <code>PLAN-FORMAT.md</code>, every <code>AGENTS.md</code> in the repository and <code>reckon/crew/prompts/*.md</code>, and asserts each verb chain and each flag appears in that command's <code>--help</code>; a citation inside a sentence that marks it as planned names its plan and is allowed. The three dead citations are rewritten to the commands that exist or removed. The copied command table in <code>coordinator-reference.md</code> is left to §3, which rewrites that file.</p><p><strong>Done when</strong> the test passes at the integrated head and reports the number of citations it checked; the positive control is executed and logged: run against this section's own base revision, the test fails naming at least <code>PLAN-FORMAT.md:321</code>, <code>PLAN-FORMAT.md:330</code> and <code>skills/reckon-build/references/sprint-orchestration.md:1011</code>, and every dead citation it names there (the recursive corpus also reaches <code>references/orchestrator-harness/</code>, which the health review's extractor skipped) is repaired or marked planned in this node, with the list in the manifest; and the negative control is executed and logged: a temporary skill file citing <code>reckon crew dispatch --no-such-flag</code> fails the test by file and line. Write paths: <code>tests/test_cited_commands_exist.py</code>, <code>PLAN-FORMAT.md</code>, <code>skills/reckon-build/references/</code>. This section runs before §3, so its test then guards §3's rewrite of <code>SKILL.md</code> and the references: every command the rewritten text cites must still resolve.</p>
 
     <section data-reckon="gates" id="gates" class="r-gates">
@@ -178,6 +178,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-tccf-residuals-landed" data-who="s25-coord" data-when="2026-10-02">
     <div class="r-comment-body"><p><strong>classify-rules-residuals landed</strong> (run <code>r-20261002T191804314390</code>, commit <code>0ba69fa82</code>, merged at <code>6f4a91515</code>, review 91). The ten scanner candidates the reconcile left uncovered are now rows or listed rejects. <code>reconcile_coverage.py</code> is committed beside the scan scripts, and at main it reports <code>candidates 261 rows 329 rejects 13</code>, <code>uncovered 0</code>. The dispositions figure is regenerated from the table.</p><p>Two review follow-ons remain. Row 327 restates row 197; the checker's tokeniser splits the backticked <code>crew.followup_ops_from_manifest</code> on underscores, so one rule got two rows. And the fragment header keeps the earlier reconcile paragraph (247 rows) beside the new 329-row account, without marking it as superseded.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-close-s5" data-who="reckon-build" data-when="2026-10-10T22:25:00Z">
+    <div class="r-comment-body"><p>§5 landed: every cited reckon command is checked against --help (290 citations, 0 problems; merged <code>4d14e208a</code>); review 105/120. It now guards §3's rewrite. <a href="/reckon/evidence/archive/the-crew-contract-fits-one-read-landed.html#s5">evidence</a></p></div>
 </div>
 </section>
 </main>
