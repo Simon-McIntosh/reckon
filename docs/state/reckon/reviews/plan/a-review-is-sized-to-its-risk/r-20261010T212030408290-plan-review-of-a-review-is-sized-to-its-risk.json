@@ -1,0 +1,55 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T21:32:18.102Z",
+  "dispatched_at": "2026-10-10T21:20:59Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-review-is-sized-to-its-risk.html:185",
+      "id": "reasoning-1",
+      "reason": "a node building \u00a79 as written either leaves its own cited plan-carrying review without a rubric or silently stops the plan gates running for plan-carrying review runs, and the done-when would not catch either.",
+      "text": "\u00a79 routes every run review's rubric through a composed brief, but `brief = \"\" if plan else node.brief_path` and `_review_dispatch_tokens` choose `--brief` XOR `--plan/--section`, so making the brief non-empty for a plan-naming run replaces `--plan/--section` with `--brief` and drops the plan authority the in-code invariant at recovery_review_subject.py:496-502 says such a run must keep; \u00a79 states no such change and its done-when tests only an implement run and an investigate run, so the plan-carrying example it cites is neither shown fixed nor shown safe",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-review-is-sized-to-its-risk.html:184",
+      "id": "wiring-1",
+      "reason": "\u00a78 has already landed, so the dependency is satisfied and no schedule or gate changes; recording it is bookkeeping rather than a change to what a node does.",
+      "text": "\u00a79's deliverable composes `load_claims_review_prompt` for a read-only run, a loader \u00a78 adds, yet the s9 section element carries `data-links=\"\"` and no ordering prose, so the s9-to-s8 dependency is not declared",
+      "type": "wiring",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "a13d33b00de7039e0c1ac179eb20d693cf55c47980a8b5ee79690ed26e6d0f98",
+  "plan_slug": "a-review-is-sized-to-its-risk",
+  "plan_version": 145,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261010T212030408290-plan-review-of-a-review-is-sized-to-its-risk",
+  "reviewed_blob_sha": "274db612fd689f65493fcce4c5c3a4e302ef28ba",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `load_review_prompt`/`load_claims_review_prompt` (review.py:432/437), `_review_dispatch_fields` (recovery_review_subject.py:355) and `_review_dispatch_action` (recovery_classification.py:550, a live call site) all resolve, and the plan no longer cites the blank line 411.",
+    "done_when": "pass \u2014 \u00a79 names a measurable test and a declared, executed negative control (compose the brief from the reviewed run's brief alone; the first assertion fails).",
+    "evidence_paths": "pass \u2014 the cited prompt file resolves on the durable crew-runs path (141 lines, present) and the test path is a repository test file.",
+    "naming": "pass \u2014 \u00a79 introduces no plan labels, ticket numbers or version tags; `SCORE <dimension>` and `CLAIM` are emitted-record grammar, not symbols.",
+    "reasoning": "a finding \u2014 \u00a79's mechanism cannot reach the plan-carrying run its own cited example is about without a change \u00a79 does not state: `_review_dispatch_fields` sets `brief=\"\"` whenever the reviewed run names a plan, so a plan-carrying review dispatches `--plan/--section` and never a brief, and plan-carrying is exactly the case of the cited `r-20261010T204459845050-review-of-a-read-takes-no-lock/prompt.txt` (its prompt carries `PLAN reckon:a-read-answers-inside-its-deadline \u00a72`).",
+    "single_goal": "pass \u2014 \u00a79 carries one deliverable, composing the run review's brief from the rubric.",
+    "wiring": "a finding \u2014 \u00a79 composes `load_claims_review_prompt`, which \u00a78 introduces, but the \u00a79 section element declares no relationship (`data-links=\"\"`), so the dependency it rests on is unrecorded."
+  },
+  "section_digests": {
+    "_document": "559cec5332c4e2772f0c8bb42b10af28b4a6c6214163ada0e79741c0481d484f",
+    "s1": "1bca4570a6dc141df8190260147c4603fdbd4e237bbd0fa1f635f166cdf5637b",
+    "s2": "d87e94711b1191be6062f6581f0bf3c2f7793876a327c35be59e3dd37bbe72c8",
+    "s3": "865c2c7d189405d6ba0566cebd8df5e459211cc93a64a9332de51cff756b47ac",
+    "s4": "834dc20a74581e06fc6c6b99a07ea7b628c9c36d7c390cee1b4e599eeec7b070",
+    "s5": "dd9455e66ea742a997a12400b194e02c6557b19217a06db0a58f82d7d82b8fde",
+    "s6": "cb4e838e28a346993a653862da66ac934c2c1b8e7e1aa1d7cb23c7082672067d",
+    "s7": "044f93aa0d0fd0aed5a7b5b535f5b7a2efacfc541ef12f41a04af14289440d7c",
+    "s8": "a12e7aff5d1cfd541706cc743c3d78ed9c0a96dba6af2c4f8b6dbb2309ea9582",
+    "s9": "fae6d27edf6aa0170dd302afb790da6fb4da2bb870734a7eed0a3b1ce3ed483f"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T21:32:38.125046+00:00"
+}
