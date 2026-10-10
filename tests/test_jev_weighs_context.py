@@ -145,14 +145,24 @@ def scan_candidates(config, root):
 
 
 def test_context_block_reports_headroom_and_leaves_unknown_null():
+    # The block renders the once-per-pick figure it is handed, not the
+    # per-backend estimate the context carries, so one backend-settings rule
+    # governs the request estimate and every candidate block.
     block = snapshot._context_block(
         {"window_tokens": 100000, "estimated_tokens": 85000},
-        0,
+        85000,
         NO_UTILISATION,
     )
     assert block["window_tokens"] == 100000
-    assert block["estimated_tokens"] == 85000
     assert block["headroom_pct"] == pytest.approx(15.0, abs=0.1)
+
+    overrides = snapshot._context_block(
+        {"window_tokens": 100000, "estimated_tokens": 85000},
+        60000,
+        NO_UTILISATION,
+    )
+    assert overrides["estimated_tokens"] == 60000
+    assert overrides["headroom_pct"] == pytest.approx(40.0, abs=0.1)
 
     unbounded = snapshot._context_block(None, 60000, NO_UTILISATION)
     assert unbounded["window_tokens"] is None

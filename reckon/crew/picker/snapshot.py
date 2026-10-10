@@ -220,20 +220,18 @@ def _context_block(
 ) -> dict[str, Any]:
     """One candidate's weighable context facts, null where unknown.
 
-    ``window_tokens`` is the gating window the context-fit verdict compares an
-    estimate against; ``estimated_tokens`` is this node measured against that
-    candidate (the verdict's own per-backend estimate where one exists, else
-    the once-per-pick figure). ``headroom_pct`` is the share of the window the
-    estimate leaves free. A lane declaring no window carries a null window and
-    no headroom, never a zero that would read as a spent window.
+    ``window_tokens`` is the gating window the context-fit verdict compares the
+    figure against. ``estimated_tokens`` is the once-per-pick, harness-
+    independent figure for this node — the same one the request estimate
+    carries — so one backend-settings rule governs both the request's figure
+    and every candidate's block, rather than each candidate wearing its own
+    backend's standing chain. ``headroom_pct`` is the share of the window that
+    figure leaves free. A lane declaring no window carries a null window and no
+    headroom, never a zero that would read as a spent window.
     """
 
-    if context is None:
-        window_tokens = None
-        estimated_tokens: int | None = node_tokens
-    else:
-        window_tokens = context.get("window_tokens")
-        estimated_tokens = context.get("estimated_tokens")
+    window_tokens = None if context is None else context.get("window_tokens")
+    estimated_tokens: int | None = node_tokens
     headroom_pct = None
     if window_tokens and estimated_tokens is not None:
         headroom_pct = round(
