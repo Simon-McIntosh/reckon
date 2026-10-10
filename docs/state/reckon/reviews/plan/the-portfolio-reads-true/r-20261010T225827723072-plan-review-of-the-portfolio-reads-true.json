@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T23:07:30.235Z",
+  "dispatched_at": "2026-10-10T22:58:55Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-portfolio-reads-true.html:47",
+      "id": "anchors_resolve-1",
+      "reason": "a reader who opens the worktree at these anchors lands on unrelated code, and \u00a73 itself concedes line numbers moved, so the fix is to correct them or cite by name as \u00a73 does.",
+      "text": "\u00a71's table cites the mtime read at `reckon/doccheck.py:531` and `ACTIVE_PLAN_STALE_AFTER_DAYS` at \"line 154\", but those are now lines 540 and 163, and \u00a75 (line 129) cites `unwired_plan_finding` at `reckon/doccheck.py:874` where it now sits at 883 (the module gained nine lines when \u00a72 landed)",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-portfolio-reads-true.html:101",
+      "id": "done_when-1",
+      "reason": "the band's population must be fixed for AGING and STALE together, and the STALE fixture carries an unstated precondition, or the node's declared measure fails on a plan the plan's own text calls non-shipped.",
+      "text": "the deliverable reports AGING for \"a non-shipped plan between 14 and 30 days old\" yet keeps STALE \"as today\", which fires only for `status == \"active\"` and `impl < 1.0` (`reckon/doccheck.py:291-294`); a non-shipped plan that is `draft` or `blocked` would therefore enter the AGING band and never reach STALE, and the done-when's \"second plan committed 40 days ago reports `STALE`\" (line 107) asserts a row without stating that the fixture must be active with `impl < 1.0`",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "85322d0c8420da39fa20a84e2669a3d5c90c46412f8e02d5bf1ad1d3ff6d57fa",
+  "plan_slug": "the-portfolio-reads-true",
+  "plan_version": 13,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261010T225827723072-plan-review-of-the-portfolio-reads-true",
+  "reviewed_blob_sha": "d52d71b8aebda4402044fc4edbc49fb7b31c46de",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the numeric anchors into `reckon/doccheck.py` in \u00a71 and \u00a75 no longer resolve to the lines they name after \u00a72's landing shifted the module.",
+    "done_when": "a finding \u2014 the deliverable gives the AGING band a \"non-shipped\" population while leaving STALE at today's active-only rule, and the done-when's STALE assertion omits the `impl < 1.0` precondition.",
+    "evidence_paths": "pass \u2014 \u00a73 names its test file as the gate (`tests/test_staleness_counts_from_the_last_commit.py`) and the node records its logs on the crew run directory; no session scratchpad or node-local temp path is named as evidence.",
+    "naming": "pass \u2014 \u00a73 cites functions by name and states the reason (\"line numbers in these modules moved during this sprint\"); no plan labels, stage names or ticket numbers reach the symbols or comments it will add.",
+    "reasoning": "pass \u2014 the stated root cause (every server write refreshes the mtime, so the audit's mtime read reported 0 stale) matches \u00a71's cited evidence; the mechanism runs on named production callers (the audit loop at `reckon/doccheck.py:540`, the roadmap's `_authorisation_age`, the archive's call); and the two deferrals from the prior review are now written into the section.",
+    "single_goal": "pass \u2014 \u00a73 carries one deliverable, that a plan's age counts from its last commit, expressed as one audit change (AGING) over one code path.",
+    "wiring": "pass \u2014 \u00a73 is gated by `g-tprt-age-honest` (requires `the-portfolio-reads-true#s3`) and its ordering after \u00a72 is declared in the section text (line 110) and the driving followup `f-tprt-002` (\"\u00a72, \u00a73, \u00a74, \u00a75 in turn\")."
+  },
+  "section_digests": {
+    "_document": "a2e40a46ef8769d14f88fec5811bd50d0aa5fc6a7f36f66f1ebcba3a9533436a",
+    "s1": "56204248c9050844c40ac7e00bff909830602caaa4b95be87bacea51b1495a03",
+    "s2": "69b86246adb4ea89719f367ac57f43940ed14fb88c5c89408cf18a6b59911f57",
+    "s3": "470392f49184f886a2e270ffeb9f41fb7c2c802a4c8b3d9c2df008e90fadf151",
+    "s4": "9280ec81cafc36b7de1295b0f22745c6162986e93d9731a8e8b99c51d658a217",
+    "s5": "6faa47a6baa98d4e30fc9ec11b4968f36696b381308a599ae91bf7eb75418236",
+    "s6": "3b386242a01bc207ce0810ef1ee5ccbd8a9d5ea78f77a5dd6fc61b2f207c53d0"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T23:09:17.847730+00:00"
+}
