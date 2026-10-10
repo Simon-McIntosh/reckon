@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="nothing-lands-unreached">
+  <meta name="plan-evidence-for" content="reckon:nothing-lands-unreached">
+  <meta name="plan-verifies" content="reckon:nothing-lands-unreached#s4">
+  <meta name="plan-recorded-at" content="2026-10-11">
+  <meta name="plan-verdict" content="passed">
+  <title>The one-off census modules move out of the package | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="census-modules-move-to-scripts-landing" data-node="census-modules-move-to-scripts" data-reckon="landed" data-when="2026-10-11">
+  <h2>The three unreached census modules and their tests move to <code>scripts/census</code></h2>
+
+  <p><strong>What changed.</strong> <code>carryover_census</code>,
+  <code>death_census</code> and <code>pace_replay</code> left
+  <code>reckon/crew/</code> for <code>scripts/census/</code> as standalone
+  scripts, each with an <code>argparse</code> <code>main()</code> behind a
+  <code>__main__</code> guard (<code>death_census</code>'s positional output path
+  became <code>--out</code>). Their three tests moved beside them. The four
+  tests that stay in <code>tests/</code> and the two committed research scripts
+  now load the moved modules by path with <code>importlib</code>, since
+  <code>scripts/</code> is not a package; the loader registers each module in
+  <code>sys.modules</code> before executing it, so the dataclass definitions
+  resolve. The unreached-module allowlist in
+  <code>tests/test_every_module_is_reached.py</code> drops the three entries,
+  and the <code>:mod:</code> reference in <code>reckon/budget.py</code> names the
+  script path. The moved code's own <code>generated_by</code> value now reads
+  <code>scripts/census/death_census.py</code>; committed data files keep the
+  provenance they were written with.</p>
+
+  <p><strong>Measure.</strong> <code>git grep -nE
+  "reckon[./]crew[./](carryover_census|death_census|pace_replay)"</code> over
+  <code>reckon/ tests/ skills/ scripts/</code> returns no hit (exit 1). Each of
+  the three scripts runs from <code>scripts/census</code> with <code>--help</code>
+  exiting 0. The gate — the three moved tests, the four rewritten tests that stay
+  in <code>tests/</code>, and the reach ratchet — passes:
+  <strong>317 passed</strong>, <code>EXIT=0</code>. Both research scripts import
+  at the head (<code>scan_local_lane_deaths</code> and
+  <code>anatomy_census</code>, the latter binding <code>_dialect</code> and
+  <code>_first_turn_input</code> from the moved module).</p>
+
+  <p><strong>Negative control.</strong> With one moved module's old dotted import
+  (<code>from reckon.crew import death_census</code>) left in a copy of a test,
+  that test fails at collection —
+  <code>ImportError: cannot import name 'death_census'</code>, <code>EXIT=2</code>
+  (<code>negative-control.log</code>).</p>
+</article>
+</body>
+</html>
