@@ -154,3 +154,65 @@ def test_dispatch_reads_the_bounded_receipt_index(
         )
 
     assert dispatch_claims.recent_claim_grace_seconds() == 27.0
+
+
+def test_the_grace_is_derived_through_the_run_store_index(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The unrooted derivation takes its run names from the store index.
+
+    With no observations summary file present, ``recent_claim_grace_seconds``
+    falls through to ``_recent_run_names`` with ``indexed=True``. That branch
+    reads ``run_store.db`` and the live pointers, and its fallback is a plain
+    directory scan of ``runs_dir()``. A test whose receipts sit under a
+    scannable ``runs_dir()`` would pass even with the index read broken,
+    because the fallback would find the same names. Here the fallback scan is
+    blinded to the runs directory, so the receipts are reachable only through
+    the run ids the store index names and the derived grace can only come from
+    the index: a branch that named no runs would fall to the floor and fail.
+    """
+    from reckon import run_store
+
+    runs_root = tmp_path / "runs"
+    monkeypatch.setattr(dispatch_claims, "crew_home", lambda: tmp_path)
+    monkeypatch.setattr(dispatch_claims, "runs_dir", lambda: runs_root)
+    dispatch_claims._claim_grace_cache.clear()
+    origin = datetime(2026, 10, 8, tzinfo=UTC)
+    with run_store.RunStore(tmp_path / "run_store.db") as store:
+        for index in range(20):
+            run_id = f"r-20261008T{index:014d}-indexed"
+            store.append("fixture", {"run_id": run_id})
+            directory = runs_root / run_id
+            directory.mkdir(parents=True)
+            (directory / "attempt-1-worker.json").write_text(
+                json.dumps(
+                    {
+                        "attempt": 1,
+                        "claim_registered_at": origin.isoformat(),
+                        "launched_at": (origin + timedelta(seconds=20)).isoformat(),
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+    empty = tmp_path / "no-fallback-entries"
+    empty.mkdir()
+    real_os = dispatch_claims.os
+
+    class _IndexOnlyOs:
+        """An ``os`` whose scandir cannot enumerate the runs directory."""
+
+        def scandir(self, path: object, *args: object, **kwargs: object):
+            if Path(path) == runs_root:
+                return real_os.scandir(empty)
+            return real_os.scandir(path, *args, **kwargs)
+
+        def __getattr__(self, name: str) -> object:
+            return getattr(real_os, name)
+
+    monkeypatch.setattr(dispatch_claims, "os", _IndexOnlyOs())
+
+    assert (
+        dispatch_claims.recent_claim_grace_seconds()
+        == dispatch_claims.claim_grace_seconds([20.0] * 20)
+    )
