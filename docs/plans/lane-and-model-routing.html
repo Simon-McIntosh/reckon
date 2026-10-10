@@ -20,14 +20,14 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;: [&quot;every-module-fits-a-worker-window#s4&quot;], &quot;s10&quot;: [&quot;every-module-fits-a-worker-window#s4&quot;], &quot;s14&quot;: [&quot;lane-and-model-routing#s4&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s0&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s0&quot;:&quot;done&quot;}">
   <title>Lane And Model Routing | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-north-star" content="unattended-execution">
-<meta name="plan-impl" content="0.7777777777777778">
-<meta name="plan-version" content="55">
-<meta name="plan-modified" content="2026-10-10">
+<meta name="plan-impl" content="0.8">
+<meta name="plan-version" content="57">
+<meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
   <main class="plan-doc">
@@ -104,7 +104,7 @@
 <p>The review of §9 (score 102) found that <code>_leaf_paths</code>, added by §9 in <code>reckon/flight.py</code>, is a second copy of the leaf-traversal rule that <code>_record_provenance</code> applies inline. Provenance is right only while the two agree on which paths are leaves, and a comment now asserts that agreement instead of the code holding it. Make <code>_record_provenance</code> walk the leaves through <code>_leaf_paths</code>, so the module has one owner for the rule.</p><p>Write paths: <code>reckon/flight.py</code> and its tests.</p><p><strong>Done when</strong> <code>_record_provenance</code> calls <code>_leaf_paths</code> and holds no traversal of its own. A test changes the leaf rule in <code>_leaf_paths</code> alone (treating an empty mapping as a non-leaf, which today is a leaf) and shows <code>origin()</code> and <code>provenance_sources</code> both follow it. Every existing <code>origin()</code> assertion still passes.</p>
 
     <h2 id="s13">§13 — A modelless key&#x27;s naming has a test that fails without it</h2>
-<section data-reckon="section" data-id="s13" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s13" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
 <p>§8's review found that <code>test_a_modelless_candidate_does_not_name_its_backend_a_model</code> and <code>test_two_modelless_backends_on_one_lane_are_both_offered</code> in <code>tests/test_option_keys_are_unique.py</code> also pass at §8's base, where the key already read <code>&lt;lane&gt;:&lt;backend&gt;</code>. So item 2's change, which stops the questions presenting a modelless candidate's backend as its model, has no guard. Assert what the questions say about that part, not only the key string.</p><p>Write paths: <code>tests/test_option_keys_are_unique.py</code>. No product code changes.</p><p><strong>Done when</strong> a test of the rendered questions for a modelless candidate fails when its backend is labelled as a model, and passes on main.</p>
 
     <h2 id="s14">§14 — A declared model outside the named lane is refused by name, and --model is tested end to end</h2>
@@ -286,6 +286,12 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261010T205451806281-review-of-dispatch-names-a-model" data-who="reckon-build" data-when="2026-10-10T21:04:40.194Z">
     <div class="r-comment-body"><p>stored an independent review of r-20261010T201227087344-dispatch-names-a-model reading c16b71de9724b9a3c1523c6effd18a2b45c6697d..dba1dbfaa8e1757d69c6cc3082e05bb8f33650b6</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-close-s13" data-who="reckon-build" data-when="2026-10-10T22:15:00Z">
+    <div class="r-comment-body"><p>§13 closed with no defect: <code>test_a_modelless_candidate_does_not_name_its_backend_a_model</code> already guards the modelless key. The run's added test duplicated it (review 80), so it was not merged. <a href="/reckon/evidence/archive/lane-and-model-routing-landed.html#s13">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261010T215157026672-modelless-key-naming-is-tested" data-who="reckon-build" data-when="2026-10-10T22:02:14.578Z">
+    <div class="r-comment-body"><p>tests/test_option_keys_are_unique.py adds test_the_rendered_questions_name_a_modelless_key_part_as_its_backend, which renders the questions for a modelless candidate and asserts the key&#x27;s second part is the backend and no model is named for it; gate 194 passed on head vs 193 on base, and the test fails (EXIT=1) when the backend is labelled as its model.</p></div>
 </div>
 </section>
 </main>
