@@ -1,0 +1,53 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed manifest records baseline_suite and after_suite as null, so both arms were re-run by the reviewer at base e257433977ad and head 358c5031c with the corpus pinned non-empty (citations=292): base passes 1 test EXIT=0, head passes 2 tests EXIT=0, so no failure was added by the change.",
+  "backend": "local",
+  "base_log_revision": "e257433977ad5f4616b55b94c8d9b1ab5dfedda3",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-10T22:46:37.457Z",
+  "dispatched_at": "2026-10-10T22:37:31Z",
+  "findings": [],
+  "head_log_revision": "358c5031cba1b839ef62cfdfcb7abc0ed1358c69",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "none - the changed file is a test module, so it has no production call sites",
+    "diff": "read e257433977ad5f4616b55b94c8d9b1ab5dfedda3..358c5031cba1b839ef62cfdfcb7abc0ed1358c69; +44/-8 across two files: tests/test_cited_commands_exist.py adds _help_has_flag and _flag_problems, routes the flag arm through them, adds test_a_cited_flag_is_matched_as_a_whole_option_token, and rewrites the module and corpus docstrings to state the mechanism; the fragment html is added empty. No product code changes.",
+    "done_when": "the done-when has four clauses: head gate EXIT=0 with whole-token matching (reproduced: 2 passed, citations=292 checked=290 planned=2 problems=0, EXIT=0), a new case asserting a substring-only flag is reported (tests/test_cited_commands_exist.py:264), a mechanism-only module docstring with no incident history (reworded at :57 and :9), and a negative control that passes the substring case and fails the new assertion (reproduced: restoring `flag in help_text` reddens test_a_cited_flag_is_matched_as_a_whole_option_token at `assert not _help_has_flag(help_text, substring)`, EXIT=1). All four hold.",
+    "goal": "the node's goal is to match each cited flag against the --help text as a whole option token; tests/test_cited_commands_exist.py adds _help_has_flag (re.search with (?<![\\w-])...(?![\\w-]), :207) and _flag_problems (:219), and the flag arm at :257 now calls _flag_problems, so the deliverable is present.",
+    "manifest": "read; it records status complete, commit 358c5031c, head gate head-gate.log 2 passed EXIT=0, negative control negative-control.log 1 failed 1 passed EXIT=1, names its log paths, and states the three prior findings from the cited-commands-exist review are repaired in the one commit; baseline_suite and after_suite are null.",
+    "write_paths": "the diff touches only tests/test_cited_commands_exist.py and docs/evidence/fragments/the-crew-contract-fits-one-read/cited-flags-match-whole-tokens.html, both inside the declared write paths; no product source and no plan-state edit."
+  },
+  "justifications": {
+    "durability": "the tightened guard is the change; restoring the substring check reddens the new assertion (negative control, EXIT=1, failing test_a_cited_flag_is_matched_as_a_whole_option_token) and the base arm passes only because the new case is absent at base, so the new case is load-bearing for the whole-token behaviour rather than passing vacuously.",
+    "evidence": "the recorded head gate and negative control are sound and I reproduced both; the reviewed run's own negative-control log ran its corpus arm against a scratch ROOT (citations=0, a vacuous pass under AGENTS.md's non-vacuity rule), so its substring-passing clause was carried by the new case alone rather than a real corpus arm - I re-ran the mutation with the corpus pinned to the reviewed worktree and the discriminator still holds (corpus passes, new case fails). Base and head arms re-run non-vacuously at citations=292.",
+    "fit": "conventional commit with a body stating the mechanism, no AI attribution, no plan or version labels in the subject or in the code, and the docstring now states the recursion mechanism (a nested reference is as binding as the skill body) rather than citing the review that motivated it.",
+    "goal_fidelity": "tests/test_cited_commands_exist.py:207 implements the whole-token match the goal names and :264 pins it, and the same commit repairs the two prior findings (the substring flag check and the incident-citing docstring); the corpus arm confirms no genuine flag is now rejected (problems=0 at citations=292).",
+    "reuse": "the change reuses _help, _FLAG and Citation and extends the existing flag loop rather than forking it, factoring the inline comprehension into _flag_problems so the corpus arm and the new case share one matcher.",
+    "scope_discipline": "every path in the diff is inside the declared write paths (the test file and the evidence fragment); the only extra in-file change is reflowing the docstring and extracting _flag_problems, both in service of the goal."
+  },
+  "model": "deepseek-v4.1-flash",
+  "node": "review-of-cited-flags-match-whole-tokens",
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: e257433977ad5f4616b55b94c8d9b1ab5dfedda3\nreviewed_head_sha: 358c5031cba1b839ef62cfdfcb7abc0ed1358c69\nVERDICT goal: the node's goal is to match each cited flag against the --help text as a whole option token; tests/test_cited_commands_exist.py adds _help_has_flag (re.search with (?<![\\w-])...(?![\\w-]), :207) and _flag_problems (:219), and the flag arm at :257 calls _flag_problems, so the deliverable is present.\nVERDICT done_when: the head gate runs 2 passed EXIT=0 with a non-vacuous corpus (citations=292 checked=290 planned=2 problems=0); the new case test_a_cited_flag_is_matched_as_a_whole_option_token asserts a substring-only flag is reported; the module docstring states the mechanism with no incident history; and restoring the substring check reddens the new assertion (EXIT=1). I reproduced every clause.\nVERDICT write_paths: the diff touches only tests/test_cited_commands_exist.py and docs/evidence/fragments/the-crew-contract-fits-one-read/cited-flags-match-whole-tokens.html, both inside the declared write paths; no product code and no plan-state edit.\nVERDICT manifest: read; status complete, commit 358c5031c, head-gate.log 2 passed EXIT=0, negative-control.log 1 failed 1 passed EXIT=1, log paths named; baseline_suite and after_suite null, so both arms were re-run by the reviewer.\nVERDICT diff: read e257433977ad..358c5031c; +44/-8, adding _help_has_flag/_flag_problems and the new case, rewording the docstrings, and adding the empty fragment; no product changes.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_cited_commands_exist.py:207 implements the whole-token match the goal names and :264 pins it, and the same commit repairs the two prior findings; the corpus arm confirms no genuine flag is now rejected (problems=0 at citations=292).\nSCORE evidence: 18\nJUSTIFICATION evidence: the recorded head gate and negative control are sound and I reproduced both with the corpus pinned non-empty; the reviewed run's own negative-control log ran its corpus arm against a scratch ROOT (citations=0, a vacuous pass), so its substring-passing clause was carried by the new case alone - I re-ran the mutation correctly and the discriminator still holds.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared write paths (the test file and the fragment); the only extra is in-file docstring reflow and the _flag_problems extraction, both in service of the goal.\nSCORE durability: 19\nJUSTIFICATION durability: the guard is the change; restoring the substring check reddens the new assertion (negative control) and the base arm passes only because the new case is absent, so the new case is load-bearing.\nSCORE fit: 19\nJUSTIFICATION fit: conventional commit with a body stating the mechanism, no AI attribution, no plan or version labels, and the docstring now states the recursion mechanism rather than citing the review that motivated it.\nSCORE reuse: 18\nJUSTIFICATION reuse: the change reuses _help, _FLAG and Citation and extends the existing flag loop, factoring the inline comprehension into _flag_problems so the corpus arm and the new case share one matcher.\n",
+  "review_run_id": "r-20261010T223650245013-review-of-cited-flags-match-whole-tokens",
+  "reviewed_base_sha": "e257433977ad5f4616b55b94c8d9b1ab5dfedda3",
+  "reviewed_head_sha": "358c5031cba1b839ef62cfdfcb7abc0ed1358c69",
+  "reviewed_run_id": "r-20261010T222511418587-cited-flags-match-whole-tokens",
+  "reviewer": "review-of-cited-flags-match-whole-tokens",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T22:43:10Z",
+  "total": 112
+}
