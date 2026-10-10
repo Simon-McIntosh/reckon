@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-slug" content="a-read-answers-inside-its-deadline">
+  <meta name="plan-title" content="A read answers inside its deadline">
+  <meta name="plan-evidence-for" content="reckon:a-read-answers-inside-its-deadline">
+  <meta name="plan-verifies" content="reckon:a-read-answers-inside-its-deadline#s3">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-10">
+  <title>A warm roadmap takes the index's walk-skip | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="warm-roadmap-takes-the-walk-skip-landing">
+  <h2>A warm roadmap read takes the metadata index's recorded tree shape</h2>
+
+  <p><strong>Cause found.</strong> A counting wrapper over
+  <code>metadata_index._walk_covered</code> showed the warm roadmap re-walking
+  the covered tree on every call through the discovery change signature:
+  <code>serve._discovery_signature</code> &rarr;
+  <code>serve._walk_discovery_signature</code> &rarr;
+  <code>metadata_index._covered_files</code>, which called
+  <code>_walk_covered</code> unconditionally and so never reached
+  <code>_reuse_covered</code>. Two entries per first read, one per warm read.</p>
+
+  <p><strong>Change.</strong> <code>_covered_files</code> (the single docs-tree
+  walk the index and discovery share) now resolves the tree's project from the
+  mounts table; when the index holds that tree it answers from
+  <code>_reuse_covered</code> while every recorded directory identity matches,
+  and otherwise walks and records the file set and directory identities so the
+  next read skips. No second directory-identity map is added.</p>
+
+  <p><strong>Measured.</strong> <code>tests/test_warm_roadmap_does_not_walk.py</code>
+  passes <code>EXIT=0</code> (<code>2 passed</code>): the second roadmap read in
+  one process enters <code>_walk_covered</code> zero times, and after a plan is
+  added the third read walks and reports three plans. The declared negative
+  control was executed and logged: forcing <code>_reuse_covered</code> to
+  decline makes the second read walk and reds the case
+  (<code>1 failed</code>, <code>EXIT=1</code>). Related suites
+  (metadata-index, discovery, rollup, MCP roadmap) run green, 48 passed.</p>
+
+  <p><strong>Scope retained.</strong> The driving followup stays open and no
+  terminal status is set. Logs:
+  <code>~/.config/reckon/crew/runs/r-20261010T212131119432-warm-roadmap-takes-the-walk-skip/logs/</code>.</p>
+</section>
+</main>
+</body>
+</html>
