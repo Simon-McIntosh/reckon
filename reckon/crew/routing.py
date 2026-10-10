@@ -1428,6 +1428,219 @@ PLAN_REVIEW_RAW_REPORT_REASON = (
 )
 
 
+def _newest_mtime(directory: Path) -> datetime:
+    """The newest file mtime beneath a tree, or the tree directory's own."""
+    newest = directory.stat().st_mtime
+    for child in directory.rglob("*"):
+        try:
+            stamp = child.stat().st_mtime
+        except OSError:
+            continue
+        newest = max(newest, stamp)
+    return datetime.fromtimestamp(newest, tz=UTC)
+
+
+def _tree_bytes(path: Path) -> int:
+    """Bytes a report tree or run directory holds, its files summed."""
+    if path.is_file():
+        try:
+            return path.stat().st_size
+        except OSError:
+            return 0
+    total = 0
+    for child in path.rglob("*"):
+        if child.is_file():
+            try:
+                total += child.stat().st_size
+            except OSError:
+                continue
+    return total
+
+
+def _live_run_ids() -> set[str]:
+    """The run ids a live pointer currently names, read fresh for a re-check."""
+    return {str(record.get("run_id") or "") for record in list_live()}
+
+
+def _run_has_live_pointer(
+    run_id: str, live_ids: set[str], confined_to: str | None
+) -> bool:
+    """Whether a run's own artifacts are held by a live pointer.
+
+    A live pointer names a run that may still be writing into its tree, so a
+    tree whose run is live is not offered for removal. A pass confined with
+    ``--run`` owns that run's artifacts — the operator named it, as the release
+    door names a tree its own record carries — so the confined run's own live
+    pointer does not withhold it.
+    """
+    if confined_to and confined_to == run_id:
+        return False
+    return run_id in live_ids
+
+
+def _run_report_trees(
+    *,
+    project: str | None,
+    apply: bool,
+    now: datetime | None,
+    run_id: str | None,
+    live_ids: set[str],
+    ledgered: set[str],
+    retention_days: int,
+) -> list[dict[str, Any]]:
+    """Run-keyed report trees outside the plan-review family, past retention.
+
+    A report tree here is a top-level ``reports/<project>/<run-id>/`` directory
+    named for a run gc knows, live or already in the ledger; a topic-named
+    directory filed by hand carries no run name and is never matched. A tree
+    whose run is live is left alone, and the live set is re-read immediately
+    before each removal.
+    """
+    from reckon.crew.runs import reports_dir
+
+    reports_root = reports_dir()
+    if not reports_root.is_dir():
+        return []
+    current = now or datetime.now(tz=UTC)
+    cutoff = current - timedelta(days=retention_days)
+    entries: list[dict[str, Any]] = []
+    for project_dir in sorted(path for path in reports_root.iterdir() if path.is_dir()):
+        name = project_dir.name
+        if project and name != project:
+            continue
+        for tree in sorted(path for path in project_dir.iterdir() if path.is_dir()):
+            report_run_id = tree.name
+            if report_run_id == "plan-review":
+                continue
+            if report_run_id not in live_ids and report_run_id not in ledgered:
+                continue
+            if run_id and report_run_id != run_id:
+                continue
+            modified = _newest_mtime(tree)
+            if modified > cutoff:
+                continue
+            if _run_has_live_pointer(report_run_id, live_ids, run_id):
+                continue
+            entry = {
+                "family": "run",
+                "project": name,
+                "run_id": report_run_id,
+                "path": str(tree),
+                "tree": str(tree),
+                "size": _tree_bytes(tree),
+                "age_days": (current - modified).days,
+                "action": "prune",
+                "removed": False,
+            }
+            if apply and not _run_has_live_pointer(
+                report_run_id, _live_run_ids(), run_id
+            ):
+                shutil.rmtree(tree)
+                entry["removed"] = True
+            entries.append(entry)
+    return entries
+
+
+def _stale_run_locks(
+    *,
+    apply: bool,
+    now: datetime | None,
+    run_id: str | None,
+    live_ids: set[str],
+    ledgered: set[str],
+    retention_days: int,
+) -> list[dict[str, Any]]:
+    """Lock files for runs already in the ledger, past retention and not live.
+
+    ``_pointer_lock`` creates ``locks/<run-id>.lock`` per run and nothing
+    removes it. A run still live may take that lock again, so only a lock whose
+    run is in the ledger — the run has finished — and has no live pointer is
+    offered. The queue's own ``queued-dispatch.lock`` is not a run's and is
+    never matched. Before a lock is removed the live set is re-read, so a
+    pointer that appears mid-sweep still withholds its run's lock.
+    """
+    from reckon.crew.runs import crew_home
+
+    locks_root = crew_home() / "locks"
+    if not locks_root.is_dir():
+        return []
+    current = now or datetime.now(tz=UTC)
+    cutoff = current - timedelta(days=retention_days)
+    entries: list[dict[str, Any]] = []
+    for lock in sorted(path for path in locks_root.glob("*.lock") if path.is_file()):
+        if lock.name == "queued-dispatch.lock":
+            continue
+        lock_run_id = lock.stem
+        if run_id and lock_run_id != run_id:
+            continue
+        if lock_run_id not in ledgered or lock_run_id in live_ids:
+            continue
+        modified = datetime.fromtimestamp(lock.stat().st_mtime, tz=UTC)
+        if modified > cutoff:
+            continue
+        entry = {
+            "run_id": lock_run_id,
+            "path": str(lock),
+            "size": lock.stat().st_size,
+            "age_days": (current - modified).days,
+            "action": "prune",
+            "removed": False,
+        }
+        if apply and lock_run_id not in _live_run_ids():
+            lock.unlink()
+            entry["removed"] = True
+        entries.append(entry)
+    return entries
+
+
+def _unledgered_run_directories(
+    *,
+    apply: bool,
+    now: datetime | None,
+    run_id: str | None,
+    live_ids: set[str],
+    ledgered: set[str],
+    retention_days: int,
+) -> list[dict[str, Any]]:
+    """Run directories with no ledger row and no live pointer, past retention.
+
+    The ledgered-directory sweep withholds these when their figures are not
+    recorded: without a row there is nothing to check, and reaping would
+    destroy a stream that is still the only copy of its figures. A directory
+    with neither a row nor a live pointer is covered by nothing durable, so
+    past retention it is offered whole. The live set is re-read before each
+    removal.
+    """
+    runs_root = runs_dir()
+    if not runs_root.is_dir():
+        return []
+    current = now or datetime.now(tz=UTC)
+    cutoff = current - timedelta(days=retention_days)
+    entries: list[dict[str, Any]] = []
+    for directory in sorted(path for path in runs_root.iterdir() if path.is_dir()):
+        directory_run_id = directory.name
+        if run_id and directory_run_id != run_id:
+            continue
+        if directory_run_id in ledgered or directory_run_id in live_ids:
+            continue
+        modified = datetime.fromtimestamp(directory.stat().st_mtime, tz=UTC)
+        if modified > cutoff:
+            continue
+        entry = {
+            "run_id": directory_run_id,
+            "path": str(directory),
+            "size": _tree_bytes(directory),
+            "age_days": (current - modified).days,
+            "action": "prune",
+            "removed": False,
+        }
+        if apply and directory_run_id not in _live_run_ids():
+            shutil.rmtree(directory)
+            entry["removed"] = True
+        entries.append(entry)
+    return entries
+
+
 def _plan_review_raw_reports(
     *,
     repo_root: Path,
@@ -1435,8 +1648,13 @@ def _plan_review_raw_reports(
     apply: bool,
     now: datetime | None,
     run_id: str | None = None,
+    live_ids: set[str] | None = None,
 ) -> list[dict[str, Any]]:
     """Prune a plan review's raw report text past its retention, printing each.
+
+    A tree whose review run still holds a live pointer is left alone, because
+    that run may be writing into it; the live set is re-read immediately before
+    each removal so a pointer that appears mid-sweep still withholds its tree.
 
     The committed record filed under the project's docs tree is what survives a
     clone, and coverage reads the sidecar and the snapshot beside the raw text,
@@ -1485,6 +1703,8 @@ def _plan_review_raw_reports(
                 modified = datetime.fromtimestamp(report.stat().st_mtime, tz=UTC)
                 if modified > cutoff:
                     continue
+                if _run_has_live_pointer(run_dir.name, live_ids or set(), run_id):
+                    continue
                 record = (
                     plan_review.plan_review_path(
                         name,
@@ -1497,16 +1717,21 @@ def _plan_review_raw_reports(
                     else None
                 )
                 entry = {
+                    "family": "plan-review",
                     "project": name,
                     "plan_slug": slug_dir.name,
                     "run_id": run_dir.name,
                     "path": str(report),
+                    "tree": str(run_dir),
+                    "size": report.stat().st_size,
                     "age_days": (current - modified).days,
                     "removed": False,
                 }
                 if record is not None and record.is_file():
                     entry["action"] = "prune"
-                    if apply:
+                    if apply and not _run_has_live_pointer(
+                        run_dir.name, _live_run_ids(), run_id
+                    ):
                         report.unlink()
                         entry["removed"] = True
                 else:
@@ -1825,8 +2050,40 @@ def garbage_collect(
                     shutil.rmtree(directory)
                     report["removed"] = True
                 run_reports.append(report)
-        raw_report_reports = _plan_review_raw_reports(
-            repo_root=repo_root, project=project, apply=apply, now=now, run_id=run_id
+        report_tree_rows = _plan_review_raw_reports(
+            repo_root=repo_root,
+            project=project,
+            run_id=run_id,
+            apply=apply,
+            now=now,
+            live_ids=live_ids,
+        ) + _run_report_trees(
+            project=project,
+            apply=apply,
+            now=now,
+            run_id=run_id,
+            live_ids=live_ids,
+            ledgered=ledgered,
+            retention_days=retention_days,
+        )
+        raw_report_reports = [
+            row for row in report_tree_rows if row["family"] == "plan-review"
+        ]
+        lock_reports = _stale_run_locks(
+            apply=apply,
+            now=now,
+            run_id=run_id,
+            live_ids=live_ids,
+            ledgered=ledgered,
+            retention_days=retention_days,
+        )
+        unledgered_run_reports = _unledgered_run_directories(
+            apply=apply,
+            now=now,
+            run_id=run_id,
+            live_ids=live_ids,
+            ledgered=ledgered,
+            retention_days=retention_days,
         )
     except PROGRAMMING_ERRORS:
         # Re-raised untouched: the traceback names the defective line, where a
@@ -1926,6 +2183,16 @@ def garbage_collect(
         ),
         "plan_review_raw_reports_withheld": sum(
             1 for item in raw_report_reports if item["action"] == "withheld"
+        ),
+        "report_trees": report_tree_rows,
+        "report_trees_removed": sum(
+            1 for item in report_tree_rows if item.get("removed")
+        ),
+        "lock_files": lock_reports,
+        "lock_files_removed": sum(1 for item in lock_reports if item.get("removed")),
+        "unledgered_run_directories": unledgered_run_reports,
+        "unledgered_run_directories_removed": sum(
+            1 for item in unledgered_run_reports if item.get("removed")
         ),
         "scratch": (
             garbage_collect_orphan_scratch(apply=apply) if run_id is None else None
