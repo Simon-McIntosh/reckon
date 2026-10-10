@@ -1,0 +1,55 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T21:44:07.553Z",
+  "dispatched_at": "2026-10-10T21:33:44Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-is-sized-to-its-risk.html:185",
+      "id": "reasoning-1",
+      "reason": "the section's whole seam is this composer, and the sentence leaves an implementing node unable to tell whether to keep the XOR or pass both, so the plan-naming branch would silently regress to the exact defect the prior review raised.",
+      "text": "\u00a79 states \"`_review_dispatch_tokens` now chooses `--brief` or `--plan`/`--section`, never both; for a run that names a plan it passes both\", two incompatible behaviours for one composer in one clause; the code emits the pair as an either/or (`reckon/crew/recovery_review_subject.py:597-601`) and `_review_dispatch_fields` blanks the brief whenever a plan is set (`brief = \"\" if plan else \u2026`, line 503), so \"passes both\" is not reachable by changing `_review_dispatch_tokens` alone, and a node that follows the \"never both\" half emits `--brief` alone for a plan-naming run, dropping `--plan`/`--section` and breaking the invariant the same sentence cites at lines 496-502",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-is-sized-to-its-risk.html:185",
+      "id": "done_when-1",
+      "reason": "an implementation that emits `--brief` alone for a plan-naming run satisfies \"the first brief contains the SCORE block\" and passes the gate while dropping the plan authority the section must keep.",
+      "text": "\u00a79's done-when composes the reflex review of an implement run, an investigate run and a brief-carried run, and asserts the brief text and the brief-carried path, but it never asserts that a plan-naming run's composed command still carries `--plan`/`--section`, so the plan-authority half of the section's own mechanism is measured by nothing",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "5b455c6c9a6fbf768400ea80d18f7fb93431d39e380cd09d06a9d22149d0fbbd",
+  "plan_slug": "a-review-is-sized-to-its-risk",
+  "plan_version": 146,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261010T213314892609-plan-review-of-a-review-is-sized-to-its-risk",
+  "reviewed_blob_sha": "81ff70e78059b34ab7166fb0aa3957ea2469e2a8",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited `r-20261010T204459845050-review-of-a-read-takes-no-lock/prompt.txt` exists at 141 lines, `reckon/crew/prompts/review.md` and the loaders in `reckon/crew/review.py` resolve, `recovery_review_subject.py:496-502` is the brief-authority comment block, and `recovery_classification.py:550` is the call site that composes the obligation's action.",
+    "done_when": "a finding \u2014 \u00a79's done-when composes an implement, an investigate and a brief-carried run but never asserts that a plan-naming review's composed dispatch still names `--plan`/`--section`, so it cannot show the plan authority the section exists to preserve.",
+    "evidence_paths": "pass \u2014 the done-when's test path (`tests/test_a_review_receives_its_rubric.py`) and the section's write paths are repository paths, not a scratchpad or a node-local temporary.",
+    "naming": "pass \u2014 the symbols \u00a79 names (`load_review_prompt`, `_review_dispatch_fields`, `_review_dispatch_action`) carry no plan labels, stage names or ticket numbers.",
+    "reasoning": "a finding \u2014 \u00a79's new sentence on `_review_dispatch_tokens` asserts the XOR and \"passes both\" as the same present-tense behaviour, and the plan-naming branch it describes is the one the prior review raised.",
+    "single_goal": "pass \u2014 \u00a79 names one deliverable, that a run review's dispatch composes its rubric into its brief.",
+    "wiring": "pass \u2014 \u00a79's dependency on \u00a78's claims loader is stated in prose (\"This section runs on the claims loader \u00a78 landed\") and \u00a78 carries data-status=\"done\"; no depends-on or gates edge points at a node that does not exist."
+  },
+  "section_digests": {
+    "_document": "559cec5332c4e2772f0c8bb42b10af28b4a6c6214163ada0e79741c0481d484f",
+    "s1": "1bca4570a6dc141df8190260147c4603fdbd4e237bbd0fa1f635f166cdf5637b",
+    "s2": "d87e94711b1191be6062f6581f0bf3c2f7793876a327c35be59e3dd37bbe72c8",
+    "s3": "865c2c7d189405d6ba0566cebd8df5e459211cc93a64a9332de51cff756b47ac",
+    "s4": "834dc20a74581e06fc6c6b99a07ea7b628c9c36d7c390cee1b4e599eeec7b070",
+    "s5": "dd9455e66ea742a997a12400b194e02c6557b19217a06db0a58f82d7d82b8fde",
+    "s6": "cb4e838e28a346993a653862da66ac934c2c1b8e7e1aa1d7cb23c7082672067d",
+    "s7": "044f93aa0d0fd0aed5a7b5b535f5b7a2efacfc541ef12f41a04af14289440d7c",
+    "s8": "a12e7aff5d1cfd541706cc743c3d78ed9c0a96dba6af2c4f8b6dbb2309ea9582",
+    "s9": "087dab81298fdd9e70ec13502368db8098d23fc1d78f89ce286b5c5cef0931a0"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T21:45:00.090867+00:00"
+}
