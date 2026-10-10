@@ -25,7 +25,7 @@
   <title>Nothing Lands Unreached | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="14">
+<meta name="plan-version" content="15">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -124,8 +124,8 @@
       <code>test_timestamp_callers_batch_a.py</code>) load them by path with <code>importlib</code>, since <code>scripts/</code> is not a
       package, or drop the assertion if its subject was only the moved module. <code>hold.py</code> and <code>serving_origin.py</code> stay in the package on the §2 allowlist with
       <code>a-window-paces-the-lane</code> named as their owner, and the coordinator records a comment on that plan naming them as unwired.</p>
-    <p><strong>Done when</strong> each script runs from <code>scripts/census/</code> with <code>--help</code> exiting 0, its moved tests pass
-      from their new location, <code>git grep -n "reckon.crew.carryover_census\|reckon.crew.death_census\|reckon.crew.pace_replay"</code>
+    <p><strong>Done when</strong> each script runs from <code>scripts/census/</code> with <code>--help</code> exiting 0, its moved tests and the four rewritten tests that stay in <code>tests/</code> pass
+      from their new location, <code>git grep -nE "reckon[./]crew[./](carryover_census|death_census|pace_replay)"</code>, which also catches a path-style import,
       over <code>reckon/ tests/ skills/ scripts/</code> and the research scripts returns no hit outside the moved files (committed data
       provenance fields excluded, as above), and §2's ratchet test passes with the three modules gone from its allowlist. The negative
       control is executed and logged: with one moved module's old import left in a test, that test fails at collection. Write paths:
