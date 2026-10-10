@@ -2,11 +2,24 @@
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import os
+import sys
 from pathlib import Path
 
-from reckon.crew import death_census
+
+def _load_census(name: str):
+    """Load a sibling census script by path; ``scripts/`` is not a package."""
+    path = Path(__file__).resolve().parent / f"{name}.py"
+    spec = importlib.util.spec_from_file_location(f"census_{name}", path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+death_census = _load_census("death_census")
 
 
 def _write_stream(directory: Path, name: str, records: list[dict]) -> Path:

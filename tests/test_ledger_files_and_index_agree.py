@@ -2,14 +2,29 @@
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import sqlite3
+import sys
 from pathlib import Path
 
 import pytest
 
 from reckon import ledger, run_store
-from reckon.crew import carryover_census, death_census
+
+
+def _load_census_script(name: str):
+    """Load a census script by path; ``scripts/`` is not a package."""
+    path = Path(__file__).resolve().parents[1] / "scripts" / "census" / f"{name}.py"
+    spec = importlib.util.spec_from_file_location(f"census_{name}", path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+carryover_census = _load_census_script("carryover_census")
+death_census = _load_census_script("death_census")
 
 PROJECT = "example"
 READERS = (

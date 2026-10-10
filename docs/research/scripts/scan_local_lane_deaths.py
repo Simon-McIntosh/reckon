@@ -14,7 +14,7 @@ Two views are reported and they are not the same number:
   event the plan counts ("died mid-turn nine times in one day").
 * ``terminal`` — only the run's last attempt is read, so a run that died and
   was resumed to completion reads as completed. This is the convention
-  ``reckon.crew.death_census`` documents.
+  ``scripts/census/death_census.py`` documents.
 
 The headline death count is the review role **at the lane's declared review
 effort**. A review attempt dispatched at any other effort is counted in the
@@ -50,14 +50,32 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
 import math
 import re
 import signal
 import subprocess
+import sys
 from collections import Counter, defaultdict
 from datetime import UTC, datetime
 from pathlib import Path
+
+
+def _load_census_script(name: str):
+    """Load a census script by path; ``scripts/`` is not a package."""
+    root = next(
+        parent
+        for parent in Path(__file__).resolve().parents
+        if (parent / "pyproject.toml").is_file()
+    )
+    path = root / "scripts" / "census" / f"{name}.py"
+    spec = importlib.util.spec_from_file_location(f"census_{name}", path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
 
 CREW_HOME = Path.home() / ".config/reckon" / "crew"
 RUNS_ROOT = CREW_HOME / "runs"
@@ -646,7 +664,7 @@ def main(argv: list[str] | None = None) -> int:
 
     records = recorded_runs(store) if store.is_file() else {}
 
-    from reckon.crew.death_census import pointer_process_alive
+    pointer_process_alive = _load_census_script("death_census").pointer_process_alive
 
     runs_root = Path(args.runs_root)
     live_dir = Path(args.live_dir)
@@ -906,11 +924,14 @@ def main(argv: list[str] | None = None) -> int:
                 "with no top-level result record whose process is gone"
             ),
             "terminal_view": (
-                "only the run's last attempt is read, matching reckon.crew.death_census"
+                "only the run's last attempt is read, matching "
+                "scripts/census/death_census.py"
             ),
             "role_source": "the run's own prompt.txt ROLE line, ledger record as fallback",
             "effort_source": "the run's recorded ledger row (the lane pins effort)",
-            "liveness": "reckon.crew.death_census.pointer_process_alive on the live pointer",
+            "liveness": (
+                "scripts/census/death_census.py pointer_process_alive on the live pointer"
+            ),
             "exit_record_source": (
                 "attempt-N-exit.json in the run directory, written by the supervisor that "
                 "collected the wait; a signal is read from the record's own signal_name, "

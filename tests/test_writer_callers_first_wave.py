@@ -16,12 +16,25 @@ owns its own temporary-and-rename cannot pass them.
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import os
 import stat
+import sys
 from pathlib import Path
 
 import pytest
+
+
+def _load_census_script(name: str):
+    """Load a census script by path; ``scripts/`` is not a package."""
+    path = Path(__file__).resolve().parents[1] / "scripts" / "census" / f"{name}.py"
+    spec = importlib.util.spec_from_file_location(f"census_{name}", path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
 
 CANONICAL_PAYLOAD = {"z": 1, "a": {"n": [1, 2]}, "m": "text", "b": None}
 
@@ -280,7 +293,8 @@ def test_optional_number_matches_the_recorded_expectations(value, expected):
 
 def test_private_number_helpers_are_gone():
     from reckon import _backends
-    from reckon.crew import carryover_census
+
+    carryover_census = _load_census_script("carryover_census")
 
     assert not hasattr(_backends, "_number")
     assert not hasattr(carryover_census, "_measured")

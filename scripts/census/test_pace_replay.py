@@ -6,6 +6,7 @@ import copy
 import importlib.util
 import json
 import os
+import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -14,16 +15,25 @@ import pytest
 from reckon.crew import pace
 
 
-def _replay_project(root: Path, project: str, **kwargs):
-    from reckon.crew.pace_replay import replay_project
+def _load_census(name: str):
+    """Load a sibling census script by path; ``scripts/`` is not a package."""
+    path = Path(__file__).resolve().parent / f"{name}.py"
+    spec = importlib.util.spec_from_file_location(f"census_{name}", path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
 
-    return replay_project(root, project, **kwargs)
+
+pace_replay = _load_census("pace_replay")
+
+
+def _replay_project(root: Path, project: str, **kwargs):
+    return pace_replay.replay_project(root, project, **kwargs)
 
 
 def _render_report(report):
-    from reckon.crew.pace_replay import render_report
-
-    return render_report(report)
+    return pace_replay.render_report(report)
 
 
 def _instant(hours_from_start: float) -> str:
@@ -177,7 +187,8 @@ def _write_run(root: Path, record: dict) -> None:
 
 
 def test_report_module_is_available_at_head():
-    assert importlib.util.find_spec("reckon.crew.pace_replay") is not None
+    assert callable(pace_replay.replay_project)
+    assert callable(pace_replay.render_report)
 
 
 def test_committed_week_replays_allowances_holds_and_work_split(committed_week):
@@ -623,7 +634,7 @@ def test_a_damaged_field_marks_its_row_and_never_the_week(
     fields swept are the row's own keys, so a field the producer starts writing
     is covered here without an edit.
     """
-    from reckon.crew.pace_replay import replay
+    replay = pace_replay.replay
 
     monkeypatch.setenv("RECKON_HOME", str(tmp_path / "home"))
     subject, control = _producer_records(tmp_path, nodes=("subject", "control"))
@@ -676,7 +687,8 @@ def test_a_primary_only_window_replays_its_own_allowance(
     would reproduce a different allowance for the same row.
     """
     from reckon import budget
-    from reckon.crew.pace_replay import replay
+
+    replay = pace_replay.replay
 
     moment = datetime(2026, 9, 22, 8, tzinfo=UTC)
     reset = moment + timedelta(minutes=43_200) - timedelta(days=2)
@@ -743,7 +755,8 @@ def test_a_new_window_replays_a_withheld_allowance(
 ) -> None:
     """A thin account reading retains its position and replays no projection."""
     from reckon import budget
-    from reckon.crew.pace_replay import replay
+
+    replay = pace_replay.replay
 
     moment = datetime(2030, 1, 3, tzinfo=UTC)
     reset = moment + timedelta(days=7) - timedelta(minutes=11)

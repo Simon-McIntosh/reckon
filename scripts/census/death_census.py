@@ -35,13 +35,18 @@ attributed to a lane and is reported as unattributed rather than guessed at.
 from __future__ import annotations
 
 import json
+import sys
 from collections import defaultdict
 from collections.abc import Mapping
 from os import PathLike
 from pathlib import Path
 from typing import Any
 
-from reckon.crew.runs import record_process_alive
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from reckon.crew.runs import record_process_alive  # noqa: E402
 
 CLIVE_BACKEND = "clive"
 _RESULT_TYPE = "result"
@@ -341,20 +346,30 @@ def completed_control(
 
 def main(argv: list[str] | None = None) -> int:
     """Write the death-rate census over the locally served lane to JSON."""
+    import argparse
     from datetime import UTC, datetime
 
     from reckon.crew import runs as runs_module
     from reckon.run_store import store_path
 
-    out = (
-        Path(argv[0])
-        if argv
-        else Path("docs/research/data/review-death-by-effort.json")
+    parser = argparse.ArgumentParser(
+        description=(
+            "Classify every recorded run's terminal stream as completed, "
+            "running or dead and write the census to JSON."
+        ),
     )
+    parser.add_argument(
+        "--out",
+        default=str(ROOT / "docs/research/data/review-death-by-effort.json"),
+        help="path to write the census JSON to",
+    )
+    args = parser.parse_args(argv)
+
+    out = Path(args.out)
     records = recorded_runs(store_path())
     root = runs_module.runs_dir()
     census = census_runs(root, records, live_dir=runs_module.live_dir())
-    census["generated_by"] = "reckon.crew.death_census"
+    census["generated_by"] = "scripts/census/death_census.py"
     census["generated_at_utc"] = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     census["plan"] = "a-review-dies-where-nobody-is-looking"
     census["section"] = "§2"
