@@ -1,0 +1,80 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite or after_suite gate log (neither field is present on the reviewed run's manifest.md, worker.json or supervisor.json), so the added-failure count was not taken.",
+  "backend": "local",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/serve.py:1302 (_git_head definition)",
+    "reckon/serve.py:1359 (_git_first_committed)",
+    "reckon/serve.py:1521 (_git_last_committed)"
+  ],
+  "completed_at": "2026-10-10T21:51:30.333Z",
+  "dispatched_at": "2026-10-10T21:36:28Z",
+  "findings": [
+    {
+      "file": "reckon/serve.py",
+      "line": "1278",
+      "severity": "blocking",
+      "text": "blocking (regression): _head_identity reads the ref file the HEAD names from the checkout's private git directory (git_dir / ref_name), but a linked worktree's refs live in the common git directory named by that directory's `commondir`, so `git_dir / ref_name` does not exist and the identity's ref component is None; _git_directory's docstring claims it 'keeps the HEAD memo working whether the docs tree is served from a main checkout or a worktree', yet in a worktree a new commit leaves the identity unchanged and _git_head returns the stale sha. Reproduced (review-reproduction.log, worktree probe): a linked worktree committed twice; _git_head returned the first head e53b4c2c899a after the second commit whose real HEAD is fdd00a828f20, with identity ((1791668918502012074, 141595810, 20), 'ref: refs/heads/wtb', 'refs/heads/wtb', None) \u2014 the ref component None because the worktree's `commondir` is never followed. Because _git_first_committed/_git_last_committed short-circuit on `cached.head == head`, the date maps freeze too. The base (no memo) always ran `git rev-parse HEAD` and was correct there, so this is a staleness the change introduces."
+    },
+    {
+      "file": "tests/test_git_head_is_resolved_once.py",
+      "line": "75",
+      "severity": "follow-on",
+      "text": "follow-on: _make_repo builds a plain `git init` checkout, so the linked-worktree path the code and its docstring claim to support is never exercised; a regression in the ref resolution (the defect above) keeps the suite green because no test constructs a worktree."
+    },
+    {
+      "file": "reckon/serve.py",
+      "line": "1243",
+      "severity": "follow-on",
+      "text": "follow-on: _GIT_HEAD_MEMO is keyed on str(repo_dir) and never evicted, so a long-lived server accumulates one entry per checkout path; benign at current scale but unbounded."
+    },
+    {
+      "file": "manifest",
+      "line": "tests",
+      "severity": "follow-on",
+      "text": "follow-on (record-fidelity): the reviewed manifest's tests field carries an unsubstituted `PYTHONPATH=<worktree>` placeholder rather than the literal command that ran; the real command and result are in head-arm.log ('19 passed in 8.57s' / EXIT=0), which I reproduced."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 references \u2014 the definition at reckon/serve.py:1302 and the two call sites reckon/serve.py:1359 (_git_first_committed) and :1521 (_git_last_committed).",
+    "diff": "read commit 4685373af against base 25b07c0dd: three files, +220/-0 \u2014 75 lines added to reckon/serve.py (the memo, _git_directory, _file_identity, _head_identity), a new 122-line test module and a 23-line evidence fragment; nothing outside the declared scope.",
+    "done_when": "the done-when names tests/test_git_head_is_resolved_once.py with the three-times-each warm assertion and a declared, executed negative control; the manifest records 1 passed EXIT=0, I reproduced head 19 passed EXIT=0 at 4685373af in a scratch tree and the negative control 1 failed EXIT=1 by forcing _head_identity to None.",
+    "goal": "the node's goal is that a warm creation/last-modified lookup for an unchanged checkout starts no git process while a new commit re-resolves the new date; reckon/serve.py:1302 _git_head memoises on _head_identity (:1278) and the test asserts both halves, which is the deliverable for a main checkout, but the worktree half is broken as the regression finding records.",
+    "manifest": "read; status complete, commit 4685373af, tests record 19 passed EXIT=0 with the negative control at EXIT=1; baseline_suite/after_suite are absent so the added-failure count is unmeasured.",
+    "write_paths": "read the reviewed manifest's declared paths (reckon/serve.py, tests/test_git_head_is_resolved_once.py, the evidence fragment, the figures dir); every path in the diff 25b07c0dd..4685373af is inside them and the figures directory is unpopulated."
+  },
+  "justifications": {
+    "durability": "the memo guard reddens under the declared mutation (reproduced 1 failed EXIT=1) and the no-process warm assertion is the test's central claim, but the linked-worktree staleness is silent \u2014 no test would redden if _git_directory's ref resolution regressed, because the suite never builds a worktree.",
+    "evidence": "tests/test_git_head_is_resolved_once.py at 4685373af reproduced independently: 1 passed EXIT=0, and the four-file head arm 19 passed EXIT=0 at the reviewed revision in a scratch tree; the declared negative control (identity forced to None) reproduced 1 failed EXIT=1. The manifest records no baseline_suite/after_suite so the added-failure count is unmeasured, and its tests field carries an unsubstituted <worktree> placeholder while the real command sits in head-arm.log; the test builds a plain git-init repo, so the linked-worktree path the code claims to support is untested.",
+    "fit": "reckon/serve.py follows the module's own idiom \u2014 a module-level cache beside _GIT_CREATION_CACHE/_GIT_LAST_MODIFIED_CACHE, mechanism-named helpers _git_directory/_file_identity/_head_identity and an explicit 'means the identity cannot be read' docstring; but the _git_directory docstring claims it 'keeps the HEAD memo working whether the docs tree is served from a main checkout or a worktree' while it never follows the worktree's commondir, so the ref it looks for is absent in that mode.",
+    "goal_fidelity": "reckon/serve.py:1302 _git_head memoises the resolved sha on _head_identity (:1278), a tuple of the HEAD file's (mtime, inode, size) and the named ref file's, and the test drives _git_first_committed/_git_last_committed three times each asserting no git process after the first pair, which is the deliverable; but the memo refreshes only when the ref file's identity changes, and in a linked worktree that ref lives in the common git dir so the component is None (reproduced) and a new commit leaves the memo stale, so the documented 'a new commit changes that identity' holds only for a main checkout.",
+    "reuse": "the memo reuses _run_git and the two existing date maps rather than adding a layer in front of them, as section 4 asks, and _file_identity is the only new low-level helper; a search found the pre-existing reckon/fleet_index.py:29 _git_head is a separate module's own reader and is untouched, so no fork is introduced.",
+    "scope_discipline": "every path in git diff 25b07c0dd..4685373af is inside the reviewed manifest's declared write paths (reckon/serve.py, tests/test_git_head_is_resolved_once.py, the evidence fragment); the declared figures directory a-read-answers-inside-its-deadline/git-head-resolved-once is unpopulated."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a warm creation/last-modified lookup for an unchanged checkout starts no git process while a new commit re-resolves the new date; reckon/serve.py:1302 _git_head memoises on _head_identity (:1278) and the test asserts both halves, which is the deliverable for a main checkout, but the worktree half is broken as the regression finding records.\nVERDICT done_when: the done-when names tests/test_git_head_is_resolved_once.py with the three-times-each warm assertion and a declared, executed negative control; the manifest records 1 passed EXIT=0, I reproduced head 19 passed EXIT=0 at 4685373af in a scratch tree and the negative control 1 failed EXIT=1 by forcing _head_identity to None.\nVERDICT write_paths: read the reviewed manifest's declared paths (reckon/serve.py, tests/test_git_head_is_resolved_once.py, the evidence fragment, the figures dir); every path in the diff 25b07c0dd..4685373af is inside them and the figures directory is unpopulated.\nVERDICT manifest: read; status complete, commit 4685373af, tests record 19 passed EXIT=0 with the negative control at EXIT=1; baseline_suite/after_suite are absent so the added-failure count is unmeasured.\nVERDICT diff: read commit 4685373af against base 25b07c0dd: three files, +220/-0 - 75 lines added to reckon/serve.py (the memo, _git_directory, _file_identity, _head_identity), a new 122-line test module and a 23-line evidence fragment; nothing outside the declared scope.\nCALL_SITES: reckon/serve.py:1302 (_git_head definition), reckon/serve.py:1359 (_git_first_committed), reckon/serve.py:1521 (_git_last_committed)\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/serve.py:1302 _git_head memoises the resolved sha on _head_identity (:1278), a tuple of the HEAD file's (mtime, inode, size) and the named ref file's, and the test drives _git_first_committed/_git_last_committed three times each asserting no git process after the first pair, which is the deliverable; but the memo refreshes only when the ref file's identity changes, and in a linked worktree that ref lives in the common git dir so the component is None (reproduced) and a new commit leaves the memo stale, so the documented 'a new commit changes that identity' holds only for a main checkout.\nSCORE evidence: 16\nJUSTIFICATION evidence: tests/test_git_head_is_resolved_once.py at 4685373af reproduced independently: 1 passed EXIT=0, and the four-file head arm 19 passed EXIT=0 at the reviewed revision in a scratch tree; the declared negative control (identity forced to None) reproduced 1 failed EXIT=1. The manifest records no baseline_suite/after_suite so the added-failure count is unmeasured, and its tests field carries an unsubstituted <worktree> placeholder while the real command sits in head-arm.log; the test builds a plain git-init repo, so the linked-worktree path the code claims to support is untested.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff 25b07c0dd..4685373af is inside the reviewed manifest's declared write paths (reckon/serve.py, tests/test_git_head_is_resolved_once.py, the evidence fragment); the declared figures directory a-read-answers-inside-its-deadline/git-head-resolved-once is unpopulated.\nSCORE durability: 15\nJUSTIFICATION durability: the memo guard reddens under the declared mutation (reproduced 1 failed EXIT=1) and the no-process warm assertion is the test's central claim, but the linked-worktree staleness is silent - no test would redden if _git_directory's ref resolution regressed, because the suite never builds a worktree.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/serve.py follows the module's own idiom - a module-level cache beside _GIT_CREATION_CACHE/_GIT_LAST_MODIFIED_CACHE, mechanism-named helpers _git_directory/_file_identity/_head_identity and an explicit 'means the identity cannot be read' docstring; but the _git_directory docstring claims worktree support while it never follows the worktree's commondir, so the ref it looks for is absent there.\nSCORE reuse: 18\nJUSTIFICATION reuse: the memo reuses _run_git and the two existing date maps rather than adding a layer in front of them, as section 4 asks, and _file_identity is the only new low-level helper; a search found the pre-existing reckon/fleet_index.py:29 _git_head is a separate module's own reader and is untouched, so no fork is introduced.\nFINDING reckon/serve.py:1278 blocking: _head_identity reads the ref file the HEAD names from the checkout's private git directory (git_dir / ref_name), but a linked worktree's refs live in the common git directory named by that directory's commondir, so git_dir / ref_name does not exist and the identity's ref component is None; in a worktree a new commit leaves the identity unchanged and _git_head returns the stale sha. Reproduced: a linked worktree committed c2 then c3; _git_head returned the first head e53b4c2c899a after the c3 commit whose real HEAD is fdd00a828f20, and the date maps short-circuit on cached.head == head so they freeze too. The base (no memo) always ran git rev-parse HEAD and was correct there, so this is a staleness the change introduces.\nFINDING tests/test_git_head_is_resolved_once.py:75 follow-on: _make_repo builds a plain git init checkout, so the linked-worktree path the code and its docstring claim to support is never exercised; a regression in the ref resolution keeps the suite green because no test constructs a worktree.\nFINDING reckon/serve.py:1243 follow-on: _GIT_HEAD_MEMO is keyed on str(repo_dir) and never evicted, so a long-lived server accumulates one entry per checkout path; benign at current scale but unbounded.\nFINDING manifest:tests follow-on (record-fidelity): the reviewed manifest's tests field carries an unsubstituted PYTHONPATH=<worktree> placeholder rather than the literal command that ran; the real command and result are in head-arm.log (19 passed in 8.57s / EXIT=0), which I reproduced.\nreviewed_base_sha: 25b07c0dd5f689cb08fc733d1a773a169b7c327d\nreviewed_head_sha: 4685373afcb6de84fb45421a4fda5763001d5e7d\n",
+  "review_run_id": "r-20261010T213605774740-review-of-git-head-resolved-once",
+  "reviewed_base_sha": "25b07c0dd5f689cb08fc733d1a773a169b7c327d",
+  "reviewed_head_sha": "4685373afcb6de84fb45421a4fda5763001d5e7d",
+  "reviewed_run_id": "r-20261010T212226904790-git-head-resolved-once",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 15,
+    "goal_fidelity": 15,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T21:45:29.791103+00:00",
+  "total": 99
+}
