@@ -1,0 +1,51 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T20:44:03.306Z",
+  "dispatched_at": "2026-10-10T20:39:03Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-crew-contract-fits-one-read.html:78",
+      "id": "done_when-1",
+      "reason": "a node implementing to the done-when either fails its own \"exactly three\" assertion or narrows the glob to hide claude-code.md, and \u00a72 already classifies that harness file as in scope, so the narrowing would ship a test that misses a live dead citation.",
+      "text": "the positive control says the test \"fails naming exactly PLAN-FORMAT.md:321, PLAN-FORMAT.md:330 and skills/reckon-build/references/sprint-orchestration.md:1011\", but \u00a75's test corpus is `skills/**/*.md`, which also contains `reckon crew census` at skills/reckon-build/references/orchestrator-harness/claude-code.md:266 (an identical sentence: \"`reckon crew census` replaces the recipe when it lands\") and a line-split `reckon migrate-project-state` at skills/reckon-sync/SKILL.md:50, so the test fails naming two more citations than the control allows",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-contract-fits-one-read.html:78",
+      "id": "reasoning-1",
+      "reason": "",
+      "text": "\u2014 \u00a75 restates the health review's \"261 citations \u2026 three name commands that do not exist\", but that figure comes from an extractor whose corpus is the non-recursive glob `skills/reckon-*/references/*.md` (health-skill-drift/extract_commands.py:30), which skips references/orchestrator-harness/ and misses a citation split across a newline, while \u00a75's own test uses the recursive `skills/**/*.md`; the plan builds a control on a count its cited evidence cannot support, and the review's report even flags the harness-file census sentence only indirectly via the neighbouring artifact render.py:373 \u2192 WOULD_CHANGE_THE_PLAN: yes \u2014 REASON: the wrong count sets the positive control's expectation, so the node measures against a number the evidence never established; correcting it to the real corpus size changes the done-when the node is dispatched with.",
+      "type": "reasoning",
+      "would_change": null
+    }
+  ],
+  "plan_fingerprint": "11db663bba459f8e97c1c18f55c9a4067f5c2c8351e4c04f6707acaec74938e1",
+  "plan_slug": "the-crew-contract-fits-one-read",
+  "plan_version": 30,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261010T203834896507-plan-review-of-the-crew-contract-fits-one-read",
+  "reviewed_blob_sha": "c2ba8390164fa0382fe34a06e3d582b505e907cb",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 PLAN-FORMAT.md:321 (`reckon migrate-project-state`) and :330 (`reckon migrate-fleet`), sprint-orchestration.md:1011 (`reckon crew census`), coordinator-reference.md:593-614, SKILL.md:185-211, commit 807053fb6 and the health-skill-drift report path all resolve at the reviewed head.",
+    "done_when": "a finding \u2014 \u00a75's positive control asserts the test \"fails naming exactly\" the three dead citations, but \u00a75's own corpus yields at least four.",
+    "evidence_paths": "pass \u2014 \u00a75 writes only source and test paths (tests/test_cited_commands_exist.py, PLAN-FORMAT.md, skills/reckon-build/references/) and its control logs land on the node's evidence, no scratchpad named.",
+    "naming": "pass \u2014 \u00a75's new filename (tests/test_cited_commands_exist.py) and prose carry no plan label, stage name, ticket number or version tag.",
+    "reasoning": "a finding \u2014 \u00a75's \"three dead citations\" count is inherited from a health review whose extractor used a non-recursive corpus, so the evidence does not support the count the test's control is built on.",
+    "single_goal": "pass \u2014 \u00a75 carries one deliverable, the shipped citation-drift test plus the three repairs it forces, with one gate.",
+    "wiring": "pass \u2014 \u00a75 declares no depends-on/informs/gates of its own, and the \u00a73\u2194\u00a75 ordering the earlier wiring finding named is now stated in the section's prose (\"this section runs after \u00a73 \u2026 if \u00a73 has not started \u2026 the table replacement is left to \u00a75\u2192\u00a73\"), matching the plan's empty data-links convention on s4/s5."
+  },
+  "section_digests": {
+    "_document": "971e28a5e13a3c3a7a90171ee3b34a8ee93c6a73b132edf8b0c38109a08b8397",
+    "s1": "e03f606afdb78e6b308ef1299a7b868ec09052b4842de46205b30106103e5991",
+    "s2": "698a2a8583161b33608967bafc3c61641856bd4c995bb3e303796723932345e7",
+    "s3": "55c86e04c5aae2cb268f9567ce641cae99945fa16a350c250d4170d30ed1c947",
+    "s4": "bc54d1886f4d3949bffdaf93118a6be518f17b34653992dc9521ee8e03739257",
+    "s5": "0f5359a6c56072d6a171dfbf73994c43b2bb6e61bbe0b85dedb277bd57b98acb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T20:45:18.293060+00:00"
+}
