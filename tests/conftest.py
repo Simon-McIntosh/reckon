@@ -27,6 +27,7 @@ import tempfile
 import time
 import urllib.request
 from pathlib import Path
+from types import ModuleType
 
 import pytest
 
@@ -40,6 +41,39 @@ from reckon.crew.dispatch import (
 from reckon.crew.routing import signal_worker
 
 ARMING_MARKER = "arms_watch_producer"
+
+# The marker every test in a module that imports the browser harness carries.
+# The browser population is defined by where a test's browser comes from, and
+# ``installed_browser_or_skip`` is called at test time, so a module cannot mark
+# its own items: the marker is applied at collection, in one hook below.
+BROWSER_MARKER = "browser"
+
+# The two spellings the harness is imported under: a test module either binds the
+# module itself (``import spa_browser_harness``) or a name from it
+# (``from tests.spa_browser_harness import installed_browser_or_skip``). Both
+# resolve to one of these module names, and a name defined in the harness carries
+# it as its ``__module__``.
+_HARNESS_MODULE_NAMES = frozenset({"spa_browser_harness", "tests.spa_browser_harness"})
+
+
+def module_reaches_the_browser_harness(module: object) -> bool:
+    """Whether ``module`` imports the browser harness, in either spelling.
+
+    A module's namespace is scanned rather than its source: the harness import
+    binds either the harness module object or a name defined in it, and a name
+    defined in the harness names the harness as its own ``__module__``. This is
+    the identity the marker hook and the gate test both read, so the population
+    is defined one way.
+    """
+    if not isinstance(module, ModuleType):
+        return False
+    for value in vars(module).values():
+        if isinstance(value, ModuleType) and value.__name__ in _HARNESS_MODULE_NAMES:
+            return True
+        if getattr(value, "__module__", None) in _HARNESS_MODULE_NAMES:
+            return True
+    return False
+
 
 # Promotion fixtures record a command that can run from any temporary
 # repository; the interpreter path must exist in the process doing the check.
@@ -1096,6 +1130,10 @@ def pytest_configure(config: pytest.Config) -> None:
         "markers",
         f"{ARMING_MARKER}: the test owns and reaps a real watch producer",
     )
+    config.addinivalue_line(
+        "markers",
+        f"{BROWSER_MARKER}: the test is in a module that imports the browser harness",
+    )
     basetemp = getattr(config.option, "basetemp", None)
     if not basetemp:
         return
@@ -1115,6 +1153,8 @@ def pytest_collection_modifyitems(
         name = getattr(module, "__name__", "").rsplit(".", 1)[-1]
         if name in _PRODUCER_LIFECYCLE_MODULES:
             item.add_marker(getattr(pytest.mark, ARMING_MARKER))
+        if module_reaches_the_browser_harness(module):
+            item.add_marker(getattr(pytest.mark, BROWSER_MARKER))
 
 
 @pytest.fixture(autouse=True)
