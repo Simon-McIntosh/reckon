@@ -1,0 +1,45 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T23:09:36.610Z",
+  "dispatched_at": "2026-10-10T23:00:01Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-suite-tests-behaviour.html:145",
+      "id": "wiring-1",
+      "reason": "the followup body is the dispatch order the plan carries, and adding the \u00a77 step (and noting \u00a72's held merge) is a one-line edit that changes what the coordinator runs next.",
+      "text": "the plan declares \u00a72's merge gated on \u00a77 (gate g-tstb-browser-row, line 133 + line 169) yet its own dispatch followup f-tstb-002 lists only \"\u00a72 and \u00a73 in parallel; \u00a74 then \u00a75\", omitting the implementable \u00a77 that unblocks \u00a72, so a coordinator working the followup sequence would dispatch \u00a72, \u00a73, \u00a74 and \u00a75 and never \u00a77, leaving \u00a72's merge held by its own gate indefinitely",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "c534a25c427b292f56341812c525dfbfaceefc408c808753d516efbb446edac1",
+  "plan_slug": "the-suite-tests-behaviour",
+  "plan_version": 15,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261010T225934026712-plan-review-of-the-suite-tests-behaviour",
+  "reviewed_blob_sha": "596dacce4651a3c63b90dc570965b515b04cd84b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 \u00a77's cited files (tests/conftest.py, tests/spa_browser_harness.py, reckon/crew/standing_suite.py, docs/state/reckon/flight.yaml), gate g-tstb-browser-row, comment c-hold-s2-1010 and the extension-bearing /reckon/plans/the-suite-is-green-at-head.html link all resolve; in the unchanged context \u00a73's line anchors have drifted (line 83 cites _result_counts at 164 but it is now at 171), which does not change the plan.",
+    "done_when": "pass \u2014 \u00a77's done-when (line 133) measures a universal over the marked population (\"every collected test in every module importing the harness carries the marker\") plus a negative (\"no test outside those modules does\"), and names a declared negative control (removing the marker exclusion collects a marked test and the assertion fails); a hook that marked nothing would fail its own positive assertion.",
+    "evidence_paths": "pass \u2014 \u00a77's quiet-node measurement is written to the run directory and its failing ids to the-suite-is-green-at-head, both durable surfaces the host allocation names, not a session scratchpad or node-local /tmp; the fixed pytest log is a test fixture, not the gate evidence.",
+    "naming": "pass \u2014 \u00a77 carries no plan labels, stage names, ticket numbers or version tags into code or comments; the gate and comment identifiers (g-tstb-browser-row, c-hold-s2-1010) stay in plan data where they belong.",
+    "reasoning": "pass \u2014 \u00a77's root cause (the population's wall-clock, with timeouts confounded by a head arm run at a lower per-test timeout than the base) matches comment c-hold-s2-1010; the collection-time marker plus command exclusion mechanism is capable of producing the done-when; and each mechanism's caller is named and real (pytest_collection_modifyitems in tests/conftest.py, review.suite.command in docs/state/reckon/flight.yaml, reckon/crew/standing_suite.py).",
+    "single_goal": "pass \u2014 \u00a77 carries one deliverable: the browser population runs as its own suite row (marker, command exclusion, own record row, quiet-node measurement are facets of that one goal; line 133), and \u00a76 is the only no-done-when section and is explicitly deferred.",
+    "wiring": "a finding \u2014 \u00a77's gate g-tstb-browser-row is declared (docs/plans/the-suite-tests-behaviour.html:169, data-gated-sections=\"s2\", required evidence \u00a77) and \u00a77 states \u00a72's completion is gated on its evidence, but the driving followup f-tstb-002 (line 145) sequences \"\u00a72 and \u00a73 in parallel; \u00a74 then \u00a75\" and never names \u00a77, so the gate that holds \u00a72's merge is not carried into the plan's own dispatch guidance."
+  },
+  "section_digests": {
+    "_document": "e17b65d6e579c79abe158c68fa6611786a1145fe183287cb6ce34e4e38fdc7be",
+    "s1": "1d6184c53af837617ac7ee370d7b6d622f0b187f5ac5e8f8d90a1dda6a98b5b2",
+    "s2": "0a2190864603950ade3af9b2de4b53b463e747cc8dc4c1f6e9175cdd5a4ee623",
+    "s3": "b54ea6f02bf0468b0b6f22c4317ef1f30b269045ffcaa9c19ae6abd2d175e96b",
+    "s4": "0bbb53f80bd6f9eb08c166f5e54fdde7bd5678c29b455fd39e15555bcbc17e35",
+    "s5": "ab2721f7547c999de436c1bb3551c6fe1aff3bbe51e9d92c2f44f5f91ce4123d",
+    "s6": "2ab2547ce36adce1b8926643bbc4604f1d6d1695d52434c1e8849e50f80c4b9d",
+    "s7": "6923b90ad2de1d3c7d21b7d4aa204ae8d2b445425f13415254e324f7452ce801"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T23:11:15.956775+00:00"
+}
