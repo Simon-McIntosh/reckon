@@ -419,8 +419,18 @@ def _reviewed_head_from_run_records(project: str, reviewed_run_id: str) -> str:
 )
 @click.option(
     "--dimension",
-    required=True,
+    required=False,
+    default=None,
     help="Review dimension carrying the sub-floor finding.",
+)
+@click.option(
+    "--finding",
+    "finding_index",
+    required=False,
+    default=None,
+    type=int,
+    help="Index of a finding in the run's newest review record, as the "
+    "findings rows print it.",
 )
 @click.option(
     "--kind",
@@ -439,31 +449,49 @@ def _reviewed_head_from_run_records(project: str, reviewed_run_id: str) -> str:
     help="Why the finding is not being acted on, for --kind exempted.",
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_dispose(project, reviewed_run_id, dimension, kind, node_id, reason, pretty):
-    """Record the disposition one sub-floor review dimension carries.
+def crew_dispose(
+    project,
+    reviewed_run_id,
+    dimension,
+    finding_index,
+    kind,
+    node_id,
+    reason,
+    pretty,
+):
+    """Record the disposition one sub-floor review dimension or review finding carries.
 
-    A review dimension below the floor flight configuration declares for it is
-    an obligation row until an entry in the closed set answers it: a fold
-    naming the dispatched node the finding went into, or an exemption naming
-    why it is not being acted on. This is that entry's writer, so a
-    coordinator retires the row through a command rather than editing the
-    review store by hand or promoting the close over it.
+    A finding is a sub-floor review dimension, or an entry in the run's newest
+    review record: a dimension below the floor flight configuration declares for
+    it, or a finding §3's rows print by index. Whichever the caller names is an
+    obligation row until an entry in the closed set answers it: a fold naming
+    the dispatched node the finding went into, or an exemption naming why it is
+    not being acted on. This is that entry's writer, so a coordinator retires
+    the row through a command rather than editing the review store by hand or
+    promoting the close over it. ``--dimension`` and ``--finding`` name the two
+    spaces and are mutually exclusive; exactly one is required.
 
-    Every refusal is the store's own, and nothing is written on one: an
-    unknown dimension, a kind outside the closed set, a fold naming no node,
-    an exemption carrying no reason, and either kind supplied with the other's
-    field all exit non-zero with the reason stated. The record rewritten is the
-    one the sub-floor duty reader selects — the same reading, taken through the
-    same function and arguments the duty was built from — so a duty row raised
-    is one this command can retire, and a store holding a legacy copy beside a
-    revision-keyed record for the same head cannot take the entry in the copy
-    nobody reads. A run with no live pointer, the ordinary case once it is
-    promoted, is answered from its own records rather than from the directory
-    the operator stands in; see :func:`_reviewed_head_from_run_records`.
+    Every refusal is the store's own, and nothing is written on one: an unknown
+    dimension, an index naming no finding, a kind outside the closed set, a fold
+    naming no node, an exemption carrying no reason, and either kind supplied
+    with the other's field all exit non-zero with the reason stated. The record
+    rewritten is the one the dimension duty reader selects, and a finding
+    disposition is written under its own key beside the dimension map, so the
+    same reading and the same file carry both. A run with no live pointer, the
+    review is answered from its own records rather than from the directory the
+    operator stands in; see :func:`_reviewed_head_from_run_records`.
     """
     from reckon.crew import obligations as obligations_module
     from reckon.crew import recovery, runs
     from reckon.crew import review as review_module
+
+    named_dimension = str(dimension or "").strip() if dimension is not None else ""
+    if bool(named_dimension) == (finding_index is not None):
+        raise click.ClickException(
+            "name exactly one of --dimension and --finding: a disposition "
+            "answers one review finding, whether a sub-floor dimension or an "
+            "index must be named to answer it"
+        )
 
     try:
         pointer = runs.read_pointer(reviewed_run_id)
@@ -514,28 +542,54 @@ def crew_dispose(project, reviewed_run_id, dimension, kind, node_id, reason, pre
     _, _, carries_head, stored_head = review_module.carried_revision_pair(stored)
     reviewed_head_sha = stored_head if carries_head and stored_head else None
     try:
-        path = review_module.record_dimension_disposition(
-            project,
-            reviewed_run_id,
-            dimension,
-            kind=kind,
-            node=node_id,
-            reason=reason,
-            reviewed_head_sha=reviewed_head_sha,
-        )
+        if finding_index is None:
+            path = review_module.record_dimension_disposition(
+                project,
+                reviewed_run_id,
+                named_dimension,
+                kind=kind,
+                node=node_id,
+                reason=reason,
+                reviewed_head_sha=reviewed_head_sha,
+            )
+        else:
+            path = review_module.record_finding_disposition(
+                project,
+                reviewed_run_id,
+                finding_index,
+                kind=kind,
+                node=node_id,
+                reason=reason,
+                reviewed_head_sha=reviewed_head_sha,
+            )
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
     _, record = review_module.stored_record(
         project, reviewed_run_id, reviewed_head_sha=reviewed_head_sha
     )
-    dispositions = (record or {}).get(review_module.DIMENSION_DISPOSITIONS_KEY) or {}
+    if finding_index is None:
+        dispositions = (record or {}).get(
+            review_module.DIMENSION_DISPOSITIONS_KEY
+        ) or {}
+        entry = dispositions.get(named_dimension)
+    else:
+        # The disposition is rendered through the findings reader's own predicate,
+        # so the receipt reports what a later read of the record reports.
+        from reckon.crew.findings import finding_disposition
+
+        entry = finding_disposition(record or {}, finding_index)
     _emit_crew_result(
         {
             "project": project,
             "run_id": reviewed_run_id,
-            "dimension": dimension,
+            "dimension": named_dimension or None,
+            # The index is named ``finding_index``, not ``finding``: a bare
+            # ``finding`` key is in the crew verdict's refusal vocabulary, where
+            # a truthy value marks a report carrying a problem, so a receipt
+            # naming the index that way would exit non-zero on a success.
+            "finding_index": finding_index,
             "path": str(path),
-            "disposition": dispositions.get(str(dimension or "").strip().lower()),
+            "disposition": entry,
         },
         pretty,
     )

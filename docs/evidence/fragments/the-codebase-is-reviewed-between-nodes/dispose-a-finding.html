@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-codebase-is-reviewed-between-nodes">
+  <meta name="plan-evidence-for" content="reckon:the-codebase-is-reviewed-between-nodes">
+  <meta name="plan-verifies" content="reckon:the-codebase-is-reviewed-between-nodes#s4">
+  <meta name="plan-recorded-at" content="2026-10-10">
+  <meta name="plan-verdict" content="passed">
+  <title>A review finding carries a disposition | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="dispose-a-finding-landing" data-node="dispose-a-finding" data-reckon="landed" data-when="2026-10-10">
+  <h2>A review finding carries a disposition</h2>
+  <p><code>reckon crew dispose</code> takes <code>--finding &lt;n&gt;</code> beside <code>--run</code> as an alternative to <code>--dimension</code>, writing the closed set's entry under the record's <code>finding_dispositions</code> map keyed by the index the findings reader prints; the two options are mutually exclusive and one is required. The gate <code>tests/test_dispose_a_finding.py</code> stores a committed review carrying two follow-on findings and runs <code>--finding 1 --kind folded --node fix-a</code>, reading back <code>folded:fix-a</code> for finding 1 and <code>open</code> for finding 0, with an exemption carrying no reason, a call naming both options, and a call naming neither each exiting non-zero and leaving the record's bytes unchanged; the declared negative control writes the disposition into the dimension slot and fails three tests at <code>EXIT=1</code>.</p>
+</article>
+</body>
+</html>

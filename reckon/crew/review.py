@@ -3323,6 +3323,122 @@ def record_dimension_disposition(
     return path
 
 
+# Where a disposition on one finding lives on the stored record, keyed by the
+# finding's index within its own findings list — the same index the findings
+# reader prints as ``finding``. The value is the closed set's own shape: a fold
+# names the node the finding went into, an exemption records why it is not being
+# acted on. It is a different key from the dimension map because a finding and a
+# dimension are answered in different spaces, and an entry written under one is
+# not a disposition for the other.
+FINDING_DISPOSITIONS_KEY = "finding_dispositions"
+
+
+def record_finding_disposition(
+    project: str,
+    reviewed_run_id: str,
+    finding_index: int,
+    *,
+    kind: str,
+    node: str | None = None,
+    reason: str | None = None,
+    base_dir: str | Path | None = None,
+    reviewed_head_sha: str | None = None,
+) -> Path:
+    """Record the disposition one stored finding carries, and return its path.
+
+    The entry is written under :data:`FINDING_DISPOSITIONS_KEY`, keyed by the
+    finding's index, which is where the findings reader looks it up. A fold names
+    the node id through ``node``; an exemption records its reason through
+    ``reason``. The same refusals the dimension writer raises apply: a kind
+    outside :data:`DIMENSION_DISPOSITION_KINDS`, a fold naming no node, an
+    exemption carrying no reason, and either kind supplied with the other's field
+    all raise :class:`ValueError`. An index that names no finding in the record
+    is refused too — a disposition answers a finding, and storing one for an
+    index the record does not carry would read as answered while the reader
+    reports nothing there.
+
+    The record selected and rewritten is the same one the dimension disposition
+    rewrites, so a head-keyed review keeps its own file and a disposition
+    recorded against one revision never speaks for another.
+    """
+    if (
+        not isinstance(finding_index, int)
+        or isinstance(finding_index, bool)
+        or finding_index < 0
+    ):
+        raise ValueError(
+            f"a finding disposition names a finding by its non-negative index; "
+            f"got {finding_index!r}"
+        )
+    disposition_kind = str(kind or "").strip().lower()
+    named_node = str(node or "").strip()
+    recorded_reason = str(reason or "").strip()
+    if not dimension_disposition_valid(
+        {"kind": disposition_kind, "node": named_node, "reason": recorded_reason}
+    ):
+        if disposition_kind not in DIMENSION_DISPOSITION_KINDS:
+            raise ValueError(
+                f"unknown disposition {kind!r}; "
+                f"allowed kinds are {', '.join(DIMENSION_DISPOSITION_KINDS)}"
+            )
+        if disposition_kind == "folded":
+            raise ValueError(
+                "a folded disposition must name the node it was folded into"
+            )
+        raise ValueError("an exempted disposition must record its reason")
+    if disposition_kind == "folded" and recorded_reason:
+        raise ValueError(
+            "a folded disposition carries no reason; record an exemption "
+            "instead of folding a finding whose reason you are keeping"
+        )
+    if disposition_kind == "exempted" and named_node:
+        raise ValueError(
+            "an exempted disposition names no node; record a fold instead of "
+            "exempting a finding that a node already answers"
+        )
+
+    path, record = stored_record(
+        project,
+        reviewed_run_id,
+        base_dir=base_dir,
+        reviewed_head_sha=reviewed_head_sha,
+    )
+    if record is None or path is None:
+        raise ValueError(
+            f"no stored review for run {reviewed_run_id!r} in project "
+            f"{project!r} to record a disposition against"
+        )
+    # The findings are enumerated through the same reader the findings surface
+    # uses, so the index the caller sees printed is the index this writer keys
+    # against; a second enumeration could count differently and answer the wrong
+    # finding.
+    from reckon.crew import repair as repair_module
+
+    findings = repair_module.review_findings(record)
+    if finding_index >= len(findings):
+        raise ValueError(
+            f"run {reviewed_run_id!r} carries {len(findings)} findings; "
+            f"--finding {finding_index} names none of them"
+        )
+    disposition: dict[str, Any] = {
+        "kind": disposition_kind,
+        "recorded_at": datetime.now(UTC).isoformat(),
+    }
+    if disposition_kind == "folded":
+        disposition["node"] = named_node
+    else:
+        disposition["reason"] = recorded_reason
+    dispositions = record.get(FINDING_DISPOSITIONS_KEY)
+    merged = dict(dispositions) if isinstance(dispositions, Mapping) else {}
+    merged[str(finding_index)] = disposition
+    record[FINDING_DISPOSITIONS_KEY] = merged
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    _write_record(path, record)
+    commit_record_write(project, path)
+    return path
+
+
 def _write_record(path: Path, record: Mapping[str, Any]) -> None:
     """Write one record to ``path`` atomically through the shared writer.
 
