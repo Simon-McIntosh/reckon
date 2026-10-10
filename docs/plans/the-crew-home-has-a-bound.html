@@ -25,7 +25,7 @@
   <title>The Crew Home Has A Bound | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="8">
+<meta name="plan-version" content="9">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -108,10 +108,10 @@
       lifted into one helper taking a head size and a tail size, the service log calling it with a head of zero so its behaviour and its
       tests are unchanged, and the run-file bound with half the limit each side, and no line is split: the tail cut advances forward to the next newline as <code>trim_service_log</code> does
       (<code>fleet_supervisor.py:566-570</code>), and the head cut backs off to the last newline before its end, a forward-reading snap of
-      its own, because <code>line_boundary</code> (<code>reckon/crew/runs.py:1923</code>) reads backward from the end of a whole file and
+      its own, because <code>line_boundary</code> (in <code>reckon/crew/runs.py</code>) reads backward from the end of a whole file and
       takes no offset; gate-log
       paths are read with <code>_declared_arm_paths</code> (<code>reckon/crew/promotion_release.py:127</code>). The rotating watch log
-      (<code>WATCH_LOG_MAX_BYTES</code>, <code>runs.py:3927</code>) keeps its newest bytes because nothing cites its head; a run's log keeps
+      (<code>WATCH_LOG_MAX_BYTES</code>, defined in <code>reckon/crew/watch_unit.py</code> since <code>runs.py</code> was split, and re-exported from it) keeps its newest bytes because nothing cites its head; a run's log keeps
       both ends because a gate's command and its verdict sit at opposite ends.</p>
     <p><strong>Done when</strong> <code>tests/test_gc_bounds_a_run_file.py</code> builds a promoted temporary run directory with a 3 MB log and a
       3 MB <code>.pt</code> file under a 1 MB limit, and asserts <code>gc --apply</code> leaves the log at no more than 1 MB plus the marker, its
