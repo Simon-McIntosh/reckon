@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="nothing-lands-unreached">
+  <meta name="plan-evidence-for" content="reckon:nothing-lands-unreached">
+  <meta name="plan-verifies" content="reckon:nothing-lands-unreached#s3">
+  <meta name="plan-recorded-at" content="2026-10-10">
+  <meta name="plan-verdict" content="partial">
+  <title>Deleting four unreached record helpers, and keeping five the census mislabelled | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="dead-record-helpers-deleted-landing" data-node="dead-record-helpers-deleted" data-reckon="landed" data-when="2026-10-10">
+  <h2>Four dead record helpers are gone; five census candidates are live pydantic hooks and are kept</h2>
+  <p>Deleted <code>reckon/crew/reports.py::_is_quoted_scalar</code>, <code>reckon/crew/repair.py::reviewed_run_test_paths</code> (with its sole-user <code>_is_test_path</code> and <code>_TEST_PATH_PREFIX</code>), <code>reckon/crew/placement.py::clear_reservation</code> and <code>reckon/crew/placement.py::reservation_step_argv</code> — 66 lines removed, nothing added; <code>grep -rnw</code> for each over <code>reckon/ tests/ skills/</code> returns no hit. The census's other five <code>reckon/_schema.py</code> candidates (<code>_valid_status</code>, <code>_valid_links</code>, <code>_valid_capability</code>, <code>_consistent_section_records</code>, <code>_serialize_authored_transition</code>) are kept: they are <code>@field_validator</code>/<code>@model_validator</code>/<code>@model_serializer</code> methods that pydantic calls by registration, not by name, and each fires — reproduced by constructing a <code>SectionRecord</code> with an off-enum status and a <code>PlanState</code> whose section record disagrees with its declaration, both of which raise. The name-grep instrument has this blind spot; the reachability report's own method note already lists pydantic validators as a known false-positive class.</p>
+</article>
+</body>
+</html>

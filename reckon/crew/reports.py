@@ -201,11 +201,6 @@ def _strip_matching_quotes(value: str) -> str:
     return value
 
 
-def _is_quoted_scalar(value: str) -> bool:
-    """Whether a value is one scalar the worker surrounded with a quote pair."""
-    return len(value) >= 2 and value[0] == value[-1] and value[0] in _QUOTE_CHARS
-
-
 # A manifest field key appearing later on the same line as another key's value.
 # The tolerant reader captures the whole remainder of the line as the first
 # key's value, so ``commits: ...; changed_paths: ...`` turns the commit into a

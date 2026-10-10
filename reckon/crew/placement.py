@@ -213,23 +213,6 @@ def publish_reservation(record: Mapping[str, Any], project: str | None = None) -
     return path
 
 
-def clear_reservation(project: str | None = None) -> None:
-    """Remove the published reservation record, and a legacy one if named.
-
-    The unkeyed record is always removed. A legacy per-project record is
-    removed too when the caller names the project, so releasing a reservation
-    does not leave a stale record for migration to read back.
-    """
-    paths = [reservation_path()]
-    if project is not None:
-        paths.append(legacy_reservation_path(project))
-    for path in paths:
-        try:
-            path.unlink()
-        except FileNotFoundError:
-            continue
-
-
 def reservation_options(
     *,
     partition: str = RESERVATION_PARTITION,
@@ -1043,21 +1026,3 @@ def reservation_roster_refusal(
             "across a wave, not by counting cores."
         ),
     )
-
-
-def reservation_step_argv(
-    reservation: Mapping[str, Any] | None,
-    *,
-    scheduler: str,
-    options: list[str],
-) -> list[str] | None:
-    """The prefix that places one worker inside the held reservation, or None.
-
-    None means no live reservation is published, and the caller falls back to
-    the backend's own declared wrapping exactly as before — a host that has not
-    run the ensure command is not silently given an allocation it never asked
-    for.
-    """
-    if not reservation or not reservation.get("job_id"):
-        return None
-    return [scheduler, *step_prefix(str(reservation["job_id"]), options)]
