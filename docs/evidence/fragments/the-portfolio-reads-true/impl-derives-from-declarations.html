@@ -1,0 +1,60 @@
+<section id="impl-derives-from-declarations">
+  <h2>A plan derives its impl from the section declarations when its records fall short</h2>
+
+  <p><strong>What changed.</strong> A plan's served implementation fraction now has three sources,
+  ordered. Records that cover every declaration answer with the effort-weighted figure, sourced
+  <code>computed</code> as before (<code>reckon/_plan_html.py</code>). Records that do <em>not</em>
+  cover the declarations fall back to the declaration count — done over done plus implementable, with
+  deferred excluded — sourced <code>declarations</code>, a value added to the schema's
+  <code>impl_source</code> enumeration (<code>reckon/_schema.py</code>) and to the plan-review
+  reader's documentation (<code>reckon/crew/plan_review.py</code>). A plan carrying no declaration
+  keeps its authored <code>plan-impl</code> meta, sourced <code>authored</code>. A plan with an
+  implementable declaration therefore never reads 1.0 while its records are partial.</p>
+
+  <p><strong>The audit agrees the file with the server.</strong> <code>reckon audit-doc</code> now
+  reports <code>impl-meta-stale</code> at <code>warn</code> (<code>reckon/doccheck.py</code>) when the
+  <code>plan-impl</code> meta on disk differs from the served figure by more than 0.01, so a reader of
+  the file and a reader of the server agree once the next write lands.</p>
+
+  <h3>The store's authoring refusal is unchanged</h3>
+
+  <p>The refusal at <code>reckon/_store.py</code> still fires only once the records cover the
+  declarations, so a coordinator's <code>set impl</code> on a partially recorded plan is accepted —
+  the served figure is governed by the declarations regardless, the disk write is elided by the
+  idempotency guard, and the audit reports the meta stale. Nothing retires: no prior value or code
+  reported a figure derived from declarations.</p>
+
+  <h3>Measured</h3>
+
+  <p>The gate is <code>tests/test_impl_derives_from_declarations.py</code>, eight tests over three
+  temporary plans plus the schema, the audit and the store path:</p>
+
+  <table>
+    <thead><tr><th>plan</th><th>records vs declarations</th><th>served impl</th><th>impl_source</th></tr></thead>
+    <tbody>
+      <tr><td>covered</td><td>both declared sections recorded (4 h done, 6 h implementable)</td><td>0.4</td><td><code>computed</code></td></tr>
+      <tr><td>partial</td><td>authored meta 1.0; <code>{s1: done, s2: implementable}</code>; record for <code>s1</code> only</td><td>0.5</td><td><code>declarations</code></td></tr>
+      <tr><td>no declarations</td><td>none; authored meta 0.3</td><td>0.3</td><td><code>authored</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The gate ran green (<strong>8 passed</strong>, exit 0) at the working head. The negative control
+  applied the declared mutation — make the coverage fallback return the authored figure — and the
+  partial plan read 1.0; the run was red (<strong>3 failed</strong>, exit 1) with
+  <code>test_partial_records_derive_the_impl_by_count_from_the_declarations</code>,
+  <code>test_audit_doc_reports_impl_meta_stale_when_the_two_disagree</code> and
+  <code>test_an_impl_write_on_the_partial_plan_is_accepted</code> failing. The mutation was then
+  reverted to the committed bytes.</p>
+
+  <h3>Superseded expectations, outside this node's write scope</h3>
+
+  <p>Three existing test files assert the behaviour this section supersedes — that a partially
+  recorded plan keeps its authored figure with source <code>authored</code>. They are not in this
+  node's granted write paths, so they are reported rather than edited:</p>
+
+  <ul>
+    <li><code>tests/test_impl_needs_every_section_recorded.py::test_a_declared_section_without_a_record_keeps_the_authored_impl</code> — expects authored 0.57; the declarations now derive 0.75.</li>
+    <li><code>tests/test_impl_stays_authorable_while_records_are_partial.py::test_set_impl_succeeds_while_records_are_partial</code> — expects the written plan to read 0.25/<code>authored</code>; it now reads 0.5/<code>declarations</code>. Its authoring half stands; its served-figure half is superseded.</li>
+    <li><code>tests/test_bookkeeping_earns_no_review.py::test_setting_impl_on_a_plan_that_had_none_leaves_every_unit_covered</code> — asserts <code>"impl" not in read_state(bare)</code> for a plan with declarations and no records; that plan now reads 0.0/<code>declarations</code>.</li>
+  </ul>
+</section>
