@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-10T19:20:30.302Z",
+  "dispatched_at": "2026-10-10T19:10:15Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/health-review-1010/health-skill-drift/report.md",
+      "line": "115",
+      "severity": "follow-on",
+      "text": "follow-on: the summary line \u2014 the node's own done-when \u2014 states findings=6 high=1 mid=4 low=1 owned=0 regressed=3 unowned=3 but the table at report.md:36-42 carries seven findings (F1-F7) with high=1 mid=5 low=1 owned=1 regressed=2 unowned=4, and the manifest checkpoint repeats the stale count, so the quantitative claim under-reports the work by one finding and misstates every owner bucket."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/health-review-1010/health-skill-drift/report.md",
+      "line": "92",
+      "severity": "follow-on",
+      "text": "follow-on: the named-plan paragraph ends mid-sentence (\"None of the six findings above is\") with the \"(landed across 92c0a7ff, 69cbf25a, 87bcae7d)\" clause duplicated across lines 92-93, so the one paragraph summarising what the-audit-agrees-with-the-skill already covers is unreadable as delivered \u2014 and it says \"six\" where the table carries seven."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "there is no commit to read \u2014 the node is a read-only reviewer, so the change under review is report.md and its helper scripts under the write path.",
+    "done_when": "the done_when is that report.md ends with the line findings=N ... with findings>=1 and every table row citing a path:line; report.md:115 carries that line and every row at report.md:36-42 cites a path:line, so the gate fires \u2014 but the line's numbers disagree with the table it summarises.",
+    "goal": "the node's goal is to report where the reckon skills disagree with the tool, and report.md's Method table and seven findings answer all six brief.md items (sizes, command drift, rule drift, dead rules, the named plan, review-prompt coverage).",
+    "manifest": "read; status complete, it names report.md and the helper scripts, and states no commits because the node is read-only.",
+    "write_paths": "the sole declared path is the reports directory reports/reckon/health-review-1010/health-skill-drift; report.md and five helper scripts sit there and tree-snapshot.json records the worktree status as empty, so nothing in the repository changed."
+  },
+  "justifications": {
+    "durability": "nothing guards the report's internal consistency \u2014 the summary line at report.md:115 drifted from the table at report.md:36-42 and no check would have reddened, which is the one artifact a reader trusts.",
+    "evidence": "the gate line at report.md:115 is present and findings>=1, but it reads findings=6 high=1 mid=4 low=1 owned=0 regressed=3 unowned=3 while the table at report.md:36-42 carries seven rows with mid=5, owned=1 and regressed=2, so the recorded figure misstates the artifact it summarises.",
+    "fit": "report.md follows the required shape (Method table, findings table with the eight named columns at report.md:35, top-five list, final line) and the helper scripts are named by capability, e.g. report.md-adjacent extract_commands.py and check_flags.py.",
+    "goal_fidelity": "report.md answers every brief.md:7-50 item, and the six-item Method table at report.md:14-23 names the command each measurement used.",
+    "reuse": "rule_overlap.py measures text duplicated across files, a capability reckon/clones.py:1 already owns for the repository's files, and the report names no search for that owner.",
+    "scope_discipline": "every artifact sits under the declared write path and tree-snapshot.json records the reviewed worktree's status_entries as empty."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to report where the reckon skills disagree with the tool, and report.md's Method table and seven findings answer all six brief.md items (sizes, command drift, rule drift, dead rules, the named plan, review-prompt coverage).\nVERDICT done_when: the done_when is that report.md ends with the line findings=N ... with findings>=1 and every table row citing a path:line; report.md:115 carries that line and every row at report.md:36-42 cites a path:line, so the gate fires \u2014 but the line's numbers disagree with the table it summarises.\nVERDICT write_paths: the sole declared path is the reports directory reports/reckon/health-review-1010/health-skill-drift; report.md and five helper scripts sit there and tree-snapshot.json records the worktree status as empty, so nothing in the repository changed.\nVERDICT manifest: read; status complete, it names report.md and the helper scripts, and states no commits because the node is read-only.\nVERDICT diff: there is no commit to read \u2014 the node is a read-only reviewer, so the change under review is report.md and its helper scripts under the write path.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: report.md answers every brief.md:7-50 item, and the six-item Method table at report.md:14-23 names the command each measurement used.\nSCORE evidence: 12\nJUSTIFICATION evidence: the gate line at report.md:115 is present and findings>=1, but it reads findings=6 high=1 mid=4 low=1 owned=0 regressed=3 unowned=3 while the table at report.md:36-42 carries seven rows with mid=5, owned=1 and regressed=2, so the recorded figure misstates the artifact it summarises.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every artifact sits under the declared write path and tree-snapshot.json records the reviewed worktree's status_entries as empty.\nSCORE durability: 9\nJUSTIFICATION durability: nothing guards the report's internal consistency \u2014 the summary line at report.md:115 drifted from the table at report.md:36-42 and no check would have reddened, which is the one artifact a reader trusts.\nSCORE fit: 17\nJUSTIFICATION fit: report.md follows the required shape (Method table, findings table with the eight named columns at report.md:35, top-five list, final line) and the helper scripts are named by capability, e.g. report.md-adjacent extract_commands.py and check_flags.py.\nSCORE reuse: 11\nJUSTIFICATION reuse: rule_overlap.py measures text duplicated across files, a capability reckon/clones.py:1 already owns for the repository's files, and the report names no search for that owner.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/health-review-1010/health-skill-drift/report.md:115 follow-on: the summary line \u2014 the node's own done-when \u2014 states findings=6 high=1 mid=4 low=1 owned=0 regressed=3 unowned=3 but the table at report.md:36-42 carries seven findings (F1-F7) with high=1 mid=5 low=1 owned=1 regressed=2 unowned=4, and the manifest checkpoint repeats the stale count, so the quantitative claim under-reports the work by one finding and misstates every owner bucket.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/health-review-1010/health-skill-drift/report.md:92 follow-on: the named-plan paragraph ends mid-sentence (\"None of the six findings above is\") with the \"(landed across 92c0a7ff, 69cbf25a, 87bcae7d)\" clause duplicated across lines 92-93, so the one paragraph summarising what the-audit-agrees-with-the-skill already covers is unreadable as delivered \u2014 and it says \"six\" where the table carries seven.\n",
+  "review_run_id": "r-20261010T190948433390-review-of-health-skill-drift",
+  "reviewed_base_sha": "d33407f58afee19c756aef1227c01f6a1bf7f342",
+  "reviewed_head_sha": "d33407f58afee19c756aef1227c01f6a1bf7f342",
+  "reviewed_run_id": "r-20261010T181958787367-health-skill-drift",
+  "reviewer": "review-of-health-skill-drift",
+  "rubric": "review",
+  "scores": {
+    "durability": 9,
+    "evidence": 12,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 11,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T19:40:43.927079+00:00",
+  "total": 87
+}
