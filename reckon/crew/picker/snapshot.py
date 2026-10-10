@@ -218,20 +218,31 @@ def _context_block(
     node_tokens: int,
     utilisation: dict[str, Any],
 ) -> dict[str, Any]:
-    """One candidate's weighable context facts, null where unknown.
+    """One candidate's weighable context block, reconciled with the gate.
 
-    ``window_tokens`` is the gating window the context-fit verdict compares the
-    figure against. ``estimated_tokens`` is the once-per-pick, harness-
-    independent figure for this node — the same one the request estimate
-    carries — so one backend-settings rule governs both the request's figure
-    and every candidate's block, rather than each candidate wearing its own
-    backend's standing chain. ``headroom_pct`` is the share of the window that
-    figure leaves free. A lane declaring no window carries a null window and no
-    headroom, never a zero that would read as a spent window.
+    ``context`` is the context-fit verdict's measurement for this candidate's
+    backend, or None when the backend declares no window. The verdict's own
+    ``estimated_tokens`` — that backend's standing instruction chain plus the
+    repository files the brief loads — is the figure its window gates, so the
+    block carries it and ``headroom_pct`` is the share of the gating window
+    that figure leaves free. Reading the verdict's figure rather than the
+    request's harness-independent one keeps the margin Jev weighs the margin
+    the gate measured: a lane whose standing chain is larger than the request's
+    would otherwise report headroom the gate had already spent. A backend
+    declaring no window gets no gate estimate, so its block keeps the
+    request-level ``node_tokens`` and carries a null window and headroom, never
+    a zero that would read as a spent window.
     """
 
-    window_tokens = None if context is None else context.get("window_tokens")
-    estimated_tokens: int | None = node_tokens
+    if context is None:
+        return {
+            "window_tokens": None,
+            "estimated_tokens": node_tokens,
+            "headroom_pct": None,
+            **utilisation,
+        }
+    window_tokens = context.get("window_tokens")
+    estimated_tokens = context.get("estimated_tokens")
     headroom_pct = None
     if window_tokens and estimated_tokens is not None:
         headroom_pct = round(

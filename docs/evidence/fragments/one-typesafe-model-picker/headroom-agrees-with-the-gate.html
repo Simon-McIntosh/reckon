@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="one-typesafe-model-picker">
+  <meta name="plan-title" content="Headroom agrees with the context-window gate">
+  <meta name="plan-summary" content="A candidate block's estimated_tokens and headroom_pct are now the context-window gate's per-backend estimate and the gating window it was measured against, so the margin Jev weighs is the margin the gate spent. A backend declaring no window keeps the request figure and a null headroom.">
+  <meta name="plan-evidence-for" content="reckon:one-typesafe-model-picker">
+  <meta name="plan-verifies" content="reckon:one-typesafe-model-picker#s30">
+  <meta name="plan-recorded-at" content="2026-10-11">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,picker,context-window,headroom,gate">
+  <title>Headroom agrees with the gate — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="headroom-agrees-with-the-gate" data-reckon="landed" data-when="2026-10-11">
+  <h2 id="headroom-agrees-with-the-gate-title">Headroom agrees with the context-window gate</h2>
+
+  <p id="headroom-agrees-with-the-gate-change"><strong>Change.</strong>
+  <code>_context_block</code> in <code>reckon/crew/picker/snapshot.py</code> now
+  renders the estimate the context-fit verdict measured for <em>that
+  candidate's</em> backend (<code>context["estimated_tokens"]</code>, that
+  backend's standing instruction chain plus the repository files the brief
+  loads) and derives <code>headroom_pct</code> as
+  <code>100 × (window_tokens − estimated_tokens) / window_tokens</code> against
+  the gating window the verdict compared it with. The request-level,
+  harness-independent figure still governs the request estimate; only the
+  per-candidate block moves to the gate's number. A backend declaring neither
+  <code>usable_input_window</code> nor <code>effective_input_window</code> gets
+  no gate verdict (<code>context is None</code>), so its block keeps the request
+  figure as <code>estimated_tokens</code> and a null <code>headroom_pct</code>,
+  as on main. This supersedes §15's rule that every block carries the request's
+  one figure.</p>
+
+  <p id="headroom-agrees-with-the-gate-measure"><strong>Measured.</strong> The
+  new <code>tests/test_headroom_agrees_with_the_gate.py</code> offers two
+  windowed backends whose standing chains differ (claude 60000, codex 51000,
+  window 200000) and a third declaring no window, with the request figure at
+  55000. Each windowed block reports <code>estimated_tokens</code> equal to the
+  estimate measured for that backend's chain — 60000 and 51000 — and
+  <code>headroom_pct</code> of 70.0 and 74.5, the two differing from each other
+  and from the request. The windowless block reports 55000 with
+  <code>headroom_pct</code> null.</p>
+
+  <p id="headroom-agrees-with-the-gate-negative-control"><strong>Negative
+  control.</strong> Against the unmodified <code>snapshot.py</code> the new
+  test fails at <code>assert 55000 == 60000</code>: the larger-chain backend's
+  block reports the request figure's 55000 rather than the gate's 60000.
+  <code>1 failed</code>, <code>EXIT=1</code>
+  (<code>negative-control-on-main.log</code>).</p>
+
+  <p id="headroom-agrees-with-the-gate-gate"><strong>Gate.</strong> The new test
+  module, <code>tests/test_pick_paths_carry_authority.py</code>,
+  <code>tests/test_jev_weighs_context.py</code> and the picker tests that
+  reference the picker snapshot or routing, run in place on the fleet node with
+  the shared venv interpreter: <code>284 passed in 119.53s</code>,
+  <code>EXIT=0</code> at revision <code>0861e9ca2</code>
+  (<code>gate.log</code>). This gate measures only this node's change;
+  verifying the merged result belongs to a separately dispatched test node.</p>
+</article>
+</body>
+</html>
