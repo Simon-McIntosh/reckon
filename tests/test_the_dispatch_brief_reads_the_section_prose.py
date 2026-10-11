@@ -211,22 +211,19 @@ def test_the_exempt_plan_list_holds_exactly_the_named_parser_divergences():
     assert set(EXEMPT_PLANS) == {"docs/plans/fleet-monitor-legibility.html"}
 
 
-def test_the_section_text_no_longer_reads_the_heading_span():
-    """An authored section's text comes from the one reader, not a soup walk.
+def test_a_heading_the_reader_does_not_serve_keeps_its_own_extent_prose():
+    """A heading the reader yields no prose for falls back to its own extent.
 
-    ``_plan_section_text`` keeps its spelling resolution and the branch for an
-    identified non-heading element, so the only soup read it retains besides the
-    id lookup is that branch's ``identified.get_text``. A heading the reader
-    serves takes its text from ``section_prose``; a heading it does not serve
-    keeps its own extent's prose through ``_strip_tags``, which carries no
-    ``get_text`` call.
+    The served path is pinned by ``test_the_dispatch_section_text_reads_through_the_one_reader``
+    (a sentinel ``section_prose`` must surface); this pins the other branch, so
+    the fallback cannot silently stop reading the heading's own extent.
     """
-    import inspect
-
-    from reckon.crew import dispatch_sections
-
-    source = inspect.getsource(dispatch_sections._plan_section_text)
-    assert "section_prose(" in source
-    assert "_strip_tags(html_text[slice(*heading.span)])" in source
-    without_branch = source.replace('identified.get_text(" ", strip=True)', "")
-    assert ".get_text(" not in without_branch
+    document = (
+        "<html><body><main>"
+        '<h2 id="s2">&#167;2 &#8212; A section</h2>'
+        "<p>body the retired read would have surfaced</p>"
+        "</main></body></html>"
+    )
+    assert dispatch._plan_section_text(document, "2") == (
+        "§2 — A section body the retired read would have surfaced"
+    )

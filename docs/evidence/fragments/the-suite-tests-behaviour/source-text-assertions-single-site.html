@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-suite-tests-behaviour">
+  <meta name="plan-evidence-for" content="reckon:the-suite-tests-behaviour">
+  <meta name="plan-verifies" content="reckon:the-suite-tests-behaviour#s5">
+  <meta name="plan-verdict" content="pass">
+  <title>Source-text assertions become behaviour assertions or are deleted | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="source-text-assertions-single-site-landing" data-node="source-text-assertions-single-site" data-reckon="landed" data-when="2026-10-11">
+  <h2>Source-text assertions become behaviour assertions or are deleted</h2>
+  <p>The 14 in-scope test files carried 14 sites reading a module's source (<code>inspect.getsource</code>, <code>__file__).read_text</code>). Ten were removed: four deleted where the behaviour was already asserted elsewhere, and six rewritten to call the code and assert its effect (a sentinel shared parser for the timestamp readers, a sentinel document renderer, and a report-and-apply comparison for the worktree reclamation set). Four remain: three guard a structural invariant no behaviour can show (no literal <code>"ok": True</code> beside a result dict, subprocess use confined to the runner, and which functions read <code>changed_lines</code>), and the fourth is the declared-mutation harness, which imports a mutated module image rather than asserting on source text. Gate: <code>grep -n -e inspect.getsource -e '__file__).read_text'</code> over the 14 files counts 4 against 14.</p>
+</article>
+</body>
+</html>

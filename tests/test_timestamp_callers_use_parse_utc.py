@@ -14,7 +14,6 @@ other row is a value recorded from the base revision.
 
 from __future__ import annotations
 
-import inspect
 from datetime import UTC, datetime, timedelta, timezone
 
 import pytest
@@ -67,18 +66,26 @@ FENCE_DEADLINE_TABLE = [
     (Z_STAMP, "2026-09-28T22:15:00Z"),
 ]
 
-DIRECT_PARSER_CALLERS = {
-    "time_fence_statement": time_fence_statement,
-    "_parsed_moment": _parsed_moment,
-    "_summary": _summary,
-}
 
+def test_each_caller_reads_through_the_shared_parser(monkeypatch):
+    """Each caller routes its stamp through ``reckon._timestamps.parse_iso``.
 
-def test_none_of_the_three_calls_fromisoformat_directly():
-    for name, func in DIRECT_PARSER_CALLERS.items():
-        source = inspect.getsource(func)
-        assert "fromisoformat" not in source, name
-        assert "parse_utc" in source or "parse_iso" in source, name
+    A sentinel ``parse_iso`` returns a moment no caller would compute itself, so
+    a caller that went back to parsing the stamp directly would not surface it.
+    """
+    import reckon.crew.prompts as prompts_module
+    import reckon.crew.repair as repair_module
+    import reckon.served_code as served_module
+
+    sentinel = datetime(2031, 1, 2, 3, 4, 5, tzinfo=UTC)
+    monkeypatch.setattr(prompts_module, "parse_iso", lambda _value: sentinel)
+    monkeypatch.setattr(repair_module, "parse_iso", lambda _value: sentinel)
+    monkeypatch.setattr(served_module, "parse_iso", lambda _value: sentinel)
+
+    assert _parsed_moment("not-a-timestamp") == sentinel
+    statement = time_fence_statement(time_budget=BUDGET, launch_instant="not-a-stamp")
+    assert "deadline 2031-01-02T03:49:05Z —" in statement
+    assert "2031-01-02 03:04 UTC" in _summary(FILES, "not-a-stamp", "executed")
 
 
 @pytest.mark.parametrize(

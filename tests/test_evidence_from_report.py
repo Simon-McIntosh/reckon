@@ -8,7 +8,6 @@ order to compose such a plan without a hand-authored evidence file.
 
 from __future__ import annotations
 
-import ast
 from pathlib import Path
 
 import pytest
@@ -208,18 +207,44 @@ def test_the_ledger_row_still_composes_a_run_that_has_commits(
     assert "CONTENT THAT MUST NOT BE CITED" not in output
 
 
-def test_evidence_module_defines_one_document_renderer() -> None:
-    source = Path(evidence_module.__file__).read_text(encoding="utf-8")
-    renderers = [
-        node.name
-        for node in ast.walk(ast.parse(source))
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
-        and any(
-            isinstance(inner, ast.Constant)
-            and isinstance(inner.value, str)
-            and inner.value.lstrip().startswith("<!doctype html")
-            for inner in ast.walk(node)
-        )
-    ]
+def test_the_landed_record_renders_through_the_one_document_renderer(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The public synthesis renders through the module's single renderer.
 
-    assert renderers == ["_render_document"]
+    A sentinel wrapper around ``_render_document`` records the call, so a second
+    rendering path that bypassed the one renderer would leave the sentinel
+    uncalled. The content the rendered record carries is asserted by the case
+    above.
+    """
+    root = _repository(tmp_path, monkeypatch)
+    manifest, _report = _delivered_report(
+        tmp_path, "run-delivery", "CONTENT THAT MUST NOT BE CITED"
+    )
+    ledger.append_run(
+        PROJECT,
+        ledger.build_record(
+            run_id="run-delivery",
+            plan=PLAN,
+            section="delivery",
+            node="delivery-node",
+            gate="passed",
+            completed_at="2026-08-24T19:02:00Z",
+            completed_at_source="provided",
+            commits=("abc1234",),
+            manifest_path=str(manifest),
+        ),
+        root=root,
+    )
+
+    calls: list[tuple] = []
+    original = evidence_module._render_document
+
+    def _spy(*args: object, **kwargs: object) -> str:
+        calls.append((args, kwargs))
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(evidence_module, "_render_document", _spy)
+    synthesize_landed_record(root / "docs", PROJECT, PLAN)
+
+    assert calls

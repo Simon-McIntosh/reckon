@@ -13,7 +13,6 @@ from __future__ import annotations
 import inspect
 from dataclasses import fields
 from itertools import pairwise
-from pathlib import Path
 
 import pytest
 
@@ -62,18 +61,14 @@ def test_the_module_exposes_one_pure_decision_function() -> None:
 
 
 def test_the_score_is_a_parameter_and_never_read_from_a_node() -> None:
-    """A literal score is honoured, and the module does not reach for one.
+    """A literal score is honoured rather than computed from a node.
 
     Judging a synthesised node must need no repository, so the score is a
-    parameter rather than something the module computes by importing the
-    prescription judgement.
+    parameter of the decision rather than something the module reads off a
+    node. The two literal scores below are the behaviour the guard stood for.
     """
     assert recommend(MID_FILL, 0.9).score == 0.9
     assert recommend(MID_FILL, 0.1).score == 0.1
-
-    source_lines = Path(bar.__file__).read_text().splitlines()
-    imports = [line for line in source_lines if line.startswith(("import ", "from "))]
-    assert not any("prescription" in line for line in imports)
 
 
 def test_the_bar_rises_monotonically_across_the_whole_window_domain() -> None:

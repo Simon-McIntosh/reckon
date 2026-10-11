@@ -19,7 +19,6 @@ from both directory kinds and requiring the same outcome in each.
 
 from __future__ import annotations
 
-import inspect
 import os
 import re
 import shlex
@@ -122,15 +121,13 @@ def test_composed_client_names_the_composing_interpreter():
 
 
 def test_the_interpreter_is_derived_from_the_composing_process_not_a_literal():
-    import reckon.crew.prompts as prompts_mod
-
     client = _client_line(_prompt())
     # Every absolute path in the client is exactly the composing interpreter:
     # no source tree, worktree, delivery directory or manifest path is written
-    # into the prompt text, and the derivation goes through the composing
-    # process's interpreter rather than spelling one out.
+    # into the prompt text. That the interpreter is the composing process's own
+    # rather than a spelled-out one is asserted by
+    # test_composed_client_names_the_composing_interpreter.
     assert re.findall(r"/[^\s'\"]+", client) == [sys.executable]
-    assert "sys.executable" in inspect.getsource(prompts_mod.compose_prompt)
 
 
 # ── Reach: the exact advertised command runs from both directory kinds ──────
