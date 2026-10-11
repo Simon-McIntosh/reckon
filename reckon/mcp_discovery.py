@@ -20,6 +20,7 @@ from reckon._store import (
     _state_root,
     read_plan,
 )
+from reckon._store import sprint_item_slug as _sprint_item_slug
 from reckon.mcp_views import (
     index_discovery,
 )
@@ -591,14 +592,6 @@ def _finding(
     if extra:
         row["extra"] = extra
     return row
-
-
-def _sprint_item_slug(item: Any) -> str:
-    if isinstance(item, str):
-        return item
-    if isinstance(item, dict):
-        return str(item.get("slug", "") or "")
-    return ""
 
 
 def _audit_sprint_findings(

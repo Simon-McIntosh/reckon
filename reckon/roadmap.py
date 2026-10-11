@@ -42,6 +42,7 @@ from reckon._schema import (
     section_depends_on,
     standalone_reason,
 )
+from reckon._store import sprint_item_slug
 from reckon._timestamps import parse_utc
 from reckon.doccheck import (
     _load_mounts,
@@ -94,14 +95,6 @@ class GraphTargetError(ValueError):
     def __init__(self, handle: str, detail: str) -> None:
         self.handle = handle
         super().__init__(f"graph handle {handle!r}: {detail}")
-
-
-def _item_slug(item: Any) -> str:
-    if isinstance(item, str):
-        return item
-    if isinstance(item, dict):
-        return str(item.get("slug") or "")
-    return ""
 
 
 def _progress(plan: dict[str, Any]) -> float:
@@ -1504,7 +1497,7 @@ def _sprint_membership(
         if str(sprint.get("status") or "").lower() in closed_statuses:
             continue
         for item in sprint.get("items") or []:
-            ref = _item_slug(item)
+            ref = sprint_item_slug(item)
             parsed = parse_plan_ref(ref)
             target_project = (
                 str(parsed.project) if parsed and parsed.project else sprint_project
@@ -1603,10 +1596,10 @@ def _resolved_sprint_items(
     return {
         str(sprint.get("_ref") or sprint.get("id") or ""): [
             resolve_plan_ref(
-                _item_slug(item), str(sprint.get("_project") or project), lookup
+                sprint_item_slug(item), str(sprint.get("_project") or project), lookup
             )
             for item in sprint.get("items") or []
-            if _item_slug(item)
+            if sprint_item_slug(item)
         ]
         for sprint in sprints
         if sprint.get("id")
@@ -1639,7 +1632,7 @@ def _open_sprints(
         item_plans = [
             plans[slug]
             for item in sprint.get("items") or []
-            if (slug := _item_slug(item)) in plans
+            if (slug := sprint_item_slug(item)) in plans
         ]
         if any(_status(plan) not in TERMINAL_STATUSES for plan in item_plans):
             result.append(sprint_ref)

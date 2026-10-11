@@ -61,6 +61,7 @@ from reckon._store import (
     _section_contract_refusal,
     plan_summary_length,
     section_coverage_gaps,
+    sprint_item_slug,
 )
 from reckon.lifecycle import TERMINAL_STATUSES
 
@@ -576,18 +577,6 @@ def _foreign_followup_findings(
     return findings
 
 
-def _item_slug(item: Any) -> str:
-    """The plan slug a sprint item names, from either item shape on read."""
-    if isinstance(item, str):
-        return item.strip()
-    if isinstance(item, Mapping):
-        for key in ("slug", "path"):
-            value = item.get(key)
-            if isinstance(value, str) and value.strip():
-                return value.strip()
-    return ""
-
-
 def sprint_membership_index(
     docs_dir: Path, project: str
 ) -> tuple[dict[str, set[str]], dict[str, str]]:
@@ -615,7 +604,7 @@ def sprint_membership_index(
             continue
         sprint_status[sprint_id] = str(sprint.get("status") or "").strip().lower()
         for item in sprint.get("items") or []:
-            parsed = parse_plan_ref(_item_slug(item))
+            parsed = parse_plan_ref(sprint_item_slug(item))
             if parsed is None:
                 continue
             if parsed.project and parsed.project != project:

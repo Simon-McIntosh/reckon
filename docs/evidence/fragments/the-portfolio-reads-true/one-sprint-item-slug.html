@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en-locale">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-portfolio-reads-true">
+  <meta name="plan-evidence-for" content="the-portfolio-reads-true">
+  <meta name="plan-verdict" content="pass">
+  <title>One sprint-item slug reader | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>One sprint-item slug reader</h1>
+  <p id="one-sprint-item-slug-landing">The four private copies of the sprint-item slug reader — in
+    <code>reckon/_store.py</code>, <code>reckon/roadmap.py</code>, <code>reckon/doccheck.py</code> and
+    <code>reckon/mcp_discovery.py</code> — are replaced by one public helper,
+    <code>reckon._store.sprint_item_slug</code>, keeping the most complete behaviour (string or mapping, key
+    <code>slug</code> then <code>path</code>, whitespace stripped). <code>grep -rn "def .*item_slug" reckon/</code>
+    returns one definition, imported by the other three modules. <code>tests/test_one_sprint_item_slug.py</code>
+    passes EXIT=0 (8 passed) for string, slug-mapping and path-mapping items. <code>reckon roadmap --project reckon</code>
+    and <code>reckon audit --project reckon</code> are byte-identical at base and head once timestamps and ages are
+    masked. The line delta over <code>reckon/</code> is &minus;17.</p>
+ </main>
+</body>
+</html>
