@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest carries no baseline_suite and no after_suite arm (both null in its classification record), so no base log exists to subtract; its head gate log gate-head.log ran to its summary with 426 passed and no FAILED id, independently reproduced as review-head.log (426 passed, EXIT=0).",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-11T01:30:25.670Z",
+  "dispatched_at": "2026-10-11T01:19:22Z",
+  "findings": [
+    {
+      "file": "tests/test_one_reader_of_remaining_work.py",
+      "line": "186",
+      "severity": "follow-on",
+      "text": "follow-on: the run logged only one negative control (negctl.log) while section 5's done-when asks for three rewritten tests to be falsified and chosen by the reviewer; this review ran the other two and both fired (negctl-a.log one failed, negctl-b.log one failed), so the gap is a missing record rather than a missing guard."
+    },
+    {
+      "file": "tests/test_timestamp_callers_batch_d.py",
+      "line": "18",
+      "severity": "follow-on",
+      "text": "follow-on: deleting test_no_fromisoformat_call_remains_outside_the_retained_exception and the shared-parser import guards removes an absence-of-forbidden-call invariant that no behaviour shows \u2014 the carve-out section 5 says to keep) because the cited recorded-output tables assert caller outputs that a caller can satisfy while still routing through a second copy of the parser."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit 35d93267a against 4e4de5ba commit by commit; it deletes seventeen source-reading sites and adds two behaviour tests and one spy-based test, all inside the scoped files.",
+    "done_when": "section 5's done-when is the whole-tree grep cap plus three negative controls chosen by the reviewer; the node measured its scoped census and logged one negative control, and this review reproduced the census and ran the two further controls the clause asks the reviewer to choose, both of which fired.",
+    "goal": "the node goal is section 5's per-site deliverable over the ten scoped test files; the diff rewrites seven source-reading assertions in three tests to drive the code and assert its effect, deletes ten in five tests citing an existing behaviour test, and keeps six with a stated reason.",
+    "manifest": "read; it declares 426 passed EXIT=0 in gate-head.log and one negative control in negctl.log, and carries no baseline_suite or after_suite arm, so added_failure_count is unmeasured rather than zero.",
+    "write_paths": "read the manifest's declared paths against the diff; all nine changed paths (eight test files and one evidence fragment) are inside the ten-file scope and the declared fragment path, and the reviewed tree is clean."
+  },
+  "justifications": {
+    "durability": "the rewritten assertions fail on the regression they name (a second removal call reddens tests/test_a_review_attempt_that_launches_nothing_leaves_nothing.py and dropping the predicate strip reddens tests/test_one_reader_of_remaining_work.py, negctl-b.log and negctl-a.log), while the deleted guards leave the no-forbidden-call invariant covered only by caller-output tables.",
+    "evidence": "the census and the ten-file gate reproduce independently at 35d93267a (six sites; 426 passed in 38.04s, review-head.log), and all three negative controls redden (negctl.log, negctl-a.log, negctl-b.log), though the manifest's artifacts line states twenty-five sites at dispatch where the landing and the census give twenty-three.",
+    "fit": "the new test names describe the mechanism and the evidence fragment follows the repository template at docs/evidence/fragments/the-suite-tests-behaviour/source-text-assertions-multi-site.html with no plan label in any symbol.",
+    "goal_fidelity": "the ten scoped files drop from twenty-three source-text sites at 4e4de5ba to six at 35d93267a (tests/test_fleet_counter_coverage.py and tests/test_crew_monitor_output.py), the delivered section-5 behaviour, but two deleted absence-guards fall in section 5's keep carve-out and only one of the three negative controls the done-when asks for was logged.",
+    "reuse": "the rewritten tests extend the shared owners rather than forking them (a spy on reckon/crew/runs.py proves both callers reach one composition) and every deleted test cites an existing behaviour test rather than a new copy.",
+    "scope_discipline": "every one of the nine changed paths is inside the ten-file scope and the declared evidence-fragment path, and no plan or index state was touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is section 5's per-site deliverable over the ten scoped test files; the diff rewrites seven source-reading assertions in three tests to drive the code and assert its effect, deletes ten in five tests citing an existing behaviour test, and keeps six with a stated reason.\nVERDICT done_when: section 5's done-when is the whole-tree grep cap plus three negative controls chosen by the reviewer; the node measured its scoped census and logged one negative control, and this review reproduced the census and ran the two further controls the clause asks the reviewer to choose, both of which fired.\nVERDICT write_paths: read the manifest's declared paths against the diff; all nine changed paths (eight test files and one evidence fragment) are inside the ten-file scope and the declared fragment path, and the reviewed tree is clean.\nVERDICT manifest: read; it declares 426 passed EXIT=0 in gate-head.log and one negative control in negctl.log, and carries no baseline_suite or after_suite arm, so added_failure_count is unmeasured rather than zero.\nVERDICT diff: read commit 35d93267a against 4e4de5ba commit by commit; it deletes seventeen source-reading sites and adds two behaviour tests and one spy-based test, all inside the scoped files.\nCALL_SITES: none\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: the ten scoped files drop from twenty-three source-text sites at 4e4de5ba to six at 35d93267a (tests/test_fleet_counter_coverage.py and tests/test_crew_monitor_output.py), the delivered section-5 behaviour, but two deleted absence-guards fall in section 5's keep carve-out and only one of the three negative controls the done-when asks for was logged.\nSCORE evidence: 17\nJUSTIFICATION evidence: the census and the ten-file gate reproduce independently at 35d93267a (six sites; 426 passed in 38.04s, review-head.log), and all three negative controls redden (negctl.log, negctl-a.log, negctl-b.log), though the manifest's artifacts line states twenty-five sites at dispatch where the landing and the census give twenty-three.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every one of the nine changed paths is inside the ten-file scope and the declared evidence-fragment path, and no plan or index state was touched.\nSCORE durability: 17\nJUSTIFICATION durability: the rewritten assertions fail on the regression they name (a second removal call reddens tests/test_a_review_attempt_that_launches_nothing_leaves_nothing.py and dropping the predicate strip reddens tests/test_one_reader_of_remaining_work.py, negctl-b.log and negctl-a.log), while the deleted guards leave the no-forbidden-call invariant covered only by caller-output tables.\nSCORE fit: 18\nJUSTIFICATION fit: the new test names describe the mechanism and the evidence fragment follows the repository template at docs/evidence/fragments/the-suite-tests-behaviour/source-text-assertions-multi-site.html with no plan label in any symbol.\nSCORE reuse: 19\nJUSTIFICATION reuse: the rewritten tests extend the shared owners rather than forking them (a spy on reckon/crew/runs.py proves both callers reach one composition) and every deleted test cites an existing behaviour test rather than a new copy.\nFINDING tests/test_one_reader_of_remaining_work.py:186 follow-on: the run logged only one negative control (negctl.log) while section 5's done-when asks for three rewritten tests to be falsified and chosen by the reviewer; this review ran the other two and both fired (negctl-a.log one failed, negctl-b.log one failed), so the gap is a missing record rather than a missing guard.\nFINDING tests/test_timestamp_callers_batch_d.py:18 follow-on: deleting test_no_fromisoformat_call_remains_outside_the_retained_exception and the shared-parser import guards removes an absence-of-forbidden-call invariant that no behaviour shows \u2014 the carve-out section 5 says to keep) because the cited recorded-output tables assert caller outputs that a caller can satisfy while still routing through a second copy of the parser.\n",
+  "review_run_id": "r-20261011T011834031065-review-of-source-text-assertions-multi-site",
+  "reviewed_base_sha": "4e4de5ba77990135a3e7a0ad69c3e8faae2231ba",
+  "reviewed_head_sha": "35d93267a989d27871ce84337cb89b776f741d11",
+  "reviewed_run_id": "r-20261011T003514683816-source-text-assertions-multi-site",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T01:28:12.216817+00:00",
+  "total": 107
+}
