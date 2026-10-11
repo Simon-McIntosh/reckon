@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-codebase-is-reviewed-between-nodes">
+  <meta name="plan-evidence-for" content="reckon:the-codebase-is-reviewed-between-nodes">
+  <meta name="plan-verifies" content="reckon:the-codebase-is-reviewed-between-nodes#s6">
+  <meta name="plan-recorded-at" content="2026-10-11">
+  <meta name="plan-verdict" content="passed">
+  <title>A path-only code review is stored by the delivery path | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-path-review-is-stored-landing" data-node="a-path-review-is-stored" data-reckon="landed" data-when="2026-10-11">
+  <h2>A path-only code review is stored by the delivery path</h2>
+  <p><code>store_delivered_reviews</code> read the code deliveries with <code>around=plan_slug</code>, and the keep filter in <code>delivered_code_reviews</code> retains only sidecars whose <code>around</code> equals that value. A review composed with <code>--path</code> alone carries an empty <code>around</code>, so it was composed and dispatched and then never read into the store. The delivery call now reads <code>delivered_code_reviews(project)</code>: every delivered code review for the project is stored once, keyed by its neighbourhood, whether its subject came from <code>--around</code> or <code>--path</code>. The gate adds a path-only case to <code>tests/test_review_composes_a_code_subject.py</code> that composes with <code>--path reckon/a.py</code>, writes the fixed health report into the neighbourhood report directory, runs <code>store_delivered_reviews</code>, and reads the record back under its neighbourhood key; the key is asserted against an expectation computed from the key's documented form (sha256 of the sorted union of named paths and adjacent modules, first twelve hex characters) rather than against <code>code_review_key</code>, so the read side cannot move in step with the write side. The file passes 6 tests at <code>EXIT=0</code>. The declared negative control restores the filter keeping only the plan's <code>around</code> value, drops the path-only record, and reddens the new case (<code>EXIT=1</code>, 1 failed, 5 passed).</p>
+</article>
+</body>
+</html>

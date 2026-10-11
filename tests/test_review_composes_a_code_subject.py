@@ -8,6 +8,7 @@ as an alias that composes the same plan brief.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -245,6 +246,23 @@ def test_review_plan_alias_prints_a_deprecation_line(project):
     assert "deprecated" in stderr
 
 
+def _expected_neighbourhood_key(named: list[str], modules: list[str]) -> str:
+    """The neighbourhood key from its documented form, computed independently.
+
+    The write path keys a neighbourhood by digesting the sorted union of the
+    named paths and the adjacent modules and keeping the first twelve hex
+    characters. The stored key is checked against this expectation rather than
+    against :func:`plan_review.code_review_key`, so the read side cannot move in
+    step with the write side and agree vacuously.
+    """
+    blob = json.dumps(
+        sorted({str(item) for item in named} | {str(module) for module in modules}),
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()[:12]
+
+
 def test_a_delivered_code_report_is_stored_under_its_neighbourhood(project):
     """The plan-build delivery path stores a code review beside a plan's.
 
@@ -259,7 +277,7 @@ def test_a_delivered_code_report_is_stored_under_its_neighbourhood(project):
     plan_review.code_review_fields(subject, write=True)
     directory = plan_review.code_review_report_directory(subject)
     (directory / "report.md").write_text(HEALTH_REPORT, encoding="utf-8")
-    key = plan_review.code_review_key(subject["named_paths"], subject["modules"])
+    key = _expected_neighbourhood_key(subject["named_paths"], subject["modules"])
     assert plan_review.code_review_record("sample", key) is None
 
     refused = plan_review.store_delivered_reviews("sample", "fixture")
@@ -276,6 +294,37 @@ def test_a_delivered_code_report_is_stored_under_its_neighbourhood(project):
     assert record["treatment"] == {"none": "the neighbourhood is healthy"}
     # The delivery is stored once: a later pass finds the record already there.
     assert plan_review.store_delivered_reviews("sample", "fixture") == []
+    assert plan_review.list_code_reviews("sample") != []
+
+
+def test_a_path_only_delivered_code_report_is_stored(project):
+    """A code review composed with ``--path`` alone is stored by the delivery path.
+
+    A path-only subject names no plan, so its sidecar carries an empty
+    ``around``. The plan-build delivery path must still read the reviewer's
+    report into the store keyed by its neighbourhood, or a review the
+    coordinator dispatched is composed and dispatched and then never stored.
+    """
+    _home, _repo, _plan = project
+    subject = plan_review.code_review_subject(
+        "sample", "coordinator", paths=["reckon/a.py"]
+    )
+    assert subject["around"] == ""
+    plan_review.code_review_fields(subject, write=True)
+    directory = plan_review.code_review_report_directory(subject)
+    (directory / "report.md").write_text(HEALTH_REPORT, encoding="utf-8")
+    key = _expected_neighbourhood_key(subject["named_paths"], subject["modules"])
+    assert plan_review.code_review_record("sample", key) is None
+
+    refused = plan_review.store_delivered_reviews("sample", "fixture")
+
+    assert refused == []
+    record = plan_review.code_review_record("sample", key)
+    assert record is not None, plan_review.code_review_path("sample", key)
+    assert record["subject"] == "code"
+    assert record["neighbourhood_key"] == key
+    assert record["around"] == ""
+    assert [finding["anchor"] for finding in record["findings"]] == ["reckon/a.py:3"]
     assert plan_review.list_code_reviews("sample") != []
 
 
