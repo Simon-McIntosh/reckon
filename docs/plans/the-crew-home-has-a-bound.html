@@ -25,8 +25,8 @@
   <title>The Crew Home Has A Bound | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="25">
-<meta name="plan-modified" content="2026-10-11">
+<meta name="plan-version" content="26">
+<meta name="plan-modified" content="2026-10-12">
 </head>
 <body>
   <main class="plan-doc">
@@ -193,6 +193,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261011T211828168587-review-of-gc-keeps-every-project-run-directory" data-who="reckon-build" data-when="2026-10-11T21:37:23.710Z">
     <div class="r-comment-body"><p>independent review of gc-keeps-every-project-run-directory — stored a parsed record scoring all 6 dimensions (total 113) at both review paths, recording reviewed_base_sha and reviewed_head_sha; two follow-on findings, no blockers</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261011T205927099279-gc-keeps-every-project-run-directory" data-who="reckon-build" data-when="2026-10-11T21:51:39.744Z">
+    <div class="r-comment-body"><p>gc keeps a peer project&#x27;s run directory — the unledgered sweep&#x27;s known set is the union of the gc repository&#x27;s own ledgered rows with every registered mount&#x27;s, and it fails closed on an unreadable one; three new cases in tests/test_gc_reaches_every_crew_store.py (9 passed, EXIT=0) and tests/test_crew_gc.py (27 passed, EXIT=0); gc --apply from project A leaves project B&#x27;s directory on disk, a repository that is not a registered mount spares its own ledgered directory, and a withheld row sets action to &quot;withheld&quot;; the declared own-ledgers-only mutation fails the two-project case and dropping the union fails the unregistered-repository case (both mutation logs EXIT=1).</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261011T002644790277-gc-sweeps-ledger-indexes" data-who="reckon-build" data-when="2026-10-11T01:11:49.247Z">
     <div class="r-comment-body"><p>crew gc now sweeps ledger indexes whose checkout is gone: each run index records the resolved ledger path it serves in its metadata table, and gc reports, and under --apply removes, every ledger-*.sqlite in the pick-input cache root whose recorded path no longer exists or which records no path and has not been opened for seven days, leaving picker-*.json inputs and any index a live process holds — the record sits at docs/evidence/fragments/the-crew-home-has-a-bound/gc-sweeps-ledger-indexes.html</p></div>
