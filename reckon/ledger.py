@@ -2176,15 +2176,22 @@ def promoted_picker_selection(run_id: str) -> dict[str, Any] | None:
 
 
 def promoted_route_mode(run_id: str) -> str | None:
-    """Read how the dispatch chose its backend before promotion removes its pointer."""
+    """Read how the dispatch chose its backend before promotion removes its pointer.
+
+    Every route mode the dispatch can record is accepted, the overridden-hold
+    value among them, so a row built here keeps the mode the pick produced
+    rather than reading as one whose mode was never written.
+    """
     from reckon.crew import runs
+    from reckon.crew.picker.outcomes import OVERRIDDEN_HOLD_ROUTE_MODE
 
     try:
         pointer = runs.read_pointer(run_id)
     except runs.CrewError:
         return None
     mode = pointer.get("route_mode")
-    return mode if mode in {"picker", "shadow", "explicit"} else None
+    accepted = {"picker", "shadow", "explicit", OVERRIDDEN_HOLD_ROUTE_MODE}
+    return mode if mode in accepted else None
 
 
 def is_unmetered_backend(backend: str) -> bool:
