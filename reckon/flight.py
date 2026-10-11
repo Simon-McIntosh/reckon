@@ -114,6 +114,14 @@ DEFAULT_PLAN_CHANGE_THRESHOLD = 0.30
 DEFAULT_REVIEW_NEED_THRESHOLD = 0.5
 DEFAULT_RAW_REPORT_RETENTION_DAYS = 30
 
+# The size a promoted run's captured file is bounded to, in megabytes. The
+# ``gc`` namespace is declared on the schema so a layer may set it and an
+# undeclared namespace is refused, but the shipped defaults layer carries no
+# ``gc`` block, so a resolved config that never set it falls back here.
+GC_KEY = "gc"
+GC_RUN_FILE_MAX_MB_KEY = "run_file_max_mb"
+DEFAULT_RUN_FILE_MAX_MB = 256
+
 # The unit each budget suffix is worth in seconds. A budget is written as an
 # integer followed by one of these letters, and the reader converts it once so
 # every caller measures the same run against the same number.
@@ -782,6 +790,26 @@ def raw_report_retention_days(config: Mapping[str, Any] | None) -> int:
         REVIEW_OWNED_KEYS["raw_report_retention_days"], value
     ):
         return DEFAULT_RAW_REPORT_RETENTION_DAYS
+    return int(value)
+
+
+def run_file_max_mb(config: Mapping[str, Any] | None) -> int:
+    """The size in megabytes a promoted run's captured file is bounded to.
+
+    Read from the resolved config's ``gc`` namespace, so a host or project layer
+    retunes the limit without a code change. A config declaring no such key — a
+    hand-assembled test config, or a host that never set one — falls back to the
+    shipped default rather than failing, and a value of the wrong shape is
+    treated the same way rather than disabling the bound.
+    """
+    gc = (config or {}).get(GC_KEY)
+    value = (
+        gc.get(GC_RUN_FILE_MAX_MB_KEY, DEFAULT_RUN_FILE_MAX_MB)
+        if isinstance(gc, Mapping)
+        else DEFAULT_RUN_FILE_MAX_MB
+    )
+    if not isinstance(value, int) or isinstance(value, bool) or value < 1:
+        return DEFAULT_RUN_FILE_MAX_MB
     return int(value)
 
 

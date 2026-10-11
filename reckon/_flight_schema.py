@@ -214,6 +214,7 @@ class FlightConfig(ConfiguredBaseModel):
     routing: RoutingConfig | None = Field(default=None, description="""How dispatch selects its worker backend.""")
     gates: GateConfig | None = Field(default=None)
     review: ReviewConfig | None = Field(default=None)
+    gc: GcConfig | None = Field(default=None, description="""How gc bounds the files a promoted run captured. Declared on the flight config so a host or project layer retunes the limit without a code change; the resolver reads it from the resolved config.""")
     budget: BudgetConfig | None = Field(default=None)
     fences: FenceConfig | None = Field(default=None)
     capability_raise: CapabilityRaise | None = Field(default=None, description="""Rule that raises the capability a node resolves at once its plan section has been attempted at or above a threshold, so a section that keeps costing attempts stops landing on the raise's own lane without anyone deciding it by hand. The raise moves a node upward only: a node already at or above the raised level resolves unchanged.""")
@@ -236,6 +237,13 @@ class ReviewConfig(ConfiguredBaseModel):
     tiers: ReviewTiers | None = Field(default=None, description="""The thresholds that size a review to a finished run's risk. The resolver reads them from the resolved flight config so a host or project layer retunes the tiers without a code change.""")
     suite: ReviewSuite | None = Field(default=None, description="""The project's own suite command and whole-run budget. Absent means the project declares no standing suite, and no run is recorded for it.""")
     populations: list[ReviewPopulation] | None = Field(default=None, description="""Named extra populations of the project's suite, each with its own command and whole-run budget and no default. A population runs beside the standing suite and is recorded as its own row, so a slow or browser-driven population keeps its time and its failure ids separable from the standing suite's — it cannot spend the standing suite's budget and its failure does not hold a promotion the standing suite would allow.""")
+
+
+class GcConfig(ConfiguredBaseModel):
+    """
+    How gc bounds the files a promoted run captured. Declared on the flight config so the size a run's captured file is held to is set by a layer rather than by code.
+    """
+    run_file_max_mb: int | None = Field(default=None, description="""The size a promoted run's captured file may reach before gc bounds it, in megabytes. A text file over the limit keeps its head and its tail around a one-line marker naming the original size and sha256; a recognised binary artefact over the limit is reported and left untouched.""", ge=1)
 
 
 class ReviewSuite(ConfiguredBaseModel):
@@ -691,6 +699,7 @@ class TickerConfig(ConfiguredBaseModel):
 FlightConfig.model_rebuild()
 RoutingConfig.model_rebuild()
 ReviewConfig.model_rebuild()
+GcConfig.model_rebuild()
 ReviewSuite.model_rebuild()
 ReviewPopulation.model_rebuild()
 ReviewTiers.model_rebuild()

@@ -342,7 +342,16 @@ def _sha256_bytes(value: bytes) -> str:
 
 
 def _sha256_path(path: Path) -> str:
-    return _sha256_bytes(path.read_bytes())
+    """The sha256 of a file's whole content, read in bounded chunks.
+
+    A file whose size gc is bounding can be far larger than memory wants, so the
+    digest is folded chunk by chunk rather than reading the whole file at once.
+    """
+    digest = hashlib.sha256()
+    with open(path, "rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def _render_resource(

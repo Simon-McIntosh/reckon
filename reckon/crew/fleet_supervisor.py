@@ -67,7 +67,7 @@ import sys
 import termios
 import threading
 import time
-from collections.abc import Callable, Mapping, MutableMapping, Sequence
+from collections.abc import Callable, Iterator, Mapping, MutableMapping, Sequence
 from contextlib import suppress
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -78,6 +78,7 @@ from reckon import service
 from reckon._store import write_json_atomically
 from reckon.crew.host_lease import LEASE_RENEW_SECONDS, HostLease
 from reckon.crew.routing import signal_worker
+from reckon.project_state import _sha256_path
 
 RUNTIME_DIR_ENV = "FLEET_RUNTIME_DIR"
 STATE_DIR_ENV = "FLEET_STATE_DIR"
@@ -545,6 +546,50 @@ def next_backoff(delay: float, ran_seconds: float) -> tuple[float, float]:
     return delay, min(delay * 2, BACKOFF_CAP_SECONDS)
 
 
+def trim_file_ends(
+    path: Path, *, limit: int, head: int, tail: int = 0
+) -> tuple[bytes, bytes] | None:
+    """Return a file's leading and trailing bytes, snapped to whole lines.
+
+    Reads the first ``head`` bytes and the last ``tail`` bytes of ``path`` and
+    returns them as a pair. Neither cut splits a line: the tail keeps the newest
+    bytes and drops the partial line it would start in the middle of, moving
+    forward to the next newline so the first line a later reader sees is whole;
+    the head backs off to the last newline before its end so the last line it
+    carries is whole too, a forward-reading snap of its own. A ``head`` or
+    ``tail`` of zero yields the empty byte string for that side.
+
+    Returns ``None`` when the file is absent or already within ``limit`` — the
+    caller decides whether that is a no-op or a failure. The caller also decides
+    what to do with the bytes: the service log writes the tail back in place
+    under its open descriptor, while the run-file bound writes both halves
+    described by a marker naming the original size and digest.
+    """
+    try:
+        size = path.stat().st_size
+    except FileNotFoundError:
+        return None
+    if size <= limit:
+        return None
+    tail_size = int(tail)
+    head_bytes = b""
+    tail_bytes = b""
+    with open(path, "rb") as handle:
+        if head:
+            head_bytes = handle.read(min(head, size))
+        if tail_size > 0:
+            handle.seek(max(size - tail_size, 0))
+            tail_bytes = handle.read()
+    if head_bytes:
+        boundary = head_bytes.rfind(b"\n")
+        head_bytes = head_bytes[: boundary + 1] if boundary != -1 else b""
+    if tail_bytes:
+        boundary = tail_bytes.find(b"\n")
+        if boundary != -1:
+            tail_bytes = tail_bytes[boundary + 1 :]
+    return head_bytes, tail_bytes
+
+
 def trim_service_log(path: Path, *, limit: int, keep: int) -> bool:
     """Bound a service log, keeping its newest bytes and dropping the oldest.
 
@@ -555,23 +600,199 @@ def trim_service_log(path: Path, *, limit: int, keep: int) -> bool:
     line a later reader sees is a whole one. An absent log is not a failure.
     Returns whether anything was trimmed.
     """
-    try:
-        size = path.stat().st_size
-    except FileNotFoundError:
+    ends = trim_file_ends(path, limit=limit, head=0, tail=min(keep, limit))
+    if ends is None:
         return False
-    if size <= limit:
-        return False
-    keep = min(keep, limit)
+    _, tail = ends
     with open(path, "rb+") as handle:
-        handle.seek(max(size - keep, 0))
-        tail = handle.read()
-        boundary = tail.find(b"\n")
-        if boundary != -1:
-            tail = tail[boundary + 1 :]
         handle.seek(0)
         handle.write(tail)
         handle.truncate()
     return True
+
+
+# ── Bounding a promoted run's captured files ────────────────────────────────
+#
+# A promoted run's directory keeps the streams a later reader opens as
+# evidence: the worker's own output, and the gate log the ledger row names. A
+# run that wrote a runaway log leaves a file nothing else bounds, and the run
+# directory is held for retention rather than reaped, so the file grows with
+# every reader that opens it. gc therefore bounds each promoted run's captured
+# file to the configured size, keeping the head and the tail around a
+# one-line marker naming the original size and sha256, because a gate's command
+# and its verdict sit at opposite ends of a log. A recognised binary artefact
+# is reported and never touched: truncating it would corrupt it rather than
+# bound what a reader opens.
+
+RUN_FILE_BINARY_SUFFIXES = (".pt", ".h5", ".npz")
+
+# The names a run directory uses for something that is never a source tree: a
+# git directory, a virtualenv, a module cache. None is the run's captured
+# output, so neither the extraction report nor the run-file walk takes one.
+RUN_TREE_SKIP_NAMES = frozenset({".git", ".venv", "node_modules"})
+
+
+def carries_git_directory(path: Path) -> bool:
+    """Whether a tree carries a git directory, so the worktree registry owns it."""
+    git = path / ".git"
+    return git.is_file() or git.is_dir()
+
+
+def is_run_source_tree(path: Path) -> bool:
+    """Whether ``path`` is a whole source tree a worker left in a run directory.
+
+    Two shapes: a child of a ``checkouts`` directory, and a directory named for
+    a base revision (``base-source``, ``base-tree`` ...) at the run-directory
+    level or under ``artifacts``. gc files each such tree under its own kind, so
+    both the extraction report and the run-file walk treat these as one policy
+    rather than two that can drift. A git directory, a virtualenv or a module
+    cache is never a source tree.
+    """
+    if path.name in RUN_TREE_SKIP_NAMES:
+        return False
+    if path.name.startswith("base-"):
+        return True
+    return path.parent.name == "checkouts"
+
+
+def run_directory_source_trees(run_dir: Path) -> list[Path]:
+    """The source trees a worker left directly in one run directory.
+
+    The three shapes are one level deep by construction -- ``base-*`` at the
+    run-directory level, the children of ``checkouts``, and ``base-*`` under
+    ``artifacts`` -- so the walk never descends a whole run tree.
+    """
+    trees: list[Path] = []
+    if not run_dir.is_dir():
+        return trees
+    for parent in (run_dir, run_dir / "checkouts", run_dir / "artifacts"):
+        if not parent.is_dir():
+            continue
+        for path in sorted(parent.iterdir()):
+            if path.is_dir() and is_run_source_tree(path) and path not in trees:
+                trees.append(path)
+    return trees
+
+
+def _run_directory_captured_files(directory: Path) -> Iterator[Path]:
+    """Yield the files a run directory owns, without descending a nested tree.
+
+    A run directory holds its captured streams directly and, beside them, whole
+    source trees a worker made under ``checkouts`` or a ``base-*`` name. Those
+    are reported by gc under their own kind, so the policy that names them --
+    :func:`is_run_source_tree` and :func:`carries_git_directory` -- prunes them
+    here too: a bound over a run's own output must not scan a checkout's every
+    file to find it.
+    """
+    for root, dirs, names in os.walk(directory):
+        current = Path(root)
+        dirs[:] = [
+            name
+            for name in dirs
+            if not (
+                name in RUN_TREE_SKIP_NAMES
+                or name == "checkouts"
+                or is_run_source_tree(current / name)
+                or carries_git_directory(current / name)
+            )
+        ]
+        for name in names:
+            yield current / name
+
+
+def _bound_run_file(path: Path, *, limit_bytes: int, apply: bool) -> dict[str, Any]:
+    """Report one run file over the limit, bounding it under ``--apply``.
+
+    A recognised binary artefact is reported and never rewritten — ``binary``
+    is set and ``action`` reads ``reported`` rather than ``bound``. A text file
+    keeps its first and last half of the limit around a one-line marker naming
+    the original size and sha256, so the result is the limit plus the marker,
+    its first and last line intact and its identity recorded in the marker. A
+    dry run reports the same row without touching the file.
+    """
+    size = path.stat().st_size
+    row: dict[str, Any] = {
+        "path": str(path),
+        "size": size,
+        "action": "bound",
+        "bounded": False,
+        "binary": False,
+    }
+    if path.suffix.lower() in RUN_FILE_BINARY_SUFFIXES:
+        row["action"] = "reported"
+        row["binary"] = True
+        return row
+    digest = _sha256_path(path)
+    row["original_sha256"] = digest
+    if not apply:
+        return row
+    half = limit_bytes // 2
+    ends = trim_file_ends(path, limit=limit_bytes, head=half, tail=half)
+    if ends is None:
+        return row
+    head, tail = ends
+    marker = f"\n[reckon gc: truncated from {size} bytes; sha256 {digest}]\n".encode()
+    with open(path, "wb") as handle:
+        handle.write(head)
+        handle.write(marker)
+        handle.write(tail)
+    row["bounded"] = True
+    row["final_size"] = path.stat().st_size
+    return row
+
+
+def bound_run_files(
+    directory: Path,
+    record: Mapping[str, Any],
+    *,
+    limit_bytes: int,
+    apply: bool,
+) -> list[dict[str, Any]]:
+    """Bound every over-limit file a promoted run directory and its row name.
+
+    Two sets are read: the files the run directory itself owns, and the gate
+    logs the run's own ledger record declares — the latter through
+    :func:`reckon.crew.promotion_release._declared_arm_paths`, so a log a
+    reviewer cites is bounded the same way as the run's own output even when it
+    sits outside the run directory. A path read twice is reported once.
+    """
+    from reckon.crew import promotion_release
+
+    rows: list[dict[str, Any]] = []
+    seen: set[Path] = set()
+
+    def consider(path: Path, kind: str) -> None:
+        try:
+            resolved = path.resolve()
+        except OSError:
+            return
+        if resolved in seen:
+            return
+        seen.add(resolved)
+        try:
+            if not path.is_file() or path.stat().st_size <= limit_bytes:
+                return
+        except OSError:
+            return
+        row = _bound_run_file(path, limit_bytes=limit_bytes, apply=apply)
+        row["run_id"] = directory.name
+        row["kind"] = kind
+        rows.append(row)
+
+    for path in _run_directory_captured_files(directory):
+        consider(path, "run-file")
+    declared = promotion_release._declared_manifest(record)
+    for path in promotion_release._declared_arm_paths(declared):
+        consider(Path(path), "gate-log")
+    return rows
+
+
+def run_file_limit_bytes(repo_root: Path, project: str | None) -> int:
+    """The resolved run-file bound in bytes, from the flight config layers."""
+    from reckon import flight
+
+    config = flight.resolve(project, checkout_path=repo_root).config
+    return flight.run_file_max_mb(config) * 1024 * 1024
 
 
 def service_wrapper_argv(name: str, argv: Sequence[str]) -> list[str]:

@@ -529,31 +529,27 @@ def _run_directory_extractions(runs_root: Path) -> list[Path]:
 
     Workers keep two kinds of source tree in a run directory: registered
     worktrees, and plain extractions made with ``git archive`` that carry no
-    git directory. Both appear in the same places — the children of a
-    ``checkouts`` directory, and directories named for a base revision
-    (``base-source``, ``base-tree``, ``base-wt`` ...) at the run-directory
-    level or under ``artifacts``. A candidate that holds a git directory is a
-    real worktree that the worktree registry already reports, so only the
-    git-less ones are returned here — they are exactly the trees gc would
-    otherwise never see. Each run directory is scanned directly; the walk never
-    descends a whole run tree.
+    git directory. The shapes and names both appear in are stated once, by
+    :func:`reckon.crew.fleet_supervisor.run_directory_source_trees`, so the
+    extraction report and the gc run-file walk cannot drift apart. A candidate
+    that holds a git directory is a real worktree that the worktree registry
+    already reports, so only the git-less ones are returned here — they are
+    exactly the trees gc would otherwise never see. Each run directory is
+    scanned directly; the walk never descends a whole run tree.
     """
+    from reckon.crew.fleet_supervisor import (
+        carries_git_directory,
+        run_directory_source_trees,
+    )
+
     if not runs_root.is_dir():
         return []
     found: list[Path] = []
     for run_dir in sorted(path for path in runs_root.iterdir() if path.is_dir()):
-        candidates: list[Path] = []
-        for pattern in ("base-*", "artifacts/base-*"):
-            candidates.extend(path for path in run_dir.glob(pattern) if path.is_dir())
-        checkouts = run_dir / "checkouts"
-        if checkouts.is_dir():
-            candidates.extend(path for path in checkouts.iterdir() if path.is_dir())
-        for candidate in candidates:
-            git_dir = candidate / ".git"
-            if git_dir.is_file() or git_dir.is_dir():
+        for candidate in run_directory_source_trees(run_dir):
+            if carries_git_directory(candidate) or candidate in found:
                 continue
-            if candidate not in found:
-                found.append(candidate)
+            found.append(candidate)
     return sorted(found)
 
 
@@ -2052,6 +2048,10 @@ def garbage_collect(
         cutoff = (now or datetime.now(tz=timezone.utc)) - timedelta(days=retention_days)
         live_ids = {str(record.get("run_id") or "") for record in list_live()}
         run_reports: list[dict[str, Any]] = []
+        run_file_reports: list[dict[str, Any]] = []
+        from reckon.crew.fleet_supervisor import bound_run_files, run_file_limit_bytes
+
+        run_file_limit = run_file_limit_bytes(repo_root, project)
         if runs_root.is_dir():
             for directory in sorted(
                 path for path in runs_root.iterdir() if path.is_dir()
@@ -2060,12 +2060,17 @@ def garbage_collect(
                     continue
                 if directory.name not in ledgered or directory.name in live_ids:
                     continue
+                record = ledgered_records.get(directory.name, {})
+                run_file_reports.extend(
+                    bound_run_files(
+                        directory, record, limit_bytes=run_file_limit, apply=apply
+                    )
+                )
                 modified = datetime.fromtimestamp(
                     directory.stat().st_mtime, tz=timezone.utc
                 )
                 if modified > cutoff:
                     continue
-                record = ledgered_records.get(directory.name, {})
                 figure_status = {
                     field: _figure_retention(record, field)
                     for field in STREAM_DERIVED_FIELDS
@@ -2244,6 +2249,7 @@ def garbage_collect(
         "residue_report": residue_report,
         "pointers": pointer_reports,
         "run_directories": run_reports,
+        "run_files": run_file_reports,
         "run_directories_withheld": run_directories_withheld,
         "run_directories_reaped_with_explicitly_absent_figures": (
             run_directories_reaped_with_explicitly_absent_figures
