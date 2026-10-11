@@ -25,7 +25,7 @@
   <title>Nothing Lands Unreached | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="23">
+<meta name="plan-version" content="24">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -201,6 +201,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261010T223838483920-review-of-dead-record-helpers-deleted" data-who="reckon-build" data-when="2026-10-10T22:50:36.540Z">
     <div class="r-comment-body"><p>review-of-dead-record-helpers-deleted: attached a parsed review to r-20261010T221121386516-dead-record-helpers-deleted at reviewed base 3f9f84469 (6 failed/3654 passed) and head 489e0ccd (5 failed/3653 passed), added_failure_count 0 with empty added_failure_ids, six dimensions scored {goal_fidelity 16, evidence 18, scope_discipline 20, durability 17, fit 19, reuse 19} total 109; verified the four deleted helpers have no hit by git grep over reckon/ tests/ skills/ at head, the five kept _schema.py names are live pydantic hooks (_valid_status reproduced firing), and no survivor was orphaned.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261011T000713071756-dead-serving-helpers-deleted" data-who="reckon-build" data-when="2026-10-11T00:20:00.823Z">
+    <div class="r-comment-body"><p>Deleted three unreached helpers — reckon/serve.py::_FleetChangeWatch.armed_roots, reckon/crew_dispatch_commands.py::_OneDocumentStdout.seekable, reckon/crew/session_host.py::_SessionHost._record_name — 13 lines removed, 0 added (source delta −13/+0); grep -rnw over reckon/ tests/ skills/ returns no hit for any of the three; the 89 test files importing the three touched modules pass at 1 failed/875 passed/27 skipped with the sole failure pre-existing (identical in a base-arm scratch tree), added_failure_count 0; negative control fires (a restored call site makes the grep non-empty).</p></div>
 </div>
 </section>
 </main>
