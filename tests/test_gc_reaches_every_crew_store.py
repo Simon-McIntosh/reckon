@@ -471,6 +471,7 @@ def test_an_unreadable_peer_ledger_withholds_the_sweep(tmp_path, monkeypatch):
     # B's directory and the unledgered one are both withheld rather than offered.
     assert set(rows) == {str(dir_b), str(dir_none)}
     assert all("withheld" in row for row in rows.values())
+    assert all(row["action"] == "withheld" for row in rows.values())
     assert all("project-b" in row["withheld"] for row in rows.values())
 
     applied = gc_for(repo_a, "project-a", apply=True)
@@ -478,3 +479,21 @@ def test_an_unreadable_peer_ledger_withholds_the_sweep(tmp_path, monkeypatch):
     assert dir_a.is_dir()
     assert dir_b.is_dir()
     assert dir_none.is_dir()
+
+
+def test_gc_spares_its_own_ledgered_run_directory_with_no_mount(tmp_path, monkeypatch):
+    """A repository that runs workers without being a registered mount still
+    spares its own ledgered run directory: the gc repository's own ledgered
+    set is carried alongside the cross-mount set."""
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
+    monkeypatch.setenv("RECKON_MOUNTS_PATH", str(tmp_path / "config" / "mounts.json"))
+    repo = repository(tmp_path)
+    record_run(repo, "own-ledgered")
+    directory = write_run_dir("own-ledgered", age_days=OLD_DAYS)
+
+    applied = gc(repo, apply=True)
+
+    assert directory.is_dir()
+    assert all(
+        row["path"] != str(directory) for row in applied["unledgered_run_directories"]
+    )

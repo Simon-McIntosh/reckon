@@ -1612,6 +1612,7 @@ def _unledgered_run_directories(
     now: datetime | None,
     run_id: str | None,
     live_ids: set[str],
+    ledgered: set[str],
     retention_days: int,
 ) -> list[dict[str, Any]]:
     """Run directories with no ledger row and no live pointer, past retention.
@@ -1623,19 +1624,24 @@ def _unledgered_run_directories(
     past retention it is offered whole. The live set is re-read before each
     removal.
 
-    The run directory is unledgered only when no registered project's ledger
-    holds its run id, so the known set is built across every mount rather than
-    the gc repository's own. If any registered project's ledger cannot be
-    read, the sweep fails closed: every would-be row is reported withheld with
-    a reason naming the unreadable project and none of them is removed, so a
-    gc run from one checkout cannot delete a peer project's run directories.
+    The run directory is shared with every registered project, so the known
+    set is the union of the gc repository's own ``ledgered`` rows with every
+    registered mount's. The mounts are read because a run this checkout never
+    ledgers is still a peer project's; the repository's own rows are carried
+    because a repository can run workers without being a registered mount, and
+    its own ledgered directories must survive its gc. If any registered
+    project's ledger cannot be read, the sweep fails closed: every would-be
+    row is reported withheld with a reason naming the unreadable project and
+    none of them is removed, so a gc run from one checkout cannot delete a
+    peer project's run directories.
     """
     from reckon.crew.dispatch import tree_size_bytes
 
     runs_root = runs_dir()
     if not runs_root.is_dir():
         return []
-    ledgered, unreadable = _mounted_ledgered_run_ids()
+    mounted, unreadable = _mounted_ledgered_run_ids()
+    known = set(ledgered) | mounted
     current = now or datetime.now(tz=UTC)
     cutoff = current - timedelta(days=retention_days)
     entries: list[dict[str, Any]] = []
@@ -1643,7 +1649,7 @@ def _unledgered_run_directories(
         directory_run_id = directory.name
         if run_id and directory_run_id != run_id:
             continue
-        if directory_run_id in ledgered or directory_run_id in live_ids:
+        if directory_run_id in known or directory_run_id in live_ids:
             continue
         modified = datetime.fromtimestamp(directory.stat().st_mtime, tz=UTC)
         if modified > cutoff:
@@ -1657,6 +1663,7 @@ def _unledgered_run_directories(
             "removed": False,
         }
         if unreadable:
+            entry["action"] = "withheld"
             entry["withheld"] = (
                 "the ledger of registered project "
                 f"{', '.join(repr(name) for name in unreadable)} could not be "
@@ -2199,6 +2206,7 @@ def garbage_collect(
             now=now,
             run_id=run_id,
             live_ids=live_ids,
+            ledgered=ledgered,
             retention_days=retention_days,
         )
         # The ledger index cache is global, keyed by checkout rather than by
