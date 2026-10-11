@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="nothing-lands-unreached">
+  <meta name="plan-evidence-for" content="reckon:nothing-lands-unreached">
+  <meta name="plan-verifies" content="reckon:nothing-lands-unreached#s3">
+  <meta name="plan-recorded-at" content="2026-10-11">
+  <meta name="plan-verdict" content="pass">
+  <title>Three unreached serving helpers are deleted | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="dead-serving-helpers-deleted-landing" data-node="dead-serving-helpers-deleted" data-reckon="landed" data-when="2026-10-11">
+  <h2>Three unreached helpers are gone: armed_roots, seekable, _record_name</h2>
+  <p>Deleted <code>reckon/serve.py::_FleetChangeWatch.armed_roots</code>, <code>reckon/crew_dispatch_commands.py::_OneDocumentStdout.seekable</code> and <code>reckon/crew/session_host.py::_SessionHost._record_name</code> — 13 lines removed, nothing added (delta −13/+0). <code>grep -rnw</code> for each over <code>reckon/ tests/ skills/</code> returns no hit, and no <code>getattr</code>/<code>hasattr</code> touches them. The gate — the 89 test files in the head tree that import <code>reckon.serve</code>, <code>reckon.crew_dispatch_commands</code> or <code>reckon.crew.session_host</code> — ran <strong>1 failed, 875 passed, 27 skipped</strong> (EXIT=1); the one failure, <code>tests/test_mcp_views.py::test_raw_and_schema_are_explicit_layers</code>, also fails in a base-arm scratch tree with the three helpers restored (<strong>1 failed, 875 passed, 27 skipped</strong>), so it is pre-existing and the added-failure count is 0. Negative control: adding an <code>armed_roots</code> call site in a scratch copy makes the grep non-empty (2 hits), proving the grep can fire.</p>
+</article>
+</body>
+</html>

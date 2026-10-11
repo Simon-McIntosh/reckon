@@ -91,9 +91,6 @@ class _OneDocumentStdout:
     def readable(self) -> bool:
         return False
 
-    def seekable(self) -> bool:
-        return False
-
     def flush(self) -> None:
         sys.stderr.flush()
 

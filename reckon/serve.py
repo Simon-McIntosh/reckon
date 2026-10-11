@@ -250,13 +250,6 @@ class _FleetChangeWatch:
         self._thread: threading.Thread | None = None
         self.running = False
 
-    @property
-    def armed_roots(self) -> frozenset[Path]:
-        """Return the roots currently covered by an armed watch."""
-
-        with self._lock:
-            return frozenset(watch.root for watch in self._watches.values())
-
     def start(self) -> _FleetChangeWatch:
         """Begin watching every mounted tree; return self for chaining."""
         if self.running:
