@@ -20,11 +20,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
   <title>The Portfolio Reads True | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="21">
+<meta name="plan-version" content="24">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -130,7 +130,8 @@
       declares <code>plan-section-depends-on</code> or <code>plan-after</code>, or when another plan holds a gate whose required evidence
       names it, beside the links, gates and standalone reason it accepts today. The audit message and the reckon-create skill's wiring table
       name the section-level forms, so the right wire is also the one that silences the finding. Its three callers pass the new inputs:
-      <code>reckon/doccheck.py:858</code>, <code>reckon/roadmap.py:1287</code> and <code>reckon/mcp_discovery.py:221</code>, the last of which
+      <code>_unwired_plan_findings</code> in <code>reckon/doccheck.py</code>, <code>_unwired_plan_findings</code> in
+      <code>reckon/roadmap.py</code> and <code>_unwired_plan_refusal</code> in <code>reckon/mcp_discovery.py</code>, the last of which
       drives the new-plan refusal.</p>
     <p><strong>Done when</strong> <code>tests/test_section_relations_count_as_wiring.py</code> audits a temporary project in which plan
       <code>x</code> declares only <code>plan-section-depends-on</code> on <code>y#s2</code>, plan <code>y</code> is named only as the required
@@ -153,20 +154,28 @@
       is the 2026-10-10 baseline: the same count taken before the round must read 63 or more, or the reduction is not attributable to it.
       Write paths: the plan and sprint resources the dispositions name, through <code>reckon-edit</code> and <code>reckon-sprint</code>.</p>
 
+    <h2 id="s7">§7 — A section gate holds its sections, not the plan</h2>
+<section data-reckon="section" data-id="s7" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p>The roadmap reports a plan <code>blocked</code> when any of its execution gates is unpassed, including a gate whose <code>gated_sections</code> names one later section. In <code>reckon/roadmap.py</code>, the readiness pass builds <code>gate_blockers</code> from <code>unpassed_gate_blockers(execution_gates(plan))</code> and lets any entry clear <code>is_ready</code> and set <code>is_blocked</code>, whatever sections the gate names. Measured on 2026-10-10: this plan and the-codebase-is-reviewed-between-nodes both read <code>effective_status: blocked</code> while their first sections were running, each because of a gate on one later section (comment <code>c-gate-blocks-plan-1010</code>). The wiring rules in the reckon-create and reckon-edit skills recommend a gate over a plan-level <code>depends_on</code> because a gate holds only the section it names. The roadmap undoes that, so the advice produces the misreport it was meant to avoid.</p>
+<p><strong>Deliverable.</strong> A gate whose <code>gated_sections</code> is non-empty holds those sections only. The plan stays ready while at least one implementable section is held by no unpassed gate and every other readiness condition holds. The gate is still reported on the plan's row, scoped to the sections it holds. A gate that names no sections holds the whole plan, as it does today. A plan whose every implementable section is gated is blocked by those gates. The change is confined to the readiness pass and the row it emits, and reuses <code>execution_gates</code> and <code>unpassed_gate_blockers</code>. Nothing retires, because no reader scopes a gate to its sections today.</p>
+<p><strong>Done when</strong> <code>tests/test_a_section_gate_holds_its_sections.py</code> builds a temporary project with three plans. Plan <code>p</code> has an ungated implementable <code>s1</code> and an implementable <code>s2</code> held by an unpassed gate naming <code>s2</code>. Plan <code>q</code>'s only implementable section is held by such a gate. Plan <code>r</code> holds an unpassed gate naming no section. The test asserts that the roadmap lists <code>p</code> in <code>ready_now</code> with the gate reported against <code>s2</code>, and reports <code>q</code> and <code>r</code> blocked by their gates. The tests importing <code>reckon/roadmap.py</code> show no added failure against base, their list built from the head tree. The negative control is executed and logged: with every unpassed gate treated as plan-level again, <code>p</code> reads blocked and the test fails. Write paths: <code>reckon/roadmap.py</code>, <code>tests/test_a_section_gate_holds_its_sections.py</code>. This section runs after §5, which also writes <code>reckon/roadmap.py</code>.</p>
+
     <section data-reckon="gates" id="gates" class="r-gates">
 <h2><span class="sec">§</span> Evidence gates</h2>
 <div class="r-gate" data-id="g-tprt-portfolio-mode" data-section="s6" data-gated-sections="s6" data-status="open" data-verdict="">
     <h4 class="r-gate-measure">reckon crew review --portfolio composes a portfolio review and parses one disposition per non-shipped plan</h4>
     <p class="r-gate-required-evidence">the-codebase-is-reviewed-between-nodes#s8</p>
     </div>
-<div class="r-gate" data-id="g-tprt-impl-honest" data-section="s6" data-gated-sections="s6" data-status="open" data-verdict="">
+<div class="r-gate" data-id="g-tprt-impl-honest" data-section="s6" data-gated-sections="s6" data-status="closed" data-verdict="passed">
     <h4 class="r-gate-measure">a plan with an implementable declaration never reads impl 1.0, and the impl source is named on every parsed plan</h4>
     <p class="r-gate-required-evidence">the-portfolio-reads-true#s2</p>
-    </div>
-<div class="r-gate" data-id="g-tprt-age-honest" data-section="s6" data-gated-sections="s6" data-status="open" data-verdict="">
+    <a class="r-gate-evidence" href="the-portfolio-reads-true#s2: impl falls back to the declaration count when section records do not cover the declarations, so a plan with an implementable declaration never reads 1.0, and impl_source names computed, declarations or authored on every parsed plan (merge c6abb36b4).">Evidence</a>
+</div>
+<div class="r-gate" data-id="g-tprt-age-honest" data-section="s6" data-gated-sections="s6" data-status="closed" data-verdict="passed">
     <h4 class="r-gate-measure">the audit&#x27;s plan age counts from the last commit and reports AGING from 14 days</h4>
     <p class="r-gate-required-evidence">the-portfolio-reads-true#s3</p>
-    </div>
+    <a class="r-gate-evidence" href="the-portfolio-reads-true#s3: derived_plan_age reads the last commit first and the audit reports AGING from 14 days, STALE past 30 (merge c9320e15b).">Evidence</a>
+</div>
 </section>
     
     <section data-reckon="followups" id="followups" class="r-followups">
