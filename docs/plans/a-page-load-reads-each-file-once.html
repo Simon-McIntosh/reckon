@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-page-load-reads-each-file-once">
   <meta name="plan-title" content="A Page Load Reads Each File Once">
   <meta name="plan-summary" content="Every SPA load rediscovered the whole fleet from disk, reparsing each plan about nineteen times; a refresh must cost what changed, not the fleet.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="6.0">
   <meta name="plan-capability-version" content="1.0">
@@ -22,10 +22,10 @@
   <title>A Page Load Reads Each File Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="42">
 <meta name="plan-commits" content="56e13e11,98d99673,f9d08b55,f6529a51,b097918e,26d03b02,267cdb69">
 <meta name="plan-impl" content="0.83">
+<meta name="plan-version" content="43">
+<meta name="plan-modified" content="2026-10-11">
 <meta name="plan-informs" content="a-follower-outlives-its-monitor">
 </head>
 <body>
@@ -531,6 +531,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-aplref-s8-landed" data-who="" data-when="">
     <div class="r-comment-body"><p>Landed in merge <code>f3bc6109c</code> of <code>d102a85e9</code> (run r-20261003T054514895506-server-serves-one-code-version, codex lane). The first head, <code>810e9a319</code>, was reviewed at 91 but held. It ran <code>served_code.drift</code> with no reuse window over the whole package on every request, so it re-statted the package on GPFS per request. It also refused every request until a manual restart, so any merge touching reckon would have taken the live service down. Resumed with that advice, the repaired head was reviewed at 93 with no added failures. Drift is now judged through <code>served_code.served_report</code>, which keeps its reuse window and counts only executed definitions, and both fingerprints come from that report's changed files. On drift, the triggering request gets a 503 <code>stale-code</code> body with Retry-After. <code>_CodeReload</code> then stops accepting, drains in-flight requests for up to 3 s and re-execs in place with the server's own argv. <code>tests/test_server_serves_one_code_version.py</code> covers four cases: the ImportError reproduction, an unexecuted module edit that is ignored, one 503 then an exec, and a single comparison per window. The 85-file serve.py population passes at base <code>8d5f02101</code> and at the stacked head. It takes effect on the live <code>reckon.service</code> at its next restart. Review follow-on: the test helper still monkeypatches the deleted <code>_SERVER_CODE_STAMP</code>, which is now a no-op.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-portfolio-close-1011" data-who="reckon-build (portfolio review)" data-when="2026-10-11T07:50:00Z">
+    <div class="r-comment-body"><p>Closed by the first portfolio review (run <code>r-20261011T053414304371-review-portfolio-5a41ff11ff49</code>): impl 1.0 with no implementable section and no live run. The persisted metadata index is in <code>reckon/serve.py</code>. The one open followup, <code>f-aplref-002</code>, is a pointer to a-follower-outlives-its-monitor §9, which owns the remaining page-load cost.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261003T060602744120-review-of-server-serves-one-code-version" data-who="reckon-build" data-when="2026-10-03T06:12:49.221Z">
     <div class="r-comment-body"><p>Stored the independent review of r-20261003T054514895506-server-serves-one-code-version scoring all five dimensions (goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 16; total 91) over base 9b66ff8a768e734c9e39da17f846cca1ca6c94d6 and head 810e9a319f689a2b7e94b4265add55242ee6f2bc, with added_failure_count 0 and no added ids, and three follow-on findings on the new request guard.</p></div>
