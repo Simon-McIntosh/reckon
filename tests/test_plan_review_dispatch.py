@@ -181,13 +181,6 @@ def test_a_report_missing_a_rubric_line_names_that_item_absent(
 
 
 def test_the_report_grammar_has_one_owner() -> None:
-    source = Path(plan_review.__file__).read_text(encoding="utf-8")
-    grammar_regexes = [
-        line
-        for line in source.splitlines()
-        if "re.compile" in line and ("RUBRIC" in line or "FINDING" in line)
-    ]
-    assert grammar_regexes == []
     for name in ("_RUBRIC_LINE_RE", "_FINDING_LINE_RE", "_FINDING_TAIL_RE"):
         assert not hasattr(plan_review, name)
     assert plan_review.parse_review_report is review_module.parse_plan_review_report

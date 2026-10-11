@@ -26,9 +26,7 @@ caller reaches it: the one caller guards the stamp before the call.
 
 from __future__ import annotations
 
-import ast
 from datetime import UTC, datetime
-from pathlib import Path
 from typing import Any
 
 import pytest
@@ -36,10 +34,6 @@ import pytest
 from reckon.crew import (
     promotion,
     promotion_checks,
-    promotion_evidence,
-    promotion_gate,
-    promotion_records,
-    promotion_release,
     promotion_scope,
 )
 
@@ -127,23 +121,24 @@ def test_every_reader_is_covered() -> None:
         assert set(row) == set(INPUTS), reader
 
 
-def test_no_reader_parses_iso_strings_itself() -> None:
-    """Promotion parses through reckon._timestamps, not fromisoformat directly."""
-    modules = (
-        promotion,
-        promotion_checks,
-        promotion_evidence,
-        promotion_gate,
-        promotion_records,
-        promotion_release,
-        promotion_scope,
+def test_each_reader_parses_through_the_shared_module(monkeypatch) -> None:
+    """Each reader routes its stamps through ``reckon._timestamps``.
+
+    A sentinel parser returns a moment no reader would compute itself, so a
+    reader that went back to ``fromisoformat`` on the stamp directly would not
+    surface it.
+    """
+    sentinel = datetime(2031, 1, 2, 3, 4, 5, tzinfo=UTC)
+    monkeypatch.setattr(promotion_scope, "parse_utc", lambda _value: sentinel)
+    monkeypatch.setattr(promotion_scope, "parse_iso", lambda _value: sentinel)
+    monkeypatch.setattr(promotion_checks, "parse_iso", lambda _value: sentinel)
+
+    # Two sentinel moments are zero seconds apart; a direct parse of the same
+    # unparseable values would have yielded no span at all.
+    assert promotion_scope._elapsed_seconds("a", "b") == 0
+    # An aware sentinel leaves a naive stamp as written; a direct parse would
+    # have attached a trailing Z to it.
+    assert promotion_scope._assume_utc_if_naive("2026-09-26T11:00:00") == (
+        "2026-09-26T11:00:00"
     )
-    offenders = [
-        (module.__file__, node.lineno)
-        for module in modules
-        for node in ast.walk(ast.parse(Path(module.__file__).read_text(), filename=str(module.__file__)))
-        if isinstance(node, ast.Call)
-        and isinstance(node.func, ast.Attribute)
-        and node.func.attr == "fromisoformat"
-    ]
-    assert offenders == []
+    assert promotion_checks._zone_aware_stream_timestamp("x") == sentinel

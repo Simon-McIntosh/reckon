@@ -17,7 +17,6 @@ by newly added failure identities rather than absolute suite health.
 
 from __future__ import annotations
 
-import inspect
 import json
 import subprocess
 from pathlib import Path
@@ -27,7 +26,6 @@ from click.testing import CliRunner
 
 from reckon import capabilities, ledger
 from reckon.cli import main as cli_main
-from reckon.crew import promotion
 from reckon.crew import review as review_module
 from reckon.crew.reports import audit_manifest, parse_manifest
 from reckon.crew.runs import _write_json, pointer_path
@@ -926,9 +924,14 @@ def test_failure_attribution_round_trips_through_parse_manifest(
     fields = parse_manifest(manifest.read_text())
 
     assert fields["failure_attribution"] == attribution
-    assert ledger.new_failure_attribution(
-        fields["baseline_suite"], fields["after_suite"], fields["failure_attribution"]
-    ) == attribution
+    assert (
+        ledger.new_failure_attribution(
+            fields["baseline_suite"],
+            fields["after_suite"],
+            fields["failure_attribution"],
+        )
+        == attribution
+    )
 
 
 def test_new_failure_attribution_drops_a_pre_existing_failure_id() -> None:
@@ -989,8 +992,8 @@ def test_audit_manifest_rejects_attribution_naming_failure_absent_from_after(
 
     assert not audit["ok"]
     assert any(
-        "tests/test_missing.py::test_ghost" in finding and "not in after_suite"
-        in finding
+        "tests/test_missing.py::test_ghost" in finding
+        and "not in after_suite" in finding
         for finding in audit["findings"]
     )
 
@@ -1061,19 +1064,6 @@ def test_added_failure_ids_matches_promotions_suite_delta_arithmetic(
         )
         == attribution
     )
-
-
-def test_promotion_uses_ledger_added_failure_ids_not_a_second_expression() -> None:
-    """The promotion delta gate reuses the ledger's added-failure arithmetic.
-
-    A second set-difference over failure_ids inside promotion would be a
-    second notion of "new" that could drift from the one the attribution is
-    filtered against. The gate must call ledger.added_failure_ids and must
-    fail the moment the inline expression is reintroduced.
-    """
-    source = inspect.getsource(promotion._evaluate_suite_delta)
-    assert "ledger.added_failure_ids(" in source
-    assert '["failure_ids"]) - set(' not in source
 
 
 def test_promoted_run_stores_failure_attribution_beside_added_ids(

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import inspect
 import json
 import os
 import subprocess
@@ -529,9 +528,9 @@ def test_a_withheld_worktree_says_which_condition_holds_it(tmp_path, monkeypatch
 def test_the_reclaimable_set_is_exactly_what_apply_removes(tmp_path, monkeypatch):
     """The report and the removal branch must not drift apart.
 
-    The report is what a caller decides from, so a classification the report
-    calls reclaimable has to be one `--apply` acts on, and the reverse. Asserted
-    against the vocabulary rather than by running a destructive pass.
+    The report is what a caller decides from, so this asserts the report and
+    `--apply` agree on the same fixture: the set of worktrees the report calls
+    reclaimable is exactly the set `--apply` removes.
     """
     from reckon.crew import routing
 
@@ -547,9 +546,29 @@ def test_the_reclaimable_set_is_exactly_what_apply_removes(tmp_path, monkeypatch
     }
     assert not set(routing.RECLAIMABLE_CLASSES) & set(routing.WITHHELD_REASONS)
 
-    source = inspect.getsource(routing.garbage_collect)
-    assert 'if item["classification"] not in RECLAIMABLE_CLASSES:' in source
-    assert 'item["classification"] == "dirty-integrated"' in source
+    home = tmp_path / "config"
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    repo = repository(tmp_path)
+    first = create_worktree(repo, "run-a", "candidate")
+    second = create_worktree(repo, "run-b", "candidate")
+
+    report = json.loads(
+        CliRunner()
+        .invoke(cli.main, ["crew", "gc", "--repo", str(repo), "--project", "test"])
+        .output
+    )
+    reported = {item["path"] for item in report["worktrees"] if item["reclaimable"]}
+    assert {str(first), str(second)} <= reported
+
+    applied = json.loads(
+        CliRunner()
+        .invoke(
+            cli.main,
+            ["crew", "gc", "--repo", str(repo), "--project", "test", "--apply"],
+        )
+        .output
+    )
+    assert set(applied["removed_worktrees"]) == reported
 
 
 def test_gc_with_no_repo_resolves_the_named_projects_registered_checkout(

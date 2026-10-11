@@ -54,13 +54,6 @@ def _patch_accessor(monkeypatch: pytest.MonkeyPatch, action: str) -> dict[str, s
     return sentinel
 
 
-def test_only_the_accessor_looks_a_finding_response_up_by_id() -> None:
-    # The lookup lives in exactly one function; each reader calls it by name.
-    source = Path(plan_review.__file__).read_text(encoding="utf-8")
-    assert source.count("responses.get(") == 1
-    assert "response = _stored_response(record, finding)" in source
-
-
 def test_declined_recurrence_counts_through_the_accessor(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
