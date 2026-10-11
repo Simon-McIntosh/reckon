@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-standalone" content="It waits on no plan; its one downstream consumer is the section gate g-tcirbn-reach-instrument held on the-codebase-is-reviewed-between-nodes §6, which no plan-level relation expresses.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;}">
   <title>Nothing Lands Unreached | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="25">
+<meta name="plan-version" content="26">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -86,7 +86,7 @@
       <code>reckon/served_code.py</code>, <code>tests/test_reach_graph.py</code>, <code>tests/test_every_module_is_reached.py</code>.</p>
 
     <h2 id="s3">§3 — Code no plan owns and nothing reaches is deleted</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> Delete <code>reckon/crew/context_budget.py</code> with the tests that exist only to test it; the
       12 unreferenced helpers. (The <code>reckon crew pick --estimated-context</code> option the census first
       listed is kept: it is read at <code>reckon/crew_dispatch_commands.py:693</code> and consumed at
@@ -206,7 +206,10 @@
     <div class="r-comment-body"><p>Deleted three unreached helpers — reckon/serve.py::_FleetChangeWatch.armed_roots, reckon/crew_dispatch_commands.py::_OneDocumentStdout.seekable, reckon/crew/session_host.py::_SessionHost._record_name — 13 lines removed, 0 added (source delta −13/+0); grep -rnw over reckon/ tests/ skills/ returns no hit for any of the three; the 89 test files importing the three touched modules pass at 1 failed/875 passed/27 skipped with the sole failure pre-existing (identical in a base-arm scratch tree), added_failure_count 0; negative control fires (a restored call site makes the grep non-empty).</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261011T002016715106-review-of-dead-serving-helpers-deleted" data-who="reckon-build" data-when="2026-10-11T00:27:48.981Z">
-    <div class="r-comment-body"><p>Independent review of dead-serving-helpers-deleted (base 8d56aba9, head edbe7939) stored: goal_fidelity 19, evidence 16, scope_discipline 19, durability 16, fit 20, reuse 20 (total 110); two follow-on findings — the done_when EXIT=0 clause is unmet (head gate EXIT=1, 1 pre-existing failure answered by the base-arm delta) and the reviewed manifest omits the baseline_suite/after_suite fields; added_failure_count 0 derived from the run&#x27;s own base-arm-full.log and gate log.</p></div>
+    <div class="r-comment-body"><p>Independent review of dead-serving-helpers-deleted (base 8d56aba9, head edbe7939) stored: goal_fidelity 19, evidence 16, scope_discipline 19, durability 16, fit 20, reuse 20 (total 110); two follow-on findings — the done_when EXIT=0 clause is unmet (head gate EXIT=1, 1 pre-existing failure answered by the base-arm delta) and the reviewed manifest omits the baseline_suite/after_suite fields; added_failure_count 0 derived from the run's own base-arm-full.log and gate log.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-11T02:35:00Z">
+    <div class="r-comment-body"><p>§3 closed. Its third node deleted three unreached serving helpers (merge <code>cf0c68215</code>, −13 lines, 0 added failures over 89 importing test files; review 110/120), after <code>context_budget</code> (<code>e4427ae78</code>) and the dead record helpers (<code>8e99f8405</code>). <a href="/reckon/evidence/archive/nothing-lands-unreached-landed.html#s3-dead-serving-helpers">evidence</a></p></div>
 </div>
 </section>
 </main>
