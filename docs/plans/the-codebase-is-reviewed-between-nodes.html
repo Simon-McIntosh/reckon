@@ -25,7 +25,7 @@
   <title>The Codebase Is Reviewed Between Nodes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="17">
+<meta name="plan-version" content="18">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -277,14 +277,16 @@
 
     <section data-reckon="gates" id="gates" class="r-gates">
 <h2><span class="sec">§</span> Evidence gates</h2>
-<div class="r-gate" data-id="g-tcirbn-reach-instrument" data-section="s6" data-gated-sections="s6" data-status="open" data-verdict="">
+<div class="r-gate" data-id="g-tcirbn-reach-instrument" data-section="s6" data-gated-sections="s6" data-status="closed" data-verdict="passed">
     <h4 class="r-gate-measure">the reachability reader in reckon/served_code.py returns the production modules one import away from a named path, and the reach ratchet test passes at the integrated head</h4>
     <p class="r-gate-required-evidence">nothing-lands-unreached#s2</p>
-    </div>
-<div class="r-gate" data-id="g-tcirbn-cited-commands" data-section="s7" data-gated-sections="s7" data-status="open" data-verdict="">
+    <a class="r-gate-evidence" href="nothing-lands-unreached#s2: reckon/served_code.py provides neighbourhood(repo, revision, paths), the production modules one import away from named paths, beside reached() and package_modules(); tests/test_every_module_is_reached.py passes at the integrated head (merge ab062cfae, re-run in the census move&#x27;s gate at 25a0cb5fa, 317 passed).">Evidence</a>
+</div>
+<div class="r-gate" data-id="g-tcirbn-cited-commands" data-section="s7" data-gated-sections="s7" data-status="closed" data-verdict="passed">
     <h4 class="r-gate-measure">tests/test_cited_commands_exist.py exists at the integrated head and passes over every skill</h4>
     <p class="r-gate-required-evidence">the-crew-contract-fits-one-read#s5</p>
-    </div>
+    <a class="r-gate-evidence" href="the-crew-contract-fits-one-read#s5: tests/test_cited_commands_exist.py landed at 4d14e208a with the whole-token flag repair 2faf0a1b5 and passes over every skill at the integrated head.">Evidence</a>
+</div>
 </section>
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -340,7 +342,7 @@
     <div class="r-comment-body"><p>findings.py no longer normalises finding paths itself — it calls runs._repository_relative_scope, extended to accept an absent root, so a symlinked in-checkout path and a ..-bearing path resolve to one repository path through both callers; head gate 67 passed + 17 passed EXIT=0, negative control 1 failed 6 passed EXIT=1.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261010T221624683842-review-of-findings-uses-the-scope-owner" data-who="reckon-build" data-when="2026-10-10T22:33:43.042Z">
-    <div class="r-comment-body"><p>an independent review of r-20261010T215312164968-findings-uses-the-scope-owner is stored: total 112 over the six dimensions (goal_fidelity 18, evidence 18, scope_discipline 20, durability 17, fit 19, reuse 20), reviewed_base_sha 611ad57d, reviewed_head_sha 2f2682e44, one follow-on finding — the routed call classifies a pathless (and root-equal) finding as repository scope/path &#x27;.&#x27; where the retired function called it an artefact/path &#x27;&#x27;.</p></div>
+    <div class="r-comment-body"><p>an independent review of r-20261010T215312164968-findings-uses-the-scope-owner is stored: total 112 over the six dimensions (goal_fidelity 18, evidence 18, scope_discipline 20, durability 17, fit 19, reuse 20), reviewed_base_sha 611ad57d, reviewed_head_sha 2f2682e44, one follow-on finding — the routed call classifies a pathless (and root-equal) finding as repository scope/path '.' where the retired function called it an artefact/path ''.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-10-10T22:10:00Z">
     <div class="r-comment-body"><p>§4 landed: a review finding can be folded or exempted by index (merged <code>0c8dbb631</code>); review 101/120, its two reuse findings folded into <code>one-disposition-writer</code>. <a href="/reckon/evidence/archive/the-codebase-is-reviewed-between-nodes-landed.html#s4">evidence</a></p></div>
