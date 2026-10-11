@@ -95,7 +95,6 @@ from reckon.figures import figure_rows
 from reckon.file_memo import memoized
 from reckon.lifecycle import (
     effective_status,
-    unpassed_gate_blockers,
     unresolved_dependencies,
 )
 from reckon.project_state import ProjectStateError
@@ -1884,7 +1883,7 @@ def _discover_plans_uncached(
         # and open followups are the body state needed to explain roadmap
         # readiness. The SPA fetches the remaining full state per document.
         rec = _plan_html.parse_meta(html_file)
-        gates, decisions, followups = _read_readiness_state(html_file)
+        gates, decisions, followups, declarations = _read_readiness_state(html_file)
         slug = resource.slug
         artifact_type = resource.type
         created, edited = _row_times(html_file, repo_dir, git_times, git_last_times)
@@ -1949,6 +1948,7 @@ def _discover_plans_uncached(
                     "followups": followups,
                     "blockers": rec["blockers"],
                     "gates": gates,
+                    "section_declarations": declarations,
                     **edge_row(rec),
                 }
             )
@@ -2152,7 +2152,7 @@ def _attach_schedule(
 
 def _read_readiness_state(
     path: Path,
-) -> tuple[list[dict], list[dict], list[dict]]:
+) -> tuple[list[dict], list[dict], list[dict], dict]:
     """Read named gate and decision state used to explain readiness."""
 
     from reckon.file_memo import memoized
@@ -2162,7 +2162,7 @@ def _read_readiness_state(
 
 def _read_readiness_uncached(
     path: Path,
-) -> tuple[list[dict], list[dict], list[dict]]:
+) -> tuple[list[dict], list[dict], list[dict], dict]:
     try:
         state, text = _plan_html.read_state_and_text_file(path)
     except ValueError as exc:
@@ -2175,7 +2175,12 @@ def _read_readiness_uncached(
         for key, decision in decisions.items()
     ]
     followups = list(state.get("followups") or [])
-    return gates, decision_rows, followups
+    declarations = (
+        state.get("section_declarations")
+        if isinstance(state.get("section_declarations"), dict)
+        else {}
+    )
+    return gates, decision_rows, followups, declarations
 
 
 def _derive_lifecycle(
@@ -2189,7 +2194,11 @@ def _derive_lifecycle(
     from copy import deepcopy
 
     from reckon._schema import parse_plan_ref
-    from reckon.roadmap import closure_blockers, execution_gates, unsettled_decisions
+    from reckon.roadmap import (
+        closure_blockers,
+        split_unpassed_gates,
+        unsettled_decisions,
+    )
 
     plans = deepcopy(inventory)
     plan_by_slug = {
@@ -2258,11 +2267,13 @@ def _derive_lifecycle(
                 explicit_by_slug.get(str(plan.get("slug")), [])
             )
         )
-        blocking.extend(unpassed_gate_blockers(execution_gates(plan)))
+        gate_blockers, section_gate_blockers = split_unpassed_gates(plan)
+        blocking.extend(gate_blockers)
         workflow_status = str(plan.get("status") or "draft")
         plan["workflow_status"] = workflow_status
         plan["effective_status"] = effective_status(workflow_status, blocking)
         plan["blocking"] = blocking
+        plan["section_gate_blockers"] = section_gate_blockers
         plan["blockers"] = len(blocking)
         # Transition gates hold a closure or a choice, not execution, so they
         # leave this list and surface beside it instead.
