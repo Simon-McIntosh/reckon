@@ -1,0 +1,55 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-11T05:11:30.211Z",
+  "dispatched_at": "2026-10-11T05:03:15Z",
+  "findings": [
+    {
+      "file": "tests/test_refused_promotion_leaves_no_trace.py",
+      "line": "368",
+      "severity": "follow-on",
+      "text": "follow-on: the module gains a final newline (W292) beyond the helper-import change, an edit the brief reserved to tests/helpers/; harmless and in scope, but unnamed in the manifest."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against fc68b01e4; 713287a7a converts the 32 modules and adds the two helper newlines, 4ef9ff948 adds the evidence fragment - 35 files, all inside scope.",
+    "done_when": "the done_when names the census (no _git group copy left in the 32 files, before/after totals), ruff W292 clean over tests/helpers/, the 32 files passing with the same ids as base, a negative line delta over tests/, and a red negative control; gate-base.log and gate-head.log each record 191 passed EXIT=0, gate-negctl.log 15 failed / 136 errors EXIT=1.",
+    "goal": "the node goal is to replace the next 32 private _git test helpers with the shared import; the diff converts 32 modules to `from tests.helpers.git import git as _git` and deletes each private body (e.g. tests/test_landing_comment_authorship.py:26).",
+    "manifest": "read; it states the 32 conversions, census totals 484/569 to 483/561, base and head 191 passed EXIT=0, negctl 15 failed/136 errors, and the -343 line delta over tests/.",
+    "write_paths": "declared scope is tests/helpers plus the 32 listed modules and the evidence fragment; every path in the diff is inside it."
+  },
+  "justifications": {
+    "durability": "the negative control (tests/helpers/git.py stubbed to raise) reddens the importing modules (gate-negctl.log 15 failed/136 errors), so a broken helper or import fails the suite.",
+    "evidence": "the manifest's census, gate and negative-control logs are recorded, and I reproduced census group 09fb044aecb9 (32 files, 256 lines) at base and its absence at head, plus re-ran two scoped files to 15 passed EXIT=0.",
+    "fit": "the alias `git as _git` keeps every call site unchanged and matches the first helper chunk's idiom; no name the naming rules forbid.",
+    "goal_fidelity": "tests/test_landing_comment_authorship.py and its 31 peers now import git from tests/helpers/git.py instead of carrying a private copy.",
+    "reuse": "it removes 32 forked copies of the helper and points them at the single owner tests/helpers/git.py, which already existed at base.",
+    "scope_discipline": "every changed path is a declared write path; tests/test_refused_promotion_leaves_no_trace.py:368 also gains a final newline the brief did not name."
+  },
+  "node": "git-test-helper-second-chunk",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to replace the next 32 private _git test helpers with the shared import; the diff converts 32 modules to `from tests.helpers.git import git as _git` and deletes each private body (e.g. tests/test_landing_comment_authorship.py:26).\nVERDICT done_when: the done_when names the census (no _git group copy left in the 32 files, before/after totals), ruff W292 clean over tests/helpers/, the 32 files passing with the same ids as base, a negative line delta over tests/, and a red negative control; gate-base.log and gate-head.log each record 191 passed EXIT=0, gate-negctl.log 15 failed / 136 errors EXIT=1.\nVERDICT write_paths: declared scope is tests/helpers plus the 32 listed modules and the evidence fragment; every path in the diff is inside it.\nVERDICT manifest: read; it states the 32 conversions, census totals 484/569 to 483/561, base and head 191 passed EXIT=0, negctl 15 failed/136 errors, and the -343 line delta over tests/.\nVERDICT diff: read commit by commit against fc68b01e4; 713287a7a converts the 32 modules and adds the two helper newlines, 4ef9ff948 adds the evidence fragment - 35 files, all inside scope.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_landing_comment_authorship.py and its 31 peers now import git from tests/helpers/git.py instead of carrying a private copy.\nSCORE evidence: 20\nJUSTIFICATION evidence: the manifest's census, gate and negative-control logs are recorded, and I reproduced census group 09fb044aecb9 (32 files, 256 lines) at base and its absence at head, plus re-ran two scoped files to 15 passed EXIT=0.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every changed path is a declared write path; tests/test_refused_promotion_leaves_no_trace.py:368 also gains a final newline the brief did not name.\nSCORE durability: 19\nJUSTIFICATION durability: the negative control (tests/helpers/git.py stubbed to raise) reddens the importing modules (gate-negctl.log 15 failed/136 errors), so a broken helper or import fails the suite.\nSCORE fit: 20\nJUSTIFICATION fit: the alias `git as _git` keeps every call site unchanged and matches the first helper chunk's idiom; no name the naming rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: it removes 32 forked copies of the helper and points them at the single owner tests/helpers/git.py, which already existed at base.\nFINDING tests/test_refused_promotion_leaves_no_trace.py:368 follow-on: the module gains a final newline (W292) beyond the helper-import change, an edit the brief reserved to tests/helpers/; harmless and in scope, but unnamed in the manifest.",
+  "review_run_id": "r-20261011T050232806313-review-of-git-test-helper-second-chunk",
+  "reviewed_base_sha": "fc68b01e4ffff162598c268dfe3f9ae55c4fc926",
+  "reviewed_head_sha": "4ef9ff9480e397744138d9d8b6bef53455916926",
+  "reviewed_run_id": "r-20261011T043348680849-git-test-helper-second-chunk",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T05:10:04.446192+00:00",
+  "total": 118
+}
