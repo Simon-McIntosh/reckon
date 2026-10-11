@@ -24,7 +24,7 @@
   <title>The Portfolio Reads True | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="46">
+<meta name="plan-version" content="47">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -193,10 +193,16 @@
     <pre class="r-fu-prompt">/reckon-build the-portfolio-reads-true §2</pre>
     <p class="r-fu-outcome">§2, §3 and §4 landed (merges c6abb36b4, c9320e15b, 8eaf29326); superseded by f-tprt-003, which adds §7 to the order.</p>
     </article>
-<article class="r-fu" data-id="f-tprt-003" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-11" data-recommends-skill="/reckon-build the-portfolio-reads-true §5" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tprt-003" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-11" data-recommends-skill="/reckon-build the-portfolio-reads-true §5" data-resolved-at="2026-10-11T05:32:05+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Build §5, then §7, then §6</h4>
     <div class="r-fu-body"><p>§5 and §7 both write <code>reckon/roadmap.py</code>, so they run in turn: §5 after node <code>one-sprint-item-slug</code> releases <code>reckon/doccheck.py</code>, <code>reckon/roadmap.py</code> and <code>reckon/mcp_discovery.py</code>, then §7. §6 runs once its remaining gate, <code>g-tprt-portfolio-mode</code>, passes on the-codebase-is-reviewed-between-nodes §8.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-portfolio-reads-true §5</pre>
+    <p class="r-fu-outcome">§5 (merges 08984a146, 2b4ce5386) and §7 (merge 06d02d423) landed, and g-tprt-portfolio-mode passed on the-codebase-is-reviewed-between-nodes §8; superseded by f-tprt-004, which names §6.</p>
+    </article>
+<article class="r-fu" data-id="f-tprt-004" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-build (health-review-1010)" data-written-at="2026-10-11" data-recommends-skill="/reckon-build the-portfolio-reads-true §6" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Run the first portfolio review (§6)</h4>
+    <div class="r-fu-body"><p>All three gates on §6 have passed. Compose <code>reckon crew review --project reckon --portfolio</code> and apply its dispositions through reckon-edit and reckon-sprint. A plan another live session is building is proposed, not changed. Closing a plan whose sections are all done is mechanical; merging and retiring plans changes what other sessions read, so put those dispositions to the lead before they are applied.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-portfolio-reads-true §6</pre>
     </article>
 </section>
   
