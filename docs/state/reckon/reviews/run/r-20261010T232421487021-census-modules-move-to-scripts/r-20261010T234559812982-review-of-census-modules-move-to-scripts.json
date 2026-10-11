@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "backend": "clive",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-10T23:56:25.822Z",
+  "dispatched_at": "2026-10-10T23:46:23Z",
+  "findings": [
+    {
+      "file": "tests/test_timestamp_callers_batch_a.py",
+      "line": "376",
+      "severity": "follow-on",
+      "text": "follow-on: the added comment describes the change (\"The batch caller that moved out of the package is scanned where it now lives\") rather than the mechanism; it should say why pace_replay is scanned at its script path, not that it moved."
+    },
+    {
+      "file": "tests/test_timestamp_callers_batch_a.py",
+      "line": "49",
+      "severity": "follow-on",
+      "text": "follow-on: nine near-identical _load_census_script/_load_census helpers are added across four staying tests, three moved tests and two research scripts; one shared loader would carry the capability without nine copies."
+    },
+    {
+      "file": "docs/evidence/fragments/nothing-lands-unreached/census-modules-move-to-scripts.html",
+      "line": "50",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest's structured record carries baseline_suite null and after_suite null, so no added-failure delta is derivable from it and the done_when's --help and research-import clauses have no gate log; a baseline_suite field would make both measurable."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read 3961854c2..e904ad18f commit by commit, two commits, 15 files and +285/-46 in the refactor plus a 56-line evidence fragment; the diff is the rename plus main() additions, the importlib rewiring in the four staying tests and two research scripts, the allowlist drop, and the reckon/budget.py docstring path.",
+    "done_when": "the done_when asks each script's --help to exit 0, the moved tests and the four rewritten tests to pass with EXIT=0, the reach grep over reckon/ tests/ skills/ scripts/ to return no hit, the ratchet to pass with the three allowlist entries gone, and an executed negative control; I re-ran the grep at e904ad18f (exit 1, no hit), ran all three --help from scripts/census (exit 0 each), confirmed both research scripts import by path, and read tests/test_every_module_is_reached.py, which passes.",
+    "goal": "the reviewed node's goal is to move the three census modules out of the package into scripts/census; commit 9f1748cd3 renames reckon/crew/{carryover_census,death_census,pace_replay}.py into scripts/census/ and gives each an argparse main() behind a __main__ guard.",
+    "manifest": "read the reviewed manifest; status complete, tests names the pytest gate (317 passed, EXIT=0) with test_logs gate-after.log, and the structured record carries baseline_suite null and after_suite null so no base arm exists to derive a delta from.",
+    "write_paths": "the brief lists 17 paths (the three source modules, reckon/budget.py, scripts/census, the two research scripts, five tests that stay, three moved tests, the evidence fragment and a figures dir); git diff at e904ad18f touches only paths inside that list and leaves the figures dir unused."
+  },
+  "justifications": {
+    "durability": "tests/test_every_module_is_reached.py fails if an unreached module returns to reckon/crew/, and tests/test_timestamp_callers_batch_a.py:378 keeps the fromisoformat scan on scripts/census/pace_replay.py so the moved module stays covered.",
+    "evidence": "the gate result is recorded in gate-after.log naming revision 9f1748cd3 and the pytest set, but the manifest's structured record carries baseline_suite null and after_suite null so no delta is derivable, and the done_when's --help and research-import clauses sit in artifacts with no log.",
+    "fit": "commits 9f1748cd3 and e904ad18f carry conventional subjects and bodies with no attribution, but tests/test_timestamp_callers_batch_a.py:376 adds a comment that describes the migration rather than the mechanism.",
+    "goal_fidelity": "scripts/census/carryover_census.py, scripts/census/death_census.py and scripts/census/pace_replay.py each exist with a main() behind a __main__ guard, reckon/budget.py:2648 names the script path, and no reckon[./]crew[./]<module> reference survives at e904ad18f.",
+    "reuse": "a search for an owned path-loader over reckon/ tests/ scripts/ found none (spec_from_file_location is used ad hoc in about seven places), so no owner is forked, but the change adds nine near-identical _load_census helpers.",
+    "scope_discipline": "every path in the diff at e904ad18f is inside the brief's write list and no shared index, sprint or plan state is touched, the figures dir left unused."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is to move the three census modules out of the package into scripts/census; commit 9f1748cd3 renames reckon/crew/{carryover_census,death_census,pace_replay}.py into scripts/census/ and gives each an argparse main() behind a __main__ guard.\nVERDICT done_when: the done_when asks each script's --help to exit 0, the moved tests and the four rewritten tests to pass with EXIT=0, the reach grep over reckon/ tests/ skills/ scripts/ to return no hit, the ratchet to pass with the three allowlist entries gone, and an executed negative control; I re-ran the grep at e904ad18f (exit 1, no hit), ran all three --help from scripts/census (exit 0 each), confirmed both research scripts import by path, and read tests/test_every_module_is_reached.py, which passes.\nVERDICT write_paths: the brief lists 17 paths (the three source modules, reckon/budget.py, scripts/census, the two research scripts, five tests that stay, three moved tests, the evidence fragment and a figures dir); git diff at e904ad18f touches only paths inside that list and leaves the figures dir unused.\nVERDICT manifest: read the reviewed manifest; status complete, tests names the pytest gate (317 passed, EXIT=0) with test_logs gate-after.log, and the structured record carries baseline_suite null and after_suite null so no base arm exists to derive a delta from.\nVERDICT diff: read 3961854c2..e904ad18f commit by commit, two commits, 15 files and +285/-46 in the refactor plus a 56-line evidence fragment; the diff is the rename plus main() additions, the importlib rewiring in the four staying tests and two research scripts, the allowlist drop, and the reckon/budget.py docstring path.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: scripts/census/carryover_census.py, scripts/census/death_census.py and scripts/census/pace_replay.py each exist with a main() behind a __main__ guard, reckon/budget.py:2648 names the script path, and no reckon[./]crew[./]<module> reference survives at e904ad18f.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate result is recorded in gate-after.log naming revision 9f1748cd3 and the pytest set, but the manifest's structured record carries baseline_suite null and after_suite null so no delta is derivable, and the done_when's --help and research-import clauses sit in artifacts with no log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff at e904ad18f is inside the brief's write list and no shared index, sprint or plan state is touched, the figures dir left unused.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_every_module_is_reached.py fails if an unreached module returns to reckon/crew/, and tests/test_timestamp_callers_batch_a.py:378 keeps the fromisoformat scan on scripts/census/pace_replay.py so the moved module stays covered.\nSCORE fit: 17\nJUSTIFICATION fit: commits 9f1748cd3 and e904ad18f carry conventional subjects and bodies with no attribution, but tests/test_timestamp_callers_batch_a.py:376 adds a comment that describes the migration rather than the mechanism.\nSCORE reuse: 17\nJUSTIFICATION reuse: a search for an owned path-loader over reckon/ tests/ scripts/ found none (spec_from_file_location is used ad hoc in about seven places), so no owner is forked, but the change adds nine near-identical _load_census helpers.\nFINDING tests/test_timestamp_callers_batch_a.py:376 follow-on: the added comment describes the change (\"The batch caller that moved out of the package is scanned where it now lives\") rather than the mechanism; it should say why pace_replay is scanned at its script path, not that it moved.\nFINDING tests/test_timestamp_callers_batch_a.py:49 follow-on: nine near-identical _load_census_script/_load_census helpers are added across four staying tests, three moved tests and two research scripts; one shared loader would carry the capability without nine copies.\nFINDING docs/evidence/fragments/nothing-lands-unreached/census-modules-move-to-scripts.html:50 follow-on: the reviewed manifest's structured record carries baseline_suite null and after_suite null, so no added-failure delta is derivable from it and the done_when's --help and research-import clauses have no gate log; a baseline_suite field would make both measurable.\n",
+  "review_run_id": "r-20261010T234559812982-review-of-census-modules-move-to-scripts",
+  "reviewed_base_sha": "3961854c22921a072d1de3bf32be1b2b79c08007",
+  "reviewed_head_sha": "e904ad18f7a73abe988800a9546458d75ae418e9",
+  "reviewed_run_id": "r-20261010T232421487021-census-modules-move-to-scripts",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T00:04:54.568832+00:00",
+  "total": 107
+}
