@@ -1,0 +1,62 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-11T01:00:34.488Z",
+  "dispatched_at": "2026-10-11T00:55:10Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-portfolio-reads-true.html:160",
+      "id": "reasoning-1",
+      "reason": "a node implementing \u00a77 will run this test red and must decide whether to rewrite it (superseding the pin, as \u00a72 did) or add a zero-section guard that keeps such a plan blocked; without the plan stating which, the two readings send it to opposite mechanisms for the same plan shape.",
+      "text": "\u00a77 delivers \"A gate whose `gated_sections` is non-empty holds those sections only\", which for a plan whose only gate names sections makes the plan read ready, yet `tests/test_roadmap.py:1394` (`test_gate_verdict_blocks_and_releases_downstream_sections_without_status_edit`) pins the opposite for exactly that shape \u2014 a gate `gated_sections: [\"deployment\",\"release\"]`, `verdict: \"failed\"` asserted to give `discovered[0][\"effective_status\"] == \"blocked\"`, `roadmap[\"blocked\"][0][\"effective_status\"] == \"blocked\"` and `roadmap[\"ready_now\"] == []` (test_roadmap.py:1418-1423), and under \u00a77 that gate is section-holding so the plan is neither blocked nor absent from `ready_now`; \u00a72 names the test it supersedes (\"which pins the behaviour this section supersedes\"), but \u00a77 names none, and the case that decides the outcome \u2014 a plan with no implementable section declarations, where the third clause \"a plan whose every implementable section is gated is held by those gates\" is vacuously true and so contradicts the primary rule \u2014 is left undefined by either sentence",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "013726c5d642e274274d340614fa1c4cd0b35ec5e85b9f2375227a527a50a482",
+  "plan_slug": "the-portfolio-reads-true",
+  "plan_version": 26,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "deferred to \u00a77's dispatch, which follows \u00a75: the boundary (a plan with no implementable section outside its gated ones stays held, keeping test_roadmap.py:1394) is recorded in comment c-s7-boundary-1011 and applied to \u00a77's text before it builds",
+      "when": "2026-10-11T01:08:21.830897+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "deferred to \u00a77's dispatch, which follows \u00a75: the boundary (a plan with no implementable section outside its gated ones stays held, keeping test_roadmap.py:1394) is recorded in comment c-s7-boundary-1011 and applied to \u00a77's text before it builds",
+      "when": "2026-10-11T01:08:21.830897+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-portfolio-reads-true.v26.json",
+  "review_run_id": "r-20261011T005440674291-plan-review-of-the-portfolio-reads-true",
+  "reviewed_blob_sha": "5f25ee40013ad8d9614110f76cbc37e1fb3e5cc8",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited comment `c-gate-blocks-plan-1010` resolves (plan.html:215), the three named call sites resolve (`reckon/roadmap.py:3104`, `reckon/serve.py:2261`, `reckon/mcp_views.py:2470`, the last two feeding `effective_status` at serve.py:2264 and mcp_\u2026:2544), the referenced plan `the-codebase-is-reviewed-between-nodes` exists, and the gate-over-plan-level-depends_on guidance \u00a77 leans on is present (reckon-create SKILL.md:320-326, reckon-edit SKILL.md:265-268).",
+    "done_when": "pass \u2014 \u00a77's fixture names three plans (p ungated s1 plus gated s2; q wholly gated; r gate naming no section), asserts each on all three readers, and declares a falsifying negative control (\"with the shared function returning every unpassed gate as plan-holding, p reads blocked and the test fails\").",
+    "evidence_paths": "pass \u2014 the write paths are source and test modules; the negative control is executed and logged under the run, not a node-local or scratch path.",
+    "naming": "pass \u2014 the new test is capability-named (`test_a_section_gate_holds_its_sections.py`); no plan label, ticket number or version tag reaches a symbol, and `c-gate-blocks-plan-1010` is a comment anchor the plan grammar carries.",
+    "reasoning": "a finding \u2014 \u00a77's mechanism reverses the behaviour pinned by `tests/test_roadmap.py:1394`, and the boundary that decides it (a plan with no implementable sections) is left undefined.",
+    "single_goal": "pass \u2014 \u00a77 carries one deliverable: a gate whose `gated_sections` is non-empty holds those sections only.",
+    "wiring": "pass \u2014 \u00a77's ordering after \u00a75 is carried by the driving followup f-tprt-003 (\"\u00a75 and \u00a77 both write `reckon/roadmap.py`, so they run in turn ... then \u00a77\") and both sections' write paths agree on `reckon/roadmap.py`; no gate or depends-on it needs is missing."
+  },
+  "section_digests": {
+    "_document": "2e0e84b1f09a1086bd12d11d5885ccb196358b6752c5c1932162c1e3569ff81f",
+    "s1": "56204248c9050844c40ac7e00bff909830602caaa4b95be87bacea51b1495a03",
+    "s2": "69b86246adb4ea89719f367ac57f43940ed14fb88c5c89408cf18a6b59911f57",
+    "s3": "5902125b920ccad233230b403ba1e4cb62c75743d8265014bc35f38e0c9915c3",
+    "s4": "9280ec81cafc36b7de1295b0f22745c6162986e93d9731a8e8b99c51d658a217",
+    "s5": "e5d24ffe43f8fdfcdb88130b1632bc368dc94fd8641f628befb77b4c1f95b435",
+    "s6": "3b386242a01bc207ce0810ef1ee5ccbd8a9d5ea78f77a5dd6fc61b2f207c53d0",
+    "s7": "e72b52d515267116d7511b4b1c1c43a41dd936604a2455bb9dc475c088304e2a"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T01:07:35.860700+00:00"
+}
