@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-suite-tests-behaviour-landed">
+  <meta name="plan-title" content="The Suite Tests Behaviour — landed record">
+  <meta name="plan-summary" content="Closure synthesis for The Suite Tests Behaviour: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="the-suite-tests-behaviour">
+  <meta name="plan-verdict" content="qualified">
+  <title>The Suite Tests Behaviour — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>The Suite Tests Behaviour — landed record</h1>
+  <p>Closure synthesis for The Suite Tests Behaviour: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s7-each-population-recorded">
+    <h2>§7 — each declared suite population records its own row</h2>
+    <p>The flight schema declares <code>review.populations</code> (name, command, budget), regenerated into <code>reckon/_flight_schema.py</code> and <code>docs/_shared/flight.schema.json</code>, and <code>docs/state/reckon/flight.yaml</code> declares the <code>browser</code> population. <code>flight.review_populations</code> reads it through the parser <code>review_suite</code> already uses, so the parser has no second copy. <code>reckon crew suite run</code> records one row per declared population beside the standing suite's own, and a failing population row does not hold a tier-none promotion. Commit <code>8f2cc1194</code>, merged at <code>f76612774</code>. Measured after the merge, <code>flight.resolve('reckon')</code> succeeds and its config yields the browser population (<code>-m browser</code>, 20m) beside the standing suite (<code>-m 'not browser'</code>, 20m).</p><p><strong>Measure.</strong> The flight, standing-suite and skip-record tests and the new CLI test: 116 passed, <code>EXIT=0</code>. Run review: 111/120, follow-ons only. Two assertions compare a value against the function the code also uses, so they cannot fail independently.</p><p><strong>Remaining for §7.</strong> The quiet-node measurement, both arms at 60 s with their failing ids, which also gates §2's held merge.</p>
+  </section>
+
+</main>
+</body>
+</html>
