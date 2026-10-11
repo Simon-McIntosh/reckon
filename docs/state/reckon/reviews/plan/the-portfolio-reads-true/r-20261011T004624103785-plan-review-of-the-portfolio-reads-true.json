@@ -1,0 +1,61 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-11T00:52:12.328Z",
+  "dispatched_at": "2026-10-11T00:46:52Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-portfolio-reads-true.html:191",
+      "id": "wiring-1",
+      "reason": "the followup is the plan's own dispatch route, so a new section it omits is a node no one dispatches, and \u00a77 (unlike \u00a72-\u00a76) declares no section-level relation to place it either.",
+      "text": "the driving followup f-tprt-002 carries the dispatch order \"\u00a72, \u00a73, \u00a74, \u00a75 in turn (each writes reckon/doccheck.py); \u00a76 once its three gates open\" and was not updated when \u00a77 was added, so the route a coordinator dispatches from names every section except \u00a77 and never reaches it",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-portfolio-reads-true.html:161",
+      "id": "reasoning-1",
+      "reason": "a change confined to roadmap.py leaves the same gate a plan-level blocker in the page a reader actually opens, which is the misreport the section exists to remove; the plan must either add serve.py and mcp_views.py to its write paths or move the scoping into the shared helper every caller already imports.",
+      "text": "\u00a77 says \"the change is confined to the readiness pass and the row it emits\" and lists `reckon/roadmap.py` alone as its write path, but the misreport it fixes is computed by three call sites of the same helper: `reckon/roadmap.py:3104/3199`, `reckon/serve.py:2261` (into `plan[\"effective_status\"]` at 2264, which the served plan page and fleet index read) and `reckon/mcp_views.py:2470` (into `effective_status` at 2544), so the served page and the MCP view would still report this plan blocked by a gate on one later section",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-portfolio-reads-true.html:161",
+      "id": "done_when-1",
+      "reason": "the measure tests an internal readiness flag while the cited comment (c-gate-blocks-plan-1010) names `effective_status: blocked`, so the gate can go green on precisely the code path that leaves the reported defect live; the done-when must assert the reported status, or the deliverable must name the separate field the held section's gate is reported under.",
+      "text": "\u00a77's done-when asserts only that plan `p` appears in `ready_now` with the gate reported against `s2`, never that the plan's reported status has cleared, while the deliverable simultaneously requires \"the gate is still reported on the plan's row\" (`row[\"gate_blockers\"]`, roadmap.py:3222) \u2014 the very list `effective_status()` consumes at roadmap.py:3199, so a node that keeps the gate on the row passes this gate with `effective_status` still `blocked`",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "426ab7285787601afa2edd5cdfdd2195b509b0d6cb3863cd8665b9e959914446",
+  "plan_slug": "the-portfolio-reads-true",
+  "plan_version": 24,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261011T004624103785-plan-review-of-the-portfolio-reads-true",
+  "reviewed_blob_sha": "9ffa4738046a57d647b6795210fd8bdd197f2c0e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/roadmap.py`, `execution_gates` (roadmap.py:785), `unpassed_gate_blockers` (lifecycle.py:52), comment `c-gate-blocks-plan-1010` (plan line 209), `the-codebase-is-reviewed-between-nodes` (docs/plans/the-codebase-is-reviewed-between-nodes.html) and the wiring rule in skills/reckon-create/SKILL.md:132-134 all resolve.",
+    "done_when": "a finding \u2014 \u00a77's done-when asserts membership of `ready_now` only, not the plan's reported status, which is the field the cited comment names.",
+    "evidence_paths": "pass \u2014 \u00a77's gate is a temporary-project test under `tests/` run from the repository, with no session-scratchpad or node-local path anywhere in the section.",
+    "naming": "pass \u2014 no plan label, stage name, ticket number or version tag reaches a symbol, filename or comment; the test filename names the behaviour.",
+    "reasoning": "a finding \u2014 \u00a77 confines its change to `reckon/roadmap.py`, but two other callers of the same helper produce the `effective_status` the section exists to correct.",
+    "single_goal": "pass \u2014 \u00a77 carries one deliverable (a gate whose `gated_sections` is non-empty holds those sections only), with the row reporting as part of the same goal.",
+    "wiring": "a finding \u2014 \u00a77 is a new section, but the driving followup f-tprt-002 names the order \"\u00a72, \u00a73, \u00a74, \u00a75 in turn \u2026 \u00a76 once its three gates open\" and omits \u00a77, and no section-level relation places it."
+  },
+  "section_digests": {
+    "_document": "2e0e84b1f09a1086bd12d11d5885ccb196358b6752c5c1932162c1e3569ff81f",
+    "s1": "56204248c9050844c40ac7e00bff909830602caaa4b95be87bacea51b1495a03",
+    "s2": "69b86246adb4ea89719f367ac57f43940ed14fb88c5c89408cf18a6b59911f57",
+    "s3": "5902125b920ccad233230b403ba1e4cb62c75743d8265014bc35f38e0c9915c3",
+    "s4": "9280ec81cafc36b7de1295b0f22745c6162986e93d9731a8e8b99c51d658a217",
+    "s5": "e5d24ffe43f8fdfcdb88130b1632bc368dc94fd8641f628befb77b4c1f95b435",
+    "s6": "3b386242a01bc207ce0810ef1ee5ccbd8a9d5ea78f77a5dd6fc61b2f207c53d0",
+    "s7": "d38e3d791560b3b7af1f97cb6aa3a9ce8cc48b088f6fd7fdc2f0f3eeb1fcacf6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T00:53:40.175027+00:00"
+}
