@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-section-depends-on" content="{&quot;s6&quot;: [&quot;nothing-lands-unreached#s2&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
   <title>The Codebase Is Reviewed Between Nodes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="41">
+<meta name="plan-version" content="42">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -213,7 +213,7 @@
       <code>tests/test_an_edit_tells_its_author_a_review_is_owed.py</code>), whose calls move to <code>review</code>.</p>
 
     <h2 id="s8">§8 — The portfolio rubric proposes a disposition for every live plan</h2>
-<section data-reckon="section" data-id="s8" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s8" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> <code>reckon/crew/prompts/portfolio_review.md</code> and the composer branch
       <code>reckon crew review --sprint &lt;id&gt;</code>, <code>--portfolio</code> (every non-shipped plan of the project), or <code>--plan &lt;slug&gt; --rubric currency</code>. The
       brief carries, for every non-shipped plan in scope, the figures the portfolio health review computed by hand: status, stored and
@@ -248,7 +248,7 @@
       <code>tests/test_dispatch_names_the_health_review.py</code>. This section runs after §3 and §6.</p>
 
     <h2 id="s10">§10 — The yield is on the velocity view, with a rule for turning the reflex off</h2>
-<section data-reckon="section" data-id="s10" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s10" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> <code>crew(view="velocity")</code> gains a <code>health_reviews</code> field, served when named in
       <code>fields</code>, for the window: code-mode reviews composed; findings read as known against reported as new; treatments
       dispatched, promoted and the product-line delta of the promoted ones; findings disposed by kind; and the change in clone pairs and
@@ -413,6 +413,9 @@
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261011T033714294194-portfolio-review-composes" data-who="reckon-build" data-when="2026-10-11T04:55:46.191Z">
     <div class="r-comment-body"><p>PORTFOLIO REVIEW COMPOSES — `reckon crew review --portfolio` (and `--sprint &lt;id&gt;`, `--plan &lt;slug&gt; --rubric currency`) composes one brief listing every non-shipped plan with derived impl + source, sprint, commit age + source, open sections/followups and roadmap readiness, dispatching one read-only review node that emits one DISPOSITION per plan; an output omitting a plan in scope is refused naming it. Measure: tests/test_portfolio_review_composes.py 4 passed EXIT=0; negative control (empty shipped filter) red.</p></div>
 </div>
+<div class="r-comment" data-section="s8" data-id="c-close-s8" data-who="reckon-build" data-when="2026-10-11T07:30:00Z">
+    <div class="r-comment-body"><p>§8 landed: the portfolio and sprint review subjects with one disposition per live plan (merge <code>8e1412ef5</code>); 0 added failures; review 105/120. <a href="/reckon/evidence/archive/the-codebase-is-reviewed-between-nodes-landed.html#s8-portfolio-rubric">evidence</a></p></div>
+</div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261011T045645330052-review-of-velocity-counts-health-reviews" data-who="reckon-build" data-when="2026-10-11T05:05:55.248Z">
     <div class="r-comment-body"><p>independent review of run r-20261011T043817026230-velocity-counts-health-reviews stored at reviews/reckon/r-20261011T043817026230-velocity-counts-health-reviews.json (and its .at-021beb93c sibling), a parsed six-dimension record (goal_fidelity 17, evidence 19, scope_discipline 20, durability 17, fit 19, reuse 16; total 108) with reviewed_base_sha 1dd2de54704216d0580667ba4fe1bd7a2dea00ab and reviewed_head_sha 021beb93c32b5baa0bd0d38174daeab0fe50614e, added_failure_count 0 and added_failure_ids [], two follow-on findings and no blocking finding.</p></div>
 </div>
@@ -421,6 +424,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261011T051539187455-review-of-velocity-counts-health-reviews" data-who="reckon-build" data-when="2026-10-11T05:22:52.404Z">
     <div class="r-comment-body"><p>An independent review of the velocity health-reviews node was stored: 6 dimensions scored (total 110/120 — goal_fidelity 18, evidence 19, scope_discipline 17, durability 17, fit 19, reuse 20), reviewed_base_sha 1dd2de54704216d0580667ba4fe1bd7a2dea00ab and reviewed_head_sha 8ecbbbdfa1bec3a02d57609ddce0daec117b5902 recorded, added_failure_count 0 with no added_failure_ids, and two follow-on findings (the repair touches reckon/crew/findings.py outside the declared write paths, and the two stop-rule assertions are near-tautological).</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-close-s10" data-who="reckon-build" data-when="2026-10-11T07:30:00Z">
+    <div class="r-comment-body"><p>§10 landed: health_reviews on the velocity view, windowed, with treatments read from fold dispositions (merge <code>a5e0e4855</code>); review 110/120. <a href="/reckon/evidence/archive/the-codebase-is-reviewed-between-nodes-landed.html#s10-velocity-yield">evidence</a></p></div>
 </div>
 </section>
 </main>
