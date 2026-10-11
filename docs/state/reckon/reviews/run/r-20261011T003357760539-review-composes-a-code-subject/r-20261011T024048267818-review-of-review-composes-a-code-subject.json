@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "local",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:2116",
+    "reckon/crew/promotion_checks.py:1873",
+    "reckon/crew/routing.py:3091"
+  ],
+  "completed_at": "2026-10-11T02:48:41.615Z",
+  "dispatched_at": "2026-10-11T02:41:19Z",
+  "findings": [
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": "2200",
+      "severity": "follow-on",
+      "text": "follow-on: a code review composed with --path alone is never stored. store_delivered_reviews is the only caller of delivered_code_reviews and passes around=plan_slug, and the keep filter at plan_review.py:2198 requires sidecar[\"around\"] == around, so a path-only subject (around=\"\") is composed and dispatched but its delivered report is never read into the store, though the plan's section 6 deliverable names both subjects and store_code_review is otherwise unreachable."
+    },
+    {
+      "file": "tests/test_review_composes_a_code_subject.py",
+      "line": "272",
+      "severity": "follow-on",
+      "text": "follow-on: assert record[\"neighbourhood_key\"] == key compares the stored key against key = plan_review.code_review_key(...) at line 262, the same function the write path uses, so both sides move together and the assertion survives a regression in code_review_key (for example a constant key); no independent literal pins the neighbourhood key."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against 4e4de5ba; the change composes the health brief for a neighbourhood, dispatches one read-only review node, and stores the delivered report keyed by the neighbourhood, and the store keeps code reviews out of the plan-review listing (PLAN_REVIEW_FILE_GLOB is plan-*.v*.json).",
+    "done_when": "the done_when names tests/test_review_composes_a_code_subject.py; the manifest records 5 passed EXIT=0 and the file asserts the measure (neighbourhood names reckon/a.py and reckon.b and not reckon.c, carries the stored finding and the four interface-figure keys, and review-plan composes the same plan brief as review).",
+    "goal": "the source node's goal is \"Compose a code review around a plan or a path through one review verb\"; the landed change adds crew review with --around/--path and composes a code neighbourhood brief at reckon/crew_dispatch_commands.py:2116, resolving it through code_review_subject and dispatch_code_review in reckon/crew/plan_review.py.",
+    "manifest": "read; it records the gate (49 passed, EXIT=0), the declared negative control (1 failed 4 passed, EXIT=1 on assert \"reckon.b\" in neighbourhood) and the two population arms (5 failed base, 5 failed head) with their log paths.",
+    "write_paths": "the node declared six paths (reckon/crew/plan_review.py, reckon/crew_dispatch_commands.py, reckon/cli.py, tests/test_review_composes_a_code_subject.py, the evidence fragment and the figures dir); the diff additionally edits reckon/crew/recovery_review_subject.py, tests/test_crew_help_names_its_state.py and four review-plan test files, each recorded in the manifest as a review-granted fence extension."
+  },
+  "justifications": {
+    "durability": "the neighbourhood assertion is a real guard (negative-control-2.log reddens it on the mutation), but the store-key assertion at tests/test_review_composes_a_code_subject.py:272 is circular and no test stores a path-only review.",
+    "evidence": "the gate at gate-2.log names tests/test_review_composes_a_code_subject.py (5 passed) and the negative control at negative-control-2.log:175 reproduces the named failure at EXIT=1.",
+    "fit": "the module follows the surrounding plan_review.py idiom and names nothing the naming rules forbid, though it reaches two private helpers across modules (_review_dispatch_tokens, fleet_index._git_head).",
+    "goal_fidelity": "reckon/crew_dispatch_commands.py:2112-2124 composes and dispatches a code subject through the same _run_review body the plan subject uses, so one verb serves both subjects.",
+    "reuse": "each added definition extends an owner \u2014 neighbourhood (reckon/served_code.py:1013), parse_health_review (reckon/crew/review.py:1024), write_review_sidecar and review_store_root \u2014 and no second import walker or argv builder exists in plan_review.py.",
+    "scope_discipline": "every diff path is inside the declared six or a manifest-recorded review extension, but the live pointer did not carry the extension so check-manifest still names two of them."
+  },
+  "node": "review-of-review-composes-a-code-subject",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is \"Compose a code review around a plan or a path through one review verb\"; the landed change adds crew review with --around/--path and composes a code neighbourhood brief at reckon/crew_dispatch_commands.py:2116, resolving it through code_review_subject and dispatch_code_review in reckon/crew/plan_review.py.\nVERDICT done_when: the done_when names tests/test_review_composes_a_code_subject.py; the manifest records 5 passed EXIT=0 and the file asserts the measure (neighbourhood names reckon/a.py and reckon.b and not reckon.c, carries the stored finding and the four interface-figure keys, and review-plan composes the same plan brief as review).\nVERDICT write_paths: the node declared six paths (reckon/crew/plan_review.py, reckon/crew_dispatch_commands.py, reckon/cli.py, tests/test_review_composes_a_code_subject.py, the evidence fragment and the figures dir); the diff additionally edits reckon/crew/recovery_review_subject.py, tests/test_crew_help_names_its_state.py and four review-plan test files, each recorded in the manifest as a review-granted fence extension.\nVERDICT manifest: read; it records the gate (49 passed, EXIT=0), the declared negative control (1 failed 4 passed, EXIT=1 on assert \"reckon.b\" in neighbourhood) and the two population arms (5 failed base, 5 failed head) with their log paths.\nVERDICT diff: read commit by commit against 4e4de5ba; the change composes the health brief for a neighbourhood, dispatches one read-only review node, and stores the delivered report keyed by the neighbourhood, and the store keeps code reviews out of the plan-review listing (PLAN_REVIEW_FILE_GLOB is plan-*.v*.json).\nCALL_SITES: reckon/crew_dispatch_commands.py:2116, reckon/crew/promotion_checks.py:1873, reckon/crew/routing.py:3091\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew_dispatch_commands.py:2112-2124 composes and dispatches a code subject through the same _run_review body the plan subject uses, so one verb serves both subjects.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate at gate-2.log names tests/test_review_composes_a_code_subject.py (5 passed) and the negative control at negative-control-2.log:175 reproduces the named failure at EXIT=1.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: every diff path is inside the declared six or a manifest-recorded review extension, but the live pointer did not carry the extension so check-manifest still names two of them.\nSCORE durability: 14\nJUSTIFICATION durability: the neighbourhood assertion is a real guard (negative-control-2.log reddens it on the mutation), but the store-key assertion at tests/test_review_composes_a_code_subject.py:272 is circular and no test stores a path-only review.\nSCORE fit: 18\nJUSTIFICATION fit: the module follows the surrounding plan_review.py idiom and names nothing the naming rules forbid, though it reaches two private helpers across modules (_review_dispatch_tokens, fleet_index._git_head).\nSCORE reuse: 19\nJUSTIFICATION reuse: each added definition extends an owner \u2014 neighbourhood (reckon/served_code.py:1013), parse_health_review (reckon/crew/review.py:1024), write_review_sidecar and review_store_root \u2014 and no second import walker or argv builder exists in plan_review.py.\nFINDING reckon/crew/plan_review.py:2200 follow-on: a code review composed with --path alone is never stored. store_delivered_reviews is the only caller of delivered_code_reviews and passes around=plan_slug, and the keep filter at plan_review.py:2198 requires sidecar[\"around\"] == around, so a path-only subject (around=\"\") is composed and dispatched but its delivered report is never read into the store, though the plan's section 6 deliverable names both subjects and store_code_review is otherwise unreachable.\nFINDING tests/test_review_composes_a_code_subject.py:272 follow-on: assert record[\"neighbourhood_key\"] == key compares the stored key against key = plan_review.code_review_key(...) at line 262, the same function the write path uses, so both sides move together and the assertion survives a regression in code_review_key (for example a constant key); no independent literal pins the neighbourhood key.\n",
+  "review_run_id": "r-20261011T024048267818-review-of-review-composes-a-code-subject",
+  "reviewed_base_sha": "4e4de5ba77990135a3e7a0ad69c3e8faae2231ba",
+  "reviewed_head_sha": "6ad8e9763f706ba3ca2ef5836a8b8b8d434b97af",
+  "reviewed_run_id": "r-20261011T003357760539-review-composes-a-code-subject",
+  "reviewer": "review-of-review-composes-a-code-subject",
+  "scores": {
+    "durability": 14,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 19,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T02:55:00+00:00",
+  "total": 103
+}
