@@ -48,6 +48,7 @@ from reckon.doccheck import (
     _load_mounts,
     authorisation_staleness,
     derived_plan_age,
+    gate_declared_refs,
     gate_evidence_slugs_from_gates,
     unwired_plan_finding,
 )
@@ -234,14 +235,15 @@ def _gate_section_refs(
 ) -> list[tuple[str, str, str]]:
     """Section refs a gate names as its outcome source, with their provenance.
 
-    A gate waits on a section in one of three authored forms: a declared outcome
-    source carrying the ``#section`` anchor; a ``#section`` ref written into the
-    gate's own measure or evidence text; or a section named in words beside the
-    plan it belongs to, as in "cut-cell-current-attribution section 6" or a bare
-    "sections 1 and 2" carrying the gate's own plan by context. The first two are
-    declarations and resolve as written. The third is read from prose, marked as
-    such, and binds only when the named section exists on the named plan, so a
-    passing mention of a section never invents an edge.
+    A gate waits on a section in one of two authored forms the roadmap follows:
+    a declared outcome source carrying the ``#section`` anchor; or a section
+    named in words beside the plan it belongs to, as in
+    "cut-cell-current-attribution section 6" or a bare "sections 1 and 2"
+    carrying the gate's own plan by context. The declared outcome source is read
+    through ``gate_declared_refs``, the one gate-ref reader the wiring check also
+    uses. The worded form is read from prose, marked as such, and binds only when
+    the named section exists on the named plan, so a passing mention of a section
+    never invents an edge.
     """
 
     found: list[tuple[str, str, str]] = []
@@ -262,22 +264,24 @@ def _gate_section_refs(
                 return
         found.append((f"{target_slug}#{stage}", stage, source))
 
-    declared = str(gate.get("gating_plan") or "").strip()
-    if declared:
-        parsed = parse_plan_ref(declared)
-        if parsed is not None:
-            if parsed.stage:
-                bind(parsed.slug or slug, parsed.stage, "declared")
-            else:
-                found.append((declared, "", "declared"))
+    # Only the outcome source the gate declares becomes an edge. The extractor's
+    # other form — a ``#section`` anchor embedded in the gate's free text — is
+    # what the wiring check reads when it asks whether some plan's gate names
+    # another, a different question from the section an edge waits on.
+    for ref, source in gate_declared_refs(gate):
+        if source != "declared":
+            continue
+        parsed = parse_plan_ref(ref)
+        if parsed is None:
+            continue
+        if parsed.stage:
+            bind(parsed.slug or slug, parsed.stage, "declared")
+        else:
+            found.append((ref, "", "declared"))
     texts = [
         str(gate.get(key) or "") for key in ("measure", "required_evidence", "evidence")
     ]
     for text in texts:
-        for token in _REF_TOKEN_RE.findall(text):
-            parsed = parse_plan_ref(token)
-            if parsed is not None and parsed.stage:
-                bind(parsed.slug or slug, parsed.stage, "gate-text")
         for match in _SECTION_WORD_RE.finditer(text):
             before = _REF_TOKEN_RE.findall(text[: match.start()])
             context = slug

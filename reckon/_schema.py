@@ -329,7 +329,8 @@ def unwired_plan_message(*, slug: str) -> str:
 
     return (
         f"plan {slug!r} is still implementable and declares no plan-depends-on, "
-        f"no plan-blocks, no plan-informs and no gate — author the wiring from "
+        f"no plan-blocks, no plan-informs, no plan-section-depends-on, "
+        f"no plan-after and no gate — author the wiring from "
         f"the sprint's plan list ({UNWIRED_PLAN_CHECKLIST}), or declare "
         f'<meta name="{PLAN_STANDALONE_META}" content="<one-sentence reason">> '
         f"if it genuinely stands alone — "

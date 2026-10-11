@@ -1161,10 +1161,40 @@ def unwired_plan_finding(
     )
 
 
-#: A ref-shaped token in a gate's required-evidence prose. It carries the
-#: project qualifier and the ``#stage`` anchor a plan ref may hold, so
-#: ``<slug>#<section>`` reads as one token rather than a slug and a stray word.
+#: A ref-shaped token in a gate's own text. It carries the project qualifier
+#: and the ``#stage`` anchor a plan ref may hold, so ``<slug>#<section>`` reads
+#: as one token rather than a slug and a stray word.
 _GATE_EVIDENCE_REF_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:#-]*")
+
+#: The gate fields whose text may carry a ``#section``-anchored ref.
+_GATE_TEXT_FIELDS = ("measure", "required_evidence", "evidence")
+
+
+def gate_declared_refs(gate: Mapping[str, Any]) -> list[tuple[str, str]]:
+    """The plan refs a gate declares, each with the authored form it came from.
+
+    A gate declares a plan ref in one of two authored forms, both carrying the
+    ``[project:]slug[#section]`` grammar: its ``gating_plan`` outcome source, and
+    a ``#section``-anchored token in its own ``measure``, ``required_evidence``
+    or ``evidence`` text. A token with no ``#section`` anchor is prose, not a
+    declaration, and is never read as a declaration — only a declared form wires
+    a plan, so a word that happens to equal a plan slug never does. The form is
+    ``"declared"`` for the outcome source and ``"gate-text"`` for a ref written
+    into the gate text. Both readers that judge a gate's refs share this one
+    extractor so they agree by construction rather than by coincidence.
+    """
+
+    refs: list[tuple[str, str]] = []
+    declared = str(gate.get("gating_plan") or "").strip()
+    if declared and parse_plan_ref(declared) is not None:
+        refs.append((declared, "declared"))
+    for field in _GATE_TEXT_FIELDS:
+        text = str(gate.get(field) or "")
+        for token in _GATE_EVIDENCE_REF_RE.findall(text):
+            parsed = parse_plan_ref(token)
+            if parsed is not None and parsed.stage:
+                refs.append((token, "gate-text"))
+    return refs
 
 
 def gate_evidence_slugs_from_gates(
@@ -1174,17 +1204,18 @@ def gate_evidence_slugs_from_gates(
 
     A plan whose only wire is that another plan's gate waits on it is wired —
     the gate names it as the evidence it needs — so the audit and the roadmap
-    silence it. Foreign-qualified refs are skipped: only a plan in the audited
-    project can be a row.
+    silence it. Only a declared form wires a plan, read through the one
+    extractor ``gate_declared_refs`` that the roadmap's gate edges also use, so
+    a prose word equal to a plan slug never wires a plan. Foreign-qualified refs
+    are skipped: only a plan in the audited project can be a row.
     """
 
     named: set[str] = set()
     for gate in gates:
         if not isinstance(gate, Mapping):
             continue
-        text = str(gate.get("required_evidence") or "")
-        for token in _GATE_EVIDENCE_REF_RE.findall(text):
-            parsed = parse_plan_ref(token)
+        for ref, _source in gate_declared_refs(gate):
+            parsed = parse_plan_ref(ref)
             if parsed is None or parsed.is_external(project or ""):
                 continue
             if parsed.slug:
