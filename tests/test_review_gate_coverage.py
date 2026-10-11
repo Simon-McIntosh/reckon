@@ -9,7 +9,6 @@ left to declassify the run.
 from __future__ import annotations
 
 import json
-import subprocess
 from pathlib import Path
 
 import pytest
@@ -21,23 +20,13 @@ from reckon.crew import review as review_module
 from reckon.crew.reports import MANIFEST_STATUSES
 from reckon.crew.runs import _write_json, pointer_path
 from tests.conftest import EXECUTABLE_GATE_COMMAND
+from tests.helpers.git import git as _git
 
 PROJECT = "proj"
 PLAN = "plan-a"
 # A runtime-source path: the classifier the review tier reads calls a package
 # module runtime source, while a bare data file at the repository root is not.
 RUNTIME_SOURCE = "reckon/candidate.py"
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    completed = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return completed.stdout.strip()
 
 
 def _write_resource(path: Path) -> None:

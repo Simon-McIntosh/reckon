@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import json
 import os
-import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -26,6 +25,7 @@ import pytest
 
 from reckon.crew import obligation_snapshot, runs
 from reckon.crew import review as review_module
+from tests.helpers.git import git as _git
 
 PROJECT = "unreadable-record-fixture"
 SESSION = "coordinator-fixture"
@@ -35,17 +35,6 @@ PRODUCER = {
     "started_at": None,
     "code_stamp": "stamp-not-read-by-these-cases",
 }
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    completed = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return completed.stdout.strip()
 
 
 @pytest.fixture()

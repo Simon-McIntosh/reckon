@@ -18,13 +18,13 @@ from __future__ import annotations
 
 import json
 import os
-import subprocess
 from pathlib import Path
 
 import pytest
 
 from reckon import crew
 from reckon.crew import recovery
+from tests.helpers.git import git as _git
 
 PROJECT = "proj"
 
@@ -77,17 +77,6 @@ def repo(tmp_path: Path) -> Path:
     _git(root, "add", "docs", "reckon")
     _git(root, "commit", "-q", "-m", "chore: seed")
     return root
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    completed = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return completed.stdout.strip()
 
 
 def _dispatch_delivered_run(repo: Path) -> dict:

@@ -28,6 +28,7 @@ from click.testing import CliRunner
 
 from reckon import cli, ledger
 from reckon.crew.runs import _write_json, pointer_path, run_dir
+from tests.helpers.git import git as _git
 
 routing_module = importlib.import_module("reckon.crew.routing")
 obligations_module = importlib.import_module("reckon.crew.obligations")
@@ -38,17 +39,6 @@ RUN_PARKED = "r-20261003T120048839648-parked-node"
 RUN_PHASELESS = "r-20261003T120048839649-phaseless-node"
 RUN_RETAINED = "r-20261003T120048839650-retained-node"
 RUN_HELD = "r-20261003T120048839651-held-node"
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    completed = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return completed.stdout.strip()
 
 
 @pytest.fixture()

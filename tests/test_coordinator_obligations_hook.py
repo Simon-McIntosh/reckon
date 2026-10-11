@@ -29,6 +29,7 @@ from reckon.hooks.coordinator_obligations import (
     duty_digest,
     format_checklist,
 )
+from tests.helpers.git import git as _git
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 HOOK = REPO_ROOT / "reckon" / "hooks" / "coordinator_obligations.py"
@@ -71,17 +72,6 @@ def _stamp(path: Path) -> tuple[int, int] | None:
     except OSError:
         return None
     return (metadata.st_mtime_ns, metadata.st_size)
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    completed = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return completed.stdout.strip()
 
 
 @pytest.fixture()

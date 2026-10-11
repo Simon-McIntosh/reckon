@@ -39,6 +39,7 @@ from reckon.crew.obligations import (
 from reckon.crew.obligations import obligations as obligations_view
 from reckon.hooks import coordinator_obligations
 from reckon.hooks.coordinator_obligations import format_checklist, not_fresh_line
+from tests.helpers.git import git as _git
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 HOOK = REPO_ROOT / "reckon" / "hooks" / "coordinator_obligations.py"
@@ -56,13 +57,6 @@ LANE_WORKER_SLOTS = 9
 # A pid no process can hold, so the drive's session resolves through the
 # registration's own name rather than the runner's ambient harness identity.
 _ABSENT_HARNESS_PID = 2_147_483_647
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    completed = subprocess.run(
-        ["git", *arguments], cwd=repository, check=True, capture_output=True, text=True
-    )
-    return completed.stdout.strip()
 
 
 def _write_json(path: Path, document: object) -> None:

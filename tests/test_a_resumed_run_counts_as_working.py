@@ -15,7 +15,6 @@ from __future__ import annotations
 import importlib
 import json
 import os
-import subprocess
 import time
 from datetime import UTC, datetime
 from pathlib import Path
@@ -23,6 +22,7 @@ from pathlib import Path
 import pytest
 
 from reckon.crew import recovery, runs
+from tests.helpers.git import git as _git
 
 obligations_module = importlib.import_module("reckon.crew.obligations")
 
@@ -31,17 +31,6 @@ SESSION = "coordinator-fixture"
 
 # A pid nothing runs under, for the finished case.
 DEAD_PID = 99999999
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    completed = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return completed.stdout.strip()
 
 
 @pytest.fixture()

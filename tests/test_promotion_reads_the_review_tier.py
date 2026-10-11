@@ -11,7 +11,6 @@ under a declared elevated risk) is what the row records once it lands.
 from __future__ import annotations
 
 import json
-import subprocess
 from pathlib import Path
 
 import pytest
@@ -20,6 +19,7 @@ from reckon import _plan_html, crew, ledger
 from reckon.crew import review as review_module
 from reckon.crew.runs import _write_json, pointer_path
 from tests.conftest import EXECUTABLE_GATE_COMMAND
+from tests.helpers.git import git as _git
 
 PROJECT = "proj"
 PLAN = "plan-a"
@@ -31,17 +31,6 @@ _LARGE_SOURCE = "".join(f"VALUE_{index} = {index}\n" for index in range(80))
 _MEDIUM_SOURCE = "".join(
     f"def f_{index}():\n    return {index}\n" for index in range(15)
 )
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    completed = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return completed.stdout.strip()
 
 
 def _write_plan(

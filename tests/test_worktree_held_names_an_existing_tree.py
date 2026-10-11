@@ -17,7 +17,6 @@ from __future__ import annotations
 import importlib
 import json
 import shutil
-import subprocess
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -25,6 +24,7 @@ from typing import Any
 import pytest
 
 from reckon import ledger
+from tests.helpers.git import git as _git
 
 obligations_module = importlib.import_module("reckon.crew.obligations")
 
@@ -32,17 +32,6 @@ PROJECT = "held-tree-exists-fixture"
 SESSION = "s22-fixture"
 OBSERVED_AT = datetime(2026, 10, 2, 9, 0, tzinfo=UTC)
 COMPLETED_AT = OBSERVED_AT - timedelta(minutes=5)
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    completed = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return completed.stdout.strip()
 
 
 @pytest.fixture()
