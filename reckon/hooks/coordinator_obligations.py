@@ -499,7 +499,7 @@ def local_lane(project: str) -> str:
 # The ``crew`` subcommands that launch new work. A remedy naming one of these
 # routes something new — a review, a node — and so leaves the lane to the
 # picker; every other composed command continues the run it already names.
-_NEW_WORK_SUBCOMMANDS = frozenset({"dispatch", "review-plan", "shadow"})
+_NEW_WORK_SUBCOMMANDS = frozenset({"dispatch", "review", "shadow"})
 
 
 def _dispatches_new_work(tokens: Sequence[str]) -> bool:

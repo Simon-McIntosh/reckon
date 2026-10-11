@@ -224,9 +224,6 @@ from reckon.crew_dispatch_commands import (
     crew_review as crew_review,
 )
 from reckon.crew_dispatch_commands import (
-    crew_review_plan as crew_review_plan,
-)
-from reckon.crew_dispatch_commands import (
     crew_shadow as crew_shadow,
 )
 from reckon.crew_follow_commands import (

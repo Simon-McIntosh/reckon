@@ -44,7 +44,7 @@ CONFIG = {
 SNAPSHOT_RUN_ID = "an-edit-tells-its-author-a-review-is-owed"
 DONE_WHEN = "charlie ships and nothing regresses"
 _INVOCATION = (
-    "reckon crew review-plan --project sample --plan fixture --rubric content "
+    "reckon crew review --project sample --plan fixture --rubric content "
     "--session <session>"
 )
 
@@ -344,4 +344,8 @@ def test_both_skills_name_the_review_and_its_invocation():
     for skill in ("reckon-create", "reckon-edit"):
         text = (root / skill / "SKILL.md").read_text(encoding="utf-8")
         assert "review_owed" in text, skill
-        assert "reckon crew review-plan --project" in text, skill
+        # The skill points its author at the crew review surface; the exact
+        # invocation text it prints is emitted by plan_review.review_invocation
+        # and, for the skill body itself, held to that surface by the skill
+        # contract test.
+        assert "reckon crew review" in text, skill

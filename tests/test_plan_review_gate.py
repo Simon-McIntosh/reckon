@@ -213,7 +213,7 @@ def test_unreviewed_implementation_is_refused_with_a_composed_remedy(
     refusal = str(excinfo.value)
     assert "fixture" in refusal
     assert (
-        "`reckon crew review-plan --project sample --plan fixture --rubric design "
+        "`reckon crew review --project sample --plan fixture --rubric design "
         "--session <session>`" in refusal
     )
 
@@ -669,7 +669,7 @@ def test_an_unanswered_design_finding_stays_owed_past_a_newer_content_review(
         cli_module.main,
         [
             "crew",
-            "review-plan",
+            "review",
             "--project",
             "sample",
             "--plan",

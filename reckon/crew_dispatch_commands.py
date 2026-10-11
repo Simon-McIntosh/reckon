@@ -1988,48 +1988,6 @@ def crew_review(
     )
 
 
-@crew.command(name="review-plan", hidden=True)
-@_review_options
-@_holds_stdout_for_one_document
-def crew_review_plan(
-    project,
-    plan_slug,
-    around_plan,
-    paths,
-    sprint_id,
-    portfolio,
-    session,
-    rubric,
-    local,
-    dry_run,
-    pretty,
-    answer,
-    acted,
-    declined,
-):
-    """Deprecated alias of ``reckon crew review``: reviews one plan's current content."""
-    click.echo(
-        "reckon crew review-plan is deprecated; use reckon crew review",
-        err=True,
-    )
-    _run_review(
-        project,
-        plan_slug,
-        around_plan,
-        paths,
-        session,
-        rubric,
-        local,
-        dry_run=dry_run,
-        pretty=pretty,
-        answer=answer,
-        acted=acted,
-        declined=declined,
-        sprint_id=sprint_id,
-        portfolio=portfolio,
-    )
-
-
 def _run_review(
     project,
     plan_slug,
@@ -2049,8 +2007,8 @@ def _run_review(
 ):
     """Compose and dispatch one review, or answer a plan finding.
 
-    One body for the ``review`` verb and its ``review-plan`` alias, so the two
-    surfaces cannot disagree about a subject, a refusal or a composed brief.
+    The body of the ``review`` verb: it resolves the subject, refuses a
+    contradictory command and composes the brief one way.
     """
     from reckon.crew import plan_review, recovery
     from reckon.crew.node import CrewError

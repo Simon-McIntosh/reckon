@@ -45,8 +45,7 @@ STATE_PHRASES: dict[CommandPath, str] = {
     ("repair-status",): "a manifest's status word",
     ("resume",): "one blocked run with advice",
     ("resume-ready",): "provider hold or declared external wait has ended",
-    ("review",): "one plan's current content or a code neighbourhood",
-    ("review-plan",): "one plan's current content",
+    ("review",): "one plan's content, a code neighbourhood or a portfolio",
     ("shadow",): "committed run",
     # `split-runs` is a registered leaf of `crew`, so the census of reachable
     # verbs owes it a row like any other. It acts on the aggregate run rows a
@@ -135,6 +134,17 @@ def test_every_crew_verb_help_names_its_state_or_condition() -> None:
         assert result.exit_code == 0, result.output
         assert " ".join(first_line.split()) in " ".join(result.output.split())
         assert STATE_PHRASES[path] in first_line
+
+
+def test_the_retired_review_plan_alias_is_not_reachable() -> None:
+    """``review`` is the one verb that composes a plan review.
+
+    The retired alias must not answer: a session reaching for it is routed to
+    the verb that replaced it rather than composing a second, divergent review.
+    """
+    assert "review-plan" not in cli_module.crew.commands
+    result = _help_result(("review-plan",))
+    assert result.exit_code != 0, result.output
 
 
 def test_the_four_one_word_near_namesakes_state_their_distinction() -> None:

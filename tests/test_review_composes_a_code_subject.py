@@ -1,9 +1,8 @@
 """One review verb composes a code neighbourhood around a plan or a path.
 
 The verb resolves the production modules a plan's implementable sections name
-together with the modules one import away in either direction, composes the
-health-review brief for that neighbourhood, and keeps ``review-plan`` working
-as an alias that composes the same plan brief.
+together with the modules one import away in either direction and composes the
+health-review brief for that neighbourhood.
 """
 
 from __future__ import annotations
@@ -11,7 +10,6 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-import re
 import subprocess
 from types import SimpleNamespace
 
@@ -180,70 +178,6 @@ def test_around_composes_the_neighbourhood_brief(project, monkeypatch):
     figures = _line(brief, "Interface figures:")
     for key in ("public_definitions", "cli_options", "mcp_views", "refusal_families"):
         assert key in figures, figures
-
-
-def test_review_plan_alias_composes_the_same_plan_brief(project):
-    _home, _repo, _plan = project
-    _head_payload, head_brief = _brief(
-        [
-            "crew",
-            "review",
-            "--project",
-            "sample",
-            "--plan",
-            "fixture",
-            "--session",
-            "coordinator",
-            "--dry-run",
-        ]
-    )
-    _alias_payload, alias_brief = _brief(
-        [
-            "crew",
-            "review-plan",
-            "--project",
-            "sample",
-            "--plan",
-            "fixture",
-            "--session",
-            "coordinator",
-            "--dry-run",
-        ]
-    )
-    assert head_brief
-    assert _without_run_identity(head_brief) == _without_run_identity(alias_brief)
-
-
-def _without_run_identity(brief: str) -> str:
-    """The brief with its per-invocation run id and stamped instant folded out.
-
-    Two invocations of the verb compose the same content but mint their own run
-    id and record their own instant, so equality of composition is measured
-    with those two values folded out rather than compared literally.
-    """
-    folded = re.sub(r"r-\d{8}T\d+", "r-<run>", brief)
-    return re.sub(r"\d{4}-\d{2}-\d{2}T[\d:.]+Z", "<instant>", folded)
-
-
-def test_review_plan_alias_prints_a_deprecation_line(project):
-    _home, _repo, _plan = project
-    result = _runner().invoke(
-        cli.main,
-        [
-            "crew",
-            "review-plan",
-            "--project",
-            "sample",
-            "--plan",
-            "fixture",
-            "--session",
-            "coordinator",
-            "--dry-run",
-        ],
-    )
-    assert result.exit_code == 0, result.output
-    stderr = getattr(result, "stderr", "") or ""
-    assert "deprecated" in stderr
 
 
 def _expected_neighbourhood_key(named: list[str], modules: list[str]) -> str:
