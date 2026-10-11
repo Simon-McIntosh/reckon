@@ -288,7 +288,7 @@ def test_review_plan_dry_run_resolves_the_shared_composition(project):
         cli.main,
         [
             "crew",
-            "review-plan",
+            "review",
             "--project",
             "sample",
             "--plan",
@@ -299,8 +299,6 @@ def test_review_plan_dry_run_resolves_the_shared_composition(project):
         ],
     )
     assert result.exit_code == 0, result.output
-    # The document is on stdout; the deprecated alias writes its notice to
-    # stderr, which CliRunner merges into ``output`` but not into ``stdout``.
     payload = json.loads(result.stdout)
     assert payload["node"]["id"] == "plan-review-of-fixture"
     assert payload["node"]["role"] == "review"
@@ -327,7 +325,7 @@ def test_review_plan_dry_run_leaves_the_report_root_unchanged(project):
             cli.main,
             [
                 "crew",
-                "review-plan",
+                "review",
                 "--project",
                 "sample",
                 "--plan",
@@ -356,7 +354,7 @@ def test_review_plan_real_dispatch_writes_the_composed_artifacts(project, monkey
         cli.main,
         [
             "crew",
-            "review-plan",
+            "review",
             "--project",
             "sample",
             "--plan",
@@ -393,7 +391,7 @@ def test_review_plan_launch_passes_session_and_local(project, monkeypatch):
         cli.main,
         [
             "crew",
-            "review-plan",
+            "review",
             "--project",
             "sample",
             "--plan",
@@ -424,7 +422,7 @@ def test_answer_refuses_missing_reason_or_ambiguous_action(project, options):
         cli.main,
         [
             "crew",
-            "review-plan",
+            "review",
             "--project",
             "sample",
             "--plan",
@@ -451,7 +449,7 @@ def test_answer_records_response_through_store(project, options, action):
         cli.main,
         [
             "crew",
-            "review-plan",
+            "review",
             "--project",
             "sample",
             "--plan",

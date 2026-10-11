@@ -5,7 +5,7 @@ that changes it and at the build gate — so a follower sweep no longer walks th
 project's plans. These cases hold both halves: a pass over a project holding an
 active plan with no review composes no plan review and leaves the plan-review
 report root untouched, while a finished run awaiting its review in the same pass
-still has that review composed. ``crew review-plan`` composes on demand, which
+still has that review composed. ``crew review`` composes on demand, which
 is the surface an author reaches through the edit tool's owed-review invocation.
 """
 
@@ -112,12 +112,12 @@ def test_a_finished_run_still_gets_its_review_in_the_same_pass(project, monkeypa
     assert report["dispatched"] == ["review-of-r-awaiting-review"]
 
 
-def test_review_plan_still_composes_a_review_on_demand(project):
+def test_review_still_composes_a_review_on_demand(project):
     result = CliRunner().invoke(
         cli.main,
         [
             "crew",
-            "review-plan",
+            "review",
             "--project",
             "sample",
             "--plan",

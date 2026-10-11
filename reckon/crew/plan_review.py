@@ -142,7 +142,7 @@ PLAN_DERIVED_SCALARS: tuple[str, ...] = (
 # ── The two review moments ─────────────────────────────────────────────────
 # A content review is the rubber-duck read an author composes once a writing
 # session ends; a design review is the prior-art and depth read a plan carries
-# before its first implementation node. Spelled as the ``review-plan`` verb
+# before its first implementation node. Spelled as the ``review`` verb
 # takes them.
 CONTENT_RUBRIC = "content"
 DESIGN_RUBRIC = "design"
@@ -174,7 +174,7 @@ def review_invocation(
     """
     named = shlex.quote(session) if session else SESSION_PLACEHOLDER
     return (
-        f"reckon crew review-plan --project {shlex.quote(project)} "
+        f"reckon crew review --project {shlex.quote(project)} "
         f"--plan {shlex.quote(plan_slug)} --rubric {rubric} --session {named}"
     )
 
@@ -182,7 +182,7 @@ def review_invocation(
 def answer_invocation(project: str, plan_slug: str, finding_id: str) -> str:
     """The command that answers one finding, acted on or declined with a reason."""
     return (
-        f"reckon crew review-plan --project {shlex.quote(project)} "
+        f"reckon crew review --project {shlex.quote(project)} "
         f"--plan {shlex.quote(plan_slug)} --answer {shlex.quote(finding_id)} "
         "--acted (or --declined '<reason>')"
     )
@@ -2006,11 +2006,7 @@ def delivered_reports(
     )
 
 
-def delivered_code_reviews(
-    project: str,
-    *,
-    around: str | None = None,
-) -> list[dict[str, Any]]:
+def delivered_code_reviews(project: str) -> list[dict[str, Any]]:
     """Return the delivered code-review reports under a project, newest first.
 
     A delivered code review is a neighbourhood directory carrying both
@@ -2018,16 +2014,11 @@ def delivered_code_reviews(
     the plan deliveries use, so both kinds of delivery are read one way. Each
     returned dict is the sidecar plus ``report_path``, ``sidecar_path``,
     ``review_run_id`` and ``stored``, under the same keys a plan delivery
-    carries. ``around`` keeps only the reviews composed around one plan, which
-    is how a plan's build finds the code reviews its own sections prompted
-    without reading a review another plan composed.
+    carries.
     """
     return _delivered_report_sidecars(
         _code_review_report_root(project),
-        keep=lambda sidecar: (
-            str(sidecar.get("subject") or "") == "code"
-            and (not around or str(sidecar.get("around") or "") == around)
-        ),
+        keep=lambda sidecar: str(sidecar.get("subject") or "") == "code",
         stored=_stored_code_review_run_ids(project),
         sidecar_name=CODE_REVIEW_SIDECAR_NAME,
     )

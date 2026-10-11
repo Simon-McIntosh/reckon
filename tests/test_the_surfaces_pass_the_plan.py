@@ -1,6 +1,6 @@
 """The answer verb and the plan-review view read a review through the plan.
 
-Two surfaces answer "which review belongs to this plan": ``crew review-plan
+Two surfaces answer "which review belongs to this plan": ``crew review
 --answer`` and the MCP plan-review view. A review exists only as a delivered
 sidecar until something stores it, and a plan may be covered section by section
 rather than by one whole-document record, so both surfaces must store a
@@ -183,7 +183,7 @@ def test_answer_stores_an_unstored_delivery_before_answering(project):
         cli.main,
         [
             "crew",
-            "review-plan",
+            "review",
             "--project",
             "sample",
             "--plan",
@@ -219,7 +219,7 @@ def test_answer_surface_reads_a_section_covering_review(project):
         cli.main,
         [
             "crew",
-            "review-plan",
+            "review",
             "--project",
             "sample",
             "--plan",
@@ -270,7 +270,7 @@ def test_absent_covering_review_names_the_stale_one(project):
         cli.main,
         [
             "crew",
-            "review-plan",
+            "review",
             "--project",
             "sample",
             "--plan",
@@ -284,7 +284,7 @@ def test_absent_covering_review_names_the_stale_one(project):
     detail = json.loads(result.stdout)["detail"]
     assert f"version {int(stale['plan_version'])}" in detail
     assert "no longer covers" in detail
-    assert "crew review-plan" in detail
+    assert "crew review" in detail
 
     payload = mcp._crew(project="sample", plan="fixture", view="plan-review")
     assert payload["record"] is None

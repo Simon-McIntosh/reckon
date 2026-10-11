@@ -87,7 +87,7 @@ DISPATCH_REFUSAL_REMEDIES: Mapping[str, str | None] = {
         "backend launch; use `reckon crew attach` only for an in-harness directive"
     ),
     "D23": (
-        "`reckon crew review-plan` for the plan, with every finding it raises "
+        "`reckon crew review` for the plan, with every finding it raises "
         "answered through its `--answer` flag as acted on or declined with a "
         "reason, then `reckon crew dispatch`; or `reckon crew dispatch "
         "--allow-unreviewed-plan` to waive the review"
