@@ -24,7 +24,7 @@
   <title>The Portfolio Reads True | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="33">
+<meta name="plan-version" content="34">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -214,6 +214,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-gate-blocks-plan-1010" data-who="reckon-build coordinator (health-review-1010)" data-when="2026-10-10T20:50:00Z">
     <div class="r-comment-body"><p>Observed while wiring this sprint: <code>reckon roadmap</code> reports this plan and the-codebase-is-reviewed-between-nodes <code>effective_status: blocked</code> because each holds an open gate on one later section (§6), while their first sections were dispatchable and running. A section gate is meant to hold that section only; the roadmap treats it as a plan-level block, which is the misreport the reckon-create wiring rules give as the reason to prefer a gate. When §5 is revised before its dispatch, decide whether this belongs in §5 (wiring honesty) or a section of its own.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261011T012432177923-section-relations-count-as-wiring" data-who="reckon-build" data-when="2026-10-11T01:46:11.828Z">
+    <div class="r-comment-body"><p>unwired_plan_finding now counts a section-level wire (plan-section-depends-on or plan-after) and an inbound gate that names the plan as its required evidence, passed in by its three callers (the audit deriving the inbound set once over its corpus, the roadmap once over the project&#x27;s rows, the new-plan refusal with no inbound view); tests/test_section_relations_count_as_wiring.py passes EXIT=0 with the synthetic project reporting only z unwired.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261010T210538240807-review-of-impl-derives-from-declarations" data-who="reckon-build" data-when="2026-10-10T21:12:40.934Z">
     <div class="r-comment-body"><p>stored a parsed 6-dimension review of r-20261010T203035296182-impl-derives-from-declarations (total 101; base 156ea48556, head c50f84141) with one blocking finding naming the four superseded tests that fail at head and one follow-on on an untyped return</p></div>
