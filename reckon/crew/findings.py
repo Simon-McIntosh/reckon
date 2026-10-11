@@ -42,8 +42,9 @@ from reckon.crew import runs as _runs
 # ``finding``. The value is a mapping with a ``kind`` of ``folded`` (naming the
 # node it went into) or ``exempted`` (naming the reason it is not being acted
 # on). The entry's presence is the disposition; a missing or unrecognised entry
-# leaves the finding ``open`` rather than reporting it as closed.
-FINDING_DISPOSITIONS_KEY = "finding_dispositions"
+# leaves the finding ``open`` rather than reporting it as closed. The key is
+# declared once in :mod:`reckon.crew.review`, which writes the entry and is
+# imported here, so the writer and the reader can never disagree on it.
 
 # The two scopes a row can carry. A repository path is one the record's own
 # checkout holds; every other path — an absolute report or manifest path, a
@@ -176,7 +177,7 @@ def finding_disposition(record: Mapping[str, Any], index: int) -> str:
     outside the closed set leaves the finding ``open`` — an unreadable entry is
     a row someone meant to fill in, not a closed finding.
     """
-    dispositions = record.get(FINDING_DISPOSITIONS_KEY)
+    dispositions = record.get(_review.FINDING_DISPOSITIONS_KEY)
     if not isinstance(dispositions, Mapping):
         return "open"
     entry = dispositions.get(str(index))

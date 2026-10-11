@@ -789,6 +789,9 @@ _PLAN_REPORT_RUBRIC_ALIASES: dict[str, str] = {
     "content": "plan_review",
     "design": "plan_design_review",
 }
+# The RUBRIC verdict line — ``RUBRIC <item>: <verdict sentence>`` — is the same
+# grammar in the plan-review parser, the health parser and the delivered-report
+# check, so all three read one compiled pattern declared here.
 _PLAN_RUBRIC_LINE_RE = re.compile(
     r"^RUBRIC\s+([A-Za-z_][A-Za-z0-9_]*)\s*:\s*(.*)$", re.IGNORECASE
 )
@@ -909,9 +912,6 @@ def parse_plan_review_report(text: str, *, rubric: str) -> dict[str, Any]:
 # The line reading is shared with :func:`parse_review` through
 # :func:`_review_text_lines`.
 
-_HEALTH_RUBRIC_LINE_RE = re.compile(
-    r"^RUBRIC\s+([A-Za-z_][A-Za-z0-9_]*)\s*:\s*(.*)$", re.IGNORECASE
-)
 _HEALTH_FINDING_LINE_RE = re.compile(
     r"^FINDING\s+([A-Za-z_][A-Za-z0-9_]*)\s+(\S+)\s*(.*)$", re.IGNORECASE
 )
@@ -1058,7 +1058,7 @@ def parse_health_review(text: str) -> dict[str, Any]:
     counters: dict[str, int] = {}
     treatments: list[str] = []
     for line in _review_text_lines(text):
-        match = _HEALTH_RUBRIC_LINE_RE.match(line)
+        match = _PLAN_RUBRIC_LINE_RE.match(line)
         if match:
             item = match.group(1).lower()
             verdict = match.group(2).strip()
@@ -3452,6 +3452,59 @@ def sub_floor_dimensions(
     return rows
 
 
+def _build_disposition_entry(
+    kind: str | None, node: str | None, reason: str | None
+) -> dict[str, Any]:
+    """Validate one disposition's kind and field, and build its stored entry.
+
+    Both the dimension writer and the finding writer store the same closed
+    shape and refuse the same inputs, so the check and the build live here once.
+    A kind outside :data:`DIMENSION_DISPOSITION_KINDS`, a fold naming no node,
+    an exemption carrying no reason, and either kind supplied with the other's
+    field all raise :class:`ValueError`. The gate is the reader's own predicate
+    :func:`dimension_disposition_valid`, so an entry this returns is one the
+    readers honour. The other kind's field is refused rather than dropped: a
+    stored entry that carries a reason no fold can name, or a node no exemption
+    can stand behind, reads as recorded on both sides of a question the caller
+    only half answered.
+    """
+    disposition_kind = str(kind or "").strip().lower()
+    named_node = str(node or "").strip()
+    recorded_reason = str(reason or "").strip()
+    if not dimension_disposition_valid(
+        {"kind": disposition_kind, "node": named_node, "reason": recorded_reason}
+    ):
+        if disposition_kind not in DIMENSION_DISPOSITION_KINDS:
+            raise ValueError(
+                f"unknown disposition {kind!r}; "
+                f"allowed kinds are {', '.join(DIMENSION_DISPOSITION_KINDS)}"
+            )
+        if disposition_kind == "folded":
+            raise ValueError(
+                "a folded disposition must name the node it was folded into"
+            )
+        raise ValueError("an exempted disposition must record its reason")
+    if disposition_kind == "folded" and recorded_reason:
+        raise ValueError(
+            "a folded disposition carries no reason; record an exemption "
+            "instead of folding a finding whose reason you are keeping"
+        )
+    if disposition_kind == "exempted" and named_node:
+        raise ValueError(
+            "an exempted disposition names no node; record a fold instead of "
+            "exempting a finding that a node already answers"
+        )
+    entry: dict[str, Any] = {
+        "kind": disposition_kind,
+        "recorded_at": datetime.now(UTC).isoformat(),
+    }
+    if disposition_kind == "folded":
+        entry["node"] = named_node
+    else:
+        entry["reason"] = recorded_reason
+    return entry
+
+
 def record_dimension_disposition(
     project: str,
     reviewed_run_id: str,
@@ -3497,40 +3550,7 @@ def record_dimension_disposition(
             f"unknown review dimension {dimension!r}; "
             f"known dimensions are {', '.join(REVIEW_DIMENSIONS)}"
         )
-    disposition_kind = str(kind or "").strip().lower()
-    named_node = str(node or "").strip()
-    recorded_reason = str(reason or "").strip()
-    # The gate here is the reader's own predicate, so a disposition this writer
-    # accepts is one :func:`sub_floor_dimensions` will honour. A second copy of
-    # the closed set in the writer could accept a kind the reader then ignores,
-    # which stores a row that reads as answered and stands.
-    if not dimension_disposition_valid(
-        {"kind": disposition_kind, "node": named_node, "reason": recorded_reason}
-    ):
-        if disposition_kind not in DIMENSION_DISPOSITION_KINDS:
-            raise ValueError(
-                f"unknown disposition {kind!r}; "
-                f"allowed kinds are {', '.join(DIMENSION_DISPOSITION_KINDS)}"
-            )
-        if disposition_kind == "folded":
-            raise ValueError(
-                "a folded disposition must name the node it was folded into"
-            )
-        raise ValueError("an exempted disposition must record its reason")
-    # The field a caller supplies for the other kind is refused rather than
-    # dropped: a stored entry that carries a reason no fold can name, or a node
-    # no exemption can stand behind, reads as recorded on both sides of a
-    # question the caller only half answered.
-    if disposition_kind == "folded" and recorded_reason:
-        raise ValueError(
-            "a folded disposition carries no reason; record an exemption "
-            "instead of folding a finding whose reason you are keeping"
-        )
-    if disposition_kind == "exempted" and named_node:
-        raise ValueError(
-            "an exempted disposition names no node; record a fold instead of "
-            "exempting a finding that a node already answers"
-        )
+    disposition = _build_disposition_entry(kind, node, reason)
 
     path, record = stored_record(
         project,
@@ -3543,14 +3563,6 @@ def record_dimension_disposition(
             f"no stored review for run {reviewed_run_id!r} in project "
             f"{project!r} to record a disposition against"
         )
-    disposition: dict[str, Any] = {
-        "kind": disposition_kind,
-        "recorded_at": datetime.now(UTC).isoformat(),
-    }
-    if disposition_kind == "folded":
-        disposition["node"] = named_node
-    else:
-        disposition["reason"] = recorded_reason
     dispositions = record.get(DIMENSION_DISPOSITIONS_KEY)
     merged = dict(dispositions) if isinstance(dispositions, Mapping) else {}
     merged[dimension_name] = disposition
@@ -3612,32 +3624,7 @@ def record_finding_disposition(
             f"a finding disposition names a finding by its non-negative index; "
             f"got {finding_index!r}"
         )
-    disposition_kind = str(kind or "").strip().lower()
-    named_node = str(node or "").strip()
-    recorded_reason = str(reason or "").strip()
-    if not dimension_disposition_valid(
-        {"kind": disposition_kind, "node": named_node, "reason": recorded_reason}
-    ):
-        if disposition_kind not in DIMENSION_DISPOSITION_KINDS:
-            raise ValueError(
-                f"unknown disposition {kind!r}; "
-                f"allowed kinds are {', '.join(DIMENSION_DISPOSITION_KINDS)}"
-            )
-        if disposition_kind == "folded":
-            raise ValueError(
-                "a folded disposition must name the node it was folded into"
-            )
-        raise ValueError("an exempted disposition must record its reason")
-    if disposition_kind == "folded" and recorded_reason:
-        raise ValueError(
-            "a folded disposition carries no reason; record an exemption "
-            "instead of folding a finding whose reason you are keeping"
-        )
-    if disposition_kind == "exempted" and named_node:
-        raise ValueError(
-            "an exempted disposition names no node; record a fold instead of "
-            "exempting a finding that a node already answers"
-        )
+    disposition = _build_disposition_entry(kind, node, reason)
 
     path, record = stored_record(
         project,
@@ -3662,14 +3649,6 @@ def record_finding_disposition(
             f"run {reviewed_run_id!r} carries {len(findings)} findings; "
             f"--finding {finding_index} names none of them"
         )
-    disposition: dict[str, Any] = {
-        "kind": disposition_kind,
-        "recorded_at": datetime.now(UTC).isoformat(),
-    }
-    if disposition_kind == "folded":
-        disposition["node"] = named_node
-    else:
-        disposition["reason"] = recorded_reason
     dispositions = record.get(FINDING_DISPOSITIONS_KEY)
     merged = dict(dispositions) if isinstance(dispositions, Mapping) else {}
     merged[str(finding_index)] = disposition

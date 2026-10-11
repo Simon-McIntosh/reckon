@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-codebase-is-reviewed-between-nodes">
+  <meta name="plan-evidence-for" content="reckon:the-codebase-is-reviewed-between-nodes">
+  <meta name="plan-verifies" content="reckon:the-codebase-is-reviewed-between-nodes#s4">
+  <meta name="plan-recorded-at" content="2026-10-11">
+  <meta name="plan-verdict" content="passed">
+  <title>One disposition builder and one RUBRIC-line pattern | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="one-disposition-writer-landing" data-node="one-disposition-writer" data-reckon="landed" data-when="2026-10-11">
+  <h2>One disposition builder, one store key and one RUBRIC-line pattern</h2>
+  <p><code>record_dimension_disposition</code> and <code>record_finding_disposition</code> now share one private <code>_build_disposition_entry</code> for the kind/field validation and the stored entry, so both writers call one helper and neither public signature changed. The <code>RUBRIC</code> verdict-line grammar is one compiled pattern, <code>_PLAN_RUBRIC_LINE_RE</code> (kept under that name because <code>plan_review.py</code> reads it and is outside this node's scope); the health grammar's byte-identical <code>_HEALTH_RUBRIC_LINE_RE</code> is deleted and both parsers use the shared one. The store key is declared once, in <code>review.py</code>, because <code>findings.py</code> already imports it there and importing in the other direction would cycle; <code>findings.py</code> reads <code>_review.FINDING_DISPOSITIONS_KEY</code>. <code>grep -c "FINDING_DISPOSITIONS_KEY = "</code> over <code>reckon/</code> is 1 and <code>review.py</code> holds one compiled RUBRIC-line pattern. Line delta over <code>reckon/</code>: +63/−83 = −20. The 93 test files importing <code>reckon/crew/review.py</code> or <code>reckon/crew/findings.py</code> read 854 passed / 2 failed at base and 854 passed / 2 failed at head, identical ids. Negative control: making <code>_build_disposition_entry</code> accept a folded entry carrying a reason turns <code>tests/test_dispose_a_finding.py::test_a_refused_disposition_writes_nothing[fold-carrying-a-reason]</code> red.</p>
+</article>
+</body>
+</html>
