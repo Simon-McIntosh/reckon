@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/velocity.py:2995"
+  ],
+  "completed_at": "2026-10-11T05:22:52.404Z",
+  "dispatched_at": "2026-10-11T05:16:21Z",
+  "findings": [
+    {
+      "file": "reckon/crew/findings.py",
+      "line": "196",
+      "severity": "follow-on",
+      "text": "follow-on: the repair adds a public parser to a file the node's declared write_paths do not name; the repair advice authorized adding only a parser there if none existed, so the expansion is authorized rather than silent, but the node record does not carry it and a later reader of the write_paths alone would not expect the file to change."
+    },
+    {
+      "file": "tests/test_velocity_counts_health_reviews.py",
+      "line": "273",
+      "severity": "follow-on",
+      "text": "follow-on: the two stop-rule assertions compare HEALTH_REVIEW_STOP_RULE against a field that returns that same constant (:273) and against its own docstring (:278), so both hold whatever the code does; they guard the constant's presence, not the behaviour of turning the reflex off."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read against 1dd2de547; 021beb93c adds the field, its helpers, the gate and the evidence fragment, and 8ecbbbdfa narrows every count to the window and reads dispositions through findings.parse_finding_disposition \u2014 four files, the last one outside the declared scope.",
+    "done_when": "the done_when asks the gate to report 3 reviews, 1 of 2 treatments promoted, -40 product lines and the dispositions by kind, no added failure against base, and the negative control reporting 2 of 2 and failing; the manifest records all four and I re-ran the gate to 8 passed EXIT=0 and the control to 1 failed 7 passed EXIT=1.",
+    "goal": "the node goal is to report the health-review yield on the velocity view; reckon/velocity.py:2687 defines health_reviews and reckon/velocity.py:2995 attaches it to the summary as a field served only when fields names it (OPTIONAL_BLOCKS, reckon/velocity.py:3045).",
+    "manifest": "read; it states gate 8 passed EXIT=0, the velocity-importing suite 100 passed at head against 91 passed 1 failed at base (git-less extraction), the negative control 1 failed 7 passed, and flags the reckon/crew/findings.py scope exception in its blockers.",
+    "write_paths": "declared scope is reckon/velocity.py, tests/test_velocity_counts_health_reviews.py, the evidence fragment and a figures dir; the repair commit also touches reckon/crew/findings.py, which the run's own write_paths do not name though the repair advice authorized a parser there."
+  },
+  "justifications": {
+    "durability": "the promotion assertion at tests/test_velocity_counts_health_reviews.py:264 reddens under the declared dispatch-not-promotion mutation and the windowing case at :319 reddens if the window filter is reverted, but the stop-rule assertions at :273 and :278 compare the constant against itself and its own docstring and guard nothing behavioural.",
+    "evidence": "tests/test_velocity_counts_health_reviews.py:246-264 asserts the done_when's exact figures from a synthesised ledger and store, and the reviewed manifest's gate logs record 8 passed EXIT=0 and the control 1 failed EXIT=1, which I re-ran to the same results.",
+    "fit": "the field follows the block idiom of reckon/velocity.py:2956 (clones) and is registered in OPTIONAL_BLOCKS at reckon/velocity.py:3045, its helper names are private and unprefixed by any plan label.",
+    "goal_fidelity": "reckon/velocity.py:2687 delivers and 2995 serves reviews, findings known/new, treatments dispatched/promoted, product_lines, dispositions by kind and the stop rule; the neighbourhood clone/reach change is reported unmeasured at reckon/velocity.py:2837 with its reason, which the brief permits.",
+    "reuse": "the repair extends the disposition owner rather than forking it \u2014 reckon/crew/findings.py:196 parse_finding_disposition sits beside finding_disposition (:172) and decodes the encoding that function owns, replacing the folded: prefix the earlier revision re-stated.",
+    "scope_discipline": "reckon/velocity.py, the gate test and the evidence fragment are inside the declared write paths, but reckon/crew/findings.py:196 is outside them; the repair advice permitted adding only a parser there, which is what landed and nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to report the health-review yield on the velocity view; reckon/velocity.py:2687 defines health_reviews and reckon/velocity.py:2995 attaches it to the summary as a field served only when fields names it (OPTIONAL_BLOCKS, reckon/velocity.py:3045).\nVERDICT done_when: the done_when asks the gate to report 3 reviews, 1 of 2 treatments promoted, -40 product lines and the dispositions by kind, no added failure against base, and the negative control reporting 2 of 2 and failing; the manifest records all four and I re-ran the gate to 8 passed EXIT=0 and the control to 1 failed 7 passed EXIT=1.\nVERDICT write_paths: declared scope is reckon/velocity.py, tests/test_velocity_counts_health_reviews.py, the evidence fragment and a figures dir; the repair commit also touches reckon/crew/findings.py, which the run's own write_paths do not name though the repair advice authorized a parser there.\nVERDICT manifest: read; it states gate 8 passed EXIT=0, the velocity-importing suite 100 passed at head against 91 passed 1 failed at base (git-less extraction), the negative control 1 failed 7 passed, and flags the reckon/crew/findings.py scope exception in its blockers.\nVERDICT diff: read against 1dd2de547; 021beb93c adds the field, its helpers, the gate and the evidence fragment, and 8ecbbbdfa narrows every count to the window and reads dispositions through findings.parse_finding_disposition \u2014 four files, the last one outside the declared scope.\nCALL_SITES: reckon/velocity.py:2995\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/velocity.py:2687 delivers and 2995 serves reviews, findings known/new, treatments dispatched/promoted, product_lines, dispositions by kind and the stop rule; the neighbourhood clone/reach change is reported unmeasured at reckon/velocity.py:2837 with its reason, which the brief permits.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_velocity_counts_health_reviews.py:246-264 asserts the done_when's exact figures from a synthesised ledger and store, and the reviewed manifest's gate logs record 8 passed EXIT=0 and the control 1 failed EXIT=1, which I re-ran to the same results.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: reckon/velocity.py, the gate test and the evidence fragment are inside the declared write paths, but reckon/crew/findings.py:196 is outside them; the repair advice permitted adding only a parser there, which is what landed and nothing else.\nSCORE durability: 17\nJUSTIFICATION durability: the promotion assertion at tests/test_velocity_counts_health_reviews.py:264 reddens under the declared dispatch-not-promotion mutation and the windowing case at :319 reddens if the window filter is reverted, but the stop-rule assertions at :273 and :278 compare the constant against itself and its own docstring and guard nothing behavioural.\nSCORE fit: 19\nJUSTIFICATION fit: the field follows the block idiom of reckon/velocity.py:2956 (clones) and is registered in OPTIONAL_BLOCKS at reckon/velocity.py:3045, its helper names are private and unprefixed by any plan label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the repair extends the disposition owner rather than forking it \u2014 reckon/crew/findings.py:196 parse_finding_disposition sits beside finding_disposition (:172) and decodes the encoding that function owns, replacing the folded: prefix the earlier revision re-stated.\nFINDING reckon/crew/findings.py:196 follow-on: the repair adds a public parser to a file the node's declared write_paths do not name; the repair advice authorized adding only a parser there if none existed, so the expansion is authorized rather than silent, but the node record does not carry it and a later reader of the write_paths alone would not expect the file to change.\nFINDING tests/test_velocity_counts_health_reviews.py:273 follow-on: the two stop-rule assertions compare HEALTH_REVIEW_STOP_RULE against a field that returns that same constant (:273) and against its own docstring (:278), so both hold whatever the code does; they guard the constant's presence, not the behaviour of turning the reflex off.",
+  "review_run_id": "r-20261011T051539187455-review-of-velocity-counts-health-reviews",
+  "reviewed_base_sha": "1dd2de54704216d0580667ba4fe1bd7a2dea00ab",
+  "reviewed_head_sha": "8ecbbbdfa1bec3a02d57609ddce0daec117b5902",
+  "reviewed_run_id": "r-20261011T043817026230-velocity-counts-health-reviews",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T05:26:00.716181+00:00",
+  "total": 110
+}
