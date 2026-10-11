@@ -21,6 +21,7 @@ from click.testing import CliRunner
 
 from reckon import cli, ledger
 from reckon.crew import plan_review
+from reckon.crew.routing import _workspace_roots
 from reckon.crew.runs import crew_home, reports_dir
 
 PROJECT = "gc-store"
@@ -93,12 +94,22 @@ def write_general_tree(run_id: str, *, age_days: float) -> Path:
     return tree
 
 
-def write_pointer(run_id: str) -> None:
+def write_pointer(run_id: str, *, worktree: Path | None = None) -> None:
     live = crew_home() / "live"
     live.mkdir(parents=True, exist_ok=True)
-    (live / f"{run_id}.json").write_text(
-        json.dumps({"run_id": run_id, "phase": "working"}), encoding="utf-8"
-    )
+    record: dict = {"run_id": run_id, "phase": "working"}
+    if worktree is not None:
+        record["worktree"] = str(worktree)
+    (live / f"{run_id}.json").write_text(json.dumps(record), encoding="utf-8")
+
+
+def _worktree(repo: Path, name: str) -> Path:
+    """A managed tree registered at the repository's head, clean and integrated."""
+    root = _workspace_roots(repo)[0]
+    tree = root / name
+    tree.parent.mkdir(parents=True, exist_ok=True)
+    _git(repo, "worktree", "add", "-q", "--detach", str(tree), "HEAD")
+    return tree
 
 
 def record_run(repo: Path, run_id: str) -> None:
@@ -125,7 +136,7 @@ def write_run_dir(run_id: str, *, age_days: float) -> Path:
     return directory
 
 
-def gc(repo: Path, *, apply: bool) -> dict:
+def gc(repo: Path, *, apply: bool, run: str | None = None) -> dict:
     result = CliRunner().invoke(
         cli.main,
         [
@@ -137,6 +148,7 @@ def gc(repo: Path, *, apply: bool) -> dict:
             PROJECT,
             "--retention-days",
             str(RETENTION),
+            *(["--run", run] if run else []),
             *(["--apply"] if apply else []),
         ],
     )
@@ -281,3 +293,57 @@ def test_the_real_crew_home_is_untouched(tmp_path, monkeypatch):
 
     assert real_home.exists() == before
     assert str(reports_dir()).startswith(os.environ["RECKON_HOME"])
+
+
+def test_the_queue_lock_is_never_offered(tmp_path, monkeypatch):
+    """The queue's own ``queued-dispatch.lock`` is not a run's, so gc leaves it.
+
+    A run named ``queued-dispatch`` sits in the ledger and its lock is far past
+    retention, so every other condition the lock set tests is met: the name is
+    the only thing that spares it, and dropping that exclusion offers and removes
+    the queue's lock.
+    """
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
+    repo = repository(tmp_path)
+    record_run(repo, "queued-dispatch")
+    queue_lock = write_lock("queued-dispatch", age_days=OLD_DAYS)
+
+    applied = gc(repo, apply=True)
+
+    assert queue_lock.is_file()
+    assert all(row["path"] != str(queue_lock) for row in applied["lock_files"])
+
+
+def test_a_lock_with_no_ledger_row_is_never_offered(tmp_path, monkeypatch):
+    """gc offers a lock only once its run has a ledger row: a lock whose run has
+    no row is left, because gc cannot prove that run has finished."""
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
+    repo = repository(tmp_path)
+    stray = write_lock("no-ledger-row", age_days=OLD_DAYS)
+
+    applied = gc(repo, apply=True)
+
+    assert stray.is_file()
+    assert all(row["path"] != str(stray) for row in applied["lock_files"])
+
+
+def test_a_confined_run_offers_its_tree_while_it_is_live(tmp_path, monkeypatch):
+    """``--run`` owns the named run's artifacts, so its own live pointer does not
+    withhold its report tree; the same pointer withholds it from a whole sweep."""
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
+    repo = repository(tmp_path)
+    tree = _worktree(repo, "confined-tree")
+    write_general_tree("live-tree", age_days=OLD_DAYS)
+    write_pointer("live-tree", worktree=tree)
+
+    held_tree = str(reports_dir() / PROJECT / "live-tree")
+    unconfined = gc(repo, apply=False)
+    assert all(row["path"] != held_tree for row in unconfined["report_trees"])
+
+    confined = gc(repo, apply=False, run="live-tree")
+    offered = {
+        row["path"]
+        for row in confined["report_trees"]
+        if row["run_id"] == "live-tree"
+    }
+    assert offered == {held_tree}
