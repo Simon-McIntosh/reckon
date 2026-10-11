@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en-locale">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-portfolio-reads-true">
+  <meta name="plan-evidence-for" content="the-portfolio-reads-true">
+  <meta name="plan-verdict" content="qualified">
+  <title>A section relation counts as wiring | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A section relation, or an inbound gate, counts as wiring</h1>
+  <p id="section-relations-count-as-wiring-landing">The <code>unwired-plan</code> rule read only a plan's plan-level
+    links, its gates and its standalone reason, so a plan whose only portfolio relation was a section-level one
+    (<code>plan-section-depends-on</code> or a soft <code>plan-after</code>) was reported unwired, as was a plan some
+    other plan's gate names as its required evidence. Both are wires the roadmap already follows, so the rule now
+    counts them. <code>unwired_plan_finding</code> gains <code>section_wires</code> and <code>inbound_evidence</code>;
+    its three callers pass them, the audit deriving the inbound set once over its corpus and the roadmap once over the
+    project's rows. <code>tests/test_section_relations_count_as_wiring.py</code> passes EXIT=0 — 8 passed — on a
+    synthetic project where plan <code>x</code> declares only a section wire and holds a gate naming <code>y</code>,
+    <code>y</code> is named only by that gate and <code>z</code> declares nothing: <code>z</code> is reported unwired,
+    <code>x</code> and <code>y</code> are not.</p>
+  <h2 id="section-relations-count-as-wiring-measure">Measure</h2>
+  <p id="section-relations-count-as-wiring-measure-body">Head: 712 passed, 1 failed (<code>neighborhood-head.log</code>).
+    Base: 704 passed, the same 1 failed (<code>neighborhood-base.log</code>) — the pre-existing
+    <code>test_one_sprint_item_slug.py::test_consumers_share_the_one_reader</code>, present at base and outside this
+    node's scope. Zero added failures. Negative control: with the gate-evidence clause removed so a plan named only by
+    a gate is reported unwired, 4 of the 8 tests fail EXIT=1 (<code>negative-control.log</code>), the audit reporting
+    <code>y</code> alongside <code>z</code>.</p>
+ </main>
+</body>
+</html>
