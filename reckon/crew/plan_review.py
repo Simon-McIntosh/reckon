@@ -2182,10 +2182,12 @@ def store_delivered_reviews(
 
     A delivered review is a report a review run left on the durable report path
     with a sidecar beside it. It is stored at the moment the plan is built, so
-    the coordinator never runs a store step. The plan's code reviews are stored
-    on the same pass — the ones composed around this plan, so a code review
-    takes the plan-build route a plan review does rather than needing a store
-    step of its own. A delivery the store refuses is recorded on its own
+    the coordinator never runs a store step. Every delivered code review for
+    the project is stored on the same pass, whether its subject was a plan
+    (``--around``) or one or more paths (``--path``), keyed by the
+    neighbourhood it read, so a code review takes the plan-build route a plan
+    review does rather than needing a store step of its own. A delivery the
+    store refuses is recorded on its own
     sidecar, under ``store_error``, with the reason, rather than skipped, so the
     next reader sees why the review did not take rather than the review's own
     absence. A delivery that stores on a later pass has that reason cleared from
@@ -2196,9 +2198,7 @@ def store_delivered_reviews(
     refused = _store_deliveries(
         delivered_reports(project, plan_slug), base_dir=base_dir
     )
-    refused += _store_deliveries(
-        delivered_code_reviews(project, around=plan_slug), base_dir=base_dir
-    )
+    refused += _store_deliveries(delivered_code_reviews(project), base_dir=base_dir)
     return refused
 
 
