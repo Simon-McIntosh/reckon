@@ -46,7 +46,7 @@ from reckon._store import state_path
 from reckon.crew.promotion import _RUNNER_SUMMARY
 from reckon.crew.review import _pytest_failure_ids
 from reckon.crew.routing import signal_worker
-from reckon.flight import REVIEW_KEY, SuiteDeclaration
+from reckon.flight import SuiteDeclaration, review_populations
 
 # The two tiers the standing suite holds back. A full review reads the run for
 # itself, so it is not made to wait on the project's suite; a lighter review is
@@ -67,18 +67,9 @@ SUITE_RUNS_DIRNAME = "suite-runs"
 RUN_KIND = "run"
 WAIVER_KIND = "waiver"
 
-# The key under ``review`` holding the named populations a project declares, each
-# a mapping of ``name``, ``command`` and ``budget``: everything ``review.suite``
-# carries, recorded as its own row rather than folded into the standing suite.
-POPULATIONS_KEY = "populations"
-
 # A run's trailing exit-status line, the form :func:`run` leaves and
 # :func:`record_from_log` reads.
 _EXIT_LINE_RE = re.compile(r"^EXIT=(\d+)\s*$", re.MULTILINE)
-
-# The budget form ``review.suite`` and each population declare: an integer and
-# one unit character.
-_BUDGET_RE = re.compile(r"[0-9]+[smh]")
 
 # The plain pytest collection line ("collected 12 items") and the pytest-xdist
 # form (`[12 items]`). Under `-q` — the form this repository's own suite
@@ -143,49 +134,12 @@ def population_declarations(
 ) -> list[tuple[str, SuiteDeclaration]]:
     """The named populations a resolved config declares under ``review.populations``.
 
-    Each entry is a mapping carrying ``name``, ``command`` and ``budget`` — the
-    same two keys ``review.suite`` uses, plus the name the row is recorded under.
-    Absence (no ``review`` block, no ``populations`` key, or an in-process config
-    assembled by hand) is not an error and returns an empty list. A block present
-    but malformed is refused by name rather than silently ignored, so a
-    population that looks declared and never runs cannot read as one that was
-    never declared.
+    Read through :func:`reckon.flight.review_populations`, the one parser that
+    reads both the standing suite and every population's ``command`` and
+    ``budget``, so a population declares exactly what the standing suite
+    declares and this module owns no second budget shape.
     """
-    review = (config or {}).get(REVIEW_KEY)
-    populations = review.get(POPULATIONS_KEY) if isinstance(review, Mapping) else None
-    if populations is None:
-        return []
-    if not isinstance(populations, list):
-        raise StandingSuiteError(
-            f"flight config: {REVIEW_KEY}.{POPULATIONS_KEY} must be a list of "
-            "mappings carrying 'name', 'command' and 'budget'"
-        )
-    declared: list[tuple[str, SuiteDeclaration]] = []
-    for index, entry in enumerate(populations):
-        key = f"{REVIEW_KEY}.{POPULATIONS_KEY}[{index}]"
-        if not isinstance(entry, Mapping):
-            raise StandingSuiteError(f"flight config: {key} must be a mapping")
-        name = entry.get("name")
-        if not isinstance(name, str) or not name:
-            raise StandingSuiteError(
-                f"flight config: {key}.name must be a non-empty string"
-            )
-        command = entry.get("command")
-        if (
-            not isinstance(command, (list, tuple))
-            or not command
-            or any(not isinstance(part, str) for part in command)
-        ):
-            raise StandingSuiteError(
-                f"flight config: {key}.command must be a non-empty list of strings"
-            )
-        budget = entry.get("budget")
-        if not isinstance(budget, str) or _BUDGET_RE.fullmatch(budget) is None:
-            raise StandingSuiteError(
-                f"flight config: {key}.budget must be an integer followed by s, m or h"
-            )
-        declared.append((name, SuiteDeclaration(command=tuple(command), budget=budget)))
-    return declared
+    return review_populations(config)
 
 
 def _exit_status(log_text: str) -> int | None:

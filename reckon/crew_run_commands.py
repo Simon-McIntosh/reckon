@@ -1051,7 +1051,15 @@ def _suite_project_root(project: str, checkout_path: Path | None) -> Path:
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_suite_run(project, checkout_path, pretty):
-    """Run the project's declared suite under its budget and record the result."""
+    """Run the project's declared suite and every declared population.
+
+    Each runs under its own declared budget and is recorded as its own row, so a
+    slow or browser-driven population keeps its time and its failure ids
+    separable from the standing suite's: a population's failing run does not
+    read as the standing suite's latest run and does not hold a promotion the
+    standing suite would allow. One row per declared population plus the
+    standing suite's own row is written and reported.
+    """
     from reckon.crew import standing_suite
 
     _, flight_module = _crew_modules()
@@ -1066,12 +1074,26 @@ def crew_suite_run(project, checkout_path, pretty):
             f"project {project!r} declares no review.suite command, so there is "
             "nothing to run"
         )
-    log_path = (
-        standing_suite.suite_runs_dir(root, project) / f"suite-{time.time_ns()}.log"
-    )
-    record = standing_suite.run(root, declaration, log_path)
+    runs_dir = standing_suite.suite_runs_dir(root, project)
+    standing_log = runs_dir / f"suite-{time.time_ns()}.log"
+    record = standing_suite.run(root, declaration, standing_log)
     standing_suite.record(root, project, record)
-    _emit_crew_result({"project": project, **record}, pretty)
+    populations = []
+    for name, population in standing_suite.population_declarations(config):
+        population_log = runs_dir / f"population-{name}-{time.time_ns()}.log"
+        population_record = standing_suite.run(
+            root, population, population_log, population=name
+        )
+        path = standing_suite.record(root, project, population_record)
+        populations.append(
+            {"population": name, "path": str(path), "record": population_record}
+        )
+    # The standing suite's own fields ride at the top level, so the command's
+    # exit verdict answers the standing suite alone: a named population's
+    # failure is recorded on its own row and does not fail this command.
+    _emit_crew_result(
+        {"project": project, **record, "populations": populations}, pretty
+    )
 
 
 

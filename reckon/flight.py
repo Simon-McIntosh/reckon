@@ -94,6 +94,7 @@ DEFAULT_SPRINT_RECENT_DAYS = 14
 REVIEW_KEY = "review"
 REVIEW_TIERS_KEY = "tiers"
 REVIEW_SUITE_KEY = "suite"
+REVIEW_POPULATIONS_KEY = "populations"
 DEFAULT_LIGHT_CHANGED_LINES = 50
 DEFAULT_LIGHT_TIME_BUDGET = "10m"
 
@@ -840,6 +841,39 @@ def review_tier_thresholds(
     return lines, budget
 
 
+def _suite_declaration_from_mapping(
+    block: Mapping[str, Any],
+    key_path: str,
+) -> SuiteDeclaration:
+    """Parse one suite block — a ``command`` vector and a ``budget`` — by name.
+
+    The shape ``review.suite`` and every ``review.populations`` entry share, so
+    one parser reads both and a population declares exactly what the standing
+    suite declares. ``key_path`` is the dotted path the refusal names, so a
+    malformed block is reported at the key that holds it rather than at the
+    block type.
+    """
+    command = block.get("command")
+    if (
+        not isinstance(command, (list, tuple))
+        or not command
+        or any(not isinstance(part, str) for part in command)
+    ):
+        raise FlightConfigError(
+            "flight config",
+            f"{key_path}.command",
+            "must be a non-empty list of strings",
+        )
+    budget = block.get("budget")
+    if not isinstance(budget, str) or re.fullmatch(r"[0-9]+[smh]", budget) is None:
+        raise FlightConfigError(
+            "flight config",
+            f"{key_path}.budget",
+            "must be an integer followed by s, m or h",
+        )
+    return SuiteDeclaration(command=tuple(command), budget=budget)
+
+
 def review_suite(config: Mapping[str, Any] | None) -> SuiteDeclaration | None:
     """Return the suite a resolved config declares, or ``None`` when it declares none.
 
@@ -862,25 +896,46 @@ def review_suite(config: Mapping[str, Any] | None) -> SuiteDeclaration | None:
             f"{REVIEW_KEY}.{REVIEW_SUITE_KEY}",
             "must be a mapping carrying 'command' and 'budget'",
         )
-    command = suite.get("command")
-    if (
-        not isinstance(command, (list, tuple))
-        or not command
-        or any(not isinstance(part, str) for part in command)
-    ):
+    return _suite_declaration_from_mapping(suite, f"{REVIEW_KEY}.{REVIEW_SUITE_KEY}")
+
+
+def review_populations(
+    config: Mapping[str, Any] | None,
+) -> list[tuple[str, SuiteDeclaration]]:
+    """The named populations a resolved config declares under ``review.populations``.
+
+    Each entry is a mapping carrying ``name``, ``command`` and ``budget``: the
+    two keys ``review.suite`` uses, read through the same parser, plus the name
+    the row is recorded under. Absence (no ``review`` block, no ``populations``
+    key, or an in-process config assembled by hand) is not an error and returns
+    an empty list. A block present but malformed is refused by name rather than
+    silently ignored, so a population that looks declared and never runs cannot
+    read as one that was never declared.
+    """
+    review = (config or {}).get(REVIEW_KEY)
+    populations = (
+        review.get(REVIEW_POPULATIONS_KEY) if isinstance(review, Mapping) else None
+    )
+    if populations is None:
+        return []
+    if not isinstance(populations, (list, tuple)):
         raise FlightConfigError(
             "flight config",
-            f"{REVIEW_KEY}.{REVIEW_SUITE_KEY}.command",
-            "must be a non-empty list of strings",
+            f"{REVIEW_KEY}.{REVIEW_POPULATIONS_KEY}",
+            "must be a list of mappings carrying 'name', 'command' and 'budget'",
         )
-    budget = suite.get("budget")
-    if not isinstance(budget, str) or re.fullmatch(r"[0-9]+[smh]", budget) is None:
-        raise FlightConfigError(
-            "flight config",
-            f"{REVIEW_KEY}.{REVIEW_SUITE_KEY}.budget",
-            "must be an integer followed by s, m or h",
-        )
-    return SuiteDeclaration(command=tuple(command), budget=budget)
+    declared: list[tuple[str, SuiteDeclaration]] = []
+    for index, entry in enumerate(populations):
+        key = f"{REVIEW_KEY}.{REVIEW_POPULATIONS_KEY}[{index}]"
+        if not isinstance(entry, Mapping):
+            raise FlightConfigError("flight config", key, "must be a mapping")
+        name = entry.get("name")
+        if not isinstance(name, str) or not name:
+            raise FlightConfigError(
+                "flight config", f"{key}.name", "must be a non-empty string"
+            )
+        declared.append((name, _suite_declaration_from_mapping(entry, key)))
+    return declared
 
 
 def placement_for(backend: Mapping[str, Any]) -> dict[str, Any] | None:

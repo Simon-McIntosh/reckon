@@ -235,6 +235,7 @@ class ReviewConfig(ConfiguredBaseModel):
     """
     tiers: ReviewTiers | None = Field(default=None, description="""The thresholds that size a review to a finished run's risk. The resolver reads them from the resolved flight config so a host or project layer retunes the tiers without a code change.""")
     suite: ReviewSuite | None = Field(default=None, description="""The project's own suite command and whole-run budget. Absent means the project declares no standing suite, and no run is recorded for it.""")
+    populations: list[ReviewPopulation] | None = Field(default=None, description="""Named extra populations of the project's suite, each with its own command and whole-run budget and no default. A population runs beside the standing suite and is recorded as its own row, so a slow or browser-driven population keeps its time and its failure ids separable from the standing suite's — it cannot spend the standing suite's budget and its failure does not hold a promotion the standing suite would allow.""")
 
 
 class ReviewSuite(ConfiguredBaseModel):
@@ -242,6 +243,28 @@ class ReviewSuite(ConfiguredBaseModel):
     The project's own suite: the command the coordinator runs once at the merged head, and the whole-run wall-clock budget it is held to. Declared on the flight config so a project names its own suite rather than reckon fixing one.
     """
     command: list[str] = Field(default=..., description="""The suite command as an argument vector, run from the checkout root. The first entry is the executable, resolved against the working directory and PATH the run is started in.""")
+    budget: str = Field(default=..., description="""Whole-run wall-clock budget, written as an integer followed by a unit — `s`, `m` or `h`. A run that exceeds it is stopped and recorded as over budget rather than being left to hang.""")
+
+    @field_validator('budget')
+    def pattern_budget(cls, v):
+        pattern=re.compile(r"^[0-9]+[smh]$")
+        if isinstance(v, list):
+            for element in v:
+                if isinstance(element, str) and not pattern.match(element):
+                    err_msg = f"Invalid budget format: {element}"
+                    raise ValueError(err_msg)
+        elif isinstance(v, str) and not pattern.match(v):
+            err_msg = f"Invalid budget format: {v}"
+            raise ValueError(err_msg)
+        return v
+
+
+class ReviewPopulation(ConfiguredBaseModel):
+    """
+    One named population of a project's suite: the command that selects it and the whole-run wall-clock budget it is held to, beside the name its row is recorded under. It carries everything ReviewSuite carries plus the name, so one population's row is told from another's and from the standing suite's in the suite-runs directory.
+    """
+    name: str = Field(default=..., description="""The population name, recorded on every row the population writes so a reader tells it from the standing suite's rows.""")
+    command: list[str] = Field(default=..., description="""The population's command as an argument vector, run from the checkout root. The first entry is the executable, resolved against the working directory and PATH the run is started in.""")
     budget: str = Field(default=..., description="""Whole-run wall-clock budget, written as an integer followed by a unit — `s`, `m` or `h`. A run that exceeds it is stopped and recorded as over budget rather than being left to hang.""")
 
     @field_validator('budget')
@@ -669,6 +692,7 @@ FlightConfig.model_rebuild()
 RoutingConfig.model_rebuild()
 ReviewConfig.model_rebuild()
 ReviewSuite.model_rebuild()
+ReviewPopulation.model_rebuild()
 ReviewTiers.model_rebuild()
 BackendConfig.model_rebuild()
 LaneModelConfig.model_rebuild()

@@ -2117,6 +2117,16 @@
             "additionalProperties": false,
             "description": "How a finished run is sized to a review. Declared on the flight config so a host or project layer retunes the tier thresholds without a code change; the resolver reads them from the resolved config.",
             "properties": {
+                "populations": {
+                    "description": "Named extra populations of the project's suite, each with its own command and whole-run budget and no default. A population runs beside the standing suite and is recorded as its own row, so a slow or browser-driven population keeps its time and its failure ids separable from the standing suite's \u2014 it cannot spend the standing suite's budget and its failure does not hold a promotion the standing suite would allow.",
+                    "items": {
+                        "$ref": "#/$defs/ReviewPopulation"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                },
                 "suite": {
                     "anyOf": [
                         {
@@ -2141,6 +2151,35 @@
                 }
             },
             "title": "ReviewConfig",
+            "type": "object"
+        },
+        "ReviewPopulation": {
+            "additionalProperties": false,
+            "description": "One named population of a project's suite: the command that selects it and the whole-run wall-clock budget it is held to, beside the name its row is recorded under. It carries everything ReviewSuite carries plus the name, so one population's row is told from another's and from the standing suite's in the suite-runs directory.",
+            "properties": {
+                "budget": {
+                    "description": "Whole-run wall-clock budget, written as an integer followed by a unit \u2014 `s`, `m` or `h`. A run that exceeds it is stopped and recorded as over budget rather than being left to hang.",
+                    "pattern": "^[0-9]+[smh]$",
+                    "type": "string"
+                },
+                "command": {
+                    "description": "The population's command as an argument vector, run from the checkout root. The first entry is the executable, resolved against the working directory and PATH the run is started in.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                },
+                "name": {
+                    "description": "The population name, recorded on every row the population writes so a reader tells it from the standing suite's rows.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "name",
+                "command",
+                "budget"
+            ],
+            "title": "ReviewPopulation",
             "type": "object"
         },
         "ReviewSuite": {
