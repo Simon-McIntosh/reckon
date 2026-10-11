@@ -1440,23 +1440,6 @@ def _newest_mtime(directory: Path) -> datetime:
     return datetime.fromtimestamp(newest, tz=UTC)
 
 
-def _tree_bytes(path: Path) -> int:
-    """Bytes a report tree or run directory holds, its files summed."""
-    if path.is_file():
-        try:
-            return path.stat().st_size
-        except OSError:
-            return 0
-    total = 0
-    for child in path.rglob("*"):
-        if child.is_file():
-            try:
-                total += child.stat().st_size
-            except OSError:
-                continue
-    return total
-
-
 def _live_run_ids() -> set[str]:
     """The run ids a live pointer currently names, read fresh for a re-check."""
     return {str(record.get("run_id") or "") for record in list_live()}
@@ -1496,6 +1479,7 @@ def _run_report_trees(
     whose run is live is left alone, and the live set is re-read immediately
     before each removal.
     """
+    from reckon.crew.dispatch import tree_size_bytes
     from reckon.crew.runs import reports_dir
 
     reports_root = reports_dir()
@@ -1527,7 +1511,7 @@ def _run_report_trees(
                 "run_id": report_run_id,
                 "path": str(tree),
                 "tree": str(tree),
-                "size": _tree_bytes(tree),
+                "size": tree_size_bytes(tree),
                 "age_days": (current - modified).days,
                 "action": "prune",
                 "removed": False,
@@ -1611,6 +1595,8 @@ def _unledgered_run_directories(
     past retention it is offered whole. The live set is re-read before each
     removal.
     """
+    from reckon.crew.dispatch import tree_size_bytes
+
     runs_root = runs_dir()
     if not runs_root.is_dir():
         return []
@@ -1629,7 +1615,7 @@ def _unledgered_run_directories(
         entry = {
             "run_id": directory_run_id,
             "path": str(directory),
-            "size": _tree_bytes(directory),
+            "size": tree_size_bytes(directory),
             "age_days": (current - modified).days,
             "action": "prune",
             "removed": False,
