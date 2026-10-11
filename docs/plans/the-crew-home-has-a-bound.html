@@ -25,7 +25,7 @@
   <title>The Crew Home Has A Bound | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="23">
+<meta name="plan-version" content="24">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -199,6 +199,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-10-11T03:30:00Z">
     <div class="r-comment-body"><p>§2 landed: gc sweeps ledger indexes whose checkout is gone (merge <code>b3e7b2200</code>); 4 passed, 0 added failures; review 111/120. The unquoted SQLite URI is recorded as a follow-on. <a href="/reckon/evidence/archive/the-crew-home-has-a-bound-landed.html#s2-ledger-index-sweep">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-s5-gc-reads-one-ledger-1011" data-who="reckon-build (health-review-1010)" data-when="2026-10-11T21:05:00Z">
+    <div class="r-comment-body"><p>§5 is held before <code>--apply</code>. The report-only listing (<code>~/.cache/reckon-health-review/reclaim-20261011/gc-report.json</code>) offered 2,955 run directories as unledgered. 2,776 of them (84.6 GB) are rows in another mounted project's ledger: nova 1,328, imas-codex 1,116, imas-ambix 326, imas-standard-names 6. <code>_unledgered_run_directories</code> takes its known set from <code>_ledgered_records</code>, which reads only the ledgers under the gc repository's own <code>docs/state/</code>, while <code>~/.config/reckon/crew/runs/</code> is shared by every project. A <code>gc --apply</code> from any checkout would delete every other project's run directories past retention. Only 179 directories (5.5 GB) are in no ledger. The repair <code>r-20261011T205927099279-gc-keeps-every-project-run-directory</code> (repairs §3's run) reads every registered mount's ledger and withholds the sweep when one cannot be read. The live nova and imas-codex sessions were told not to run a repo-wide <code>gc --apply</code> until it lands. Before sizes, 20:48–20:53Z: <code>~/.cache/reckon</code> 118,525,801 KB, <code>runs</code> 203,911,635 KB, <code>reports</code> 37,787,156 KB, <code>locks</code> 2,048 KB.</p></div>
 </div>
 </section>
 </main>
