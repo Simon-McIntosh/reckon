@@ -1,0 +1,79 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest records no baseline_suite/after_suite arm, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:crew_suite_run",
+    "reckon/crew/promotion_checks.py:783",
+    "reckon/crew/standing_suite.py:population_declarations"
+  ],
+  "completed_at": "2026-10-11T00:11:50.470Z",
+  "dimension_dispositions": {},
+  "dispatched_at": "2026-10-11T00:02:17Z",
+  "findings": [
+    {
+      "file": "tests/test_browser_population_is_its_own_row.py",
+      "line": "187",
+      "severity": "follow-on",
+      "text": "follow-on: the assertion compares Path(row_path).parent against standing_suite.suite_runs_dir(project_root, \"reckon\"), and the code under test (record) resolves its directory through that same function, so the two sides move together and the assertion cannot fail on a wrong suite_runs_dir -- it only checks record used the function at all."
+    },
+    {
+      "file": "tests/test_browser_population_is_its_own_row.py",
+      "line": "184",
+      "severity": "follow-on",
+      "text": "follow-on: assert row[\"budget_seconds\"] == declaration.budget_seconds() compares the recorded budget against a method on the same declaration object the test passed in, so it is not independent of the value under test and would survive a regression in how budget_seconds() maps the unit."
+    },
+    {
+      "file": "tests/test_browser_population_is_its_own_row.py",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: \u00a77's done-when names a quiet-node measurement of the browser population (both arms at 60 s with their failing ids) that this node's gate does not produce; the manifest records it under follow_ons and it belongs to the coordinator."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew_run_commands.py:crew_suite_run runs the declared populations and writes their rows; reckon/crew/promotion_checks.py:783 reads the standing row through standing_suite.hold_reason; reckon/crew/standing_suite.py:population_declarations is the production caller of flight.review_populations.",
+    "diff": "read 893d83d..8f2cc1194 revision by revision; one revision, nine files, +382/-74, adding ReviewPopulation to the flight schema and the regenerated model and JSON schema, review_populations and the shared _suite_declaration_from_mapping in reckon/flight.py, the browser population in docs/state/reckon/flight.yaml, the population loop in crew_suite_run, delegation of standing_suite.population_declarations to review_populations (dropping POPULATIONS_KEY and _BUDGET_RE), and the new test.",
+    "done_when": "the dispatch done-when requires the flight schema to declare review.populations (model and JSON schema regenerated), the project layer to declare the browser population, the new test to record each population's row with the hold reading only the standing row, the flight and standing-suite tests green EXIT=0, and the negative control logged; the gate logs/gate-flight-standing.log records 116 passed EXIT=0, logs/negative-control.log records 1 failed / 3 passed EXIT=1, and logs/flight-resolve.log records review keys including populations and populations ['browser'].",
+    "goal": "the node goal is \"Record each declared suite population's row from reckon crew suite run\"; at head 8f2cc1194 reckon/crew_run_commands.py:1089 iterates standing_suite.population_declarations(config) and writes one row per declared population beside the standing suite's, reckon/schema/flight.yaml declares the review.populations slot, and docs/state/reckon/flight.yaml declares the browser population.",
+    "manifest": "read the reviewed manifest; status complete, gate 116 passed EXIT=0 with its logs, the negative control logged (1 failed / 3 passed, EXIT=1), flight-resolve logged; it records the one retry failure and its fix, and names the quiet-node measurement under follow_ons.",
+    "write_paths": "the declared write paths are reckon/crew_run_commands.py, reckon/crew/standing_suite.py, reckon/flight.py, reckon/schema/flight.yaml, reckon/_flight_schema.py, docs/_shared/flight.schema.json, docs/state/reckon/flight.yaml, tests/test_browser_population_is_its_own_row.py, the evidence fragment and its figures dir; all nine files in the diff lie inside them and the figures dir is unused."
+  },
+  "justifications": {
+    "durability": "tests/test_browser_population_is_its_own_row.py:291-297 reddens under the declared mutation (run only the standing suite), shown by logs/negative-control.log EXIT=1, but the guard at line 187 compares the row path against the same suite_runs_dir() the code under test calls, so the two sides move together.",
+    "evidence": "the gate logs/gate-flight-standing.log records 116 passed EXIT=0 over tests/test_flight.py and the new test, which asserts each done-when clause; \u00a77's quiet-node-measurement clause is not this node's declared measure and is recorded under follow_ons.",
+    "fit": "the change follows flight.py's existing parser idiom in _suite_declaration_from_mapping and introduces no plan label, version number or attribution.",
+    "goal_fidelity": "reckon/crew_run_commands.py:1089 records one row per declared population beside the standing suite's, and reckon/schema/flight.yaml declares the review.populations slot the project layer uses.",
+    "reuse": "reckon/flight.py:848 _suite_declaration_from_mapping is the one suite-block parser both review_suite and review_populations use, and standing_suite.population_declarations now delegates rather than owning a second budget regex.",
+    "scope_discipline": "every path in the diff 893d83d..8f2cc1194 is inside the declared write paths, and the dropped POPULATIONS_KEY and _BUDGET_RE are referenced nowhere else in the tree."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "REVIEW of run r-20261010T234234848653-suite-run-records-each-population\nplan reckon:the-suite-tests-behaviour \u00a77\nreviewed_base_sha: 893d83d5035354aa87496b0d6b44a1b0dfb79ded\nreviewed_head_sha: 8f2cc1194684fbf348e2dafa52624b2ff8bbb9a0\n\nVERDICT goal: the node goal is \"Record each declared suite population's row from reckon crew suite run\"; at head 8f2cc1194684fbf348e2dafa52624b2ff8bbb9a0 reckon/crew_run_commands.py:1089 iterates standing_suite.population_declarations(config) and writes one row per declared population beside the standing suite's, reckon/schema/flight.yaml declares the review.populations slot, and docs/state/reckon/flight.yaml declares the browser population.\nVERDICT done_when: the dispatch done-when requires the flight schema to declare review.populations (model and JSON schema regenerated), the project layer to declare the browser population, the new test to record each population's row with the hold reading only the standing row, the flight and standing-suite tests green EXIT=0, and the negative control logged; the gate logs/gate-flight-standing.log records 116 passed EXIT=0, logs/negative-control.log records 1 failed / 3 passed EXIT=1, and logs/flight-resolve.log records review keys including populations and populations ['browser'].\nVERDICT write_paths: the declared write paths are reckon/crew_run_commands.py, reckon/crew/standing_suite.py, reckon/flight.py, reckon/schema/flight.yaml, reckon/_flight_schema.py, docs/_shared/flight.schema.json, docs/state/reckon/flight.yaml, tests/test_browser_population_is_its_own_row.py, the evidence fragment and its figures dir; all nine files in the diff lie inside them and the figures dir is unused.\nVERDICT manifest: read the reviewed manifest; status complete, gate 116 passed EXIT=0 with its logs, the negative control logged (1 failed / 3 passed, EXIT=1), flight-resolve logged; it records the one retry failure and its fix, and names the quiet-node measurement under follow_ons.\nVERDICT diff: read 893d83d..8f2cc1194 revision by revision; one revision, nine files, +382/-74, adding ReviewPopulation to the flight schema and the regenerated model and JSON schema, review_populations and the shared _suite_declaration_from_mapping in reckon/flight.py, the browser population in docs/state/reckon/flight.yaml, the population loop in crew_suite_run, delegation of standing_suite.population_declarations to review_populations (dropping POPULATIONS_KEY and _BUDGET_RE), and the new test.\nCALL_SITES: reckon/crew_run_commands.py:crew_suite_run, reckon/crew/promotion_checks.py:783, reckon/crew/standing_suite.py:population_declarations\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_run_commands.py:1089 records one row per declared population beside the standing suite's, and reckon/schema/flight.yaml declares the review.populations slot the project layer uses.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate logs/gate-flight-standing.log records 116 passed EXIT=0 over tests/test_flight.py and the new test, which asserts each done-when clause; \u00a77's quiet-node-measurement clause is not this node's declared measure and is recorded under follow_ons.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff 893d83d..8f2cc1194 is inside the declared write paths, and the dropped POPULATIONS_KEY and _BUDGET_RE are referenced nowhere else in the tree.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_browser_population_is_its_own_row.py:291-297 reddens under the declared mutation (run only the standing suite), shown by logs/negative-control.log EXIT=1, but the guard at line 187 compares the row path against the same suite_runs_dir() the code under test calls, so the two sides move together.\nSCORE fit: 19\nJUSTIFICATION fit: the change follows flight.py's existing parser idiom in _suite_declaration_from_mapping and introduces no plan label, version number or attribution.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/flight.py:848 _suite_declaration_from_mapping is the one suite-block parser both review_suite and review_populations use, and standing_suite.population_declarations now delegates rather than owning a second budget regex.\nFINDING tests/test_browser_population_is_its_own_row.py:187 follow-on: the assertion compares Path(row_path).parent against standing_suite.suite_runs_dir(project_root, \"reckon\"), and the code under test (record) resolves its directory through that same function, so the two sides move together and the assertion cannot fail on a wrong suite_runs_dir -- it only checks record used the function at all.\nFINDING tests/test_browser_population_is_its_own_row.py:184 follow-on: assert row[\"budget_seconds\"] == declaration.budget_seconds() compares the recorded budget against a method on the same declaration object the test passed in, so it is not independent of the value under test and would survive a regression in how budget_seconds() maps the unit.\nFINDING tests/test_browser_population_is_its_own_row.py:1 follow-on: \u00a77's done-when names a quiet-node measurement of the browser population (both arms at 60 s with their failing ids) that this node's gate does not produce; the manifest records it under follow_ons and it belongs to the coordinator.\n",
+  "review_run_id": "r-20261011T000154085687-review-of-suite-run-records-each-population",
+  "reviewed_base_sha": "893d83d5035354aa87496b0d6b44a1b0dfb79ded",
+  "reviewed_head_sha": "8f2cc1194684fbf348e2dafa52624b2ff8bbb9a0",
+  "reviewed_run_id": "r-20261010T234234848653-suite-run-records-each-population",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T00:10:06.963071+00:00",
+  "total": 111
+}
