@@ -24,7 +24,7 @@
   <title>The Portfolio Reads True | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="29">
+<meta name="plan-version" content="30">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -241,6 +241,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-10-11T02:45:00Z">
     <div class="r-comment-body"><p>§4 landed: <code>SPRINT_MEMBERSHIP</code> compares a plan's sprint with the sprint's list (merge <code>8eaf29326</code>); 32 rows on reckon at head; review 101/120. The severity that reaches readers and the duplicated slug helper are repaired by <code>membership-severity-reaches-readers</code>. <a href="/reckon/evidence/archive/the-portfolio-reads-true-landed.html#s4-sprint-membership">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261011T004248005716-membership-severity-reaches-readers" data-who="reckon-build" data-when="2026-10-11T01:02:34.711Z">
+    <div class="r-comment-body"><p>fix(audit): the MCP lifecycle consumer and the reckon audit table now read each finding&#x27;s own severity, so a shipped plan an open sprint lists reaches both as info instead of warn; tests/test_lifecycle_severity_reaches_readers.py passes EXIT=0 with MCP/CLI reporting info, warn and error and the exit code still 1.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-s7-boundary-1011" data-who="reckon-build" data-when="2026-10-11T03:10:00Z">
     <div class="r-comment-body"><p>To apply to §'s text before its dispatch (content review finding <code>reasoning-1</code>): the deliverable leaves undefined the boundary that decides the outcome, a plan that declares no implementable section outside its gated ones. That includes a plan with no section declarations at all. It is held by the gate, so the plan-level reading stands. This keeps <code>tests/test_roadmap.py::test_gate_verdict_blocks_and_releases_downstream_sections_without_status_edit</code> passing unchanged: its plan carries a gate naming <code>deployment</code> and <code>release</code> and declares no sections, and it must still read <code>blocked</code> and stay out of <code>ready_now</code>. A gate holds only its sections when the plan declares at least one implementable section that no unpassed gate names. The done-when gains that test as a named keep, and the temporary project gains a fourth plan with a section gate and no declarations, asserted blocked.</p></div>
