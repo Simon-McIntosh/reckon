@@ -26,7 +26,6 @@ write.
 from __future__ import annotations
 
 import json
-import subprocess
 from pathlib import Path
 
 import pytest
@@ -43,6 +42,7 @@ from reckon.crew.runs import (
     read_pointer,
 )
 from tests.conftest import EXECUTABLE_GATE_COMMAND
+from tests.helpers.git import git as _git
 
 PROJECT = "review-promotion-fixture"
 PLAN = "review-promotion-target"
@@ -55,17 +55,6 @@ DECLARED_PATH = "candidate.txt"
 # different extension. Each is a file beside the granted record and none of them
 # is a deliverable this run declared.
 NOT_THE_SIBLING = ("another-stem", "revision-suffix-too-short", "another-extension")
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    result = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout.strip()
 
 
 @pytest.fixture(autouse=True)

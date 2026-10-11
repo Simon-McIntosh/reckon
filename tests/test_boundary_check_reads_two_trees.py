@@ -14,7 +14,6 @@ from __future__ import annotations
 import importlib
 import json
 import os
-import subprocess
 from pathlib import Path
 
 import pytest
@@ -22,23 +21,13 @@ import pytest
 from reckon import crew
 from reckon.crew import promotion
 from reckon.crew.runs import _write_json, pointer_path, run_dir
+from tests.helpers.git import git as _git
 
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
 
 PROJECT = "sample"
 REGISTERED_WORKTREES = 50
 FULL_SCAN = REGISTERED_WORKTREES + 1
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    result = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout.strip()
 
 
 @pytest.fixture()

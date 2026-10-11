@@ -21,7 +21,6 @@ nothing under this run's own id.
 from __future__ import annotations
 
 import json
-import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -31,6 +30,7 @@ from click.testing import CliRunner
 from reckon import _plan_html, ledger
 from reckon.cli import main as cli_main
 from reckon.crew.runs import run_dir
+from tests.helpers.git import git as _git
 
 PROJECT = "proj"
 PLAN = "plan-a"
@@ -40,17 +40,6 @@ OUTLIVES_THE_BOUND = "sleep 120"
 BOUND_SECONDS = 2.0
 COMPLETES_GREEN = "echo gate-ran"
 COMPLETES_RED = "exit 7"
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    result = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout.strip()
 
 
 def _write_resource(path: Path, state: dict) -> None:

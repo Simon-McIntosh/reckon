@@ -19,7 +19,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import subprocess
 from pathlib import Path
 
 import pytest
@@ -30,6 +29,7 @@ from reckon.crew import review as review_module
 from reckon.crew.review import review_path
 from reckon.crew.runs import _write_json, crew_home, pointer_path
 from tests.conftest import EXECUTABLE_GATE_COMMAND
+from tests.helpers.git import git as _git
 
 PROJECT = "claimless-finding-fixture"
 RUN_ID = "r-20260101T000000000000-reviewed-run"
@@ -185,17 +185,6 @@ def test_ids_stay_derived_from_the_text_key_whatever_claim_is_carried() -> None:
 
 
 # ── (5) A promoted record carrying a claimless finding is committed ──────────
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    result = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout.strip()
 
 
 @pytest.fixture()

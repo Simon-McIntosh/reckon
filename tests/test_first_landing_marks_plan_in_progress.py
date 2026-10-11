@@ -3,27 +3,16 @@
 from __future__ import annotations
 
 import json
-import subprocess
 from pathlib import Path
 
 import pytest
 
 from reckon import _plan_html, _store
 from reckon.crew import promotion
+from tests.helpers.git import git as _git
 
 PROJECT = "first-landing-fixture"
 PLAN = "first-landing-target"
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    result = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout.strip()
 
 
 def _write_plan(root: Path, *, status: str) -> Path:

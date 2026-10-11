@@ -33,7 +33,6 @@ from __future__ import annotations
 
 import importlib
 import os
-import subprocess
 import time
 from pathlib import Path
 
@@ -45,6 +44,7 @@ from reckon.crew import promotion, routing
 from reckon.crew.node import TaskNode
 from reckon.crew.prompts import compose_prompt
 from reckon.crew.runs import _write_json, pointer_path
+from tests.helpers.git import git as _git
 
 # `reckon.crew.dispatch` is shadowed by the dispatch function the package
 # re-exports, so the module is reached by importlib rather than by attribute.
@@ -61,17 +61,6 @@ AGE_CONTROL_MUTATION = (
 )
 AGE_CONTROL = os.environ.get("RECKON_SCRATCH_GC_NEGATIVE") == "1"
 AGE_BOUND_SECONDS = 3600
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    result = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout.strip()
 
 
 @pytest.fixture()

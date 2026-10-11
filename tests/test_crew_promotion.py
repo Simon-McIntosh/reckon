@@ -15,6 +15,7 @@ from reckon.crew import promotion, promotion_scope
 from reckon.crew import review as review_module
 from reckon.crew.runs import _write_json, pointer_path
 from tests.conftest import EXECUTABLE_GATE_COMMAND
+from tests.helpers.git import git as _git
 
 PROJECT = "proj"
 PLAN = "plan-a"
@@ -64,17 +65,6 @@ def repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         json.dumps({PROJECT: str(root / "docs")}), encoding="utf-8"
     )
     return root
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    result = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout.strip()
 
 
 def _resolves_as_commit(repository: Path, revision: str) -> bool:

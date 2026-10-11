@@ -14,19 +14,9 @@ from reckon import crew, ledger
 from reckon.cli import main as cli_main
 from reckon.crew import routing
 from reckon.crew.runs import _write_json, pointer_path
+from tests.helpers.git import git as _git
 
 PROJECT = "sample"
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    result = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout.strip()
 
 
 @pytest.fixture()

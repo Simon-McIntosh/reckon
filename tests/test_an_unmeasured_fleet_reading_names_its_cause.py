@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -18,6 +17,7 @@ from reckon.crew import (
     recovery_watch,
 )
 from reckon.crew.runs import _write_json, pointer_path
+from tests.helpers.git import git as _git
 
 PROJECT = "cause-project"
 PLAN = "cause-plan"
@@ -26,17 +26,6 @@ COMPLETED_AT = "2030-01-02T03:04:05Z"
 
 class _PointerStepError(RuntimeError):
     """A distinctive failure a reader can recognise by its type name."""
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    result = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout.strip()
 
 
 def _repository(tmp_path: Path, home: Path) -> Path:

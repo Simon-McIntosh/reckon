@@ -13,29 +13,18 @@ workstation's own state.
 from __future__ import annotations
 
 import json
-import subprocess
 from pathlib import Path
 
 import pytest
 
 from reckon import ledger
+from tests.helpers.git import git as _git
 
 PROJECT = "reckon"
 LEDGER_PATH = Path("docs") / "state" / PROJECT / "crew.json"
 OPENED_AT = "2026-10-03T05:00:00Z"
 CLOSED_AT = "2026-10-03T05:10:00Z"
 HOLD_ID = "hold-alpha-20261003050000"
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    result = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout.strip()
 
 
 @pytest.fixture()
