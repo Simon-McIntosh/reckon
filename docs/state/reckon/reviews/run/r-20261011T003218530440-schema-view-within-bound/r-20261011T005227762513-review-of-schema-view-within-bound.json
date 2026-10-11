@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "4e4de5ba7",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/mcp.py:524",
+    "reckon/mcp_views.py:1955"
+  ],
+  "completed_at": "2026-10-11T00:59:13.614Z",
+  "dispatched_at": "2026-10-11T00:52:52Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261011T003218530440-schema-view-within-bound/gate-head.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the head gate log's header names revision=4e4de5ba7 (the base) and the manifest's after_suite revision reads \"4e4de5ba... +working tree changes\", so no recorded log ties the 24452-byte measurement to the landed commit 6784834dc; the content is identical (the worktree is clean at head and I re-verified the named test there), so this is a traceability gap rather than a measurement error."
+    }
+  ],
+  "head_log_revision": "4e4de5ba77990135a3e7a0ad69c3e8faae2231ba",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read 4e4de5ba7..6784834dc commit by commit; one commit (6784834dc fix(schema): fit the compact schema view inside its size bound), two files, +31/-12, all inside the declared write paths: reckon/_schema.py shortens the wall_clock_hours, milestone, sprint, standalone and impl_source descriptions, and the evidence fragment is new.",
+    "done_when": "the measure is tests/test_mcp_views.py::test_raw_and_schema_are_explicit_layers passing at head with the compact size and margin printed into the gate log; gate-head.log's footer prints schema_view_compact_bytes=24452 bound=24576 margin_under_bound=124 and the target test is absent from its FAILED list, and I re-ran that test at 6784834dc in the reviewed worktree (1 passed, EXIT=0; logs/review_head_test.txt).",
+    "goal": "the node's goal is to bring the compact MCP schema view back within its 24 KiB bound by shortening the schema text; the landed commit shortens five PlanState field descriptions in reckon/_schema.py and the compact view then measures 24452 bytes (gate-head.log footer), so the goal is met.",
+    "manifest": "read the reviewed manifest; status complete, commits 6784834dc, changed_paths name the two in-fence files, tests names the head gate (7 failed / 3203 passed, EXIT=1) and test_logs names gate-head.log, gate-base.log and schema-size.log; baseline_suite and after_suite are both populated (8 and 7 failing ids, the head list a strict subset of the base plus the target test), so the added-failure count derives as 0.",
+    "write_paths": "the run was fenced to reckon/_schema.py, docs/evidence/fragments/the-portfolio-reads-true/schema-view-within-bound.html and docs/figures/the-portfolio-reads-true/schema-view-within-bound (prompt.txt:92-94); git diff --stat 4e4de5ba7..6784834dc touches only the first two, both inside the fence, and leaves the figures directory unused."
+  },
+  "justifications": {
+    "durability": "the pre-existing assertion compact_size(schema) <= 24 * 1024 at tests/test_mcp_views.py:733 compares a computed size against a literal bound, and gate-base.log shows it red at 24676 with the longer description restored, so the assertion fails if this change regresses.",
+    "evidence": "gate-head.log's footer records schema_view_compact_bytes=24452 against bound=24576 (margin_under_bound=124) and I re-ran tests/test_mcp_views.py::test_raw_and_schema_are_explicit_layers at 6784834dc (1 passed, EXIT=0), but the log's header at gate-head.log:1 names the base revision 4e4de5ba7 rather than the head.",
+    "fit": "the change edits descriptions in place in reckon/_schema.py:1184-1316 following the surrounding Field(description=...) idiom, adds no name, and the commit at 6784834dc carries a conventional subject and a body.",
+    "goal_fidelity": "reckon/_schema.py:1296-1300 keeps the three impl_source sources (computed/declarations/authored) and the absent case the brief required, so the shortening preserves the meaning while recovering the bytes.",
+    "reuse": "the diff adds no definition, so there is nothing to fork; it only shortens existing field descriptions in reckon/_schema.py, and a search for a second schema-serving path found none beyond gen_json_schema's callers.",
+    "scope_discipline": "git diff --stat 4e4de5ba7..6784834dc touches only reckon/_schema.py and the in-fence evidence fragment, mutating no shared plan, index or sprint state and leaving the declared figures directory unused."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to bring the compact MCP schema view back within its 24 KiB bound by shortening the schema text; the landed commit shortens five PlanState field descriptions in reckon/_schema.py and the compact view then measures 24452 bytes (gate-head.log footer), so the goal is met.\nVERDICT done_when: the measure is tests/test_mcp_views.py::test_raw_and_schema_are_explicit_layers passing at head with the compact size and margin printed into the gate log; gate-head.log's footer prints schema_view_compact_bytes=24452 bound=24576 margin_under_bound=124 and the target test is absent from its FAILED list, and I re-ran that test at 6784834dc in the reviewed worktree (1 passed, EXIT=0; logs/review_head_test.txt).\nVERDICT write_paths: the run was fenced to reckon/_schema.py, docs/evidence/fragments/the-portfolio-reads-true/schema-view-within-bound.html and docs/figures/the-portfolio-reads-true/schema-view-within-bound (prompt.txt:92-94); git diff --stat 4e4de5ba7..6784834dc touches only the first two, both inside the fence, and leaves the figures directory unused.\nVERDICT manifest: read the reviewed manifest; status complete, commits 6784834dc, changed_paths name the two in-fence files, tests names the head gate (7 failed / 3203 passed, EXIT=1) and test_logs names gate-head.log, gate-base.log and schema-size.log; baseline_suite and after_suite are both populated (8 and 7 failing ids, the head list a strict subset of the base plus the target test), so the added-failure count derives as 0.\nVERDICT diff: read 4e4de5ba7..6784834dc commit by commit; one commit (6784834dc fix(schema): fit the compact schema view inside its size bound), two files, +31/-12, all inside the declared write paths: reckon/_schema.py shortens the wall_clock_hours, milestone, sprint, standalone and impl_source descriptions, and the evidence fragment is new.\nCALL_SITES: reckon/mcp.py:524, reckon/mcp_views.py:1955\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_schema.py:1296-1300 keeps the three impl_source sources (computed/declarations/authored) and the absent case the brief required, so the shortening preserves the meaning while recovering the bytes.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-head.log's footer records schema_view_compact_bytes=24452 against bound=24576 (margin_under_bound=124) and I re-ran tests/test_mcp_views.py::test_raw_and_schema_are_explicit_layers at 6784834dc (1 passed, EXIT=0), but the log's header at gate-head.log:1 names the base revision 4e4de5ba7 rather than the head.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 4e4de5ba7..6784834dc touches only reckon/_schema.py and the in-fence evidence fragment, mutating no shared plan, index or sprint state and leaving the declared figures directory unused.\nSCORE durability: 19\nJUSTIFICATION durability: the pre-existing assertion compact_size(schema) <= 24 * 1024 at tests/test_mcp_views.py:733 compares a computed size against a literal bound, and gate-base.log shows it red at 24676 with the longer description restored, so the assertion fails if this change regresses.\nSCORE fit: 19\nJUSTIFICATION fit: the change edits descriptions in place in reckon/_schema.py:1184-1316 following the surrounding Field(description=...) idiom, adds no name, and the commit at 6784834dc carries a conventional subject and a body.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition, so there is nothing to fork; it only shortens existing field descriptions in reckon/_schema.py, and a search for a second schema-serving path found none beyond gen_json_schema's callers.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261011T003218530440-schema-view-within-bound/gate-head.log:1 follow-on: the head gate log's header names revision=4e4de5ba7 (the base) and the manifest's after_suite revision reads \"4e4de5ba... +working tree changes\", so no recorded log ties the 24452-byte measurement to the landed commit 6784834dc; the content is identical (the worktree is clean at head and I re-verified the named test there), so this is a traceability gap rather than a measurement error.",
+  "review_run_id": "r-20261011T005227762513-review-of-schema-view-within-bound",
+  "reviewed_base_sha": "4e4de5ba77990135a3e7a0ad69c3e8faae2231ba",
+  "reviewed_head_sha": "6784834dc5f69f7b86a448260d36437f960e37e3",
+  "reviewed_run_id": "r-20261011T003218530440-schema-view-within-bound",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T00:58:13.903032+00:00",
+  "total": 113
+}
