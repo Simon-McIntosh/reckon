@@ -1,0 +1,87 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite (base 4e4de5ba) recorded 5 failure ids (test_bookkeeping_earns_no_review metadata sweep, three test_crew.py cases) and after_suite (head 599d6f6a) recorded the identical 5 ids, so the added set is empty; logs base-population.log and after-head.log both end '5 failed, 1060 passed, 1 skipped'.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py",
+    "reckon/crew_dispatch_commands.py:_run_review"
+  ],
+  "completed_at": "2026-10-11T02:04:22.744Z",
+  "dispatched_at": "2026-10-11T01:57:15Z",
+  "findings": [
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": "2426",
+      "severity": "follow-on",
+      "text": "follow-on: code_review_argv re-implements the review dispatch argument-vector composition owned by _review_dispatch_tokens (reckon/crew/recovery_review_subject.py:670) rather than extending it; the same `reckon crew dispatch --role review --spec-level exact --node --goal --done-when --write-path --time-budget --session --allow-unreconciled-runs` token list now exists in two places, so a change to the dispatch contract must be made twice."
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": "2186",
+      "severity": "follow-on",
+      "text": "follow-on: _git_head duplicates an existing capability the repository already owns - serve._git_head (reckon/serve.py:1320) and fleet_index._git_head (reckon/fleet_index.py:29) each resolve a repository's HEAD - without extending either owner."
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": "2523",
+      "severity": "follow-on",
+      "text": "follow-on: store_code_review has no caller anywhere in the tree at the reviewed head and the code-subject path never invokes parse_health_review, so the brief's 'store the parsed result' half is unimplemented and this store is unreachable dead code."
+    },
+    {
+      "file": "reckon/crew_dispatch_commands.py",
+      "line": "2041",
+      "severity": "follow-on",
+      "text": "follow-on: a code subject is selected whenever --around or --path is given (code_subject = bool(around_plan or paths)), so --plan supplied alongside either is silently ignored rather than refused, and the caller receives a code review where a plan review was asked for with no notice."
+    },
+    {
+      "file": "docs/evidence/fragments/the-codebase-is-reviewed-between-nodes/review-composes-a-code-subject.html",
+      "line": "36",
+      "severity": "follow-on",
+      "text": "follow-on: the evidence fragment file ends without a terminating newline (the diff carries '\\ No newline at end of file'), unlike the other files the node wrote."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commits 366e36bdb, 3073873ab, d49cdc111 and 599d6f6a8 against base 4e4de5ba commit by commit; they add the review verb and hidden alias in reckon/crew_dispatch_commands.py, ~430 lines of code-subject composition in reckon/crew/plan_review.py, a reckon/cli.py re-export, the new test, the evidence fragment, and a result.stdout read in four existing tests.",
+    "done_when": "the done_when names tests/test_review_composes_a_code_subject.py at EXIT=0 with a brief naming module a and b and not c, carrying the open finding and the four interface figures, the alias composing the same plan brief, zero added failures among the importing population, and a negative control that drops b; the manifest records each and the run's logs corroborate (head-test.log 3 passed, negative-control.log 1 failed EXIT=1, base-population.log and after-head.log both 5 failed / 1060 passed).",
+    "goal": "the node goal is to compose a code review around a plan or a path through one review verb; reckon/crew_dispatch_commands.py:2018 _run_review routes --around/--path to plan_review.code_review_subject (reckon/crew/plan_review.py:2224) and the hidden review-plan alias routes --plan to the same body, both exercised green in tests/test_review_composes_a_code_subject.py at the reviewed head.",
+    "manifest": "read; it states the gate command and results, the negative control and its log path, the base/head population arms with their five failure ids each, the failure_attribution explaining the merged-output repair across nine sites, and follow_ons naming tests/test_crew_help_names_its_state.py as left outside the fence.",
+    "write_paths": "the reviewed run pointer's write_paths carry the six declared paths plus tests/test_review_plan_command.py, tests/test_an_edit_tells_its_author_a_review_is_owed.py, tests/test_nothing_sweeps_old_plans.py and tests/test_the_surfaces_pass_the_plan.py added by recorded scope extension, and every path in the diff sits inside that list."
+  },
+  "justifications": {
+    "durability": "tests/test_review_composes_a_code_subject.py:165 asserts 'reckon.b' in the composed neighbourhood line, and the declared negative control in the same file (RECKON_TEST_CODE_SUBJECT_NEGATIVE=1) removes the one-hop expansion and reddens exactly that assertion, so the guard fails if the composition regresses.",
+    "evidence": "tests/test_review_composes_a_code_subject.py asserts the done_when's measures and the run's head-test.log records 3 passed EXIT=0, negative-control.log records 1 failed EXIT=1 on assert 'reckon.b' in neighbourhood, and base-population.log and after-head.log both record 5 failed / 1060 passed with identical failure ids so zero were added.",
+    "fit": "the added functions follow the surrounding style of reckon/crew/plan_review.py:2152 and introduce no plan, version or ticket identifier, but the unreachable store_code_review at reckon/crew/plan_review.py:2523 and the newline-less fragment are not the idiom of a delivered node.",
+    "goal_fidelity": "reckon/crew_dispatch_commands.py:2018 _run_review dispatches a code subject from --around/--path through plan_review.code_review_subject (reckon/crew/plan_review.py:2224), which composes the health brief from the neighbourhood, the stored open findings and the four interface figures, and the hidden review-plan alias composes the same plan brief through the same body.",
+    "reuse": "the brief's reuse map was honoured for the import walker, the findings reader, the interface figures and review.py's grammar, but code_review_argv (reckon/crew/plan_review.py:2426) duplicates the dispatch token builder _review_dispatch_tokens (reckon/crew/recovery_review_subject.py:670) and _git_head (reckon/crew/plan_review.py:2186) duplicates serve._git_head (reckon/serve.py:1320), neither extending its owner.",
+    "scope_discipline": "the reviewed pointer's write_paths list reckons/crew/plan_review.py, reckon/crew_dispatch_commands.py, reckon/cli.py, the new test, the evidence fragment, the figures dir and four test files added by recorded scope extension, and every diff path is inside that list; the ~30-line store_code_review at reckon/crew/plan_review.py:2523 is outside what the goal implies."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to compose a code review around a plan or a path through one review verb; reckon/crew_dispatch_commands.py:2018 _run_review routes --around/--path to plan_review.code_review_subject (reckon/crew/plan_review.py:2224) and the hidden review-plan alias routes --plan to the same body, both exercised green in tests/test_review_composes_a_code_subject.py at the reviewed head.\nVERDICT done_when: the done_when names tests/test_review_composes_a_code_subject.py at EXIT=0 with a brief naming module a and b and not c, carrying the open finding and the four interface figures, the alias composing the same plan brief, zero added failures among the importing population, and a negative control that drops b; the manifest records each and the run's logs corroborate (head-test.log 3 passed, negative-control.log 1 failed EXIT=1, base-population.log and after-head.log both 5 failed / 1060 passed).\nVERDICT write_paths: the reviewed run pointer's write_paths carry the six declared paths plus tests/test_review_plan_command.py, tests/test_an_edit_tells_its_author_a_review_is_owed.py, tests/test_nothing_sweeps_old_plans.py and tests/test_the_surfaces_pass_the_plan.py added by recorded scope extension, and every path in the diff sits inside that list.\nVERDICT manifest: read; it states the gate command and results, the negative control and its log path, the base/head population arms with their five failure ids each, the failure_attribution explaining the merged-output repair across nine sites, and follow_ons naming tests/test_crew_help_names_its_state.py as left outside the fence.\nVERDICT diff: read commits 366e36bdb, 3073873ab, d49cdc111 and 599d6f6a8 against base 4e4de5ba commit by commit; they add the review verb and hidden alias in reckon/crew_dispatch_commands.py, ~430 lines of code-subject composition in reckon/crew/plan_review.py, a reckon/cli.py re-export, the new test, the evidence fragment, and a result.stdout read in four existing tests.\nCALL_SITES: reckon/cli.py, reckon/crew_dispatch_commands.py:_run_review\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew_dispatch_commands.py:2018 _run_review dispatches a code subject from --around/--path through plan_review.code_review_subject (reckon/crew/plan_review.py:2224), which composes the health brief from the neighbourhood, the stored open findings and the four interface figures, and the hidden review-plan alias composes the same plan brief through the same body.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_review_composes_a_code_subject.py asserts the done_when's measures and the run's head-test.log records 3 passed EXIT=0, negative-control.log records 1 failed EXIT=1 on assert 'reckon.b' in neighbourhood, and base-population.log and after-head.log both record 5 failed / 1060 passed with identical failure ids so zero were added.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: the reviewed pointer's write_paths list reckon/crew/plan_review.py, reckon/crew_dispatch_commands.py, reckon/cli.py, the new test, the evidence fragment, the figures dir and four test files added by recorded scope extension, and every diff path is inside that list; the ~30-line store_code_review at reckon/crew/plan_review.py:2523 is outside what the goal implies.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_review_composes_a_code_subject.py:165 asserts 'reckon.b' in the composed neighbourhood line, and the declared negative control in the same file (RECKON_TEST_CODE_SUBJECT_NEGATIVE=1) removes the one-hop expansion and reddens exactly that assertion, so the guard fails if the composition regresses.\nSCORE fit: 16\nJUSTIFICATION fit: the added functions follow the surrounding style of reckon/crew/plan_review.py:2152 and introduce no plan, version or ticket identifier, but the unreachable store_code_review at reckon/crew/plan_review.py:2523 and the newline-less fragment are not the idiom of a delivered node.\nSCORE reuse: 5\nJUSTIFICATION reuse: the brief's reuse map was honoured for the import walker, the findings reader, the interface figures and review.py's grammar, but code_review_argv (reckon/crew/plan_review.py:2426) duplicates the dispatch token builder _review_dispatch_tokens (reckon/crew/recovery_review_subject.py:670) and _git_head (reckon/crew/plan_review.py:2186) duplicates serve._git_head (reckon/serve.py:1320), neither extending its owner.\nFINDING reckon/crew/plan_review.py:2426 follow-on: code_review_argv re-implements the review dispatch argument-vector composition owned by _review_dispatch_tokens (reckon/crew/recovery_review_subject.py:670) rather than extending it; the same token list now exists in two places, so a change to the dispatch contract must be made twice.\nFINDING reckon/crew/plan_review.py:2186 follow-on: _git_head duplicates a capability the repository already owns - serve._git_head (reckon/serve.py:1320) and fleet_index._git_head (reckon/fleet_index.py:29) each resolve a repository's HEAD - without extending either owner.\nFINDING reckon/crew/plan_review.py:2523 follow-on: store_code_review has no caller anywhere in the tree at the reviewed head and the code-subject path never invokes parse_health_review, so the brief's 'store the parsed result' half is unimplemented and this store is unreachable dead code.\nFINDING reckon/crew_dispatch_commands.py:2041 follow-on: a code subject is selected whenever --around or --path is given, so --plan supplied alongside either is silently ignored rather than refused, and the caller receives a code review where a plan review was asked for with no notice.\nFINDING docs/evidence/fragments/the-codebase-is-reviewed-between-nodes/review-composes-a-code-subject.html:36 follow-on: the evidence fragment file ends without a terminating newline, unlike the other files the node wrote.",
+  "review_run_id": "r-20261011T015646632569-review-of-review-composes-a-code-subject",
+  "reviewed_base_sha": "4e4de5ba77990135a3e7a0ad69c3e8faae2231ba",
+  "reviewed_head_sha": "599d6f6a892871c9b2d7064df684874eb2531658",
+  "reviewed_run_id": "r-20261011T003357760539-review-composes-a-code-subject",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T02:02:07.006041+00:00",
+  "total": 90
+}
