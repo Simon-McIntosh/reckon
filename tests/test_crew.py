@@ -2136,9 +2136,13 @@ def test_dispatch_refuses_every_unreconciled_run_past_the_grace(home, repo) -> N
 
     assert [row["run_id"] for row in excinfo.value.runs] == list(run_ids)
     for run_id in run_ids:
+        # A plan-naming run with no section cannot carry a brief beside its
+        # plan, so its review is composed brief-carried: the brief holds the
+        # rubric and the reviewed run's identity, keyed on the reviewed run.
+        brief = runs.run_dir(run_id) / "review-brief.md"
         expected = (
-            f"- {run_id}: reckon crew dispatch --project proj --plan plan-a "
-            "--section '' --role review --spec-level exact"
+            f"- {run_id}: reckon crew dispatch --project proj --brief {brief} "
+            "--role review --spec-level exact"
         )
         assert expected in str(excinfo.value)
     listed = subprocess.run(
@@ -2244,9 +2248,14 @@ def test_cli_dispatch_reports_unreconciled_runs_on_its_own_exit_code(
     assert result.exit_code == 6
     assert payload["error"] == "unreconciled-runs"
     assert payload["runs"][0]["run_id"] == old_run
+    # A run that names a plan and no section cannot carry a brief beside the
+    # plan — dispatch refuses a briefed plan without the section it instructs —
+    # so the review is composed brief-carried, and the brief carries the rubric
+    # and the reviewed run's identity. Its path is keyed on the reviewed run.
+    brief = runs.run_dir(old_run) / "review-brief.md"
     assert (
-        f"- {old_run}: reckon crew dispatch --project proj --plan plan-a "
-        "--section '' --role review --spec-level exact" in payload["detail"]
+        f"- {old_run}: reckon crew dispatch --project proj --brief {brief} "
+        "--role review --spec-level exact" in payload["detail"]
     )
 
 
@@ -3613,9 +3622,14 @@ def test_a_complete_manifest_emits_an_authorised_review_dispatch(
     assert row["classification"] == "scoring"
     assert row["manifest_status"] == "complete"
     assert row["manifest_commits"] == ["HEAD"]
+    # The review's brief is composed from the rubric and the reviewed run's
+    # identity, so the command names it beside the plan section the run carried;
+    # the plan stays the authority the plan gates read. The brief path is keyed
+    # on the reviewed run, so the command and the executed dispatch name one file.
+    brief = runs.run_dir(record["run_id"]) / "review-brief.md"
     assert row["next_action"].startswith(
-        "reckon crew dispatch --project proj --plan plan-a --section '§3' "
-        "--role review --spec-level exact"
+        f"reckon crew dispatch --project proj --brief {brief} --plan plan-a "
+        "--section '§3' --role review --spec-level exact"
     )
 
     configured = {**CONFIG, "local_backend": "alpha"}
@@ -3625,6 +3639,11 @@ def test_a_complete_manifest_emits_an_authorised_review_dispatch(
         lambda *_args, **_kwargs: configured,
     )
     command = shlex.split(row["next_action"])
+    # The classifier is a read and writes nothing, so the brief its command
+    # names is materialized the way the reflex dispatch does — by composing the
+    # fields with the delta that marks a dispatch. The dry-run then proves the
+    # emitted command is one dispatch accepts, not that the file is absent.
+    recovery._review_dispatch_fields(crew.read_pointer(record["run_id"]), delta=None)
     result = CliRunner().invoke(
         cli_module.main,
         [*command[1:], "--repo", str(repo), "--dry-run"],

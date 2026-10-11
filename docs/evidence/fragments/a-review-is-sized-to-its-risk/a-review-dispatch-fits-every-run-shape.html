@@ -1,0 +1,23 @@
+<article class="landed-report" data-run-id="r-20261011T223501570468-a-review-dispatch-fits-every-run-shape" data-node="a-review-dispatch-fits-every-run-shape">
+      <h3 id="a-review-dispatch-fits-every-run-shape-heading">a-review-dispatch-fits-every-run-shape — the review dispatch is accepted for every run shape</h3>
+      <p id="a-review-dispatch-fits-every-run-shape-anchor">
+        For a reviewed run that named a plan and no section, the composed review
+        command carried <code>--brief</code> beside <code>--plan</code> with no
+        section, which <code>reckon crew dispatch</code> refuses — "a brief
+        beside a plan is the coordinator's instructions for a section, so name
+        the section the brief belongs to". The composer now emits the
+        plan/section pair only when a section is named, so such a review is
+        brief-carried and the brief still delivers the rubric; the plan-and-
+        section shape keeps both. The five tests red on <code>main</code> since
+        the rubric brief landed pass, and
+        <code>tests/test_a_review_receives_its_rubric.py</code> gains a dry-run
+        acceptance test per shape (plan and section, plan without section, brief
+        without plan). The negative control — emitting <code>--brief</code>
+        beside a sectionless <code>--plan</code> — fails the plan-without-section
+        dry-run test with dispatch's refusal.
+        <strong>Measure.</strong>
+        <code>pytest -q</code> over the five files and
+        <code>tests/test_a_review_receives_its_rubric.py</code>: 15 passed,
+        EXIT=0.
+      </p>
+    </article>
