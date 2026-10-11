@@ -1728,6 +1728,86 @@ def _plan_review_raw_reports(
     return entries
 
 
+# An index that records no ledger path cannot be tied to a checkout, so it is
+# offered for removal only once no reader has opened it for this long. Seven
+# days is well past any live reader's refresh cadence yet far short of the
+# multi-month accumulation this sweep exists to reclaim.
+LEDGER_INDEX_UNRECORDED_MAX_AGE_DAYS = 7
+
+
+def _ledger_index_locked(index: Path) -> bool:
+    """Whether a live process holds the index, so it is never removed.
+
+    A reader mid-refresh holds a write lock, and SQLite refuses a second
+    writer: that refusal is the signal. A file that cannot be opened at all is
+    not a running reader, so it is not treated as locked.
+    """
+    import contextlib
+    import sqlite3
+
+    try:
+        with contextlib.closing(sqlite3.connect(index, timeout=0.0)) as connection:
+            try:
+                connection.execute("BEGIN IMMEDIATE")
+            except sqlite3.OperationalError:
+                return True
+            connection.rollback()
+    except sqlite3.Error:
+        return False
+    return False
+
+
+def _orphan_ledger_indexes(
+    *, apply: bool, now: datetime | None
+) -> list[dict[str, Any]]:
+    """Ledger caches whose checkout is gone, or stale and carrying no path.
+
+    Each index is keyed per checkout, so a worktree that is later removed
+    leaves a full-size index behind that nothing resolves again. An index
+    recording a ledger path that no longer exists is an orphan outright; one
+    recording no path at all is offered only once it has aged past
+    :data:`LEDGER_INDEX_UNRECORDED_MAX_AGE_DAYS`, so a reader between opening
+    and rebuilding an index is never swept. A cache file a live process holds
+    is left alone whatever the age, and only ``ledger-*.sqlite`` files are
+    matched, so the picker's ``picker-*.json`` inputs in the same root are
+    untouched. Every row states its path and size, and removal happens only
+    under ``--apply``.
+    """
+    from reckon import _store
+    from reckon import ledger as ledger_module
+
+    root = _store.cache_root("pick-input")
+    if not root.is_dir():
+        return []
+    current = now or datetime.now(tz=UTC)
+    stale_before = current - timedelta(days=LEDGER_INDEX_UNRECORDED_MAX_AGE_DAYS)
+    entries: list[dict[str, Any]] = []
+    for index in sorted(path for path in root.glob("ledger-*.sqlite") if path.is_file()):
+        recorded = ledger_module.recorded_ledger_path(index)
+        if recorded is not None:
+            if Path(recorded).exists():
+                continue
+            reason = "recorded-checkout-gone"
+        else:
+            modified = datetime.fromtimestamp(index.stat().st_mtime, tz=UTC)
+            if modified > stale_before:
+                continue
+            reason = "unrecorded-stale"
+        entry = {
+            "path": str(index),
+            "size": index.stat().st_size,
+            "recorded_ledger_path": recorded,
+            "reason": reason,
+            "action": "prune",
+            "removed": False,
+        }
+        if apply and not _ledger_index_locked(index):
+            index.unlink()
+            entry["removed"] = True
+        entries.append(entry)
+    return entries
+
+
 def garbage_collect(
     *,
     repo: str | Path,
@@ -2071,6 +2151,11 @@ def garbage_collect(
             ledgered=ledgered,
             retention_days=retention_days,
         )
+        # The ledger index cache is global, keyed by checkout rather than by
+        # run, so a pass confined to one run's artifacts does not reach it.
+        ledger_index_reports = (
+            _orphan_ledger_indexes(apply=apply, now=now) if run_id is None else []
+        )
     except PROGRAMMING_ERRORS:
         # Re-raised untouched: the traceback names the defective line, where a
         # refusal would have named only the tree the defect happened to hit.
@@ -2179,6 +2264,10 @@ def garbage_collect(
         "unledgered_run_directories": unledgered_run_reports,
         "unledgered_run_directories_removed": sum(
             1 for item in unledgered_run_reports if item.get("removed")
+        ),
+        "ledger_indexes": ledger_index_reports,
+        "ledger_indexes_removed": sum(
+            1 for item in ledger_index_reports if item.get("removed")
         ),
         "scratch": (
             garbage_collect_orphan_scratch(apply=apply) if run_id is None else None

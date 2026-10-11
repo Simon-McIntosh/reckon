@@ -851,6 +851,11 @@ def run_ids(project: str, root: str | Path | None = None) -> set[str]:
 # including ctime, so edits with a preserved mtime still invalidate the row.
 _RUN_INDEX_VERSION = 3
 
+# The metadata key an index uses to carry the resolved ledger path it indexes.
+# It is written when the index is built, so a sweep can identify an index whose
+# checkout has since been removed without reading the ledger it once served.
+LEDGER_INDEX_PATH_KEY = "ledger_path"
+
 
 def _file_identity(path: Path) -> tuple[int, int, int, int] | None:
     try:
@@ -902,6 +907,24 @@ def _run_index_path(project: str, root: str | Path | None) -> Path:
     source = str(ledger_path(project, root).resolve())
     identity = hashlib.sha256(source.encode()).hexdigest()
     return _store.cache_root("pick-input") / f"ledger-{identity}.sqlite"
+
+
+def recorded_ledger_path(index: str | Path) -> str | None:
+    """The ledger path an index records, or ``None`` when it records none.
+
+    Read without creating an index: a cache file that is absent, unreadable,
+    corrupt or written by an older schema has no recorded path, which is a
+    distinct state from one whose recorded checkout is gone.
+    """
+    try:
+        connection = sqlite3.connect(f"file:{Path(index)}?mode=ro", uri=True, timeout=0.2)
+        with contextlib.closing(connection):
+            row = connection.execute(
+                "SELECT payload FROM metadata WHERE name=?", (LEDGER_INDEX_PATH_KEY,)
+            ).fetchone()
+    except (OSError, sqlite3.Error):
+        return None
+    return str(row[0]) if row and row[0] else None
 
 
 def index_stamp(project: str, root: str | Path | None = None) -> list[Any]:
@@ -1081,6 +1104,7 @@ def _indexed_data(
     aggregate_stamp = json.dumps(_file_identity(aggregate))
     snapshot = _run_snapshot(project, root)
     path = _run_index_path(project, root)
+    index_source = str(ledger_path(project, root).resolve())
     path.parent.mkdir(parents=True, exist_ok=True)
 
     def update(connection: sqlite3.Connection) -> tuple[dict[str, Any], int]:
@@ -1111,6 +1135,16 @@ def _indexed_data(
                 "(name TEXT PRIMARY KEY, payload TEXT)"
             )
             meta = dict(connection.execute("SELECT name, payload FROM metadata"))
+            # The index records the ledger path it indexes, so a sweep can tell
+            # an index whose checkout is gone from one merely stale: the path is
+            # an identity, while a filename hash is opaque. Written here so any
+            # index a reader touches carries it, including one built before this
+            # row existed.
+            if meta.get(LEDGER_INDEX_PATH_KEY) != index_source:
+                connection.execute(
+                    "INSERT OR REPLACE INTO metadata VALUES (?, ?)",
+                    (LEDGER_INDEX_PATH_KEY, index_source),
+                )
             aggregate_changed = meta.get("stamp") != aggregate_stamp
             if aggregate_changed:
                 data, version = _load_aggregate(project, root)
