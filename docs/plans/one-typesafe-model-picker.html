@@ -26,8 +26,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;done&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;done&quot;,&quot;s27&quot;:&quot;done&quot;,&quot;s28&quot;:&quot;done&quot;,&quot;s29&quot;:&quot;done&quot;,&quot;s30&quot;:&quot;done&quot;,&quot;s31&quot;:&quot;done&quot;,&quot;s32&quot;:&quot;done&quot;}">
-<meta name="plan-impl" content="0.96875">
-<meta name="plan-version" content="316">
+<meta name="plan-impl" content="1.0">
+<meta name="plan-version" content="317">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -1011,6 +1011,9 @@
 </div>
 <div class="r-comment" data-section="s29" data-id="c-close-s29" data-who="reckon-build" data-when="2026-10-11T00:15:00Z">
     <div class="r-comment-body"><p>§29 landed: promotion's pick wait starts at the pick, and overridden-hold rows keep their route mode (merge <code>d225d5e44</code>, review 108, no failures added across a 140-file population). <a href="/reckon/evidence/archive/one-typesafe-model-picker-landed.html#s29">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261010T232416940731-pick-wait-starts-at-the-pick" data-who="reckon-build" data-when="2026-10-10T23:46:01.894Z">
+    <div class="r-comment-body"><p>_shadow_pick_deadline in reckon/crew/promotion.py now runs from the deferred pick&#x27;s recorded start (the shadow-pick spec file&#x27;s mtime, created_at fallback), so a launch slower than the pick&#x27;s bound still records the pick&#x27;s selection; promoted_route_mode in reckon/ledger.py accepts the overridden-hold route mode so build_record keeps it. Two new tests in tests/test_promotion_records_the_pick.py pass at head and fail on the parent revision (2 failed, EXIT=1).</p></div>
 </div>
 </section>
 <section data-reckon="followups" id="followups" class="r-followups">
