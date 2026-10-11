@@ -756,6 +756,200 @@ def _dispatch_lane_advisory(
     return carry
 
 
+# A code review younger than this is fresh enough that a dispatch names it
+# rather than the command that would compose another; older, the neighbourhood
+# is due a re-read and the payload names the command instead.
+HEALTH_REVIEW_STALE_AFTER_DAYS = 7
+# The compose verb, spelled once, so the command the payload names and the
+# command a reader runs cannot drift apart.
+HEALTH_REVIEW_COMPOSE_VERB = "reckon crew review"
+
+
+def _is_product_source(path: str) -> bool:
+    """Whether a node's write path names a product source module.
+
+    The reachability instrument that defines a code review's neighbourhood and
+    the composer that keys it both work on Python modules, so a node's
+    product-source write paths are its ``.py`` ones. A plan, a document or a
+    JSON artefact is not a neighbourhood a code review reads, so a node that
+    writes only those is handed no block rather than a command that cannot run.
+    """
+    return str(path).strip().endswith(".py")
+
+
+def _health_review_neighbourhood(record: Mapping[str, Any]) -> set[str]:
+    """The neighbourhood a stored code review read: its named paths and modules.
+
+    A review's record carries the paths it was composed around (``named_paths``)
+    beside the production modules one import away (``modules``); together they
+    are the neighbourhood it covers, and a node's write path is covered when it
+    appears in either.
+    """
+    named = {str(path) for path in record.get("named_paths") or ()}
+    modules = {str(module) for module in record.get("modules") or ()}
+    return named | modules
+
+
+def _health_review_age_days(
+    record: Mapping[str, Any], *, now: datetime
+) -> float | None:
+    """A stored review's age in days, or ``None`` when its stamp is unreadable."""
+    stamp = parse_utc(record.get("timestamp"))
+    if stamp is None:
+        return None
+    return (now - stamp).total_seconds() / 86400.0
+
+
+def _health_review_compose_command(*, project: str, plan: str, session: str) -> str:
+    """The command that composes a fresh code review around the plan."""
+    return (
+        f"{HEALTH_REVIEW_COMPOSE_VERB} --project {project} "
+        f"--around {plan} --session {session}"
+    )
+
+
+def _dispatch_health_review(
+    *,
+    project: str,
+    plan: str,
+    session: str,
+    node: TaskNode,
+    root: str | Path | None = None,
+    now: datetime | None = None,
+) -> dict[str, Any] | None:
+    """Carry the code review that covers a node's neighbourhood, refusing nothing.
+
+    The block exists because a plan build repeats a neighbourhood a review may
+    already have read, and the reviewer's result is only found by a coordinator
+    that goes looking — which the one moment it is dispatching is not doing. So
+    the block rides the payload: it names the newest stored code review whose
+    neighbourhood covers every one of the node's product write paths together
+    with that review's age and the open findings already stored against those
+    paths, and names the compose command instead when no covering review is
+    younger than the staleness window.
+
+    It is advisory: nothing here refuses, holds or reroutes, and the routing is
+    untouched. A node that writes no product source has no neighbourhood a code
+    review reads, so it is handed ``None`` rather than a command that could not
+    run. A store that cannot be read is reported as ``unknown`` rather than as a
+    measured absence, and the compose command is still named, because the safe
+    advice where a review cannot be seen is to compose one.
+    """
+    product_paths = {
+        str(path).strip() for path in node.write_paths if _is_product_source(str(path))
+    }
+    if not product_paths:
+        return None
+    moment = now or parse_utc(_utc_now())
+
+    from reckon.crew import plan_review as _plan_review
+
+    def _open_findings() -> int:
+        """The open findings stored against the node's write paths.
+
+        The count comes from :func:`reckon.crew.plan_review._open_findings_for`,
+        which reads the findings store by path and keeps the open rows for the
+        named paths, so the block counts nothing a second time. The store's own
+        reader swallows an unreadable findings tree as no rows; the resolved
+        checkout it needs is the dispatch's, or the project's own when the
+        dispatch named none.
+        """
+        try:
+            repo_root = (
+                str(root)
+                if root is not None
+                else _plan_review._project_repository(project)
+            )
+            return len(
+                _plan_review._open_findings_for(
+                    {
+                        "project": project,
+                        "repo": repo_root,
+                        "named_paths": sorted(product_paths),
+                    }
+                )
+            )
+        except (CrewError, OSError, ValueError):
+            return 0
+
+    def _block(
+        state: str,
+        detail: str,
+        *,
+        review: dict[str, Any] | None,
+        age_days: float | None,
+    ) -> dict[str, Any]:
+        fresh = state == "covered"
+        return {
+            "state": state,
+            "review": review,
+            "age_days": age_days,
+            "open_findings": 0 if state == "unknown" else _open_findings(),
+            "compose_command": (
+                None
+                if fresh
+                else _health_review_compose_command(
+                    project=project, plan=plan, session=session
+                )
+            ),
+            "detail": detail,
+        }
+
+    try:
+        reviews = _plan_review.list_code_reviews(project)
+    except (OSError, ValueError) as error:
+        return _block(
+            "unknown",
+            f"the code review store for {project!r} could not be read ({error}); "
+            "no review can be named, so the compose command is named instead",
+            review=None,
+            age_days=None,
+        )
+
+    covering: list[tuple[dict[str, Any], float | None]] = []
+    for record in reviews:
+        if not product_paths <= _health_review_neighbourhood(record):
+            continue
+        covering.append((record, _health_review_age_days(record, now=moment)))
+    if not covering:
+        return _block(
+            "missing",
+            f"no stored code review covers {sorted(product_paths)}; compose one "
+            "before this neighbourhood is built again",
+            review=None,
+            age_days=None,
+        )
+
+    # Newest first by age; an unreadable stamp sorts last so a review with a
+    # readable age is preferred as the one a reader can date.
+    covering.sort(key=lambda item: item[1] if item[1] is not None else float("inf"))
+    newest, age_days = covering[0]
+    identity = {
+        "key": str(newest.get("neighbourhood_key") or ""),
+        "path": str(newest.get("review_path") or ""),
+        "reviewed_revision": str(newest.get("reviewed_revision") or ""),
+        "around": str(newest.get("around") or ""),
+        "timestamp": str(newest.get("timestamp") or ""),
+    }
+    if age_days is not None and age_days < HEALTH_REVIEW_STALE_AFTER_DAYS:
+        return _block(
+            "covered",
+            f"code review {identity['key']} covers {sorted(product_paths)}, "
+            f"{age_days:.1f}d old",
+            review=identity,
+            age_days=age_days,
+        )
+    rendered_age = "of unreadable age" if age_days is None else f"{age_days:.1f}d old"
+    return _block(
+        "stale",
+        f"the newest covering code review {identity['key']} is {rendered_age}, "
+        f"at or past the {HEALTH_REVIEW_STALE_AFTER_DAYS}d window; compose a "
+        "fresh review of this neighbourhood",
+        review=identity,
+        age_days=age_days,
+    )
+
+
 def _lane_reading_unknown(*, detail: str) -> dict[str, Any]:
     """Advisory carry for a lane reading the dispatch could not trust."""
     return {
