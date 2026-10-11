@@ -52,7 +52,6 @@ names one, so a harness can point the configuration at a temporary tree too.
 from __future__ import annotations
 
 import fcntl
-import hashlib
 import json
 import os
 import pty
@@ -79,6 +78,7 @@ from reckon import service
 from reckon._store import write_json_atomically
 from reckon.crew.host_lease import LEASE_RENEW_SECONDS, HostLease
 from reckon.crew.routing import signal_worker
+from reckon.project_state import _sha256_path
 
 RUNTIME_DIR_ENV = "FLEET_RUNTIME_DIR"
 STATE_DIR_ENV = "FLEET_STATE_DIR"
@@ -626,11 +626,52 @@ def trim_service_log(path: Path, *, limit: int, keep: int) -> bool:
 
 RUN_FILE_BINARY_SUFFIXES = (".pt", ".h5", ".npz")
 
-# Subdirectories of a run directory that are never descended into: a nested
-# worktree or extraction is a whole source tree gc files under its own kind, so
-# its files are not the run's captured output and walking it would cost more
-# than the bound is worth.
-_RUN_FILE_SKIP_DIRS = frozenset({"checkouts", ".git", ".venv", "node_modules"})
+# The names a run directory uses for something that is never a source tree: a
+# git directory, a virtualenv, a module cache. None is the run's captured
+# output, so neither the extraction report nor the run-file walk takes one.
+RUN_TREE_SKIP_NAMES = frozenset({".git", ".venv", "node_modules"})
+
+
+def carries_git_directory(path: Path) -> bool:
+    """Whether a tree carries a git directory, so the worktree registry owns it."""
+    git = path / ".git"
+    return git.is_file() or git.is_dir()
+
+
+def is_run_source_tree(path: Path) -> bool:
+    """Whether ``path`` is a whole source tree a worker left in a run directory.
+
+    Two shapes: a child of a ``checkouts`` directory, and a directory named for
+    a base revision (``base-source``, ``base-tree`` ...) at the run-directory
+    level or under ``artifacts``. gc files each such tree under its own kind, so
+    both the extraction report and the run-file walk treat these as one policy
+    rather than two that can drift. A git directory, a virtualenv or a module
+    cache is never a source tree.
+    """
+    if path.name in RUN_TREE_SKIP_NAMES:
+        return False
+    if path.name.startswith("base-"):
+        return True
+    return path.parent.name == "checkouts"
+
+
+def run_directory_source_trees(run_dir: Path) -> list[Path]:
+    """The source trees a worker left directly in one run directory.
+
+    The three shapes are one level deep by construction -- ``base-*`` at the
+    run-directory level, the children of ``checkouts``, and ``base-*`` under
+    ``artifacts`` -- so the walk never descends a whole run tree.
+    """
+    trees: list[Path] = []
+    if not run_dir.is_dir():
+        return trees
+    for parent in (run_dir, run_dir / "checkouts", run_dir / "artifacts"):
+        if not parent.is_dir():
+            continue
+        for path in sorted(parent.iterdir()):
+            if path.is_dir() and is_run_source_tree(path) and path not in trees:
+                trees.append(path)
+    return trees
 
 
 def _run_directory_captured_files(directory: Path) -> Iterator[Path]:
@@ -638,8 +679,9 @@ def _run_directory_captured_files(directory: Path) -> Iterator[Path]:
 
     A run directory holds its captured streams directly and, beside them, whole
     source trees a worker made under ``checkouts`` or a ``base-*`` name. Those
-    are reported by gc under their own kind, so they are pruned here rather than
-    walked: a bound over a run's own output must not scan a checkout's every
+    are reported by gc under their own kind, so the policy that names them --
+    :func:`is_run_source_tree` and :func:`carries_git_directory` -- prunes them
+    here too: a bound over a run's own output must not scan a checkout's every
     file to find it.
     """
     for root, dirs, names in os.walk(directory):
@@ -647,21 +689,15 @@ def _run_directory_captured_files(directory: Path) -> Iterator[Path]:
         dirs[:] = [
             name
             for name in dirs
-            if name not in _RUN_FILE_SKIP_DIRS
-            and not name.startswith("base-")
-            and not (current / name / ".git").exists()
+            if not (
+                name in RUN_TREE_SKIP_NAMES
+                or name == "checkouts"
+                or is_run_source_tree(current / name)
+                or carries_git_directory(current / name)
+            )
         ]
         for name in names:
             yield current / name
-
-
-def _sha256_of(path: Path) -> str:
-    """The sha256 of a file's whole content, read in bounded chunks."""
-    digest = hashlib.sha256()
-    with open(path, "rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
 
 
 def _bound_run_file(path: Path, *, limit_bytes: int, apply: bool) -> dict[str, Any]:
@@ -686,7 +722,7 @@ def _bound_run_file(path: Path, *, limit_bytes: int, apply: bool) -> dict[str, A
         row["action"] = "reported"
         row["binary"] = True
         return row
-    digest = _sha256_of(path)
+    digest = _sha256_path(path)
     row["original_sha256"] = digest
     if not apply:
         return row
