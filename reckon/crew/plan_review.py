@@ -59,7 +59,7 @@ import json
 import re
 import shlex
 import subprocess
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -68,7 +68,8 @@ from reckon import _plan_html
 from reckon._plan_html import DOCUMENT_UNIT, landed_section_ids
 from reckon._store import write_json_atomically
 from reckon.crew import review as _review_store
-from reckon.crew import review_need
+from reckon.crew import review_need, runs
+from reckon.served_code import neighbourhood
 
 # Reviewer-text parsing is owned by reckon.crew.review, so the code-review and
 # plan-report grammars share one line reader rather than each defining their
@@ -2119,3 +2120,432 @@ def _clear_store_error(sidecar: Mapping[str, Any]) -> None:
         return
     payload.pop("store_error", None)
     write_review_sidecar(directory, payload=payload)
+
+
+# ── Code reviews: one neighbourhood as the subject ──────────────────────────
+# A plan review reads a plan and is keyed by the plan's content; a code review
+# reads the production modules a plan (or a set of paths) names together with
+# the modules one import away from them, so its brief names a neighbourhood
+# rather than a document and its record is keyed by that neighbourhood. The
+# import adjacency comes from the reachability instrument on
+# :mod:`reckon.served_code`, the findings from the findings reader on
+# :mod:`reckon.crew.findings`, and the four interface figures from
+# :mod:`reckon.interface_counts` — this module composes the brief and keys the
+# report directory, and reuses the reviewer grammars the store already owns.
+
+# A code review run's node id carries this prefix, so a live run is recognisable
+# as a code review rather than a run review or a plan review.
+CODE_REVIEW_NODE_PREFIX = "review-code-"
+# The report directory a code review writes into, beside the plan-review root
+# under the crew reports directory: ``<reports>/<project>/code-review/<key>``,
+# where ``<key>`` is the neighbourhood it read.
+CODE_REVIEW_REPORTS_DIRNAME = "code-review"
+
+# The write-path sentence a plan section carries, and the path-shaped tokens it
+# names. A section's write paths are authored prose rather than markup, so the
+# composer reads the sentence that states them and takes the ``.py`` paths from
+# it rather than guessing at any path-like token in the prose.
+_WRITE_PATHS_SENTENCE = re.compile(r"write\s+paths?\s*:", re.IGNORECASE)
+_PY_PATH_TOKEN = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_./-]*\.py")
+
+
+def code_review_paths_from_plan(plan: Mapping[str, Any] | str | Path) -> list[str]:
+    """The production paths a plan's implementable sections name as write paths.
+
+    Only the sections still declared implementable contribute: a landed or
+    deferred section's write paths describe work already done, so its modules
+    are not the neighbourhood about to be built. The paths are read from the
+    "Write paths" sentence each such section carries, in document order and
+    without duplicates, so the composer and a reader of the plan agree on what
+    the section claims. A plan whose input carries no document text, or names
+    no implementable section, yields no path rather than an invented one.
+    """
+    from reckon.roadmap import implementable_sections
+
+    document = _as_document(plan)
+    if document is None:
+        return []
+    implementable = set(
+        implementable_sections(_as_state(plan).get("section_declarations"))
+    )
+    if not implementable:
+        return []
+    found: list[str] = []
+    for identity, prose in _plan_html.section_prose(document):
+        if identity not in implementable:
+            continue
+        match = _WRITE_PATHS_SENTENCE.search(prose)
+        if match is None:
+            continue
+        for token in _PY_PATH_TOKEN.findall(prose[match.end() :]):
+            if token not in found:
+                found.append(token)
+    return found
+
+
+def _git_head(repo: str | Path) -> str:
+    """The head revision of ``repo``, or empty when it resolves none."""
+    try:
+        completed = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=repo,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return ""
+    head = completed.stdout.strip()
+    if completed.returncode or not re.fullmatch(r"[0-9A-Fa-f]{40,64}", head):
+        return ""
+    return head
+
+
+def code_review_key(named: Iterable[str], modules: Iterable[str]) -> str:
+    """A filesystem-safe key for a neighbourhood, so its report dir is stable.
+
+    The key digests the union of the named paths and the adjacent modules, so
+    two reviews of one neighbourhood share a directory and a changed
+    neighbourhood earns its own — the neighbourhood is the identity a code
+    review is stored under.
+    """
+    return _digest(sorted({str(item) for item in named} | {str(m) for m in modules}))[
+        :12
+    ]
+
+
+def _project_repository(project: str) -> str:
+    """The checkout a project's code review reads, resolved from its mount."""
+    from reckon.crew.dispatch import resolve_project_repository
+
+    return str(resolve_project_repository(project, None))
+
+
+def code_review_subject(
+    project: str,
+    session: str,
+    *,
+    around: str = "",
+    paths: Iterable[str] = (),
+    local: bool = False,
+    repo: str | None = None,
+    revision: str = "",
+) -> dict[str, Any]:
+    """Resolve a code subject: the neighbourhood of a plan's or a named path's modules.
+
+    The named paths come from ``--path`` when given, otherwise from the
+    implementable sections' write paths of the plan named by ``--around``. The
+    neighbourhood is those paths' modules plus every production module one
+    import away in either direction, read from the reachability instrument so
+    the composer adds no second import walker. The subject carries the resolved
+    repository and head, so the brief and the record describe one revision.
+    """
+    from reckon.crew.node import CrewError
+
+    named: list[str] = []
+    if around:
+        from reckon import flight
+
+        docs = flight.mounted_project_docs().get(project)
+        if docs is None:
+            raise CrewError(f"project {project!r} has no mounted docs")
+        plan_path = docs / "plans" / f"{around}.html"
+        if not plan_path.is_file():
+            raise CrewError(f"plan {around!r} does not exist at {plan_path}")
+        named = code_review_paths_from_plan(plan_path)
+        if not named:
+            raise CrewError(
+                f"plan {around!r} names no implementable section write paths"
+            )
+    for path in paths:
+        text = str(path).strip()
+        if text and text not in named:
+            named.append(text)
+    if not named:
+        raise CrewError("a code review names a plan (--around) or one or more --path")
+    repository = str(repo or _project_repository(project))
+    head = revision or _git_head(repository)
+    adjacent = sorted(neighbourhood(repository, head, named))
+    return {
+        "subject": "code",
+        "project": project,
+        "session": session,
+        "local": local,
+        "repo": repository,
+        "head": head,
+        "around": around,
+        "named_paths": named,
+        "modules": adjacent,
+        "run_id": runs.new_run_id(
+            f"{CODE_REVIEW_NODE_PREFIX}{code_review_key(named, adjacent)}"
+        ),
+    }
+
+
+def _open_findings_for(subject: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """The open findings the stored reviews carry against the named paths."""
+    from reckon.crew import findings as findings_reader
+
+    named = {str(path) for path in subject.get("named_paths") or ()}
+    try:
+        grouped = findings_reader.findings_by_path(
+            str(subject["project"]), root=str(subject["repo"])
+        )
+    except (OSError, ValueError):
+        return []
+    return [
+        row
+        for group in grouped.get("paths") or ()
+        if str(group.get("path")) in named
+        for row in group.get("rows") or ()
+        if row.get("disposition") == "open"
+    ]
+
+
+def _interface_figure_line(subject: Mapping[str, Any]) -> str:
+    """The four interface figures at the reviewed revision, as one brief line."""
+    from reckon import interface_counts
+
+    figures = interface_counts.count_revision(
+        str(subject["repo"]), str(subject.get("head") or "")
+    )
+    rendered = ", ".join(
+        f"{name} {figures.get(name, 0)}" for name in interface_counts.COUNT_KEYS
+    )
+    return f"Interface figures: {rendered}"
+
+
+def code_review_brief(subject: Mapping[str, Any]) -> str:
+    """Compose the health-review brief for a code subject.
+
+    The brief is the health rubric verbatim — so a reviewer in any mounted
+    project reads the same six items — followed by what the neighbourhood is:
+    the named paths, the modules one import away, the open findings already
+    stored against the named paths, and the four interface figures. The reviewer
+    is told the report path so its emission lands where the store reads it.
+    """
+    prompt = _review_store.load_health_review_prompt().rstrip("\n")
+    modules = list(subject.get("modules") or ())
+    lines = [
+        prompt,
+        "",
+        f"Reviewed revision: {subject.get('head') or '<unresolved>'}",
+        "Named paths: " + ", ".join(subject.get("named_paths") or ()),
+        "Neighbourhood modules (one import away): "
+        + (", ".join(modules) if modules else "none"),
+        _interface_figure_line(subject),
+    ]
+    open_findings = _open_findings_for(subject)
+    if open_findings:
+        lines.append(
+            "Open findings already stored against the named paths; cite these by "
+            "their row rather than re-reporting them:"
+        )
+        for row in open_findings:
+            where = f"{row.get('path')}:{row.get('line')}".rstrip(":")
+            severity = row.get("severity") or "finding"
+            lines.append(f"- {where} [{severity}] {row.get('text') or ''}".rstrip())
+    else:
+        lines.append("Open findings already stored against the named paths: none.")
+    report_path = code_review_report_directory(subject) / "report.md"
+    lines.append(f"Report path: {report_path}")
+    return "\n".join(lines) + "\n"
+
+
+def code_review_report_directory(
+    subject: Mapping[str, Any] | None = None,
+    *,
+    project: str | None = None,
+    key: str | None = None,
+) -> Path:
+    """The report directory a code review writes into, keyed by its neighbourhood.
+
+    The directory is ``<crew reports root>/<project>/code-review/<key>``, the
+    code-review sibling of the plan-review report root, keyed by the
+    neighbourhood the review read so two reviews of one neighbourhood share a
+    directory.
+    """
+    resolved_project = str(project or (subject or {}).get("project") or "")
+    resolved_key = str(
+        key
+        or code_review_key(
+            (subject or {}).get("named_paths") or (),
+            (subject or {}).get("modules") or (),
+        )
+    )
+    return (
+        runs.reports_dir()
+        / resolved_project
+        / CODE_REVIEW_REPORTS_DIRNAME
+        / resolved_key
+    )
+
+
+def code_review_fields(
+    subject: Mapping[str, Any], *, write: bool = False
+) -> dict[str, Any]:
+    """The dispatch fields a code subject composes, with or without writing them.
+
+    ``write`` False returns the fields and the composed brief text a preview
+    needs while creating nothing; ``write`` True materialises the brief so a
+    real dispatch hands its reviewer one durable path.
+    """
+    directory = code_review_report_directory(subject)
+    brief = directory / "brief.md"
+    brief_text = code_review_brief(subject)
+    if write:
+        directory.mkdir(parents=True, exist_ok=True)
+        brief.write_text(brief_text, encoding="utf-8")
+    key = code_review_key(
+        subject.get("named_paths") or (), subject.get("modules") or ()
+    )
+    return {
+        "run_id": str(subject.get("run_id") or ""),
+        "project": str(subject.get("project") or ""),
+        "repo": str(subject.get("repo") or ""),
+        "head": str(subject.get("head") or ""),
+        "session": str(subject.get("session") or SESSION_PLACEHOLDER),
+        "node_id": f"{CODE_REVIEW_NODE_PREFIX}{key}",
+        "time_budget": "20m",
+        "brief": str(brief),
+        "brief_text": brief_text,
+        "goal": (
+            f"health-review the neighbourhood of {subject.get('project')} modules "
+            + ", ".join(subject.get("named_paths") or ())
+        ),
+        "done_when": (
+            f"{directory / 'report.md'} carries a RUBRIC line for each of the six "
+            "health items, one FINDING line per defect, and exactly one TREATMENT "
+            "line; the manifest names the delivered report"
+        ),
+        "write_path": str(directory),
+        "write_paths": [str(directory)],
+    }
+
+
+def code_review_argv(fields: Mapping[str, Any], lane: Sequence[str] = ()) -> list[str]:
+    """The ordinary dispatch command for a code review, ready to print or run."""
+    path_args: list[str] = []
+    for path in fields["write_paths"]:
+        path_args += ["--write-path", str(path)]
+    return [
+        "reckon",
+        "crew",
+        "dispatch",
+        "--project",
+        str(fields["project"]),
+        "--brief",
+        str(fields["brief"]),
+        "--role",
+        "review",
+        "--spec-level",
+        "exact",
+        "--node",
+        str(fields["node_id"]),
+        "--goal",
+        str(fields["goal"]),
+        "--done-when",
+        str(fields["done_when"]),
+        *path_args,
+        "--time-budget",
+        str(fields["time_budget"]),
+        "--session",
+        str(fields["session"]),
+        "--allow-unreconciled-runs",
+        *lane,
+    ]
+
+
+def dispatch_code_review(
+    subject: Mapping[str, Any],
+    *,
+    config: Mapping[str, Any] | None = None,
+    dry_run: bool = False,
+    launcher: Any = None,
+) -> dict[str, Any]:
+    """Dispatch one read-only review node for a code subject, or preview it.
+
+    The node carries the composed brief and writes only its report directory, so
+    the run is read-only: it proposes a treatment rather than changing code. A
+    preview resolves the same command and brief a dispatch would use and creates
+    nothing, so a ``--dry-run`` leaves the reports root untouched.
+    """
+    import importlib
+
+    from reckon.crew.node import TaskNode
+
+    fields = code_review_fields(subject, write=not dry_run)
+    node = TaskNode(
+        id=str(fields["node_id"]),
+        goal=str(fields["goal"]),
+        plan="",
+        section="",
+        brief=str(fields["brief"]),
+        role="review",
+        spec_level="exact",
+        done_when=str(fields["done_when"]),
+        write_paths=list(fields["write_paths"]),
+        time_budget=str(fields["time_budget"]),
+    )
+    if dry_run:
+        return {
+            "dispatched": False,
+            "dry_run": True,
+            "brief_text": fields["brief_text"],
+            "node": node.as_dict(),
+            "argv": code_review_argv(
+                fields, ["--local"] if subject.get("local") else []
+            ),
+        }
+    from reckon import flight
+
+    resolved = (
+        config
+        if config is not None
+        else flight.resolve(project=str(fields["project"])).config
+    )
+    dispatch_module = importlib.import_module("reckon.crew.dispatch")
+    result = dispatch_module.dispatch(
+        node=node,
+        project=str(fields["project"]),
+        repo=str(fields["repo"]),
+        config=resolved,
+        session=str(fields["session"]),
+        launcher=launcher,
+        watch_required=True,
+        unreconciled_override=True,
+        route="deterministic",
+        local=bool(subject.get("local")),
+    )
+    return {**result, "brief_text": fields["brief_text"]}
+
+
+def store_code_review(
+    record: Mapping[str, Any],
+    *,
+    base_dir: str | Path | None = None,
+) -> Path:
+    """Persist one code review keyed by its neighbourhood, returning the path.
+
+    A code review's record is keyed by the neighbourhood it read rather than by
+    a plan version, so two reviews of one neighbourhood land under one key and a
+    changed neighbourhood earns its own record. The write is atomic, through the
+    shared writer's temporary-and-rename.
+    """
+    project = str(record.get("project") or "").strip()
+    key = str(record.get("neighbourhood_key") or "").strip()
+    if not project:
+        raise ValueError("code review record is missing project")
+    if not key:
+        raise ValueError("code review record is missing neighbourhood_key")
+    stored = dict(record)
+    if not stored.get("timestamp"):
+        stored["timestamp"] = datetime.now(UTC).isoformat()
+    root = Path(base_dir) if base_dir is not None else runs.reports_dir()
+    directory = root / project / CODE_REVIEW_REPORTS_DIRNAME
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / f"{key}.json"
+    write_json_atomically(
+        path, stored, indent=2, sort_keys=True, fsync=False, mode=None
+    )
+    return path
