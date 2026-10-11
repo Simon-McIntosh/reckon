@@ -1,0 +1,85 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured: the reviewed run's own suite_base.log (rev 84e2fb0b) and suite_head.log (rev 3fa0ce0ef) each ran to their pytest summary line reporting 4 failed, 1 skipped and 1 error on each arm (1081 passed at base, 1087 at head), and the FAILED/ERROR id sets are identical between the arms -- tests/conftest.py::test_temp_config_home plus the three tests/test_crew.py ids and test_follower_survives_a_config_change.py::test_a_follower_defers_one_tick_and_keeps_delivering_across_a_config_error -- so the node added no failing test against base. The manifest's baseline_suite/after_suite log_digest values match these two files.",
+  "base_log_revision": "84e2fb0b58ad875ffbacc0285f72b67597af10d3",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/routing.py:garbage_collect",
+    "reckon/crew/routing.py:_run_directory_extractions",
+    "reckon/crew/fleet_supervisor.py:trim_service_log",
+    "reckon/crew/fleet_supervisor.py:run_file_limit_bytes"
+  ],
+  "completed_at": "2026-10-11T04:04:21.613Z",
+  "dispatched_at": "2026-10-11T03:43:30Z",
+  "findings": [
+    {
+      "file": "reckon/flight.py",
+      "line": "121",
+      "severity": "blocking",
+      "text": "blocking: reckon/flight.py is outside the reviewed node's declared write_paths yet carries DEFAULT_RUN_FILE_MAX_MB and run_file_max_mb, so the landed change writes outside its fence; the coordinator must ratify the scope in writeback or the reader must move into an in-scope module (fleet_supervisor.py already imports it)."
+    },
+    {
+      "file": "reckon/project_state.py",
+      "line": "344",
+      "severity": "follow-on",
+      "text": "follow-on: the tree-policy repair touches project_state.py although that file is outside the declared write_paths; the reuse fix is correct in substance but the file is unfenced and needs the coordinator's ratification."
+    },
+    {
+      "file": "r-20261011T012957477999-gc-bounds-a-run-file/manifest.md",
+      "line": "21",
+      "severity": "follow-on",
+      "text": "follow-on: the baseline_suite and after_suite command fields summarize their input as an importer-file count in angle brackets, which the arm-JSON contract forbids (a literal command with no angle-bracket placeholder), so a reader cannot re-run the exact arm from the record."
+    },
+    {
+      "file": "reckon/crew/fleet_supervisor.py",
+      "line": "658",
+      "severity": "follow-on",
+      "text": "follow-on: run_directory_source_trees also skips .venv and node_modules, so routing.py:549 _run_directory_extractions no longer reports a checkouts/.venv that the previous bespoke listing would have named -- a behaviour change to the extraction report beyond this node's run-file goal, disclosed in the message but worth recording."
+    }
+  ],
+  "head_log_revision": "3fa0ce0efe343fbfc99f99ac3ddf1bdd0ab5adc1",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew/routing.py:garbage_collect reaches the bound through the crew gc CLI; reckon/crew/routing.py:_run_directory_extractions calls run_directory_source_trees; reckon/crew/fleet_supervisor.py:trim_service_log calls trim_file_ends and run_file_limit_bytes calls flight.run_file_max_mb.",
+    "diff": "read commit by commit against 84e2fb0b; c551baab adds the bound, the flight gc key and reckon/flight.py, b936707e8 anchors the evidence fragment, 92d3ec6ca moves the bounding helpers beside the log trim, 2cf592a55 records the first measurement, the tree-policy repair shares one run-directory tree policy and the path digest (rewriting project_state.py); every file but flight.py and project_state.py is inside the declared scope, and the docs-only tip sits above the reviewed head.",
+    "done_when": "the done-when names tests/test_gc_bounds_a_run_file.py at EXIT=0, tests/test_flight.py, the importer-suite with no added failure, flight.resolve under both trees, and an executed negative control; gate_node_head.log records 15 passed, the manifest's structured baseline_suite/after_suite name suite_base.log (84e2fb0b) and suite_head.log (3fa0ce0ef) with digests matching and identical five-id failure sets, flight_resolve.log records both arms EXIT=0, and negative_control.log and negative_control_repair.log each record a guard reddening at EXIT=1.",
+    "goal": "the node's goal is \"Bound a promoted run's captured file to its configured size, keeping head, tail and identity\"; reckon/crew/fleet_supervisor.py:700 _bound_run_file writes the head plus a one-line marker carrying the original size and sha256 plus the tail, reports a *.pt/*.h5/*.npz artefact untouched, and reckon/crew/routing.py:2064 reaches it only for ledgered, non-live run directories.",
+    "manifest": "read; it records the bound, the flight proof, two negative controls and 131 passed for the focused gate, and carries structured baseline_suite/after_suite whose log_digest values match the two arm logs, but both command fields summarize the file list as an importer count rather than the literal command.",
+    "write_paths": "the node's live pointer lists eight write paths; git diff 84e2fb0b..3fa0ce0ef touches those plus reckon/flight.py and reckon/project_state.py, neither of which is in the declared set."
+  },
+  "justifications": {
+    "durability": "tests/test_gc_bounds_a_run_file.py:140-147 compare the bounded log's size and its head/tail lines against independently-derived values, and negative_control.log and negative_control_repair.log independently show the unpromoted-run assertion and the reuse assertion reddening when their guards are removed.",
+    "evidence": "the manifest's structured baseline_suite (84e2fb0b) and after_suite (3fa0ce0ef) both ran to their summary line with matching log_digest values and identical five-id failure sets, so added_failure_count is a measured 0, gate_node_head.log reproduces 15 passed, and two negative-control logs each show their guard failing (EXIT=1), but the arm command fields carry an angle-bracket file-count placeholder rather than the literal command.",
+    "fit": "reckon/crew/fleet_supervisor.py:549 trim_file_ends follows the trim_service_log idiom and the added names carry no plan, ticket or version identifier, though routing.py:541 imports fleet_supervisor lazily and the gc run-directory walk lives in fleet_supervisor.py rather than the routing.py home the brief named.",
+    "goal_fidelity": "reckon/crew/fleet_supervisor.py:700 _bound_run_file writes head + marker + tail with the original sha256 (:719 reports a binary artefact untouched), and reckon/crew/routing.py:2064 reaches it only for ledgered, non-live runs.",
+    "reuse": "the earlier duplication is resolved -- the tree-policy repair gives the run-directory tree policy one owner, run_directory_source_trees with is_run_source_tree and carries_git_directory (fleet_supervisor.py:641-672), reused by both routing.py:549 and the gc walk, and removes _sha256_of in favour of the shared project_state.py:344 _sha256_path (now chunked).",
+    "scope_discipline": "reckon/flight.py:121-123 and :796-813 carry DEFAULT_RUN_FILE_MAX_MB and run_file_max_mb and reckon/project_state.py:344 _sha256_path was rewritten, none of which is among the node's eight declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is \"Bound a promoted run's captured file to its configured size, keeping head, tail and identity\"; reckon/crew/fleet_supervisor.py:700 _bound_run_file writes the head plus a one-line marker carrying the original size and sha256 plus the tail, reports a *.pt/*.h5/*.npz artefact untouched (:719), and reckon/crew/routing.py:2064 reaches it only for ledgered, non-live run directories.\nVERDICT done_when: the done-when names tests/test_gc_bounds_a_run_file.py at EXIT=0, tests/test_flight.py, the importer-suite with no added failure, flight.resolve under both trees, and an executed negative control; gate_node_head.log records 15 passed, the manifest's structured baseline_suite/after_suite now name suite_base.log (84e2fb0b, 4 failed/1081 passed/1 skipped/1 error) and suite_head.log (3fa0ce0ef, the same five failing ids, 1087 passed) with digests matching those files, flight_resolve.log records both arms EXIT=0, and negative_control.log and negative_control_repair.log each record a guard reddening at EXIT=1.\nVERDICT write_paths: the node's live pointer lists eight write paths (reckon/crew/routing.py, reckon/crew/fleet_supervisor.py, reckon/schema/flight.yaml, reckon/_flight_schema.py, docs/_shared/flight.schema.json, tests/test_gc_bounds_a_run_file.py, the evidence fragment, the figures dir); git diff 84e2fb0b..3fa0ce0ef touches those plus reckon/flight.py and reckon/project_state.py, neither of which is in the declared set.\nVERDICT manifest: read; it records the bound, the flight proof, two negative controls and 131 passed for the focused gate, and now carries structured baseline_suite/after_suite whose log_digest values match the two arm logs, but both command fields summarize the file list as the importer file count rather than the literal command that ran.\nVERDICT diff: read commit by commit against 84e2fb0b -- c551baab adds the bound, the flight gc key and reckon/flight.py, b936707e8 anchors the evidence fragment, 92d3ec6ca moves the bounding helpers beside the log trim, 2cf592a55 records the first measurement, 3fa0ce0ef shares one run-directory tree policy and the path digest (rewriting project_state.py); every file but flight.py and project_state.py is inside the declared scope, and 58762bea (docs-only) sits above the reviewed head.\nCALL_SITES: reckon/crew/routing.py:garbage_collect, reckon/crew/routing.py:_run_directory_extractions, reckon/crew/fleet_supervisor.py:trim_service_log, reckon/crew/fleet_supervisor.py:run_file_limit_bytes\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/fleet_supervisor.py:700 _bound_run_file writes head + marker + tail with the original sha256 (:719 reports a binary artefact untouched), and reckon/crew/routing.py:2064 reaches it only for ledgered, non-live runs.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest's structured baseline_suite (84e2fb0b) and after_suite (3fa0ce0ef) both ran to their summary line with matching log_digest values and identical five-id failure sets, so added_failure_count is a measured 0, gate_node_head.log reproduces 15 passed, and two negative-control logs each show their guard failing (EXIT=1), but the arm command fields carry an angle-bracket file-list placeholder rather than the literal command.\nSCORE scope_discipline: 12\nJUSTIFICATION scope_discipline: reckon/flight.py:121-123 and :796-813 carry DEFAULT_RUN_FILE_MAX_MB and run_file_max_mb and reckon/project_state.py:344 _sha256_path was rewritten, none of which is among the node's eight declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_gc_bounds_a_run_file.py:140-147 compare the bounded log's size and its head/tail lines against independently-derived values (a marker length from the test's own template and the pre-bound sha256), and negative_control.log and negative_control_repair.log independently show the unpromoted-run assertion and the reuse assertion reddening when their guards are removed.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/fleet_supervisor.py:549 trim_file_ends follows the trim_service_log idiom and the added names (trim_file_ends, run_directory_source_trees, is_run_source_tree) carry no plan, ticket or version identifier, though routing.py:541 imports fleet_supervisor lazily and the gc run-directory walk lives in fleet_supervisor.py rather than the routing.py home the brief named.\nSCORE reuse: 19\nJUSTIFICATION reuse: the earlier duplication is resolved -- 3fa0ce0ef gives the run-directory tree policy one owner, run_directory_source_trees with is_run_source_tree and carries_git_directory (fleet_supervisor.py:641-672), reused by both routing.py:549 and the gc walk, and removes _sha256_of in favour of the shared project_state.py:344 _sha256_path (now chunked).\nFINDING reckon/flight.py:121 blocking: reckon/flight.py is outside the reviewed node's declared write_paths yet carries DEFAULT_RUN_FILE_MAX_MB and run_file_max_mb, so the landed change writes outside its fence; the coordinator must ratify scope in writeback or the reader must move into an in-scope module (fleet_supervisor.py already imports it).\nFINDING reckon/project_state.py:344 follow-on: the tree-policy repair touches project_state.py although that file is outside the declared write_paths; the reuse fix is correct in substance but the file is unfenced and needs ratification.\nFINDING r-20261011T012957477999-gc-bounds-a-run-file/manifest.md:21 follow-on: the baseline_suite and after_suite command fields summarize their input as an importer-file count in angle brackets, which the arm-JSON contract forbids (a literal command with no angle-bracket placeholder), so a reader cannot re-run the exact arm from the record.\nFINDING reckon/crew/fleet_supervisor.py:658 follow-on: run_directory_source_trees also skips .venv and node_modules, so routing.py:549 _run_directory_extractions no longer reports a checkouts/.venv that the previous bespoke listing would have named -- a behaviour change to the extraction report beyond this node's run-file goal, disclosed in the message but worth recording.",
+  "review_run_id": "r-20261011T034237057470-review-of-gc-bounds-a-run-file",
+  "reviewed_base_sha": "84e2fb0b58ad875ffbacc0285f72b67597af10d3",
+  "reviewed_head_sha": "3fa0ce0efe343fbfc99f99ac3ddf1bdd0ab5adc1",
+  "reviewed_run_id": "r-20261011T012957477999-gc-bounds-a-run-file",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 12
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T04:01:55.094827+00:00",
+  "total": 103
+}
