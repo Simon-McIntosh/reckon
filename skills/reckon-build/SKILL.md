@@ -130,6 +130,14 @@ item, use isolated worktrees by default, and never dispatch two workers that
 write the same file. Each node carries a brief citing the reuse map: the module
 to extend, the interface not to widen, the question the worker may not settle.
 
+Each implementation dispatch carries a `health_review` block: the newest code
+review whose neighbourhood covers the node's write paths, its age and the open
+findings already stored against them, or the compose command when no covering
+review is younger than seven days. When the block names a compose command and
+the plan writes product source, run `/reckon-review --around <plan>` once as a
+parallel node in the wave, and treat its result in the next beat like any other
+landing. A plan that writes only documents or plans skips it.
+
 A node is well-formed BEFORE it is sent. Single goal, Fully specified,
 Demonstrable, Closed, Scoped, Bounded and Independently verifiable all hold, and
 the specification level is declared. `reckon crew dispatch --dry-run` enforces
