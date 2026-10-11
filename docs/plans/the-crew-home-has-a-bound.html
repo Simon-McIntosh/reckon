@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-standalone" content="Storage bounds for the crew home and caches; no live plan waits on them and they wait on none. The pick-input index belongs to one-typesafe-model-picker&#x27;s code and is fixed here because its growth is independent of the picker&#x27;s open sections.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
   <title>The Crew Home Has A Bound | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="16">
+<meta name="plan-version" content="17">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -60,7 +60,7 @@
       repeated here.</p>
 
     <h2 id="s2">§2 — A ledger index whose checkout is gone is swept</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> Each ledger index records, in a metadata table written when it is built, the ledger path it indexes.
       <code>reckon crew gc</code> reports, and with <code>--apply</code> removes, every <code>ledger-*.sqlite</code> in the
       <code>pick-input</code> cache root whose recorded ledger path no longer exists, and every one that records no path and was not opened
@@ -174,7 +174,10 @@
     <div class="r-comment-body"><p>crew gc now sweeps ledger indexes whose checkout is gone: each run index records the resolved ledger path it serves in its metadata table, and gc reports, and under --apply removes, every ledger-*.sqlite in the pick-input cache root whose recorded path no longer exists or which records no path and has not been opened for seven days, leaving picker-*.json inputs and any index a live process holds — the record sits at docs/evidence/fragments/the-crew-home-has-a-bound/gc-sweeps-ledger-indexes.html</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261011T011400954610-review-of-gc-sweeps-ledger-indexes" data-who="reckon-build" data-when="2026-10-11T01:21:48.266Z">
-    <div class="r-comment-body"><p>Independent review of r-20261011T002644790277-gc-sweeps-ledger-indexes stored at head e1fbed89 (base 24b5ef0f): goal_fidelity 19, evidence 16, scope_discipline 20, durability 18, fit 19, reuse 19, total 111; added_failure_count 0; two follow-on findings (unquoted SQLite URI in recorded_ledger_path, and the reviewed run&#x27;s empty baseline_suite/after_suite).</p></div>
+    <div class="r-comment-body"><p>Independent review of r-20261011T002644790277-gc-sweeps-ledger-indexes stored at head e1fbed89 (base 24b5ef0f): goal_fidelity 19, evidence 16, scope_discipline 20, durability 18, fit 19, reuse 19, total 111; added_failure_count 0; two follow-on findings (unquoted SQLite URI in recorded_ledger_path, and the reviewed run's empty baseline_suite/after_suite).</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-10-11T03:30:00Z">
+    <div class="r-comment-body"><p>§2 landed: gc sweeps ledger indexes whose checkout is gone (merge <code>b3e7b2200</code>); 4 passed, 0 added failures; review 111/120. The unquoted SQLite URI is recorded as a follow-on. <a href="/reckon/evidence/archive/the-crew-home-has-a-bound-landed.html#s2-ledger-index-sweep">evidence</a></p></div>
 </div>
 </section>
 </main>
