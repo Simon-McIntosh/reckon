@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en-locale">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-portfolio-reads-true">
+  <meta name="plan-evidence-for" content="the-portfolio-reads-true">
+  <meta name="plan-verdict" content="qualified">
+  <title>Lifecycle severity reaches the audit readers | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>Lifecycle severity reaches the audit readers</h1>
+  <p id="membership-severity-reaches-readers-landing">The MCP lifecycle consumer and the
+    <code>reckon audit</code> table each read a finding's own severity, so a shipped plan an
+    open sprint lists reaches both as <code>info</code> rather than the <code>warn</code> a
+    flag-derived rule assigns. <code>tests/test_lifecycle_severity_reaches_readers.py</code>
+    passes EXIT=0: the MCP read and the CLI table both report <code>info</code>, <code>warn</code>
+    and <code>error</code> for the shipped/mismatched/missing-impl rows, and the audit exit code
+    stays 1. The negative control — the MCP consumer deriving severity from the flag — reports
+    the info row as warn and fails.</p>
+ </main>
+</body>
+</html>
