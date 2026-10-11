@@ -61,9 +61,11 @@ import select
 import shutil
 import signal
 import socket
+import stat
 import struct
 import subprocess
 import sys
+import tempfile
 import termios
 import threading
 import time
@@ -626,6 +628,10 @@ def trim_service_log(path: Path, *, limit: int, keep: int) -> bool:
 
 RUN_FILE_BINARY_SUFFIXES = (".pt", ".h5", ".npz")
 
+# How much of a file's head is read to look for a NUL byte. A bounded prefix is
+# enough: a NUL anywhere in the head marks the file as carrying binary content.
+RUN_FILE_HEAD_PROBE_BYTES = 8192
+
 # The names a run directory uses for something that is never a source tree: a
 # git directory, a virtualenv, a module cache. None is the run's captured
 # output, so neither the extraction report nor the run-file walk takes one.
@@ -700,7 +706,38 @@ def _run_directory_captured_files(directory: Path) -> Iterator[Path]:
             yield current / name
 
 
-def _bound_run_file(path: Path, *, limit_bytes: int, apply: bool) -> dict[str, Any]:
+def _run_file_is_binary(path: Path, mode: int) -> bool:
+    """Whether a run file carries anything other than text, whatever its name.
+
+    The suffix list is the cheap first test. Beyond it a file is binary when it
+    carries an execute bit or when its head holds a NUL byte, so an
+    extensionless binary and a script are recognised rather than hashed and
+    rewritten as if they were a log. An extensionless NUL-byte file and an
+    executable share the trait that a text cut corrupts them.
+    """
+    if path.suffix.lower() in RUN_FILE_BINARY_SUFFIXES:
+        return True
+    if mode & 0o111:
+        return True
+    with open(path, "rb") as handle:
+        return b"\x00" in handle.read(RUN_FILE_HEAD_PROBE_BYTES)
+
+
+def _skipped_run_file_row(path: Path, size: int, reason: str) -> dict[str, Any]:
+    """A row for a file the bound will not touch, naming why."""
+    return {
+        "path": str(path),
+        "size": size,
+        "action": "skipped",
+        "bounded": False,
+        "binary": False,
+        "reason": reason,
+    }
+
+
+def _bound_run_file(
+    path: Path, *, limit_bytes: int, apply: bool, mode: int
+) -> dict[str, Any]:
     """Report one run file over the limit, bounding it under ``--apply``.
 
     A recognised binary artefact is reported and never rewritten — ``binary``
@@ -709,6 +746,10 @@ def _bound_run_file(path: Path, *, limit_bytes: int, apply: bool) -> dict[str, A
     the original size and sha256, so the result is the limit plus the marker,
     its first and last line intact and its identity recorded in the marker. A
     dry run reports the same row without touching the file.
+
+    The bound writes the head, marker and tail to a temporary file in the same
+    directory and replaces the original with it, so a failure before the
+    replace leaves the original whole rather than half written.
     """
     size = path.stat().st_size
     row: dict[str, Any] = {
@@ -718,7 +759,7 @@ def _bound_run_file(path: Path, *, limit_bytes: int, apply: bool) -> dict[str, A
         "bounded": False,
         "binary": False,
     }
-    if path.suffix.lower() in RUN_FILE_BINARY_SUFFIXES:
+    if _run_file_is_binary(path, mode):
         row["action"] = "reported"
         row["binary"] = True
         return row
@@ -732,10 +773,17 @@ def _bound_run_file(path: Path, *, limit_bytes: int, apply: bool) -> dict[str, A
         return row
     head, tail = ends
     marker = f"\n[reckon gc: truncated from {size} bytes; sha256 {digest}]\n".encode()
-    with open(path, "wb") as handle:
-        handle.write(head)
-        handle.write(marker)
-        handle.write(tail)
+    fd, tmp_name = tempfile.mkstemp(dir=str(path.parent), prefix=".reckon-gc-")
+    try:
+        with os.fdopen(fd, "wb") as handle:
+            handle.write(head)
+            handle.write(marker)
+            handle.write(tail)
+        os.replace(tmp_name, path)
+    except OSError:
+        with suppress(OSError):
+            os.unlink(tmp_name)
+        raise
     row["bounded"] = True
     row["final_size"] = path.stat().st_size
     return row
@@ -755,29 +803,85 @@ def bound_run_files(
     :func:`reckon.crew.promotion_release._declared_arm_paths`, so a log a
     reviewer cites is bounded the same way as the run's own output even when it
     sits outside the run directory. A path read twice is reported once.
+
+    The bound may rewrite only a regular, singly linked file whose resolved
+    path lies inside the run directory: a symlink is decided on ``lstat`` and
+    reported rather than followed, a file with more than one hard link is
+    reported, and a declared gate log that resolves outside the run directory
+    is reported. A file that cannot be bounded — any ``OSError`` from the steps
+    that read or replace it — is reported with its error and the walk
+    continues, so one file never aborts the whole pass.
     """
     from reckon.crew import promotion_release
 
     rows: list[dict[str, Any]] = []
-    seen: set[Path] = set()
+    seen: set[str] = set()
+    run_root = directory.resolve()
 
-    def consider(path: Path, kind: str) -> None:
-        try:
-            resolved = path.resolve()
-        except OSError:
-            return
-        if resolved in seen:
-            return
-        seen.add(resolved)
-        try:
-            if not path.is_file() or path.stat().st_size <= limit_bytes:
-                return
-        except OSError:
-            return
-        row = _bound_run_file(path, limit_bytes=limit_bytes, apply=apply)
+    def emit(row: dict[str, Any], kind: str) -> None:
         row["run_id"] = directory.name
         row["kind"] = kind
         rows.append(row)
+
+    def consider(path: Path, kind: str) -> None:
+        key = os.path.abspath(path)
+        if key in seen:
+            return
+        seen.add(key)
+        try:
+            st = os.lstat(path)
+        except OSError:
+            return
+        if stat.S_ISLNK(st.st_mode):
+            emit(
+                _skipped_run_file_row(
+                    path, st.st_size, "symlink is never followed or bounded"
+                ),
+                kind,
+            )
+            return
+        if not stat.S_ISREG(st.st_mode):
+            return
+        if st.st_size <= limit_bytes:
+            return
+        if st.st_nlink > 1:
+            emit(
+                _skipped_run_file_row(
+                    path,
+                    st.st_size,
+                    f"file has {st.st_nlink} hard links",
+                ),
+                kind,
+            )
+            return
+        # The walk yields only entries under the run directory and never follows
+        # a symlinked directory, so a walked run-file is inside by construction;
+        # a declared path is supplied by the manifest and may point anywhere, so
+        # containment is what stops a declared gate log outside the run
+        # directory from being rewritten in place.
+        if kind == "gate-log":
+            try:
+                real = path.resolve()
+            except OSError:
+                real = None
+            if real is None or not real.is_relative_to(run_root):
+                emit(
+                    _skipped_run_file_row(
+                        path,
+                        st.st_size,
+                        "file resolves outside the run directory",
+                    ),
+                    kind,
+                )
+                return
+        try:
+            row = _bound_run_file(
+                path, limit_bytes=limit_bytes, apply=apply, mode=st.st_mode
+            )
+        except OSError as exc:
+            row = _skipped_run_file_row(path, st.st_size, "bounding failed")
+            row["error"] = str(exc)
+        emit(row, kind)
 
     for path in _run_directory_captured_files(directory):
         consider(path, "run-file")

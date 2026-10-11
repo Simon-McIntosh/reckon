@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import subprocess
 from pathlib import Path
 
@@ -174,7 +175,15 @@ def test_gc_leaves_an_unpromoted_run_directory_untouched(tmp_path, monkeypatch):
     )
 
 
-def test_gc_bounds_a_declared_gate_log_outside_the_run_directory(tmp_path, monkeypatch):
+def test_gc_reports_a_declared_gate_log_outside_the_run_directory(
+    tmp_path, monkeypatch
+):
+    """The bound may rewrite only a file the run directory itself owns.
+
+    A gate log a manifest declares but that lives outside the run directory is
+    reported, not bounded: the run directory does not own it, so rewriting it in
+    place would truncate a file another run or a peer session holds.
+    """
     home = tmp_path / "config"
     monkeypatch.setenv("RECKON_HOME", str(home))
     _host_limit(home, 1)
@@ -183,7 +192,7 @@ def test_gc_bounds_a_declared_gate_log_outside_the_run_directory(tmp_path, monke
     gate_log = tmp_path / "gate" / "NODE-gate.log"
     gate_log.parent.mkdir(parents=True)
     _write_log(gate_log, 3 * MiB)
-    original_digest = _sha256(gate_log)
+    before = gate_log.read_bytes()
 
     _promoted_run(
         repo,
@@ -199,12 +208,143 @@ def test_gc_bounds_a_declared_gate_log_outside_the_run_directory(tmp_path, monke
 
     assert result.exit_code == 0, result.output
     rows = {row["path"]: row for row in payload["run_files"]}
-    assert rows[str(gate_log)]["kind"] == "gate-log"
-    assert rows[str(gate_log)]["bounded"] is True
-    assert gate_log.stat().st_size <= 1 * MiB + _marker_length(
-        rows[str(gate_log)]["size"], original_digest
+    row = rows[str(gate_log)]
+    assert row["kind"] == "gate-log"
+    assert row["action"] == "skipped"
+    assert row["bounded"] is False
+    assert row["reason"], "the skipped row must say why it was not bounded"
+    assert gate_log.read_bytes() == before, "an outside gate log was rewritten"
+
+
+def test_gc_skips_files_the_run_directory_does_not_own(tmp_path, monkeypatch):
+    """A symlink, a hard-linked file, a binary blob and a script are reported.
+
+    Each target is larger than the limit, and after ``--apply`` every one is
+    byte-identical with every link intact, because the bound rewrites only a
+    regular, singly linked file the run directory itself owns.
+    """
+    home = tmp_path / "config"
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    _host_limit(home, 1)
+    repo = repository(tmp_path)
+
+    gate = tmp_path / "gate" / "NODE-gate.log"
+    gate.parent.mkdir(parents=True)
+    _write_log(gate, 3 * MiB)
+
+    run_dir, log, _, _ = _promoted_run(
+        repo,
+        home,
+        "run-promoted",
+        extra_manifest=f"test_logs: {gate}\n",
     )
-    assert original_digest in gate_log.read_text(encoding="utf-8")
+
+    # A symlink to a text file outside the run directory.
+    outside = tmp_path / "outside.txt"
+    _write_log(outside, 3 * MiB)
+    link_out = run_dir / "outside-link.log"
+    link_out.symlink_to(outside)
+
+    # A symlink to a file inside the crew home's stores.
+    store = home / "crew" / "run_store.db"
+    _write_log(store, 3 * MiB)
+    link_store = run_dir / "store-link.db"
+    link_store.symlink_to(store)
+
+    # A regular file with a hard link elsewhere.
+    hard = run_dir / "hard.log"
+    _write_log(hard, 3 * MiB)
+    os.link(hard, tmp_path / "hard-peer.log")
+
+    # An extensionless file carrying NUL bytes.
+    blob = run_dir / "blob"
+    blob.write_bytes(b"\x00" * (3 * MiB))
+
+    # An executable script.
+    script = run_dir / "run.sh"
+    _write_log(script, 3 * MiB)
+    script.chmod(0o755)
+
+    targets = [outside, store, hard, blob, script, gate]
+    before = {path: _sha256(path) for path in targets}
+    links = {link_out: outside, link_store: store}
+
+    result = CliRunner().invoke(
+        cli.main, ["crew", "gc", "--repo", str(repo), "--apply"]
+    )
+    payload = json.loads(result.output)
+
+    assert result.exit_code == 0, result.output
+    rows = {row["path"]: row for row in payload["run_files"]}
+
+    # Every target is byte-identical.
+    for path, digest in before.items():
+        assert _sha256(path) == digest, f"{path} was rewritten"
+
+    # Every link is still a link to the same target.
+    for link, target in links.items():
+        assert link.is_symlink(), f"{link} is no longer a symlink"
+        assert os.readlink(link) == str(target), f"{link} points elsewhere"
+
+    # Each row says why it was not bounded.
+    assert rows[str(link_out)]["action"] == "skipped"
+    assert rows[str(link_out)]["reason"]
+    assert rows[str(link_store)]["action"] == "skipped"
+    assert rows[str(link_store)]["reason"]
+    assert rows[str(hard)]["action"] == "skipped"
+    assert rows[str(hard)]["reason"]
+    assert rows[str(blob)]["action"] == "reported"
+    assert rows[str(blob)]["binary"] is True
+    assert rows[str(script)]["action"] == "reported"
+    assert rows[str(script)]["binary"] is True
+    assert rows[str(gate)]["action"] == "skipped"
+    assert rows[str(gate)]["reason"]
+
+    # Only the run directory's own over-limit text log is bounded.
+    assert rows[str(log)]["bounded"] is True
+    assert sum(1 for row in payload["run_files"] if row["bounded"]) == 1
+
+
+def test_gc_one_file_that_cannot_be_bounded_leaves_the_rest_bounded(
+    tmp_path, monkeypatch
+):
+    """An OSError on one file is reported on its row and the walk continues.
+
+    A failed replace must not abort the whole pass, and it must leave the file
+    it failed on whole rather than half written.
+    """
+    from reckon.crew import fleet_supervisor
+
+    home = tmp_path / "config"
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    _host_limit(home, 1)
+    repo = repository(tmp_path)
+
+    run_dir, log, _, _ = _promoted_run(repo, home, "run-promoted")
+    bad = run_dir / "bad.log"
+    _write_log(bad, 3 * MiB)
+    bad_before = _sha256(bad)
+
+    real_replace = os.replace
+
+    def fake_replace(src, dst):
+        if Path(dst) == bad:
+            raise OSError(26, "Text file busy")
+        return real_replace(src, dst)
+
+    monkeypatch.setattr(fleet_supervisor.os, "replace", fake_replace)
+
+    result = CliRunner().invoke(
+        cli.main, ["crew", "gc", "--repo", str(repo), "--apply"]
+    )
+    payload = json.loads(result.output)
+
+    assert result.exit_code == 0, result.output
+    rows = {row["path"]: row for row in payload["run_files"]}
+    assert rows[str(bad)]["action"] == "skipped"
+    assert rows[str(bad)]["error"], "the row must carry the error"
+    assert _sha256(bad) == bad_before, "the failed file was left half written"
+    assert rows[str(log)]["bounded"] is True, "the walk stopped at the failure"
 
 
 def test_gc_never_descends_a_nested_source_tree(tmp_path, monkeypatch):
