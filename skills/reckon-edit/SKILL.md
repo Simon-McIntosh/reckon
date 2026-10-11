@@ -130,7 +130,7 @@ hid it. Canonical rule: `reckon-build` SKILL.md §7a-bis.
    keeps a review off metered lanes, so it runs locally or holds.
 
    ```bash
-   reckon crew review-plan --project <project> --plan <slug> --rubric content --session <session>
+   reckon crew review --project <project> --plan <slug> --rubric content --session <session>
    ```
 
    A plan reviewed before is reviewed again only where it changed: the brief
@@ -139,8 +139,8 @@ hid it. Canonical rule: `reckon-build` SKILL.md §7a-bis.
    every finding the review raises, acted on or declined with a one-line reason:
 
    ```bash
-   reckon crew review-plan --project <project> --plan <slug> --answer <finding> --acted
-   reckon crew review-plan --project <project> --plan <slug> --answer <finding> --declined "<reason>"
+   reckon crew review --project <project> --plan <slug> --answer <finding> --acted
+   reckon crew review --project <project> --plan <slug> --answer <finding> --declined "<reason>"
    ```
 
    **Answering converges; editing for every finding does not.** Edit the plan
@@ -170,7 +170,7 @@ hid it. Canonical rule: `reckon-build` SKILL.md §7a-bis.
    Run the invocation once, with your session in place of its `<session>`,
 
    ```bash
-   reckon crew review-plan --project <project> --plan <slug> --rubric content --session <session>
+   reckon crew review --project <project> --plan <slug> --rubric content --session <session>
    ```
 
    and answer every finding it raises before a build is dispatched. The tool
