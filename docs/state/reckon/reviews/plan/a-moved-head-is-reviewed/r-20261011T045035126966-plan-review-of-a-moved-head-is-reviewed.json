@@ -1,0 +1,49 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-11T04:57:33.388Z",
+  "dispatched_at": "2026-10-11T04:51:01Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-moved-head-is-reviewed.html:35",
+      "id": "done_when-1",
+      "reason": "the worker picks the test's head move, and without the runtime-source condition the assertion contradicts \u00a73's own preserved mechanism for a data-only move, so the node's measure is ambiguous exactly where it must be sharp.",
+      "text": "\u00a73's first case says a resume A\u2192B means \"the reflex launches exactly one review keyed to B\", but the same section states it \"still carries a review forward when \u00a75 of a-review-is-sized-to-its-risk says the move needs none\"; for a data-only A\u2192B move the landed \u00a75 rule carries the stored review forward and launches nothing, so the case's expected verdict is defined only if the move changes runtime source, which the case does not say",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-moved-head-is-reviewed.html:35",
+      "id": "naming-1",
+      "reason": "the phrase reads as the behaviour it tests and survives deletion of the plan, so the name does not churn with plan state and the collision with the slug is incidental.",
+      "text": "\u00a73 names the test file `tests/test_a_moved_head_is_reviewed.py`, which is the plan slug, carrying a plan-document name into a source filename where the repo convention names the test for the mechanism (compare `tests/test_review_carries_forward.py`)",
+      "type": "naming",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "931e852e935c0c76516f44a5aabd765686666941475f0572f73956ad7e40c210",
+  "plan_slug": "a-moved-head-is-reviewed",
+  "plan_version": 5,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261011T045035126966-plan-review-of-a-moved-head-is-reviewed",
+  "reviewed_blob_sha": "e4175cd825d3ba32b6ea2a358a474fe06117e09b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/recovery_review_dispatch.py` and its three named functions `dispatch_review_for_run` (:1279), `review_head_move` (:589) and `carry_review_forward` (:697) exist; `reckon/crew/recovery_watch.py` calls `dispatch_review_for_run` (:2423, imported :2469); all seven cited commits (`c47c99ef6`, `71bb011d8`, `92d3ec6ca`, `2cf592a55`, `3fa0ce0ef`, `29185a66a`, `624314887`) resolve to commits; and `a-review-is-sized-to-its-risk` \u00a75 exists and says a runtime-source move earns a light re-review, as the plan states.",
+    "done_when": "a finding \u2014 \u00a73's first test case expects a launch \"keyed to B\" for a resume A\u2192B without stating the move touches runtime source, while \u00a73 itself preserves the carry-forward rule.",
+    "evidence_paths": "pass \u2014 \u00a72's report lands in the run's own directory (durable under the crew run store, `/home/ITER/mcintos/.config/reckon/crew/runs/<id>/`), and \u00a73's write paths are a source module and a test file, both durable; no session scratchpad or node-local temp path is named.",
+    "naming": "a finding \u2014 the test filename carries the plan slug into source.",
+    "reasoning": "pass \u2014 the premise that the reflex path exists and is reached holds: `dispatch_review_for_run` reads the stored review through the head-aware `_stored_review`/`select_review_for_head`, so a review keyed to an old head returns None and the run falls through to `carry_review_forward` rather than being short-circuited by a stale record, and the watch path calls it; each section's mechanism can produce its done-when and the caller is named.",
+    "single_goal": "pass \u2014 \u00a72 is the read-only investigation and \u00a73 the repair it scopes, one deliverable each, with \u00a73 declared to run after \u00a72.",
+    "wiring": "pass \u2014 the plan declares `plan-informs=a-review-is-sized-to-its-risk`, which exists and is the correct direction for a repair that feeds back into that plan's landed \u00a75; no `depends-on`/`blocks` is needed because \u00a75 already landed, so nothing is an executable prerequisite."
+  },
+  "section_digests": {
+    "_document": "885c3985fdc995ffc912923d8a04de109792bb9e7aafad45b13ff488d0c0edfe",
+    "s1": "a3a1b8eb4f84292df6d31e99043de92c9c4916a619d1de95917df87aae676d63",
+    "s2": "48dd7ab841931b559865e55c8d35fc2c6ff607e66a332ba21e17c336aebe001e",
+    "s3": "12db613dd2ba611a716715109f625f82ffa55bdb3441dbe18fbd49a7f638f823"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T04:58:35.054648+00:00"
+}
