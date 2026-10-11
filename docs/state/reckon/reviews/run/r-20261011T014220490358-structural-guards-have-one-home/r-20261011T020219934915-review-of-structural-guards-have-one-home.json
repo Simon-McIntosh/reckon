@@ -1,0 +1,80 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite or after_suite gate log, so the added-failure count was not derivable; the reviewed node ran a single-module gate (tests/test_structural_invariants.py) and no base/after suite pair.",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-11T02:10:37.399Z",
+  "dispatched_at": "2026-10-11T02:03:11Z",
+  "findings": [
+    {
+      "file": "tests/test_structural_invariants.py",
+      "line": "145",
+      "severity": "follow-on",
+      "text": "follow-on: the parse_utc/parse_iso definition scan reads only `tree.body`, so a second definition nested in a class, a function or a conditional evades it, whereas the is_section_identity definer check at :167 uses ast.walk and does catch nested definitions; the inconsistent depth leaves the one-definition invariant with a hole the existing owner tests/test_picker_helpers_have_one_owner.py:80 (which uses ast.walk) does not have."
+    },
+    {
+      "file": "tests/test_structural_invariants.py",
+      "line": "305",
+      "severity": "follow-on",
+      "text": "follow-on: the node-identity check passes vacuously at the reviewed head, because set(re.findall(...)) over tests/test_prescription.py is empty (no lowercase hyphenated identity with three or more hyphen groups occurs in that fixture), so `candidates <= set(PRESCRIBED_PROPERTIES)` is True whatever the fixture says; unlike its sibling plan-document check at :292 it carries no non-vacuity guard, so the restored guard is unexercised and would not catch a regression."
+    },
+    {
+      "file": "tests/test_structural_invariants.py",
+      "line": "134",
+      "severity": "follow-on",
+      "text": "follow-on: re-implements a capability the repository already owns without extending its owner, since tests/test_picker_helpers_have_one_owner.py:80 _defined_names and :105 test_no_second_definition_of_an_owned_helper_under_picker already scan a module tree for a second definition of an owned name through ast, and :29 _module_paths duplicates the source enumeration owned by reckon/served_code.py:83 _source_files."
+    },
+    {
+      "file": "docs/evidence/fragments/the-suite-tests-behaviour/structural-guards-have-one-home.html",
+      "line": "23",
+      "severity": "follow-on",
+      "text": "follow-on: the evidence fragment ends without a terminating newline (the diff carries \"\\ No newline at end of file\"), unlike the surrounding files the node wrote."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read the single commit c47c99ef against its base 02e06d66; it adds tests/test_structural_invariants.py (305 lines, six ast-based invariants) and one 23-line evidence fragment, and nothing else.",
+    "done_when": "the done_when names tests/test_structural_invariants.py passing EXIT=0 at the head, the manifest mapping every guard the brief lists, the one-parser invariant covering every module under reckon/ including all seven promotion_* modules, and a negative control that fails the one-parser invariant naming promotion_gate.py; the manifest and both logs record each, and I re-ran the module at the head and reproduced 6 passed EXIT=0.",
+    "goal": "the goal is to restore the deleted and narrowed structural guards as repo-wide invariants in one module; tests/test_structural_invariants.py is that one module, holding six invariants that were deleted or narrowed by the two count-reducing merges.",
+    "manifest": "read; it maps every guard the brief lists to an invariant in the new module (or a cited existing test), records the gate command and its 6-passed result, the negative control and its log path, and follow_ons naming crew/budget_reset._parse and crew/reports._instant as migration candidates outside its scope.",
+    "write_paths": "the reviewed run pointer declares tests/test_structural_invariants.py, docs/evidence/fragments/the-suite-tests-behaviour/structural-guards-have-one-home.html and the docs/figures/... directory; the diff adds only the first two and neither of the two nodes' changed files is touched."
+  },
+  "justifications": {
+    "durability": "negative-control.log shows the one-parser guard reddens when a fromisoformat call is reinstated in crew/promotion_gate.py, but two of the six restored guards are weaker than the invariant they claim: tests/test_structural_invariants.py:145 scans only the top-level ast body for a parse_utc/parse_iso definition, and the node-identity check at :305 passes vacuously at head.",
+    "evidence": "gate-head.log records \"6 passed in 9.26s\" EXIT=0 at c47c99ef and negative-control.log records \"1 failed, 5 passed\" EXIT=1 naming crew/promotion_gate.py:_probe_iso, and I re- tests/test_structural_invariants.py in the reviewed worktree at the head and reproduced 6 passed EXIT=0 (log review-gate.log).",
+    "fit": "the module follows the suite's ast-source-read idiom (cf. tests/test_picker_helpers_have_one_owner.py:80) and introduces no plan, version or ticket identifier, but the evidence fragment at structural-guards-have-one-home.html:23 ends without a terminating newline.",
+    "goal_fidelity": "tests/test_structural_invariants.py:1 replaces the per-file guards the two count-reducing merges deleted with six repo-wide invariants (one fromisoformat scan, one parse_utc/parse_iso definition, one number core, one is_section_identity, two prescription-fixture checks), matching the goal to restore them in one module.",
+    "reuse": "the definition-uniqueness scan at tests/test_structural_invariants.py:134 re-implements a capability tests/test_picker_helpers_have_one_owner.py:80 _defined_names and :105 already own via ast, and _module_paths at :29 re-implements the source enumeration owned by reckon/served_code.py:83 _source_files, neither extending its owner.",
+    "scope_discipline": "the diff touches only tests/test_structural_invariants.py and docs/evidence/fragments/the-suite-tests-behaviour/structural-guards-have-one-home.html, both inside the reviewed run's declared write paths, and edits neither of the two nodes' changed files."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to restore the deleted and narrowed structural guards as repo-wide invariants in one module; tests/test_structural_invariants.py is that one module, holding six invariants that were deleted or narrowed by the two count-reducing merges.\nVERDICT done_when: the done_when names tests/test_structural_invariants.py passing EXIT=0 at the head, the manifest mapping every guard the brief lists, the one-parser invariant covering every module under reckon/ including all seven promotion_* modules, and a negative control that fails the one-parser invariant naming promotion_gate.py; the manifest and both logs record each, and I re-ran the module at the head and reproduced 6 passed EXIT=0.\nVERDICT write_paths: the reviewed run pointer declares tests/test_structural_invariants.py, docs/evidence/fragments/the-suite-tests-behaviour/structural-guards-have-one-home.html and the docs/figures/... directory; the diff adds only the first two and neither of the two nodes' changed files is touched.\nVERDICT manifest: read; it maps every guard the brief lists to an invariant in the new module (or a cited existing test), records the gate command and its 6-passed result, the negative control and its log path, and follow_ons naming crew/budget_reset._parse and crew/reports._instant as migration candidates outside its scope.\nVERDICT diff: read the single commit c47c99ef against its base 02e06d66; it adds tests/test_structural_invariants.py (305 lines, six ast-based invariants) and one 23-line evidence fragment, and nothing else.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_structural_invariants.py:1 replaces the per-file guards the two count-reducing merges deleted with six repo-wide invariants (one fromisoformat scan, one parse_utc/parse_iso definition, one number core, one is_section_identity, two prescription-fixture checks), matching the goal to restore them in one module.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-head.log records \"6 passed in 9.26s\" EXIT=0 at c47c99ef and negative-control.log records \"1 failed, 5 passed\" EXIT=1 naming crew/promotion_gate.py:_probe_iso, and I re-ran tests/test_structural_invariants.py in the reviewed worktree at the head and reproduced 6 passed EXIT=0 (log review-gate.log).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches only tests/test_structural_invariants.py and docs/evidence/fragments/the-suite-tests-behaviour/structural-guards-have-one-home.html, both inside the reviewed run's declared write paths, and edits neither of the two nodes' changed files.\nSCORE durability: 13\nJUSTIFICATION durability: negative-control.log shows the one-parser guard reddens when a fromisoformat call is reinstated in crew/promotion_gate.py, but two of the six restored guards are weaker than the invariant they claim: tests/test_structural_invariants.py:145 scans only the top-level ast body for a parse_utc/parse_iso definition, and the node-identity check at :305 passes vacuously at head.\nSCORE fit: 17\nJUSTIFICATION fit: the module follows the suite's ast-source-read idiom (cf. tests/test_picker_helpers_have_one_owner.py:80) and introduces no plan, version or ticket identifier, but the evidence fragment at structural-guards-have-one-home.html:23 ends without a terminating newline.\nSCORE reuse: 12\nJUSTIFICATION reuse: the definition-uniqueness scan at tests/test_structural_invariants.py:134 re-implements a capability tests/test_picker_helpers_have_one_owner.py:80 _defined_names and :105 already own via ast, and _module_paths at :29 re-implements the source enumeration owned by reckon/served_code.py:83 _source_files, neither extending its owner.\nFINDING tests/test_structural_invariants.py:145 follow-on: the parse_utc/parse_iso definition scan reads only `tree.body`, so a second definition nested in a class, a function or a conditional evades it, whereas the is_section_identity definer check at :167 uses ast.walk and does catch nested definitions; the inconsistent depth leaves the one-definition invariant with a hole the existing owner tests/test_picker_helpers_have_one_owner.py:80 (which uses ast.walk) does not have.\nFINDING tests/test_structural_invariants.py:305 follow-on: the node-identity check passes vacuously at the reviewed head, because set(re.findall(...)) over tests/test_prescription.py is empty (no lowercase hyphenated identity with three or more hyphen groups occurs in that fixture), so `candidates <= set(PRESCRIBED_PROPERTIES)` is True whatever the fixture says; unlike its sibling plan-document check at :292 it carries no non-vacuity guard, so the restored guard is unexercised and would not catch a regression.\nFINDING tests/test_structural_invariants.py:134 follow-on: re-implements a capability the repository already owns without extending its owner, since tests/test_picker_helpers_have_one_owner.py:80 _defined_names and :105 test_no_second_definition_of_an_owned_helper_under_picker already scan a module tree for a second definition of an owned name through ast, and :29 _module_paths duplicates the source enumeration owned by reckon/served_code.py:83 _source_files.\nFINDING docs/evidence/fragments/the-suite-tests-behaviour/structural-guards-have-one-home.html:23 follow-on: the evidence fragment ends without a terminating newline (the diff carries \"\\ No newline at end of file\"), unlike the surrounding files the node wrote.",
+  "review_run_id": "r-20261011T020219934915-review-of-structural-guards-have-one-home",
+  "reviewed_base_sha": "02e06d665f64f67d0304f5148b3ec9c088f3f182",
+  "reviewed_head_sha": "c47c99ef603cff0385b30db8918ba0103224c514",
+  "reviewed_run_id": "r-20261011T014220490358-structural-guards-have-one-home",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 13,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 12,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T02:09:00.000000+00:00",
+  "total": 97
+}
