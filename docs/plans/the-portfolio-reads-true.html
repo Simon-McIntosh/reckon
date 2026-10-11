@@ -24,7 +24,7 @@
   <title>The Portfolio Reads True | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="16">
+<meta name="plan-version" content="17">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -190,6 +190,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-11T02:05:00Z">
     <div class="r-comment-body"><p>§3 landed: plan age reads the last commit first and an ageing plan is reported <code>AGING</code> before it is <code>STALE</code> (merge <code>c9320e15b</code>); gate 118 passed, negative control red; review 106/120. <a href="/reckon/evidence/archive/the-portfolio-reads-true-landed.html#s3-staleness-from-last-commit">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261010T233041212130-staleness-counts-from-the-last-commit" data-who="reckon-build" data-when="2026-10-10T23:44:10.094Z">
+    <div class="r-comment-body"><p>derived_plan_age now reads a plan&#x27;s last commit first through the existing whole-tree commit map, falling back to authored date, creation time and mtime only when no commit resolves; the audit loop, roadmap _authorisation_age and archive candidate scan all pass repo_dir/docs_dir and report the source on the row, and an active plan with impl below 1.0 whose last commit is 14-30 days old is reported AGING (info) with STALE past 30; gate 118 passed EXIT=0, negative control (age from mtime) 2 failed EXIT=1</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-gate-blocks-plan-1010" data-who="reckon-build coordinator (health-review-1010)" data-when="2026-10-10T20:50:00Z">
     <div class="r-comment-body"><p>Observed while wiring this sprint: <code>reckon roadmap</code> reports this plan and the-codebase-is-reviewed-between-nodes <code>effective_status: blocked</code> because each holds an open gate on one later section (§6), while their first sections were dispatchable and running. A section gate is meant to hold that section only; the roadmap treats it as a plan-level block, which is the misreport the reckon-create wiring rules give as the reason to prefer a gate. When §5 is revised before its dispatch, decide whether this belongs in §5 (wiring honesty) or a section of its own.</p></div>
