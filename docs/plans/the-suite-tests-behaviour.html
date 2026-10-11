@@ -26,7 +26,7 @@
   <title>The Suite Tests Behaviour | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="32">
+<meta name="plan-version" content="33">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -158,7 +158,10 @@
     <div class="r-comment-body"><p>Before §4 is dispatched, apply the finding deferred from review <code>r-20261010T201646229881-plan-review-of-the-suite-tests-behaviour</code>: <code>reasoning-1</code> (the section's own census definition yields 476 groups, 563 files and 12,859 lines at <code>646bbacf5</code>, not 463, 559 and 12,757; the three-group figures reproduce, so the baseline text is restated and the census script states its exact definition).</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261011T033855049155-home-fixture-has-one-home" data-who="reckon-build" data-when="2026-10-11T04:08:13.629Z">
-    <div class="r-comment-body"><p>landing: the RECKON_HOME isolation fixture that 22 test modules each copied — a fresh configuration home under the test&#x27;s tmp_path, under the names home, crew_home and isolated_home — now lives once in tests/conftest.py, with the two modules that used a different spelling renamed to the shared name; census group 5795d5fe3d4e falls 22 members → 1 (tests/conftest.py:home) and the multi-member group total 485 → 484, the 22 listed files pass at head as at base (177 passed vs 176, EXIT=0, line delta −161 over tests/).</p></div>
+    <div class="r-comment-body"><p>landing: the RECKON_HOME isolation fixture that 22 test modules each copied — a fresh configuration home under the test's tmp_path, under the names home, crew_home and isolated_home — now lives once in tests/conftest.py, with the two modules that used a different spelling renamed to the shared name; census group 5795d5fe3d4e falls 22 members → 1 (tests/conftest.py:home) and the multi-member group total 485 → 484, the 22 listed files pass at head as at base (177 passed vs 176, EXIT=0, line delta −161 over tests/).</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261011T041500243244-review-of-home-fixture-has-one-home" data-who="reckon-build" data-when="2026-10-11T04:23:17.662Z">
+    <div class="r-comment-body"><p>landing: an independent run review is stored for r-20261011T033855049155-home-fixture-has-one-home — a parsed record scoring all six dimensions 0..20 (goal_fidelity 19, evidence 13, scope_discipline 20, durability 18, fit 17, reuse 20; total 107), naming reviewed_base_sha 776a5d59b48da3f9c65070c2168ff478699e9ffa and reviewed_head_sha 4ee347593e63c892ba023557c250ba034352f9fa, and carrying added_failure_count 0 and added_failure_ids [] derived from the reviewed run&#x27;s own baseline_suite and after_suite gate logs; the substantive change (§4&#x27;s home-fixture family, census group 5795d5fe3d4e 22 members -&gt; 1) is sound, and the two follow-on findings name a truncated head-arm log and a test placed in tests/conftest.py.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261010T203635984410-suite-record-counts-skips" data-who="reckon-build" data-when="2026-10-10T20:47:14.471Z">
     <div class="r-comment-body"><p>The standing-suite record now carries skipped and skipped_ids — the count was already parsed by _result_counts and discarded by _build_counts and is now carried through, and skipped_ids adds the per-id extractor for the SKIPPED lines a -rs summary lists (path:lineno location, separator colon stripped). Measure: tests/test_suite_record_counts_skips.py passes EXIT=0, recording skipped == 2 with both ids for a log ending 3 failed, 10 passed, 2 skipped and 0 with an empty list when absent.</p></div>

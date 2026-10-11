@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-11T04:23:17.662Z",
+  "dispatched_at": "2026-10-11T04:15:41Z",
+  "findings": [
+    {
+      "file": "logs/after.txt",
+      "line": "5",
+      "severity": "follow-on",
+      "text": "follow-on: the head-arm gate log is truncated -- it ends at 40% plus fourteen tests with no pytest summary line and no EXIT= line -- while the manifest's after_suite marks it completed true with 177 passed and artifacts quotes after.txt for 177 passed in 596.23s EXIT=0; the file was also hand-edited after the run (its header names 4ee347593 while after_suite.revision names 1bac3958d, and negative_control_note's explanation of that does not match the file). The result is real (the run stream shows 177 passed EXIT=0) but the durable receipt the record cites does not carry it."
+    },
+    {
+      "file": "tests/conftest.py",
+      "line": "1184",
+      "severity": "follow-on",
+      "text": "follow-on: the new isolation test is defined in tests/conftest.py rather than in tests/; conftest.py is collected, so the test runs, but a test in a fixture module is easy to miss in a per-file reading and does not sit with its peers."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read both commits 1bac3958d (the fixture move) and 4ee347593 (the landed-evidence fragment); all 22 module-level home/crew_home/isolated_home fixtures are gone at head, no crew_home/isolated_home fixture reference survives, and the two differently-named modules are renamed to the shared home.",
+    "done_when": "the census script beside the log (logs/census.py) reports the owned group at one member in tests/conftest.py and the whole census before/after (groups 485 -> 484); the 22 touched files pass at head with the same pass ids as at base (176 base, 177 head); the line delta over tests/ is negative; the negative control is executed and logged red.",
+    "goal": "node goal (plan reckon:the-suite-tests-behaviour \u00a74) is the home-fixture family that 22 test modules each copied -- a fresh RECKON_HOME under the test's tmp_path, under the names home, crew_home and isolated_home -- moving to one definition in tests/conftest.py; the change does exactly that and the census confirms group 5795d5fe3d4e falls 22 -> 1.",
+    "manifest": "read; it declares the fixture consolidation, the census 22 -> 1, base 176 / head 177 passed, EXIT=0, and the negative control red; its after_suite cites logs/after.txt for the head result, but that log is truncated and does not itself carry the summary line.",
+    "write_paths": "git diff 776a5d59b..4ee347593 touches 24 paths -- the 22 listed test modules, tests/conftest.py and the evidence fragment -- every one inside the declared write paths; nothing outside was created, removed or reformatted."
+  },
+  "justifications": {
+    "durability": "logs/negctl.txt with logs/negctl_mutate.py reinstates the regression (the conftest fixture made to leave RECKON_HOME at the real home) and reddens tests/conftest.py::test_shared_home_fixture_never_targets_the_real_store with 1 failed, EXIT=1, so the guard is shown to fire rather than only to pass.",
+    "evidence": "the change is pinned by a new isolation test and the census, and base 176 / head 177 passed both read EXIT=0; but the head arm's own log logs/after.txt is truncated mid progress bar with no summary line and no EXIT= line, so the record's cited receipt does not contain the 177 passed the manifest and landing fragment assert -- the completed run is corroborated only by the run stream, not by the cited log.",
+    "fit": "the fixture sits beside the existing autouse isolated_reckon_home and composes the existing real_store_home and real_store_is_not_a_fixture_target helpers; no plan, sprint or ticket label appears in any added name or comment, but the new test function test_shared_home_fixture_never_targets_the_real_store lives in tests/conftest.py rather than a test module, which is unusual placement for a test.",
+    "goal_fidelity": "tests/conftest.py:1173 defines the single home fixture and every one of the 22 copies is deleted; census group 5795d5fe3d4e is 22 members in logs/census-before.txt and 1 member (tests/conftest.py:home) in logs/census-after.txt, matching the \u00a74 home-fixture deliverable.",
+    "reuse": "22 identical fixture bodies collapse to one in tests/conftest.py and the isolation assertion reuses the existing real_store_is_not_a_fixture_target helper rather than restating the real-store check; the remaining home-fixture families carry different bodies and are left for later nodes by \u00a74.",
+    "scope_discipline": "git diff 776a5d59b..4ee347593 changes 24 paths, all within the declared write paths (22 test modules, tests/conftest.py, the evidence fragment); the diff is 26 insertions and 184 deletions and touches no production source and no unrelated file."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: node goal (plan reckon:the-suite-tests-behaviour \u00a74) is the home-fixture family that 22 test modules each copied -- a fresh RECKON_HOME under the test's tmp_path, under the names home, crew_home and isolated_home -- moving to one definition in tests/conftest.py; the change does exactly that and the census confirms group 5795d5fe3d4e falls 22 -> 1.\nVERDICT done_when: the census script beside the log (logs/census.py) reports the owned group at one member in tests/conftest.py and the whole census before/after (groups 485 -> 484); the 22 touched files pass at head with the same pass ids as at base (176 base, 177 head); the line delta over tests/ is negative; the negative control is executed and logged red.\nVERDICT write_paths: git diff 776a5d59b..4ee347593 touches 24 paths -- the 22 listed test modules, tests/conftest.py and the evidence fragment -- every one inside the declared write paths; nothing outside was created, removed or reformatted.\nVERDICT manifest: read; it declares the fixture consolidation, the census 22 -> 1, base 176 / head 177 passed, EXIT=0, and the negative control red; its after_suite cites logs/after.txt for the head result, but that log is truncated and does not itself carry the summary line.\nVERDICT diff: read both commits 1bac3958d (the fixture move) and 4ee347593 (the landed-evidence fragment); all 22 module-level home/crew_home/isolated_home fixtures are gone at head, no crew_home/isolated_home fixture reference survives, and the two differently-named modules are renamed to the shared home.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/conftest.py:1173 defines the single home fixture and every one of the 22 copies is deleted; census group 5795d5fe3d4e is 22 members in logs/census-before.txt and 1 member (tests/conftest.py:home) in logs/census-after.txt, matching the \u00a74 home-fixture deliverable.\nSCORE evidence: 13\nJUSTIFICATION evidence: the change is pinned by a new isolation test and the census, and base 176 / head 177 passed both read EXIT=0; but the head arm's own log logs/after.txt is truncated mid progress bar with no summary line and no EXIT= line, so the record's cited receipt does not contain the 177 passed the manifest and landing fragment assert -- the completed run is corroborated only by the run stream, not by the cited log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 776a5d59b..4ee347593 changes 24 paths, all within the declared write paths (22 test modules, tests/conftest.py, the evidence fragment); the diff is 26 insertions and 184 deletions and touches no production source and no unrelated file.\nSCORE durability: 18\nJUSTIFICATION durability: logs/negctl.txt with logs/negctl_mutate.py reinstates the regression (the conftest fixture made to leave RECKON_HOME at the real home) and reddens tests/conftest.py::test_shared_home_fixture_never_targets_the_real_store with 1 failed, EXIT=1, so the guard is shown to fire rather than only to pass.\nSCORE fit: 17\nJUSTIFICATION fit: the fixture sits beside the existing autouse isolated_reckon_home and composes the existing real_store_home and real_store_is_not_a_fixture_target helpers; no plan, sprint or ticket label appears in any added name or comment, but the new test function test_shared_home_fixture_never_targets_the_real_store lives in tests/conftest.py rather than a test module, which is unusual placement for a test.\nSCORE reuse: 20\nJUSTIFICATION reuse: 22 identical fixture bodies collapse to one in tests/conftest.py and the isolation assertion reuses the existing real_store_is_not_a_fixture_target helper rather than restating the real-store check; the remaining home-fixture families carry different bodies and are left for later nodes by \u00a74.\nFINDING logs/after.txt:5 follow-on: the head-arm gate log is truncated -- it ends at 40% plus fourteen tests with no pytest summary line and no EXIT= line -- while the manifest's after_suite marks it completed true with 177 passed and artifacts quotes after.txt for 177 passed in 596.23s EXIT=0; the file was also hand-edited after the run (its header names 4ee347593 while after_suite.revision names 1bac3958d, and negative_control_note's explanation of that does not match the file). The result is real (the run stream shows 177 passed EXIT=0) but the durable receipt the record cites does not carry it.\nFINDING tests/conftest.py:1184 follow-on: the new isolation test is defined in tests/conftest.py rather than in tests/; conftest.py is collected, so the test runs, but a test in a fixture module is easy to miss in a per-file reading and does not sit with its peers.\n",
+  "review_run_id": "r-20261011T041500243244-review-of-home-fixture-has-one-home",
+  "reviewed_base_sha": "776a5d59b48da3f9c65070c2168ff478699e9ffa",
+  "reviewed_head_sha": "4ee347593e63c892ba023557c250ba034352f9fa",
+  "reviewed_run_id": "r-20261011T033855049155-home-fixture-has-one-home",
+  "reviewer": {
+    "backend": "local",
+    "effort": "standard",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261011T041500243244-review-of-home-fixture-has-one-home",
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T04:22:21.348189+00:00",
+  "total": 107
+}
