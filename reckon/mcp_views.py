@@ -37,7 +37,6 @@ from reckon.lifecycle import (
     TERMINAL_STATUSES,
     effective_status,
     is_section_scoped,
-    unpassed_gate_blockers,
     unresolved_dependencies,
 )
 from reckon.project_state import _natural_identifier_key
@@ -2460,15 +2459,27 @@ def _relations(data: dict[str, Any]) -> dict[str, list[Any]]:
 
 
 def _blocking(data: dict[str, Any], deps: list[dict[str, Any]]) -> list[Any]:
-    from reckon.roadmap import execution_gates
+    from reckon.roadmap import split_unpassed_gates
 
     explicit = data.get("blocked_by")
     result = list(explicit) if isinstance(explicit, list) else []
     result.extend(unresolved_dependencies(deps))
     # Transition gates hold a closure or a choice, not execution, so the
-    # roadmap's execution split governs what counts as blocking here too.
-    result.extend(unpassed_gate_blockers(execution_gates(data)))
+    # roadmap's execution split governs what counts as blocking here too. A gate
+    # naming only later sections holds those sections, not the plan, so it never
+    # reaches this list; the summary reports it beside it.
+    plan_holding, _section_holding = split_unpassed_gates(data)
+    result.extend(plan_holding)
     return result
+
+
+def _section_gate_blockers(data: dict[str, Any]) -> list[dict[str, Any]]:
+    """Report the gates that hold only the sections they name."""
+
+    from reckon.roadmap import split_unpassed_gates
+
+    _plan_holding, section_holding = split_unpassed_gates(data)
+    return section_holding
 
 
 def _section_blocking(deps: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -2656,6 +2667,7 @@ def _summary(
     }
     if selector.type == "plan":
         result["section_blocking"] = _section_blocking(deps)
+        result["section_gate_blockers"] = _section_gate_blockers(data)
         result["sections"] = list(data.get("sections") or [])
         result["todos"] = list(data.get("todos") or [])
     return result

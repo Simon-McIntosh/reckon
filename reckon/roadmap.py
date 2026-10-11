@@ -795,6 +795,36 @@ def execution_gates(plan: dict[str, Any]) -> list[dict[str, Any]]:
     ]
 
 
+def split_unpassed_gates(
+    plan: Mapping[str, Any],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Split a plan's unpassed execution gates by what they hold.
+
+    A gate that names sections holds only those sections, so long as the plan
+    declares at least one implementable section none of its unpassed gates
+    names -- there is still work the gate leaves reachable. When every
+    implementable section is named by an unpassed gate, or the plan declares no
+    implementable section at all, the gates hold the whole plan because no
+    section is left to carry it. A gate that names no sections always holds the
+    plan.
+
+    Both lists carry the row shape :func:`unpassed_gate_blockers` produces, so a
+    caller reports the first into the plan's blocker list and
+    ``effective_status``, and the second beside it as the section-scoped holds.
+    """
+
+    gates = unpassed_gate_blockers(execution_gates(plan))
+    declared = set(implementable_sections(plan.get("section_declarations")))
+    named = {
+        str(section) for gate in gates for section in gate.get("gated_sections") or []
+    }
+    if not declared - named:
+        return gates, []
+    plan_holding = [gate for gate in gates if not gate.get("gated_sections")]
+    section_holding = [gate for gate in gates if gate.get("gated_sections")]
+    return plan_holding, section_holding
+
+
 def closure_blockers(plan: dict[str, Any]) -> list[dict[str, Any]]:
     """Name the pending plan-terminal gates holding a plan's closure."""
 
@@ -3129,7 +3159,8 @@ def _build_roadmap(
             for row in plan.get("blocking") or []
             if isinstance(row, dict) and row.get("kind") == "held"
         ]
-        gate_blockers = unpassed_gate_blockers(execution_gates(plan))
+        authored = _plan_authored_state(plan, docs_dir, project, slug)
+        gate_blockers, section_gate_blockers = split_unpassed_gates(authored)
         decision_sections_map = _plan_decision_sections(plan, docs_dir, project, slug)
         decisions = _decision_rows(plan, decision_sections_map)
         open_decisions = [
@@ -3248,6 +3279,7 @@ def _build_roadmap(
             "explicit_blockers": explicit_blockers,
             "held_blockers": held_blockers,
             "gate_blockers": gate_blockers,
+            "section_gate_blockers": section_gate_blockers,
             "closure_blockers": closure_blockers(plan),
             "decision_blockers": decision_blockers,
             "deferred_decisions": deferred_decisions,
@@ -3256,18 +3288,14 @@ def _build_roadmap(
             "ready": is_ready,
             "readiness": readiness,
             "implementable_sections": implementable_sections(
-                _plan_authored_state(plan, docs_dir, project, slug).get(
-                    "section_declarations"
-                )
+                authored.get("section_declarations")
             ),
             "section_attempts": {
                 section: attempts_by_plan.get(slug, {})
                 .get(section_record_id(section), {})
                 .get("attempts", 0)
                 for section in implementable_sections(
-                    _plan_authored_state(plan, docs_dir, project, slug).get(
-                        "section_declarations"
-                    )
+                    authored.get("section_declarations")
                 )
             },
             "dependency_ready": is_ready,
