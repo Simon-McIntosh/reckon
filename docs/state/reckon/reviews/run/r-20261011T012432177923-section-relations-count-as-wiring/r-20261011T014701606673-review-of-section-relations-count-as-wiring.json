@@ -1,0 +1,82 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed run's baseline_suite and after_suite both record this node's neighbourhood gate with failure_count 1 and failure_ids ['tests/test_one_sprint_item_slug.py::test_consumers_share_the_one_reader'] at base 3eda1223d and head a63fd24dc, so the added set is empty and zero failures are attributable to this change.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/roadmap.py:3610",
+    "reckon/doccheck.py:2699",
+    "reckon/mcp_edit_plan.py:1303"
+  ],
+  "completed_at": "2026-10-11T01:55:14.084Z",
+  "dispatched_at": "2026-10-11T01:47:31Z",
+  "findings": [
+    {
+      "file": "reckon/doccheck.py",
+      "line": "1186",
+      "severity": "follow-on",
+      "text": "follow-on: the required-evidence extractor treats every whitespace-delimited token of the gate text as a candidate plan ref; measured over docs/plans it yields 894 tokens of which 871 are not slugs (bare numbers, capitalised words, HTML tag words), where the repository's own gate-ref reader confines gate text to a #stage-anchored ref, so a future prose word identical to a plan slug would silently silence a real unwired finding."
+    },
+    {
+      "file": "reckon/doccheck.py",
+      "line": "1170",
+      "severity": "follow-on",
+      "text": "follow-on: gate_evidence_slugs_from_gates re-implements the gate-text plan-ref extraction that reckon/roadmap.py:228 _gate_section_refs already owns, without extending it and without its #stage discipline, so a gate's required_evidence is now parsed by two readers that agree today by coincidence rather than by construction."
+    },
+    {
+      "file": "reckon/_schema.py",
+      "line": "322",
+      "severity": "follow-on",
+      "text": "follow-on: the plan's deliverable asks the audit message to name the two section-level forms beside the plan-level ones, but unwired_plan_message still reads only plan-depends-on, plan-blocks, plan-informs and gate, so a reader told a bare plan is unwired is not told a section wire silences it; the file was outside the node's declared write paths."
+    },
+    {
+      "file": "reckon/mcp_discovery.py",
+      "line": "239",
+      "severity": "follow-on",
+      "text": "follow-on: the section_depends_on branch of the create-refusal section_wires input is exercised by no test (only the after branch is, at tests/test_section_relations_count_as_wiring.py:262), and the create ops path cannot set the key, so that half is untested pass-through."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/roadmap.py:3611 (_unwired_plan_findings, reachable via build_roadmap's wiring_findings read at reckon/mcp_views.py:3462 and reckon/project_maintenance_commands.py:1495), reckon/doccheck.py:2699 (the audit run over the corpus), reckon/mcp_edit_plan.py:1303 (_unwired_plan_refusal at the new-plan write boundary).",
+    "diff": "read a63fd24dc and 4afee060f against 3eda1223d commit by commit; the source change adds the two finding inputs and threads them through the audit, roadmap and create-refusal callers, the skill table gains the two section-level rows, the test file is new, and the second commit writes only the evidence fragment.",
+    "done_when": "tests/test_section_relations_count_as_wiring.py audits the synthetic project (x wired by a section wire and a gate naming y, y named only by that gate, z bare) and asserts z alone is reported; the manifest records 8 passed EXIT=0 and logs negative-control.log red with 4 of 8 failing, matching the done-when's requirement that removing the gate-evidence clause redden the test.",
+    "goal": "the node goal is to count a section-level relation or an inbound gate as wiring in the unwired-plan check; reckon/doccheck.py:1151 now returns the finding only when links, gate_count, section_wires and inbound_evidence are all false, and reckon/doccheck.py:1115 _declares_section_wire reads plan-after from state and plan-section-depends-on through section_depends_on.",
+    "manifest": "read; it states the gate test 8 passed EXIT=0, the neighbourhood head 712 passed 1 failed against base 704 passed 1 failed (zero added), and names its logs under logs/.",
+    "write_paths": "read the manifest's declared paths against the diff; the six changed paths (reckon/doccheck.py, reckon/roadmap.py, reckon/mcp_discovery.py, skills/reckon-create/SKILL.md, tests/test_section_relations_count_as_wiring.py, docs/evidence/fragments/the-portfolio-reads-true/section-relations-count-as-wiring.html) all sit inside them, and the reviewed tree is clean."
+  },
+  "justifications": {
+    "durability": "removing the gate-evidence clause reddens four tests (negative-control.log), so the guards bite, but the section_depends_on half of the create-refusal input at reckon/mcp_discovery.py:239 is exercised by no test.",
+    "evidence": "the gate test at tests/test_section_relations_count_as_wiring.py:166 asserts the exact done-when population and its result is recorded in the manifest and logs/gate-head.log, and negative-control.log is a real red control.",
+    "fit": "names and docstrings at reckon/doccheck.py:1170 and reckon/roadmap.py:1234 describe the mechanism with no plan or ticket label, though the same private name _declares_section_wire is defined in two modules.",
+    "goal_fidelity": "reckon/doccheck.py:1151 now clears the finding for a section wire or an inbound gate, which is exactly the goal, though reckon/_schema.py:322 unwired_plan_message still does not name the section forms the plan's deliverable also asks for.",
+    "reuse": "reckon/doccheck.py:1170 re-tokenises a gate's required_evidence with its own regex and parse_plan_ref call rather than extending the gate-text ref reader reckon/roadmap.py:228 _gate_section_refs already owns.",
+    "scope_discipline": "every path in git show --stat a63fd24dc and 4afee060f is inside the manifest's declared write paths, and no unrelated file is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to count a section-level relation or an inbound gate as wiring in the unwired-plan check; reckon/doccheck.py:1151 now returns the finding only when links, gate_count, section_wires and inbound_evidence are all false, and reckon/doccheck.py:1115 _declares_section_wire reads plan-after from state and plan-section-depends-on through section_depends_on.\nVERDICT done_when: tests/test_section_relations_count_as_wiring.py audits the synthetic project (x wired by a section wire and a gate naming y, y named only by that gate, z bare) and asserts z alone is reported; the manifest records it 8 passed EXIT=0 and logs negative-control.log red with 4 of 8 failing, matching the done-when's requirement that the gate-evidence clause removal redden the test.\nVERDICT write_paths: read the manifest's declared paths against the diff; the six changed paths (reckon/doccheck.py, reckon/roadmap.py, reckon/mcp_discovery.py, skills/reckon-create/SKILL.md, tests/test_section_relations_count_as_wiring.py, docs/evidence/fragments/the-portfolio-reads-true/section-relations-count-as-wiring.html) all sit inside them, and the reviewed tree is clean.\nVERDICT manifest: read; it states the gate test 8 passed EXIT=0, the neighbourhood head 712 passed 1 failed against base 704 passed 1 failed (zero added), and names its logs under logs/.\nVERDICT diff: read a63fd24dc and 4afee060f against 3eda1223d commit by commit; the source change adds the two finding inputs and threads them through the audit, roadmap and create-refusal callers, the skill table gains the two section-level rows, the test file is new, and the second commit writes only the evidence fragment.\nCALL_SITES: reckon/roadmap.py:3611, reckon/doccheck.py:2699, reckon/mcp_edit_plan.py:1303\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/doccheck.py:1151 now clears the finding for a section wire or an inbound gate, which is exactly the goal, though reckon/_schema.py:322 unwired_plan_message still does not name the section forms the plan's deliverable also asks for.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate test at tests/test_section_relations_count_as_wiring.py:166 asserts the exact done-when population and its result is recorded in the manifest and logs/gate-head.log, and negative-control.log is a real red control.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git show --stat a63fd24dc and 4afee060f is inside the manifest's declared write paths, and no unrelated file is touched.\nSCORE durability: 17\nJUSTIFICATION durability: removing the gate-evidence clause reddens four tests (negative-control.log), so the guards bite, but the section_depends_on half of the create-refusal input at reckon/mcp_discovery.py:239 is exercised by no test.\nSCORE fit: 16\nJUSTIFICATION fit: names and docstrings at reckon/doccheck.py:1170 and reckon/roadmap.py:1234 describe the mechanism with no plan or ticket label, though the same private name _declares_section_wire is defined in two modules.\nSCORE reuse: 12\nJUSTIFICATION reuse: reckon/doccheck.py:1170 re-tokenises a gate's required_evidence with its own regex and parse_plan_ref call rather than extending the gate-text ref reader reckon/roadmap.py:228 _gate_section_refs already owns.\nFINDING reckon/doccheck.py:1186 follow-on: the required-evidence extractor treats every whitespace-delimited token of the gate text as a candidate plan ref; measured over docs/plans it yields 894 tokens of which 871 are not slugs (bare numbers, capitalised words, HTML tag words), where the repository's own gate-ref reader confines gate text to a #stage-anchored ref, so a future prose word identical to a plan slug would silently silence a real unwired finding.\nFINDING reckon/doccheck.py:1170 follow-on: gate_evidence_slugs_from_gates re-implements the gate-text plan-ref extraction that reckon/roadmap.py:228 _gate_section_refs already owns, without extending it and without its #stage discipline, so the gate's required_evidence is now parsed by two readers that agree today by coincidence rather than by construction.\nFINDING reckon/_schema.py:322 follow-on: the plan's deliverable asks the audit message to name the two section-level forms beside the plan-level ones, but unwired_plan_message still reads only plan-depends-on, plan-blocks, plan-informs and gate, so a reader told a bare plan is unwired is not told a section wire silences it; the file was outside the node's declared write paths.\nFINDING reckon/mcp_discovery.py:239 follow-on: the section_depends_on branch of the create-refusal section_wires input is exercised by no test (only the after branch is, at tests/test_section_relations_count_as_wiring.py:262), and the create ops path cannot set the key, so that half is untested pass-through.\n",
+  "review_run_id": "r-20261011T014701606673-review-of-section-relations-count-as-wiring",
+  "reviewed_base_sha": "3eda1223d0fabc78d887faa70034e709c2721319",
+  "reviewed_head_sha": "4afee060f46aea2ca0650a3e06f433e880fa117d",
+  "reviewed_run_id": "r-20261011T012432177923-section-relations-count-as-wiring",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 12,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T01:54:11.728378+00:00",
+  "total": 102
+}
