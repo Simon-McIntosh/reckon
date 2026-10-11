@@ -24,7 +24,7 @@
   <title>The Portfolio Reads True | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="28">
+<meta name="plan-version" content="29">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -231,7 +231,7 @@
     <div class="r-comment-body"><p>Shortened the impl_source field description in reckon/_schema.py to name the three sources (computed/declarations/authored) and the absent case, plus trimmed four PlanState descriptions that restated their own field name (standalone, wall_clock_hours, milestone, sprint); the compact schema view now measures 24452 bytes, 124 under the 24576-byte bound, and tests/test_mcp_views.py::test_raw_and_schema_are_explicit_layers passes.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261011T005227762513-review-of-schema-view-within-bound" data-who="reckon-build" data-when="2026-10-11T00:59:13.614Z">
-    <div class="r-comment-body"><p>Independent review of r-20261011T003218530440-schema-view-within-bound at head 6784834dc: verdict parsed, total 113 (goal_fidelity 19, evidence 17, scope_discipline 19, durability 19, fit 19, reuse 20); the done-when holds — the named test passes at head (re-run EXIT=0) and gate-head.log prints 24452 bytes / margin 124 under the 24576 bound, added_failure_count 0 — with one follow-on finding (the head gate log&#x27;s header names the base revision, so no log ties the measurement to the landed commit); no blocking findings.</p></div>
+    <div class="r-comment-body"><p>Independent review of r-20261011T003218530440-schema-view-within-bound at head 6784834dc: verdict parsed, total 113 (goal_fidelity 19, evidence 17, scope_discipline 19, durability 19, fit 19, reuse 20); the done-when holds — the named test passes at head (re-run EXIT=0) and gate-head.log prints 24452 bytes / margin 124 under the 24576 bound, added_failure_count 0 — with one follow-on finding (the head gate log's header names the base revision, so no log ties the measurement to the landed commit); no blocking findings.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261011T001008724801-audit-reports-sprint-membership" data-who="reckon-build" data-when="2026-10-11T00:24:58.857Z">
     <div class="r-comment-body"><p>reckon audit now emits SPRINT_MEMBERSHIP — a warn for a plan whose declared sprint and the sprint that lists it disagree (either end, at most one row per plan), and an info for a shipped plan a still-open sprint lists; tests/test_audit_reports_sprint_membership.py passes EXIT=0 with exactly two warn rows (b, c), none for the agreeing plan a, and one info row (d).</p></div>
@@ -241,6 +241,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-10-11T02:45:00Z">
     <div class="r-comment-body"><p>§4 landed: <code>SPRINT_MEMBERSHIP</code> compares a plan's sprint with the sprint's list (merge <code>8eaf29326</code>); 32 rows on reckon at head; review 101/120. The severity that reaches readers and the duplicated slug helper are repaired by <code>membership-severity-reaches-readers</code>. <a href="/reckon/evidence/archive/the-portfolio-reads-true-landed.html#s4-sprint-membership">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-s7-boundary-1011" data-who="reckon-build" data-when="2026-10-11T03:10:00Z">
+    <div class="r-comment-body"><p>To apply to §'s text before its dispatch (content review finding <code>reasoning-1</code>): the deliverable leaves undefined the boundary that decides the outcome, a plan that declares no implementable section outside its gated ones. That includes a plan with no section declarations at all. It is held by the gate, so the plan-level reading stands. This keeps <code>tests/test_roadmap.py::test_gate_verdict_blocks_and_releases_downstream_sections_without_status_edit</code> passing unchanged: its plan carries a gate naming <code>deployment</code> and <code>release</code> and declares no sections, and it must still read <code>blocked</code> and stay out of <code>ready_now</code>. A gate holds only its sections when the plan declares at least one implementable section that no unpassed gate names. The done-when gains that test as a named keep, and the temporary project gains a fourth plan with a section gate and no declarations, asserted blocked.</p></div>
 </div>
 </section>
 </main>
