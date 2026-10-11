@@ -94,7 +94,7 @@ dispatch gate refuses an implementation node until one exists, at any version,
 with every finding answered. Compose it once per plan:
 
 ```bash
-reckon crew review-plan --project <project> --plan <slug> --rubric design --session <session>
+reckon crew review --project <project> --plan <slug> --rubric design --session <session>
 ```
 
 Read it back with `crew(project, view="plan-review", plan=<slug>)`. The reuse
@@ -105,7 +105,7 @@ review-need judge finds its change needs no new review. A refusal names the
 exact command it is waiting for.
 
 Answer every finding before dispatching, acted on or declined with a reason:
-`reckon crew review-plan --project <project> --plan <slug> --answer <finding> --acted`,
+`reckon crew review --project <project> --plan <slug> --answer <finding> --acted`,
 or `--declined "<reason>"` in place of `--acted`. **Answer rather than edit.**
 Edit the plan only for findings about the sections you are about to build;
 answer a finding an existing section already meets `--acted`, naming it, and
@@ -210,7 +210,7 @@ reckon crew placement --ensure --session <session> --project <project>
 reckon crew recover    reckon crew redispatch --run <id> --backend <backend> --reason <text>
 reckon crew repair-status --run <id> --status <verdict> --reason <text>    # replaces a manifest's status word, keeping the file as delivered
 reckon crew resume --run <id> --advice <text>    reckon crew resume-ready --project <project>
-reckon crew review-plan --project <project> --plan <slug> --rubric <rubric> --session <session> --local --answer <finding> --acted --declined <reason>
+reckon crew review --project <project> --plan <slug> --rubric <rubric> --session <session> --local --answer <finding> --acted --declined <reason>
 reckon crew shadow    reckon crew stop    reckon crew unwatch --project <project>
 reckon crew verify-gate --project <project> --run <id> --checkout-path <path>
 reckon crew watch --project <project> --stall-window <duration>

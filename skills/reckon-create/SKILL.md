@@ -647,7 +647,7 @@ wiring, measurable done-whens with negative controls, single goals, durable
 evidence paths, resolving anchors, naming and reasoning:
 
 ```bash
-reckon crew review-plan --project <project> --plan <slug> --rubric content --session <session>
+reckon crew review --project <project> --plan <slug> --rubric content --session <session>
 ```
 
 It runs read-only, stores its findings against the plan's content, and its
@@ -656,8 +656,8 @@ completion reaches your session's follower. Read it back with
 acted on or declined with a one-line reason:
 
 ```bash
-reckon crew review-plan --project <project> --plan <slug> --answer <finding> --acted
-reckon crew review-plan --project <project> --plan <slug> --answer <finding> --declined "<reason>"
+reckon crew review --project <project> --plan <slug> --answer <finding> --acted
+reckon crew review --project <project> --plan <slug> --answer <finding> --declined "<reason>"
 ```
 
 Edit the plan only for a finding you act on. A later edit is judged for
@@ -679,7 +679,7 @@ before any build is dispatched, with your session in place of the invocation's
 `<session>`:
 
 ```bash
-reckon crew review-plan --project <project> --plan <slug> --rubric content --session <session>
+reckon crew review --project <project> --plan <slug> --rubric content --session <session>
 ```
 
 The tool composes no review itself; the author decides when the session's

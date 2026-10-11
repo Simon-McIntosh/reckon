@@ -107,7 +107,13 @@ def test_fan_out_rule_lands_in_every_skill_a_session_holds() -> None:
         ROOT / "reckon" / "crew" / "AGENTS.md": "reckon/crew/AGENTS.md",
         **{
             ROOT / "skills" / name / "SKILL.md": f"skills/{name}/SKILL.md"
-            for name in ("reckon-status", "reckon-roadmap", "reckon-sprint", "reckon-create")
+            for name in (
+                "reckon-status",
+                "reckon-roadmap",
+                "reckon-sprint",
+                "reckon-create",
+                "reckon-review",
+            )
         },
     }
     for path, label in targets.items():
@@ -132,6 +138,53 @@ def test_sprint_skill_hands_execution_to_ship() -> None:
     sprint = normalized((ROOT / "skills" / "reckon-sprint" / "SKILL.md").read_text())
     assert "This skill never dispatches workers" in sprint
     assert "/reckon-build S1" in sprint
+
+
+# A skill body is loaded whole when its skill is invoked, so its size is a
+# per-call cost. The review core is one loop per mode, not a procedure manual:
+# the counts, ranks and dispositions it names live in the plan it cites, so the
+# body stays a short index of what to run and when to stop.
+SKILL_BODY_WORD_LIMIT = 1_500
+
+
+def _skill_body(path: Path) -> str:
+    """A skill's body: its text with the YAML frontmatter removed.
+
+    The frontmatter names the skill and its trigger verbs rather than
+    instructing a reader mid-loop, so it is not counted against the bound.
+    """
+    text = path.read_text(encoding="utf-8")
+    if text.startswith("---"):
+        _, _, rest = text.partition("\n---")
+        text = rest.split("\n", 1)[1] if "\n" in rest else ""
+    return text
+
+
+def test_review_skill_is_discovered_beside_the_other_reckon_skills() -> None:
+    """reckon-review ships as a peer skill, and its body stays within the bound.
+
+    It is discovered the same way every reckon skill is — a directory under
+    ``skills/`` holding a ``SKILL.md`` — so a session that has one has this one
+    too, and no separate registration is owed. The body bound is what keeps the
+    core from becoming the procedure manual the plan already holds: when the
+    body grows, the fix is to move detail into the plan, not to widen the bound.
+    """
+    skill_root = ROOT / "skills"
+    discovered = sorted(path.parent.name for path in skill_root.glob("*/SKILL.md"))
+
+    assert "reckon-review" in discovered, (
+        f"reckon-review is not discovered beside the other reckon skills: {discovered}"
+    )
+    assert len(discovered) > 1, discovered
+
+    body = _skill_body(skill_root / "reckon-review" / "SKILL.md")
+    words = len(body.split())
+    assert words <= SKILL_BODY_WORD_LIMIT, (
+        f"reckon-review's body is {words} words against a {SKILL_BODY_WORD_LIMIT} "
+        "bound. This file is loaded whole on invocation, so growth costs every "
+        "review; move procedural detail into the plan the skill cites rather "
+        "than widening this bound."
+    )
 
 
 def test_skills_use_progressive_reads_by_intent() -> None:
@@ -1144,7 +1197,7 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
         ("crew", "repair-status"): {"--run", "--status", "--reason"},
         ("crew", "resume"): {"--run", "--advice"},
         ("crew", "resume-ready"): {"--project"},
-        ("crew", "review-plan"): {
+        ("crew", "review"): {
             "--project",
             "--plan",
             "--rubric",
