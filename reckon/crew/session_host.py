@@ -294,9 +294,6 @@ class SessionHost:
 
     # -- identity -----------------------------------------------------------
 
-    def _record_name(self) -> str:
-        return f"{self._stem}{RECORD_SUFFIX}"
-
     @property
     def owner(self) -> dict[str, Any]:
         return dict(self._owner)
