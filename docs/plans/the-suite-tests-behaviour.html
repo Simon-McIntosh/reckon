@@ -26,7 +26,7 @@
   <title>The Suite Tests Behaviour | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="34">
+<meta name="plan-version" content="35">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -165,6 +165,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261011T034053001095-git-test-helper-has-one-home" data-who="reckon-build" data-when="2026-10-11T04:11:24.871Z">
     <div class="r-comment-body"><p>extracted one `git` helper into `tests/helpers/git.py` (with `tests/helpers/__init__.py`), imported as `_git` by the 32 scoped modules, dropping a now-unused `subprocess` import; the census hashing every module-level non-test function in `tests/` shows the 64-file `_git` group falling to 32 (none of the scoped files remain) with the 40-file `_git` family unchanged; the 32 scoped files pass with the same ids on both arms (252 passed, EXIT=0 each), the line delta over `tests/` is negative (51 added, 377 deleted, delta -326), and the negative control (shared import pointed at a raising stub) fails 34 importing tests (EXIT=1).</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261011T041408150508-review-of-git-test-helper-has-one-home" data-who="reckon-build" data-when="2026-10-11T04:27:53.630Z">
+    <div class="r-comment-body"><p>reviewed r-20261011T034053001095-git-test-helper-has-one-home (commits 064ae85a code, 46da4df docs; base 776a5d59..head 46da4df) — a test-only refactor giving the `_git` subprocess wrapper one home in tests/helpers/git.py, imported as `_git` by 32 modules — as parsed with all six dimensions scored (durability 19, evidence 18, fit 20, goal_fidelity 20, reuse 20, scope_discipline 19; total 116/120), three follow-ons and no blocker; added_failure_count 0, added_failure_ids [].</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261010T203635984410-suite-record-counts-skips" data-who="reckon-build" data-when="2026-10-10T20:47:14.471Z">
     <div class="r-comment-body"><p>The standing-suite record now carries skipped and skipped_ids — the count was already parsed by _result_counts and discarded by _build_counts and is now carried through, and skipped_ids adds the per-id extractor for the SKIPPED lines a -rs summary lists (path:lineno location, separator colon stripped). Measure: tests/test_suite_record_counts_skips.py passes EXIT=0, recording skipped == 2 with both ids for a log ending 3 failed, 10 passed, 2 skipped and 0 with an empty list when absent.</p></div>

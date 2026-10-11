@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-11T04:27:53.630Z",
+  "dispatched_at": "2026-10-11T04:14:52Z",
+  "findings": [
+    {
+      "file": "tests/helpers/git.py",
+      "line": "18",
+      "severity": "follow-on",
+      "text": "follow-on: the two new files each add a ruff finding, against the repository's binding rule that a commit adds none. W is in `[tool.ruff.lint].select` and W292 is not ignored, so `ruff check` at the reviewed head reports `tests/helpers/__init__.py:1:41: W292 No newline at end of file` and `tests/helpers/git.py:18:33: W292 No newline at end of file` - neither file ends in a newline (verified with od on `git show 46da4df:<path>`). The manifest's evidence_inputs claims 'ruff check adds no findings (6 findings on changed files all pre-existing, same ids shifted)', but that counts only the 32 pre-existing test files (measured: 6 findings at base, 6 at head, identical ids, lines shifted, delta 0, reproduced) and omits the two changed files under tests/helpers/, which take the changed-file count 6 -> 8. The same omission is in the format claim: `ruff format --check` reports 7 unformatted over the 32 test files (unchanged base->head, reproduced) but the two new helper files are also unformatted (9 total). Trivial fix - append a trailing newline to each new file - and non-blocking; the substantive no-new-findings-on-the-edited-test-files claim holds.",
+      "type": "lint-finding-added"
+    },
+    {
+      "file": "manifest.md",
+      "line": "tests",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest `tests:` line carries an unsubstituted template placeholder, `/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q -n 8 --dist loadfile --basetemp=/tmp/pt-after <32 scoped files> -> 252 passed in 325.18s (EXIT=0)`. The literal command that ran is present in full in after_suite and baseline_suite (32 absolute paths each), so the field is recoverable, but the `tests:` field itself is a template rather than the command that ran.",
+      "type": "manifest-placeholder"
+    },
+    {
+      "file": "logs/census.py",
+      "line": "_normalise",
+      "severity": "follow-on",
+      "text": "follow-on: the census normalises the whole FunctionDef node, so its hash includes the function name (and the return annotation), whereas the plan defines the normalised body as 'ast.dump of the body, arguments and decorators'. At one revision the two definitions give different whole-census counts: the node's name-included script reports 473 groups (before and after), a name-excluded script over the same trees reports 480; the plan names 476 at an earlier revision (646bbacf5) and the coordinator's brief 485, so the count is revision- and definition-sensitive and none of the three reproduces another. Materiality is low: the node's own group of interest - the 64-file `_git` family - reproduces identically under either definition (64 files at base, 32 at head, with the 32 scoped files absent from it and the 40-file `_git` family unchanged), which is what the brief required the census to show 'before and after'. The census hash values themselves are Python-version-dependent (ast.dump differs across interpreters), so only the grouping, not the digest, is portable.",
+      "type": "census-definition-deviation"
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "No production symbol is touched. The change introduces one test-only helper, `git` in tests/helpers/git.py, imported as `_git` by the 32 scoped modules; there is no src/ or reckon/ caller. call_site_count is reported 0 on that basis, as the sibling test-helper review did, even though 32 test modules are import sites.",
+    "diff": "Read commit by commit. The code commit 064ae85a 'refactor(tests): give the git subprocess helper one home' changes 34 files, 51 insertions / 377 deletions: new tests/helpers/__init__.py (one docstring line) and tests/helpers/git.py (an 18-line module holding `git(repository: Path, *arguments: str) -> str`, a `subprocess.run([...], cwd=repository, check=True, capture_output=True, text=True)` returning `stdout.strip()`), and 32 test modules each losing the identical private `_git` definition and gaining `from tests.helpers.git import git as _git`; a now-unused `import subprocess` is dropped where the helper was its only user. The docs commit 46da4df adds a 3-line evidence fragment. The diffstat reconciles with the manifest's changed_paths.",
+    "done_when": "The brief's deliverables are met and independently reproduced. The census group for this node: my own run of logs/census.py over a fresh extraction of base 776a5d59 gives a 64-file `_git` group and, over head 46da4df, the same group at 32 files with none of the 32 scoped files in it (the untouched remainder), the 40-file `_git` family unchanged - matching the brief's '64 files -> 32'. The tests: I re-ran the 32 scoped files at the head in an independent scratch extraction of 46da4df (252 passed, EXIT=0) and, at base, reproduce the same 252 passed, EXIT=0 - same ids both arms. Line delta over tests/ is negative (-326). The negative control was executed and logged and I reproduced the effect independently: pointing the shared import at a raising stub makes the importing tests fail in fixture setup. Two blemishes are named as follow-ons (the two new files add a W292 ruff finding contrary to the manifest's lint claim; the `tests:` manifest line is a template).",
+    "goal": "The brief asked for exactly one thing: extract the 64-file `_git` helper - the subprocess git wrapper - into tests/helpers/git.py as a single `git` function, add tests/helpers/__init__.py, and have the 32 scoped modules import it (aliased to `_git` to keep the diff to the import lines). That is what landed, without deviation: the bodies are byte-identical to the copies they replace, the alias preserves every call site, and no behaviour changes. This node is one half of plan section 4's 64-file group; the remaining 32 copies are a sibling node's scope, so the group legitimately stays at 32 after this node - the brief's own census criterion, not a gap.",
+    "manifest": "status complete; commits [064ae85a, 46da4df]; both arms present, complete, and reconciling: baseline_suite and after_suite each carry revision, the full literal command, exit_status 0, completed true, failure_count 0, failure_ids [] - so added_failure_count 0, added_failure_ids []. changed_paths lists the 32 test files, tests/helpers/*, and one evidence fragment and reconciles with the diffstat. Two inaccuracies: the evidence_inputs ruff figure counts only the 32 pre-existing test files and omits the 2 new helper files, which each add a W292 finding; and the `tests:` field carries a `<32 scoped files>` placeholder. The declared docs/figures/... write path was not used and no figure was written, which the brief permits.",
+    "write_paths": "Declared: tests/helpers/, the 32 named test files, docs/evidence/fragments/the-suite-tests-behaviour/git-test-helper-has-one-home.html, and a figures directory. The diff touches exactly the 32 test files, tests/helpers/__init__.py, tests/helpers/git.py, and the one fragment; nothing outside the grant was written and no sibling's file was touched."
+  },
+  "justifications": {
+    "durability": "The refactor is behaviour-preserving and the shared helper is load-bearing: 32 modules import it and every one exercises it, so a regression in the helper surfaces. I falsified the guard rather than trusting the green suite - mutating tests/helpers/git.py to raise makes the importing tests fail in fixture setup (3 failed, 48 errors over a four-file sample), which is the declared negative control and it fires. The pre-existing suite also independently reproduces green at both arms. Marked 19 rather than 20 only because the change ships two new files that are not ruff-clean (a W292 each), a small avoidable defect on files it introduced.",
+    "evidence": "Strong and independently reproduced, not read: I extracted base 776a5d59 and head 46da4df from the object store and re-ran the 32 scoped files at the head myself (252 passed, EXIT=0) and reproduced the base arm's 252 passed, EXIT=0; re-ran census.py over both trees and confirmed the 64->32 group with the same membership the logs report; and reproduced the negative control by an independent mutation. The reviewed run's own gate logs carry proper headers (revision, tree, module.__file__, cwd) and its baseline_suite/after_suite are complete with literal commands. The deduction is for manifest precision, not the change: the ruff claim omits the two new files (6 -> 8 findings, 7 -> 9 unformatted) and the `tests:` line is a template.",
+    "fit": "Sits exactly where the plan and brief put it: a shared helper module under tests/helpers/ with a package __init__, imported by the copying modules. `from __future__ import annotations` matches the surrounding style; the function keeps the same signature and semantics as the copies. No new abstraction, no parametrisation, no store - the minimum that removes the copies.",
+    "goal_fidelity": "The two required moves - one git helper in tests/helpers/git.py and the __init__.py that makes `tests.helpers.git` importable - are implemented and load-bearing, and the brief's constraint to keep call sites unchanged (alias `as _git`) is honoured. The plan's section 4 done-when items that this node owns all hold: the census group reports 64->32 with no scoped copy outside helpers, the touched files pass with the same pass/fail ids at base and head, the line delta is negative, and the negative control is executed and logged. The section's remaining 32 copies belong to a sibling node.",
+    "reuse": "Reuses the existing subprocess-based pattern verbatim (it is the same body, moved) and reuses the repo's own test package layout; adds no dependency, no store path, no fixture, and no second implementation. The `subprocess` import is kept only where still used and dropped where the helper was its sole consumer.",
+    "scope_discipline": "The diff is exactly the granted surface: the 32 named test files, tests/helpers/__init__.py, tests/helpers/git.py, and the one evidence fragment; no source file under reckon/ is touched, no sibling node's files, and no figure or plan file. The only residue is that the two new files are not ruff-clean, which is a quality slip inside the grant rather than a boundary breach."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the private `_git` subprocess wrapper copied across 32 test modules is now one `git` in tests/helpers/git.py, imported as `_git` so no call site changes; the copies are byte-identical to the helper and nothing under reckon/ is touched. EVIDENCE: independently reproduced - head 46da4df re-run over the 32 scoped files gives 252 passed EXIT=0 and the base arm 776a5d59 gives 252 passed EXIT=0 (same ids); census.py over both trees gives the 64-file `_git` group falling to 32 with none of the scoped files in it and the 40-file family unchanged; the negative control reproduced by my own mutation (raising stub -> importing tests error in fixture setup). SCOPE: 32 test files + tests/helpers/* + one fragment, exactly the grant. DURABILITY: helper is imported and exercised by all 32 modules; guard falsified by mutation. FIT/REUSE: minimum change, reuses the existing pattern and package layout, no new mechanism. FOLLOW-ONS: (1) the two new files each add a W292 ruff finding (no trailing newline), against the repo's 'adds no findings' rule, and the manifest's lint claim counts only the 32 pre-existing test files (6 -> 8 findings; 7 -> 9 unformatted); (2) the manifest `tests:` line carries a `<32 scoped files>` template rather than the literal command (the literal is in after_suite); (3) the census hash includes the function name, so its whole-census count (473) differs from the plan's definition (480 name-excluded) and from the plan's 476 at an earlier revision - the node's group of interest reproduces either way. added_failure_count 0.",
+  "review_run_id": "r-20261011T041408150508-review-of-git-test-helper-has-one-home",
+  "reviewed_base_sha": "776a5d59b48da3f9c65070c2168ff478699e9ffa",
+  "reviewed_head_sha": "46da4df5969dce329e5cde612527d2020cdbec47",
+  "reviewed_run_id": "r-20261011T034053001095-git-test-helper-has-one-home",
+  "reviewer": {
+    "backend": "local",
+    "effort": "standard",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261011T041408150508-review-of-git-test-helper-has-one-home",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T04:25:42.659585+00:00",
+  "total": 116
+}
