@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-section-depends-on" content="{&quot;s6&quot;: [&quot;nothing-lands-unreached#s2&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
   <title>The Codebase Is Reviewed Between Nodes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="32">
+<meta name="plan-version" content="33">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -162,7 +162,7 @@
       <code>tests/test_health_review_parses.py</code>. This section runs after §4, which also writes <code>review.py</code>.</p>
 
     <h2 id="s6">§6 — One review verb composes a code review around a plan or a path</h2>
-<section data-reckon="section" data-id="s6" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s6" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> <code>reckon crew review-plan</code> becomes <code>reckon crew review</code>. Its existing options keep
       their meaning under <code>--plan</code>, and two subjects are added: <code>--around &lt;plan&gt;</code> and <code>--path &lt;path&gt;</code>
       (repeatable). For a code subject the verb resolves the neighbourhood: the production modules named by the plan's implementable
@@ -388,6 +388,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261011T032536529828-review-of-a-path-review-is-stored" data-who="reckon-build" data-when="2026-10-11T03:33:00.633Z">
     <div class="r-comment-body"><p>The review of r-20261011T025459446790-a-path-review-is-stored is stored at /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261011T025459446790-a-path-review-is-stored.at-fea785657da581482008dda58e6a24cd64432e6b.json (and its bare sibling), a parsed record scoring all six dimensions (goal_fidelity 20, evidence 20, scope_discipline 20, durability 19, fit 20, reuse 20; total 119) with reviewed_base_sha 7e06222549ff8e5ce6e1623fb8c5f89a86518e49 and reviewed_head_sha fea785657da581482008dda58e6a24cd64432e6b, added_failure_count 0 and added_failure_ids []; one follow-on finding and no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-close-s6" data-who="reckon-build" data-when="2026-10-11T05:35:00Z">
+    <div class="r-comment-body"><p>§6 closed. <code>reckon crew review --around|--path</code> composes, dispatches and stores a code review (merge <code>a28095a92</code>), and a path-only review is now stored on the delivery pass too (merge <code>6f2688871</code>, review 119/120). The remaining follow-on is that <code>delivered_code_reviews</code>'s <code>around</code> parameter has no caller left. <a href="/reckon/evidence/archive/the-codebase-is-reviewed-between-nodes-landed.html#s6-review-verb">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-s11-known-gate-hole-1011" data-who="reckon-build" data-when="2026-10-11T04:20:00Z">
     <div class="r-comment-body"><p>A known finding for the proving run's neighbourhood, measured on 2026-10-11. The contradiction guard in <code>reckon/crew/promotion_evidence.py</code> refuses a passing gate only when an asserted exit status differs from the log's <code>EXIT=</code> record. With no <code>--gate-exit-status</code>, the status is taken from the log itself, so a log recording <code>EXIT=1</code> promotes as <code>gate: passed</code> with <code>exit_status: 1</code> stored side by side. The guard compares equal values and finds nothing. It happened on run <code>r-20261011T003218530440-schema-view-within-bound</code>, which was promoted citing its base arm; the ledger row was corrected at the next commit after <code>2d3275928</code>. The same guard refused the identical mistake when the status was passed explicitly. A passing verdict with a non-zero exit status is itself the contradiction, so the review this section runs should read it as a known finding, not report it as new.</p></div>
