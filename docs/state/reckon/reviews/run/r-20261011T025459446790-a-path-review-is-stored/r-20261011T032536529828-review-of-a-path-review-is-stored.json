@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:2078",
+    "reckon/crew/routing.py:3180",
+    "reckon/crew/promotion_checks.py:1873"
+  ],
+  "completed_at": "2026-10-11T03:33:00.633Z",
+  "dispatched_at": "2026-10-11T03:26:07Z",
+  "findings": [
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": "2009",
+      "severity": "follow-on",
+      "text": "follow-on: the around parameter on delivered_code_reviews is now passed by no caller after this fix, leaving a documented-but-unused filter argument on a public function."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against 7e062225; 62de92d3c drops the around filter in store_delivered_reviews and adds a path-only test plus an independent-key helper, fea785657 adds the evidence fragment \u2014 three files, all inside scope.",
+    "done_when": "the done_when names tests/test_review_composes_a_code_subject.py passing with EXIT=0, a path-only case read back under an independent key expectation, an importing-set arm with no added failure, and a logged negative control; the manifest records all three with their logs.",
+    "goal": "the node goal is to store a delivered code review whose subject was named by path; reckon/crew/plan_review.py:2201 now reads delivered_code_reviews(project) with no around filter, so a --path-only review (around \"\") reaches the store.",
+    "manifest": "read; it states the gate 6 passed EXIT=0, the importing-set head 484 passed and base 484 passed both EXIT=0, and the negative control 1 failed EXIT=1.",
+    "write_paths": "the declared scope is reckon/crew/plan_review.py, tests/test_review_composes_a_code_subject.py, the evidence fragment and a figures dir; every path in the diff (plan_review.py, the test file, the fragment) is inside it."
+  },
+  "justifications": {
+    "durability": "tests/test_review_composes_a_code_subject.py:321 reddens under the negative control that restores the filter, and its key comes from _expected_neighbourhood_key (line 249) rather than code_review_key, so the read and write sides cannot agree vacuously.",
+    "evidence": "tests/test_review_composes_a_code_subject.py ran 6 passed EXIT=0 (head-arm.log) with the importing set 484/484 on both arms (importing-head-arm.log, importing-base-arm.log) and the negative control logged (negative-control.log).",
+    "fit": "the one-line call change and docstring at reckon/crew/plan_review.py:2196-2204 follow the surrounding _store_deliveries idiom and introduce no name the naming rules forbid.",
+    "goal_fidelity": "reckon/crew/plan_review.py:2201 calls delivered_code_reviews(project) with the around filter removed, so a --path subject's delivery is stored keyed by its neighbourhood, matching the section's requirement.",
+    "reuse": "the diff adds no production definition; it extends the existing owner store_delivered_reviews/delivered_code_reviews rather than forking a delivery path, and the test helper duplicates only the documented digest form the brief asked for.",
+    "scope_discipline": "the diff touches only reckon/crew/plan_review.py, tests/test_review_composes_a_code_subject.py and docs/evidence/fragments/the-codebase-is-reviewed-between-nodes/a-path-review-is-stored.html, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to store a delivered code review whose subject was named by path; reckon/crew/plan_review.py:2201 now reads delivered_code_reviews(project) with no around filter, so a --path-only review (around \"\") reaches the store.\nVERDICT done_when: the done_when names tests/test_review_composes_a_code_subject.py passing with EXIT=0, a path-only case read back under an independent key expectation, an importing-set arm with no added failure, and a logged negative control; the manifest records all three with their logs.\nVERDICT write_paths: the declared scope is reckon/crew/plan_review.py, tests/test_review_composes_a_code_subject.py, the evidence fragment and a figures dir; every path in the diff (plan_review.py, the test file, the fragment) is inside it.\nVERDICT manifest: read; it states the gate 6 passed EXIT=0, the importing-set head 484 passed and base 484 passed both EXIT=0, and the negative control 1 failed EXIT=1.\nVERDICT diff: read commit by commit against 7e062225; 62de92d3c drops the around filter in store_delivered_reviews and adds a path-only test plus an independent-key helper, fea785657 adds the evidence fragment \u2014 three files, all inside scope.\nCALL_SITES: reckon/crew_dispatch_commands.py:2078, reckon/crew/routing.py:3180, reckon/crew/promotion_checks.py:1873\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:2201 calls delivered_code_reviews(project) with the around filter removed, so a --path subject's delivery is stored keyed by its neighbourhood, matching the section's requirement.\nSCORE evidence: 20\nJUSTIFICATION evidence: tests/test_review_composes_a_code_subject.py ran 6 passed EXIT=0 (head-arm.log) with the importing set 484/484 on both arms (importing-head-arm.log, importing-base-arm.log) and the negative control logged (negative-control.log).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only reckon/crew/plan_review.py, tests/test_review_composes_a_code_subject.py and docs/evidence/fragments/the-codebase-is-reviewed-between-nodes/a-path-review-is-stored.html, all inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_review_composes_a_code_subject.py:321 reddens under the negative control that restores the filter, and its key comes from _expected_neighbourhood_key (line 249) rather than code_review_key, so the read and write sides cannot agree vacuously.\nSCORE fit: 20\nJUSTIFICATION fit: the one-line call change and docstring at reckon/crew/plan_review.py:2196-2204 follow the surrounding _store_deliveries idiom and introduce no name the naming rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no production definition; it extends the existing owner store_delivered_reviews/delivered_code_reviews rather than forking a delivery path, and the test helper duplicates only the documented digest form the brief asked for.\nFINDING reckon/crew/plan_review.py:2009 follow-on: the around parameter on delivered_code_reviews is now passed by no caller after this fix, leaving a documented-but-unused filter argument on a public function.",
+  "review_run_id": "r-20261011T032536529828-review-of-a-path-review-is-stored",
+  "reviewed_base_sha": "7e06222549ff8e5ce6e1623fb8c5f89a86518e49",
+  "reviewed_head_sha": "fea785657da581482008dda58e6a24cd64432e6b",
+  "reviewed_run_id": "r-20261011T025459446790-a-path-review-is-stored",
+  "scores": {
+    "durability": 19,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T03:35:49.483716+00:00",
+  "total": 119
+}

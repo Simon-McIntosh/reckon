@@ -25,7 +25,7 @@
   <title>The Codebase Is Reviewed Between Nodes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="31">
+<meta name="plan-version" content="32">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -385,6 +385,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261011T025459446790-a-path-review-is-stored" data-who="reckon-build" data-when="2026-10-11T03:24:50.257Z">
     <div class="r-comment-body"><p>store_delivered_reviews now reads delivered_code_reviews(project) instead of around=plan_slug, so every delivered code review is stored once keyed by its neighbourhood whether its subject was --around or --path; tests/test_review_composes_a_code_subject.py passes 6 at EXIT=0, including a path-only case whose key is asserted against an expectation computed independently of code_review_key</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261011T032536529828-review-of-a-path-review-is-stored" data-who="reckon-build" data-when="2026-10-11T03:33:00.633Z">
+    <div class="r-comment-body"><p>The review of r-20261011T025459446790-a-path-review-is-stored is stored at /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261011T025459446790-a-path-review-is-stored.at-fea785657da581482008dda58e6a24cd64432e6b.json (and its bare sibling), a parsed record scoring all six dimensions (goal_fidelity 20, evidence 20, scope_discipline 20, durability 19, fit 20, reuse 20; total 119) with reviewed_base_sha 7e06222549ff8e5ce6e1623fb8c5f89a86518e49 and reviewed_head_sha fea785657da581482008dda58e6a24cd64432e6b, added_failure_count 0 and added_failure_ids []; one follow-on finding and no blocking finding.</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-s11-known-gate-hole-1011" data-who="reckon-build" data-when="2026-10-11T04:20:00Z">
     <div class="r-comment-body"><p>A known finding for the proving run's neighbourhood, measured on 2026-10-11. The contradiction guard in <code>reckon/crew/promotion_evidence.py</code> refuses a passing gate only when an asserted exit status differs from the log's <code>EXIT=</code> record. With no <code>--gate-exit-status</code>, the status is taken from the log itself, so a log recording <code>EXIT=1</code> promotes as <code>gate: passed</code> with <code>exit_status: 1</code> stored side by side. The guard compares equal values and finds nothing. It happened on run <code>r-20261011T003218530440-schema-view-within-bound</code>, which was promoted citing its base arm; the ledger row was corrected at the next commit after <code>2d3275928</code>. The same guard refused the identical mistake when the status was passed explicitly. A passing verdict with a non-zero exit status is itself the contradiction, so the review this section runs should read it as a known finding, not report it as new.</p></div>
