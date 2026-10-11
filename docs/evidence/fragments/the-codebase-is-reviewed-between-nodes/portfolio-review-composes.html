@@ -1,0 +1,16 @@
+<section data-reckon="fragment" id="portfolio-review-composes">
+<h2 id="portfolio-review-composes-landing">portfolio-review-composes — one disposition per live plan</h2>
+<p id="portfolio-review-composes-claim">The review verb gains a portfolio subject:
+<code>reckon crew review --project P --portfolio</code> (and <code>--sprint &lt;id&gt;</code>, and
+<code>--plan &lt;slug&gt; --rubric currency</code>) composes one brief listing every non-shipped
+plan with its derived impl and its source, sprint, commit age and age source, open section
+declarations and followups, and the roadmap readiness verdict, then dispatches one read-only
+review node whose output is one <code>DISPOSITION &lt;slug&gt;: keep | close | merge-into &lt;slug&gt; |
+retire | re-sprint &lt;id&gt; — &lt;evidence&gt;</code> line per plan in scope. An output omitting a plan
+in scope is refused, naming the plan.</p>
+<p id="portfolio-review-composes-measure">Measure: <code>tests/test_portfolio_review_composes.py</code>
+passes at EXIT=0 (4 passed); a fixed three-plan output parses to three dispositions; an output
+omitting <code>progress</code> is refused with <code>missing == ["progress"]</code>; the declared
+negative control (empty shipped-status filter) lists the shipped plan and fails the omission
+assertion.</p>
+</section>
