@@ -229,6 +229,24 @@ PLAN_DESIGN_REVIEW_ITEMS: tuple[str, ...] = (
 # rubric name one list.
 PLAN_REVIEW_RUBRICS: tuple[str, ...] = ("plan_review", "plan_design_review")
 
+# ── The health rubric ───────────────────────────────────────────────────────
+# A health review reads a neighbourhood of code — production modules and the
+# modules one import away — rather than one diff, so it sees defects a
+# single-diff review cannot: a capability duplicated by a second implementation,
+# a module no entry point reaches, an interface grown with nothing retired. It
+# reports one verdict per item and at most one treatment, and the items are
+# mirrored into prompts/health_review.md, whose RUBRIC_ITEMS line the falsifier
+# checks against this constant in both directions.
+HEALTH_REVIEW_RUBRIC = "health"
+HEALTH_REVIEW_ITEMS: tuple[str, ...] = (
+    "known_findings",
+    "duplicate_capability",
+    "unreached",
+    "interface_growth",
+    "width",
+    "test_debt",
+)
+
 # ── The claims rubric ───────────────────────────────────────────────────────
 # A read-only run — an investigation or a brief-carried run with no commit past
 # its base — leaves no diff to read and runs no gate suite, so the landed-node
@@ -286,6 +304,13 @@ _PLAN_DESIGN_REVIEW_PROMPT_PATH = (
 # The claims rubric prompt is the same shape: a versioned file beside the two
 # landed-node prompts, read from disk on every call.
 _CLAIMS_PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "claims_review.md"
+
+# The health-review rubric is the same shape: a versioned file beside the other
+# rubric prompts, read from disk on every call, so editing the rubric is a text
+# change rather than a code change.
+_HEALTH_REVIEW_PROMPT_PATH = (
+    Path(__file__).resolve().parent / "prompts" / "health_review.md"
+)
 
 
 def _sha_from(value: Any) -> str | None:
@@ -447,6 +472,11 @@ def load_plan_review_prompt() -> str:
 def load_plan_design_review_prompt() -> str:
     """Read the plan-design-review rubric prompt from disk at call time."""
     return _PLAN_DESIGN_REVIEW_PROMPT_PATH.read_text(encoding="utf-8")
+
+
+def load_health_review_prompt() -> str:
+    """Read the health-review rubric prompt from disk at call time."""
+    return _HEALTH_REVIEW_PROMPT_PATH.read_text(encoding="utf-8")
 
 
 # ── The parser ──────────────────────────────────────────────────────────────
@@ -859,6 +889,218 @@ def parse_plan_review_report(text: str, *, rubric: str) -> dict[str, Any]:
         "rubric_items": rubric_items,
         "absent_items": absent_items,
         "findings": findings,
+    }
+
+
+# ── The health-review grammar ───────────────────────────────────────────────
+# A health review emits its own line form beside the plan-review one:
+#     RUBRIC <item>: <verdict sentence>
+#     FINDING <item> <file>:<line> — CLASS: <class> — <text> — CITES: <row|new>
+#     TREATMENT — GOAL: <...> — WRITE_PATHS: <p>, <p> — DONE_WHEN: <...> — EXPECTED_DELTA: <±n>
+#     TREATMENT: none — <reason>
+# A finding already named in the brief is cited by its findings-reader row under
+# CITES rather than re-reported; a finding the brief does not carry uses
+# ``CITES: new``. The treatment is the review's whole point, so exactly one
+# TREATMENT line is admitted: the none form records that no repair is owed, and
+# an emitted warrant carries its write paths and a measurable done-when. The
+# separators between treatment fields are em dashes, the same separator the
+# plan-review finding tail uses. Lines in any other shape are ignored, so the
+# reviewer may surround the emitted lines with prose without breaking the parse.
+# The line reading is shared with :func:`parse_review` through
+# :func:`_review_text_lines`.
+
+_HEALTH_RUBRIC_LINE_RE = re.compile(
+    r"^RUBRIC\s+([A-Za-z_][A-Za-z0-9_]*)\s*:\s*(.*)$", re.IGNORECASE
+)
+_HEALTH_FINDING_LINE_RE = re.compile(
+    r"^FINDING\s+([A-Za-z_][A-Za-z0-9_]*)\s+(\S+)\s*(.*)$", re.IGNORECASE
+)
+_HEALTH_FINDING_TAIL_RE = re.compile(
+    r"^—\s*CLASS:\s*(?P<class>[^—]+?)\s+—\s+(?P<text>.+?)\s+—\s+"
+    r"CITES:\s*(?P<cites>.+)$",
+    re.IGNORECASE,
+)
+_TREATMENT_LINE_RE = re.compile(r"^TREATMENT\b\s*(.*)$", re.IGNORECASE)
+_TREATMENT_NONE_RE = re.compile(r"^:\s*none\s*(?:—\s*(?P<reason>.*))?$", re.IGNORECASE)
+_TREATMENT_LABEL_RE = re.compile(
+    r"(GOAL|WRITE_PATHS|DONE_WHEN|EXPECTED_DELTA)\s*:\s*", re.IGNORECASE
+)
+
+# The field labels a warranted treatment carries. A treatment missing its write
+# paths is refused by name — it cannot be dispatched — and one missing any other
+# label is refused as incomplete, because a treatment with no goal or no
+# done-when cannot be reviewed or measured.
+_TREATMENT_FIELDS: tuple[str, ...] = (
+    "goal",
+    "write_paths",
+    "done_when",
+    "expected_delta",
+)
+
+# The rules a health-review output can break. Each is a machine-readable name so
+# a caller distinguishes the refusals without reading the message, and the
+# message names the offending text so the reviewer repairs its own record.
+HEALTH_NO_TREATMENT = "no_treatment"
+HEALTH_MULTIPLE_TREATMENTS = "multiple_treatments"
+HEALTH_TREATMENT_WITHOUT_WRITE_PATHS = "treatment_without_write_paths"
+HEALTH_TREATMENT_INCOMPLETE = "treatment_incomplete"
+
+
+class HealthReviewError(ValueError):
+    """A health-review output broke a rule the rubric states.
+
+    ``reason`` is the machine-readable name of the rule broken, so the
+    one-treatment rule and the write-path rule are told apart without reading the
+    message. The message names the offending text, so the reviewer sees what was
+    rejected rather than re-emitting blind.
+    """
+
+    def __init__(self, reason: str, message: str) -> None:
+        self.reason = reason
+        super().__init__(message)
+
+
+def _health_finding_tail(remainder: str) -> dict[str, Any]:
+    """Parse one health FINDING line's tail into class, text and citation.
+
+    The structured form carries the class, the text and the citation row. A tail
+    that carries none of them is accepted with ``class`` and ``cites`` left
+    ``None`` — an unstated class is a recorded absence, not a defaulted judgement
+    — and the whole remainder is read as the text.
+    """
+    match = _HEALTH_FINDING_TAIL_RE.match(remainder.strip())
+    if match:
+        return {
+            "class": match.group("class").strip(),
+            "text": match.group("text").strip(),
+            "cites": match.group("cites").strip(),
+        }
+    return {"class": None, "text": remainder.strip(), "cites": None}
+
+
+def _parse_health_treatment(remainder: str) -> dict[str, Any]:
+    """Parse one TREATMENT line's tail into the none form or the warrant form.
+
+    The none form records a reason and nothing else. The warrant form carries the
+    four labelled fields; the values are read by label position rather than by
+    splitting on the separator, so a value carrying an em dash is kept whole.
+    """
+    none_match = _TREATMENT_NONE_RE.match(remainder.strip())
+    if none_match:
+        return {"none": (none_match.group("reason") or "").strip()}
+    labels = list(_TREATMENT_LABEL_RE.finditer(remainder))
+    fields: dict[str, str] = {}
+    for index, label in enumerate(labels):
+        end = labels[index + 1].start() if index + 1 < len(labels) else len(remainder)
+        value = remainder[label.end() : end].strip().strip("—").strip()
+        fields.setdefault(label.group(1).lower(), value)
+    missing = [name for name in _TREATMENT_FIELDS if not fields.get(name)]
+    if "write_paths" in missing:
+        raise HealthReviewError(
+            HEALTH_TREATMENT_WITHOUT_WRITE_PATHS,
+            f"treatment names no write path: {remainder.strip()!r}",
+        )
+    if missing:
+        raise HealthReviewError(
+            HEALTH_TREATMENT_INCOMPLETE,
+            f"treatment omits {', '.join(missing)}: {remainder.strip()!r}",
+        )
+    write_paths = [
+        part.strip() for part in fields["write_paths"].split(",") if part.strip()
+    ]
+    if not write_paths:
+        raise HealthReviewError(
+            HEALTH_TREATMENT_WITHOUT_WRITE_PATHS,
+            f"treatment names no write path: {remainder.strip()!r}",
+        )
+    return {
+        "goal": fields["goal"],
+        "write_paths": write_paths,
+        "done_when": fields["done_when"],
+        "expected_delta": fields["expected_delta"],
+    }
+
+
+def parse_health_review(text: str) -> dict[str, Any]:
+    """Parse emitted health-review text into the rubric's record shape.
+
+    The health rubric reads a neighbourhood rather than a diff, so its record is
+    the item verdicts, the findings and the one treatment. Returns:
+
+    - ``rubric`` — :data:`HEALTH_REVIEW_RUBRIC`, the rubric the text was read
+      under.
+    - ``rubric_items`` — item to the verdict sentence its ``RUBRIC`` line
+      carried, for the items that were emitted with text.
+    - ``absent_items`` — checklist items with no ``RUBRIC`` line, or with one
+      carrying no text: a line that says nothing is not a verdict, so the item is
+      reported absent rather than silently taken as checked.
+    - ``findings`` — a list of ``{"id", "item", "anchor", "class", "text",
+      "cites"}``, one per ``FINDING`` line whose item belongs to the rubric. The
+      id is ``<item>-<n>`` with ``n`` counting that item's findings in the order
+      they appear, so an id is stable across a re-read and two findings of one
+      item never share an id. A tail carrying no ``CLASS`` or ``CITES`` records
+      both as ``None`` rather than defaulting them — an unstated class is a
+      judgement nobody made.
+    - ``treatment`` — exactly one entry. The none form is ``{"none": <reason>}``;
+      the warrant form is ``{"goal", "write_paths", "done_when",
+      "expected_delta"}`` with ``write_paths`` as a list of the named paths.
+
+    A text that carries no ``TREATMENT`` line, or more than one, is refused with
+    :class:`HealthReviewError` (``reason`` :data:`HEALTH_NO_TREATMENT` or
+    :data:`HEALTH_MULTIPLE_TREATMENTS`); a warrant naming no usable write path is
+    refused with :data:`HEALTH_TREATMENT_WITHOUT_WRITE_PATHS`. The refusals are
+    the rubric's own rules — a health review proposes one repair, and a repair
+    that names no write path cannot be dispatched — so a malformed review is
+    refused by name rather than stored.
+    """
+    rubric_items: dict[str, str] = {}
+    findings: list[dict[str, Any]] = []
+    counters: dict[str, int] = {}
+    treatments: list[str] = []
+    for line in _review_text_lines(text):
+        match = _HEALTH_RUBRIC_LINE_RE.match(line)
+        if match:
+            item = match.group(1).lower()
+            verdict = match.group(2).strip()
+            if item in HEALTH_REVIEW_ITEMS and verdict:
+                rubric_items[item] = verdict
+            continue
+        match = _HEALTH_FINDING_LINE_RE.match(line)
+        if match:
+            item = match.group(1).lower()
+            if item not in HEALTH_REVIEW_ITEMS:
+                continue
+            parsed = _health_finding_tail(match.group(3))
+            counters[item] = counters.get(item, 0) + 1
+            parsed["id"] = f"{item}-{counters[item]}"
+            parsed["item"] = item
+            parsed["anchor"] = match.group(2)
+            findings.append(parsed)
+            continue
+        match = _TREATMENT_LINE_RE.match(line)
+        if match:
+            treatments.append(match.group(1).strip())
+            continue
+    if not treatments:
+        raise HealthReviewError(
+            HEALTH_NO_TREATMENT,
+            "health review carries no TREATMENT line; it emits exactly one, or "
+            "TREATMENT: none — <reason>",
+        )
+    if len(treatments) > 1:
+        raise HealthReviewError(
+            HEALTH_MULTIPLE_TREATMENTS,
+            f"health review carries {len(treatments)} TREATMENT lines; exactly "
+            "one is allowed",
+        )
+    treatment = _parse_health_treatment(treatments[0])
+    absent_items = [item for item in HEALTH_REVIEW_ITEMS if item not in rubric_items]
+    return {
+        "rubric": HEALTH_REVIEW_RUBRIC,
+        "rubric_items": rubric_items,
+        "absent_items": absent_items,
+        "findings": findings,
+        "treatment": treatment,
     }
 
 
