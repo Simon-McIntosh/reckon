@@ -48,14 +48,6 @@ FIXTURE = Path(__file__).parent / "fixtures" / "backends" / "codex-turn.jsonl"
 
 
 @pytest.fixture()
-def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    config_home = tmp_path / "config"
-    config_home.mkdir()
-    monkeypatch.setenv("RECKON_HOME", str(config_home))
-    return config_home
-
-
-@pytest.fixture()
 def repo(tmp_path: Path, home: Path) -> Path:
     root = tmp_path / "repo"
     (root / "skills" / "reckon-build" / "scripts").mkdir(parents=True)

@@ -76,14 +76,6 @@ def _commit_repository(root: Path, *paths: str) -> None:
         subprocess.run(["git", *arguments], cwd=root, check=True, capture_output=True)
 
 
-@pytest.fixture()
-def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    config_home = tmp_path / "config"
-    config_home.mkdir()
-    monkeypatch.setenv("RECKON_HOME", str(config_home))
-    return config_home
-
-
 def _capability(
     capability_class: str = "general",
     reasoning: str = "standard",

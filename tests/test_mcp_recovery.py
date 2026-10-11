@@ -47,14 +47,6 @@ def _crew_entry(**kwargs):
     return _invoke_tool("crew", **kwargs)
 
 
-@pytest.fixture()
-def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    config_home = tmp_path / "config"
-    config_home.mkdir()
-    monkeypatch.setenv("RECKON_HOME", str(config_home))
-    return config_home
-
-
 def _real_crew_home(monkeypatch: pytest.MonkeyPatch) -> Path:
     with monkeypatch.context() as fresh:
         fresh.delenv("RECKON_HOME", raising=False)

@@ -119,14 +119,6 @@ def test_the_absence_sentence_is_canonical(monkeypatch: pytest.MonkeyPatch) -> N
     assert format_refusal("D02", rendered) == rendered
 
 
-@pytest.fixture()
-def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    config_home = tmp_path / "config"
-    config_home.mkdir()
-    monkeypatch.setenv("RECKON_HOME", str(config_home))
-    return config_home
-
-
 def _store_answered_review(plan_path: Path, *, project: str, slug: str) -> None:
     """Give the fixture plan the answered review a build dispatch now requires.
 
