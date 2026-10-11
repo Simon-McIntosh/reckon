@@ -24,7 +24,7 @@
   <title>The Portfolio Reads True | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="35">
+<meta name="plan-version" content="36">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -238,6 +238,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261011T005227762513-review-of-schema-view-within-bound" data-who="reckon-build" data-when="2026-10-11T00:59:13.614Z">
     <div class="r-comment-body"><p>Independent review of r-20261011T003218530440-schema-view-within-bound at head 6784834dc: verdict parsed, total 113 (goal_fidelity 19, evidence 17, scope_discipline 19, durability 19, fit 19, reuse 20); the done-when holds — the named test passes at head (re-run EXIT=0) and gate-head.log prints 24452 bytes / margin 124 under the 24576 bound, added_failure_count 0 — with one follow-on finding (the head gate log's header names the base revision, so no log ties the measurement to the landed commit); no blocking findings.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261011T014846107142-review-of-impl-derivation-keeps-round-trips" data-who="reckon-build" data-when="2026-10-11T01:56:35.761Z">
+    <div class="r-comment-body"><p>independent review of r-20261011T010943942184-impl-derivation-keeps-round-trips stored at both assigned paths as a parsed six-dimension record (goal_fidelity 19, evidence 15, scope_discipline 20, durability 18, fit 17, reuse 15; total 104) reading base 78ef1ee8c539079d7548bbd75379b7b2fdd25dbe and head da4ae2cd08d239a8ef541e706964d38b897f0247; the impl_source guard at reckon/_plan_html.py:2053 keeps a derived figure out of the authored plan-impl meta, both named round-trip tests pass at the reviewed head (verified directly) and the worker&#x27;s negative control logs them reddening with the guard reverted; one follow-on finding records the duplicated derived-source literal</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261011T001008724801-audit-reports-sprint-membership" data-who="reckon-build" data-when="2026-10-11T00:24:58.857Z">
     <div class="r-comment-body"><p>reckon audit now emits SPRINT_MEMBERSHIP — a warn for a plan whose declared sprint and the sprint that lists it disagree (either end, at most one row per plan), and an info for a shipped plan a still-open sprint lists; tests/test_audit_reports_sprint_membership.py passes EXIT=0 with exactly two warn rows (b, c), none for the agreeing plan a, and one info row (d).</p></div>

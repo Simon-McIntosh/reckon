@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite (base 78ef1ee8c) recorded 5 failure ids, after_suite (head da4ae2cd0) recorded 1; the single after failure is the cross-project conformance id red at base too, so the added set is empty. The base importing arm was stopped at 90% and is not the source of the no-added-failure claim; each head importing failure was confirmed red at base individually.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/serve.py:3696",
+    "reckon/_store.py:1417",
+    "reckon/_store.py:2012",
+    "reckon/tags.py:130",
+    "reckon/archive.py:132"
+  ],
+  "completed_at": "2026-10-11T01:56:35.761Z",
+  "dispatched_at": "2026-10-11T01:49:16Z",
+  "findings": [
+    {
+      "file": "reckon/_plan_html.py",
+      "line": "2053",
+      "severity": "follow-on",
+      "text": "follow-on: the derived-source set is written as a fresh inline literal {\"computed\", \"declarations\"}, duplicating the identical membership test at reckon/doccheck.py:1418 without a shared predicate, so adding a source to the enum at reckon/_schema.py:114 can leave the two sites disagreeing."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commits 26ded9af0 and da4ae2cd0 against 78ef1ee8c commit by commit; they add a three-line impl_source guard in reckon/_plan_html.py, regenerate docs/_shared/plan.schema.json (the impl_source enum gains declarations), and add the evidence fragment for the section.",
+    "done_when": "the done_when names the three round-trip tests and tests/test_schema.py::test_committed_schema_matches_generated at EXIT=0, test_impl_derives_from_declarations.py still passing, and no added failure among the importing tests; the manifest records the four-file gate at 1 failed 2690 passed (the one failure pre-existing at base) and the negative control at 2 failed EXIT=1.",
+    "goal": "the node goal is to keep a no-change plan round trip byte-identical while impl derives from declarations; reckon/_plan_html.py:2053 gates the plan-impl emission on impl_source so a derived figure never enters the authored meta block, and both named round-trip tests pass at the reviewed head (verified directly, 2 passed in 1.47s) while the negative control shows them redden with the guard reverted.",
+    "manifest": "read; it reports the gate command and its result, the negative control, the baseline_suite and after_suite arms with five and one failure ids, and states the base importing arm was stopped at 90% and is incomplete.",
+    "write_paths": "the manifest declares reckon/_plan_html.py, docs/_shared/plan.schema.json, docs/evidence/fragments/the-portfolio-reads-true/impl-derivation-keeps-round-trips.html and a docs/figures/ directory; the diff changes exactly the two source paths and the fragment, and writes no figure."
+  },
+  "justifications": {
+    "durability": "tests/test_plan_todos.py:171 asserts write_state(text, state) == text against the document's own bytes, and logs/negative-control.log shows that assertion reddens when the guard is reverted, so the guard has a test that fails if it regresses.",
+    "evidence": "the four-file gate at logs/head-gate.log records 1 failed 2690 passed and the negative control at logs/negative-control.log records 2 failed EXIT=1 (the plan-impl meta reappears), but the base importing arm logs/base-importing.log stopped at 90%, so no-added-failure rests on per-failure base confirmation rather than a completed base arm.",
+    "fit": "the guard follows the surrounding idiom of reckon/_plan_html.py:2052 and extends the adjacent comment with the declarations case, introducing no banned name.",
+    "goal_fidelity": "reckon/_plan_html.py:2053 suppresses the plan-impl meta whenever impl_source is computed or declarations, so a plan that authored no plan-impl meta keeps a byte-identical no-change round trip and both named tests pass at the reviewed head.",
+    "reuse": "no shared predicate for a derived impl source exists; the added membership test repeats the literal set already carried at reckon/doccheck.py:1418 and extends no owner, though reckon/_schema.py:114 holds the full enum.",
+    "scope_discipline": "the two changed source paths and the one evidence fragment are all inside the manifest's declared write paths, and the declared figures directory is correctly left unwritten."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to keep a no-change plan round trip byte-identical while impl derives from declarations; reckon/_plan_html.py:2053 gates the plan-impl emission on impl_source so a derived figure never enters the authored meta block, and both named round-trip tests pass at the reviewed head (verified directly, 2 passed in 1.47s) while the negative control shows them redden with the guard reverted.\nVERDICT done_when: the done_when names the three round-trip tests and tests/test_schema.py::test_committed_schema_matches_generated at EXIT=0, test_impl_derives_from_declarations.py still passing, and no added failure among the importing tests; the manifest records the four-file gate at 1 failed 2690 passed (the one failure pre-existing at base) and the negative control at 2 failed EXIT=1.\nVERDICT write_paths: the manifest declares reckon/_plan_html.py, docs/_shared/plan.schema.json, docs/evidence/fragments/the-portfolio-reads-true/impl-derivation-keeps-round-trips.html and a docs/figures/ directory; the diff changes exactly the two source paths and the fragment, and writes no figure.\nVERDICT manifest: read; it reports the gate command and its result, the negative control, the baseline_suite and after_suite arms with five and one failure ids, and states the base importing arm was stopped at 90% and is incomplete.\nVERDICT diff: read commits 26ded9af0 and da4ae2cd0 against 78ef1ee8c commit by commit; they add a three-line impl_source guard in reckon/_plan_html.py, regenerate docs/_shared/plan.schema.json (the impl_source enum gains declarations), and add the evidence fragment for the section.\nCALL_SITES: reckon/serve.py:3696, reckon/_store.py:1417, reckon/_store.py:2012, reckon/tags.py:130, reckon/archive.py:132\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_plan_html.py:2053 suppresses the plan-impl meta whenever impl_source is computed or declarations, so a plan that authored no plan-impl meta keeps a byte-identical no-change round trip and both named tests pass at the reviewed head.\nSCORE evidence: 15\nJUSTIFICATION evidence: the four-file gate at logs/head-gate.log records 1 failed 2690 passed and the negative control at logs/negative-control.log records 2 failed EXIT=1 (the plan-impl meta reappears), but the base importing arm logs/base-importing.log stopped at 90%, so no-added-failure rests on per-failure base confirmation rather than a completed base arm.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two changed source paths and the one evidence fragment are all inside the manifest's declared write paths, and the declared figures directory is correctly left unwritten.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_plan_todos.py:171 asserts write_state(text, state) == text against the document's own bytes, and logs/negative-control.log shows that assertion reddens when the guard is reverted, so the guard has a test that fails if it regresses.\nSCORE fit: 17\nJUSTIFICATION fit: the guard follows the surrounding idiom of reckon/_plan_html.py:2052 and extends the adjacent comment with the declarations case, introducing no banned name.\nSCORE reuse: 15\nJUSTIFICATION reuse: no shared predicate for a derived impl source exists; the added membership test repeats the literal set already carried at reckon/doccheck.py:1418 and extends no owner, though reckon/_schema.py:114 holds the full enum.\nFINDING reckon/_plan_html.py:2053 follow-on: the derived-source set is written as a fresh inline literal {\"computed\", \"declarations\"}, duplicating the identical membership test at reckon/doccheck.py:1418 without a shared predicate, so adding a source to the enum at reckon/_schema.py:114 can leave the two sites disagreeing.",
+  "review_run_id": "r-20261011T014846107142-review-of-impl-derivation-keeps-round-trips",
+  "reviewed_base_sha": "78ef1ee8c539079d7548bbd75379b7b2fdd25dbe",
+  "reviewed_head_sha": "da4ae2cd08d239a8ef541e706964d38b897f0247",
+  "reviewed_run_id": "r-20261011T010943942184-impl-derivation-keeps-round-trips",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T01:55:25.039507+00:00",
+  "total": 104
+}
