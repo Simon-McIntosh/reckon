@@ -106,7 +106,7 @@ reckon crew review --project <project> --portfolio --session <session>
 
 Apply the dispositions: `close`, `merge-into` and `re-sprint` through
 `reckon-edit` and `reckon-sprint`; archive a retirement with `plan-archived=1`.
-Record the round in the sprint review resource (`docs/state/reckon/review.html`).
+Record the round in the sprint review resource (`docs/state/<project>/review.html`).
 **A merge or retirement of a plan another live session is building is proposed,
 never applied** — check `crew(project, view="live")` before writing.
 
