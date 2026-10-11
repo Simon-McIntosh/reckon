@@ -1994,7 +1994,7 @@ def crew_review_plan(
     acted,
     declined,
 ):
-    """Deprecated alias of ``reckon crew review`` for a plan subject."""
+    """Deprecated alias of ``reckon crew review``: reviews one plan's current content."""
     click.echo(
         "reckon crew review-plan is deprecated; use reckon crew review",
         err=True,

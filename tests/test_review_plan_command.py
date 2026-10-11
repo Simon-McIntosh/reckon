@@ -299,7 +299,9 @@ def test_review_plan_dry_run_resolves_the_shared_composition(project):
         ],
     )
     assert result.exit_code == 0, result.output
-    payload = json.loads(result.output)
+    # The document is on stdout; the deprecated alias writes its notice to
+    # stderr, which CliRunner merges into ``output`` but not into ``stdout``.
+    payload = json.loads(result.stdout)
     assert payload["node"]["id"] == "plan-review-of-fixture"
     assert payload["node"]["role"] == "review"
     assert (
@@ -336,7 +338,7 @@ def test_review_plan_dry_run_leaves_the_report_root_unchanged(project):
             ],
         )
         assert result.exit_code == 0, result.output
-        payload = json.loads(result.output)
+        payload = json.loads(result.stdout)
         assert payload["dry_run"] is True
         assert not Path(payload["node"]["brief"]).exists()
     after = _report_listing()
@@ -364,7 +366,7 @@ def test_review_plan_real_dispatch_writes_the_composed_artifacts(project, monkey
         ],
     )
     assert result.exit_code == 0, result.output
-    assert json.loads(result.output)["review_run_id"] == "launched-review"
+    assert json.loads(result.stdout)["review_run_id"] == "launched-review"
     root = plan_review.review_report_directory("sample", "fixture", "unused").parent
     run_directories = sorted(path for path in root.iterdir() if path.is_dir())
     assert len(run_directories) == 1
@@ -402,7 +404,7 @@ def test_review_plan_launch_passes_session_and_local(project, monkeypatch):
         ],
     )
     assert result.exit_code == 0, result.output
-    assert json.loads(result.output)["review_run_id"] == "launched-review"
+    assert json.loads(result.stdout)["review_run_id"] == "launched-review"
     assert calls[0]["session"] == "named-session"
     assert calls[0]["local"] is True
 
@@ -460,7 +462,7 @@ def test_answer_records_response_through_store(project, options, action):
         ],
     )
     assert result.exit_code == 0, result.output
-    assert json.loads(result.output)["unanswered"] == []
+    assert json.loads(result.stdout)["unanswered"] == []
     stored = plan_review.read_plan_review("sample", "fixture")
     assert stored["responses"]["reuse-owner"]["action"] == action
     if action == "declined":
