@@ -28,7 +28,6 @@ import importlib
 import json
 import shutil
 import socket
-import subprocess
 import time
 from pathlib import Path
 
@@ -37,6 +36,7 @@ import pytest
 from reckon import _plan_html, crew, ledger
 from reckon.crew import recovery, resumption, runs
 from reckon.crew.runs import _write_json, pointer_path, run_dir
+from tests.helpers.git import git as _git
 
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
 backends_module = importlib.import_module("reckon._backends")
@@ -77,17 +77,6 @@ commits: none
 MANIFEST
 exit 0
 """ % NODE_ID
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    result = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout.strip()
 
 
 @pytest.fixture()

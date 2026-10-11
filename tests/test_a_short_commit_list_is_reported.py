@@ -23,7 +23,6 @@ worktree head moved off base — still fires unchanged.
 from __future__ import annotations
 
 import json
-import subprocess
 from pathlib import Path
 
 import pytest
@@ -33,22 +32,12 @@ from reckon import crew, ledger
 from reckon.cli import main as cli_main
 from reckon.crew import promotion
 from reckon.crew.runs import _write_json, pointer_path
+from tests.helpers.git import git as _git
 
 PROJECT = "shortfall"
 
 # A well-formed forty-character revision that resolves to no commit object.
 _GONE_40 = "0123456789abcdef0123456789abcdef01234567"
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    result = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout.strip()
 
 
 @pytest.fixture()

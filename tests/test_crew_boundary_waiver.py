@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import subprocess
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -13,6 +12,7 @@ from reckon import crew, ledger
 from reckon.crew import routing
 from reckon.crew.promotion import BOUNDARY_REFERENT_MAX_AGE_SECONDS
 from reckon.crew.runs import _write_json, pointer_path
+from tests.helpers.git import git as _git
 
 PROJECT = "sample"
 
@@ -21,17 +21,6 @@ def _stamp(*, before_now: timedelta) -> str:
     """Return a UTC stamp the given interval before the current clock."""
     moment = datetime.now(tz=UTC) - before_now
     return moment.isoformat(timespec="seconds").replace("+00:00", "Z")
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    result = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout.strip()
 
 
 @pytest.fixture()

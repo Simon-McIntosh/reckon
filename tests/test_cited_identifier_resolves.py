@@ -30,7 +30,6 @@ resolved it.
 
 from __future__ import annotations
 
-import subprocess
 from pathlib import Path
 
 import pytest
@@ -39,6 +38,7 @@ from click.testing import CliRunner
 from reckon import ledger
 from reckon.cli import main as cli_main
 from reckon.crew.runs import _write_json, pointer_path
+from tests.helpers.git import git as _git
 
 PROJECT = "citation"
 
@@ -46,17 +46,6 @@ PROJECT = "citation"
 _FABRICATED = "7892cb696b2fbb52ac9b3e2ded0f5a5a26a3b2d1"
 # A forty-character hexadecimal value that resolves to nothing in any store.
 _GONE_40 = "0123456789abcdef0123456789abcdef01234567"
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    result = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout.strip()
 
 
 @pytest.fixture()

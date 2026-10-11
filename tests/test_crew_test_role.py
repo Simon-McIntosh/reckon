@@ -18,7 +18,6 @@ Covers the three measures the test role adds over an implementation role:
 from __future__ import annotations
 
 import json
-import subprocess
 from pathlib import Path
 
 import pytest
@@ -29,6 +28,7 @@ from reckon.crew.promotion import _outside_declared_scope
 from reckon.crew.runs import _write_json, pointer_path
 from reckon.flight import resolve
 from tests.conftest import EXECUTABLE_GATE_COMMAND
+from tests.helpers.git import git as _git
 
 PROJECT = "sample"
 PRE_EXISTING_FAILURE = "tests/test_environment.py::test_external_service"
@@ -48,17 +48,6 @@ def home(tmp_path, monkeypatch):
     config_home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(config_home))
     return config_home
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    result = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout.strip()
 
 
 def _commit_candidate(

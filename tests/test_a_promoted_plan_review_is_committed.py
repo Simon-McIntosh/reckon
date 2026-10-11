@@ -19,7 +19,6 @@ the operator's own store.
 from __future__ import annotations
 
 import json
-import subprocess
 from pathlib import Path
 
 import pytest
@@ -29,6 +28,7 @@ from reckon.crew import plan_review
 from reckon.crew import review as review_module
 from reckon.crew.runs import _write_json, crew_home, pointer_path
 from tests.conftest import EXECUTABLE_GATE_COMMAND
+from tests.helpers.git import git as _git
 
 PROJECT = "promoted-plan-review-fixture"
 PLAN = "promoted-plan-review-target"
@@ -40,17 +40,6 @@ BLOB = "b" * 40
 COMPOSED_RUN_ID = f"r-20261007T141516205570-plan-review-of-{PLAN_SLUG}"
 PROMOTING_RUN_ID = f"r-20261007T141519430181-plan-review-of-{PLAN_SLUG}"
 DISPATCH_TS = "2026-10-07T14:15:43Z"
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    result = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout.strip()
 
 
 def _read(path: Path) -> dict:

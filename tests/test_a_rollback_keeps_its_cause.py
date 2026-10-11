@@ -25,6 +25,7 @@ from pathlib import Path
 import pytest
 
 from reckon import crew, ledger
+from tests.helpers.git import git as _git
 
 # The package re-exports the dispatch *function* under this name, so the module
 # that holds the rollback is resolved by import path rather than as an attribute.
@@ -58,17 +59,6 @@ class LaunchStepError(RuntimeError):
 
 class WorktreeRemovalError(RuntimeError):
     """Stands in for the removal refusing the worktree the run still claims."""
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    result = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout.strip()
 
 
 def _run(repository: Path, *arguments: str) -> None:
