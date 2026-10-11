@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-suite-tests-behaviour">
+  <meta name="plan-evidence-for" content="reckon:the-suite-tests-behaviour">
+  <meta name="plan-verifies" content="reckon:the-suite-tests-behaviour#s5">
+  <meta name="plan-verdict" content="pass">
+  <title>Structural guards have one home | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="structural-guards-have-one-home-landing" data-node="structural-guards-have-one-home" data-reckon="landed" data-when="2026-10-11">
+  <h2>Structural guards have one home</h2>
+  <p>The guards the count-reducing nodes deleted or narrowed now live as six repo-wide invariants in one module, <code>tests/test_structural_invariants.py</code>, reading source through <code>ast</code>. It holds: no <code>fromisoformat</code> call anywhere under <code>reckon/</code> outside the shared parser and a named retained-exception registry (subsuming the batch, dispatch and promotion-family timestamp checks, and scanning all seven <code>promotion_*</code> modules); one definition of <code>parse_utc</code>/<code>parse_iso</code>; one definition of the number core with every frame composing it; one definition of <code>is_section_identity</code> with the store's section-id validations routing through it; and the two prescription-fixture naming checks (no real plan document, no node identity).</p>
+  <p>Measure: the module passes at the reviewed head (<code>EXIT=0</code>, 6 passed). Negative control: a <code>fromisoformat</code> call added to <code>reckon/crew/promotion_gate.py</code> in a scratch copy fails the one-parser invariant naming <code>crew/promotion_gate.py:_probe_iso</code> (<code>EXIT=1</code>).</p>
+</article>
+</body>
+</html>
