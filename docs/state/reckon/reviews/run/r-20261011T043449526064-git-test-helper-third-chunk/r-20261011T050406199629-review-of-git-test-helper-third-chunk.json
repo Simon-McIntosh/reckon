@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-11T05:17:24.411Z",
+  "dispatched_at": "2026-10-11T05:04:51Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261011T043449526064-git-test-helper-third-chunk/gate-head.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the head arm's log records revision fc68b01e4 (the base) while the change lands at d3b52bf9a, so the log cannot be reproduced from the revision it names; the tree path and basetemp distinguish the arms and both arms report the same ids, so the measure holds, but a reader taking the header at face value is misled."
+    },
+    {
+      "file": "docs/evidence/fragments/the-suite-tests-behaviour/git-test-helper-third-chunk.html",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment name and the landing message subject carry the plan-stage label \"third chunk\", a stage/chunk reference the naming rules keep out of source and messages; harmless and coordinator-assigned, but worth folding into a node-agnostic description."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read change by change against fc68b01e4; b22cfa98c converts the forty modules and d3b52bf9a adds the evidence fragment, forty-one files, all inside the declared scope.",
+    "done_when": "the done_when names the census (the second `_git` family falling from forty files to zero within the forty scoped files, with whole-tree before/after totals), the forty files passing with the same ids as base, a negative line delta over tests/, and a red negative control; the census reports the group 40 -> 0, the gate logs read 3 failed / 240 passed EXIT=1 in both arms, and the negative control reads 6 failed EXIT=1.",
+    "goal": "the node goal is to convert the remaining forty private `_git` test helpers (the variant naming its local `completed`) into an import of the shared `git` from tests/helpers/git.py, kept at the call-site name `_git`; the diff adds `from tests.helpers.git import git as _git` to all forty modules and deletes each private body (tests/test_a_live_worker_still_owes_its_review.py:82).",
+    "manifest": "read; it states the forty conversions, census 40 -> 0 in scope, base and head 3 failed / 240 passed, negative control 6 failed, and the -422 line delta over tests/.",
+    "write_paths": "declared scope is the forty listed test modules plus the evidence fragment and a figures directory; every path in the diff is inside it and none outside is touched."
+  },
+  "justifications": {
+    "durability": "the negative control (tests/helpers/git.py stubbed to raise) reddens six tests in the converted modules, so a broken helper or a dropped import fails the suite, though no test guards the deduplication property itself.",
+    "evidence": "the census and the negative control are strong, but gate-head.log:1 records the base revision fc68b01e4 while the change lands at d3b52bf9a, so the head arm cannot be reproduced from the revision its own log names.",
+    "fit": "the alias `from tests.helpers.git import git as _git` matches the idiom the pre-existing thirty-two files use and introduces no forbidden name.",
+    "goal_fidelity": "all forty modules now import tests/helpers/git.py:8 instead of carrying a private _git, which is exactly the stated deliverable.",
+    "reuse": "the change adds no definition and points forty forked copies at the single owner tests/helpers/git.py, which already existed at base.",
+    "scope_discipline": "the diff names only the forty declared tests plus the declared fragment, with nothing outside the write paths."
+  },
+  "node": "git-test-helper-third-chunk",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to convert the remaining forty private `_git` test helpers (the variant naming its local `completed`) into an import of the shared `git` from tests/helpers/git.py, kept at the call-site name `_git`; the diff adds `from tests.helpers.git import git as _git` to all forty modules and deletes each private body (tests/test_a_live_worker_still_owes_its_review.py:82).\nVERDICT done_when: the done_when names the census (the second `_git` family falling from forty files to zero within the forty scoped files, with whole-tree before/after totals), the forty files passing with the same ids as base, a negative line delta over tests/, and a red negative control; the census reports the group 40 -> 0, the gate logs read 3 failed / 240 passed EXIT=1 in both arms, and the negative control reads 6 failed EXIT=1.\nVERDICT write_paths: declared scope is the forty listed test modules plus the evidence fragment and a figures directory; every path in the diff is inside it and none outside is touched.\nVERDICT manifest: read; it states the forty conversions, census 40 -> 0 in scope, base and head 3 failed / 240 passed, negative control 6 failed, and the -422 line delta over tests/.\nVERDICT diff: read change by change against fc68b01e4; b22cfa98c converts the forty modules and d3b52bf9a adds the evidence fragment, forty-one files, all inside the declared scope.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: all forty modules now import tests/helpers/git.py:8 instead of carrying a private _git, which is exactly the stated deliverable.\nSCORE evidence: 15\nJUSTIFICATION evidence: the census and the negative control are strong, but gate-head.log:1 records the base revision fc68b01e4 while the change lands at d3b52bf9a, so the head arm cannot be reproduced from the revision its own log names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff names only the forty declared tests plus the declared fragment, with nothing outside the write paths.\nSCORE durability: 17\nJUSTIFICATION durability: the negative control (tests/helpers/git.py stubbed to raise) reddens six tests in the converted modules, so a broken helper or a dropped import fails the suite, though no test guards the deduplication property itself.\nSCORE fit: 19\nJUSTIFICATION fit: the alias `from tests.helpers.git import git as _git` matches the idiom the pre-existing thirty-two files use and introduces no forbidden name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition and points forty forked copies at the single owner tests/helpers/git.py, which already existed at base.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261011T043449526064-git-test-helper-third-chunk/gate-head.log:1 follow-on: the head arm's log records revision fc68b01e4 (the base) while the change lands at d3b52bf9a, so the log cannot be reproduced from the revision it names; the tree path and basetemp distinguish the arms and both arms report the same ids, so the measure holds, but a reader taking the header at face value is misled.\nFINDING docs/evidence/fragments/the-suite-tests-behaviour/git-test-helper-third-chunk.html:1 follow-on: the fragment name and the landing message subject carry the plan-stage label \"third chunk\", a stage/chunk reference the naming rules keep out of source and messages; harmless and coordinator-assigned, but worth folding into a node-agnostic description.",
+  "review_run_id": "r-20261011T050406199629-review-of-git-test-helper-third-chunk",
+  "reviewed_base_sha": "fc68b01e4ffff162598c268dfe3f9ae55c4fc926",
+  "reviewed_head_sha": "d3b52bf9a922051c8dfac5f93a7f32d69ce63499",
+  "reviewed_run_id": "r-20261011T043449526064-git-test-helper-third-chunk",
+  "role": "review",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T05:15:20.232975+00:00",
+  "total": 111
+}
