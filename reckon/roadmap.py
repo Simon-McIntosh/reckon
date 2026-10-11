@@ -48,6 +48,7 @@ from reckon.doccheck import (
     _load_mounts,
     authorisation_staleness,
     derived_plan_age,
+    gate_evidence_slugs_from_gates,
     unwired_plan_finding,
 )
 from reckon.file_memo import memoized
@@ -1230,6 +1231,22 @@ def _standalone_reason(docs_dir: Path | None, project: str, slug: str) -> str | 
     return memoized("standalone_reason", path, read_declaration)
 
 
+def _declares_section_wire(
+    plan: Mapping[str, Any], docs_dir: Path | None, project: str, slug: str
+) -> bool:
+    """Whether a plan row declares a section-level wire rather than a plan-level one.
+
+    The two forms are the soft ``after`` field and the section-scoped
+    ``plan-section-depends-on`` mapping, read from the row or its file through
+    the same reader the roadmap builds its edges from. Either one wires the
+    plan as surely as a plan-level entry, so neither leaves it unwired.
+    """
+
+    return bool(plan.get("after")) or bool(
+        _plan_section_deps(plan, docs_dir, project, slug)
+    )
+
+
 def _unwired_plan_findings(
     project: str,
     plans: Mapping[str, dict[str, Any]],
@@ -1250,6 +1267,18 @@ def _unwired_plan_findings(
 
     if docs_dir is None:
         docs_dir = _load_mounts().get(project)
+
+    # Derived once over the whole project: a plan some other plan's gate names
+    # as its required evidence is wired by that gate, and one row's check
+    # cannot see the gates the rest of the project holds.
+    inbound_evidence = set()
+    for other in plans.values():
+        if str(other.get("type") or "plan") != "plan":
+            continue
+        inbound_evidence |= gate_evidence_slugs_from_gates(
+            other.get("gates") or [], project=project
+        )
+
     out: list[dict[str, Any]] = []
     for slug, plan in sorted(plans.items()):
         if str(plan.get("type") or "plan") != "plan":
@@ -1270,6 +1299,8 @@ def _unwired_plan_findings(
             gate_count=len(gates),
             standalone=_standalone_reason(docs_dir, project, slug),
             slug=slug,
+            section_wires=_declares_section_wire(plan, docs_dir, project, slug),
+            inbound_evidence=slug in inbound_evidence,
         )
         if finding is not None:
             out.append(

@@ -36,7 +36,7 @@ import os
 import re
 import sys
 import time
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from datetime import date, datetime
 from html.parser import HTMLParser
@@ -1079,8 +1079,16 @@ def _unwired_plan_findings(
     soup: BeautifulSoup,
     html_text: str,
     slug: str,
+    *,
+    inbound_evidence: frozenset[str] = frozenset(),
 ) -> list[Finding]:
-    """Flag an implementable plan that declares no wire and no standalone reason."""
+    """Flag an implementable plan that declares no wire and no standalone reason.
+
+    ``inbound_evidence`` holds the slugs another plan names as the required
+    evidence of one of its gates, derived once over an audit's corpus: a plan
+    the gate waits on is wired, and one document's audit cannot see another
+    plan's gates.
+    """
 
     status = str(state.get("status") or "").strip().lower()
     gate_count = len(
@@ -1098,8 +1106,22 @@ def _unwired_plan_findings(
         gate_count=gate_count,
         standalone=standalone_reason(html_text),
         slug=slug,
+        section_wires=_declares_section_wire(state, html_text),
+        inbound_evidence=slug in inbound_evidence,
     )
     return [finding] if finding else []
+
+
+def _declares_section_wire(state: Mapping[str, Any], html_text: str) -> bool:
+    """Whether a plan declares a section-level wire rather than a plan-level one.
+
+    The two forms are the ``plan-section-depends-on`` mapping and the soft
+    ``plan-after`` field. Either one is the plan saying the wait belongs to one
+    of its sections, which is a wire the roadmap follows as surely as a
+    plan-level entry.
+    """
+
+    return bool(state.get("after")) or bool(section_depends_on(html_text))
 
 
 def unwired_plan_finding(
@@ -1111,26 +1133,85 @@ def unwired_plan_finding(
     gate_count: int,
     standalone: str | None,
     slug: str,
+    section_wires: bool = False,
+    inbound_evidence: bool = False,
 ) -> Finding | None:
     """Build the ``unwired-plan`` finding for an unwired implementable plan.
 
     ``doc_type`` must be the DECLARED type — ``"plan"`` only when the document
     says it is one — so an authored prose fragment is not held to a plan's
     wiring contract. ``None`` when the document is not a plan, is already
-    terminal, is wired by a link or a gate, or carries a plan-standalone
-    reason. Severity is ``error`` for a plan modified since the rule landed and
-    ``warn`` before it, so earlier plans are visible without stopping the fleet.
+    terminal, is wired by a link, a gate, a section-level wire or an inbound
+    gate that names it as required evidence, or carries a plan-standalone
+    reason. Severity is ``error`` for a plan modified since the wiring rule
+    landed and ``warn`` before it, so earlier plans are visible without stopping
+    the fleet.
     """
 
     if doc_type != "plan" or status in TERMINAL_STATUSES:
         return None
-    if links or gate_count or (standalone or "").strip():
+    if links or gate_count or section_wires or inbound_evidence:
+        return None
+    if (standalone or "").strip():
         return None
     return Finding(
         unwired_plan_severity(modified),
         "unwired-plan",
         unwired_plan_message(slug=slug),
     )
+
+
+#: A ref-shaped token in a gate's required-evidence prose. It carries the
+#: project qualifier and the ``#stage`` anchor a plan ref may hold, so
+#: ``<slug>#<section>`` reads as one token rather than a slug and a stray word.
+_GATE_EVIDENCE_REF_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:#-]*")
+
+
+def gate_evidence_slugs_from_gates(
+    gates: Iterable[Mapping[str, Any]], project: str | None = None
+) -> set[str]:
+    """Slugs named as the required evidence of a gate, over a plan's gates.
+
+    A plan whose only wire is that another plan's gate waits on it is wired —
+    the gate names it as the evidence it needs — so the audit and the roadmap
+    silence it. Foreign-qualified refs are skipped: only a plan in the audited
+    project can be a row.
+    """
+
+    named: set[str] = set()
+    for gate in gates:
+        if not isinstance(gate, Mapping):
+            continue
+        text = str(gate.get("required_evidence") or "")
+        for token in _GATE_EVIDENCE_REF_RE.findall(text):
+            parsed = parse_plan_ref(token)
+            if parsed is None or parsed.is_external(project or ""):
+                continue
+            if parsed.slug:
+                named.add(parsed.slug)
+    return named
+
+
+def gate_evidence_slugs(
+    paths: Iterable[Path], project: str | None = None
+) -> frozenset[str]:
+    """The slugs named as required gate evidence across a set of plan files.
+
+    Derived once for an audit pass so every document's finding can ask whether
+    some other plan's gate waits on it; a document's own readers never see the
+    rest of the corpus.
+    """
+
+    named: set[str] = set()
+    for path in paths:
+        try:
+            state = _plan_html.read_state(_plan_html._read_plan_text(path))
+        except (OSError, ValueError):
+            continue
+        named |= gate_evidence_slugs_from_gates(
+            state.get("gates") or [], project=project
+        )
+    return frozenset(named)
 
 
 def _ref_identity(ref: Any, project: str) -> tuple[str, str] | None:
@@ -1438,8 +1519,18 @@ def _impl_meta_stale_findings(
     ]
 
 
-def audit_html(html_text: str, *, project: str | None = None) -> list[Finding]:
-    """Audit one document's HTML, returning findings (worst-first ordering)."""
+def audit_html(
+    html_text: str,
+    *,
+    project: str | None = None,
+    inbound_evidence: frozenset[str] | None = None,
+) -> list[Finding]:
+    """Audit one document's HTML, returning findings (worst-first ordering).
+
+    ``inbound_evidence`` carries the slugs some other plan's gate names as its
+    required evidence, derived once over the audit's whole corpus; a document
+    audited alone supplies none and reads as it did before.
+    """
     soup = BeautifulSoup(html_text or "", "html.parser")
     out: list[Finding] = []
 
@@ -1532,7 +1623,12 @@ def audit_html(html_text: str, *, project: str | None = None) -> list[Finding]:
     # slug is not held to a plan's wiring contract.
     out.extend(
         _unwired_plan_findings(
-            (rt.get("content") if rt else "") or "", state, soup, html_text, slug
+            (rt.get("content") if rt else "") or "",
+            state,
+            soup,
+            html_text,
+            slug,
+            inbound_evidence=inbound_evidence or frozenset(),
         )
     )
 
@@ -2019,7 +2115,11 @@ def review_reference_findings(
 
 
 def audit_file(
-    path: Path, *, project: str | None = None, root: str | Path | None = None
+    path: Path,
+    *,
+    project: str | None = None,
+    root: str | Path | None = None,
+    inbound_evidence: frozenset[str] | None = None,
 ) -> list[Finding]:
     from reckon.evidence import evidence_record_plan
 
@@ -2031,13 +2131,13 @@ def audit_file(
     record_plan = evidence_record_plan(path)
     if record_plan is None:
         text = _plan_html._read_plan_text(path)
-        findings = audit_html(text, project=project)
+        findings = audit_html(text, project=project, inbound_evidence=inbound_evidence)
         findings.extend(_duplicate_element_id_findings(text, [("the document", text)]))
         findings.extend(review_reference_findings(text, root=resolved_root))
         findings.sort(key=lambda f: SEVERITIES.index(f.severity))
         return findings
     text, compose_error = _composed_record_text(path, record_plan, project)
-    findings = audit_html(text, project=project)
+    findings = audit_html(text, project=project, inbound_evidence=inbound_evidence)
     findings.extend(
         _duplicate_element_id_findings(
             text, _composed_record_sources(path, record_plan)
@@ -2593,9 +2693,16 @@ def run(
         docs_dir = common_path.parent if common_path.is_file() else common_path
         link_findings = audit_links(path_objs, docs_dir, project=project)
 
+    # Derived once over the audited corpus: a document's own audit cannot see
+    # the gates another plan in the run holds, and a plan some gate names as
+    # required evidence is wired by that gate.
+    inbound_evidence = gate_evidence_slugs(path_objs, project=project)
+
     any_error = False
     for p in path_objs:
-        findings = audit_file(p, project=project, root=root)
+        findings = audit_file(
+            p, project=project, root=root, inbound_evidence=inbound_evidence
+        )
         # Merge in link and cross-type slug-collision findings for this path.
         findings = findings + link_findings.get(p, []) + collision_findings.get(p, [])
         # Re-sort worst-first.

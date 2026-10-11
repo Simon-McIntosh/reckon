@@ -215,7 +215,12 @@ def _apply_standalone_meta(html_text: str, reason: str) -> str:
 
 
 def _unwired_plan_refusal(slug: str, working: Mapping[str, Any]) -> str | None:
-    """The refusal message for a new plan that declares no wire at all."""
+    """The refusal message for a new plan that declares no wire at all.
+
+    A plan being created cannot yet be named as another plan's gate evidence,
+    so the inbound half of the wiring rule has no view here; only the wires the
+    new plan declares itself are read.
+    """
 
     from reckon.doccheck import unwired_plan_finding
 
@@ -231,6 +236,9 @@ def _unwired_plan_refusal(slug: str, working: Mapping[str, Any]) -> str | None:
         gate_count=len(working.get("gates") or []),
         standalone=working.get("standalone"),
         slug=slug,
+        section_wires=bool(working.get("after"))
+        or bool(working.get("section_depends_on")),
+        inbound_evidence=False,
     )
     return finding.message if finding is not None else None
 
