@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="docs-project" content="reckon">
+<meta name="plan-slug" content="a-moved-head-is-reviewed">
+<meta name="reckon-type" content="plan">
+<title>a-moved-head-is-reviewed</title>
+<link rel="stylesheet" href="/_shared/foundation.css">
+<link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-title" content="A Moved Head Is Reviewed">
+<meta name="plan-summary" content="The review reflex skipped first deliveries and never re-reviewed a resumed run&#x27;s moved head; every head that merges gets a review keyed to it.">
+<meta name="plan-status" content="active">
+<meta name="plan-sprint" content="S26">
+<meta name="plan-informs" content="a-review-is-sized-to-its-risk">
+<meta name="plan-version" content="3">
+<meta name="plan-modified" content="2026-10-11">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;}">
+</head>
+<body>
+<main class="plan-doc">
+<h2 id="s1">§1 — Why: nine deliveries in one session went unreviewed by the reflex</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
+<p>Measured on 2026-10-11 in coordinator session <code>health-review-1010</code>, with its follower attached and the producer live throughout. The review reflex launched no review for these deliveries, and each was dispatched by hand from the live view's <code>next_action</code>:</p><ul><li>first deliveries: <code>source-text-assertions-multi-site</code>, <code>source-text-assertions-single-site</code>, <code>structural-guards-have-one-home</code>, <code>home-fixture-has-one-home</code> and <code>git-test-helper-has-one-home</code>;</li><li>resumed runs whose head moved, which were reviewed only at the old head: <code>structural-guards-have-one-home</code> (<code>c47c99ef6</code> to <code>71bb011d8</code>), <code>gc-bounds-a-run-file</code> (<code>92d3ec6ca</code> to <code>2cf592a55</code> to <code>3fa0ce0ef</code>) and <code>dispatch-names-the-health-review</code> (<code>29185a66a</code> to <code>624314887</code>).</li></ul><p>A resumed run reads <code>complete</code> again while its stored review is keyed to a superseded head, so the head that merges goes unreviewed unless the coordinator notices. a-review-is-sized-to-its-risk §5 states that the reflex reviews a settled head and re-reviews only what changed. This is a gap in that rule.</p>
+
+<h2 id="s2">§2 — The reflex reviews every settled head, a resumed run&#x27;s included</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Deliverable.</strong> First, an investigation finds why the reflex did not launch, recorded in the run directory. Check whether it treats any stored review as satisfying a run regardless of <code>reviewed_head_sha</code>, whether a concurrency or admission bound defers a launch it never retries, and whether a resumed run's transition back to <code>complete</code> is an event the reflex hears. Then make the reflex launch a review whenever a run settles at a head that no stored review is keyed to. That covers a resumed run, and a first delivery deferred by a bound once the bound clears.</p><p><strong>Done when</strong> <code>tests/test_a_moved_head_is_reviewed.py</code> builds a temporary run that completes, is reviewed at head A, is resumed and completes again at head B. It asserts the reflex launches exactly one review keyed to B, and launches none for a run whose stored review is already keyed to its head. A run whose first launch was deferred by the admission bound is launched once the bound clears. The tests importing the reflex's module show no added failure against base. The negative control is executed and logged: with the review lookup ignoring <code>reviewed_head_sha</code>, the resumed run at B gets no review and the test fails. Write paths: the reflex's module, named by the investigation, and <code>tests/test_a_moved_head_is_reviewed.py</code>.</p>
+
+
+
+<section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-amhir-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build (health-review-1010)" data-written-at="2026-10-11" data-recommends-skill="/reckon-build a-moved-head-is-reviewed §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §2</h4>
+    <div class="r-fu-body"><p>Investigate why the reflex did not launch, then make it review every settled head. §1 lists the measured misses with their run ids and heads.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-moved-head-is-reviewed §2</pre>
+    </article>
+</section>
+</main>
+</body>
+</html>
