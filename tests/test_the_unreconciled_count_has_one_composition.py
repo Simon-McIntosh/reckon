@@ -10,13 +10,12 @@ call sites to the one shared function.
 
 from __future__ import annotations
 
-import inspect
 from pathlib import Path
 from typing import Any
 
 import pytest
 
-from reckon.crew import promotion, recovery, runs
+from reckon.crew import promotion, promotion_release, recovery, runs
 from reckon.crew.runs import _write_json, pointer_path
 
 PROJECT = "one-composition-project"
@@ -141,11 +140,33 @@ def test_a_still_working_disposition_over_a_terminal_manifest_counts_unreconcile
     assert reading == expected == 1
 
 
-def test_both_call_sites_name_one_shared_composition() -> None:
+def test_both_call_sites_reach_one_shared_composition(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     # The drain and the promotion counter must reach the same composition, not
     # two copies that merely agree today: the pointer's liveness is host-gated,
     # and a copy that dropped that gate would still match the equivalence cases
     # above while disagreeing on a pointer whose classification turns on it.
+    # Driving both readings through a spy on the shared function proves each
+    # one actually calls it rather than carrying its own copy.
     assert promotion._drain_row is runs._drain_row
-    assert "_drain_row" in inspect.getsource(runs.drain)
-    assert "_drain_row" in inspect.getsource(promotion._unreconciled_live_runs)
+    repository = tmp_path / "repository"
+    repository.mkdir()
+    _install(monkeypatch, tmp_path, [_pointer("r-one", repository, backend="alpha")])
+
+    calls: list[object] = []
+    original = runs._drain_row
+
+    def spy(pointer: object) -> dict[str, Any]:
+        calls.append(pointer)
+        return original(pointer)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(runs, "_drain_row", spy)
+    monkeypatch.setattr(promotion_release, "_drain_row", spy)
+
+    runs.drain(PROJECT)
+    assert calls, "the drain did not reach the shared composition"
+    calls.clear()
+
+    promotion._unreconciled_live_runs(runs.list_live(project=PROJECT))
+    assert calls, "the promotion reading did not reach the shared composition"

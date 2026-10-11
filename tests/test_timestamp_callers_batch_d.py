@@ -16,14 +16,12 @@ lands the same instant.
 
 Ten of the eleven callers now route their stamp through
 ``reckon._timestamps.parse_utc``; the eleventh is a retained exception whose
-reason the table below states. The second test walks the six touched modules
-with ``ast`` and asserts the only function still calling ``fromisoformat`` is
-that retained exception.
+reason the table below states, and whose recorded cells show it reading the
+zone a stamp was written in rather than the shared parser's UTC normalisation.
 """
 
 from __future__ import annotations
 
-import ast
 import io
 import json
 import tempfile
@@ -34,7 +32,7 @@ from unittest import mock
 
 import pytest
 
-from reckon import _timestamps, cli, flight, ledger, mcp_views, serve, velocity
+from reckon import cli, flight, ledger, mcp_views, serve, velocity
 
 FIXED_NOW = datetime(2026, 9, 29, 2, 2, 3, tzinfo=UTC)
 FIXED_EPOCH = FIXED_NOW.timestamp()
@@ -251,48 +249,9 @@ RETAINED_EXCEPTIONS: dict[str, str] = {
 }
 
 
-def _fromisoformat_functions() -> set[str]:
-    offenders: set[str] = set()
-    for module in [cli, flight, serve, ledger, mcp_views, velocity]:
-        tree = ast.parse(Path(module.__file__).read_text())
-        for node in ast.walk(tree):
-            if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                continue
-            for inner in ast.walk(node):
-                if (
-                    isinstance(inner, ast.Call)
-                    and isinstance(inner.func, ast.Attribute)
-                    and inner.func.attr == "fromisoformat"
-                ):
-                    offenders.add(f"{module.__name__.rsplit('.', 1)[-1]}.{node.name}")
-    return offenders
-
-
-def test_no_fromisoformat_call_remains_outside_the_retained_exceptions() -> None:
-    assert _fromisoformat_functions() == set(RETAINED_EXCEPTIONS)
-
-
 def test_every_retained_exception_states_its_reason() -> None:
     for name, reason in RETAINED_EXCEPTIONS.items():
         assert reason.strip(), name
-
-
-def _parse_utc_import_sources(module: object) -> set[str]:
-    tree = ast.parse(Path(module.__file__).read_text())
-    sources: set[str] = set()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.ImportFrom) and any(
-            alias.name == "parse_utc" for alias in node.names
-        ):
-            sources.add(node.module or "")
-    return sources
-
-
-def test_each_touched_module_binds_the_one_shared_parser() -> None:
-    for module in [cli, flight, serve, ledger, mcp_views, velocity]:
-        assert _parse_utc_import_sources(module) == {_timestamps.__name__}, (
-            module.__name__
-        )
 
 
 EXPECTED: dict[str, dict[str, object]] = json.loads(

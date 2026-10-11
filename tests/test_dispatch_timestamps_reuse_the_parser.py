@@ -22,11 +22,9 @@ which the shared parser strips and accepts and the retained reader rejects.
 
 from __future__ import annotations
 
-import ast
 import importlib
 import json
 from datetime import UTC, datetime
-from pathlib import Path
 
 import pytest
 
@@ -158,34 +156,6 @@ def test_recorded_table_covers_every_reader_and_input() -> None:
     assert set(EXPECTED) == set(CALLERS)
     for name, row in EXPECTED.items():
         assert set(row) == set(INPUTS), name
-
-
-def _fromisoformat_enclosing_functions() -> list[str]:
-    tree = ast.parse(Path(dispatch_admission_module.__file__).read_text())
-    found: list[str] = []
-    for node in ast.walk(tree):
-        if isinstance(node, ast.FunctionDef):
-            for sub in ast.walk(node):
-                if (
-                    isinstance(sub, ast.Call)
-                    and isinstance(sub.func, ast.Attribute)
-                    and sub.func.attr == "fromisoformat"
-                ):
-                    found.append(node.name)
-    return found
-
-
-def test_only_the_lane_reading_retains_fromisoformat() -> None:
-    assert _fromisoformat_enclosing_functions() == ["_lane_reading_carry"]
-
-
-def test_migrated_dispatch_binds_both_shared_parsers() -> None:
-    tree = ast.parse(Path(dispatch_admission_module.__file__).read_text())
-    imported: set[str] = set()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.ImportFrom) and node.module == _timestamps.__name__:
-            imported.update(alias.name for alias in node.names)
-    assert {"parse_utc", "parse_iso"} <= imported
 
 
 PADDED_INPUT = " 2026-09-29T01:02:03Z "

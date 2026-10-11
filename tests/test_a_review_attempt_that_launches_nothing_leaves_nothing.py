@@ -14,7 +14,6 @@ call survives a refusal.
 from __future__ import annotations
 
 import importlib
-import inspect
 import json
 import subprocess
 from pathlib import Path
@@ -181,19 +180,33 @@ def test_a_run_directory_that_existed_before_the_call_survives_a_refusal(
     assert sentinel.read_text(encoding="utf-8") == "RUBRIC reuse_search: pass\n"
 
 
-def test_the_removal_is_one_exit_at_the_composing_caller_not_one_per_branch() -> None:
-    """The removal is a single call at the caller, not copied into each branch."""
-    helper = inspect.getsource(recovery._discard_composed_plan_review)
-    caller = inspect.getsource(recovery.dispatch_review_for_run)
-    dispatch = inspect.getsource(recovery._dispatch_composed_review)
+def test_the_removal_is_one_call_at_the_composing_caller(
+    project: tuple[Path, Path, Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The removal is a single call at the caller, not one per refusal branch."""
+    _home, _repo, _path = project
+    gate = _paused_gate(tmp_path)
+    subject = _subject()
+    directory = plan_review.review_report_directory(
+        "sample", "fixture", subject["run_id"]
+    )
 
-    # the removal itself lives in one place, without ignoring errors
-    assert helper.count("shutil.rmtree(") == 1
-    assert "ignore_errors" not in helper
-    # exactly one call, at the caller that composed the fields
-    assert caller.count("_discard_composed_plan_review(") == 1
-    # and none copied into the dispatch's own branches
-    assert "_discard_composed_plan_review(" not in dispatch
+    calls: list[Path] = []
+    real = recovery.shutil.rmtree
+
+    def spy(path, *args, **kwargs):
+        calls.append(Path(path))
+        return real(path, *args, **kwargs)
+
+    monkeypatch.setattr(recovery.shutil, "rmtree", spy)
+
+    result = recovery.dispatch_review_for_run(subject, config=_config(gate))
+
+    assert result["dispatched"] is False
+    assert result["error"] == "lane-paused"
+    assert calls == [directory]
 
 
 def test_a_failed_removal_is_reported_not_swallowed(
