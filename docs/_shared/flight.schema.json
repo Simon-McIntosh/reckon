@@ -989,6 +989,17 @@
                         }
                     ]
                 },
+                "gc": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/GcConfig"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "How gc bounds the files a promoted run captured. Declared on the flight config so a host or project layer retunes the limit without a code change; the resolver reads it from the resolved config."
+                },
                 "lanes": {
                     "additionalProperties": {
                         "anyOf": [
@@ -1193,6 +1204,22 @@
             ],
             "title": "GateFailureAction",
             "type": "string"
+        },
+        "GcConfig": {
+            "additionalProperties": false,
+            "description": "How gc bounds the files a promoted run captured. Declared on the flight config so the size a run's captured file is held to is set by a layer rather than by code.",
+            "properties": {
+                "run_file_max_mb": {
+                    "description": "The size a promoted run's captured file may reach before gc bounds it, in megabytes. A text file over the limit keeps its head and its tail around a one-line marker naming the original size and sha256; a recognised binary artefact over the limit is reported and left untouched.",
+                    "minimum": 1,
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
+                }
+            },
+            "title": "GcConfig",
+            "type": "object"
         },
         "InputModality": {
             "description": "A kind of input a backend's model actually receives beside the prompt. Closed structural vocabulary: a value names an input channel, never a provider, a model or an effort level.",
@@ -2726,6 +2753,17 @@
                     "type": "null"
                 }
             ]
+        },
+        "gc": {
+            "anyOf": [
+                {
+                    "$ref": "#/$defs/GcConfig"
+                },
+                {
+                    "type": "null"
+                }
+            ],
+            "description": "How gc bounds the files a promoted run captured. Declared on the flight config so a host or project layer retunes the limit without a code change; the resolver reads it from the resolved config."
         },
         "lanes": {
             "additionalProperties": {

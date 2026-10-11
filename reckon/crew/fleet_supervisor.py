@@ -545,6 +545,50 @@ def next_backoff(delay: float, ran_seconds: float) -> tuple[float, float]:
     return delay, min(delay * 2, BACKOFF_CAP_SECONDS)
 
 
+def trim_file_ends(
+    path: Path, *, limit: int, head: int, tail: int = 0
+) -> tuple[bytes, bytes] | None:
+    """Return a file's leading and trailing bytes, snapped to whole lines.
+
+    Reads the first ``head`` bytes and the last ``tail`` bytes of ``path`` and
+    returns them as a pair. Neither cut splits a line: the tail keeps the newest
+    bytes and drops the partial line it would start in the middle of, moving
+    forward to the next newline so the first line a later reader sees is whole;
+    the head backs off to the last newline before its end so the last line it
+    carries is whole too, a forward-reading snap of its own. A ``head`` or
+    ``tail`` of zero yields the empty byte string for that side.
+
+    Returns ``None`` when the file is absent or already within ``limit`` — the
+    caller decides whether that is a no-op or a failure. The caller also decides
+    what to do with the bytes: the service log writes the tail back in place
+    under its open descriptor, while the run-file bound writes both halves
+    described by a marker naming the original size and digest.
+    """
+    try:
+        size = path.stat().st_size
+    except FileNotFoundError:
+        return None
+    if size <= limit:
+        return None
+    tail_size = int(tail)
+    head_bytes = b""
+    tail_bytes = b""
+    with open(path, "rb") as handle:
+        if head:
+            head_bytes = handle.read(min(head, size))
+        if tail_size > 0:
+            handle.seek(max(size - tail_size, 0))
+            tail_bytes = handle.read()
+    if head_bytes:
+        boundary = head_bytes.rfind(b"\n")
+        head_bytes = head_bytes[: boundary + 1] if boundary != -1 else b""
+    if tail_bytes:
+        boundary = tail_bytes.find(b"\n")
+        if boundary != -1:
+            tail_bytes = tail_bytes[boundary + 1 :]
+    return head_bytes, tail_bytes
+
+
 def trim_service_log(path: Path, *, limit: int, keep: int) -> bool:
     """Bound a service log, keeping its newest bytes and dropping the oldest.
 
@@ -555,19 +599,11 @@ def trim_service_log(path: Path, *, limit: int, keep: int) -> bool:
     line a later reader sees is a whole one. An absent log is not a failure.
     Returns whether anything was trimmed.
     """
-    try:
-        size = path.stat().st_size
-    except FileNotFoundError:
+    ends = trim_file_ends(path, limit=limit, head=0, tail=min(keep, limit))
+    if ends is None:
         return False
-    if size <= limit:
-        return False
-    keep = min(keep, limit)
+    _, tail = ends
     with open(path, "rb+") as handle:
-        handle.seek(max(size - keep, 0))
-        tail = handle.read()
-        boundary = tail.find(b"\n")
-        if boundary != -1:
-            tail = tail[boundary + 1 :]
         handle.seek(0)
         handle.write(tail)
         handle.truncate()

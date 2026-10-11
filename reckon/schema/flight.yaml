@@ -1006,6 +1006,23 @@ slots:
     multivalued: true
     inlined_as_list: true
 
+  run_file_max_mb:
+    description: >-
+      The size a promoted run's captured file may reach before gc bounds it,
+      in megabytes. A text file over the limit keeps its head and its tail
+      around a one-line marker naming the original size and sha256; a
+      recognised binary artefact over the limit is reported and left untouched.
+    range: integer
+    minimum_value: 1
+
+  gc:
+    description: >-
+      How gc bounds the files a promoted run captured. Declared on the flight
+      config so a host or project layer retunes the limit without a code
+      change; the resolver reads it from the resolved config.
+    range: GcConfig
+    inlined: true
+
 # ── Classes ─────────────────────────────────────────────────────────────────
 
 classes:
@@ -1026,6 +1043,7 @@ classes:
       - routing
       - gates
       - review
+      - gc
       - budget
       - fences
       - capability_raise
@@ -1047,6 +1065,14 @@ classes:
       - tiers
       - suite
       - populations
+
+  GcConfig:
+    description: >-
+      How gc bounds the files a promoted run captured. Declared on the flight
+      config so the size a run's captured file is held to is set by a layer
+      rather than by code.
+    slots:
+      - run_file_max_mb
 
   ReviewSuite:
     description: >-
