@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-standalone" content="Storage bounds for the crew home and caches; no live plan waits on them and they wait on none. The pick-input index belongs to one-typesafe-model-picker&#x27;s code and is fixed here because its growth is independent of the picker&#x27;s open sections.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
   <title>The Crew Home Has A Bound | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="13">
+<meta name="plan-version" content="14">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -79,7 +79,7 @@
       <code>tests/test_gc_sweeps_ledger_indexes.py</code>.</p>
 
     <h2 id="s3">§3 — gc reaches reports, locks and run directories with no ledger row</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> <code>garbage_collect</code> (<code>reckon/crew/routing.py:1520</code>) gains three row sets, each reported
       by default and acted on only with <code>--apply</code>, each re-checking for a live pointer immediately before acting, as the pointer
       reap already does: report trees under <code>reports/&lt;project&gt;/</code> whose newest file is older than the run retention and
@@ -166,6 +166,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261011T001233569910-review-of-gc-guards-are-tested" data-who="reckon-build" data-when="2026-10-11T00:20:26.191Z">
     <div class="r-comment-body"><p>review of gc-guards-are-tested stored as a parsed record (goal 19, evidence 16, scope 20, durability 16, fit 19, reuse 20; total 110) reading 3cb2df449cf1688edd66cd10ce9a35b4d27fff96..1164f81d34c05449170cfc27a65fa979fcdb11ff, 0 added failures, 2 follow-on findings, no blocking finding</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-11T02:30:00Z">
+    <div class="r-comment-body"><p>§3 landed: gc covers reports, locks and unledgered run directories (<code>10c85a7ab</code>), and its exclusions are now tested with the duplicate tree-size helper removed (merge <code>270465603</code>); 62 passed; review 110/120. <a href="/reckon/evidence/archive/the-crew-home-has-a-bound-landed.html#s3-gc-guards-tested">evidence</a></p></div>
 </div>
 </section>
 </main>

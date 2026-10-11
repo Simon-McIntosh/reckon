@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-crew-home-has-a-bound-landed">
+  <meta name="plan-title" content="The Crew Home Has A Bound — landed record">
+  <meta name="plan-summary" content="Closure synthesis for The Crew Home Has A Bound: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="the-crew-home-has-a-bound">
+  <meta name="plan-verdict" content="qualified">
+  <title>The Crew Home Has A Bound — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>The Crew Home Has A Bound — landed record</h1>
+  <p>Closure synthesis for The Crew Home Has A Bound: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s3-gc-guards-tested">
+    <h2>§3 — gc&#x27;s lock and run-confinement guards are tested</h2>
+    <p>This repair node follows §3's first landing (<code>10c85a7ab</code>). <code>tests/test_gc_reaches_every_crew_store.py</code> now asserts three guards: the queue lock is never offered, a lock with no ledger row is never offered, and <code>--run</code> offers its own run-keyed report tree while that run holds a live pointer. <code>reckon/crew/routing.py</code> measures tree size through the shared <code>tree_size_bytes</code>, and its private <code>_tree_bytes</code> copy is gone. Commit <code>1164f81d3</code>, merged at <code>270465603</code>.</p><p><strong>Measure.</strong> The eleven gc test files: 62 passed, <code>EXIT=0</code>, at the head on node-local <code>/tmp</code>. Negative control: with the queue-lock exclusion removed, the test fails, <code>EXIT=1</code>. Run review: 110/120, follow-ons only. Only the queue-lock control was executed, so the other two guards are shown to pass rather than shown to fire.</p><p><strong>Follow-on.</strong> <code>tests/test_gc_sweeps_orphan_scratch.py</code> hardcodes <code>/tmp/reckon-crew-scratch</code>, so it fails when pytest's <code>tmp_path</code> nests under that root.</p>
+  </section>
+
+</main>
+</body>
+</html>
