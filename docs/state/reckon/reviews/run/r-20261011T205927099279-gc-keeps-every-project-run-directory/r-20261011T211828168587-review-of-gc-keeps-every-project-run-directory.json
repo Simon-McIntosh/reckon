@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "backend": "clive",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_run_commands.py:1219",
+    "reckon/crew/routing.py:2197"
+  ],
+  "completed_at": "2026-10-11T21:37:23.710Z",
+  "dispatched_at": "2026-10-11T21:18:53Z",
+  "findings": [
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "1659",
+      "severity": "follow-on",
+      "text": "follow-on: a withheld unledgered row keeps `\"action\": \"prune\"` although it is not removed, inconsistent with the sibling withheld row at routing.py:2138 which sets `\"action\": \"withheld\"`; a reader keying on `action` cannot tell a withheld row from an offered one."
+    },
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "1577",
+      "severity": "follow-on",
+      "text": "follow-on: the known set is now built only from the registered mounts, so a checkout whose own project is not a registered mount would treat its own ledgered runs as unledgered; low risk where every project is registered, and the brief directed this source."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against 8ce496de9 \u2014 784d580de adds `_mounted_ledgered_run_ids` and the fail-closed withheld branch to routing.py plus the two test cases, and f96124f7a adds the evidence fragment; no plan, ledger or index state is touched.",
+    "done_when": "the done_when names two new cases in tests/test_gc_reaches_every_crew_store.py plus the existing cases and a single-repository negative control; the manifest records the gate run (8 passed, EXIT=0) and the control (2 failed, EXIT=1), both logged on disk with their own EXIT lines.",
+    "goal": "the node goal is \"gc calls a run directory unledgered only when no registered project's ledger holds its run id\"; the landed change replaces the caller-built single-repository `ledgered` set with `_mounted_ledgered_run_ids()` (reckon/crew/routing.py:1577), which reads every registered project's ledger through `ledger.runs(name, root=docs.parent)` over `flight.mounted_project_docs()`.",
+    "manifest": "read; it states the focused gate 8 passed at EXIT=0, the negative control 2 failed at EXIT=1, names both log paths, and records the two commits 784d580de and f96124f7a.",
+    "write_paths": "the source run's declared write paths are reckon/crew/routing.py, tests/test_gc_reaches_every_crew_store.py, docs/evidence/fragments/the-crew-home-has-a-bound/gc-keeps-every-project-run-directory.html and docs/figures/the-crew-home-has-a-bound/gc-keeps-every-project-run-directory; every path in the diff is inside them."
+  },
+  "justifications": {
+    "durability": "reverting `_mounted_ledgered_run_ids` to the single-repository ledger set reddens tests/test_gc_reaches_every_crew_store.py:430 on `dir_b`, as the recorded negative control shows.",
+    "evidence": "tests/test_gc_reaches_every_crew_store.py:467 offers only `dir_none` and leaves `dir_b` on disk after --apply, matching the done_when, and the result is recorded in the manifest and focused.log.",
+    "fit": "the new helper follows the surrounding module style at reckon/crew/routing.py:1577, but a withheld row keeps `\"action\": \"prune\"` while its sibling withheld row at routing.py:2138 uses `\"action\": \"withheld\"`.",
+    "goal_fidelity": "reckon/crew/routing.py:1638 builds the known set from every registered project, so a peer's run id is now unledgered-in-neither-checked incorrectly as before.",
+    "reuse": "the addition extends the existing owners `flight.mounted_project_docs` (routing.py:1591) and `ledger.runs`, and a search for an existing cross-project ledgered-run-id set found none.",
+    "scope_discipline": "every path in the diff is inside the source run's declared write paths (routing.py, the test module, the evidence fragment)."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \"gc calls a run directory unledgered only when no registered project's ledger holds its run id\"; the landed change replaces the caller-built single-repository `ledgered` set with `_mounted_ledgered_run_ids()` (reckon/crew/routing.py:1577), which reads every registered project's ledger through `ledger.runs(name, root=docs.parent)` over `flight.mounted_project_docs()`.\nVERDICT done_when: the done_when names two new cases in tests/test_gc_reaches_every_crew_store.py plus the existing cases and a single-repository negative control; the manifest records the gate run (8 passed, EXIT=0) and the control (2 failed, EXIT=1), both logged on disk with their own EXIT lines.\nVERDICT write_paths: the source run's declared write paths are reckon/crew/routing.py, tests/test_gc_reaches_every_crew_store.py, docs/evidence/fragments/the-crew-home-has-a-bound/gc-keeps-every-project-run-directory.html and docs/figures/the-crew-home-has-a-bound/gc-keeps-every-project-run-directory; every path in the diff is inside them.\nVERDICT manifest: read; it states the focused gate 8 passed at EXIT=0, the negative control 2 failed at EXIT=1, names both log paths, and records the two commits 784d580de and f96124f7a.\nVERDICT diff: read commit by commit against 8ce496de9 \u2014 784d580de adds `_mounted_ledgered_run_ids` and the fail-closed withheld branch to routing.py plus the two test cases, and f96124f7a adds the evidence fragment; no plan, ledger or index state is touched.\nCALL_SITES: reckon/crew_run_commands.py:1219, reckon/crew/routing.py:2197\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/routing.py:1638 builds the known set from every registered project, so a peer's run id is now unledgered-in-neither-checked incorrectly as before.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_gc_reaches_every_crew_store.py:467 offers only `dir_none` and leaves `dir_b` on disk after --apply, matching the done_when, and the result is recorded in the manifest and focused.log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff is inside the source run's declared write paths (routing.py, the test module, the evidence fragment).\nSCORE durability: 19\nJUSTIFICATION durability: reverting `_mounted_ledgered_run_ids` to the single-repository ledger set reddens tests/test_gc_reaches_every_crew_store.py:430 on `dir_b`, as the recorded negative control shows.\nSCORE fit: 17\nJUSTIFICATION fit: the new helper follows the surrounding module style at reckon/crew/routing.py:1577, but a withheld row keeps `\"action\": \"prune\"` while its sibling withheld row at routing.py:2138 uses `\"action\": \"withheld\"`.\nSCORE reuse: 19\nJUSTIFICATION reuse: the addition extends the existing owners `flight.mounted_project_docs` (routing.py:1591) and `ledger.runs`, and a search for an existing cross-project ledgered-run-id set found none.\nFINDING reckon/crew/routing.py:1659 follow-on: a withheld unledgered row keeps `\"action\": \"prune\"` although it is not removed, inconsistent with the sibling withheld row at routing.py:2138 which sets `\"action\": \"withheld\"`; a reader keying on `action` cannot tell a withheld row from an offered one.\nFINDING reckon/crew/routing.py:1577 follow-on: the known set is now built only from the registered mounts, so a checkout whose own project is not a registered mount would treat its own ledgered runs as unledgered; low risk where every project is registered, and the brief directed this source.",
+  "review_run_id": "r-20261011T211828168587-review-of-gc-keeps-every-project-run-directory",
+  "reviewed_base_sha": "8ce496de9b49f8820e39fa92ab8ad13a2a5344d2",
+  "reviewed_head_sha": "f96124f7a5f215dad49079f9daff9f4f5dd1b467",
+  "reviewed_run_id": "r-20261011T205927099279-gc-keeps-every-project-run-directory",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T21:36:15.775009+00:00",
+  "total": 113
+}
