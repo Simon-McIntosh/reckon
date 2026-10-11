@@ -861,9 +861,7 @@ def _dispatch_health_review(
     advice where a review cannot be seen is to compose one.
     """
     product_paths = {
-        str(path).strip()
-        for path in node.write_paths
-        if _is_product_source(str(path))
+        str(path).strip() for path in node.write_paths if _is_product_source(str(path))
     }
     if not product_paths:
         return None
