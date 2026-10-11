@@ -20,6 +20,7 @@ from pathlib import Path
 import reckon
 from reckon import _plan_html, _store, doccheck, evidence, ledger, roadmap
 from reckon.crew.prescription import PRESCRIBED_PROPERTIES
+from reckon.served_code import _source_files
 
 _ROOT = Path(reckon.__file__).parent
 _TESTS = Path(__file__).resolve().parent
@@ -27,7 +28,14 @@ _REPO = _TESTS.parent
 
 
 def _module_paths() -> list[Path]:
-    return sorted(_ROOT.rglob("*.py"))
+    """Every source file under ``reckon/``, via the served-code enumeration.
+
+    ``served_code._source_files`` is the package's own inventory of its source
+    (it excludes ``__pycache__``); this module reuses it rather than inventing a
+    second walker, so the two cannot drift on which files count.
+    """
+
+    return sorted(_source_files(_ROOT).values())
 
 
 def _enclosing_fromisoformat_calls(
@@ -134,15 +142,17 @@ def test_only_the_shared_parser_calls_fromisoformat() -> None:
 def test_the_shared_parser_is_the_one_definition_of_its_helpers() -> None:
     """``parse_utc`` and ``parse_iso`` are defined once, in the shared module.
 
-    A second top-level definition of either name is a competing parser, so
-    the one-parser invariant rests on the helper's implementation too, not
-    only on which call sites reach ``fromisoformat``.
+    A second definition of either name is a competing parser, wherever it is
+    nested — a module-level def, a method on a class, or a def inside a
+    function or a conditional branch — so the scan walks the whole tree rather
+    than the module body, and the one-parser invariant rests on the helper's
+    implementation too, not only on which call sites reach ``fromisoformat``.
     """
 
     definitions: dict[str, list[str]] = {"parse_utc": [], "parse_iso": []}
     for path in _module_paths():
         tree = ast.parse(path.read_text(), filename=str(path))
-        for node in tree.body:
+        for node in ast.walk(tree):
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and (
                 node.name in definitions
             ):
@@ -298,8 +308,19 @@ def test_the_prescription_fixtures_name_no_plan_document_that_exists() -> None:
 
 def test_the_prescription_fixtures_name_no_node_identity() -> None:
     """The prescription fixtures are synthetic: every hyphenated identity they
-    carry is one of the prescribed property names, never a real node id."""
+    carry is one of the prescribed property names, never a real node slug.
+
+    A node slug is a lowercase hyphenated identity of three or more segments,
+    which is also the shape of the prescribed property names the fixture must
+    spell, so the scan admits those names and requires at least one candidate —
+    without that, an empty match would pass the containment vacuously.
+    """
 
     source = (_TESTS / "test_prescription.py").read_text(encoding="utf-8")
-    candidates = set(re.findall(r"\b[a-z][a-z0-9]*(?:-[a-z0-9]+){3,}\b", source))
-    assert candidates <= set(PRESCRIBED_PROPERTIES)
+    candidates = set(re.findall(r"\b[a-z][a-z0-9]*(?:-[a-z0-9]+){2,}\b", source))
+    assert candidates, (
+        "the fixture spells no hyphenated identity, so this checks nothing"
+    )
+    assert candidates <= set(PRESCRIBED_PROPERTIES), sorted(
+        candidates - set(PRESCRIBED_PROPERTIES)
+    )
