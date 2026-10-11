@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "24b5ef0f48d1455c59fe9e284d83c6bb2e66123a",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew_run_commands.py:546",
+    "reckon/crew_run_commands.py:556",
+    "reckon/crew/findings.py:180",
+    "reckon/crew/plan_review.py:1990"
+  ],
+  "completed_at": "2026-10-11T01:03:20.112Z",
+  "dispatched_at": "2026-10-11T00:58:55Z",
+  "findings": [
+    {
+      "file": "reckon/crew/review.py",
+      "line": "795",
+      "severity": "follow-on",
+      "text": "follow-on: the single shared RUBRIC verdict-line pattern is still named _PLAN_RUBRIC_LINE_RE after parse_health_review (review.py:1061) was switched to read it, so a plan-specific name now describes a grammar three parsers share; the name could not be renamed here only because the out-of-scope reckon/crew/plan_review.py:1990 reads _review_store._PLAN_RUBRIC_LINE_RE, so the rename needs plan_review.py in the same change."
+    }
+  ],
+  "head_log_revision": "f363c5a35b4ad17bffc23a15e3bc3bf3adbd0041",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s): the dispose CLI at reckon/crew_run_commands.py:546 and :556 calls the two writers; reckon/crew/findings.py:180 reads _review.FINDING_DISPOSITIONS_KEY; reckon/crew/plan_review.py:1990 reads _review_store._PLAN_RUBRIC_LINE_RE, the pattern this change keeps as the single copy.",
+    "diff": "read 24b5ef0f4..f363c5a35 commit by commit; one commit (f363c5a35 refactor(crew): share one disposition builder, store key and rubric-line pattern) touching three files all inside the declared fences: review.py replaces the two inline validation/build blocks with one _build_disposition_entry and deletes _HEALTH_RUBRIC_LINE_RE, findings.py drops its key declaration and reads _review.FINDING_DISPOSITIONS_KEY, and the evidence fragment is new.",
+    "done_when": "the brief's measure is a grep count, a single compiled pattern, both writers calling the helper, a suite delta at the head, a negative line delta and an executed negative control; I confirmed grep -c \"FINDING_DISPOSITIONS_KEY = \" over reckon/ is 1 (review.py:3587), review.py holds one RUBRIC-line pattern (review.py:795), both writers call _build_disposition_entry (review.py:3558 and :3628), the base and head suite logs carry identical failure ids (2 failed, 854 passed at both), the reckond line delta is -20, and the negative control reddens tests/test_dispose_a_finding.py at EXIT=1.",
+    "goal": "the node's goal is to collapse the three duplicated copies the two run reviews raised against review.py; the landed commit shares one _build_disposition_entry between both disposition writers, keeps one compiled RUBRIC-line pattern and one FINDING_DISPOSITIONS_KEY declaration, so all three named copies are collapsed.",
+    "manifest": "read the reviewed manifest; status complete, commits f363c5a35, changed_paths name review.py, findings.py and the in-fence evidence fragment, tests names the head suite (2 failed / 854 passed, EXIT=1) and test_logs names base-suite.log, head-suite.log and negative-control.log; baseline_suite and after_suite are both populated with the same two failing ids, so the added-failure count derives as 0, and the manifest records the one retry failure (a rename of _PLAN_RUBRIC_LINE_RE that broke plan_review.py) with its cause.",
+    "write_paths": "the run was fenced to reckon/crew/review.py, reckon/crew/findings.py, docs/evidence/fragments/the-codebase-is-reviewed-between-nodes/one-disposition-writer.html and a figures directory (prompt.txt); git diff --numstat 24b5ef0f4..f363c5a35 touches only the first three (review.py 59/80, findings.py 4/3, the fragment 23/0), all inside the fence, and leaves the figures directory unused."
+  },
+  "justifications": {
+    "durability": "the diff adds no test, but the shared helper's refusals are driven through the CLI by the pre-existing tests/test_dispose_a_finding.py:298 (assert result.exit_code != 0), which the logged negative control shows reddens when the fold-carrying-a-reason refusal is removed, so a regression of that guard fails a present test.",
+    "evidence": "the head-suite.log header names revision f363c5a35 and module.__file__ under the reviewed worktree, its footer reads 2 failed, 854 passed, and base-suite.log carries the same two ids; the grep count, the -20 line delta and the EXIT=1 negative control are each recorded in the manifest and its logs, though the gate is a suite-delta plus probes rather than one named assertion.",
+    "fit": "review.py follows the surrounding private-helper idiom, the commit at f363c5a35 carries a conventional subject and a body, and no name the repository forbids is introduced; the only fit slip is the retained _PLAN_ prefix on the now-shared pattern.",
+    "goal_fidelity": "review.py:3455 _build_disposition_entry is called by both writers at review.py:3558 and :3628, review.py:795 holds the one remainder RUBRIC-line pattern and review.py:3587 the one key declaration, so each of the brief's three copies is collapsed without changing either public signature.",
+    "reuse": "the change removes duplication rather than adding a capability: _build_disposition_entry extends reckon/crew/review.py, which already owns both writers, the pattern stays in its owner, and the key is declared in the module findings.py:37 already imports, so nothing is forked.",
+    "scope_discipline": "git diff --numstat 24b5ef0f4..f363c5a35 touches only reckon/crew/review.py, reckon/crew/findings.py and the in-fence evidence fragment, mutating no shared plan, index or sprint state and leaving the declared figures directory unused."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to collapse the three duplicated copies the two run reviews raised against review.py; the landed commit shares one _build_disposition_entry between both disposition writers, keeps one compiled RUBRIC-line pattern and one FINDING_DISPOSITIONS_KEY declaration, so all three named copies are collapsed.\nVERDICT done_when: the brief's measure is a grep count, a single compiled pattern, both writers calling the helper, a suite delta at the head, a negative line delta and an executed negative control; I confirmed grep -c \"FINDING_DISPOSITIONS_KEY = \" over reckon/ is 1 (review.py:3587), review.py holds one RUBRIC-line pattern (review.py:795), both writers call _build_disposition_entry (review.py:3558 and :3628), the base and head suite logs carry identical failure ids (2 failed, 854 passed at both), the reckon/ line delta is -20, and the negative control reddens tests/test_dispose_a_finding.py at EXIT=1.\nVERDICT write_paths: the run was fenced to reckon/crew/review.py, reckon/crew/findings.py, docs/evidence/fragments/the-codebase-is-reviewed-between-nodes/one-disposition-writer.html and a figures directory (prompt.txt); git diff --numstat 24b5ef0f4..f363c5a35 touches only the first three (review.py 59/80, findings.py 4/3, the fragment 23/0), all inside the fence, and leaves the figures directory unused.\nVERDICT manifest: read the reviewed manifest; status complete, commits f363c5a35, changed_paths name review.py, findings.py and the in-fence evidence fragment, tests names the head suite (2 failed / 854 passed, EXIT=1) and test_logs names base-suite.log, head-suite.log and negative-control.log; baseline_suite and after_suite are both populated with the same two failing ids, so the added-failure count derives as 0, and the manifest records the one retry failure (a rename of _PLAN_RUBRIC_LINE_RE that broke plan_review.py) with its cause.\nVERDICT diff: read 24b5ef0f4..f363c5a35 commit by commit; one commit (f363c5a35 refactor(crew): share one disposition builder, store key and rubric-line pattern) touching three files all inside the declared fences: review.py replaces the two inline validation/build blocks with one _build_disposition_entry and deletes _HEALTH_RUBRIC_LINE_RE, findings.py drops its key declaration and reads _review.FINDING_DISPOSITIONS_KEY, and the evidence fragment is new.\nCALL_SITES: reckon/crew_run_commands.py:546, reckon/crew_run_commands.py:556, reckon/crew/findings.py:180, reckon/crew/plan_review.py:1990\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: review.py:3455 _build_disposition_entry is called by both writers at review.py:3558 and :3628, review.py:795 holds the one remainder RUBRIC-line pattern and review.py:3587 the one key declaration, so each of the brief's three copies is collapsed without changing either public signature.\nSCORE evidence: 17\nJUSTIFICATION evidence: the head-suite.log header names revision f363c5a35 and module.__file__ under the reviewed worktree, its footer reads 2 failed, 854 passed, and base-suite.log carries the same two ids; the grep count, the -20 line delta and the EXIT=1 negative control are each recorded in the manifest and its logs, though the gate is a suite-delta plus probes rather than one named assertion.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --numstat 24b5ef0f4..f363c5a35 touches only reckon/crew/review.py, reckon/crew/findings.py and the in-fence evidence fragment, mutating no shared plan, index or sprint state and leaving the declared figures directory unused.\nSCORE durability: 16\nJUSTIFICATION durability: the diff adds no test, but the shared helper's refusals are driven through the CLI by the pre-existing tests/test_dispose_a_finding.py:298 (assert result.exit_code != 0), which the logged negative control shows reddens when the fold-carrying-a-reason refusal is removed, so a regression of that guard fails a present test.\nSCORE fit: 17\nJUSTIFICATION fit: review.py follows the surrounding private-helper idiom, the commit at f363c5a35 carries a conventional subject and a body, and no name the repository forbids is introduced; the only fit slip is the retained _PLAN_ prefix on the now-shared pattern.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change removes duplication rather than adding a capability: _build_disposition_entry extends reckon/crew/review.py, which already owns both writers, the pattern stays in its owner, and the key is declared in the module findings.py:37 already imports, so nothing is forked.\nFINDING reckon/crew/review.py:795 follow-on: the single shared RUBRIC verdict-line pattern is still named _PLAN_RUBRIC_LINE_RE after parse_health_review (review.py:1061) was switched to read it, so a plan-specific name now describes a grammar three parsers share; the name could not be renamed here only because the out-of-scope reckon/crew/plan_review.py:1990 reads _review_store._PLAN_RUBRIC_LINE_RE, so the rename needs plan_review.py in the same change.",
+  "review_run_id": "r-20261011T005831784284-review-of-one-disposition-writer",
+  "reviewed_base_sha": "24b5ef0f48d1455c59fe9e284d83c6bb2e66123a",
+  "reviewed_head_sha": "f363c5a35b4ad17bffc23a15e3bc3bf3adbd0041",
+  "reviewed_run_id": "r-20261011T002552869097-one-disposition-writer",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T01:12:00+00:00",
+  "total": 108
+}
