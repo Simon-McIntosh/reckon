@@ -1919,9 +1919,13 @@ def _review_options(callback):
         click.option("--plan", "plan_slug", default=""),
         click.option("--around", "around_plan", default=""),
         click.option("--path", "paths", multiple=True),
+        click.option("--sprint", "sprint_id", default=""),
+        click.option("--portfolio", "portfolio", is_flag=True),
         click.option("--session", default=""),
         click.option(
-            "--rubric", type=click.Choice(["design", "content"]), default="design"
+            "--rubric",
+            type=click.Choice(["design", "content", "currency"]),
+            default="design",
         ),
         click.option("--local", is_flag=True),
         click.option("--dry-run", is_flag=True),
@@ -1944,6 +1948,8 @@ def crew_review(
     plan_slug,
     around_plan,
     paths,
+    sprint_id,
+    portfolio,
     session,
     rubric,
     local,
@@ -1953,12 +1959,15 @@ def crew_review(
     acted,
     declined,
 ):
-    """Review one plan's current content or a code neighbourhood, or answer a finding.
+    """Review one plan's content, a code neighbourhood or a portfolio, or answer a finding.
 
     A plan subject reviews the plan's current content under the content or
     design rubric. A code subject — a plan named by ``--around`` or the paths
     named by ``--path`` — reviews that neighbourhood of production modules and
-    the modules one import away. An answer is written to the newest stored
+    the modules one import away. A portfolio subject — ``--portfolio`` for the
+    project's non-shipped plans, ``--sprint <id>`` for one sprint's, or
+    ``--plan <slug> --rubric currency`` for a single plan — composes one
+    disposition per plan in scope. An answer is written to the newest stored
     review that raised the finding, acted on or declined with a reason.
     """
     _run_review(
@@ -1974,6 +1983,8 @@ def crew_review(
         answer=answer,
         acted=acted,
         declined=declined,
+        sprint_id=sprint_id,
+        portfolio=portfolio,
     )
 
 
@@ -1985,6 +1996,8 @@ def crew_review_plan(
     plan_slug,
     around_plan,
     paths,
+    sprint_id,
+    portfolio,
     session,
     rubric,
     local,
@@ -2012,6 +2025,8 @@ def crew_review_plan(
         answer=answer,
         acted=acted,
         declined=declined,
+        sprint_id=sprint_id,
+        portfolio=portfolio,
     )
 
 
@@ -2029,6 +2044,8 @@ def _run_review(
     answer,
     acted,
     declined,
+    sprint_id="",
+    portfolio=False,
 ):
     """Compose and dispatch one review, or answer a plan finding.
 
@@ -2038,30 +2055,47 @@ def _run_review(
     from reckon.crew import plan_review, recovery
     from reckon.crew.node import CrewError
 
+    # A command names exactly one subject: a plan (under the content or design
+    # rubric), a code neighbourhood, or a portfolio. Each subject resolves,
+    # composes and stores differently, so a command naming two would silently
+    # drop one of them and report a review of something nobody asked for.
     code_subject = bool(around_plan or paths)
+    plan_is_portfolio = (
+        bool(plan_slug) and rubric == plan_review.PORTFOLIO_REVIEW_RUBRIC
+    )
+    portfolio_subject = bool(portfolio or sprint_id or plan_is_portfolio)
+    named = []
+    if plan_slug:
+        named.append("plan")
+    if code_subject:
+        named.append("code")
+    if portfolio:
+        named.append("portfolio")
+    if sprint_id:
+        named.append("sprint")
     detail = ""
-    if plan_slug and code_subject:
-        # The two subject kinds read different subjects and are keyed
-        # differently — a plan by its content, a code review by its
-        # neighbourhood — so a command naming both would silently drop one of
-        # them and report a review of something nobody asked for.
+    if len(named) > 1:
         detail = (
-            "--plan names a plan review and --around or --path names a code "
-            "review; name one subject"
+            "name one subject: --plan, --around/--path, --portfolio and --sprint "
+            f"are alternatives, but {', '.join(named)} were given"
         )
     elif answer:
         if acted == (declined is not None):
             detail = "--answer requires exactly one of --acted or --declined REASON"
         elif dry_run or local:
             detail = "--dry-run and --local apply only to review dispatch"
-        elif code_subject:
-            detail = "--answer applies to a plan review, not a code subject"
+        elif code_subject or portfolio_subject:
+            detail = (
+                "--answer applies to a plan review, not a code or portfolio subject"
+            )
         elif not plan_slug:
             detail = "--answer requires --plan PLAN"
     elif acted or declined is not None:
         detail = "--acted and --declined require --answer FINDING_ID"
-    elif not plan_slug and not code_subject:
-        detail = "name a subject: --plan PLAN, --around PLAN or --path PATH"
+    elif not plan_slug and not code_subject and not portfolio_subject:
+        detail = (
+            "name a subject: --plan PLAN, --around PLAN, --path PATH or --portfolio"
+        )
     elif not session:
         detail = "review dispatch requires --session"
     if detail:
@@ -2117,6 +2151,26 @@ def _run_review(
                 project, session, around=around_plan, paths=paths, local=local
             )
             result = plan_review.dispatch_code_review(subject, dry_run=dry_run)
+            _emit(result, pretty)
+            if result.get("refused") or result.get("error"):
+                raise click.exceptions.Exit(1)
+            return
+        if portfolio_subject:
+            if portfolio:
+                scope = plan_review.PORTFOLIO_SCOPE_PROJECT
+            elif sprint_id:
+                scope = plan_review.PORTFOLIO_SCOPE_SPRINT
+            else:
+                scope = plan_review.PORTFOLIO_SCOPE_PLAN
+            subject = plan_review.portfolio_review_subject(
+                project,
+                session,
+                scope=scope,
+                sprint=sprint_id,
+                plan=plan_slug,
+                local=local,
+            )
+            result = plan_review.dispatch_portfolio_review(subject, dry_run=dry_run)
             _emit(result, pretty)
             if result.get("refused") or result.get("error"):
                 raise click.exceptions.Exit(1)

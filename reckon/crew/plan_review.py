@@ -2074,6 +2074,8 @@ def delivered_report_record(sidecar: Mapping[str, Any]) -> dict[str, Any]:
     """
     if str(sidecar.get("subject") or "") == "code":
         return _code_review_record(sidecar)
+    if str(sidecar.get("subject") or "") == PORTFOLIO_SUBJECT:
+        return _portfolio_review_record(sidecar)
     report_path = Path(str(sidecar.get("report_path") or ""))
     if not report_path.is_file():
         raise ValueError(f"delivered review report {report_path} does not exist")
@@ -2169,6 +2171,8 @@ def _store_delivered_report(
     record = delivered_report_record(sidecar)
     if str(record.get("subject") or "") == "code":
         return store_code_review(record, base_dir=base_dir)
+    if str(record.get("subject") or "") == PORTFOLIO_SUBJECT:
+        return store_portfolio_review(record, base_dir=base_dir)
     return store_plan_review(record, base_dir=base_dir)
 
 
@@ -2199,6 +2203,9 @@ def store_delivered_reviews(
         delivered_reports(project, plan_slug), base_dir=base_dir
     )
     refused += _store_deliveries(delivered_code_reviews(project), base_dir=base_dir)
+    refused += _store_deliveries(
+        delivered_portfolio_reviews(project), base_dir=base_dir
+    )
     return refused
 
 
@@ -2791,3 +2798,613 @@ def code_review_record(
     is the record this returns, and no fingerprint comparison is involved.
     """
     return _load(code_review_path(project, key, base_dir))
+
+
+# ── Portfolio reviews: one disposition per live plan ────────────────────────
+# A plan review reads one plan and a code review reads one neighbourhood; a
+# portfolio review reads every non-shipped plan of a project, or of one sprint,
+# so its brief carries one figure row per plan in scope and the reviewer emits
+# one DISPOSITION line per plan. The figures come from the readers that already
+# own them — the plan parse, the roadmap rows and the derived plan age — and the
+# composer computes none of them itself. The parser refuses a reviewer's output
+# that omits a plan in scope and names the plan it omitted, because a
+# disposition round that silently skips a plan has not read the portfolio.
+
+PORTFOLIO_REVIEW_RUBRIC = "currency"
+PORTFOLIO_SUBJECT = "portfolio"
+PORTFOLIO_NODE_PREFIX = "review-portfolio-"
+PORTFOLIO_REPORTS_DIRNAME = "portfolio-review"
+PORTFOLIO_SIDECAR_NAME = "portfolio-review.json"
+PORTFOLIO_FILE_PREFIX = "portfolio-"
+_PORTFOLIO_REVIEW_PROMPT_PATH = (
+    Path(__file__).resolve().parent / "prompts" / "portfolio_review.md"
+)
+
+# The disposition verbs a portfolio reviewer may emit. A verb that names a
+# target carries it after the verb; the rest stand alone.
+PORTFOLIO_DISPOSITIONS: tuple[str, ...] = (
+    "keep",
+    "close",
+    "merge-into",
+    "retire",
+    "re-sprint",
+)
+PORTFOLIO_TARGETED_DISPOSITIONS: tuple[str, ...] = ("merge-into", "re-sprint")
+
+# The scope spellings a portfolio subject resolves from: every non-shipped plan
+# of the project, one sprint's member plans, or a single plan.
+PORTFOLIO_SCOPE_PROJECT = "portfolio"
+PORTFOLIO_SCOPE_SPRINT = "sprint"
+PORTFOLIO_SCOPE_PLAN = "plan"
+
+# ``DISPOSITION <slug>: <verb> [target] — <evidence>`` is the one line shape the
+# reviewer emits per plan. The evidence separator is an em dash, with the plain
+# double-hyphen accepted as the same separator.
+_DISPOSITION_LINE_RE = re.compile(r"^DISPOSITION\s+(\S+?)\s*:\s*(.+)$", re.IGNORECASE)
+_EVIDENCE_SEPARATORS: tuple[str, ...] = ("—", " -- ", "-- ")
+
+
+class PortfolioReviewError(ValueError):
+    """A reviewer's portfolio output cannot be read into dispositions.
+
+    ``missing`` names the plans in scope the output failed to dispose of, so a
+    caller reports the omitted plan by name rather than as a shape failure.
+    """
+
+    def __init__(self, message: str, *, missing: Iterable[str] = ()) -> None:
+        super().__init__(message)
+        self.missing = list(missing)
+
+
+def load_portfolio_review_prompt() -> str:
+    """Read the portfolio-review rubric from disk at call time."""
+    return _PORTFOLIO_REVIEW_PROMPT_PATH.read_text(encoding="utf-8")
+
+
+def _split_evidence(tail: str) -> tuple[str, str]:
+    """Split a disposition tail into its action text and its evidence."""
+    for separator in _EVIDENCE_SEPARATORS:
+        if separator in tail:
+            action, _, evidence = tail.partition(separator)
+            return action.strip(), evidence.strip()
+    return tail.strip(), ""
+
+
+def _parse_disposition(text: str) -> tuple[str, str, str]:
+    """Parse one DISPOSITION tail into ``(verb, target, evidence)``."""
+    action_text, evidence = _split_evidence(text)
+    verb, _, target = action_text.partition(" ")
+    verb = verb.strip().lower()
+    target = target.strip()
+    if verb not in PORTFOLIO_DISPOSITIONS:
+        raise PortfolioReviewError(
+            f"disposition {verb!r} is not one of {PORTFOLIO_DISPOSITIONS}"
+        )
+    if verb in PORTFOLIO_TARGETED_DISPOSITIONS and not target:
+        raise PortfolioReviewError(f"disposition {verb!r} names no target")
+    return verb, target, evidence
+
+
+def parse_portfolio_review(text: str, *, plans: Iterable[str]) -> dict[str, Any]:
+    """Parse a delivered portfolio report into one disposition per plan in scope.
+
+    Every plan named in ``plans`` must carry exactly one ``DISPOSITION`` line;
+    an output that omits a plan is refused, and the refusal names the omitted
+    plan rather than reporting a body that merely parsed short.
+    """
+    in_scope = [str(plan) for plan in plans]
+    dispositions: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for line in _review_store._review_text_lines(text):
+        match = _DISPOSITION_LINE_RE.match(line)
+        if match is None:
+            continue
+        slug = match.group(1)
+        verb, target, evidence = _parse_disposition(match.group(2).strip())
+        dispositions.append(
+            {
+                "plan_slug": slug,
+                "disposition": verb,
+                "target": target,
+                "evidence": evidence,
+            }
+        )
+        seen.add(slug)
+    missing = [plan for plan in in_scope if plan not in seen]
+    if missing:
+        raise PortfolioReviewError(
+            "portfolio review omits "
+            f"{len(missing)} plan(s) in scope: {', '.join(missing)}",
+            missing=missing,
+        )
+    return {
+        "rubric": PORTFOLIO_REVIEW_RUBRIC,
+        "plans": in_scope,
+        "dispositions": dispositions,
+    }
+
+
+# ── The figures, from the readers that own them ─────────────────────────────
+
+
+def _project_docs_dir(project: str) -> Path:
+    """The mounted docs directory of a project, or a refusal naming it."""
+    from reckon import flight
+    from reckon.crew.node import CrewError
+
+    docs = flight.mounted_project_docs().get(project)
+    if docs is None:
+        raise CrewError(f"project {project!r} has no mounted docs")
+    return Path(docs)
+
+
+def _plan_paths(docs_dir: Path) -> list[tuple[str, Path]]:
+    """Every plan file under a project's ``plans`` directory, slug order."""
+    plans_dir = docs_dir / "plans"
+    if not plans_dir.is_dir():
+        return []
+    return [(path.stem, path) for path in sorted(plans_dir.glob("*.html"))]
+
+
+def _open_followups(state: Mapping[str, Any]) -> list[Mapping[str, Any]]:
+    """The followups a plan carries that are not yet resolved."""
+    return [
+        followup
+        for followup in state.get("followups") or ()
+        if isinstance(followup, Mapping)
+        and str(followup.get("status") or "").strip().lower() != "resolved"
+    ]
+
+
+def _readiness_by_slug(project: str, docs_dir: Path) -> dict[str, str]:
+    """Each plan's roadmap readiness verdict, from the roadmap rows.
+
+    The roadmap is the owner of the ready-or-blocked verdict, so it is read
+    rather than re-derived; a project the roadmap cannot build for yields an
+    empty mapping and every plan reads ``unknown`` rather than a guess.
+    """
+    try:
+        from reckon.mcp_discovery import _discover_project, _inventory_row
+        from reckon.roadmap import build_roadmap
+
+        discovered = _discover_project(project, None)
+        inventory = [_inventory_row(item) for item in discovered.get("inventory", [])]
+        roadmap = build_roadmap(
+            project,
+            inventory,
+            list(discovered.get("sprints", [])),
+            active_sprint_id=discovered.get("active_sprint_id"),
+            docs_dir=docs_dir,
+        )
+    except Exception:  # noqa: BLE001 - an unbuildable roadmap yields no verdict
+        return {}
+    return {
+        str(row.get("slug")): str(row.get("readiness") or "unknown")
+        for row in roadmap.get("pending_work") or ()
+        if row.get("slug")
+    }
+
+
+def _plan_figure(
+    slug: str,
+    path: Path,
+    *,
+    docs_dir: Path,
+    repo_dir: Path,
+    readiness: str,
+) -> dict[str, Any]:
+    """One plan's portfolio figures, each from the reader that owns it."""
+    from reckon.doccheck import derived_plan_age
+    from reckon.roadmap import implementable_sections
+
+    state = _plan_html.parse_plan(path, slug)
+    modified = str(state.get("modified") or "")
+    age_days, age_source = derived_plan_age(
+        modified, fallback_path=path, repo_dir=repo_dir, docs_dir=docs_dir
+    )
+    declarations = state.get("section_declarations") or {}
+    return {
+        "plan_slug": slug,
+        "status": str(state.get("status") or ""),
+        "impl": float(state.get("impl") or 0.0),
+        "impl_source": str(state.get("impl_source") or ""),
+        "sprint": str(state.get("sprint") or ""),
+        "age_days": age_days,
+        "age_source": age_source,
+        "open_sections": implementable_sections(declarations),
+        "open_followups": _open_followups(state),
+        "readiness": readiness,
+    }
+
+
+def _all_plans(project: str, docs_dir: Path, *, repo_dir: Path) -> list[dict[str, Any]]:
+    """Every plan of a project with its figures, plans only, document order."""
+    readiness = _readiness_by_slug(project, docs_dir)
+    figures: list[dict[str, Any]] = []
+    for slug, path in _plan_paths(docs_dir):
+        state = _plan_html.parse_plan(path, slug)
+        if str(state.get("type") or "plan") != "plan":
+            continue
+        figures.append(
+            _plan_figure(
+                slug,
+                path,
+                docs_dir=docs_dir,
+                repo_dir=repo_dir,
+                readiness=readiness.get(slug, "unknown"),
+            )
+        )
+    return figures
+
+
+def _sprint_member_slugs(project: str, sprint_id: str) -> set[str]:
+    """The plan slugs a sprint names as its items."""
+    from reckon._store import sprint_item_slug
+
+    members: set[str] = set()
+    try:
+        from reckon.mcp_discovery import _discover_project
+
+        discovered = _discover_project(project, None)
+    except Exception:  # noqa: BLE001 - an unreadable sprint yields no members
+        return members
+    for sprint in discovered.get("sprints", []) or ():
+        if str(sprint.get("id") or "") != sprint_id:
+            continue
+        for item in sprint.get("items") or ():
+            slug = sprint_item_slug(item)
+            if slug:
+                members.add(slug)
+    return members
+
+
+def portfolio_review_subject(
+    project: str,
+    session: str,
+    *,
+    scope: str = PORTFOLIO_SCOPE_PROJECT,
+    sprint: str = "",
+    plan: str = "",
+    local: bool = False,
+) -> dict[str, Any]:
+    """Resolve a portfolio subject: the plans in scope and their figures.
+
+    The scope is every non-shipped plan of the project (``portfolio``), one
+    sprint's member plans (``sprint``), or a single plan (``plan``). Only plans
+    whose status is not shipped are read, so a plan already delivered does not
+    earn a disposition it cannot need. Every figure comes from a reader that
+    already owns it; none is derived here.
+    """
+    from reckon.crew.dispatch import resolve_project_repository
+    from reckon.doccheck import SHIPPED_PLAN_STATUSES
+
+    docs_dir = _project_docs_dir(project)
+    repo_dir = Path(resolve_project_repository(project, None))
+    figures = _all_plans(project, docs_dir, repo_dir=repo_dir)
+    if scope == PORTFOLIO_SCOPE_PLAN:
+        figures = [figure for figure in figures if figure["plan_slug"] == plan]
+        if not figures:
+            from reckon.crew.node import CrewError
+
+            raise CrewError(f"plan {plan!r} does not exist in project {project!r}")
+    elif scope == PORTFOLIO_SCOPE_SPRINT:
+        members = _sprint_member_slugs(project, sprint)
+        figures = [
+            figure
+            for figure in figures
+            if figure["plan_slug"] in members or figure["sprint"] == sprint
+        ]
+    else:
+        scope = PORTFOLIO_SCOPE_PROJECT
+    figures = [
+        figure
+        for figure in figures
+        if figure["status"].strip().lower() not in SHIPPED_PLAN_STATUSES
+    ]
+    plan_slugs = [figure["plan_slug"] for figure in figures]
+    scope_key = _digest(
+        {"scope": scope, "sprint": sprint, "plan": plan, "plans": sorted(plan_slugs)}
+    )[:12]
+    return {
+        "subject": PORTFOLIO_SUBJECT,
+        "project": project,
+        "session": session,
+        "local": local,
+        "scope": scope,
+        "sprint": sprint,
+        "plan": plan,
+        "scope_key": scope_key,
+        "plans": figures,
+        "run_id": runs.new_run_id(f"{PORTFOLIO_NODE_PREFIX}{scope_key}"),
+    }
+
+
+def _figure_line(figure: Mapping[str, Any]) -> str:
+    """One plan's figures as a single brief line."""
+    age = figure.get("age_days")
+    age_text = "unknown" if age is None else f"{age}d"
+    return (
+        f"PLAN {figure['plan_slug']}: status={figure['status']} "
+        f"impl={figure['impl']:g} ({figure['impl_source'] or 'unknown'}) "
+        f"sprint={figure['sprint'] or 'none'} age={age_text} "
+        f"({figure['age_source']}) "
+        f"open_sections={len(figure['open_sections'])} "
+        f"open_followups={len(figure['open_followups'])} "
+        f"readiness={figure['readiness']}"
+    )
+
+
+def portfolio_review_brief(subject: Mapping[str, Any]) -> str:
+    """Compose the portfolio-review brief for a portfolio subject.
+
+    The brief is the portfolio rubric verbatim, followed by one figure line per
+    plan in scope — status, derived impl and its source, sprint, commit age,
+    open section declarations and followups, and the roadmap readiness verdict —
+    and the report path the reviewer's emission must land on.
+    """
+    prompt = load_portfolio_review_prompt().rstrip("\n")
+    figures = list(subject.get("plans") or ())
+    lines = [
+        prompt,
+        "",
+        f"Plans in scope ({len(figures)}):",
+    ]
+    lines.extend(_figure_line(figure) for figure in figures)
+    report_path = portfolio_review_report_directory(subject) / _REVIEW_REPORT_NAME
+    lines.append(f"Report path: {report_path}")
+    return "\n".join(lines) + "\n"
+
+
+def _portfolio_review_report_root(project: str) -> Path:
+    """The directory a project's portfolio-review report keys live under."""
+    return runs.reports_dir() / project / PORTFOLIO_REPORTS_DIRNAME
+
+
+def portfolio_review_report_directory(
+    subject: Mapping[str, Any] | None = None,
+    *,
+    project: str | None = None,
+    key: str | None = None,
+) -> Path:
+    """The report directory a portfolio review writes into, keyed by its scope."""
+    resolved_project = str(project or (subject or {}).get("project") or "")
+    resolved_key = str(key or (subject or {}).get("scope_key") or "")
+    return _portfolio_review_report_root(resolved_project) / resolved_key
+
+
+def _portfolio_review_sidecar(subject: Mapping[str, Any]) -> dict[str, Any]:
+    """The sidecar that joins a portfolio report to the scope it read."""
+    return {
+        "subject": PORTFOLIO_SUBJECT,
+        "project": str(subject.get("project") or ""),
+        "scope": str(subject.get("scope") or ""),
+        "sprint": str(subject.get("sprint") or ""),
+        "plan": str(subject.get("plan") or ""),
+        "scope_key": str(subject.get("scope_key") or ""),
+        "plans": [figure["plan_slug"] for figure in subject.get("plans") or ()],
+        "report_path": str(
+            portfolio_review_report_directory(subject) / _REVIEW_REPORT_NAME
+        ),
+        "node_id": f"{PORTFOLIO_NODE_PREFIX}{subject.get('scope_key')}",
+        "session": str(subject.get("session") or ""),
+        "review_run_id": str(subject.get("run_id") or ""),
+    }
+
+
+def portfolio_review_fields(
+    subject: Mapping[str, Any], *, write: bool = False
+) -> dict[str, Any]:
+    """The dispatch fields a portfolio subject composes, with or without writing."""
+    directory = portfolio_review_report_directory(subject)
+    brief = directory / "brief.md"
+    brief_text = portfolio_review_brief(subject)
+    if write:
+        directory.mkdir(parents=True, exist_ok=True)
+        brief.write_text(brief_text, encoding="utf-8")
+        write_review_sidecar(
+            directory,
+            payload=_portfolio_review_sidecar(subject),
+            name=PORTFOLIO_SIDECAR_NAME,
+        )
+    count = len(subject.get("plans") or ())
+    return {
+        "subject": PORTFOLIO_SUBJECT,
+        "run_id": str(subject.get("run_id") or ""),
+        "project": str(subject.get("project") or ""),
+        "plan": "",
+        "section": "",
+        "session": str(subject.get("session") or SESSION_PLACEHOLDER),
+        "node_id": f"{PORTFOLIO_NODE_PREFIX}{subject.get('scope_key')}",
+        "time_budget": "30m",
+        "brief": str(brief),
+        "brief_text": brief_text,
+        "goal": (
+            f"dispose of the {count} plan(s) in scope of {subject.get('project')}"
+        ),
+        "done_when": (
+            f"{directory / _REVIEW_REPORT_NAME} carries one DISPOSITION line per "
+            "plan in scope; the manifest names the delivered report"
+        ),
+        "write_path": str(directory),
+        "write_paths": [str(directory)],
+    }
+
+
+def dispatch_portfolio_review(
+    subject: Mapping[str, Any],
+    *,
+    config: Mapping[str, Any] | None = None,
+    dry_run: bool = False,
+    launcher: Any = None,
+) -> dict[str, Any]:
+    """Dispatch one read-only portfolio review node, or preview it."""
+    import importlib
+
+    from reckon.crew.node import TaskNode
+    from reckon.crew.recovery_review_subject import _review_dispatch_tokens
+
+    fields = portfolio_review_fields(subject, write=not dry_run)
+    node = TaskNode(
+        id=str(fields["node_id"]),
+        goal=str(fields["goal"]),
+        plan="",
+        section="",
+        brief=str(fields["brief"]),
+        role="review",
+        spec_level="exact",
+        done_when=str(fields["done_when"]),
+        write_paths=list(fields["write_paths"]),
+        time_budget=str(fields["time_budget"]),
+    )
+    if dry_run:
+        return {
+            "dispatched": False,
+            "dry_run": True,
+            "brief_text": fields["brief_text"],
+            "node": node.as_dict(),
+            "argv": _review_dispatch_tokens(
+                fields, ["--local"] if subject.get("local") else []
+            ),
+        }
+    from reckon import flight
+
+    resolved = (
+        config
+        if config is not None
+        else flight.resolve(project=str(fields["project"])).config
+    )
+    dispatch_module = importlib.import_module("reckon.crew.dispatch")
+    result = dispatch_module.dispatch(
+        node=node,
+        project=str(fields["project"]),
+        repo=str(_project_repository(str(fields["project"]))),
+        config=resolved,
+        session=str(fields["session"]),
+        launcher=launcher,
+        watch_required=True,
+        unreconciled_override=True,
+        route="deterministic",
+        local=bool(subject.get("local")),
+    )
+    return {**result, "brief_text": fields["brief_text"]}
+
+
+def delivered_portfolio_reviews(project: str) -> list[dict[str, Any]]:
+    """Return the delivered portfolio-review reports under a project, newest first."""
+    return _delivered_report_sidecars(
+        _portfolio_review_report_root(project),
+        keep=lambda sidecar: str(sidecar.get("subject") or "") == PORTFOLIO_SUBJECT,
+        stored=_stored_portfolio_run_ids(project),
+        sidecar_name=PORTFOLIO_SIDECAR_NAME,
+    )
+
+
+def _stored_portfolio_run_ids(project: str) -> set[str]:
+    """Return the review-run ids the stored portfolio reviews carry."""
+    return {
+        run_id
+        for record in list_portfolio_reviews(project)
+        if (run_id := str(record.get("review_run_id") or "").strip())
+    }
+
+
+def portfolio_review_path(
+    project: str, scope_key: str, base_dir: str | Path | None = None
+) -> Path:
+    """Return the durable path of the portfolio review a scope key names."""
+    return (
+        _review_store.review_store_root(base_dir)
+        / project
+        / f"{PORTFOLIO_FILE_PREFIX}{scope_key}.json"
+    )
+
+
+def store_portfolio_review(
+    record: Mapping[str, Any],
+    *,
+    base_dir: str | Path | None = None,
+) -> Path:
+    """Persist one portfolio review keyed by its scope, returning the path.
+
+    The record is keyed by the scope it read rather than by a plan version, so
+    two reviews of one scope land under one key and a changed scope earns its
+    own record. A record carrying no disposition is refused here rather than
+    read later as an empty review.
+    """
+    project = str(record.get("project") or "").strip()
+    key = str(record.get("scope_key") or "").strip()
+    if not project:
+        raise ValueError("portfolio review record is missing project")
+    if not key:
+        raise ValueError("portfolio review record is missing scope_key")
+    if not record.get("dispositions"):
+        raise ValueError("portfolio review record carries no disposition")
+    stored = dict(record)
+    stored["project"] = project
+    stored["scope_key"] = key
+    if not stored.get("status"):
+        stored["status"] = DEFAULT_STATUS
+    if not stored.get("timestamp"):
+        stored["timestamp"] = datetime.now(UTC).isoformat()
+    path = portfolio_review_path(project, key, base_dir)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    write_json_atomically(
+        path, stored, indent=2, sort_keys=True, fsync=False, mode=None
+    )
+    return path
+
+
+def list_portfolio_reviews(
+    project: str | None = None,
+    *,
+    base_dir: str | Path | None = None,
+) -> list[dict[str, Any]]:
+    """Return every stored portfolio review, newest last."""
+    root = _review_store.review_store_root(base_dir)
+    if project is None:
+        directories = (
+            sorted(child for child in root.iterdir() if child.is_dir())
+            if root.is_dir()
+            else []
+        )
+    else:
+        directories = [root / project]
+    found: list[dict[str, Any]] = []
+    for directory in directories:
+        if not directory.is_dir():
+            continue
+        for path in sorted(directory.glob(f"{PORTFOLIO_FILE_PREFIX}*.json")):
+            record = _load(path)
+            if record is None:
+                continue
+            record["review_path"] = str(path)
+            found.append(record)
+    found.sort(key=lambda record: str(record.get("timestamp") or ""))
+    return found
+
+
+def _portfolio_review_record(sidecar: Mapping[str, Any]) -> dict[str, Any]:
+    """Build the store record a delivered portfolio report describes."""
+    report_path = Path(str(sidecar.get("report_path") or ""))
+    if not report_path.is_file():
+        raise ValueError(f"delivered portfolio report {report_path} does not exist")
+    key = str(sidecar.get("scope_key") or "").strip()
+    if not key:
+        raise ValueError("delivered portfolio sidecar is missing scope_key")
+    plans = [str(plan) for plan in sidecar.get("plans") or ()]
+    text = report_path.read_text(encoding="utf-8", errors="replace")
+    parsed = parse_portfolio_review(text, plans=plans)
+    return {
+        "subject": PORTFOLIO_SUBJECT,
+        "project": str(sidecar.get("project") or "").strip(),
+        "scope": str(sidecar.get("scope") or ""),
+        "sprint": str(sidecar.get("sprint") or ""),
+        "plan": str(sidecar.get("plan") or ""),
+        "scope_key": key,
+        "plans": plans,
+        "rubric": PORTFOLIO_REVIEW_RUBRIC,
+        "dispositions": parsed["dispositions"],
+        "responses": {},
+        "status": DEFAULT_STATUS,
+        "review_run_id": str(sidecar.get("review_run_id") or report_path.parent.name),
+    }
