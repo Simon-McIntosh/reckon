@@ -159,6 +159,21 @@ _FOLLOWUP_WORK_ITEM = re.compile(r"\(\s*\d+\s*\)\s*\S")
 # plan's own unit must carry.
 FOLLOWUP_WORK_ITEMS_THRESHOLD = 2
 
+#: A plan's declared sprint and the sprint's member list are independent
+#: authored facts, so they drift: a plan can name a sprint that does not list
+#: it, and a sprint can list a plan whose ``plan-sprint`` names another sprint.
+#: A shipped plan still carried by a sprint that has not closed is reported as
+#: info rather than a warning — the membership is stale, not wrong.
+SPRINT_MEMBERSHIP = "SPRINT_MEMBERSHIP"
+
+#: Sprint statuses that mean the resource is finished. A member of a closed
+#: sprint is history rather than a live claim, so it never raises a row.
+CLOSED_SPRINT_STATUSES = frozenset({"done", "shipped"})
+
+#: Plan statuses that mean the plan has shipped. A shipped plan still listed by
+#: an open sprint is the info case.
+SHIPPED_PLAN_STATUSES = frozenset({"shipped", "done"})
+
 SEVERITIES = ("error", "warn", "info")
 ACTIVE_PLAN_AGING_AFTER_DAYS = 14
 ACTIVE_PLAN_STALE_AFTER_DAYS = 30
@@ -187,6 +202,14 @@ class LifecycleFinding:
     last_modified: str
     summary_length: int | None = None
     age_source: str = "unknown"
+    #: Row severity. Most lifecycle flags are warnings; a sprint-membership row
+    #: that only reports a shipped plan still listed by an open sprint is info,
+    #: so the severity cannot be derived from the flag alone.
+    severity: str = "warn"
+    #: The two-sided disagreement a ``SPRINT_MEMBERSHIP`` row reports: the
+    #: sprint the plan names and the sprint that lists it. Empty for every
+    #: other flag.
+    membership_detail: str = ""
 
 
 @dataclass(frozen=True)
@@ -416,6 +439,7 @@ def _read_lifecycle_state(path: Path) -> dict[str, Any]:
         "modified": state.get("modified"),
         "created": state.get("created"),
         "followups": state.get("followups") or [],
+        "sprint": state.get("sprint"),
     }
 
 
@@ -552,6 +576,110 @@ def _foreign_followup_findings(
     return findings
 
 
+def _item_slug(item: Any) -> str:
+    """The plan slug a sprint item names, from either item shape on read."""
+    if isinstance(item, str):
+        return item.strip()
+    if isinstance(item, Mapping):
+        for key in ("slug", "path"):
+            value = item.get(key)
+            if isinstance(value, str) and value.strip():
+                return value.strip()
+    return ""
+
+
+def sprint_membership_index(
+    docs_dir: Path, project: str
+) -> tuple[dict[str, set[str]], dict[str, str]]:
+    """Read the sprint resources and return both sides of membership.
+
+    Returns ``(listed_by, sprint_status)`` where ``listed_by`` maps a plan slug
+    to the set of sprint ids whose member list names it (same-project refs
+    only), and ``sprint_status`` maps a sprint id to its lowercased status. A
+    project whose state cannot be read contributes empty maps rather than
+    failing the whole audit.
+    """
+    from reckon.project_state import ProjectStateError, compose_project_state
+
+    try:
+        state = compose_project_state(docs_dir, project)
+    except (OSError, ValueError, ProjectStateError):
+        return {}, {}
+    listed_by: dict[str, set[str]] = {}
+    sprint_status: dict[str, str] = {}
+    for sprint in state.get("sprints") or []:
+        if not isinstance(sprint, Mapping):
+            continue
+        sprint_id = str(sprint.get("id") or "")
+        if not sprint_id:
+            continue
+        sprint_status[sprint_id] = str(sprint.get("status") or "").strip().lower()
+        for item in sprint.get("items") or []:
+            parsed = parse_plan_ref(_item_slug(item))
+            if parsed is None:
+                continue
+            if parsed.project and parsed.project != project:
+                continue
+            listed_by.setdefault(parsed.slug, set()).add(sprint_id)
+    return listed_by, sprint_status
+
+
+def _sprint_membership_finding(
+    *,
+    project: str,
+    slug: str,
+    age_days: int,
+    impl: float | None,
+    last_modified: str,
+    age_source: str,
+    named: str | None,
+    listing: set[str],
+    sprint_status: Mapping[str, str],
+    plan_status: str,
+) -> LifecycleFinding | None:
+    """The ``SPRINT_MEMBERSHIP`` row a plan earns, or ``None`` when consistent.
+
+    A plan earns at most one row, so a plan that both names a sprint that does
+    not list it and is listed under a different sprint is reported once, as the
+    member disagreement, rather than at both ends of the same fault.
+    """
+    if named is not None and named in sprint_status and named not in listing:
+        if listing:
+            message = (
+                f"names sprint {named} but is listed by {', '.join(sorted(listing))}"
+            )
+        else:
+            message = f"names sprint {named} which does not list it"
+        return LifecycleFinding(
+            project=project,
+            slug=slug,
+            flag=SPRINT_MEMBERSHIP,
+            age_days=age_days,
+            impl=impl,
+            last_modified=last_modified,
+            age_source=age_source,
+            severity="warn",
+            membership_detail=message,
+        )
+    if plan_status in SHIPPED_PLAN_STATUSES:
+        for sprint_id in sorted(listing):
+            if sprint_status.get(sprint_id, "") not in CLOSED_SPRINT_STATUSES:
+                return LifecycleFinding(
+                    project=project,
+                    slug=slug,
+                    flag=SPRINT_MEMBERSHIP,
+                    age_days=age_days,
+                    impl=impl,
+                    last_modified=last_modified,
+                    age_source=age_source,
+                    severity="info",
+                    membership_detail=(
+                        f"shipped but still listed by open sprint {sprint_id}"
+                    ),
+                )
+    return None
+
+
 def audit_lifecycle(
     *,
     project: str | None = None,
@@ -578,15 +706,17 @@ def audit_lifecycle(
         "AGING": 2,
         "STALE": 3,
         "STALE_RCA": 4,
-        FOLLOWUP_FOREIGN_TERMINAL: 5,
-        FOLLOWUP_FOREIGN_UNMOUNTED: 6,
-        FOLLOWUP_FOREIGN_MISSING: 7,
+        SPRINT_MEMBERSHIP: 5,
+        FOLLOWUP_FOREIGN_TERMINAL: 6,
+        FOLLOWUP_FOREIGN_UNMOUNTED: 7,
+        FOLLOWUP_FOREIGN_MISSING: 8,
     }
 
     for project_name, docs_dir in mounts.items():
         if not docs_dir.is_dir():
             continue
         repo_dir = docs_dir.parent
+        listed_by, sprint_status = sprint_membership_index(docs_dir, project_name)
         for html_file in _iter_doc_files(docs_dir, project_name):
             state = _read_lifecycle_state(html_file)
             modified_ts = os.path.getmtime(html_file)
@@ -684,6 +814,28 @@ def audit_lifecycle(
                         age_source=age_source,
                     )
                 )
+            named_sprint = None
+            parsed_sprint = parse_plan_ref(state.get("sprint") or "")
+            if parsed_sprint is not None and parsed_sprint.project in (
+                None,
+                "",
+                project_name,
+            ):
+                named_sprint = parsed_sprint.slug
+            membership = _sprint_membership_finding(
+                project=project_name,
+                slug=state["slug"],
+                age_days=age_days,
+                impl=impl,
+                last_modified=last_modified,
+                age_source=age_source,
+                named=named_sprint,
+                listing=listed_by.get(state["slug"], set()),
+                sprint_status=sprint_status,
+                plan_status=status,
+            )
+            if membership is not None:
+                findings.append(membership)
             findings.extend(
                 _foreign_followup_findings(
                     followups=state.get("followups") or [],
