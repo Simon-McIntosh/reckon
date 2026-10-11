@@ -2684,18 +2684,14 @@ HEALTH_REVIEW_STOP_RULE = (
     "keep it"
 )
 
-# The disposition value a finding carries once a fold names the node it went
-# into. The reader reports it as ``folded:<node>``, so only the prefix is fixed
-# here; the node is the treatment the health review proposed.
-_FOLDED_DISPOSITION_PREFIX = "folded:"
-
-
 def health_reviews(
     project,
     *,
     runs,
     promoted_runs,
     commits,
+    start,
+    end,
 ):
     """Measure the health-review yield for one project over a window.
 
@@ -2706,6 +2702,12 @@ def health_reviews(
     records rather than from a proxy: a finding folded into a *different* file
     than the one it cited would defeat a commit-touch proxy, and that proxy
     matched baseline churn (71 percent against 75) when it was tried.
+
+    ``start`` and ``end`` are the window bounds the caller named, and every
+    count is narrowed to them: only reviews whose stored ``timestamp`` falls in
+    ``[start, end)`` are counted, so a review, its findings and its dispositions
+    are all read over the same window as the treatments and the landed lines.
+    A review stored before the window or after it is outside the yield.
 
     ``runs`` is every ledger row for the project — a treatment is *dispatched*
     when one of its node ids appears here. ``promoted_runs`` is the project's
@@ -2730,7 +2732,7 @@ def health_reviews(
     from reckon.crew import plan_review as _plan_review
 
     try:
-        reviews = _plan_review.list_code_reviews(project)
+        stored = _plan_review.list_code_reviews(project)
     except (OSError, ValueError) as error:
         return {
             "state": "unreadable",
@@ -2747,6 +2749,17 @@ def health_reviews(
             "stop_rule": HEALTH_REVIEW_STOP_RULE,
         }
 
+    window_start = stamp(start)
+    window_end = stamp(end)
+    reviews = [
+        record
+        for record in stored
+        if (written := stamp(record.get("timestamp"))) is not None
+        and window_start is not None
+        and window_end is not None
+        and window_start <= written < window_end
+    ]
+
     dispositions: collections.Counter = collections.Counter()
     folded_nodes: list[str] = []
     known = new = 0
@@ -2754,14 +2767,13 @@ def health_reviews(
         findings = record.get("findings")
         findings = findings if isinstance(findings, list) else []
         for index, finding in enumerate(findings):
-            disposition = _findings.finding_disposition(record, index)
-            if disposition.startswith(_FOLDED_DISPOSITION_PREFIX):
-                dispositions["folded"] += 1
-                node = disposition[len(_FOLDED_DISPOSITION_PREFIX) :].strip()
-                if node:
-                    folded_nodes.append(node)
-            elif disposition.startswith("exempted:"):
-                dispositions["exempted"] += 1
+            disposition = _findings.parse_finding_disposition(
+                _findings.finding_disposition(record, index)
+            )
+            if disposition["kind"] in ("folded", "exempted"):
+                dispositions[disposition["kind"]] += 1
+            if disposition["kind"] == "folded" and disposition["target"]:
+                folded_nodes.append(disposition["target"])
             if not isinstance(finding, dict):
                 continue
             cites = str(finding.get("cites") or "").strip().lower()
@@ -2997,6 +3009,8 @@ def report(
                         for commit in full["commits"]
                         if commit.get("project") == entry["project"]
                     ],
+                    start=start,
+                    end=end,
                 ),
             }
             for entry in snapshot["projects"]

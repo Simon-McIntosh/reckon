@@ -193,6 +193,23 @@ def finding_disposition(record: Mapping[str, Any], index: int) -> str:
     return "open"
 
 
+def parse_finding_disposition(rendered: str) -> dict[str, str]:
+    """Decode a rendered finding disposition into its kind and its target.
+
+    :func:`finding_disposition` owns the encoding — a fold renders
+    ``folded:<node>`` and an exemption ``exempted:<reason>``. A caller that
+    counts dispositions by kind, or that needs the node a fold names, reads them
+    back through here rather than re-stating the prefixes. Anything that is not a
+    closed disposition, including ``open``, decodes to kind ``open`` with no
+    target.
+    """
+    kind, separator, target = str(rendered or "").partition(":")
+    target = target.strip()
+    if not separator or not target or kind not in ("folded", "exempted"):
+        return {"kind": "open", "target": ""}
+    return {"kind": kind, "target": target}
+
+
 def _record_rows(record: Mapping[str, Any], root: Path | None) -> list[dict[str, Any]]:
     """One row per finding on a record, carrying the record's own identity.
 

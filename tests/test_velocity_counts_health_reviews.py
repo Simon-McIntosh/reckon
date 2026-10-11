@@ -276,3 +276,65 @@ def test_the_stop_rule_rides_the_field(report: dict):
 def test_the_field_docstring_states_the_same_stop_rule():
     stated = " ".join((velocity.health_reviews.__doc__ or "").split())
     assert velocity.HEALTH_REVIEW_STOP_RULE in stated
+
+
+def _write_straddling_code_reviews(project_dir: Path) -> None:
+    """Three reviews, one inside the window and one on either side of it.
+
+    The inside review carries one fold into the promoted treatment ``fix-a`` and
+    one exemption; the two outside reviews carry their own findings, folds and
+    exemptions, so a count that ignores the window reports them all and the
+    windowed count reports only the inside one.
+    """
+    project_dir.mkdir(parents=True, exist_ok=True)
+    reviews = {
+        "inside": (
+            2,
+            [_finding(0, "new"), _finding(1, "reckon/a.py:3")],
+            {"0": _folded("fix-a"), "1": _exempted("by design")},
+        ),
+        "before": (
+            0,
+            [_finding(0, "new"), _finding(1, "new")],
+            {"0": _folded("fix-b"), "1": _exempted("stale")},
+        ),
+        "after": (
+            6,
+            [_finding(0, "reckon/a.py:7")],
+            {"0": _folded("fix-b")},
+        ),
+    }
+    for key, (day, findings, dispositions) in reviews.items():
+        record = {
+            "subject": "code",
+            "project": PROJECT,
+            "neighbourhood_key": key,
+            "timestamp": _iso(day),
+            "findings": findings,
+            "finding_dispositions": dispositions,
+        }
+        (project_dir / f"code-{key}.json").write_text(json.dumps(record))
+
+
+def test_only_reviews_inside_the_window_are_counted(tmp_path: Path, monkeypatch):
+    monkeypatch.setenv("RECKON_VELOCITY_CACHE", str(tmp_path / "cache-straddle"))
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "home-straddle"))
+    _write_straddling_code_reviews(
+        tmp_path / "home-straddle" / "crew" / "reviews" / PROJECT
+    )
+    _apply_control(monkeypatch)
+    repo = _build_repository(tmp_path / "code-straddle")
+    report = velocity.report(
+        {PROJECT: str(repo)},
+        start=WINDOW_START,
+        end=WINDOW_END,
+        run_store_db=None,
+    )
+    field = report["health_reviews"]
+    # One review inside the window; the two on either side of it are other
+    # windows' yield and contribute nothing to the counts below.
+    assert field["reviews"] == 1
+    assert field["findings"] == {"known": 1, "new": 1}
+    assert field["dispositions"] == {"exempted": 1, "folded": 1}
+    assert field["treatments"] == {"folded": 1, "dispatched": 1, "promoted": 1}
+    assert field["product_lines"] == -40
