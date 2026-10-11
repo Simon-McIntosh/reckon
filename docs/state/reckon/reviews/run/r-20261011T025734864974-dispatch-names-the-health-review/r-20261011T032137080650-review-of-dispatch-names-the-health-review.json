@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "backend": "local",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch_plan.py:644",
+    "reckon/crew/dispatch_plan.py:138",
+    "reckon/crew_dispatch_commands.py:1356"
+  ],
+  "completed_at": "2026-10-11T03:27:29.694Z",
+  "dispatched_at": "2026-10-11T03:22:10Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_admission.py",
+      "line": "803",
+      "severity": "follow-on",
+      "text": "follow-on: _health_review_open_findings re-implements the open-findings-against-named-paths capability that plan_review.py:2438 _open_findings_for already owns: both call findings_reader.findings_by_path(project, root=...) and then keep rows whose group path is in the named set and whose disposition is \"open\"; the new function differs only in returning a count rather than the list. It duplicates the owner's filter instead of extending it (for example by having _open_findings_for accept a path set), so a change to the disposition or grouping contract must be made in two places."
+    },
+    {
+      "file": "reckon/crew/dispatch_plan.py",
+      "line": "644",
+      "severity": "follow-on",
+      "text": "follow-on: the node's declared write paths name reckon/crew/dispatch_admission.py as the payload-assembly site, but the landed change also edits reckon/crew/dispatch_plan.py (lines 111, 138-139, 590, 644, 722, 1288) to import _dispatch_health_review, call it in plan_dispatch and carry the field on DispatchPlan; that path is outside the fence, so `reckon crew check-manifest` reports it. The deviation is necessary (the payload is assembled in dispatch_plan.py, not dispatch_admission.py) and is disclosed in the manifest's follow_ons, but the coordinator must grant the scope for the block to reach the payload."
+    },
+    {
+      "file": "tests/test_dispatch_names_the_health_review.py",
+      "line": "84",
+      "severity": "follow-on",
+      "text": "follow-on: no added assertion exercises the open_findings count. _store_covering_review always stores findings: [] and every test reads only state/review/age_days/compose_command, so the count that \u00a79's deliverable names (\"the open findings count from \u00a73 for those paths\") and the unknown-store branch are unverified; a regression in _health_review_open_findings or in the unreadable-store path would leave all four tests green. The manifest records this gap in follow_ons."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against 6b7a2c631; five commits land a _dispatch_health_review block in reckon/crew/dispatch_admission.py:836, wire it through reckon/crew/dispatch_plan.py:644, add a Shape-the-wave step to skills/reckon-build/SKILL.md and a fragment, and format; reckon/crew/plan_review.py is untouched, so the store reader it uses is pre-existing.",
+    "done_when": "the done_when names tests/test_dispatch_names_the_health_review.py; the manifest records 4 passed EXIT=0 (gate_head.log) and the file asserts all three named cases \u2014 no stored review names the compose command, a stored review dated today is named with no command, and a docs-only node carries null \u2014 plus the stale case.",
+    "goal": "the source node's goal is that an implementation dispatch's payload carries a health_review block; the landed change adds _dispatch_health_review at reckon/crew/dispatch_admission.py:836 and sets payload health_review from reckon/crew/dispatch_plan.py:644.",
+    "manifest": "read; it records the gate (4 passed, EXIT=0 at gate_head.log), the declared negative control (2 failed 2 passed, EXIT=1 at negative_control.log), the import-affected arms (142 passed base, 142 passed head, EXIT=0 each) and it names the out-of-scope dispatch_plan.py edit in follow_ons; it declares no baseline_suite/after_suite keys.",
+    "write_paths": "the node declared reckon/crew/dispatch_admission.py, skills/reckon-build/SKILL.md, tests/test_dispatch_names_the_health_review.py and the evidence fragment/figures; the diff also edits reckon/crew/dispatch_plan.py, which is inside no declared path (recorded in the manifest follow_ons)."
+  },
+  "justifications": {
+    "durability": "the negative control (negative_control.log) reddens the covered and stale cases at EXIT=1 on the named mutation, so the coverage assertion is a real guard, but no test populates findings so the open_findings count is unguarded (tests/test_dispatch_names_the_health_review.py:84 stores findings: []).",
+    "evidence": "the gate at gate_head.log names tests/test_dispatch_names_the_health_review.py and records 4 passed EXIT=0, and negative_control.log reproduces the named failure at EXIT=1; the reviewed manifest arms no baseline_suite/after_suite, so added_failure_count is recorded unmeasured.",
+    "fit": "reckon/crew/dispatch_admission.py:836 follows the surrounding advisory-carry idiom (_dispatch_lane_advisory) and its constants HEALTH_REVIEW_STALE_AFTER_DAYS/HEALTH_REVIEW_COMPOSE_VERB carry no plan or version label.",
+    "goal_fidelity": "reckon/crew/dispatch_plan.py:644 sets the payload's health_review from _dispatch_health_review, and dispatch_admission.py:836 returns covered/stale/missing/unknown with age_days, open_findings and the compose command, matching \u00a79's deliverable and its docs-only null.",
+    "reuse": "the coverage predicate and staleness window have no prior owner and are new, but _health_review_open_findings at reckon/crew/dispatch_admission.py:803 re-implements plan_review.py:2438 _open_findings_for without extending it.",
+    "scope_discipline": "every diff path is in the declared set except reckon/crew/dispatch_plan.py, disclosed in the manifest but not inside the fence."
+  },
+  "node": "review-of-dispatch-names-the-health-review",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that an implementation dispatch's payload carries a health_review block; the landed change adds _dispatch_health_review at reckon/crew/dispatch_admission.py:836 and sets payload health_review from reckon/crew/dispatch_plan.py:644.\nVERDICT done_when: the done_when names tests/test_dispatch_names_the_health_review.py; the manifest records 4 passed EXIT=0 (gate_head.log) and the file asserts all three named cases \u2014 no stored review names the compose command, a stored review dated today is named with no command, and a docs-only node carries null \u2014 plus the stale case.\nVERDICT write_paths: the node declared reckon/crew/dispatch_admission.py, skills/reckon-build/SKILL.md, tests/test_dispatch_names_the_health_review.py and the evidence fragment/figures; the diff also edits reckon/crew/dispatch_plan.py, which is inside no declared path (recorded in the manifest follow_ons).\nVERDICT manifest: read; it records the gate (4 passed, EXIT=0 at gate_head.log), the declared negative control (2 failed 2 passed, EXIT=1 at negative_control.log), the import-affected arms (142 passed base, 142 passed head, EXIT=0 each) and it names the out-of-scope dispatch_plan.py edit in follow_ons; it declares no baseline_suite/after_suite keys.\nVERDICT diff: read commit by commit against 6b7a2c631; five commits land a _dispatch_health_review block in reckon/crew/dispatch_admission.py:836, wire it through reckon/crew/dispatch_plan.py:644, add a Shape-the-wave step to skills/reckon-build/SKILL.md and a fragment, and format; reckon/crew/plan_review.py is untouched, so the store reader it uses is pre-existing.\nCALL_SITES: reckon/crew/dispatch_plan.py:644, reckon/crew/dispatch_plan.py:138, reckon/crew_dispatch_commands.py:1356\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_plan.py:644 sets the payload's health_review from _dispatch_health_review, and dispatch_admission.py:836 returns covered/stale/missing/unknown with age_days, open_findings and the compose command, matching \u00a79's deliverable and its docs-only null.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate at gate_head.log names tests/test_dispatch_names_the_health_review.py and records 4 passed EXIT=0, and negative_control.log reproduces the named failure at EXIT=1; the reviewed manifest arms no baseline_suite/after_suite, so added_failure_count is recorded unmeasured.\nSCORE scope_discipline: 12\nJUSTIFICATION scope_discipline: every diff path is in the declared set except reckon/crew/dispatch_plan.py, disclosed in the manifest but not inside the fence.\nSCORE durability: 13\nJUSTIFICATION durability: the negative control (negative_control.log) reddens the covered and stale cases at EXIT=1 on the named mutation, so the coverage assertion is a real guard, but no test populates findings so the open_findings count is unmeasured (tests/test_dispatch_names_the_health_review.py:84 stores findings: []).\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/dispatch_admission.py:836 follows the surrounding advisory-carry idiom (_dispatch_lane_advisory) and its constants HEALTH_REVIEW_STALE_AFTER_DAYS/HEALTH_REVIEW_COMPOSE_VERB carry no plan or version label.\nSCORE reuse: 5\nJUSTIFICATION reuse: the coverage predicate and staleness window have no prior owner and are new, but _health_review_open_findings at reckon/crew/dispatch_admission.py:803 re-implements plan_review.py:2438 _open_findings_for without extending it.\nFINDING reckon/crew/dispatch_admission.py:803 follow-on: _health_review_open_findings re-implements the open-findings-against-named-paths capability that plan_review.py:2438 _open_findings_for already owns: both call findings_reader.findings_by_path(project, root=...) and then keep rows whose group path is in the named set and whose disposition is \"open\"; the new function differs only in returning a count rather than the list. It duplicates the owner's filter instead of extending it (for example by having _open_findings_for accept a path set), so a change to the disposition or grouping contract must be made in two places.\nFINDING reckon/crew/dispatch_plan.py:644 follow-on: the node's declared write paths name reckon/crew/dispatch_admission.py as the payload-assembly site, but the landed change also edits reckon/crew/dispatch_plan.py (lines 111, 138-139, 590, 644, 722, 1288) to import _dispatch_health_review, call it in plan_dispatch and carry the field on DispatchPlan; that path is outside the fence, so `reckon crew check-manifest` reports it. The deviation is necessary (the payload is assembled in dispatch_plan.py, not dispatch_admission.py) and is disclosed in the manifest's follow_ons, but the coordinator must grant the scope for the block to reach the payload.\nFINDING tests/test_dispatch_names_the_health_review.py:84 follow-on: no added assertion exercises the open_findings count. _store_covering_review always stores findings: [] and every test reads only state/review/age_days/compose_command, so the count that \u00a79's deliverable names (\"the open findings count from \u00a73 for those paths\") and the unknown-store branch are unverified; a regression in _health_review_open_findings or in the unreadable-store path would leave all four tests green. The manifest records this gap in follow_ons.\n",
+  "review_run_id": "r-20261011T032137080650-review-of-dispatch-names-the-health-review",
+  "reviewed_base_sha": "6b7a2c631b3c5e38665f5a43b8f3c89f8b51c78e",
+  "reviewed_head_sha": "29185a66aa6fd6ffad6a7daa6716130e1a78c239",
+  "reviewed_run_id": "r-20261011T025734864974-dispatch-names-the-health-review",
+  "reviewer": "review-of-dispatch-names-the-health-review",
+  "scores": {
+    "durability": 13,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 12
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T03:34:00+00:00",
+  "total": 85
+}
