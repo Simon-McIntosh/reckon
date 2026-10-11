@@ -1912,39 +1912,156 @@ def crew_shadow(
     _emit_crew_result(record, pretty)
 
 
-@crew.command(name="review-plan")
-@click.option("--project", required=True)
-@click.option("--plan", "plan_slug", required=True)
-@click.option("--session", default="")
-@click.option("--rubric", type=click.Choice(["design", "content"]), default="design")
-@click.option("--local", is_flag=True)
-@click.option("--dry-run", is_flag=True)
-@click.option("--pretty", is_flag=True)
-@click.option("--answer", default="")
-@click.option("--acted", is_flag=True)
-@click.option("--declined", default=None, help="Decline a finding with this reason.")
+def _review_options(callback):
+    """Attach the review verb's options, shared by the verb and its alias."""
+    for decorator in (
+        click.option("--project", required=True),
+        click.option("--plan", "plan_slug", default=""),
+        click.option("--around", "around_plan", default=""),
+        click.option("--path", "paths", multiple=True),
+        click.option("--session", default=""),
+        click.option(
+            "--rubric", type=click.Choice(["design", "content"]), default="design"
+        ),
+        click.option("--local", is_flag=True),
+        click.option("--dry-run", is_flag=True),
+        click.option("--pretty", is_flag=True),
+        click.option("--answer", default=""),
+        click.option("--acted", is_flag=True),
+        click.option(
+            "--declined", default=None, help="Decline a finding with this reason."
+        ),
+    ):
+        callback = decorator(callback)
+    return callback
+
+
+@crew.command(name="review")
+@_review_options
+@_holds_stdout_for_one_document
+def crew_review(
+    project,
+    plan_slug,
+    around_plan,
+    paths,
+    session,
+    rubric,
+    local,
+    dry_run,
+    pretty,
+    answer,
+    acted,
+    declined,
+):
+    """Review one plan's current content or a code neighbourhood, or answer a finding.
+
+    A plan subject reviews the plan's current content under the content or
+    design rubric. A code subject — a plan named by ``--around`` or the paths
+    named by ``--path`` — reviews that neighbourhood of production modules and
+    the modules one import away. An answer is written to the newest stored
+    review that raised the finding, acted on or declined with a reason.
+    """
+    _run_review(
+        project,
+        plan_slug,
+        around_plan,
+        paths,
+        session,
+        rubric,
+        local,
+        dry_run=dry_run,
+        pretty=pretty,
+        answer=answer,
+        acted=acted,
+        declined=declined,
+    )
+
+
+@crew.command(name="review-plan", hidden=True)
+@_review_options
 @_holds_stdout_for_one_document
 def crew_review_plan(
-    project, plan_slug, session, rubric, local, dry_run, pretty, answer, acted, declined
+    project,
+    plan_slug,
+    around_plan,
+    paths,
+    session,
+    rubric,
+    local,
+    dry_run,
+    pretty,
+    answer,
+    acted,
+    declined,
 ):
-    """Review one plan's current content, or answer a finding its review raised.
+    """Deprecated alias of ``reckon crew review``: reviews one plan's current content."""
+    click.echo(
+        "reckon crew review-plan is deprecated; use reckon crew review",
+        err=True,
+    )
+    _run_review(
+        project,
+        plan_slug,
+        around_plan,
+        paths,
+        session,
+        rubric,
+        local,
+        dry_run=dry_run,
+        pretty=pretty,
+        answer=answer,
+        acted=acted,
+        declined=declined,
+    )
 
-    A review is composed under the content rubric when an author finishes
-    writing and under the design rubric once before the plan's first
-    implementation node. An answer is written to the newest stored review that
-    raised the finding, acted on or declined with a reason.
+
+def _run_review(
+    project,
+    plan_slug,
+    around_plan,
+    paths,
+    session,
+    rubric,
+    local,
+    *,
+    dry_run,
+    pretty,
+    answer,
+    acted,
+    declined,
+):
+    """Compose and dispatch one review, or answer a plan finding.
+
+    One body for the ``review`` verb and its ``review-plan`` alias, so the two
+    surfaces cannot disagree about a subject, a refusal or a composed brief.
     """
     from reckon.crew import plan_review, recovery
     from reckon.crew.node import CrewError
 
+    code_subject = bool(around_plan or paths)
     detail = ""
-    if answer:
+    if plan_slug and code_subject:
+        # The two subject kinds read different subjects and are keyed
+        # differently — a plan by its content, a code review by its
+        # neighbourhood — so a command naming both would silently drop one of
+        # them and report a review of something nobody asked for.
+        detail = (
+            "--plan names a plan review and --around or --path names a code "
+            "review; name one subject"
+        )
+    elif answer:
         if acted == (declined is not None):
             detail = "--answer requires exactly one of --acted or --declined REASON"
         elif dry_run or local:
             detail = "--dry-run and --local apply only to review dispatch"
+        elif code_subject:
+            detail = "--answer applies to a plan review, not a code subject"
+        elif not plan_slug:
+            detail = "--answer requires --plan PLAN"
     elif acted or declined is not None:
         detail = "--acted and --declined require --answer FINDING_ID"
+    elif not plan_slug and not code_subject:
+        detail = "name a subject: --plan PLAN, --around PLAN or --path PATH"
     elif not session:
         detail = "review dispatch requires --session"
     if detail:
@@ -1995,10 +2112,29 @@ def crew_review_plan(
                 pretty,
             )
             return
+        if code_subject:
+            subject = plan_review.code_review_subject(
+                project, session, around=around_plan, paths=paths, local=local
+            )
+            result = plan_review.dispatch_code_review(subject, dry_run=dry_run)
+            _emit(result, pretty)
+            if result.get("refused") or result.get("error"):
+                raise click.exceptions.Exit(1)
+            return
         subject = recovery.plan_review_subject(
             project, plan_slug, session, rubric=rubric, local=local
         )
         result = recovery.dispatch_review_for_run(subject, dry_run=dry_run)
+        if dry_run:
+            # The plan brief is composed rather than given and a preview writes
+            # nothing, so the composed text is read back here for the caller
+            # that compares one preview against another.
+            result = {
+                **result,
+                "brief_text": recovery._review_dispatch_fields(subject, write=False)[
+                    "brief_text"
+                ],
+            }
         _emit(result, pretty)
         if result.get("refused") or result.get("awaiting_lane") or result.get("error"):
             raise click.exceptions.Exit(1)

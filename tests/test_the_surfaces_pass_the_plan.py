@@ -281,7 +281,7 @@ def test_absent_covering_review_names_the_stale_one(project):
         ],
     )
     assert result.exit_code != 0, result.output
-    detail = json.loads(result.output)["detail"]
+    detail = json.loads(result.stdout)["detail"]
     assert f"version {int(stale['plan_version'])}" in detail
     assert "no longer covers" in detail
     assert "crew review-plan" in detail

@@ -222,7 +222,7 @@ def test_the_owed_invocation_is_one_the_verb_accepts(sectioned):
     outcome = CliRunner().invoke(cli.main, [*argv[1:], "--dry-run"])
 
     assert outcome.exit_code == 0, outcome.output
-    assert json.loads(outcome.output)["dry_run"] is True
+    assert json.loads(outcome.stdout)["dry_run"] is True
 
 
 def test_the_gate_and_the_edit_name_the_same_units(sectioned):

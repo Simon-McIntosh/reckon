@@ -128,6 +128,6 @@ def test_review_plan_still_composes_a_review_on_demand(project):
         ],
     )
     assert result.exit_code == 0, result.output
-    payload = json.loads(result.output)
+    payload = json.loads(result.stdout)
     assert payload["node"]["id"] == "plan-review-of-fixture"
     assert payload["node"]["role"] == "review"
