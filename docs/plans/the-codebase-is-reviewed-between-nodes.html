@@ -25,7 +25,7 @@
   <title>The Codebase Is Reviewed Between Nodes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="28">
+<meta name="plan-version" content="29">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -379,6 +379,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261011T024048267818-review-of-review-composes-a-code-subject" data-who="reckon-build" data-when="2026-10-11T02:48:41.615Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/the-codebase-is-reviewed-between-nodes/review-composes-a-code-subject.html</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-s6-landed-1011" data-who="reckon-build" data-when="2026-10-11T04:55:00Z">
+    <div class="r-comment-body"><p>§6 landed (merge <code>a28095a92</code>; 90/120, repaired in-run, then 103/120). The section closes when <code>a-path-review-is-stored</code> lands, because a path-only code review is composed but not yet stored. <a href="/reckon/evidence/archive/the-codebase-is-reviewed-between-nodes-landed.html#s6-review-verb">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-s11-known-gate-hole-1011" data-who="reckon-build" data-when="2026-10-11T04:20:00Z">
     <div class="r-comment-body"><p>A known finding for the proving run's neighbourhood, measured on 2026-10-11. The contradiction guard in <code>reckon/crew/promotion_evidence.py</code> refuses a passing gate only when an asserted exit status differs from the log's <code>EXIT=</code> record. With no <code>--gate-exit-status</code>, the status is taken from the log itself, so a log recording <code>EXIT=1</code> promotes as <code>gate: passed</code> with <code>exit_status: 1</code> stored side by side. The guard compares equal values and finds nothing. It happened on run <code>r-20261011T003218530440-schema-view-within-bound</code>, which was promoted citing its base arm; the ledger row was corrected at the next commit after <code>2d3275928</code>. The same guard refused the identical mistake when the status was passed explicitly. A passing verdict with a non-zero exit status is itself the contradiction, so the review this section runs should read it as a known finding, not report it as new.</p></div>
