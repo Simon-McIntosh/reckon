@@ -1,0 +1,72 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-11T00:19:40.768Z",
+  "dispatched_at": "2026-10-11T00:15:34Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/lane-and-model-routing.html:120",
+      "id": "reasoning-1",
+      "reason": "a node implementing \u00a716's three named call sites leaves this fourth resolver unconsolidated, so the section's stated outcome (\"One owner resolves a repository to its projects\") is not achieved and the worktree defect persists on the run-rebuild path.",
+      "text": "\u00a716 enumerates the resolver population as three (`_repository_owning_projects` in `reckon/crew_dispatch_commands.py`, the inline lookup in `shadow_source`, and `_resolved_node_scope_entries`), excluding `project_mount_repository` because it resolves the other way; but `_project_for_repository` in `reckon/crew/promotion_records.py:60` is a fourth site resolving a repository path to its owning project in the same direction, called from the run-rebuild path at promotion_records.py:107, and its docstring claims identity semantics (\"by repository identity so a linked worktree resolves to the same project as its main checkout\") while its body compares plain resolved paths (`repository_root.resolve() == target`, lines 68-75) \u2014 so it fails on a linked worktree exactly as \u00a716 says `shadow_source` does",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "ad5e08bf74b819577f4963b8ef8e8cb413b14e61c1af4968327c06d573d1cf03",
+  "plan_slug": "lane-and-model-routing",
+  "plan_version": 77,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-11T00:21:25.393242+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-11T00:21:25.393242+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-lane-and-model-routing.v77.json",
+  "review_run_id": "r-20261011T001501910379-plan-review-of-lane-and-model-routing",
+  "reviewed_blob_sha": "ffb71da193ffe9208b05a2d31c827abf81d4ad9f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every symbol and file `\u00a716` cites resolves: `_repository_owning_projects`/`_refuse_a_foreign_repository` (reckon/crew_dispatch_commands.py:518,540), `shadow_source`/`mounted_repository_projects` (reckon/crew/dispatch.py:198,205), `_resolved_node_scope_entries` (reckon/crew/dispatch_claims.py:896), `project_mount_repository` (reckon/crew/dispatch_sections.py:42), and the resolver's home `routing.py` beside `mounted_repository_projects` (reckon/crew/routing.py:3241), whose `from reckon.crew.node import \u2026` at line 38 is why the resolver cannot live in `node.py`.",
+    "done_when": "pass \u2014 `\u00a716` names a measurable check and a declared negative control: a temporary mounted repository plus a linked worktree with no `crew.json`, asserting the resolver names the mounted project and that `shadow_source` searches it, and that this fails on main where `shadow_source` keys the mount map by plain `resolve()` (reckon/crew/dispatch.py:204-205).",
+    "evidence_paths": "pass \u2014 the section writes no evidence into a scratch path; the plan's landing records stay on the durable `/reckon/evidence/archive/lane-and-model-routing-landed.html` record.",
+    "naming": "pass \u2014 no plan label, ticket number or version tag reaches a symbol; the cited names are existing code identifiers.",
+    "reasoning": "a finding \u2014 `\u00a716` states the repository-path\u2192projects resolution has three spellings, but a fourth live spelling exists that it does not name.",
+    "single_goal": "pass \u2014 `\u00a716` carries one deliverable, one owner for the repository-path\u2192projects resolution.",
+    "wiring": "pass \u2014 `s16` is a follow-on of `\u00a710`'s review and the open followup `f-lmr-009` (plan line 209) correctly orders `\u00a714` before `\u00a716` on their shared write path `reckon/crew_dispatch_commands.py`; no `depends-on` entry is required because their only coupling is file contention."
+  },
+  "section_digests": {
+    "_document": "8aee0b66d26dc5ce7edb18efdcbaf5fe43cf7a90b751f9320700da6c7c5ac8c1",
+    "s0": "19f29ce7f4d739b631468c119c6d758faff1d1bd15018de2a5e1e7c1957203ea",
+    "s1": "6760f63ebdb0d0db10c3c004f30d4f4253bfb7582bc7a0e4054fed73e017a02d",
+    "s10": "9f3b98da9be42bc1d1dad77d11079186c59e62315308454b2f442bdfffa7755c",
+    "s11": "2e566713b8ee8cbfcf94503cba2640bac78329b96f748ff0334a858e08287755",
+    "s12": "8a7841af15c5beacc75bf716eab0a317f722daab3a302ec190299ce0c3315350",
+    "s13": "6cc9f5f5d1d9a0d7a981363b2961d554bc1670d016cf5da011e18fd20d24b604",
+    "s14": "f4192a6b66ca1a9df3c0c8b84d6a76f9b7e2708145600fc43403217b7a52c540",
+    "s15": "f771307d6c5f071d884953878a527fd166185d3d25c88171a3028f27f2a174b8",
+    "s16": "68f261c0552bffcc504ebd044e57e0559fc9a46e3953b9336697df95d421889f",
+    "s2": "0c6488cdae0f23d0600410d02191390e773858e9bc75008234f71cc66f01889b",
+    "s3": "6cb602347e0232fe459028eff2010884381d987053d550c4565f581c23032095",
+    "s4": "aa5a29a8662005607992ae17fc914d47e8e48c68b7e65395b4865f6d33ea37f4",
+    "s5": "2ffa1a3b1d2b09433f25a83f8a7a59b1774249bac29b945f2c2273ace57cb1ba",
+    "s6": "6c8117bcfdc7d4b0bafdc4fb2185779998c71b1730b07a0d900b543f02c08ec1",
+    "s7": "07952e2e354db24e76860530568500cc2066b69b4255c020db83677e46cb18e2",
+    "s8": "7ca129403c95fcbc111273a2b419b29279191bc54c157bb6f7d8de0d5b160d34",
+    "s9": "0c546f1c0ce99eb4f03333edf6955f597fcb37c49baa31305dfd52c6b03364d8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T00:21:22.575567+00:00"
+}
