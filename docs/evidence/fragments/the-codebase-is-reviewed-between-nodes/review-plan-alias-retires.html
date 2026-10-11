@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-codebase-is-reviewed-between-nodes">
+  <meta name="plan-evidence-for" content="reckon:the-codebase-is-reviewed-between-nodes">
+  <meta name="plan-verifies" content="reckon:the-codebase-is-reviewed-between-nodes#s7">
+  <meta name="plan-recorded-at" content="2026-10-11">
+  <meta name="plan-verdict" content="passed">
+  <title>The review-plan alias retires | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="review-plan-alias-retires-landing" data-node="review-plan-alias-retires" data-reckon="landed" data-when="2026-10-11">
+  <h2>review is the one verb; the review-plan alias is gone</h2>
+
+  <p>The hidden <code>review-plan</code> command and its deprecation notice are removed. <code>reckon crew review-plan --help</code> now exits non-zero (<code>exit=2</code>), and <code>reckon crew review --help</code> exits 0. <code>grep -rn review-plan reckon/</code> returns no hit. Every string that named the alias now names the surviving verb: the dispatch refusal remedy <code>D23</code> in <code>reckon/crew/refusals.py</code>, the new-work subcommand set in <code>reckon/hooks/coordinator_obligations.py</code> (<code>review-plan</code> &rarr; <code>review</code>, because <code>review</code> launches a review node), the flight default comment in <code>reckon/schema/flight-defaults.yaml</code>, and the emitted <code>review_invocation</code> and <code>answer_invocation</code> commands in <code>reckon/crew/plan_review.py</code>.</p>
+
+  <p><strong>Follow-ons folded in.</strong> <code>delivered_code_reviews</code> loses its <code>around</code> parameter, which had no caller once the delivery pass began storing every delivered code review by its neighbourhood (<code>_store_deliveries(delivered_code_reviews(project), ...)</code> is the sole caller and passes none). <code>delivered_code_reviews(project)</code> is the signature now. The <code>_PLAN_RUBRIC_LINE_RE</code> rename was left alone: <code>reckon/crew/review.py</code> is too large to carry alongside this node.</p>
+
+  <p><strong>Measure</strong>: the ten write-path test files pass at <code>EXIT=0</code> — <code>88 passed</code> (<code>gate-review-plan-alias-retires.log</code>). This covers <code>test_review_plan_command.py</code>, <code>test_the_surfaces_pass_the_plan.py</code>, <code>test_nothing_sweeps_old_plans.py</code>, <code>test_plan_review_gate.py</code>, <code>test_an_edit_tells_its_author_a_review_is_owed.py</code>, <code>test_review_composes_a_code_subject.py</code> and <code>test_crew_help_names_its_state.py</code> invoking <code>reckon crew review</code>, and <code>delivered_code_reviews</code> taking no <code>around</code> parameter.</p>
+
+  <p><strong>Declared negative control</strong>: &ldquo;restore the alias so <code>reckon crew review-plan --help</code> exits 0&rdquo;. Applied in a scratch tree from the delivered head by restoring the alias command and its <code>cli.py</code> import; <code>review-plan --help</code> then exits 0 and the gate reports <code>2 failed, 86 passed</code> at <code>EXIT=1</code>, on <code>test_the_retired_review_plan_alias_is_not_reachable</code> (the assertion that <code>review-plan</code> is absent from <code>crew.commands</code>) and on <code>test_every_crew_verb_help_names_its_state_or_condition</code>. Neither id fails in the head arm. Logged at <code>negative-control.log</code>.</p>
+
+  <p><strong>Population arm</strong>: the importer list is every test file naming <code>crew_dispatch_commands</code>, <code>crew.plan_review</code>, <code>crew.refusals</code> or <code>hooks.coordinator_obligations</code> — 101 files built from the head tree. At the base revision the list reports <code>7 failed, 1101 passed, 1 skipped</code>; at the head it reports <code>4 failed, 1103 passed, 1 skipped</code>. The three <code>test_crew.py</code> unreconciled-run failures are identical in both arms (pre-existing), and the three <code>test_hook_installer.py</code>/<code>test_hook_scripts_correct_their_interpreter.py</code> failures present only at base are order-dependent environment failures, not present at head. The one <em>added</em> failure is <code>tests/test_skill_contracts.py::test_ship_cli_instructions_match_registered_commands_and_flags</code>, which asserts every command the skill bodies name is a registered verb: the skills still name <code>review-plan</code> until the sibling node <code>the-reckon-review-skill</code> rewrites them, so removing the alias breaks that contract test at this isolated head. It is not this node's to fix (skills/ and test_skill_contracts.py are the sibling's write paths) and clears when the sibling lands. Logged at <code>base-importers.log</code> and <code>head-importers.log</code>.</p>
+
+  <p><strong>A pre-existing red repaired.</strong> The crew-help contract test carried a state phrase for <code>review</code> — <em>&ldquo;one plan's current content or a code neighbourhood&rdquo;</em> — that no longer matched the command's help after the verb's rename, so <code>test_every_crew_verb_help_names_its_state_or_condition</code> was red at the base revision (confirmed by running the base test against the base package). The row now reads the phrase the help prints, <em>&ldquo;one plan's content, a code neighbourhood or a portfolio&rdquo;</em>, and a new case asserts the retired alias is not a reachable verb.</p>
+
+  <p><strong>Scope note.</strong> Removing the alias required deleting its re-export from <code>reckon/cli.py</code> (three lines), which is outside this node's enumerated fence but is the file that imports the command; leaving it would have made <code>import reckon.cli</code> raise and every CLI test fail. No concurrent node claims <code>reckon/cli.py</code>.</p>
+
+  <p><strong>Left open.</strong> The composite gate over <code>skills/</code> and <code>reckon/</code> cannot pass until the sibling rewrites the three skills; that grep is the sibling's deliverable. This node measures only its own change; verifying the merged result belongs to a separately dispatched test node.</p>
+</article>
+</body>
+</html>
