@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-codebase-is-reviewed-between-nodes">
+  <meta name="plan-evidence-for" content="reckon:the-codebase-is-reviewed-between-nodes">
+  <meta name="plan-verifies" content="reckon:the-codebase-is-reviewed-between-nodes#s6">
+  <meta name="plan-recorded-at" content="2026-10-12">
+  <meta name="plan-verdict" content="passed">
+  <title>a-code-review-reads-its-projects-package | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-code-review-reads-its-projects-package-landing" data-node="a-code-review-reads-its-projects-package" data-reckon="landed" data-when="2026-10-12">
+  <h2>The code review reads the reviewed repository's own import package</h2>
+  <p><code>reckon/served_code.py</code> resolves the reviewed package at the revision through <code>package_directory</code>: the <code>pyproject.toml</code> <code>[project] name</code> normalised (<code>-</code> → <code>_</code>) when that directory, or <code>src/&lt;name&gt;</code>, holds a tracked <code>__init__.py</code>; otherwise the single top-level package directory (or <code>src/</code> child), excluding <code>tests</code>, <code>docs</code> and <code>scripts</code>; otherwise a <code>PackageNotFoundError</code> naming the candidates. <code>_package_snapshot</code> passes the resolved prefix to <code>read_sources</code> and roots the snapshot at it, so <code>package_modules</code>, <code>neighbourhood</code> and <code>_reach</code> read any package, not a literal <code>reckon</code>. One normaliser, <code>served_code.dotted_token</code>/<code>as_module</code>, owns the path-to-module mapping; <code>plan_review._module_probes</code> now calls it, so <code>dotted_token</code> is the single owner of the normalisation.</p>
+  <p>The new gate <code>tests/test_a_code_review_reads_its_projects_package.py</code> builds an <code>acme-tools</code> repository whose package is <code>acme_tools</code> and finds: <code>package_modules</code> lists the four modules and their two packages; <code>neighbourhood</code> of <code>acme_tools/a.py</code> holds <code>acme_tools.b</code>; a <code>--path acme_tools/sub</code> code subject names <code>acme_tools.sub.c</code> and <code>acme_tools.sub.d</code>; a two-candidate repository is refused naming <code>alpha</code> and <code>beta</code>; and this repository's <code>package_modules</code> equals the <code>reckon</code>-prefixed listing. Figures: the gate file and the nine existing <code>served_code</code>/<code>plan_review</code> importers ran 74 passed, <code>EXIT=0</code>. Declared negative control — restore the literal <code>reckon</code> prefix in the package snapshot — fails the three acme cases plus the refusal case (4 failed, 1 passed, <code>EXIT=1</code>).</p>
+</article>
+</body>
+</html>
