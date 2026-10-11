@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest records no baseline_suite or after_suite arm, so the added-failure count was not taken",
+  "backend": "clive",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_run_commands.py:1219",
+    "reckon/crew/routing.py:2204"
+  ],
+  "completed_at": "2026-10-11T22:04:19.615Z",
+  "dispatched_at": "2026-10-11T21:52:52Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261011T205927099279-gc-keeps-every-project-run-directory/focused.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the gate log's header names rev f96124f7a, but the run measured 9 tests including test_gc_spares_its_own_ledgered_run_directory_with_no_mount, which exists only from b1977c78e, so the recorded revision is not the revision the run measured and a reader cannot tie the green run to a revision."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read change by change against f96124f7a \u2014 b1977c78e adds the `ledgered` parameter, the union `known = set(ledgered) | mounted` (reckon/crew/routing.py:1644), the withheld `action` (routing.py:1666) and the no-mount case; 4ba14caea updates the evidence fragment paragraph.",
+    "done_when": "the done_when names a two-project gc --apply case and an unreadable-ledger case in tests/test_gc_reaches_every_crew_store.py plus the existing cases and a single-repository negative control; the manifest records 9 passed and 27 passed at EXIT=0 and the declared mutation 1 failed at EXIT=1.",
+    "goal": "the goal is \"gc calls a run directory unledgered only when no registered project's ledger holds its run id\"; the gained change builds the known set as the union of the gc repository's own ledgered rows with every registered mount's (reckon/crew/routing.py:1644), so a peer project's directory is no longer offered.",
+    "manifest": "read; it records the two gate runs (9 passed, 27 passed, EXIT=0), the declared negative control (1 failed, EXIT=1), the repair at b1977c78e and the record at 4ba14caea, and names its log paths.",
+    "write_paths": "the declared paths are reckon/crew/routing.py, tests/test_gc_reaches_every_crew_store.py, docs/evidence/fragments/the-crew-home-has-a-bound/gc-keeps-every-project-run-directory.html and docs/figures/the-crew-home-has-a-bound/gc-keeps-every-project-run-directory; the diff touches routing.py, the test module and the fragment, all inside them."
+  },
+  "justifications": {
+    "durability": "dropping the union reddens tests/test_gc_reaches_every_crew_store.py:496 (negative_control_union.log, EXIT=1) and dropping the action assignment reddens the action assertion at line 472, so each new guard fails on the regression it prevents.",
+    "evidence": "tests/test_gc_reaches_every_crew_store.py:430 and :496 assert the done_when's two cases and the manifest records EXIT=0 for both gates, but focused.log:1 names rev f96124f7a while the run measured 9 tests (8 exist at that rev), so the recorded revision is not the one measured.",
+    "fit": "the withheld branch now sets `entry[\"action\"] = \"withheld\"` (reckon/crew/routing.py:1666), matching the sibling withheld row at routing.py:1773, and the added parameter and helpers follow the module's naming.",
+    "goal_fidelity": "the union at reckon/crew/routing.py:1644 keeps a directory only when neither the gc repository's own ledger nor a registered mount's holds its run id, satisfying the goal and closing the prior review's own-project gap.",
+    "reuse": "the gained changes add no definition; the union extends the existing `_ledgered_records`/`_ledgered_run_ids` owner (reckon/crew/routing.py:867) and `_mounted_ledgered_run_ids` (routing.py:1577), a search for an existing cross-mount run-id set finding none.",
+    "scope_discipline": "every path in the f96124f7a..4ba14caea diff is inside the declared write paths (routing.py, the test module, the evidence fragment)."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is \"gc calls a run directory unledgered only when no registered project's ledger holds its run id\"; the gained change b1977c78e builds the known set as the union of the gc repository's own ledgered rows with every registered mount's (reckon/crew/routing.py:1644), so a peer project's directory is no longer offered.\nVERDICT done_when: the done_when names a two-project gc --apply case and an unreadable-ledger case in tests/test_gc_reaches_every_crew_store.py plus the existing cases and a single-repository negative control; the manifest records 9 passed (focused) and 27 passed (test_crew_gc) at EXIT=0 and the declared mutation 1 failed at EXIT=1.\nVERDICT write_paths: the declared paths are reckon/crew/routing.py, tests/test_gc_reaches_every_crew_store.py, docs/evidence/fragments/the-crew-home-has-a-bound/gc-keeps-every-project-run-directory.html and docs/figures/the-crew-home-has-a-bound/gc-keeps-every-project-run-directory; the f96124f7a..4ba14caea diff touches routing.py, the test module and the fragment, all inside them.\nVERDICT manifest: read; it records the two gate runs (9 passed, 27 passed, EXIT=0), the declared negative control (1 failed, EXIT=1), the repair at b1977c78e and the record at 4ba14caea, and names its log paths.\nVERDICT diff: read change by change against f96124f7a \u2014 b1977c78e adds the `ledgered` parameter, the union `known = set(ledgered) | mounted` (reckon/crew/routing.py:1644), the withheld `action` (routing.py:1666) and the no-mount case; 4ba14caea updates the evidence fragment paragraph.\nCALL_SITES: reckon/crew_run_commands.py:1219, reckon/crew/routing.py:2204\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the union at reckon/crew/routing.py:1644 keeps a directory only when neither the gc repository's own ledger nor a registered mount's holds its run id, satisfying the goal and closing the prior review's own-project gap.\nSCORE evidence: 16\nJUSTIFICATION evidence: tests/test_gc_reaches_every_crew_store.py:430 and :496 assert the done_when's two cases and the manifest records EXIT=0 for both gates, but focused.log:1 names rev f96124f7a while the run measured 9 tests (8 exist at that rev), so the recorded revision is not the one measured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the f96124f7a..4ba14caea diff is inside the declared write paths (routing.py, the test module, the evidence fragment).\nSCORE durability: 20\nJUSTIFICATION durability: dropping the union reddens tests/test_gc_reaches_every_crew_store.py:496 (negative_control_union.log, EXIT=1) and dropping the action assignment reddens the action assertion at line 472, so each new guard fails on the regression it prevents.\nSCORE fit: 19\nJUSTIFICATION fit: the withheld branch now sets `entry[\"action\"] = \"withheld\"` (reckon/crew/routing.py:1666), matching the sibling withheld row at routing.py:1773, and the added parameter and helpers follow the module's naming.\nSCORE reuse: 20\nJUSTIFICATION reuse: the gained changes add no definition; the union extends the existing `_ledgered_records`/`_ledgered_run_ids` owner (reckon/crew/routing.py:867) and `_mounted_ledgered_run_ids` (routing.py:1577), a search for an existing cross-mount run-id set finding none.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261011T205927099279-gc-keeps-every-project-run-directory/focused.log:1 follow-on: the gate log's header names rev f96124f7a, but the run measured 9 tests including test_gc_spares_its_own_ledgered_run_directory_with_no_mount, which exists only from b1977c78e, so the recorded revision is not the revision the run measured and a reader cannot tie the green run to a revision.",
+  "review_run_id": "r-20261011T215229406865-review-of-gc-keeps-every-project-run-directory",
+  "reviewed_base_sha": "f96124f7a5f215dad49079f9daff9f4f5dd1b467",
+  "reviewed_head_sha": "4ba14caeaac7e1ac09ea1cc5b1c6685258ab991d",
+  "reviewed_run_id": "r-20261011T205927099279-gc-keeps-every-project-run-directory",
+  "scores": {
+    "durability": 20,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T22:02:14.845858+00:00",
+  "total": 115
+}
