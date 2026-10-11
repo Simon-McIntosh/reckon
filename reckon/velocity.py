@@ -2674,6 +2674,230 @@ def _clone_week_cells(runs, window_start, window_end):
     return cells
 
 
+# The rule that turns the build-time health-review reflex off once its yield is
+# measured to be negative. It is stated here and in the review skill so the two
+# surfaces the lead reads cannot disagree about when the reflex stops paying.
+HEALTH_REVIEW_STOP_RULE = (
+    "after ten code-mode reviews, if fewer than half of the treatments were "
+    "promoted, or the promoted treatments added product lines in total, the "
+    "build's health-review step becomes opt-in and the lead decides whether to "
+    "keep it"
+)
+
+def health_reviews(
+    project,
+    *,
+    runs,
+    promoted_runs,
+    commits,
+    start,
+    end,
+):
+    """Measure the health-review yield for one project over a window.
+
+    The reflex under measurement is a code-mode review composed around a plan's
+    neighbourhood; a review's findings are disposed of by folding each into the
+    node that carries its repair, and those node ids are the treatments. This
+    joins each treatment to its ledger row, so the yield is read from the
+    records rather than from a proxy: a finding folded into a *different* file
+    than the one it cited would defeat a commit-touch proxy, and that proxy
+    matched baseline churn (71 percent against 75) when it was tried.
+
+    ``start`` and ``end`` are the window bounds the caller named, and every
+    count is narrowed to them: only reviews whose stored ``timestamp`` falls in
+    ``[start, end)`` are counted, so a review, its findings and its dispositions
+    are all read over the same window as the treatments and the landed lines.
+    A review stored before the window or after it is outside the yield.
+
+    ``runs`` is every ledger row for the project — a treatment is *dispatched*
+    when one of its node ids appears here. ``promoted_runs`` is the project's
+    rows in the promoted cohort ``measure`` computes, so a treatment is
+    *promoted* when the window holds its promotion; a row promoted outside the
+    window is a dispatch here, not a promotion. ``commits`` is the project's
+    captured commits, each carrying its landed-line classes and the runs it is
+    attributed to; the product-line delta of the promoted treatments sums those
+    already-classified source and test lines, so no line is counted twice.
+
+    The change in clone pairs and unreached modules inside the reviewed
+    neighbourhoods is reported unmeasured with its reason rather than
+    approximated: it needs a clone census and a reach pass at each review's
+    revision, and the view does not carry that read.
+
+    Stop rule: after ten code-mode reviews, if fewer than half of the treatments
+    were promoted, or the promoted treatments added product lines in total, the
+    build's health-review step becomes opt-in and the lead decides whether to
+    keep it. The same sentence rides the field so the two surfaces agree.
+    """
+    from reckon.crew import findings as _findings
+    from reckon.crew import plan_review as _plan_review
+
+    try:
+        stored = _plan_review.list_code_reviews(project)
+    except (OSError, ValueError) as error:
+        return {
+            "state": "unreadable",
+            "reason": (
+                f"the code review store for {project!r} could not be read "
+                f"({error}); no review can be counted"
+            ),
+            "reviews": None,
+            "findings": {"known": None, "new": None},
+            "treatments": {"folded": None, "dispatched": None, "promoted": None},
+            "product_lines": None,
+            "dispositions": {},
+            "neighbourhood_change": _unmeasured_neighbourhood_change(),
+            "stop_rule": HEALTH_REVIEW_STOP_RULE,
+        }
+
+    window_start = stamp(start)
+    window_end = stamp(end)
+    reviews = [
+        record
+        for record in stored
+        if (written := stamp(record.get("timestamp"))) is not None
+        and window_start is not None
+        and window_end is not None
+        and window_start <= written < window_end
+    ]
+
+    dispositions: collections.Counter = collections.Counter()
+    folded_nodes: list[str] = []
+    known = new = 0
+    for record in reviews:
+        findings = record.get("findings")
+        findings = findings if isinstance(findings, list) else []
+        for index, finding in enumerate(findings):
+            disposition = _findings.parse_finding_disposition(
+                _findings.finding_disposition(record, index)
+            )
+            if disposition["kind"] in ("folded", "exempted"):
+                dispositions[disposition["kind"]] += 1
+            if disposition["kind"] == "folded" and disposition["target"]:
+                folded_nodes.append(disposition["target"])
+            if not isinstance(finding, dict):
+                continue
+            cites = str(finding.get("cites") or "").strip().lower()
+            if cites == "new":
+                new += 1
+            elif cites:
+                known += 1
+
+    treatment_nodes = sorted(set(folded_nodes))
+    dispatched_nodes = {str(row.get("node") or "") for row in runs if row.get("node")}
+    promoted_nodes = {
+        str(row.get("node") or "") for row in promoted_runs if row.get("node")
+    }
+    treatments_dispatched = sum(
+        1 for node in treatment_nodes if node in dispatched_nodes
+    )
+    treatments_promoted = len(_promoted_treatments(treatment_nodes, promoted_nodes))
+
+    promoted_ids = {
+        row.get("run_id")
+        for row in promoted_runs
+        if str(row.get("node") or "") in set(treatment_nodes)
+    }
+    product_lines = 0
+    for commit in commits:
+        if not promoted_ids & set(commit.get("run_ids") or ()):
+            continue
+        product_lines += sum(
+            (file.get("added") or 0) - (file.get("removed") or 0)
+            for file in commit.get("files") or []
+            if file.get("class") in ("source", "tests")
+        )
+
+    return {
+        "state": "measured",
+        "reviews": len(reviews),
+        "findings": {"known": known, "new": new},
+        "treatments": {
+            "folded": len(treatment_nodes),
+            "dispatched": treatments_dispatched,
+            "promoted": treatments_promoted,
+        },
+        "product_lines": product_lines,
+        "dispositions": dict(sorted(dispositions.items())),
+        "neighbourhood_change": _unmeasured_neighbourhood_change(),
+        "stop_rule": HEALTH_REVIEW_STOP_RULE,
+    }
+
+
+def _promoted_treatments(treatment_nodes, promoted_nodes):
+    """The treatments the window's promoted cohort carries.
+
+    A treatment is promoted when a row for its node is in the promoted cohort,
+    which ``measure`` builds from in-window promotions alone; a ledger row that
+    exists but was promoted outside the window is a dispatch, not a promotion.
+    """
+    promoted = {str(node) for node in promoted_nodes}
+    return [node for node in treatment_nodes if node in promoted]
+
+
+def _unmeasured_neighbourhood_change():
+    """The clone-pair and unreached-module change, reported unmeasured.
+
+    The figure is the change inside each reviewed neighbourhood between one
+    review's head and the next, which needs a clone census and a reach pass at
+    each review's revision — a read the velocity view does not carry. Reporting
+    it unmeasured with the reason keeps a missing reading distinct from a
+    measured change of zero.
+    """
+    return {
+        "status": "unmeasured",
+        "reason": (
+            "the change in clone pairs and unreached modules inside reviewed "
+            "neighbourhoods needs a clone census and a reach pass at each "
+            "review's revision, a read the velocity view does not carry; the "
+            "reading is reported unmeasured rather than approximated"
+        ),
+    }
+
+
+def _merge_health_reviews(blocks):
+    """Fold per-project health-review blocks into the one field the view serves."""
+    if len(blocks) == 1:
+        return blocks[0]
+    measured = [block for block in blocks if block.get("state") == "measured"]
+    if not measured:
+        return {
+            "state": "unreadable",
+            "reason": "; ".join(
+                str(block.get("reason")) for block in blocks if block.get("reason")
+            )
+            or "no code review store could be read",
+            "reviews": None,
+            "findings": {"known": None, "new": None},
+            "treatments": {"folded": None, "dispatched": None, "promoted": None},
+            "product_lines": None,
+            "dispositions": {},
+            "neighbourhood_change": _unmeasured_neighbourhood_change(),
+            "stop_rule": HEALTH_REVIEW_STOP_RULE,
+            "by_project": blocks,
+        }
+    dispositions: collections.Counter = collections.Counter()
+    for block in measured:
+        dispositions.update(block.get("dispositions") or {})
+    return {
+        "state": "measured" if len(measured) == len(blocks) else "partial",
+        "reviews": sum(block["reviews"] for block in measured),
+        "findings": {
+            "known": sum(block["findings"]["known"] for block in measured),
+            "new": sum(block["findings"]["new"] for block in measured),
+        },
+        "treatments": {
+            "folded": sum(block["treatments"]["folded"] for block in measured),
+            "dispatched": sum(block["treatments"]["dispatched"] for block in measured),
+            "promoted": sum(block["treatments"]["promoted"] for block in measured),
+        },
+        "product_lines": sum(block["product_lines"] for block in measured),
+        "dispositions": dict(sorted(dispositions.items())),
+        "neighbourhood_change": _unmeasured_neighbourhood_change(),
+        "stop_rule": HEALTH_REVIEW_STOP_RULE,
+        "by_project": blocks,
+    }
+
+
 def report(
     projects,
     *,
@@ -2764,6 +2988,34 @@ def report(
         }
     else:
         summary["interfaces"] = {"project": None, "weeks": []}
+    # The health-review yield is read per project, from each project's own code
+    # review store and its ledger rows, then folded into the one field the view
+    # serves. The promoted cohort and commits are the ones ``measure`` already
+    # produced, so a treatment's promotion and landed lines are never recomputed.
+    summary["health_reviews"] = _merge_health_reviews(
+        [
+            {
+                "project": entry["project"],
+                **health_reviews(
+                    entry["project"],
+                    runs=entry["runs"],
+                    promoted_runs=[
+                        row
+                        for row in full["runs"]
+                        if row.get("project") == entry["project"]
+                    ],
+                    commits=[
+                        commit
+                        for commit in full["commits"]
+                        if commit.get("project") == entry["project"]
+                    ],
+                    start=start,
+                    end=end,
+                ),
+            }
+            for entry in snapshot["projects"]
+        ]
+    )
     return summary
 
 
@@ -2790,6 +3042,7 @@ OPTIONAL_BLOCKS = frozenset(
         "by_project_day_lane",
         "interfaces",
         "clones",
+        "health_reviews",
     }
 )
 
