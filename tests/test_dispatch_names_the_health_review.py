@@ -13,13 +13,15 @@ from __future__ import annotations
 import copy
 from datetime import UTC, datetime
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from click.testing import CliRunner
 
 from reckon import cli as cli_module
 from reckon import crew_dispatch_commands
-from reckon.crew import plan_review
+from reckon.crew import dispatch_admission, plan_review
+from reckon.crew import review as review_module
 from tests import test_dispatch_names_its_backend as existing_backend_tests
 
 pytest_plugins = ("tests.test_dispatch_names_its_backend",)
@@ -164,4 +166,97 @@ def test_a_stale_review_is_named_beside_the_compose_command(
     assert block["state"] == "stale"
     assert block["review"]["key"] == stored["neighbourhood_key"]
     assert block["age_days"] > 7.0
+    assert block["compose_command"] == COMPOSE_COMMAND
+
+
+REVIEWED_RUN = "r-20261010T090000000000-reviewed-run"
+FINDINGS_REVIEW_RUN = "r-20261010T100000000000-review-run"
+
+
+def _store_committed_findings(checkout: Path) -> None:
+    """Commit a review whose findings against the write path are two open, one disposed.
+
+    The findings reader serves committed records, so the count the block reports
+    is read from the project's committed reviews tree rather than from the
+    staging code-review store; the third finding carries an exemption, keyed by
+    its index in the record, so the block must report two rather than three.
+    """
+    record = {
+        "project": PROJECT,
+        "reviewed_run_id": REVIEWED_RUN,
+        "review_run_id": FINDINGS_REVIEW_RUN,
+        "reviewed_head_sha": "0" * 40,
+        "scores": {"evidence": 17},
+        "findings": [
+            {
+                "file": PRODUCT_PATH,
+                "line": "3",
+                "text": "unguarded index",
+                "severity": "blocking",
+            },
+            {
+                "file": PRODUCT_PATH,
+                "line": "9",
+                "text": "naming would read better",
+                "severity": "follow-on",
+            },
+            {
+                "file": PRODUCT_PATH,
+                "line": "12",
+                "text": "accepted risk, no action",
+                "severity": "follow-on",
+            },
+        ],
+        review_module.FINDING_DISPOSITIONS_KEY: {
+            "2": {"kind": "exempted", "reason": "accepted risk"}
+        },
+    }
+    review_module.store_committed_review(record, root=checkout)
+
+
+def test_open_findings_counts_only_the_open_rows_on_the_write_path(
+    dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _store_covering_review(timestamp=datetime.now(UTC).isoformat())
+    _store_committed_findings(dispatch_repo)
+    payload, result = _invoke(
+        dispatch_repo, monkeypatch, node="counted", write_paths=[PRODUCT_PATH]
+    )
+
+    assert result.exit_code == 0
+    block = payload["health_review"]
+    assert block["state"] == "covered"
+    # Three findings name the path; one is exempted, so two are open.
+    assert block["open_findings"] == 2
+
+
+def test_an_unreadable_store_is_unknown_rather_than_absent(
+    dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An unreadable store reads as unknown, never as a measured absence.
+
+    The block is called directly here: the dispatch's own review gate reads the
+    same store through a second, unguarded call site, so a store made unreadable
+    for the whole process never reaches the block through a dispatch. What is
+    under test is the block's own reading of an unreadable store, so the block
+    is handed one.
+    """
+
+    def _unreadable(*_args, **_kwargs):
+        raise OSError("review store unreadable")
+
+    monkeypatch.setattr(plan_review, "list_code_reviews", _unreadable)
+    block = dispatch_admission._dispatch_health_review(
+        project=PROJECT,
+        plan=PLAN,
+        session=SESSION,
+        node=SimpleNamespace(write_paths=[PRODUCT_PATH]),
+        root=dispatch_repo,
+    )
+
+    assert block is not None
+    # An unreadable store is reported as unknown, never as a measured absence
+    # (which would be "missing"), and the safe advice is still the command.
+    assert block["state"] == "unknown"
+    assert block["review"] is None
     assert block["compose_command"] == COMPOSE_COMMAND

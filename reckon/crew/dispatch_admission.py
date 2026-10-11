@@ -800,31 +800,6 @@ def _health_review_age_days(
     return (now - stamp).total_seconds() / 86400.0
 
 
-def _health_review_open_findings(
-    project: str, paths: set[str], *, root: str | Path | None
-) -> int:
-    """Count the open findings the store holds against ``paths``.
-
-    The count comes from the findings reader that serves every stored finding by
-    the path it names, so the block never counts findings a second time; a
-    finding is counted when its path is one of the node's product write paths
-    and its disposition is ``open``.
-    """
-    from reckon.crew import findings as findings_reader
-
-    try:
-        grouped = findings_reader.findings_by_path(project, root=root)
-    except (OSError, ValueError):
-        return 0
-    return sum(
-        1
-        for group in grouped.get("paths") or ()
-        if str(group.get("path")) in paths
-        for row in group.get("rows") or ()
-        if row.get("disposition") == "open"
-    )
-
-
 def _health_review_compose_command(*, project: str, plan: str, session: str) -> str:
     """The command that composes a fresh code review around the plan."""
     return (
@@ -867,19 +842,49 @@ def _dispatch_health_review(
         return None
     moment = now or parse_utc(_utc_now())
 
+    from reckon.crew import plan_review as _plan_review
+
+    def _open_findings() -> int:
+        """The open findings stored against the node's write paths.
+
+        The count comes from :func:`reckon.crew.plan_review._open_findings_for`,
+        which reads the findings store by path and keeps the open rows for the
+        named paths, so the block counts nothing a second time. The store's own
+        reader swallows an unreadable findings tree as no rows; the resolved
+        checkout it needs is the dispatch's, or the project's own when the
+        dispatch named none.
+        """
+        try:
+            repo_root = (
+                str(root)
+                if root is not None
+                else _plan_review._project_repository(project)
+            )
+            return len(
+                _plan_review._open_findings_for(
+                    {
+                        "project": project,
+                        "repo": repo_root,
+                        "named_paths": sorted(product_paths),
+                    }
+                )
+            )
+        except (CrewError, OSError, ValueError):
+            return 0
+
     def _block(
-        state: str, detail: str, *, review: dict[str, Any] | None, age_days: float | None
+        state: str,
+        detail: str,
+        *,
+        review: dict[str, Any] | None,
+        age_days: float | None,
     ) -> dict[str, Any]:
         fresh = state == "covered"
         return {
             "state": state,
             "review": review,
             "age_days": age_days,
-            "open_findings": (
-                0
-                if state == "unknown"
-                else _health_review_open_findings(project, product_paths, root=root)
-            ),
+            "open_findings": 0 if state == "unknown" else _open_findings(),
             "compose_command": (
                 None
                 if fresh
@@ -889,8 +894,6 @@ def _dispatch_health_review(
             ),
             "detail": detail,
         }
-
-    from reckon.crew import plan_review as _plan_review
 
     try:
         reviews = _plan_review.list_code_reviews(project)
@@ -919,9 +922,7 @@ def _dispatch_health_review(
 
     # Newest first by age; an unreadable stamp sorts last so a review with a
     # readable age is preferred as the one a reader can date.
-    covering.sort(
-        key=lambda item: item[1] if item[1] is not None else float("inf")
-    )
+    covering.sort(key=lambda item: item[1] if item[1] is not None else float("inf"))
     newest, age_days = covering[0]
     identity = {
         "key": str(newest.get("neighbourhood_key") or ""),
