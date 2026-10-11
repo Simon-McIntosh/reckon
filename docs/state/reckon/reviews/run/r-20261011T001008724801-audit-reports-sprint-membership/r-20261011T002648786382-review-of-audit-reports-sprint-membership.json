@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite and no after_suite gate log, so the added-failure count was not taken; its head gate (logs/head_gate.txt) records 1 failed / 442 passed, EXIT=1, on tests/test_mcp_views.py::test_raw_and_schema_are_explicit_layers, a pre-existing failure this change does not touch",
+  "backend": "clive",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/project_maintenance_commands.py:_cmd_audit",
+    "reckon/mcp.py:2538"
+  ],
+  "completed_at": "2026-10-11T00:38:43.073Z",
+  "dispatched_at": "2026-10-11T00:27:12Z",
+  "findings": [
+    {
+      "file": "reckon/mcp.py",
+      "line": "2539",
+      "severity": "follow-on",
+      "text": "follow-on: the MCP lifecycle consumer derives severity from the flag alone (severity = \"error\" if item.flag == \"MISSING_IMPL\" else \"warn\") and ignores the LifecycleFinding.severity the change added, so the shipped-plan-in-an-open-sprint row the plan specifies as info is rendered to readers as warn; reckon/project_maintenance_commands.py:1345 _echo_lifecycle_findings is the same gap from the CLI side, printing no severity column at all, so neither surface the change reaches observes the info/warn distinction it added."
+    },
+    {
+      "file": "reckon/doccheck.py",
+      "line": "579",
+      "severity": "follow-on",
+      "text": "follow-on: the added _item_slug is a fourth textual copy of a private sprint-item slug helper the repository already carries at reckon/_store.py:2462 and reckon/roadmap.py:99; the membership index itself is not a fork because its only owner, roadmap._sprint_membership at reckon/roadmap.py:1491, is private and sits in a higher layer (roadmap.py:46 imports doccheck), so extending it would invert the import."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261011T001008724801-audit-reports-sprint-membership/manifest.md",
+      "line": "19",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest carries empty baseline_suite and after_suite fields, so the added-failure count derived from it is unmeasured (review.py added_failures_from_gate_logs returns null when either log is absent); its single gate log logs/head_gate.txt is the head arm and its header names the base revision a1ce8441 rather than the head 15129e974, so no log ties the recorded count to the commit the change landed at."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read a1ce8441..15129e974 commit by commit; one commit (15129e974 feat(audit): report sprint membership disagreement between plans and sprints), three files, +302/-3, all inside the declared write paths: reckon/doccheck.py adds SPRINT_MEMBERSHIP, sprint_membership_index, _sprint_membership_finding and LifecycleFinding.severity/membership_detail; tests/test_audit_reports_sprint_membership.py adds two tests; the evidence fragment is new.",
+    "done_when": "the plan's done-when builds a temp project whose sprint lists a and b, with a agreeing, b naming another sprint and c unlisted, and asserts two warn rows (b, c) and none for a; tests/test_audit_reports_sprint_membership.py does exactly that plus an info case (shipped d in the open sprint) and I re-ran it at head in the reviewed worktree (2 passed, EXIT=0), and logs/negative_control.txt shows the executed control red (both tests fail, [] == [b, c] and [] == [d]); the reviewed manifest's head gate is EXIT=1 (1 failed) rather than EXIT=0 on the importers pass the task. ",
+    "goal": "the node's goal is to report sprint membership that disagrees between a sprint and its plans; reckon/doccheck.py:576 sprint_membership_index reads both sides via project_state.compose_project_state and reckon/doccheck.py:606 _sprint_membership_finding emits SPRINT_MEMBERSHIP as a warn for each disagreement direction and as info for a shipped plan an open sprint lists, called per mount from audit_lifecycle at reckon/doccheck.py:818.",
+    "manifest": "read the reviewed manifest; status complete, commits 15129e974, changed_paths name the three in-fence files, tests names the head gate (442 passed / 1 failed, EXIT=1) and the node's own test (2 passed, EXIT=0), test_logs names logs/head_gate.txt and logs/negative_control.txt, and follow_ons records the pre-existing tests/test_mcp_views.py failure with a reproduction; but baseline_suite and after_suite are empty, so the added-failure count is unmeasured and the head gate log's header names the base revision a1ce8441 rather than the head.",
+    "write_paths": "the brief grants four paths (reckon/doccheck.py, tests/test_audit_reports_sprint_membership.py, docs/evidence/fragments/the-portfolio-reads-true/audit-reports-sprint-membership.html, docs/figures/the-portfolio-reads-true/audit-reports-sprint-membership); git diff --stat at 15129e974 touches three files, all inside the fence, mutates no shared plan, index or sprint state, and leaves the declared figures directory unused."
+  },
+  "justifications": {
+    "durability": "the two assertions in tests/test_audit_reports_sprint_membership.py:116 and :125 compare emitted slugs against hardcoded expected lists ([\"b\", \"c\"] warn, [\"d\"] info) rather than against any value the test passed in, so they redden if the membership comparison is removed or inverted, which logs/negative_control.txt demonstrates; they do not exercise the closed-sprint carve-out or the _item_slug \"path\" shape.",
+    "evidence": "the gate the done-when names, tests/test_audit_reports_sprint_membership.py, passes EXIT=0 on re-run at head, but the reviewed manifest's head gate is EXIT=1 (1 failed) because tests/test_mcp_views.py::test_raw_and_schema_are_explicit_layers (a test importing doccheck through mcp.py) fails on an out-of-scope schema-size bound, and the manifest records no baseline_suite or after_suite log to derive an added-failure count from.",
+    "fit": "the change follows the module idiom (a flag constant beside LIFE_CYCLE-style constants, a dataclass field, a per-mount call in audit_lifecycle) and the commit 15129e974 is a conventional subject with a body; no added name carries a plan, sprint, version or ticket label, and the new helpers are named by mechanism (_sprint_membership_finding, sprint_membership_index).",
+    "goal_fidelity": "SPRINT_MEMBERSHIP is emitted for both disagreement directions and for the shipped-plan-in-an-open-sprint info case, with the membership read through reckon/project_state.compose_project_state as the plan directed, at reckon/doccheck.py:576 and :606; the plan's \"as info\" wording is realised on the row's severity field though no consumer surfaces it (recorded as a finding).",
+    "reuse": "the membership index has no reachable owner to extend - roadmap._sprint_membership (reckon/roadmap.py:1491) is private and roadmap.py:46 imports doccheck, so extending it would invert the import - and the sprint read is plan-directed through project_state; the defect is the smaller one that the added _item_slug duplicates a private helper already at reckon/_store.py:2462 and reckon/roadmap.py:99.",
+    "scope_discipline": "git diff --stat a1ce8441..15129e974 touches only reckon/doccheck.py, tests/test_audit_reports_sprint_membership.py and the in-fence evidence fragment, mutates no shared plan, index or sprint state, and leaves the declared figures directory unused."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to report sprint membership that disagrees between a sprint and its plans; reckon/doccheck.py:576 sprint_membership_index reads both sides via project_state.compose_project_state and reckon/doccheck.py:606 _sprint_membership_finding emits SPRINT_MEMBERSHIP as a warn for each disagreement direction and as info for a shipped plan an open sprint lists, called per mount from audit_lifecycle at reckon/doccheck.py:818.\nVERDICT done_when: the plan's done-when builds a temp project whose sprint lists a and b, with a agreeing, b naming another sprint and c unlisted, and asserts two warn rows (b, c) and none for a; tests/test_audit_reports_sprint_membership.py does exactly that plus an info case (shipped d in the open sprint) and I re-ran it at head in the reviewed worktree (2 passed, EXIT=0), and logs/negative_control.txt shows the executed control red (both tests fail, [] == [b, c] and [] == [d]); the reviewed manifest's head gate is EXIT=1 (1 failed) rather than EXIT=0 because a test importing doccheck (tests/test_mcp_views.py) fails on an unrelated schema-size bound.\nVERDICT write_paths: the brief grants reckon/doccheck.py, tests/test_audit_reports_sprint_membership.py, docs/evidence/fragments/the-portfolio-reads-true/audit-reports-sprint-membership.html and docs/figures/the-portfolio-reads-true/audit-reports-sprint-membership; git diff --stat a1ce8441..15129e974 touches three files, all inside the fence, and leaves the figures directory unused.\nVERDICT manifest: read the reviewed manifest; status complete, commits 15129e974, tests names the head gate (442 passed / 1 failed, EXIT=1) and the node's own test (2 passed, EXIT=0), and follow_ons records the pre-existing mcp_views failure with a reproduction, but baseline_suite and after_suite are empty so the added-failure count is unmeasured and the head gate log's header names the base revision a1ce8441 rather than the head.\nVERDICT diff: read a1ce8441..15129e974 commit by commit; one commit, three files, +302/-3, all inside the declared write paths - doccheck.py adds SPRINT_MEMBERSHIP, sprint_membership_index, _sprint_membership_finding and the severity/membership_detail fields, the test file adds two tests, the evidence fragment is new.\nCALL_SITES: reckon/project_maintenance_commands.py:_cmd_audit, reckon/mcp.py:2538\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: SPRINT_MEMBERSHIP is emitted for both disagreement directions and the shipped-in-open-sprint info case at reckon/doccheck.py:606, read through project_state.compose_project_state as the plan directed, though no consumer surfaces the info severity (see finding).\nSCORE evidence: 15\nJUSTIFICATION evidence: tests/test_audit_reports_sprint_membership.py passes EXIT=0 on re-run at head, but the reviewed manifest's head gate is EXIT=1 (1 failed) on tests/test_mcp_views.py::test_raw_and_schema_are_explicit_layers and its empty baseline_suite/after_suite leave the added-failure count unmeasured.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat a1ce8441..15129e974 touches only reckon/doccheck.py, tests/test_audit_reports_sprint_membership.py and the in-fence evidence fragment, mutating no shared plan, index or sprint state.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_audit_reports_sprint_membership.py:116 and :125 assert hardcoded expected slug lists, so they redden if the comparison is removed or inverted, as logs/negative_control.txt demonstrates.\nSCORE fit: 19\nJUSTIFICATION fit: the change follows the module idiom at reckon/doccheck.py:576 and adds no name carrying a plan, sprint, version or ticket label.\nSCORE reuse: 13\nJUSTIFICATION reuse: the membership index has no reachable owner to extend (roadmap._sprint_membership at reckon/roadmap.py:1491 is private and roadmap.py:46 imports doccheck), but the added _item_slug at reckon/doccheck.py:579 duplicates private helpers already at reckon/_store.py:2462 and reckon/roadmap.py:99.\nFINDING reckon/mcp.py:2539 follow-on: the MCP lifecycle consumer derives severity from the flag alone and ignores LifecycleFinding.severity, so the plan's info row for a shipped plan in an open sprint renders as warn, and reckon/project_maintenance_commands.py:1345 prints no severity column at all.\nFINDING reckon/doccheck.py:579 follow-on: the added _item_slug is a fourth textual copy of a private sprint-item slug helper the repository already carries at reckon/_store.py:2462 and reckon/roadmap.py:99.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261011T001008724801-audit-reports-sprint-membership/manifest.md:19 follow-on: the reviewed manifest carries empty baseline_suite and after_suite, so the added-failure count derived from it is unmeasured, and its single head gate log's header names the base revision a1ce8441 rather than the head 15129e974.\n",
+  "review_run_id": "r-20261011T002648786382-review-of-audit-reports-sprint-membership",
+  "reviewed_base_sha": "a1ce8441fdee4186b716d738da40055b8d7a9625",
+  "reviewed_head_sha": "15129e9749d85beeff18ca250e5505d40c73756d",
+  "reviewed_run_id": "r-20261011T001008724801-audit-reports-sprint-membership",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "reuse": 13,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T00:41:26.392189+00:00",
+  "total": 101
+}
