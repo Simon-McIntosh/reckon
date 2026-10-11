@@ -22,11 +22,11 @@
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-after" content="the-suite-is-green-at-head">
   <meta name="plan-standalone" content="It shares the suite with the-suite-is-green-at-head, which it is sequenced after, but no section of either waits on the other.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
   <title>The Suite Tests Behaviour | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="35">
+<meta name="plan-version" content="36">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -109,7 +109,7 @@
       listed at dispatch by the census script.</p>
 
     <h2 id="s5">§5 — An assertion on source text becomes an assertion on behaviour, or is deleted</h2>
-<section data-reckon="section" data-id="s5" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s5" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> Each of the 37 sites that read a module's source (<code>inspect.getsource</code>, or
       <code>ast.parse</code> of <code>__file__</code>) is either rewritten to call the code and assert its effect, or deleted where the
       behaviour it stood for is already asserted elsewhere, citing that test in the manifest. A site that guards a structural invariant no
@@ -169,6 +169,9 @@
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261011T041408150508-review-of-git-test-helper-has-one-home" data-who="reckon-build" data-when="2026-10-11T04:27:53.630Z">
     <div class="r-comment-body"><p>reviewed r-20261011T034053001095-git-test-helper-has-one-home (commits 064ae85a code, 46da4df docs; base 776a5d59..head 46da4df) — a test-only refactor giving the `_git` subprocess wrapper one home in tests/helpers/git.py, imported as `_git` by 32 modules — as parsed with all six dimensions scored (durability 19, evidence 18, fit 20, goal_fidelity 20, reuse 20, scope_discipline 19; total 116/120), three follow-ons and no blocker; added_failure_count 0, added_failure_ids [].</p></div>
 </div>
+<div class="r-comment" data-section="s4" data-id="c-s4-progress-1011" data-who="reckon-build" data-when="2026-10-11T06:40:00Z">
+    <div class="r-comment-body"><p>§4 progress. The 22 copied <code>RECKON_HOME</code> fixtures are one fixture in <code>tests/conftest.py</code> (merge <code>a555d55a3</code>, review 107/120). The worker's head log was truncated and edited after the run, so the coordinator re-measured the 22 files: 177 passed at head, 0 added against base. The first 32 of 104 <code>_git</code> copies import <code>tests/helpers/git.py</code> (merge <code>b82e61314</code>, −323 lines, review 116/120). The other 72 are split into two chunks, because one node holding all 104 files was refused before launch at 420k estimated tokens against a 230k window. Both chunks are in flight.</p></div>
+</div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261010T203635984410-suite-record-counts-skips" data-who="reckon-build" data-when="2026-10-10T20:47:14.471Z">
     <div class="r-comment-body"><p>The standing-suite record now carries skipped and skipped_ids — the count was already parsed by _result_counts and discarded by _build_counts and is now carried through, and skipped_ids adds the per-id extractor for the SKIPPED lines a -rs summary lists (path:lineno location, separator colon stripped). Measure: tests/test_suite_record_counts_skips.py passes EXIT=0, recording skipped == 2 with both ids for a log ending 3 failed, 10 passed, 2 skipped and 0 with an empty list when absent.</p></div>
 </div>
@@ -225,6 +228,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261011T023305655678-review-of-structural-guards-have-one-home" data-who="reckon-build" data-when="2026-10-11T02:42:44.628Z">
     <div class="r-comment-body"><p>the review for r-20261011T014220490358 at head 71bb011d is stored as a parsed record at both granted write paths, scoring goal_fidelity 18, evidence 19, scope_discipline 19, durability 18, fit 18, reuse 15 (total 107), reviewed_base_sha 02e06d665f64f67d0304f5148b3ec9c088f3f182 and reviewed_head_sha 71bb011d8f3c4e5d32035d35c71989b56c5b2b4b, one follow-on finding (the definition scan still duplicates tests/test_picker_helpers_have_one_owner.py:80 _defined_names); the prior head c47c99ef scored 97 with four follow-ons, all four now closed and independently verified.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-close-s5" data-who="reckon-build" data-when="2026-10-11T06:40:00Z">
+    <div class="r-comment-body"><p>§5 closed: 37 source-text sites down to 10 (merges <code>bbbb6c874</code>, <code>8cddf2cb1</code>), with the structural guards the count cost restored repo-wide (merge <code>6ef8ea30c</code>, review 107/120). <a href="/reckon/evidence/archive/the-suite-tests-behaviour-landed.html#s5-structural-guards">evidence</a></p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
