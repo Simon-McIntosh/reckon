@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-codebase-is-reviewed-between-nodes">
+  <meta name="plan-evidence-for" content="reckon:the-codebase-is-reviewed-between-nodes">
+  <meta name="plan-verifies" content="reckon:the-codebase-is-reviewed-between-nodes#s6">
+  <meta name="plan-recorded-at" content="2026-10-11">
+  <meta name="plan-verdict" content="partial">
+  <title>One review verb composes a code subject | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="review-composes-a-code-subject-landing" data-node="review-composes-a-code-subject" data-reckon="landed" data-when="2026-10-11">
+  <h2>The review verb composes a code neighbourhood, and the plan form survives as an alias</h2>
+
+  <p><code>reckon crew review</code> now takes a code subject beside its plan subject. <code>--around &lt;plan&gt;</code> resolves the production paths a plan's still-implementable sections name in their <em>Write paths</em> sentence, and <code>--path &lt;path&gt;</code> names one directly. The verb turns those paths into a module set through <code>reckon.served_code.neighbourhood(repo, revision, paths)</code> — the existing reachability instrument, so no second import walker was written — which yields the named modules plus every production module one import away in either direction. The composed brief is the health rubric from <code>reckon/crew/prompts/health_review.md</code>, followed by the reviewed revision, the named paths, the neighbourhood modules, the open findings <code>reckon/crew/findings.py</code> already stores against those paths, and the four figures from <code>reckon/interface_counts.py</code>. The report directory is keyed by the neighbourhood digest, so two reviews of one neighbourhood share a directory and a changed neighbourhood earns its own.</p>
+
+  <p><code>reckon crew review-plan</code> is kept as a hidden alias: it prints one deprecation line to stderr and otherwise composes the same plan brief, calling the same body as <code>reckon crew review --plan</code>. All pre-existing options moved to the new verb unchanged.</p>
+
+  <p><strong>Measure</strong>: <code>tests/test_review_composes_a_code_subject.py</code> passes at <code>EXIT=0</code> (3 passed). It builds a temporary repository in which <code>reckon/a.py</code> imports <code>reckon/b.py</code> while <code>reckon/c.py</code> is unrelated, mounts it as project <code>sample</code>, and gives plan <code>fixture</code> an implementable section whose prose names <code>reckon/a.py</code> as a write path, with a committed plan-review record carrying an open finding anchored to <code>reckon/a.py:3</code>. The test asserts the composed brief's <em>Named paths</em> line names <code>reckon/a.py</code> and its <em>Neighbourhood modules</em> line names <code>reckon.b</code> and not <code>reckon.c</code>, that the stored finding and the four interface-figure keys are present, and that <code>crew review --plan fixture --dry-run</code> composes the same plan brief as <code>crew review-plan --dry-run</code> once the per-invocation run id and stamped instant are folded out (the two invocations mint their own identity, so literal equality would be a false measure).</p>
+
+  <p><strong>Declared negative control</strong>: &ldquo;remove the one-hop import expansion so module b is missing from the composed brief&rdquo;. Run with <code>RECKON_TEST_CODE_SUBJECT_NEGATIVE=1</code>, which replaces <code>plan_review.neighbourhood</code> with an empty result; the neighbourhood line reads <code>none</code> and the test fails at <code>EXIT=1</code> on <code>assert "reckon.b" in neighbourhood</code>. Logged at <code>negative-control.log</code>.</p>
+
+  <p><strong>Population arm</strong>: the gate list is every test file naming <code>plan_review</code> or <code>crew_dispatch_commands</code> (91 files at the head tree). At the base revision the same list reports 5 failed, 1060 passed; at the head it reports 14 failed, 1051 passed. The five base failures are unchanged. The nine added failures are one defect class, described below.</p>
+
+  <p><strong>Carried cost, needing a scope decision.</strong> The mandated deprecation line on stderr is visible to <code>click.testing.CliRunner().output</code>, which concatenates stdout and stderr; nine tests invoke <code>crew review-plan</code> and parse <code>result.output</code> as JSON, and now fail with <code>JSONDecodeError</code> at column 1 because the notice precedes the document. This is not a defect in the verb — in a shell the document on stdout stays pure — but the nine tests assert the alias's old contract. They sit outside this node's write fence, so they were left untouched: <code>tests/test_review_plan_command.py</code> lines 302, 339, 367, 405, 463; <code>tests/test_nothing_sweeps_old_plans.py</code> line 131; <code>tests/test_the_surfaces_pass_the_plan.py</code> line 284; <code>tests/test_an_edit_tells_its_author_a_review_is_owed.py</code> line 225. The repair is one token per site, <code>result.output</code> &rarr; <code>result.stdout</code>, and the repository already emits a deprecation notice this way (<code>reckon/crew_follow_commands.py</code>, the retired <code>--attention</code> flag), so the convention is established rather than invented here.</p>
+</article>
+</body>
+</html>
