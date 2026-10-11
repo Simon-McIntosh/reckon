@@ -2194,7 +2194,11 @@ def _derive_lifecycle(
     from copy import deepcopy
 
     from reckon._schema import parse_plan_ref
-    from reckon.roadmap import closure_blockers, split_unpassed_gates, unsettled_decisions
+    from reckon.roadmap import (
+        closure_blockers,
+        split_unpassed_gates,
+        unsettled_decisions,
+    )
 
     plans = deepcopy(inventory)
     plan_by_slug = {

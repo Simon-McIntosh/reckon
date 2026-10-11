@@ -111,14 +111,13 @@ def _served_plan(slug: str) -> dict:
 
 def _mcp_view(slug: str) -> dict:
     plan = next(plan for plan in _plans() if plan["slug"] == slug)
-    result = resource_view(
+    return resource_view(
         ResourceSelector(PROJECT, "plan", slug),
         1,
         plan,
         view="summary",
         provenance={},
     )
-    return result
 
 
 def test_an_ungated_section_keeps_the_plan_unblocked_across_every_reader() -> None:
