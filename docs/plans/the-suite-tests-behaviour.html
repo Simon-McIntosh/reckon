@@ -26,7 +26,7 @@
   <title>The Suite Tests Behaviour | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="20">
+<meta name="plan-version" content="21">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -180,6 +180,9 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-s7-part2-1011" data-who="reckon-build" data-when="2026-10-11T02:20:00Z">
     <div class="r-comment-body"><p>Second node of §7 landed (merge <code>f76612774</code>; review 111/120): <code>review.populations</code> is now a declared flight key, and <code>reckon crew suite run</code> records the browser population as its own row. The section stays open on the quiet-node measurement, both arms at 60 s with failing ids. That measurement is held, with <code>a-read-answers-inside-its-deadline</code> §6, until the wave drains, because the shared allocation is not quiet while workers run. <a href="/reckon/evidence/archive/the-suite-tests-behaviour-landed.html#s7-each-population-recorded">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261010T234234848653-suite-run-records-each-population" data-who="reckon-build" data-when="2026-10-11T00:00:24.981Z">
+    <div class="r-comment-body"><p>Added review.populations to the flight schema (ReviewPopulation: name, command, budget) regenerated into reckon/_flight_schema.py and docs/_shared/flight.schema.json, declared the browser population in docs/state/reckon/flight.yaml, read populations in flight.review_populations through the same suite-block parser review_suite uses (standing_suite.population_declarations delegates, no second budget regex), and made reckon crew suite run record one row per declared population beside the standing suite&#x27;s — a failing browser row does not hold a tier-none promotion while a failing standing row does; gate 116 passed EXIT=0.</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
