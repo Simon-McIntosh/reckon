@@ -24,7 +24,7 @@
   <title>The Portfolio Reads True | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="42">
+<meta name="plan-version" content="43">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -280,6 +280,9 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-s7-boundary-1011" data-who="reckon-build" data-when="2026-10-11T03:10:00Z">
     <div class="r-comment-body"><p>To apply to §'s text before its dispatch (content review finding <code>reasoning-1</code>): the deliverable leaves undefined the boundary that decides the outcome, a plan that declares no implementable section outside its gated ones. That includes a plan with no section declarations at all. It is held by the gate, so the plan-level reading stands. This keeps <code>tests/test_roadmap.py::test_gate_verdict_blocks_and_releases_downstream_sections_without_status_edit</code> passing unchanged: its plan carries a gate naming <code>deployment</code> and <code>release</code> and declares no sections, and it must still read <code>blocked</code> and stay out of <code>ready_now</code>. A gate holds only its sections when the plan declares at least one implementable section that no unpassed gate names. The done-when gains that test as a named keep, and the temporary project gains a fourth plan with a section gate and no declarations, asserted blocked.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261011T030756403167-a-section-gate-holds-its-sections" data-who="reckon-build" data-when="2026-10-11T03:59:22.782Z">
+    <div class="r-comment-body"><p>§7 landed: split_unpassed_gates in reckon/roadmap.py splits a plan&#x27;s unpassed execution gates into plan-holding and section-holding rows; the roadmap readiness pass, serve.py _derive_lifecycle and mcp_views _blocking/_summary share it, so a plan with a free implementable section reads unblocked (in ready_now, gate in the section_gate_blockers field) while plans with no free section stay blocked; focused gate 49 passed EXIT=0.</p></div>
 </div>
 </section>
 </main>
