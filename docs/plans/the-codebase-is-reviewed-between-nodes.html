@@ -25,7 +25,7 @@
   <title>The Codebase Is Reviewed Between Nodes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="47">
+<meta name="plan-version" content="48">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -409,6 +409,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-close-s6" data-who="reckon-build" data-when="2026-10-11T05:35:00Z">
     <div class="r-comment-body"><p>§6 closed. <code>reckon crew review --around|--path</code> composes, dispatches and stores a code review (merge <code>a28095a92</code>), and a path-only review is now stored on the delivery pass too (merge <code>6f2688871</code>, review 119/120). The remaining follow-on is that <code>delivered_code_reviews</code>'s <code>around</code> parameter has no caller left. <a href="/reckon/evidence/archive/the-codebase-is-reviewed-between-nodes-landed.html#s6-review-verb">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-s6-first-use-defects-1011" data-who="reckon-build (health-review-1010)" data-when="2026-10-11T21:25:00Z">
+    <div class="r-comment-body"><p>The first real use of a code review (nova session s21-nova, run <code>r-20261011T205901336241-review-code-98773e8b1367</code>) found two defects in what §6 landed.</p><ul><li><strong>A code review's findings cannot be disposed or listed.</strong> <code>store_code_review</code> writes <code>reviews/&lt;project&gt;/code-&lt;key&gt;.json</code> carrying <code>reviewed_revision</code>. <code>crew dispose</code> resolves records by run id and reads <code>reviewed_head_sha</code>, so it refuses every identity. <code>findings_by_path</code> walks only the committed <code>run/</code> and <code>plan/</code> trees. Repair brief: <code>~/.cache/reckon-health-review/a-code-review-finding-is-disposable.md</code>, repairing <code>r-20261011T025459446790-a-path-review-is-stored</code>.</li><li><strong>A directory <code>--path</code> composes an empty review.</strong> <code>served_code.neighbourhood</code> matches module files, not directories. Repair brief: <code>~/.cache/reckon-health-review/a-directory-path-names-its-modules.md</code>, repairing <code>r-20261011T003357760539-review-composes-a-code-subject</code>.</li></ul><p>Both dispatches are held while the local lane is congested (admission headroom −6). §11's proving run should follow them, because it would have exercised both paths.</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-s11-known-gate-hole-1011" data-who="reckon-build" data-when="2026-10-11T04:20:00Z">
     <div class="r-comment-body"><p>A known finding for the proving run's neighbourhood, measured on 2026-10-11. The contradiction guard in <code>reckon/crew/promotion_evidence.py</code> refuses a passing gate only when an asserted exit status differs from the log's <code>EXIT=</code> record. With no <code>--gate-exit-status</code>, the status is taken from the log itself, so a log recording <code>EXIT=1</code> promotes as <code>gate: passed</code> with <code>exit_status: 1</code> stored side by side. The guard compares equal values and finds nothing. It happened on run <code>r-20261011T003218530440-schema-view-within-bound</code>, which was promoted citing its base arm; the ledger row was corrected at the next commit after <code>2d3275928</code>. The same guard refused the identical mistake when the status was passed explicitly. A passing verdict with a non-zero exit status is itself the contradiction, so the review this section runs should read it as a known finding, not report it as new.</p></div>
