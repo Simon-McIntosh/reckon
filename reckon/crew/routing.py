@@ -27,6 +27,7 @@ from reckon import (
     velocity,
 )
 from reckon._plan_html import plan_headings, section_id_candidates, section_record_id
+from reckon._store import CorruptEnvelopeError
 from reckon._timestamps import parse_utc
 from reckon.calibration import calibration_configuration_key
 from reckon.capability import (
@@ -1573,6 +1574,38 @@ def _stale_run_locks(
     return entries
 
 
+def _mounted_ledgered_run_ids() -> tuple[set[str], list[str]]:
+    """Run ids held by every registered project's ledger, and unreadable names.
+
+    The runs directory is shared by every registered project, so a run id is
+    unledgered only when no registered project's ledger holds it. A project
+    whose ledger cannot be read leaves the set incomplete, so its name is
+    returned rather than its silence read as ``no rows``: the caller then
+    withholds the whole sweep rather than offering a peer's run for removal.
+    An absent ledger is a project that has run nothing yet, not an unreadable
+    one, and reads as empty. The mounted docs directory is the same authority
+    ``resolve_dispatch_authority`` reads through, and its parent is the
+    checkout whose ledger the reads below resolve against.
+    """
+    try:
+        mounts = flight.mounted_project_docs()
+    except flight.FlightConfigError as exc:
+        return set(), [f"the mount registry could not be read: {exc}"]
+    ids: set[str] = set()
+    unreadable: list[str] = []
+    for name, docs in sorted(mounts.items()):
+        try:
+            records = ledger.runs(str(name), root=docs.parent)
+        except (ledger.LedgerError, OSError, ValueError, CorruptEnvelopeError):
+            unreadable.append(str(name))
+            continue
+        for record in records:
+            record_run_id = str(record.get("run_id") or "")
+            if record_run_id:
+                ids.add(record_run_id)
+    return ids, unreadable
+
+
 def _unledgered_run_directories(
     *,
     apply: bool,
@@ -1590,12 +1623,25 @@ def _unledgered_run_directories(
     with neither a row nor a live pointer is covered by nothing durable, so
     past retention it is offered whole. The live set is re-read before each
     removal.
+
+    The run directory is shared with every registered project, so the known
+    set is the union of the gc repository's own ``ledgered`` rows with every
+    registered mount's. The mounts are read because a run this checkout never
+    ledgers is still a peer project's; the repository's own rows are carried
+    because a repository can run workers without being a registered mount, and
+    its own ledgered directories must survive its gc. If any registered
+    project's ledger cannot be read, the sweep fails closed: every would-be
+    row is reported withheld with a reason naming the unreadable project and
+    none of them is removed, so a gc run from one checkout cannot delete a
+    peer project's run directories.
     """
     from reckon.crew.dispatch import tree_size_bytes
 
     runs_root = runs_dir()
     if not runs_root.is_dir():
         return []
+    mounted, unreadable = _mounted_ledgered_run_ids()
+    known = set(ledgered) | mounted
     current = now or datetime.now(tz=UTC)
     cutoff = current - timedelta(days=retention_days)
     entries: list[dict[str, Any]] = []
@@ -1603,7 +1649,7 @@ def _unledgered_run_directories(
         directory_run_id = directory.name
         if run_id and directory_run_id != run_id:
             continue
-        if directory_run_id in ledgered or directory_run_id in live_ids:
+        if directory_run_id in known or directory_run_id in live_ids:
             continue
         modified = datetime.fromtimestamp(directory.stat().st_mtime, tz=UTC)
         if modified > cutoff:
@@ -1616,7 +1662,14 @@ def _unledgered_run_directories(
             "action": "prune",
             "removed": False,
         }
-        if apply and directory_run_id not in _live_run_ids():
+        if unreadable:
+            entry["action"] = "withheld"
+            entry["withheld"] = (
+                "the ledger of registered project "
+                f"{', '.join(repr(name) for name in unreadable)} could not be "
+                "read, so no run directory can be shown unledgered"
+            )
+        elif apply and directory_run_id not in _live_run_ids():
             shutil.rmtree(directory)
             entry["removed"] = True
         entries.append(entry)
