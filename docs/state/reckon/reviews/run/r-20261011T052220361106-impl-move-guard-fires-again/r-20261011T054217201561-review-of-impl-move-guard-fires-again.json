@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed run's manifest carries no baseline_suite or after_suite block (they are armed-only and this node was unarmed), so no added-failure count could be derived from its gate logs",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch_plan.py:_plan_impl_at_dispatch",
+    "reckon/crew/promotion_checks.py:_require_impl_moved"
+  ],
+  "completed_at": "2026-10-11T05:53:41.582Z",
+  "dispatched_at": "2026-10-11T05:42:43Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_checks.py",
+      "line": "1035",
+      "severity": "follow-on",
+      "text": "follow-on: _authored_plan_impl duplicates the authored plan-impl meta extraction that already exists at reckon/doccheck.py:1533 (soup.find(\"meta\", {\"name\": \"plan-impl\"}) then float), a third copy of the same idiom beside the one inline in reckon/_plan_html.py:1122; it neither extends nor wraps the existing reader."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261011T052220361106-impl-move-guard-fires-again/gate-importers-head.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the log's first line names \"head 981a7457\", the reviewed base rather than the fix head d2ea7953, so it does not evidence a head-tree run as the manifest contract requires and the \"no added failure against base\" claim is unverifiable from the log alone."
+    },
+    {
+      "file": "reckon/crew/promotion_checks.py",
+      "line": "1015",
+      "severity": "follow-on",
+      "text": "follow-on: _authored_plan_impl returns None when the plan file carries no plan-impl meta, which _plan_html.write_state deliberately omits for a declarations-derived impl (reckon/_plan_html.py:2056), so a plan that authored no such meta is exempt from the guard (\"no-impl-recorded-at-dispatch\"); this restores the pre-derivation contract the pinned tests encode but diverges from the brief's \"read from the derivation\" and the plan section's served-figure wording, and the worker disclosed the tension in its follow_ons."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base 981a7457; the single commit d2ea7953 changes reckon/crew/promotion_checks.py (+55/-4) and adds a three-line docs/evidence/fragments/the-portfolio-reads-true/impl-move-guard-fires-again.html styled like its sibling impl-derives-from-declarations.html.",
+    "done_when": "the measure names tests/test_promotion_requires_impl_move.py at 22/22 EXIT=0, tests/test_impl_derives_from_declarations.py green, the importers showing no added failure, and the negative control reddening the three named tests; the manifest records all four, and I re-ran the first two files myself (22 passed; 8 passed).",
+    "goal": "the node goal is to make the impl-move promotion guard read impl from the derivation it reads at dispatch; the landed change instead makes both ends read the plan's authored plan-impl meta through reckon/crew/promotion_checks.py:1009 (plan_impl_at -> _authored_plan_impl) and promotion_checks.py:1089 (_plan_state_for_run), which is the pre-derivation behaviour the report says the three pinned tests encode.",
+    "manifest": "read; status complete, one commit d2ea7953, the three pinned tests at 22/22 EXIT=0, the importers at 103/103 EXIT=0, and negative-control.log showing the three tests reddening.",
+    "write_paths": "the manifest declares promotion_checks.py, promotion.py, promotion_evidence.py, the node's evidence fragment and its figures directory; the diff touches only reckon/crew/promotion_checks.py and the new fragment, both inside the fence."
+  },
+  "justifications": {
+    "durability": "the diff adds no test, but negative-control.log records the three pre-existing tests failing DID NOT RAISE CrewError when reckon/crew/promotion_checks.py reads the derived figure again, so the guards genuinely redden on the regression.",
+    "evidence": "I re-ran tests/test_promotion_requires_impl_move.py (22 passed) and tests/test_impl_derives_from_declarations.py (8 passed), and negative-control.log shows the three tests at FFF EXIT=1, but gate-importers-head.log:1 is headed \"head 981a7457\" \u2014 the base, not the fix head \u2014 so the no-added-failure arm is unverifiable from that log.",
+    "fit": "the change follows the module idiom (lazy bs4 import at promotion_checks.py:1030, mapping copy at :1087) and introduces no plan, sprint or ticket label in code, names or docstrings.",
+    "goal_fidelity": "the guard now reads the authored plan-impl meta at both ends (reckon/crew/promotion_checks.py:1009 and :1089), matching the dispatch caller's own docstring at reckon/crew/dispatch_plan.py:1001 and the three pinned tests, though not the brief's literal \"read from the derivation\".",
+    "reuse": "_authored_plan_impl at reckon/crew/promotion_checks.py:1015 reuses _store._resolve_html_file and _plan_html._read_plan_text but recopies the plan-impl meta extraction already present at reckon/doccheck.py:1533 rather than extending a shared reader.",
+    "scope_discipline": "every path in the diff (reckon/crew/promotion_checks.py and docs/evidence/fragments/the-portfolio-reads-true/impl-move-guard-fires-again.html) is inside the declared write paths in the manifest."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make the impl-move promotion guard read impl from the derivation it reads at dispatch; the landed change instead makes both ends read the plan's authored plan-impl meta through reckon/crew/promotion_checks.py:1009 (plan_impl_at -> _authored_plan_impl) and promotion_checks.py:1089 (_plan_state_for_run), which is the pre-derivation behaviour the report says the three pinned tests encode.\nVERDICT done_when: the measure names tests/test_promotion_requires_impl_move.py at 22/22 EXIT=0, tests/test_impl_derives_from_declarations.py green, the importers showing no added failure, and the negative control reddening the three named tests; the manifest records all four, and I re-ran the first two files myself (22 passed; 8 passed).\nVERDICT write_paths: the manifest declares promotion_checks.py, promotion.py, promotion_evidence.py, the node's evidence fragment and its figures directory; the diff touches only reckon/crew/promotion_checks.py and the new fragment, both inside the fence.\nVERDICT manifest: read; status complete, one commit d2ea7953, the three pinned tests at 22/22 EXIT=0, the importers at 103/103 EXIT=0, and negative-control.log showing the three tests reddening.\nVERDICT diff: read commit by commit against base 981a7457; the single commit d2ea7953 changes reckon/crew/promotion_checks.py (+55/-4) and adds a three-line docs/evidence/fragments/the-portfolio-reads-true/impl-move-guard-fires-again.html styled like its sibling impl-derives-from-declarations.html.\nCALL_SITES: reckon/crew/dispatch_plan.py:_plan_impl_at_dispatch, reckon/crew/promotion_checks.py:_require_impl_moved\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the guard now reads the authored plan-impl meta at both ends (reckon/crew/promotion_checks.py:1009 and :1089), matching the dispatch caller's own docstring at reckon/crew/dispatch_plan.py:1001 and the three pinned tests, though not the brief's literal \"read from the derivation\".\nSCORE evidence: 16\nJUSTIFICATION evidence: I re-ran tests/test_promotion_requires_impl_move.py (22 passed) and tests/test_impl_derives_from_declarations.py (8 passed), and negative-control.log shows the three tests at FFF EXIT=1, but gate-importers-head.log:1 is headed \"head 981a7457\" \u2014 the base, not the fix head \u2014 so the no-added-failure arm is unverifiable from that log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff (reckon/crew/promotion_checks.py and docs/evidence/fragments/the-portfolio-reads-true/impl-move-guard-fires-again.html) is inside the declared write paths in the manifest.\nSCORE durability: 18\nJUSTIFICATION durability: the diff adds no test, but negative-control.log records the three pre-existing tests failing DID NOT RAISE CrewError when reckon/crew/promotion_checks.py reads the derived figure again, so the guards genuinely redden on the regression.\nSCORE fit: 17\nJUSTIFICATION fit: the change follows the module idiom (lazy bs4 import at promotion_checks.py:1030, mapping copy at :1087) and introduces no plan, sprint or ticket label in code, names or docstrings.\nSCORE reuse: 12\nJUSTIFICATION reuse: _authored_plan_impl at reckon/crew/promotion_checks.py:1015 reuses _store._resolve_html_file and _plan_html._read_plan_text but recopies the plan-impl meta extraction already present at reckon/doccheck.py:1533 rather than extending a shared reader.\nFINDING reckon/crew/promotion_checks.py:1035 follow-on: _authored_plan_impl duplicates the authored plan-impl meta extraction that already exists at reckon/doccheck.py:1533 (soup.find(\"meta\", {\"name\": \"plan-impl\"}) then float), a third copy of the same idiom beside the one inline in reckon/_plan_html.py:1122; it neither extends nor wraps the existing reader.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261011T052220361106-impl-move-guard-fires-again/gate-importers-head.log:1 follow-on: the log's first line names \"head 981a7457\", the reviewed base rather than the fix head d2ea7953, so it does not evidence a head-tree run as the manifest contract requires and the \"no added failure against base\" claim is unverifiable from the log alone.\nFINDING reckon/crew/promotion_checks.py:1015 follow-on: _authored_plan_impl returns None when the plan file carries no plan-impl meta, which _plan_html.write_state deliberately omits for a declarations-derived impl (reckon/_plan_html.py:2056), so a plan that authored no such meta is exempt from the guard (\"no-impl-recorded-at-dispatch\"); this restores the pre-derivation contract the pinned tests encode but diverges from the brief's \"read from the derivation\" and the plan section's served-figure wording, and the worker disclosed the tension in its follow_ons.",
+  "review_run_id": "r-20261011T054217201561-review-of-impl-move-guard-fires-again",
+  "reviewed_base_sha": "981a7457b8da84949e11d14a652a37ff58396952",
+  "reviewed_head_sha": "d2ea795330563a897ce1dd7c3406ae6dd327c8d6",
+  "reviewed_run_id": "r-20261011T052220361106-impl-move-guard-fires-again",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 12,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T05:51:18.567130+00:00",
+  "total": 101
+}
