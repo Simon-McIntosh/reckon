@@ -650,7 +650,7 @@
         }
       ],
       "default": null,
-      "description": "Elapsed hours from the plan-wall-clock-hours meta, assuming the maximum parallelism the plan itself supports. Never exceeds effort_hours; equals it for strictly sequential work."
+      "description": "Elapsed hours, assuming the maximum parallelism the plan itself supports. Never exceeds effort_hours; equals it for strictly sequential work."
     },
     "effort_calibrated": {
       "anyOf": [
@@ -679,7 +679,7 @@
     },
     "milestone": {
       "default": "",
-      "description": "Milestone identifier, or empty when unassigned",
+      "description": "Identifier, or empty when unassigned",
       "pattern": "^(?:[A-Za-z0-9][A-Za-z0-9._-]*)?$",
       "type": "string"
     },
@@ -693,7 +693,7 @@
         }
       ],
       "default": null,
-      "description": "Sprint ref this plan belongs to. Bare 'id' = same-project; 'project:id' = external (cross-project)."
+      "description": "Bare 'id' = same-project; 'project:id' = external (cross-project)."
     },
     "graph_handle": {
       "anyOf": [
@@ -879,7 +879,7 @@
         }
       ],
       "default": null,
-      "description": "One-sentence reason this plan genuinely stands alone \u2014 it waits on no other plan and feeds none. Persisted as <meta name=\"plan-standalone\">. Absent means the plan must declare depends_on, blocks, informs or a gate."
+      "description": "One-sentence reason this plan genuinely stands alone \u2014 it waits on no other plan and feeds none. Absent means the plan must declare depends_on, blocks, informs or a gate."
     },
     "modified": {
       "default": "",
@@ -891,9 +891,10 @@
     },
     "impl_source": {
       "default": "",
-      "description": "How the impl fraction was obtained: 'computed' from typed section records, or 'authored' from the plan-impl meta. Absent when neither source produced a figure.",
+      "description": "'computed' from typed section records, 'declarations' by count, 'authored' from plan-impl meta; absent when no source produced a figure.",
       "enum": [
         "computed",
+        "declarations",
         "authored"
       ],
       "type": "string"
