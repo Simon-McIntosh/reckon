@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-moved-head-is-reviewed-landed">
+  <meta name="plan-title" content="A Moved Head Is Reviewed — landed record">
+  <meta name="plan-summary" content="Closure synthesis for A Moved Head Is Reviewed: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="a-moved-head-is-reviewed">
+  <meta name="plan-verdict" content="qualified">
+  <title>A Moved Head Is Reviewed — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A Moved Head Is Reviewed — landed record</h1>
+  <p>Closure synthesis for A Moved Head Is Reviewed: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s2-why-the-reflex-launched-nothing">
+    <h2>§2 — why the reflex launched nothing for nine deliveries</h2>
+    <p>A read-only investigation (run <code>r-20261011T045938262731-why-the-reflex-launched-nothing</code>, report under the crew reports root at <code>health-review-1010/why-the-reflex-launched-nothing/report.md</code>) explained all nine deliveries from the sweep log (<code>~/.config/reckon/crew/recovery/reckon.jsonl</code>), each with a cited line. Its claims review scored 111/120.</p><ul><li><strong>Six are the tier gate working as designed.</strong> The five first deliveries and structural-guards' moved head changed tests and evidence only. <code>review_tier()</code> returned <code>none</code>, so <code>dispatch_awaiting_reviews()</code> in <code>reckon/crew/recovery_review_acceptance.py</code> recorded a skip and left them to the merged-head gate. <code>dispatch_review_for_run()</code> was never called. A reproduction of <code>review_head_move</code> on the structural-guards move sees both heads and classifies the move as not runtime source.</li><li><strong>Two are a real defect.</strong> For gc-bounds' first moved head, the reflex composed a re-review and was refused twice with <em>worktree path already exists</em>. The composed node id <code>review-of-&lt;node&gt;</code> is reused for every round of the same run, so the second round's worktree path collides with the first round's surviving worktree.</li><li><strong>One is a race the coordinator caused.</strong> For the remaining moved heads of gc-bounds and dispatch-names, the coordinator's hand dispatch beat the reflex's by seconds, and the reflex then correctly treated the hand review as standing.</li></ul><p>Across the same session, sixteen deliveries that changed runtime source were reflex-reviewed normally, so the discriminator between the two groups is the tier, not the run.</p><p><strong>What §3 must change.</strong> <code>dispatch_review_for_run()</code> in <code>reckon/crew/recovery_review_dispatch.py</code> gives a re-review round a node identity, and so a worktree path, distinct from the round before. The tier skip is the policy a-review-is-sized-to-its-risk §2 chose. Whether a test-only delivery should keep it is the lead's call: in this sprint, hand reviews of test-only runs are what caught structural guards being deleted.</p>
+  </section>
+
+</main>
+</body>
+</html>
