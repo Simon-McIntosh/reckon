@@ -1348,13 +1348,29 @@ def _echo_lifecycle_findings(findings) -> None:
             item.project,
             item.slug,
             item.flag,
+            # A row's own severity is authoritative; the flag-derived value is
+            # the fallback for a row that authors none (MISSING_IMPL, whose
+            # severity doccheck leaves at the dataclass default).
+            (
+                "error"
+                if item.flag == "MISSING_IMPL"
+                else getattr(item, "severity", None) or "warn"
+            ),
             f"{item.age_days}d",
             "-" if item.impl is None else f"{item.impl:.2f}",
             item.last_modified,
         )
         for item in findings
     ]
-    headers = ("project", "plan-slug", "flag", "age", "impl", "last-modified")
+    headers = (
+        "project",
+        "plan-slug",
+        "flag",
+        "severity",
+        "age",
+        "impl",
+        "last-modified",
+    )
     widths = [
         max(len(header), *(len(row[idx]) for row in rows))
         for idx, header in enumerate(headers)

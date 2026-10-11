@@ -2536,7 +2536,17 @@ def _audit(
             )
     try:
         for item in audit_lifecycle(project=project, docs_dir=docs_dir):
-            severity = "error" if item.flag == "MISSING_IMPL" else "warn"
+            # A row's own severity is authoritative; the flag-derived value is
+            # the fallback for a row that authors none. MISSING_IMPL is that
+            # row — doccheck leaves its severity at the dataclass default — so
+            # its flag-derived error stands. Every other row carries a severity
+            # the flag cannot recover (a shipped plan still listed by an open
+            # sprint is info, not warn).
+            severity = (
+                "error"
+                if item.flag == "MISSING_IMPL"
+                else getattr(item, "severity", None) or "warn"
+            )
             findings.append(
                 _finding(
                     "lifecycle",
