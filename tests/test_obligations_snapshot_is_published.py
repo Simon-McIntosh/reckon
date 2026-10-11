@@ -37,6 +37,7 @@ from reckon.crew import (
     runs,
 )
 from reckon.crew import review as review_module
+from tests.helpers.git import git as _git
 
 obligations_module = importlib.import_module("reckon.crew.obligations")
 
@@ -75,17 +76,6 @@ def test_importing_the_snapshot_module_pulls_in_no_derivation() -> None:
     lines = completed.stdout.splitlines()
     assert lines and lines[0].startswith("loaded"), completed.stdout
     assert lines[1] == "[]", completed.stdout
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    completed = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return completed.stdout.strip()
 
 
 def _commit(repository: Path, name: str, body: str) -> str:

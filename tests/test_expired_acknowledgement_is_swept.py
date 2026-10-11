@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import importlib
 import json
-import subprocess
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -28,6 +27,7 @@ from click.testing import CliRunner
 from reckon import ledger
 from reckon.cli import main as cli_main
 from reckon.crew import runs
+from tests.helpers.git import git as _git
 
 obligations_module = importlib.import_module("reckon.crew.obligations")
 
@@ -39,17 +39,6 @@ EXPIRED_NODE = "expired-remainder"
 CURRENT_NODE = "current-remainder"
 RUN_EXPIRED = f"r-20261003T060000000000-{EXPIRED_NODE}"
 RUN_CURRENT = f"r-20261003T060000000000-{CURRENT_NODE}"
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    completed = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return completed.stdout.strip()
 
 
 @pytest.fixture()

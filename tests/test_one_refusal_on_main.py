@@ -11,7 +11,6 @@ resting on the suite being green.
 from __future__ import annotations
 
 import json
-import subprocess
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -21,6 +20,7 @@ from reckon import _plan_html, _store, crew
 from reckon.crew import review as review_module
 from reckon.crew.runs import _write_json, pointer_path
 from tests.conftest import EXECUTABLE_GATE_COMMAND
+from tests.helpers.git import git as _git
 
 PROJECT = "proj"
 PLAN = "plan-a"
@@ -28,17 +28,6 @@ FILE = "reckon/region.py"
 # A stored record's carried revisions are resolved against the reviewed run's
 # own repository, so the store below passes the revision the run was
 # dispatched from rather than a stand-in.
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    completed = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return completed.stdout.strip()
 
 
 def _write_plan(path: Path) -> None:

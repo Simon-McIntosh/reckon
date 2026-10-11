@@ -9,7 +9,6 @@ refusal, rather than resting on the suite being green.
 from __future__ import annotations
 
 import json
-import subprocess
 from pathlib import Path
 
 import pytest
@@ -17,6 +16,7 @@ import pytest
 from reckon import _plan_html, _store, crew
 from reckon.crew.runs import _write_json, pointer_path
 from tests.conftest import EXECUTABLE_GATE_COMMAND
+from tests.helpers.git import git as _git
 
 PROJECT = "proj"
 PLAN = "plan-a"
@@ -48,17 +48,6 @@ def _write_plan(path: Path, state: dict) -> None:
         "</main></body></html>\n"
     )
     path.write_text(_plan_html.write_state(bare, state), encoding="utf-8")
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    completed = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return completed.stdout.strip()
 
 
 @pytest.fixture()

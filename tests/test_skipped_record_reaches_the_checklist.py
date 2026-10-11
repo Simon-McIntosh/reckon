@@ -29,6 +29,7 @@ import pytest
 
 from reckon.crew import obligation_snapshot, runs
 from reckon.crew import review as review_module
+from tests.helpers.git import git as _git
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 HOOK = REPO_ROOT / "reckon" / "hooks" / "coordinator_obligations.py"
@@ -36,17 +37,6 @@ PROJECT = "skipped-record-fixture"
 SESSION = "skipped-record-session"
 RUN_ID = "r-reviewed"
 _ABSENT_HARNESS_PID = 2_147_483_647
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    completed = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return completed.stdout.strip()
 
 
 @pytest.fixture()

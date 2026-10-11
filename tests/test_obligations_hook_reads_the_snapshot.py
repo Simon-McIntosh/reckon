@@ -35,6 +35,7 @@ import pytest
 from reckon.crew import obligation_snapshot, runs
 from reckon.crew.obligations import obligations as obligations_view
 from reckon.hooks.coordinator_obligations import format_checklist
+from tests.helpers.git import git as _git
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 HOOK = REPO_ROOT / "reckon" / "hooks" / "coordinator_obligations.py"
@@ -70,13 +71,6 @@ exit_code = main(["--hook", "prompt"])
 Path(sys.argv[1]).write_text(json.dumps(sorted(sys.modules)), encoding="utf-8")
 raise SystemExit(exit_code)
 """
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    completed = subprocess.run(
-        ["git", *arguments], cwd=repository, check=True, capture_output=True, text=True
-    )
-    return completed.stdout.strip()
 
 
 def _write_json(path: Path, document: object) -> None:

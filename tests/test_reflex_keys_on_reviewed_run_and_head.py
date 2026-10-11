@@ -23,12 +23,12 @@ from __future__ import annotations
 import importlib
 import json
 import os
-import subprocess
 from pathlib import Path
 
 import pytest
 
 from reckon.crew import recovery, review, runs
+from tests.helpers.git import git as _git
 
 PROJECT = "reflex-fixture"
 SESSION = "coordinator-fixture"
@@ -56,17 +56,6 @@ CONFIG = {
     "roles": {"implement": {}, "review": {}},
     "fences": {"time_budget": "25m", "needs_help_after_failures": 2},
 }
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    completed = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return completed.stdout.strip()
 
 
 def _seed_repository(home: Path, root: Path) -> None:

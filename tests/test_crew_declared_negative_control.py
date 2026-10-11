@@ -18,13 +18,13 @@ produced is kept beside the passing one under the node's report directory:
 from __future__ import annotations
 
 import json
-import subprocess
 from pathlib import Path
 
 import pytest
 
 from reckon import _plan_html, crew
 from reckon.crew.runs import _write_json, pointer_path
+from tests.helpers.git import git as _git
 
 PROJECT = "proj"
 PLAN = "plan-a"
@@ -52,17 +52,6 @@ DISPATCH_CONFIG = {
     "roles": {"implement": {}},
     "fences": {"time_budget": "25m", "needs_help_after_failures": 2},
 }
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    completed = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return completed.stdout.strip()
 
 
 @pytest.fixture()

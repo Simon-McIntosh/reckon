@@ -16,13 +16,13 @@ from __future__ import annotations
 
 import json
 import os
-import subprocess
 from pathlib import Path
 
 import pytest
 
 from reckon import crew, mcp
 from reckon.crew.runs import _write_json, pointer_path
+from tests.helpers.git import git as _git
 
 PROJECT = "proj"
 BRIEF_SHA = "b" * 64
@@ -39,17 +39,6 @@ _PLUMBING_WAIVER = (
     "the pytest process stands in for the worker; this fixture exercises "
     "promotion plumbing"
 )
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    completed = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return completed.stdout.strip()
 
 
 @pytest.fixture()

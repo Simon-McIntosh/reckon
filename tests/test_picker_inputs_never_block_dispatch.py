@@ -14,7 +14,6 @@ lets the picker fall back.
 from __future__ import annotations
 
 import json
-import subprocess
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -22,6 +21,7 @@ import pytest
 
 import reckon.crew.dispatch_picker as dispatch_picker_module
 from reckon import _plan_html, crew, ledger
+from tests.helpers.git import git as _git
 
 PROJECT = "proj"
 PLAN = "plan-a"
@@ -46,17 +46,6 @@ INPUT_BUILDERS = {
     "verdict_inputs": "_picker_verdict_inputs",
     "budget_snapshot": "_picker_budget_snapshot",
 }
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    completed = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return completed.stdout.strip()
 
 
 def _write_plan(path: Path, state: dict) -> None:

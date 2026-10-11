@@ -37,6 +37,7 @@ import pytest
 
 from reckon.crew.node import CrewError
 from reckon.crew.runs import _write_json, pointer_path, run_dir
+from tests.helpers.git import git as _git
 
 routing_module = importlib.import_module("reckon.crew.routing")
 promotion_module = importlib.import_module("reckon.crew.promotion")
@@ -48,17 +49,6 @@ WIDE_CLAIM = "_live_pointer_worktrees"
 PHASE_GATED_CLAIM = "_live_worktree_claims"
 
 REPOSITORY_ROOT = Path(__file__).resolve().parent.parent
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    completed = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return completed.stdout.strip()
 
 
 def _dead_pid() -> int:

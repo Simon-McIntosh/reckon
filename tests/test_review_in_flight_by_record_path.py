@@ -17,13 +17,13 @@ from __future__ import annotations
 
 import importlib
 import json
-import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 
 from reckon.crew import recovery, runs
+from tests.helpers.git import git as _git
 
 obligations_module = importlib.import_module("reckon.crew.obligations")
 
@@ -66,17 +66,6 @@ def _lane_config(*excluded: str) -> dict:
     if excluded:
         config[recovery.REVIEW_EXCLUDED_BACKENDS_KEY] = list(excluded)
     return config
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    completed = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return completed.stdout.strip()
 
 
 @pytest.fixture()

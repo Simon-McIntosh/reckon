@@ -12,7 +12,6 @@ reads the promotion that results.
 from __future__ import annotations
 
 import json
-import subprocess
 from pathlib import Path
 
 import pytest
@@ -21,20 +20,10 @@ from reckon import _plan_html, _store, crew
 from reckon.crew import promotion
 from reckon.crew import review as review_module
 from reckon.crew.runs import _write_json, pointer_path
+from tests.helpers.git import git as _git
 
 PROJECT = "proj"
 PLAN = "plan-a"
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    completed = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return completed.stdout.strip()
 
 
 def _write_plan_file(path: Path, state: dict) -> None:

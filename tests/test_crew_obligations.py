@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import importlib
 import json
-import subprocess
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -14,23 +13,13 @@ import pytest
 import reckon.crew.dispatch_sessions as dispatch_sessions_module
 from reckon.crew import recovery, runs
 from reckon.crew import review as review_module
+from tests.helpers.git import git as _git
 
 obligations_module = importlib.import_module("reckon.crew.obligations")
 
 PROJECT = "obligation-fixture"
 SESSION = "coordinator-fixture"
 OBSERVED_AT = datetime(2026, 9, 25, 12, 0, tzinfo=UTC)
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    completed = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return completed.stdout.strip()
 
 
 @pytest.fixture()

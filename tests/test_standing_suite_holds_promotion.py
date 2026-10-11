@@ -17,7 +17,6 @@ outside the temporary tree.
 from __future__ import annotations
 
 import json
-import subprocess
 import sys
 from pathlib import Path
 
@@ -31,6 +30,7 @@ from reckon.crew import standing_suite
 from reckon.crew.runs import _write_json, pointer_path
 from reckon.flight import SuiteDeclaration
 from tests.conftest import EXECUTABLE_GATE_COMMAND
+from tests.helpers.git import git as _git
 
 PROJECT = "proj"
 PLAN = "plan-a"
@@ -42,17 +42,6 @@ _COLLECTION_FAILURE = (sys.executable, "-c", "raise SystemExit(5)")
 _PASSING = (sys.executable, "-c", "raise SystemExit(0)")
 
 _SMALL_SOURCE = "def answer():\n    return 42\n"
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    completed = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return completed.stdout.strip()
 
 
 def _write_plan(root: Path) -> None:

@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import json
 import os
-import subprocess
 from pathlib import Path
 
 import pytest
@@ -22,6 +21,7 @@ from reckon import crew
 from reckon.crew import review as review_module
 from reckon.crew.runs import _write_json, pointer_path
 from tests.conftest import EXECUTABLE_GATE_COMMAND
+from tests.helpers.git import git as _git
 
 PROJECT = "matching-project"
 # Runtime source: a run changing it owes a review, which is the gate these
@@ -32,17 +32,6 @@ FILE = "reckon/region.py"
 # A stored record's carried revisions are resolved against the reviewed run's
 # own repository, so every store below passes the revision the run was
 # dispatched from rather than a stand-in.
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    completed = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return completed.stdout.strip()
 
 
 @pytest.fixture()
