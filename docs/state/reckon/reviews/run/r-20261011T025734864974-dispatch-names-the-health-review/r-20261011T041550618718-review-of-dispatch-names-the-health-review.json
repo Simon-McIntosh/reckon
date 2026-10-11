@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch_plan.py:644",
+    "reckon/crew/dispatch.py:477",
+    "reckon/crew/dispatch.py:658",
+    "reckon/crew/dispatch.py:833",
+    "reckon/crew_dispatch_commands.py:1356"
+  ],
+  "completed_at": "2026-10-11T04:22:11.315Z",
+  "dispatched_at": "2026-10-11T04:16:31Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_plan.py",
+      "line": "644",
+      "severity": "follow-on",
+      "text": "follow-on: the diff edits dispatch_plan.py, which \u00a79 does not declare as a write path (it names dispatch_admission.py, skills/reckon-build/SKILL.md and the test file); the payload is assembled there so the edit is necessary and the manifest follow_ons discloses it, but the coordinator must grant the scope for the block to reach the payload."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read all six commits 6b7a2c63..624314887; the block lands in dispatch_admission.py:811, is wired through dispatch_plan.py:644, a Shape-the-wave step joins skills/reckon-build/SKILL.md, tests are added, and the final commit 624314887 replaces a local open-findings filter with a call to plan_review._open_findings_for.",
+    "done_when": "the done_when names tests/test_dispatch_names_the_health_review.py; gate_head.log records 6 passed EXIT=0 and the file asserts all three named cases \u2014 no-stored-review names the command (:124), a review dated today is named with no command (:138), a docs-only node is null (:153) \u2014 plus the stale case (:166).",
+    "goal": "the node's goal is that an implementation dispatch's payload carries a health_review block; reckon/crew/dispatch_admission.py:811 _dispatch_health_review returns covered/stale/missing/unknown with age_days, open_findings and the compose command, and reckon/crew/dispatch_plan.py:644 sets payload health_review from it, matching the deliverable in \u00a79 and its docs-only null.",
+    "manifest": "read; it records the gate (6 passed EXIT=0 at gate_head.log), the negative control (3 failed 3 passed EXIT=1 at negative_control.log), the base/head population arms (3 failed 431 passed and 3 failed 437 passed, EXIT=1 each) and names the out-of-scope dispatch_plan.py edit in follow_ons.",
+    "write_paths": "\u00a79 declares reckon/crew/dispatch_admission.py, skills/reckon-build/SKILL.md and tests/test_dispatch_names_the_health_review.py; the diff also edits reckon/crew/dispatch_plan.py:644, inside no declared path (recorded in the manifest follow_ons)."
+  },
+  "justifications": {
+    "durability": "negative_control.log reinstates the coverage regression and reddens three cases at EXIT=1, and tests/test_dispatch_names_the_health_review.py:230 now asserts open_findings==2 from a three-finding one-exempted fixture, which the prior head left unguarded.",
+    "evidence": "gate_head.log records 6 passed EXIT=0 on the named file and negative_control.log reddens the coverage, stale and count cases at EXIT=1; the after_suite arm records revision 29185a66, so the final commit 624314887 is not itself covered by a population arm.",
+    "fit": "the block sits beside _dispatch_lane_advisory in reckon/crew/dispatch_admission.py:811 and its constants HEALTH_REVIEW_STALE_AFTER_DAYS and HEALTH_REVIEW_COMPOSE_VERB carry no plan, sprint or version label.",
+    "goal_fidelity": "reckon/crew/dispatch_admission.py:811 returns the block and reckon/crew/dispatch_plan.py:644 sets payload health_review from it, matching the deliverable in \u00a79 including the docs-only null at tests/test_dispatch_names_the_health_review.py:153.",
+    "reuse": "reckon/crew/dispatch_admission.py:864 now counts open findings through the owner plan_review._open_findings_for (plan_review.py:2438) rather than a filter of its own, and the code-neighbourhood coverage it adds has no prior owner \u2014 plan_review.py:781 review_coverage is a plan-content predicate.",
+    "scope_discipline": "every diff path is inside \u00a79's declared write paths except reckon/crew/dispatch_plan.py:644, which the manifest follow_ons discloses but no fence covers."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that an implementation dispatch's payload carries a health_review block; reckon/crew/dispatch_admission.py:811 _dispatch_health_review returns covered/stale/missing/unknown with age_days, open_findings and the compose command, and reckon/crew/dispatch_plan.py:644 sets payload health_review from it, matching the deliverable in \u00a79 and its docs-only null.\nVERDICT done_when: the done_when names tests/test_dispatch_names_the_health_review.py; gate_head.log records 6 passed EXIT=0 and the file asserts all three named cases \u2014 no-stored-review names the command (:124), a review dated today is named with no command (:138), a docs-only node is null (:153) \u2014 plus the stale case (:166).\nVERDICT write_paths: \u00a79 declares reckon/crew/dispatch_admission.py, skills/reckon-build/SKILL.md and tests/test_dispatch_names_the_health_review.py; the diff also edits reckon/crew/dispatch_plan.py:644, inside no declared path (recorded in the manifest follow_ons).\nVERDICT manifest: read; it records the gate (6 passed EXIT=0 at gate_head.log), the negative control (3 failed 3 passed EXIT=1 at negative_control.log), the base/head population arms (3 failed 431 passed and 3 failed 437 passed, EXIT=1 each) and names the out-of-scope dispatch_plan.py edit in follow_ons.\nVERDICT diff: read all six commits 6b7a2c63..624314887; the block lands in dispatch_admission.py:811, is wired through dispatch_plan.py:644, a Shape-the-wave step joins skills/reckon-build/SKILL.md, tests are added, and the final commit 624314887 replaces a local open-findings filter with a call to plan_review._open_findings_for.\nCALL_SITES: reckon/crew/dispatch_plan.py:644, reckon/crew/dispatch.py:477, reckon/crew/dispatch.py:658, reckon/crew/dispatch.py:833, reckon/crew_dispatch_commands.py:1356\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_admission.py:811 returns the block and reckon/crew/dispatch_plan.py:644 sets payload health_review from it, matching the deliverable in \u00a79 including the docs-only null at tests/test_dispatch_names_the_health_review.py:153.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate_head.log records 6 passed EXIT=0 on the named file and negative_control.log reddens the coverage, stale and count cases at EXIT=1; the after_suite arm records revision 29185a66, so the final commit 624314887 is not itself covered by a population arm.\nSCORE scope_discipline: 13\nJUSTIFICATION scope_discipline: every diff path is inside \u00a79's declared write paths except reckon/crew/dispatch_plan.py:644, which the manifest follow_ons discloses but no fence covers.\nSCORE durability: 17\nJUSTIFICATION durability: negative_control.log reinstates the coverage regression and reddens three cases at EXIT=1, and tests/test_dispatch_names_the_health_review.py:230 now asserts open_findings==2 from a three-finding one-exempted fixture, which the prior head left unguarded.\nSCORE fit: 18\nJUSTIFICATION fit: the block sits beside _dispatch_lane_advisory in reckon/crew/dispatch_admission.py:811 and its constants HEALTH_REVIEW_STALE_AFTER_DAYS and HEALTH_REVIEW_COMPOSE_VERB carry no plan, sprint or version label.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/crew/dispatch_admission.py:864 now counts open findings through the owner plan_review._open_findings_for (plan_review.py:2438) rather than a filter of its own, and the code-neighbourhood coverage it adds has no prior owner \u2014 plan_review.py:781 review_coverage is a plan-content predicate.\nFINDING reckon/crew/dispatch_plan.py:644 follow-on: the diff edits dispatch_plan.py, which \u00a79 does not declare as a write path (it names dispatch_admission.py, skills/reckon-build/SKILL.md and the test file); the payload is assembled there so the edit is necessary and the manifest follow_ons discloses it, but the coordinator must grant the scope for the block to reach the payload.\n",
+  "review_run_id": "r-20261011T041550618718-review-of-dispatch-names-the-health-review",
+  "reviewed_base_sha": "6b7a2c631b3c5e38665f5a43b8f3c89f8b51c78e",
+  "reviewed_head_sha": "624314887fde13d8026103bad40c8fcd717163cc",
+  "reviewed_run_id": "r-20261011T025734864974-dispatch-names-the-health-review",
+  "reviewer": {
+    "backend": "local",
+    "effort": "standard",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261011T041550618718-review-of-dispatch-names-the-health-review",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T04:26:00+00:00",
+  "total": 103
+}
