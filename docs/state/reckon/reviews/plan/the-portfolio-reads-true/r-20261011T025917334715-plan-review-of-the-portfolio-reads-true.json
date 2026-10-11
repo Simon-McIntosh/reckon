@@ -1,0 +1,36 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-11T03:05:21.990Z",
+  "dispatched_at": "2026-10-11T02:59:57Z",
+  "findings": [],
+  "plan_fingerprint": "6e344c54abf861fedb338f4e2e0033168994330a48eb0a62931aca77748b463b",
+  "plan_slug": "the-portfolio-reads-true",
+  "plan_version": 42,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261011T025917334715-plan-review-of-the-portfolio-reads-true",
+  "reviewed_blob_sha": "5c4cf3b46bb91a5996e21e3a8a5805fc28bf9d77",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every anchor in \u00a77 resolves: execution_gates (reckon/roadmap.py:783), the exact expression unpassed_gate_blockers(execution_gates(plan)) at roadmap.py:3132, unpassed_gate_blockers (reckon/lifecycle.py:52), the \u00a77 gate field gated_sections (roadmap.py:331, _schema.py:1105), gate_blockers/effective_status/ready_now on the roadmap row (roadmap.py:3250/3221/ready_now), the cited comment c-gate-blocks-plan-1010 (plan line 215), tests/test_roadmap.py::test_gate_verdict_blocks_and_releases_downstream_sections_without_status_edit (test_roadmap.py:1394), and the reckon-create/reckon-edit wiring rules that prefer a section gate to a plan-level wire (skills/reckon-create/SKILL.md:122-132, skills/reckon-edit/SKILL.md:265-268).",
+    "done_when": "pass \u2014 \u00a77's done-when names a runnable test (tests/test_a_section_gate_holds_its_sections.py) with four plans p/q/r/t covering both directions, and declares a negative control (the shared function returning every unpassed gate as plan-holding makes p read blocked and the test fail) that would fail on the unfixed code.",
+    "evidence_paths": "pass \u2014 \u00a77's only named durable path is tests/test_a_section_gate_holds_its_sections.py in the repository; no session scratchpad or node-local temporary path is named.",
+    "naming": "pass \u2014 \u00a77's deliverable introduces one function name and one row field; no plan label, stage name, ticket number or version tag reaches a symbol or comment, and the mechanism is stated (a gate holds its sections) rather than the plan item.",
+    "reasoning": "pass \u2014 the stated root cause matches the cited evidence: roadmap.py:3132 builds gate_blockers from unpassed_gate_blockers(execution_gates(plan)) with no section filter, and roadmap.py:3183-3200 lets any entry clear is_ready and set is_blocked, which is exactly the \"blocked whatever sections the gate names\" the section names; the mechanism produces the done-when (a plan declaring an implementable section outside its unpassed gates' sections keeps those gates out of gate_blockers and reads ready, while p/q/r/t each land in the correct bucket), and it runs on the real code paths with all three callers named (roadmap.py:3132, serve.py:2261, mcp_views.py:2470 \u2014 the only three call sites of the cited expression). The boundary that prior review finding reasoning-1 flagged is now written into the deliverable (\"a plan that declares no implementable section outside the sections its unpassed gates name is held... including a plan with no section declarations at all\"), and the pinned test it must keep true declares no sections (tests/test_roadmap.py:17-50 builds _plan with no section_declarations key), so it stays plan-held and blocked as the plan claims.",
+    "single_goal": "pass \u2014 one deliverable: a section gate holds only its named sections; the three readers are the same change applied wherever the same helper is consumed, not a second goal.",
+    "wiring": "pass \u2014 \u00a77 declares its ordering (\"This section runs after \u00a75, which also writes reckon/roadmap.py\") and the driving followup f-tprt-003 carries the \u00a75 \u2192 \u00a77 \u2192 \u00a76 dispatch order, so the section is reachable; \u00a77 needs no gate of its own because its evidence is its own test and negative control, not another node's output."
+  },
+  "section_digests": {
+    "_document": "2e0e84b1f09a1086bd12d11d5885ccb196358b6752c5c1932162c1e3569ff81f",
+    "s1": "56204248c9050844c40ac7e00bff909830602caaa4b95be87bacea51b1495a03",
+    "s2": "69b86246adb4ea89719f367ac57f43940ed14fb88c5c89408cf18a6b59911f57",
+    "s3": "5902125b920ccad233230b403ba1e4cb62c75743d8265014bc35f38e0c9915c3",
+    "s4": "9280ec81cafc36b7de1295b0f22745c6162986e93d9731a8e8b99c51d658a217",
+    "s5": "e5d24ffe43f8fdfcdb88130b1632bc368dc94fd8641f628befb77b4c1f95b435",
+    "s6": "3b386242a01bc207ce0810ef1ee5ccbd8a9d5ea78f77a5dd6fc61b2f207c53d0",
+    "s7": "b5d0f90a4e8a113321b55e0ed0aeaa0624369e3b41b03dde61dc10c9a6f8e5ef"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T03:06:41.652281+00:00"
+}
