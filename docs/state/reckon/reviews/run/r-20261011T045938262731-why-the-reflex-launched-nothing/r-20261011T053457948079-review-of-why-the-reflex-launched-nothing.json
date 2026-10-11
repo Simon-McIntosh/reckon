@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed run ran no gate, so its manifest names no baseline_suite or after_suite log and the added-failure count was not taken",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/recovery_review_acceptance.py:dispatch_awaiting_reviews",
+    "reckon/crew/recovery_review_dispatch.py:dispatch_review_for_run",
+    "reckon/crew/recovery_review_dispatch.py:review_head_move",
+    "reckon/crew/recovery_review_dispatch.py:carry_review_forward",
+    "reckon/crew/recovery_watch.py:recover"
+  ],
+  "completed_at": "2026-10-11T05:42:44.856Z",
+  "dispatched_at": "2026-10-11T05:35:24Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/health-review-1010/why-the-reflex-launched-nothing/report.md",
+      "line": "111",
+      "severity": "follow-on",
+      "text": "follow-on: the contrast prose says \"Fifteen dispatches\" while the table beneath it names sixteen dispatched reviews (L1 and L8 each carry two), so a reader counting the table's entries gets a different figure than the sentence states."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "none; the run committed nothing past its base 1af0e790, so the deliverable is read as the report's claims rather than as a code diff.",
+    "done_when": "the measure names a cause per delivery cited to a watch-log line or a reproduced return value, an unexplained list, a contrast set, and a reproduction of review_head_move; report.md carries each, and I re-ran reproduce_review_head_move.py (EXIT=0) whose printed JSON matches the report's block verbatim.",
+    "goal": "the node goal is to explain why the review reflex launched no review for nine deliveries; report.md does so for all nine, splitting them into the tier-gate group (six) and the reached-then-refused group (runs 7-9), and names dispatch_review_for_run() in reckon/crew/recovery_review_dispatch.py as the function the next section must change.",
+    "manifest": "read; it records a read-only investigation, no test run, and cites the reproduction log; its changed_paths are the four files in the fenced directory.",
+    "write_paths": "the manifest declares one path, the reports/reckon/health-review-1010/why-the-reflex-launched-nothing directory; the run committed nothing and every artefact (report.md, reproduce_review_head_move.py, reproduce.log, recovery-2026-10-11.jsonl) sits inside it."
+  },
+  "justifications": {
+    "durability": "the reproduction (reproduce_review_head_move.py, EXIT=0) is a re-runnable check whose output is independent of the report's prose, but it prints rather than asserts and pins the pre-move stored record, so it detects drift in review_head_move but not in the report's other claims.",
+    "evidence": "I re-ran reproduce_review_head_move.py and it returned the report's exact JSON, and each of the tier-none citations (L5-L8, L11-L12, L36, L39, L42, L45, L46) and the refusal citations (L12, L13, L14, L42) resolve to the claimed content in recovery-2026-10-11.jsonl.",
+    "fit": "report.md and reproduce_review_head_move.py carry no plan, sprint or ticket label and use the repository's naming idiom; the script rides the module's own reader through one monkeypatch rather than forking it.",
+    "goal_fidelity": "report.md explains all nine deliveries and names dispatch_review_for_run() (reckon/crew/recovery_review_dispatch.py:1279) as the next section's change, matching the node goal and the plan's section-2 deliverable.",
+    "reuse": "the reproduction calls the repository's own review_head_move and _run_head_for_review in reckon/crew/recovery_review_dispatch.py rather than re-implementing the head-move logic, so no owner is forked.",
+    "scope_discipline": "the run wrote only inside its fenced reports directory and made no repository commit, as its manifest's changed_paths and its base-equals-head revision pair show."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to explain why the review reflex launched no review for nine deliveries; report.md does so for all nine, splitting them into the tier-gate group (six) and the reached-then-refused group (runs 7-9), and names dispatch_review_for_run() in reckon/crew/recovery_review_dispatch.py as the function the next section must change.\nVERDICT done_when: the measure names a cause per delivery cited to a watch-log line or a reproduced return value, an unexplained list, a contrast set, and a reproduction of review_head_move; report.md carries each, and I re-ran reproduce_review_head_move.py (EXIT=0) whose printed JSON matches the report's block verbatim.\nVERDICT write_paths: the manifest declares one path, the reports/reckon/health-review-1010/why-the-reflex-launched-nothing directory; the run committed nothing and every artefact (report.md, reproduce_review_head_move.py, reproduce.log, recovery-2026-10-11.jsonl) sits inside it.\nVERDICT manifest: read; it records a read-only investigation, no test run, and cites the reproduction log; its changed_paths are the four files in the fenced directory.\nVERDICT diff: none; the run committed nothing past its base 1af0e790, so the deliverable is read as the report's claims rather than as a code diff.\nCALL_SITES: reckon/crew/recovery_review_acceptance.py:dispatch_awaiting_reviews, reckon/crew/recovery_review_dispatch.py:dispatch_review_for_run, reckon/crew/recovery_review_dispatch.py:review_head_move, reckon/crew/recovery_review_dispatch.py:carry_review_forward, reckon/crew/recovery_watch.py:recover\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: report.md explains all nine deliveries and names dispatch_review_for_run() (reckon/crew/recovery_review_dispatch.py:1279) as the next section's change, matching the node goal and the plan's section-2 deliverable.\nSCORE evidence: 18\nJUSTIFICATION evidence: I re-ran reproduce_review_head_move.py and it returned the report's exact JSON, and each of the tier-none citations (L5-L8, L11-L12, L36, L39, L42, L45, L46) and the refusal citations (L12, L13, L14, L42) resolve to the claimed content in recovery-2026-10-11.jsonl.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the run wrote only inside its fenced reports directory and made no repository commit, as its manifest's changed_paths and its base-equals-head revision pair show.\nSCORE durability: 16\nJUSTIFICATION durability: the reproduction (reproduce_review_head_move.py, EXIT=0) is a re-runnable check whose output is independent of the report's prose, but it prints rather than asserts and pins the pre-move stored record, so it detects drift in review_head_move but not in the report's other claims.\nSCORE fit: 18\nJUSTIFICATION fit: report.md and reproduce_review_head_move.py carry no plan, sprint or ticket label and use the repository's naming idiom; the script rides the module's own reader through one monkeypatch rather than forking it.\nSCORE reuse: 20\nJUSTIFICATION reuse: the reproduction calls the repository's own review_head_move and _run_head_for_review in reckon/crew/recovery_review_dispatch.py rather than re-implementing the head-move logic, so no owner is forked.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/health-review-1010/why-the-reflex-launched-nothing/report.md:111 follow-on: the contrast prose says \"Fifteen dispatches\" while the table beneath it names sixteen dispatched reviews (L1 and L8 each carry two), so a reader counting the table's entries gets a different figure than the sentence states.\n",
+  "review_run_id": "r-20261011T053457948079-review-of-why-the-reflex-launched-nothing",
+  "reviewed_base_sha": "1af0e790cfe689d01d5a4735dab497615998d7d1",
+  "reviewed_head_sha": "1af0e790cfe689d01d5a4735dab497615998d7d1",
+  "reviewed_run_id": "r-20261011T045938262731-why-the-reflex-launched-nothing",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T05:41:39.997261+00:00",
+  "total": 111
+}
