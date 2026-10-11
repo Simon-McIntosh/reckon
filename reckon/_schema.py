@@ -1181,9 +1181,9 @@ class PlanState(BaseModel):
         gt=0,
         multiple_of=0.25,
         description=(
-            "Elapsed hours from the plan-wall-clock-hours meta, assuming the "
-            "maximum parallelism the plan itself supports. Never exceeds "
-            "effort_hours; equals it for strictly sequential work."
+            "Elapsed hours, assuming the maximum parallelism the plan itself "
+            "supports. Never exceeds effort_hours; equals it for strictly "
+            "sequential work."
         ),
     )
     effort_calibrated: bool | None = Field(
@@ -1198,14 +1198,13 @@ class PlanState(BaseModel):
     )
     milestone: str = Field(
         "",
-        description="Milestone identifier, or empty when unassigned",
+        description="Identifier, or empty when unassigned",
         json_schema_extra={"pattern": _OPTIONAL_IDENTIFIER_PATTERN},
     )
     sprint: str | None = Field(
         None,
         description=(
-            "Sprint ref this plan belongs to. Bare 'id' = same-project; "
-            "'project:id' = external (cross-project)."
+            "Bare 'id' = same-project; 'project:id' = external (cross-project)."
         ),
     )
     graph_handle: str | None = Field(
@@ -1296,8 +1295,7 @@ class PlanState(BaseModel):
         default=None,
         description=(
             "One-sentence reason this plan genuinely stands alone — it waits on "
-            "no other plan and feeds none. Persisted as <meta name="
-            '"plan-standalone">. Absent means the plan must declare '
+            "no other plan and feeds none. Absent means the plan must declare "
             "depends_on, blocks, informs or a gate."
         ),
     )
@@ -1308,10 +1306,9 @@ class PlanState(BaseModel):
     impl_source: str = Field(
         "",
         description=(
-            "How the impl fraction was obtained: 'computed' from typed section "
-            "records, 'declarations' by count from the section declarations while "
-            "the records do not cover them, or 'authored' from the plan-impl meta. "
-            "Absent when no source produced a figure."
+            "'computed' from typed section records, 'declarations' by count, "
+            "'authored' from plan-impl meta; absent when no source produced a "
+            "figure."
         ),
         json_schema_extra=_enum(IMPL_SOURCE_ENUM),
     )
