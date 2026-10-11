@@ -108,6 +108,7 @@ class DispatchPlan:
     orchestrator_lane_stop: dict[str, Any] | None = None
     orchestrator_lane_override: dict[str, str] | None = None
     lane_advisory: dict[str, Any] | None = None
+    health_review: dict[str, Any] | None = None
     open_endedness: float | None = None
     picker_selection: dict[str, Any] | None = None
     route: str = "shadow"
@@ -133,6 +134,9 @@ class DispatchPlan:
             "local": self.local,
             "lane_advisory": (
                 None if self.lane_advisory is None else dict(self.lane_advisory)
+            ),
+            "health_review": (
+                None if self.health_review is None else dict(self.health_review)
             ),
             "lane_declaration": (
                 None if self.lane_declaration is None else dict(self.lane_declaration)
@@ -583,6 +587,7 @@ def plan_dispatch(
             )
     lane_declaration: dict[str, Any] | None = None
     lane_advisory: dict[str, Any] | None = None
+    health_review: dict[str, Any] | None = None
     if verdict.ok:
         ledger_root = (
             resolve_dispatch_ledger_root(resolved_authority)
@@ -636,6 +641,13 @@ def plan_dispatch(
                     ),
                 ],
             )
+        health_review = _dispatch_health_review(
+            project=project,
+            plan=str(node.plan or ""),
+            session=session,
+            node=node,
+            root=repo,
+        )
     if not verdict.ok:
         verdict = NodeValidation(
             ok=False,
@@ -707,6 +719,7 @@ def plan_dispatch(
         orchestrator_lane_stop=orchestrator_lane_stop,
         orchestrator_lane_override=orchestrator_lane_override,
         lane_advisory=lane_advisory,
+        health_review=health_review,
         open_endedness=open_endedness,
         # A resolved plan records the picker answer only when the route used it.
         # A shadow (or deterministic) preview reads the same whatever the picker
@@ -1272,6 +1285,7 @@ from .dispatch_admission import (  # noqa: E402
     _brief_digest,
     _brief_record,
     _dispatch_fleet_gate,
+    _dispatch_health_review,
     _dispatch_lane_advisory,
     _dispatch_lane_gate,
     _dispatch_lane_observation,
