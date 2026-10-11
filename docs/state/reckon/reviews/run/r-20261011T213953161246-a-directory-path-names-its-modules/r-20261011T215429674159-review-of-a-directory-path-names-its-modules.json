@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "backend": "clive",
+  "base_log_revision": null,
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:2108"
+  ],
+  "completed_at": "2026-10-11T22:04:30.890Z",
+  "dispatched_at": "2026-10-11T21:54:52Z",
+  "findings": [
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": "2384",
+      "severity": "follow-on",
+      "text": "follow-on: `_module_probes` re-expresses the token normalisation that served_code.neighbourhood's inner `as_module` already performs at served_code.py:1031; no exported owner exists and the brief fenced served_code.py, so the normalisation is duplicated rather than shared."
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": "2497",
+      "severity": "follow-on",
+      "text": "follow-on: expansion resolves against served_code.package_modules, whose snapshot is scoped to a `reckon/` subtree (served_code.py:777), so a directory under a package not named `reckon` resolves to no module and is refused by name; for the downstream project named in the defect the symptom becomes a refusal rather than the intended expansion."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against 9c2fe70cf; the single commit f6a999b08 changes plan_review.py and adds tests/test_a_directory_path_names_its_modules.py; both inside the declared scope.",
+    "done_when": "the done_when names tests/test_a_directory_path_names_its_modules.py and four behaviours (subpackage expansion listing exactly its two modules, refusal of a moduleless directory by name, a single file composing as at base, a removing-the-expansion negative control); the manifest records the gate and the control and the logs are on disk.",
+    "goal": "the reviewed node's goal is \"a code review's directory path expands to the production modules beneath it\"; the landed `_expand_code_review_paths` (reckon/crew/plan_review.py:2417) replaces each `--path` token with the production modules beneath it, so a directory names its modules and a token resolving to none is refused by name (plan_review.py:2488).",
+    "manifest": "read; it states the head arm 3 passed at EXIT=0, the importer arm 4 passed at EXIT=0, the negative control 1 failed/2 passed at EXIT=1, names the three log paths, and records the commit f6a999b08.",
+    "write_paths": "the source node's declared write paths are reckon/crew/plan_review.py, tests/test_a_directory_path_names_its_modules.py, docs/evidence/fragments/the-codebase-is-reviewed-between-nodes/a-directory-path-names-its-modules.html and docs/figures/.../a-directory-path-names-its-modules; both files in the diff are inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_directory_path_names_its_modules.py:84 fails when the expansion is removed, as the recorded negative control shows at EXIT=1, and :90 and :96 guard the refusal and the file pass-through.",
+    "evidence": "the done_when names tests/test_a_directory_path_names_its_modules.py, and its recorded run (head.log: 3 passed, EXIT=0; negative-control.log: 1 failed/2 passed, EXIT=1; importers.log: 4 passed, EXIT=0) asserts the exact measure called for.",
+    "fit": "the four helpers (reckon/crew/plan_review.py:2373-2488) follow the module's private-helper idiom with docstrings, the commit body is present, and no banned name or plan identifier appears.",
+    "goal_fidelity": "reckon/crew/plan_review.py:2497-2502 routes each `--path` through `_expand_code_review_paths`, expanding a directory to its modules and refusing a token that names none, which is the goal; the snapshot is scoped to a `reckon/` package (served_code.py:777), so a directory under a differently named downstream package is refused rather than expanded.",
+    "reuse": "the expansion calls served_code.package_modules (the owner of the snapshot's module set, served_code.py:1004) rather than walking the filesystem, though _module_probes re-expresses the token normalisation neighbourhood's inner as_module already performs (served_code.py:1031).",
+    "scope_discipline": "the diff touches only reckon/crew/plan_review.py and tests/test_a_directory_path_names_its_modules.py, both declared write paths, and no plan, ledger or index state."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is \"a code review's directory path expands to the production modules beneath it\"; the landed `_expand_code_review_paths` (reckon/crew/plan_review.py:2417) replaces each `--path` token with the production modules beneath it, so a directory names its modules and a token resolving to none is refused by name (plan_review.py:2488).\nVERDICT done_when: the done_when names tests/test_a_directory_path_names_its_modules.py and four behaviours (subpackage expansion listing exactly its two modules, refusal of a moduleless directory by name, a single file composing as at base, a removing-the-expansion negative control); the manifest records the gate and the control and the logs are on disk.\nVERDICT write_paths: the source node's declared write paths are reckon/crew/plan_review.py, tests/test_a_directory_path_names_its_modules.py, docs/evidence/fragments/the-codebase-is-reviewed-between-nodes/a-directory-path-names-its-modules.html and docs/figures/.../a-directory-path-names-its-modules; both files in the diff are inside them.\nVERDICT manifest: read; it states the head arm 3 passed at EXIT=0, the importer arm 4 passed at EXIT=0, the negative control 1 failed/2 passed at EXIT=1, names the three log paths, and records the commit f6a999b08.\nVERDICT diff: read commit by commit against 9c2fe70cf; the single commit f6a999b08 changes plan_review.py and adds tests/test_a_directory_path_names_its_modules.py; both inside the declared scope.\nCALL_SITES: reckon/crew_dispatch_commands.py:2108\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:2497-2502 routes each `--path` through `_expand_code_review_paths`, expanding a directory to its modules and refusing a token that names none, which is the goal; the snapshot is scoped to a `reckon/` package (served_code.py:777), so a directory under a differently named downstream package is refused rather than expanded.\nSCORE evidence: 19\nJUSTIFICATION evidence: the done_when names tests/test_a_directory_path_names_its_modules.py, and its recorded run (head.log: 3 passed, EXIT=0; negative-control.log: 1 failed/2 passed, EXIT=1; importers.log: 4 passed, EXIT=0) asserts the exact measure called for.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches only reckon/crew/plan_review.py and tests/test_a_directory_path_names_its_modules.py, both declared write paths, and no plan, ledger or index state.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_directory_path_names_its_modules.py:84 fails when the expansion is removed, as the recorded negative control shows at EXIT=1, and :90 and :96 guard the refusal and the file pass-through.\nSCORE fit: 18\nJUSTIFICATION fit: the four helpers (reckon/crew/plan_review.py:2373-2488) follow the module's private-helper idiom with docstrings, the commit body is present, and no banned name or plan identifier appears.\nSCORE reuse: 17\nJUSTIFICATION reuse: the expansion calls served_code.package_modules (the owner of the snapshot's module set, served_code.py:1004) rather than walking the filesystem, though _module_probes re-expresses the token normalisation neighbourhood's inner as_module already performs (served_code.py:1031).\nFINDING reckon/crew/plan_review.py:2384 follow-on: `_module_probes` re-expresses the token normalisation that served_code.neighbourhood's inner `as_module` already performs at served_code.py:1031; no exported owner exists and the brief fenced served_code.py, so the normalisation is duplicated rather than shared.\nFINDING reckon/crew/plan_review.py:2497 follow-on: expansion resolves against served_code.package_modules, whose snapshot is scoped to a `reckon/` subtree (served_code.py:777), so a directory under a package not named `reckon` resolves to no module and is refused by name; for the downstream project named in the defect the symptom becomes a refusal rather than the intended expansion.\n",
+  "review_run_id": "r-20261011T215429674159-review-of-a-directory-path-names-its-modules",
+  "reviewed_base_sha": "9c2fe70cf5a6a958e887b16fe65882cd51ca8661",
+  "reviewed_head_sha": "f6a999b089da3ae297f32d1517721bb48d01b78d",
+  "reviewed_run_id": "r-20261011T213953161246-a-directory-path-names-its-modules",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T22:21:57.773162+00:00",
+  "total": 109
+}

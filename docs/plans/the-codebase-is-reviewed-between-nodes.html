@@ -25,7 +25,7 @@
   <title>The Codebase Is Reviewed Between Nodes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="49">
+<meta name="plan-version" content="50">
 <meta name="plan-modified" content="2026-10-12">
 </head>
 <body>
@@ -415,6 +415,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261011T213953161246-a-directory-path-names-its-modules" data-who="reckon-build" data-when="2026-10-11T21:53:52.977Z">
     <div class="r-comment-body"><p>a --path naming a directory now expands to the production modules beneath it in the package snapshot at the reviewed head (test_a_subpackage_directory_expands_to_its_modules: named paths exactly reckon.sub.mod_a and reckon.sub.mod_b, both listed in the brief); a path resolving to no production module is refused by name (test_a_directory_with_no_module_is_refused_by_name); a single-file path composes as at base (test_a_single_file_path_composes_as_at_base). The declared negative control (remove the directory expansion) fails the subpackage case with no named modules.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261011T215429674159-review-of-a-directory-path-names-its-modules" data-who="reckon-build" data-when="2026-10-11T22:04:30.890Z">
+    <div class="r-comment-body"><p>stored the parsed review of r-20261011T213953161246-a-directory-path-names-its-modules at reviewed_base_sha 9c2fe70cf5a6a958e887b16fe65882cd51ca8661 / reviewed_head_sha f6a999b089da3ae297f32d1517721bb48d01b78d; scores goal_fidelity 18, evidence 19, scope_discipline 19, durability 18, fit 18, reuse 17 (total 109); two follow-on findings (token-normalisation duplication at plan_review.py:2384; reckon-scoped snapshot boundary at plan_review.py:2497).</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-s11-known-gate-hole-1011" data-who="reckon-build" data-when="2026-10-11T04:20:00Z">
     <div class="r-comment-body"><p>A known finding for the proving run's neighbourhood, measured on 2026-10-11. The contradiction guard in <code>reckon/crew/promotion_evidence.py</code> refuses a passing gate only when an asserted exit status differs from the log's <code>EXIT=</code> record. With no <code>--gate-exit-status</code>, the status is taken from the log itself, so a log recording <code>EXIT=1</code> promotes as <code>gate: passed</code> with <code>exit_status: 1</code> stored side by side. The guard compares equal values and finds nothing. It happened on run <code>r-20261011T003218530440-schema-view-within-bound</code>, which was promoted citing its base arm; the ledger row was corrected at the next commit after <code>2d3275928</code>. The same guard refused the identical mistake when the status was passed explicitly. A passing verdict with a non-zero exit status is itself the contradiction, so the review this section runs should read it as a known finding, not report it as new.</p></div>
