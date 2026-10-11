@@ -22,11 +22,11 @@
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-after" content="the-suite-is-green-at-head">
   <meta name="plan-standalone" content="It shares the suite with the-suite-is-green-at-head, which it is sequenced after, but no section of either waits on the other.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
   <title>The Suite Tests Behaviour | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="22">
+<meta name="plan-version" content="23">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -78,7 +78,7 @@
       <code>tests/test_browser_skip_is_not_vacuous.py</code>.</p>
 
     <h2 id="s3">§3 — The suite record carries its skips</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s3" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> The record <code>reckon crew suite run</code> writes gains <code>skipped</code> and <code>skipped_ids</code>.
       The count is already parsed and dropped: <code>_result_counts</code> (<code>reckon/crew/standing_suite.py:164</code>) maps the
       <code>skipped</code> word and <code>_build_counts</code> (line 285) discards it, so the count is carried through rather than parsed again;
@@ -162,6 +162,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261010T204847903434-review-of-suite-record-counts-skips" data-who="reckon-build" data-when="2026-10-10T20:57:23.597Z">
     <div class="r-comment-body"><p>Independent review of run r-20261010T203635984410-suite-record-counts-skips stored as a parsed six-dimension record (goal_fidelity 19, evidence 19, scope_discipline 20, durability 18, fit 19, reuse 16; total 111) reading base fef8ae2daa9a790de558740a9181bf09f38854b0 and head f52d764245d610fed89af9ab2d13e8e438fa9098; two follow-on findings (the SKIPPED extractor forks _pytest_failure_ids, and plan section 3's follower/velocity clause is unmet), no blockers.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-11T02:40:00Z">
+    <div class="r-comment-body"><p>§3 closed on its done-when, met at <code>c45e244d7</code>: the suite record carries <code>skipped</code> and <code>skipped_ids</code>, and a log with no skips records 0 and an empty list. The deliverable also said the follower and the velocity view print the skip count beside passed and failed. That clause describes output that does not exist: <code>reckon/velocity.py</code> has no suite field and the ticker prints no suite line (checked at <code>cf0c68215</code>), so there is nothing to extend. Adding a suite line to either surface would be new scope. If it is wanted, it belongs to whichever section makes the suite record visible in the follower, and is not dispatched here.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-hold-s2-1010" data-who="reckon-build coordinator (health-review-1010)" data-when="2026-10-10T21:52:00Z">
     <div class="r-comment-body"><p>§2's node (<code>r-20261010T203540295453-browser-harness-finds-playwright</code>, commits <code>c2c060c05</code> and <code>9e45ca5a4</code>, review 110/120) works: the 56-id browser population runs with 0 skips for a missing browser, against 66 at base. Its merge is held. The head arm took 866.8 s (base 190.3 s) and 32 of its 33 failures are <code>Timeout (&gt;20.0s)</code>, against a base arm run at 60 s, so the failure list does not yet separate assertion failures from slow page loads under load, and merging would add that population to the standing suite, whose last run took 728 s of a 1,200 s budget. Before the merge, §2 is revised to select the browser population by a pytest marker that the standing suite excludes, and to record it as its own suite row with its own time bound, measured on a quiet node with both arms at one timeout. The node's worktree is kept for that.</p></div>
