@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "1dd2de54704216d0580667ba4fe1bd7a2dea00ab",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/velocity.py:2983"
+  ],
+  "completed_at": "2026-10-11T05:05:55.248Z",
+  "dispatched_at": "2026-10-11T04:57:24Z",
+  "findings": [
+    {
+      "file": "reckon/velocity.py",
+      "line": "2733",
+      "severity": "follow-on",
+      "text": "follow-on: the field's review, finding and disposition counts are read from the whole code-review store (list_code_reviews(project), never narrowed by the window) while treatments and product_lines are windowed, so a figure the docstring and section 10 both describe as 'for the window' is a lifetime total."
+    },
+    {
+      "file": "reckon/velocity.py",
+      "line": "2690",
+      "severity": "follow-on",
+      "text": "follow-on: _FOLDED_DISPOSITION_PREFIX = \"folded:\" re-states the disposition encoding finding_disposition (reckon/crew/findings.py:189) already owns, so this module forks the owner's format instead of extending it."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read against 1dd2de547; 021beb93c adds the health_reviews field and its helpers to reckon/velocity.py, the gate test, and the evidence fragment \u2014 three files, all inside scope.",
+    "done_when": "the done_when names tests/test_velocity_counts_health_reviews.py asserting 3 reviews, 1 of 2 treatments promoted, -40 product lines and the dispositions by kind; the manifest records 7 passed EXIT=0 and I re-ran that file to 7 passed EXIT=0.",
+    "goal": "the node goal is a velocity health_reviews field reporting the code-mode review yield; reckon/velocity.py:2693 defines health_reviews and reckon/velocity.py:2983 attaches it to the summary.",
+    "manifest": "read; it states the gate 7 passed EXIT=0, the velocity-importing suite head 98 passed and base 91 passed 1 failed (git-less extraction), and the negative control 1 failed 6 passed EXIT=1.",
+    "write_paths": "declared scope is reckon/velocity.py, tests/test_velocity_counts_health_reviews.py, the evidence fragment and a figures dir; every path in the diff is inside it."
+  },
+  "justifications": {
+    "durability": "the negative control (reckon/velocity.py:2814 via test_velocity_counts_health_reviews.py:226) reddens test_one_of_two_treatments_promoted_and_the_line_delta, but the two stop-rule assertions at tests/test_velocity_counts_health_reviews.py:272-278 are near-tautological and add little guard.",
+    "evidence": "tests/test_velocity_counts_health_reviews.py asserts the done_when's exact figures and the reviewed manifest's gate-head.log records 7 passed EXIT=0; I re-ran that file to 7 passed EXIT=0 (review-gate-confirm.log).",
+    "fit": "the field matches velocity.py's block idiom and is registered in OPTIONAL_BLOCKS (reckon/velocity.py:3028), the same way clones and interfaces are, and introduces no name the naming rules forbid.",
+    "goal_fidelity": "reckon/velocity.py:2693 delivers and 2983 serves the field, but its review/finding/disposition counts (2753-2771) are lifetime rather than windowed.",
+    "reuse": "it reuses plan_review.list_code_reviews, findings.finding_disposition and measure's promoted cohort and commits, but velocity.py:2690 forks the folded: encoding findings.py:189 owns.",
+    "scope_discipline": "the diff touches only reckon/velocity.py, tests/test_velocity_counts_health_reviews.py and docs/evidence/fragments/the-codebase-is-reviewed-between-nodes/velocity-counts-health-reviews.html, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is a velocity health_reviews field reporting the code-mode review yield; reckon/velocity.py:2693 defines health_reviews and reckon/velocity.py:2983 attaches it to the summary.\nVERDICT done_when: the done_when names tests/test_velocity_counts_health_reviews.py asserting 3 reviews, 1 of 2 treatments promoted, -40 product lines and the dispositions by kind; the manifest records 7 passed EXIT=0 and I re-ran that file to 7 passed EXIT=0.\nVERDICT write_paths: declared scope is reckon/velocity.py, tests/test_velocity_counts_health_reviews.py, the evidence fragment and a figures dir; every path in the diff is inside it.\nVERDICT manifest: read; it states the gate 7 passed EXIT=0, the velocity-importing suite head 98 passed and base 91 passed 1 failed (git-less extraction), and the negative control 1 failed 6 passed EXIT=1.\nVERDICT diff: read against 1dd2de547; 021beb93c adds the health_reviews field and its helpers to reckon/velocity.py, the gate test, and the evidence fragment \u2014 three files, all inside scope.\nCALL_SITES: reckon/velocity.py:2983\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/velocity.py:2693 delivers and 2983 serves the field, but its review/finding/disposition counts (2753-2771) are lifetime rather than windowed.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_velocity_counts_health_reviews.py asserts the done_when's exact figures and the reviewed manifest's gate-head.log records 7 passed EXIT=0; I re-ran that file to 7 passed EXIT=0 (review-gate-confirm.log).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only reckon/velocity.py, tests/test_velocity_counts_health_reviews.py and docs/evidence/fragments/the-codebase-is-reviewed-between-nodes/velocity-counts-health-reviews.html, all inside the declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: the negative control (reckon/velocity.py:2814 via test_velocity_counts_health_reviews.py:226) reddens test_one_of_two_treatments_promoted_and_the_line_delta, but the two stop-rule assertions at tests/test_velocity_counts_health_reviews.py:272-278 are near-tautological and add little guard.\nSCORE fit: 19\nJUSTIFICATION fit: the field matches velocity.py's block idiom and is registered in OPTIONAL_BLOCKS (reckon/velocity.py:3028), the same way clones and interfaces are, and introduces no name the naming rules forbid.\nSCORE reuse: 16\nJUSTIFICATION reuse: it reuses plan_review.list_code_reviews, findings.finding_disposition and measure's promoted cohort and commits, but velocity.py:2690 forks the folded: encoding findings.py:189 owns.\nFINDING reckon/velocity.py:2733 follow-on: the field's review, finding and disposition counts are read from the whole code-review store (list_code_reviews(project), never narrowed by the window) while treatments and product_lines are windowed, so a figure the docstring and section 10 both describe as 'for the window' is a lifetime total.\nFINDING reckon/velocity.py:2690 follow-on: _FOLDED_DISPOSITION_PREFIX = \"folded:\" re-states the disposition encoding finding_disposition (reckon/crew/findings.py:189) already owns, so this module forks the owner's format instead of extending it.",
+  "review_run_id": "r-20261011T045645330052-review-of-velocity-counts-health-reviews",
+  "reviewed_base_sha": "1dd2de54704216d0580667ba4fe1bd7a2dea00ab",
+  "reviewed_head_sha": "021beb93c32b5baa0bd0d38174daeab0fe50614e",
+  "reviewed_run_id": "r-20261011T043817026230-velocity-counts-health-reviews",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T05:03:38.021263+00:00",
+  "total": 108
+}
