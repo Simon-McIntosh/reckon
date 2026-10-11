@@ -261,6 +261,74 @@ def test_the_new_plan_refusal_reads_a_declared_section_wire():
     assert _unwired_plan_refusal("soft", working) is None
 
 
+def test_the_new_plan_refusal_reads_a_section_mapping_wire():
+    from reckon.mcp_discovery import _unwired_plan_refusal
+
+    working = {
+        "status": "active",
+        "modified": ENFORCED_FROM,
+        "section_depends_on": {"s1": ["x#s2"]},
+    }
+
+    assert _unwired_plan_refusal("mapped", working) is None
+
+
+# ── only a declared form wires a plan ───────────────────────────────────────
+
+
+def test_a_prose_word_equal_to_a_slug_does_not_wire_a_plan(tmp_path: Path):
+    """A gate's required_evidence naming a plan in words wires nothing.
+
+    The reader accepts only the authored declaration forms — a ``gating_plan``
+    or a ``#section``-anchored ref — so a bare word that happens to equal a
+    plan slug is prose, and the plan it names stays unwired.
+    """
+
+    docs = tmp_path / "docs" / "plans"
+    docs.mkdir(parents=True)
+    paths = {}
+    for slug, text in (
+        ("holder", _plan_page("holder", gate_evidence="the anchor w supplies")),
+        ("w", _plan_page("w")),
+    ):
+        path = docs / f"{slug}.html"
+        path.write_text(text, encoding="utf-8")
+        paths[slug] = path
+
+    inbound = gate_evidence_slugs(paths.values(), project=PROJECT)
+
+    assert "w" not in inbound
+    assert _unwired(paths["w"], paths) == ["unwired-plan"]
+
+
+def test_the_roadmap_does_not_wire_a_plan_a_gate_names_in_prose():
+    report = build_roadmap(
+        PROJECT,
+        [
+            _row(
+                slug="holder",
+                gates=[
+                    {
+                        "id": "g-1",
+                        "required_evidence": "the anchor w supplies",
+                        "verdict": "pending",
+                    }
+                ],
+            ),
+            _row(slug="w"),
+        ],
+        [],
+    )
+
+    reported = sorted(
+        finding["slug"]
+        for finding in report["wiring_findings"]
+        if finding["code"] == "unwired-plan"
+    )
+
+    assert reported == ["w"]
+
+
 def test_the_new_plan_refusal_still_refuses_a_plan_with_no_wire():
     from reckon.mcp_discovery import _unwired_plan_refusal
 

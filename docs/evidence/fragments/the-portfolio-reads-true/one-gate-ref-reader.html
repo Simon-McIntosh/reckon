@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en-locale">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-portfolio-reads-true">
+  <meta name="plan-evidence-for" content="the-portfolio-reads-true">
+  <meta name="plan-verdict" content="qualified">
+  <title>One gate-ref reader | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>One reader of a gate's declared plan refs</h1>
+  <p id="one-gate-ref-reader-landing">The audit tokenised a gate's <code>required_evidence</code> and treated
+    every word as a candidate plan ref, so a prose word equal to a plan slug could silently wire a plan. That
+    reader and the roadmap's gate-ref reader ran the same grammar twice. The declaration-form half of the grammar — a
+    gate's <code>gating_plan</code> outcome source and a <code>#section</code>-anchored ref in its own text — now
+    lives in one function, <code>gate_declared_refs</code> in <code>reckon/doccheck.py</code>, which
+    <code>gate_evidence_slugs_from_gates</code> and the roadmap's <code>_gate_section_refs</code> both call; the prose
+    half (a section named in words beside its plan) stays in the roadmap. Only a declared form wires a plan. The audit
+    message also names <code>plan-section-depends-on</code> and <code>plan-after</code>, and the untested
+    <code>section_depends_on</code> refusal input now has a case. Negative control: making the shared reader accept any
+    whitespace token wires a prose-named plan and reddens the test (3 failed, EXIT=1).</p>
+ </main>
+</body>
+</html>
