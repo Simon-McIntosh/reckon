@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest records no baseline_suite or after_suite arm (classification.json carries manifest.data.baseline_suite=null and after_suite=null), so the added-failure count was not taken",
+  "backend": "clive",
+  "base_log_revision": "9c2fe70cf5a6a958e887b16fe65882cd51ca8661",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew_run_commands.py:499",
+    "reckon/crew_run_commands.py:2033",
+    "reckon/mcp.py:1700",
+    "reckon/crew/plan_review.py:2442"
+  ],
+  "completed_at": "2026-10-11T22:11:24.523Z",
+  "dispatched_at": "2026-10-11T22:06:19Z",
+  "findings": [
+    {
+      "file": "reckon/crew/findings.py",
+      "line": "320",
+      "severity": "follow-on",
+      "text": "follow-on: the findings-reader half of the change (_project_records/_record_kind subject=='code' at findings.py:61) has no executed negative control \u2014 only the dispose resolver's mutation was logged \u2014 so the reader regression guard is independent and falsifiable but was never shown to fire; a second red arm dropping the code-review yield would close it."
+    }
+  ],
+  "head_log_revision": "b0d4fdab6ed60031cd081fbb4444accc4edef464",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit (single commit b0d4fdab) against 9c2fe707 \u2014 review.py adds code_review_identity, code_review_record_for_run, stored_record_for_disposition and _record_code_finding_disposition; findings.py adds _code_findings, _stored_code_reviews, _project_records and a subject=='code' branch in _record_kind; crew_run_commands.py routes crew_dispose through them and refuses --dimension by name.",
+    "done_when": "the done_when names tests/test_a_code_review_finding_is_disposable.py, the dispose tests and the tests importing reckon/crew/findings.py, plus a negative control; the manifest records 7 passed / 11 passed / 7 passed all EXIT=0 and the declared mutation EXIT=1, and I re-ran the new file at the reviewed head (7 passed, EXIT=0).",
+    "goal": "the goal is to attach an independent review to run r-20261011T214057310393-a-code-review-finding-is-disposable; the reviewed change resolves a code review's run to its stored record so reckon/crew_run_commands.py:499 routes crew dispose --finding into it and reckon/crew/findings.py:320 lists its findings by path.",
+    "manifest": "read; it records status complete at b0d4fdab, the three gate logs with EXIT=0, the declared negative control (1 failed, EXIT=1) and names its log paths under the run directory.",
+    "write_paths": "the declared paths are reckon/crew_run_commands.py, reckon/crew/review.py, reckon/crew/findings.py, tests/test_a_code_review_finding_is_disposable.py and the two docs/evidence+fragments paths; the 9c2fe707..b0d4fdab diff touches exactly those four source files and the evidence fragment, with reckon/crew/plan_review.py untouched."
+  },
+  "justifications": {
+    "durability": "reverting the code-review branch in crew_dispose reddens tests/test_a_code_review_finding_is_disposable.py:253 (negative-control.log, EXIT=1), and dropping the _project_records code-review yield would KeyError the by_path[(PATH_A,0)] assertion at line 271, so both halves are guarded \u2014 though only the dispose half has an executed red.",
+    "evidence": "the three gate logs (gate-new-file.log 7 passed, gate-dispose-existing.log 11 passed, gate-findings-reader.log 7 passed, all EXIT=0) record the done_when's named runs and negative-control.log shows the declared mutation red at EXIT=1; the reviewed manifest carries no baseline_suite/after_suite arm, so added_failure_count is unmeasured.",
+    "fit": "the new names are mechanism-descriptive (code_review_identity at reckon/crew/review.py:3590, _record_code_finding_disposition at review.py:3667), carry no plan or ticket identifiers, and the dispose branch at reckon/crew_run_commands.py:496-519 follows the surrounding refusal idiom.",
+    "goal_fidelity": "reckon/crew_run_commands.py:499 resolves the run through code_review_identity and writes the disposition into the store record via plan_review.code_review_path, and reckon/crew/findings.py:320 now yields the home code reviews, so both halves of the goal are met.",
+    "reuse": "the change extends the store's own owners rather than forking them \u2014 it reuses plan_review.code_review_path/code_review_record (review.py:3633-3634), plan_review.list_code_reviews (findings.py:306), review.stored_record and _build_disposition_entry, and adds no second path builder.",
+    "scope_discipline": "every path in the 9c2fe707..b0d4fdab diff (reckon/crew_run_commands.py, reckon/crew/review.py, reckon/crew/findings.py, the test module, the evidence fragment) is inside the node's declared fence, and reckon/crew/plan_review.py is read but not edited."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to attach an independent review to run r-20261011T214057310393-a-code-review-finding-is-disposable; the reviewed change resolves a code review's run to its stored record so reckon/crew_run_commands.py:499 routes crew dispose --finding into it and reckon/crew/findings.py:320 lists its findings by path.\nVERDICT done_when: the done_when names tests/test_a_code_review_finding_is_disposable.py, the dispose tests and the tests importing reckon/crew/findings.py, plus a negative control; the manifest records 7 passed / 11 passed / 7 passed all EXIT=0 and the declared mutation EXIT=1, and I re-ran the new file at the reviewed head (7 passed, EXIT=0).\nVERDICT write_paths: the declared paths are reckon/crew_run_commands.py, reckon/crew/review.py, reckon/crew/findings.py, tests/test_a_code_review_finding_is_disposable.py and the two docs/evidence+fragments paths; the 9c2fe707..b0d4fdab diff touches exactly those four source files and the evidence fragment, with reckon/crew/plan_review.py untouched.\nVERDICT manifest: read; it records status complete at b0d4fdab, the three gate logs with EXIT=0, the declared negative control (1 failed, EXIT=1) and names its log paths under the run directory.\nVERDICT diff: read commit by commit (single commit b0d4fdab) against 9c2fe707 \u2014 review.py adds code_review_identity, code_review_record_for_run, stored_record_for_disposition and _record_code_finding_disposition; findings.py adds _code_findings, _stored_code_reviews, _project_records and a subject=='code' branch in _record_kind; crew_run_commands.py routes crew_dispose through them and refuses --dimension by name.\nCALL_SITES: reckon/crew_run_commands.py:499, reckon/crew_run_commands.py:2033, reckon/mcp.py:1700, reckon/crew/plan_review.py:2442\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_run_commands.py:499 resolves the run through code_review_identity and writes the disposition into the store record via plan_review.code_review_path, and reckon/crew/findings.py:320 now yields the home code reviews, so both halves of the goal are met.\nSCORE evidence: 18\nJUSTIFICATION evidence: the three gate logs (gate-new-file.log 7 passed, gate-dispose-existing.log 11 passed, gate-findings-reader.log 7 passed, all EXIT=0) record the done_when's named runs and negative-control.log shows the declared mutation red at EXIT=1; the reviewed manifest carries no baseline_suite/after_suite arm, so added_failure_count is unmeasured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the 9c2fe707..b0d4fdab diff (reckon/crew_run_commands.py, reckon/crew/review.py, reckon/crew/findings.py, the test module, the evidence fragment) is inside the node's declared fence, and reckon/crew/plan_review.py is read but not edited.\nSCORE durability: 19\nJUSTIFICATION durability: reverting the code-review branch in crew_dispose reddens tests/test_a_code_review_finding_is_disposable.py:253 (negative-control.log, EXIT=1), and dropping the _project_records code-review yield would KeyError the by_path[(PATH_A,0)] assertion at line 271, so both halves are guarded \u2014 though only the dispose half has an executed red.\nSCORE fit: 19\nJUSTIFICATION fit: the new names are mechanism-descriptive (code_review_identity at reckon/crew/review.py:3590, _record_code_finding_disposition at review.py:3667), carry no plan or ticket identifiers, and the dispose branch at reckon/crew_run_commands.py:496-519 follows the surrounding refusal idiom.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the store's own owners rather than forking them \u2014 it reuses plan_review.code_review_path/code_review_record (review.py:3633-3634), plan_review.list_code_reviews (findings.py:306), review.stored_record and _build_disposition_entry, and adds no second path builder.\nFINDING reckon/crew/findings.py:320 follow-on: the findings-reader half of the change (_project_records/_record_kind subject=='code' at findings.py:61) has no executed negative control \u2014 only the dispose resolver's mutation was logged \u2014 so the reader regression guard is independent and falsifiable but was never shown to fire; a second red arm dropping the code-review yield would close it.",
+  "review_run_id": "r-20261011T220555890305-review-of-a-code-review-finding-is-disposable",
+  "reviewed_base_sha": "9c2fe70cf5a6a958e887b16fe65882cd51ca8661",
+  "reviewed_head_sha": "b0d4fdab6ed60031cd081fbb4444accc4edef464",
+  "reviewed_run_id": "r-20261011T214057310393-a-code-review-finding-is-disposable",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T22:10:32.989852+00:00",
+  "total": 115
+}
