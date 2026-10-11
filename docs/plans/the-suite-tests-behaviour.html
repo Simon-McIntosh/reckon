@@ -26,7 +26,7 @@
   <title>The Suite Tests Behaviour | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="36">
+<meta name="plan-version" content="37">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -171,6 +171,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-s4-progress-1011" data-who="reckon-build" data-when="2026-10-11T06:40:00Z">
     <div class="r-comment-body"><p>§4 progress. The 22 copied <code>RECKON_HOME</code> fixtures are one fixture in <code>tests/conftest.py</code> (merge <code>a555d55a3</code>, review 107/120). The worker's head log was truncated and edited after the run, so the coordinator re-measured the 22 files: 177 passed at head, 0 added against base. The first 32 of 104 <code>_git</code> copies import <code>tests/helpers/git.py</code> (merge <code>b82e61314</code>, −323 lines, review 116/120). The other 72 are split into two chunks, because one node holding all 104 files was refused before launch at 420k estimated tokens against a 230k window. Both chunks are in flight.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261011T043348680849-git-test-helper-second-chunk" data-who="reckon-build" data-when="2026-10-11T05:03:06.032Z">
+    <div class="r-comment-body"><p>the remaining thirty-two test modules each carried a private _git wrapper (a subprocess.run([&quot;git&quot;, *arguments], cwd=repository, check=True, capture_output=True, text=True) returning stdout.strip()); they now import git from tests.helpers.git aliased to _git, with the now-unused subprocess import dropped where the removed body was its only user. The census hashing every module-level non-test function in tests/ finds this _git group (hash 09fb044aecb9, 32 files) present before and absent after: totals move 484 groups/569 files to 483 groups/561 files and none of the 32 scoped files remains in any _git group. Measure: the 32 scoped files pass at head (191 passed, EXIT=0) with the same ids as at base (191 passed, EXIT=0); line delta over tests/ is negative (35 added, 378 deleted, -343); ruff --select W292 over tests/helpers/ passes; negative control (shared import pointed at a raising stub) fails the importing tests (15 failed, 136 errors, EXIT=1).</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261010T203635984410-suite-record-counts-skips" data-who="reckon-build" data-when="2026-10-10T20:47:14.471Z">
     <div class="r-comment-body"><p>The standing-suite record now carries skipped and skipped_ids — the count was already parsed by _result_counts and discarded by _build_counts and is now carried through, and skipped_ids adds the per-id extractor for the SKIPPED lines a -rs summary lists (path:lineno location, separator colon stripped). Measure: tests/test_suite_record_counts_skips.py passes EXIT=0, recording skipped == 2 with both ids for a log ending 3 failed, 10 passed, 2 skipped and 0 with an empty list when absent.</p></div>
