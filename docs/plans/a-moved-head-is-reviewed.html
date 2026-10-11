@@ -14,7 +14,7 @@
 <meta name="plan-status" content="active">
 <meta name="plan-sprint" content="S26">
 <meta name="plan-informs" content="a-review-is-sized-to-its-risk">
-<meta name="plan-version" content="9">
+<meta name="plan-version" content="10">
 <meta name="plan-modified" content="2026-10-11">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
 </head>
@@ -42,10 +42,16 @@
     <pre class="r-fu-prompt">/reckon-build a-moved-head-is-reviewed §2</pre>
     <p class="r-fu-outcome">superseded by f-amhir-002: the content review split the section into an investigation (§2) and the fix (§3).</p>
     </article>
-<article class="r-fu" data-id="f-amhir-002" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build (health-review-1010)" data-written-at="2026-10-11" data-recommends-skill="/reckon-build a-moved-head-is-reviewed §2" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-amhir-002" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build (health-review-1010)" data-written-at="2026-10-11" data-recommends-skill="/reckon-build a-moved-head-is-reviewed §2" data-resolved-at="2026-10-11T06:14:55+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Investigate (§2), then repair (§3)</h4>
     <div class="r-fu-body"><p>§2 is a read-only investigation node, and §3 is dispatched with the write paths its report names.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-moved-head-is-reviewed §2</pre>
+    <p class="r-fu-outcome">§2's investigation is done (six tier-none skips by design, two re-review worktree collisions, one race with a hand dispatch); superseded by f-amhir-003, which names §3.</p>
+    </article>
+<article class="r-fu" data-id="f-amhir-003" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build (health-review-1010)" data-written-at="2026-10-11" data-recommends-skill="/reckon-build a-moved-head-is-reviewed §3" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Give a re-review round its own identity (§3)</h4>
+    <div class="r-fu-body"><p>Apply comment <code>c-s3-runtime-move-1011</code> to §3's text first, and take §2's finding into it. The fix is in <code>dispatch_review_for_run</code>: a re-review round's node id and worktree path must differ from the round before. Whether test-only deliveries should skip review stays with the lead.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-moved-head-is-reviewed §3</pre>
     </article>
 </section>
 <section data-reckon="comments" id="comments" class="r-comments">

@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-section-depends-on" content="{&quot;s6&quot;: [&quot;nothing-lands-unreached#s2&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
   <title>The Codebase Is Reviewed Between Nodes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="45">
+<meta name="plan-version" content="47">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -185,7 +185,7 @@
       This section runs after §5, whose parser it stores through.</p>
 
     <h2 id="s7">§7 — The /reckon-review skill</h2>
-<section data-reckon="section" data-id="s7" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s7" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> <code>skills/reckon-review/SKILL.md</code>, a short core of at most 1,500 words in the shape of the
       reckon-build core. It resolves the mode from the target and runs one loop per mode. <strong>Code:</strong> compose with
       <code>reckon crew review --around|--path</code>, read the stored result with <code>crew(view="findings")</code>, prototype the
@@ -315,10 +315,16 @@
     <pre class="r-fu-prompt">/reckon-build the-codebase-is-reviewed-between-nodes</pre>
     <p class="r-fu-outcome"><p>Superseded by f-tcirbn-002: the build order changed after the content and design reviews (§5 now runs after §4, which writes the same module).</p></p>
     </article>
-<article class="r-fu" data-id="f-tcirbn-002" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-build coordinator (health-review-1010)" data-written-at="2026-10-10" data-recommends-skill="/reckon-build the-codebase-is-reviewed-between-nodes §3" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tcirbn-002" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-build coordinator (health-review-1010)" data-written-at="2026-10-10" data-recommends-skill="/reckon-build the-codebase-is-reviewed-between-nodes §3" data-resolved-at="2026-10-11T06:14:18+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Build the health-review loop, starting with the findings reader</h4>
     <div class="r-fu-body"><p>Order: §3; then §4; then §5; then §6 once the reach gate opens; then §7 (after its cited-commands gate), §8 and §9; §10 beside them; §11 last.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-codebase-is-reviewed-between-nodes §3</pre>
+    <p class="r-fu-outcome">§3 to §10 landed on 2026-10-11 (findings reader, dispose --finding, health rubric, review verb, /reckon-review skill, portfolio rubric, dispatch health_review block, velocity yield); superseded by f-tcirbn-003, which names §11.</p>
+    </article>
+<article class="r-fu" data-id="f-tcirbn-003" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-build (health-review-1010)" data-written-at="2026-10-11" data-recommends-skill="/reckon-build the-codebase-is-reviewed-between-nodes §11" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Run the proving code review on the promotion family (§11)</h4>
+    <div class="r-fu-body"><p>Run <code>/reckon-review</code> in code mode on <code>promotion_scope.py</code>, <code>promotion_gate.py</code> and <code>promotion_checks.py</code>, and carry its one treatment to a promoted node. Two known findings are recorded on §11 for the review to read as known: the contradiction guard that admits <code>passed</code> with exit status 1, and the impl-move guard question on the-portfolio-reads-true §2.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-codebase-is-reviewed-between-nodes §11</pre>
     </article>
 </section>
   
@@ -379,6 +385,9 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261011T053048120056-review-plan-alias-retires" data-who="reckon-build" data-when="2026-10-11T06:11:33.527Z">
     <div class="r-comment-body"><p>retired the crew review-plan alias — `grep -rn review-plan reckon/` returns no hit, `reckon crew review-plan --help` exits 2 while `reckon crew review --help` exits 0, and `delivered_code_reviews` takes no `around` parameter; the ten write-path tests pass 88 at EXIT=0 and the declared negative control, the alias restored, fails 2 tests at EXIT=1.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-close-s7" data-who="reckon-build" data-when="2026-10-11T08:15:00Z">
+    <div class="r-comment-body"><p>§7 landed: the /reckon-review skill (merge <code>74b79b7fb</code>) and the retirement of <code>review-plan</code> (merge <code>e27ba6217</code>), merged together; 102 passed at the merged head; the skill is linked into the harness. <a href="/reckon/evidence/archive/the-codebase-is-reviewed-between-nodes-landed.html#s7-reckon-review-skill">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261011T015646632569-review-of-review-composes-a-code-subject" data-who="reckon-build" data-when="2026-10-11T02:04:22.744Z">
     <div class="r-comment-body"><p>stored an independent review of run r-20261011T003357760539 at reviewed base 4e4de5ba/head 599d6f6a: goal_fidelity 18, evidence 18, scope_discipline 15, durability 18, fit 16, reuse 5, total 90, added_failure_count 0, 5 follow-on findings, no blocker, at /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261011T003357760539-review-composes-a-code-subject.json</p></div>
