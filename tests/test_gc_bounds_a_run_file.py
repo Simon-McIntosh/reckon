@@ -130,8 +130,8 @@ def test_gc_bounds_a_promoted_runs_log_and_reports_its_checkpoint(
     assert rows[str(log)]["kind"] == "run-file"
     assert rows[str(checkpoint)]["binary"] is True
     assert rows[str(checkpoint)]["action"] == "reported"
-    assert payload["run_files_bounded"] == 1
-    assert payload["run_files_reported"] == 1
+    assert sum(1 for row in payload["run_files"] if row["bounded"]) == 1
+    assert sum(1 for row in payload["run_files"] if row["binary"]) == 1
 
     # The log keeps its head and its tail around the marker, so it is the limit
     # plus the marker and never more.

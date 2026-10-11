@@ -1627,148 +1627,6 @@ def _unledgered_run_directories(
     return entries
 
 
-# ── Bounding a promoted run's captured files ────────────────────────────────
-#
-# A promoted run's directory keeps the streams a later reader opens as
-# evidence: the worker's own output, and the gate log the ledger row names. A
-# run that wrote a runaway log leaves a file nothing else bounds, and the run
-# directory is held for retention rather than reaped, so the file grows with
-# every reader that opens it. gc therefore bounds each promoted run's captured
-# file to the configured size, keeping the head and the tail around a
-# one-line marker naming the original size and sha256, because a gate's command
-# and its verdict sit at opposite ends of a log. A recognised binary artefact
-# is reported and never touched: truncating it would corrupt it rather than
-# bound what a reader opens.
-
-RUN_FILE_BINARY_SUFFIXES = (".pt", ".h5", ".npz")
-
-# Subdirectories of a run directory that are never descended into: a nested
-# worktree or extraction is a whole source tree gc files under its own kind, so
-# its files are not the run's captured output and walking it would cost more
-# than the bound is worth.
-_RUN_FILE_SKIP_DIRS = frozenset({"checkouts", ".git", ".venv", "node_modules"})
-
-
-def _run_directory_captured_files(directory: Path) -> Iterator[Path]:
-    """Yield the files a run directory owns, without descending a nested tree.
-
-    A run directory holds its captured streams directly and, beside them, whole
-    source trees a worker made under ``checkouts`` or a ``base-*`` name. Those
-    are reported by gc under their own kind, so they are pruned here rather than
-    walked: a bound over a run's own output must not scan a checkout's every
-    file to find it.
-    """
-    for root, dirs, names in os.walk(directory):
-        current = Path(root)
-        dirs[:] = [
-            name
-            for name in dirs
-            if name not in _RUN_FILE_SKIP_DIRS
-            and not name.startswith("base-")
-            and not (current / name / ".git").exists()
-        ]
-        for name in names:
-            yield current / name
-
-
-def _sha256_of(path: Path) -> str:
-    """The sha256 of a file's whole content, read in bounded chunks."""
-    digest = hashlib.sha256()
-    with open(path, "rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
-
-
-def _bound_run_file(path: Path, *, limit_bytes: int, apply: bool) -> dict[str, Any]:
-    """Report one run file over the limit, bounding it under ``--apply``.
-
-    A recognised binary artefact is reported and never rewritten — ``binary``
-    is set and ``action`` reads ``reported`` rather than ``bound``. A text file
-    keeps its first and last half of the limit around a one-line marker naming
-    the original size and sha256, so the result is the limit plus the marker,
-    its first and last line intact and its identity recorded in the marker. A
-    dry run reports the same row without touching the file.
-    """
-    size = path.stat().st_size
-    row: dict[str, Any] = {
-        "path": str(path),
-        "size": size,
-        "action": "bound",
-        "bounded": False,
-        "binary": False,
-    }
-    if path.suffix.lower() in RUN_FILE_BINARY_SUFFIXES:
-        row["action"] = "reported"
-        row["binary"] = True
-        return row
-    digest = _sha256_of(path)
-    row["original_sha256"] = digest
-    if not apply:
-        return row
-    from reckon.crew.fleet_supervisor import trim_file_ends
-
-    half = limit_bytes // 2
-    ends = trim_file_ends(path, limit=limit_bytes, head=half, tail=half)
-    if ends is None:
-        return row
-    head, tail = ends
-    marker = f"\n[reckon gc: truncated from {size} bytes; sha256 {digest}]\n".encode()
-    with open(path, "wb") as handle:
-        handle.write(head)
-        handle.write(marker)
-        handle.write(tail)
-    row["bounded"] = True
-    row["final_size"] = path.stat().st_size
-    return row
-
-
-def _bound_run_directory_files(
-    *,
-    directory: Path,
-    record: Mapping[str, Any],
-    limit_bytes: int,
-    apply: bool,
-) -> list[dict[str, Any]]:
-    """Bound every over-limit file a promoted run directory and its row name.
-
-    Two sets are read: the files the run directory itself owns, and the gate
-    logs the run's own ledger record declares — the latter through
-    :func:`reckon.crew.promotion_release._declared_arm_paths`, so a log a
-    reviewer cites is bounded the same way as the run's own output even when it
-    sits outside the run directory. A path read twice is reported once.
-    """
-    from reckon.crew import promotion_release
-
-    rows: list[dict[str, Any]] = []
-    seen: set[Path] = set()
-
-    def consider(path: Path, kind: str) -> None:
-        try:
-            resolved = path.resolve()
-        except OSError:
-            return
-        if resolved in seen:
-            return
-        seen.add(resolved)
-        try:
-            if not path.is_file() or path.stat().st_size <= limit_bytes:
-                return
-        except OSError:
-            return
-        row = _bound_run_file(path, limit_bytes=limit_bytes, apply=apply)
-        row["run_id"] = directory.name
-        row["kind"] = kind
-        rows.append(row)
-
-    for path in _run_directory_captured_files(directory):
-        consider(path, "run-file")
-    declared = promotion_release._declared_manifest(record)
-    for path in promotion_release._declared_arm_paths(declared):
-        consider(Path(path), "gate-log")
-    return rows
-
-
 def _plan_review_raw_reports(
     *,
     repo_root: Path,
@@ -2195,7 +2053,9 @@ def garbage_collect(
         live_ids = {str(record.get("run_id") or "") for record in list_live()}
         run_reports: list[dict[str, Any]] = []
         run_file_reports: list[dict[str, Any]] = []
-        run_file_limits: dict[str, int] = {}
+        from reckon.crew.fleet_supervisor import bound_run_files, run_file_limit_bytes
+
+        run_file_limit = run_file_limit_bytes(repo_root, project)
         if runs_root.is_dir():
             for directory in sorted(
                 path for path in runs_root.iterdir() if path.is_dir()
@@ -2205,24 +2065,9 @@ def garbage_collect(
                 if directory.name not in ledgered or directory.name in live_ids:
                     continue
                 record = ledgered_records.get(directory.name, {})
-                # A promoted run's captured files are bounded whatever their
-                # age, because the bound is what stops the file growing, not a
-                # retention decision; the retention test below only governs
-                # whether the whole directory is offered for removal.
-                limit_name = str(record.get("project") or project or "")
-                if limit_name not in run_file_limits:
-                    resolved_config = flight.resolve(
-                        limit_name or None, checkout_path=repo_root
-                    ).config
-                    run_file_limits[limit_name] = flight.run_file_max_mb(
-                        resolved_config
-                    )
                 run_file_reports.extend(
-                    _bound_run_directory_files(
-                        directory=directory,
-                        record=record,
-                        limit_bytes=run_file_limits[limit_name] * 1024 * 1024,
-                        apply=apply,
+                    bound_run_files(
+                        directory, record, limit_bytes=run_file_limit, apply=apply
                     )
                 )
                 modified = datetime.fromtimestamp(
@@ -2409,12 +2254,6 @@ def garbage_collect(
         "pointers": pointer_reports,
         "run_directories": run_reports,
         "run_files": run_file_reports,
-        "run_files_bounded": sum(
-            1 for item in run_file_reports if item.get("bounded")
-        ),
-        "run_files_reported": sum(
-            1 for item in run_file_reports if item.get("binary")
-        ),
         "run_directories_withheld": run_directories_withheld,
         "run_directories_reaped_with_explicitly_absent_figures": (
             run_directories_reaped_with_explicitly_absent_figures
