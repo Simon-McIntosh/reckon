@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs, which its manifest names in test_logs rather than in baseline_suite/after_suite: head arm gate-head.log and base arm base-race-test.log each fail only tests/test_ledger_write_keeps_run_files.py::test_a_loser_of_the_write_race_cannot_overwrite_the_winner, so the reviewed change adds no failing test",
+  "backend": "clive",
+  "base_log_revision": "24b5ef0f48d1455c59fe9e284d83c6bb2e66123a",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew_run_commands.py:1219"
+  ],
+  "completed_at": "2026-10-11T01:21:48.266Z",
+  "dispatched_at": "2026-10-11T01:14:29Z",
+  "findings": [
+    {
+      "file": "reckon/ledger.py",
+      "line": "919",
+      "severity": "follow-on",
+      "text": "follow-on: the read-only SQLite URI is built by string interpolation (f\"file:{Path(index)}?mode=ro\") without URL-quoting the path, so a cache root containing a space, \"?\", or \"#\" yields a malformed URI and returns None, misclassifying a live index as unrecorded (Path.as_uri() or urllib.parse.quote would keep it exact)."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261011T002644790277-gc-sweeps-ledger-indexes/manifest.md",
+      "line": "19",
+      "severity": "follow-on",
+      "text": "follow-on: baseline_suite and after_suite are empty while the arms' logs (gate-head.log, base-race-test.log) are recorded only in test_logs, so annotate_review_of_run cannot derive this run's added-failure count and every review of it reads absent evidence for the two arms."
+    }
+  ],
+  "head_log_revision": "bd669e5f3876018e8cb6f827bc4d29f75b7ace69",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site: the crew gc CLI at reckon/crew_run_commands.py:1219 calls crew_module.garbage_collect, which reaches _orphan_ledger_indexes at reckon/crew/routing.py:2157; the node's own test file is not counted.",
+    "diff": "read 24b5ef0f..e1fbed89 commit by commit; the metadata write and sweep plus the test file land in bd669e5f3, and e1fbed89a only fills the evidence fragment's gate figure, all inside the fence.",
+    "done_when": "the done_when is tests/test_gc_sweeps_ledger_indexes.py EXIT=0 reporting 3 of 5 seeded files and removing exactly those with the real cache untouched plus a negative control; gate-head.log records 256 passed/1 failed at bd669e5f and negative-control.log records the node's cases reddening at EXIT=1.",
+    "goal": "the goal is `Sweep ledger indexes whose checkout no longer exists`; reckon/crew/routing.py:1760 _orphan_ledger_indexes scans the pick-input cache for ledger-*.sqlite whose recorded ledger path is gone, and reckon/ledger.py:919 recorded_ledger_path reads that path back.",
+    "manifest": "read; status complete, commits bd669e5f3 and e1fbed89a, the four in-fence changed_paths, tests states the head gate and result, failure_attribution ties the one failure to base 24b5ef0f, but baseline_suite and after_suite are empty.",
+    "write_paths": "the fence is reckon/ledger.py, reckon/crew/routing.py, tests/test_gc_sweeps_ledger_indexes.py, the evidence fragment and a figures dir; git diff --numstat 24b5ef0f..e1fbed89 touches only the first four and leaves the figures dir unused."
+  },
+  "justifications": {
+    "durability": "tests/test_gc_sweeps_ledger_indexes.py:141 fails on the set(rows) mismatch when the existence check at reckon/crew/routing.py:1780 is dropped, as negative-control.log records, and :219 fails if the lock guard at :1804 is removed.",
+    "evidence": "gate-head.log records `256 passed`/1 failed with the sole failure being the pre-existing write-race case, and negative-control.log shows the node's cases reddening, but the reviewed manifest leaves baseline_suite and after_suite empty so its arms are not machine-derivable.",
+    "fit": "_orphan_ledger_indexes returns the same path/size/reason/removed row shape as garbage_collect_orphan_scratch at reckon/crew/routing.py:2360, and the commit carries a conventional subject and body with no plan or ticket label.",
+    "goal_fidelity": "reckon/crew/routing.py:1804 unlinks each orphan index under --apply and reckon/ledger.py:1138 records the resolved ledger path, so an index whose worktree was removed is identified by a gone path and swept.",
+    "reuse": "a grep of reckon/ found no owner of a pick-input ledger-index sweep or a SQLite write-lock probe, so _orphan_ledger_indexes and _ledger_index_locked extend no existing capability rather than forking one.",
+    "scope_discipline": "git diff --numstat 24b5ef0f..e1fbed89 touches only reckon/ledger.py, reckon/crew/routing.py, tests/test_gc_sweeps_ledger_indexes.py and the in-fence evidence fragment, mutating no plan or index state."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is `Sweep ledger indexes whose checkout no longer exists`; reckon/crew/routing.py:1760 _orphan_ledger_indexes scans _store.cache_root(\"pick-input\") for ledger-*.sqlite whose recorded ledger path is gone, and reckon/ledger.py:919 recorded_ledger_path reads that path back, so a worktree-removed index is reported and removed.\nVERDICT done_when: the done_when is tests/test_gc_sweeps_ledger_indexes.py EXIT=0 reporting 3 of 5 seeded files and removing exactly those with the real cache untouched, plus a negative control; gate-head.log records 256 passed/1 failed at bd669e5f (the only failure, test_a_loser_of_the_write_race, is not in the node's file) and negative-control.log records the node's cases reddening at EXIT=1.\nVERDICT write_paths: the run was fenced to reckon/ledger.py, reckon/crew/routing.py, tests/test_gc_sweeps_ledger_indexes.py, docs/evidence/fragments/the-crew-home-has-a-bound/gc-sweeps-ledger-indexes.html and a figures dir (prompt.txt); git diff --numstat 24b5ef0f..e1fbed89 touches only the first four and leaves the figures dir unused.\nVERDICT manifest: read; status complete, commits bd669e5f3 and e1fbed89a, changed_paths name the four in-fence files, tests states the head gate and result, failure_attribution ties the one failure to base 24b5ef0f via base-race-test.log, but baseline_suite and after_suite are empty.\nVERDICT diff: read 24b5ef0f..e1fbed89 commit by commit; bd669e5f3 adds the metadata write in reckon/ledger.py:1138-1147 and the sweep in reckon/crew/routing.py:1731-1808 plus a new test file, e1fbed89a only fills the evidence fragment's gate figure, all inside the fence.\nCALL_SITES: reckon/crew_run_commands.py:1219\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/routing.py:1804 unlinks each orphan index under --apply and reckon/ledger.py:1138 records the resolved ledger path, so an index whose worktree was removed is identified by a gone path and swept.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-head.log records `256 passed`/1 failed with the sole failure being the pre-existing write-race case, and negative-control.log shows the node's cases reddening, but the reviewed manifest leaves baseline_suite and after_suite empty so its arms are not machine-derivable.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --numstat 24b5ef0f..e1fbed89 touches only reckon/ledger.py, reckon/crew/routing.py, tests/test_gc_sweeps_ledger_indexes.py and the in-fence evidence fragment, mutating no plan or index state.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_gc_sweeps_ledger_indexes.py:141 fails (`set(rows)` mismatch) when the existence check at reckon/crew/routing.py:1780 is dropped, as negative-control.log records, and :219 fails if the lock guard at :1804 is removed.\nSCORE fit: 19\nJUSTIFICATION fit: _orphan_ledger_indexes returns the same path/size/reason/removed row shape as garbage_collect_orphan_scratch at reckon/crew/routing.py:2360, and the commit carries a conventional subject and body with no plan or ticket label.\nSCORE reuse: 19\nJUSTIFICATION reuse: a grep of reckon/ found no owner of a pick-input ledger-index sweep or a SQLite write-lock probe, so _orphan_ledger_indexes and _ledger_index_locked extend no existing capability rather than forking one.\nFINDING reckon/ledger.py:919 follow-on: the read-only SQLite URI is built by string interpolation (f\"file:{Path(index)}?mode=ro\") without URL-quoting the path, so a cache root containing a space, \"?\", or \"#\" yields a malformed URI and returns None, misclassifying a live index as unrecorded (Path.as_uri() or urllib.parse.quote would keep it exact).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261011T002644790277-gc-sweeps-ledger-indexes/manifest.md:19 follow-on: baseline_suite and after_suite are empty while the arms' logs (gate-head.log, base-race-test.log) are recorded only in test_logs, so annotate_review_of_run cannot derive this run's added-failure count and every review of it reads absent evidence for the two arms.\n",
+  "review_run_id": "r-20261011T011400954610-review-of-gc-sweeps-ledger-indexes",
+  "reviewed_base_sha": "24b5ef0f48d1455c59fe9e284d83c6bb2e66123a",
+  "reviewed_head_sha": "e1fbed89a25a1f6beb30216c12ce17c88112ec3e",
+  "reviewed_run_id": "r-20261011T002644790277-gc-sweeps-ledger-indexes",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T01:20:53.689906+00:00",
+  "total": 111
+}
