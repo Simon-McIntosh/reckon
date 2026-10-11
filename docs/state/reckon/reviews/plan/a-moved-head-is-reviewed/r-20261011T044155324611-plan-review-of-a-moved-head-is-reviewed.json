@@ -1,0 +1,56 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-11T04:48:06.743Z",
+  "dispatched_at": "2026-10-11T04:42:22Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-moved-head-is-reviewed.html:29",
+      "id": "single_goal-1",
+      "reason": "a node whose second deliverable its own done-when cannot fail on is one deliverable plus a spare, and splitting it (investigation node, fix node) or extending the done-when to require the recorded finding changes the node graph.",
+      "text": "\u00a72 opens \"**Deliverable.** First, an investigation \u2026 Then make the reflex launch a review whenever a run settles at a head that no stored review is keyed to\", but the done-when only asserts the reflex's launch behaviour and never measures the investigation's recorded output, so the node carries an unmeasured deliverable",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-moved-head-is-reviewed.html:29",
+      "id": "reasoning-1",
+      "reason": "the rubric's third reasoning check requires the caller be named, and here the un-named caller is load-bearing: a-review-is-sized-to-its-risk \u00a75 landed claiming \"A runtime-source move earns a light re-review of those commits\", so a node told to \"make the reflex launch a review whenever a run settles at a head that no stored review is keyed to\" may re-implement logic that is already present instead of finding why the present logic does not fire, sending the repair at the wrong mechanism.",
+      "text": "\u00a72 names no module and no caller, writing only \"Write paths: the reflex's module, named by the investigation\", while the mechanism it asks for already exists and runs: `dispatch_review_for_run` (reckon/crew/recovery_review_dispatch.py:1279) calls `review_head_move` (:726) and `carry_review_forward` (:1426), and is reached from the watch path (reckon/crew/recovery_watch.py:2423)",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-moved-head-is-reviewed.html:25",
+      "id": "reasoning-2",
+      "reason": "the section's own evidence shows the merged head carrying a review, so the root-cause sentence \"the head that merges goes unreviewed unless the coordinator notices\" is supported only if those reviews were hand-dispatched and not reflex-launched; the plan must distinguish reflex-launched from hand-dispatched reviews (e.g. from the run's `review_dispatch` record) or the premise the whole plan rests on is unevidenced by the anchors it cites.",
+      "text": "\u00a71 asserts the resumed runs \"were reviewed only at the old head\", but the review store holds a review at every cited moved head \u2014 `71bb011d8f3c4e5d32035d35c71989b56c5b2b4b` for structural-guards-have-one-home, `2cf592a5571a993074c6b70f2e2ba1b69a996e88` and `3fa0ce0efe343fbfc99f99ac3ddf1bdd0ab5adc1` for gc-bounds-a-run-file, `624314887fde13d8026103bad40c8fcd717163cc` for dispatch-names-the-health-review",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "a76485320efec7c21f6b5809603cb53f039c375916ecf7e3f8b153d8e4ee093e",
+  "plan_slug": "a-moved-head-is-reviewed",
+  "plan_version": 3,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261011T044155324611-plan-review-of-a-moved-head-is-reviewed",
+  "reviewed_blob_sha": "c791c2f71d114561dccf69c80e7d5239c6a2e5ce",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited commit resolves (`c47c99ef6`, `71bb011d8`, `92d3ec6ca`, `2cf592a55`, `3fa0ce0ef`, `29185a66a`, `624314887`), the node ids resolve to stored review records under `docs/state/reckon/reviews/run/`, and `a-review-is-sized-to-its-risk#s5` resolves and reads as \u00a71 quotes it.",
+    "done_when": "pass \u2014 \u00a72's done-when is measurable and names a negative control that fires: with the review lookup ignoring `reviewed_head_sha`, the resumed run at head B gets no review and the test fails.",
+    "evidence_paths": "pass \u2014 the investigation is recorded in the run directory and the gate is the named test file; neither lands in a session scratchpad or node-local temp path.",
+    "naming": "pass \u2014 no plan labels, stage names or ticket numbers reach a symbol; `reviewed_head_sha` and `tests/test_a_moved_head_is_reviewed.py` are mechanism-named.",
+    "reasoning": "a finding \u2014 the reflex's moved-head re-review mechanism already exists and is reached, and \u00a71's central evidence (the moved heads \"reviewed only at the old head\") is contradicted by the review store.",
+    "single_goal": "a finding \u2014 \u00a72 declares two deliverables, a recorded investigation and the reflex fix, and its single done-when measures only the fix.",
+    "wiring": "pass \u2014 the plan's `plan-informs` target `a-review-is-sized-to-its-risk` exists and its \u00a75 is the rule \u00a71 says it extends; no `depends-on` or `gates` is declared, and none is owed now that the sibling \u00a75 has landed."
+  },
+  "section_digests": {
+    "_document": "8e8338ded3fedc35705ca3a0c3c0aef3b2c1b49a9c1fc5378a2c70d1c111956d",
+    "s1": "40a2a1d847cf6c22cbde3eeae4ba71e7d035676725a1f5be15704709ec1addb6",
+    "s2": "d51c843d51e8362ba77176269a2adc0c1c3c1354e026774f0fa2cbe84f1a3c22"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T04:49:55.915045+00:00"
+}
