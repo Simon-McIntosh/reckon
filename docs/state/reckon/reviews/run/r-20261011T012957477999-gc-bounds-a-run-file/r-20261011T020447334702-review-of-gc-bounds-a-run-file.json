@@ -1,0 +1,84 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed run's own baseline_suite and after_suite logs (suite_base.log, suite_head.log) were cancelled mid-run by the srun step at 2026-10-11T04:04:31, so neither carried a summary line or a FAILED id; a count taken over them would be a false zero (reckon/crew/review.py:1887 returns (0, []) on the truncated text while the run's stream records 7 failed / 1378 passed on both earlier arms).",
+  "base_log_revision": null,
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew_run_commands.py:1219",
+    "reckon/crew/routing.py:2068",
+    "reckon/crew/fleet_supervisor.py:841",
+    "reckon/crew/fleet_supervisor.py:756"
+  ],
+  "completed_at": "2026-10-11T02:16:40.545Z",
+  "dispatched_at": "2026-10-11T02:05:18Z",
+  "findings": [
+    {
+      "file": "r-20261011T012957477999-gc-bounds-a-run-file/manifest.md",
+      "line": "16",
+      "severity": "blocking",
+      "text": "blocking: the run's base/head importer-suite evidence - named in its own done_when - is unrecorded: suite_base.log stops at 26% and suite_head.log at 3% with no summary line, killed when the srun step was cancelled at 2026-10-11T04:04:31, so the repository's own derivation (reckon/crew/review.py:1887 added_failures_from_gate_logs) reads the two surviving logs as a measured (0, []) false zero while the earlier completed arms in the run's stream report 7 failed / 1378 passed on both sides."
+    },
+    {
+      "file": "r-20261011T012957477999-gc-bounds-a-run-file/manifest.md",
+      "line": "17",
+      "severity": "follow-on",
+      "text": "follow-on: baseline_suite and after_suite carry prose rather than the contract's JSON, so reckon/crew/review.py:1412 _gate_log_path resolves each field to the whole sentence and the review read path reports the count unmeasured even though both named logs exist on disk; recording revision, command, exit_status, completed and failure_ids would let the count be derived at all."
+    },
+    {
+      "file": "reckon/crew/fleet_supervisor.py",
+      "line": "636",
+      "severity": "follow-on",
+      "text": "follow-on: _run_directory_captured_files re-implements the run-directory pruning policy that reckon/crew/routing.py:527 _run_directory_extractions already owns (checkouts/ children, base-* trees, the .git test that separates a worktree from an extraction) rather than extending it; the homes have drifted already, since the new walk also prunes .venv and node_modules and the owner does not, and the brief assigned the gc walk to routing.py."
+    },
+    {
+      "file": "reckon/crew/fleet_supervisor.py",
+      "line": "658",
+      "severity": "follow-on",
+      "text": "follow-on: _sha256_of is a second file-digest helper beside reckon/project_state.py:344 _sha256_path; the chunked read is justified for the multi-gigabyte logs this node bounds, but the duplication should be folded onto one owner or the reason the owner cannot be extended stated at the definition."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read commit by commit against 84e2fb0b - c551baab adds the bound and the flight key, b936707e8 adds the evidence fragment, 92d3ec6ca moves the bounding helpers into fleet_supervisor.py beside trim_service_log; all inside the declared scope and the reviewed worktree is clean at 92d3ec6ca.",
+    "done_when": "the done-when names tests/test_gc_bounds_a_run_file.py passing EXIT=0 plus tests/test_flight.py, the flight_resolve base/head proof, a zero added-failure importer suite, and an executed negative control; the new test file and tests/test_flight.py were re-run by me at the reviewed head and passed 90 (EXIT=0), flight_resolve.log records both arms EXIT=0, and negative_control.log records 1 failed at EXIT=1 - but the base/head importer-arm logs (suite_base.log, suite_head.log) are killed mid-run with no summary, so that leg of the done-when is not recorded.",
+    "goal": "the node's goal is \"Bound a promoted run's captured file to its configured size, keeping head, tail and identity\" (live pointer for r-20261011T012957477999); reckon/crew/fleet_supervisor.py:667 _bound_run_file writes head + marker + tail and reports a binary artefact untouched, and reckon/crew/routing.py:2068 drives it from garbage_collect.",
+    "manifest": "read; it reports the features, the flight proof, the negative control and 131 passed for the focused gate, but its baseline_suite/after_suite fields are prose (manifest.md:16-17) and record no failure ids or deltas, and its own logs/suite_base.log and logs/suite_head.log were cancelled at 26% and 3% with no summary.",
+    "write_paths": "the run pointer declares reckon/crew/routing.py, reckon/crew/fleet_supervisor.py, reckon/schema/flight.yaml, reckon/_flight_schema.py, docs/_shared/flight.schema.json, tests/test_gc_bounds_a_run_file.py, the evidence fragment and the figures directory; git diff 84e2fb0b..92d3ec6ca touches exactly eight files, every one inside that set."
+  },
+  "justifications": {
+    "durability": "the assertions at tests/test_gc_bounds_a_run_file.py:118-146 compare the bounded file's size and its head/tail lines against independently-derived values (a marker length computed from the test's own template and the pre-move sha256), so reinstating an unbounded write or dropping the marker reddens them; negative_control.log independently shows the unpromoted-run assertion failing when the promoted filter is removed.",
+    "evidence": "the plan's done-when gate (tests/test_gc_bounds_a_run_file.py) passes and I reproduced it at the new limit (90 passed with tests/test_flight.py), and negative_control.log shows the mutation failing at EXIT=1, but the base/head importer arms the node's done_when also names are unrecorded - suite_base.log stops at 26% and suite_head.log at 3% after the srun step was cancelled at 2026-10-11T04:04:31 (stderr.log), with no summary line or FAILED id in either.",
+    "fit": "reckon/crew/fleet_supervisor.py:549 trim_file_ends follows the module's trim_service_log idiom and the new names carry no plan, ticket or version identifier, though the gc walk now lives in fleet_supervisor.py rather than the routing.py home the brief assigned it.",
+    "goal_fidelity": "reckon/crew/fleet_supervisor.py:667 _bound_run_file bounds an over-limit text file to head + one-line marker + tail (containing the original sha256), reports a *.pt/*.h5/*.npz row without touching it (:685), and reckon/crew/routing.py:2068 reaches only ledgered, non-live runs, so an unpromoted run is untouched.",
+    "reuse": "the cut genuinely extends the existing owner (fleet_supervisor.py:627 RUN_FILE_BINARY_SUFFIXES sits beside trim_service_log, which now calls trim_file_ends with head=0), but fleet_supervisor.py:636 _run_directory_captured_files re-implements the run-directory pruning policy reckon/crew/routing.py:527 _run_directory_extractions already owns and does not extend it, and fleet_supervisor.py:658 _sha256_of duplicates reckon/project_state.py:344 _sha256_path without extending it.",
+    "scope_discipline": "git diff 84e2fb0b..92d3ec6ca touches only the eight declared paths, and no plan, index or unrelated module is modified."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is \"Bound a promoted run's captured file to its configured size, keeping head, tail and identity\" (live pointer for r-20261011T012957477999); reckon/crew/fleet_supervisor.py:667 _bound_run_file writes head + marker + tail and reports a binary artefact untouched, and reckon/crew/routing.py:2068 drives it from garbage_collect.\nVERDICT done_when: the done-when names tests/test_gc_bounds_a_run_file.py passing EXIT=0 plus tests/test_flight.py, the flight_resolve base/head proof, a zero added-failure importer suite, and an executed negative control; the new test file and tests/test_flight.py were re-run by me at the reviewed head and passed 90 (EXIT=0), flight_resolve.log records both arms EXIT=0, and negative_control.log records 1 failed at EXIT=1 - but the base/head importer-arm logs (suite_base.log, suite_head.log) are killed mid-run with no summary, so that leg of the done-when is not recorded.\nVERDICT write_paths: the run pointer declares reckon/crew/routing.py, reckon/crew/fleet_supervisor.py, reckon/schema/flight.yaml, reckon/_flight_schema.py, docs/_shared/flight.schema.json, tests/test_gc_bounds_a_run_file.py, the evidence fragment and the figures directory; git diff 84e2fb0b..92d3ec6ca touches exactly eight files, every one inside that set.\nVERDICT manifest: read; it reports the features, the flight proof, the negative control and 131 passed for the focused gate, but its baseline_suite/after_suite fields are prose (manifest.md:16-17) and record no failure ids or deltas, and its own logs/suite_base.log and logs/suite_head.log were cancelled at 26% and 3% with no summary.\nVERDICT diff: read commit by commit against 84e2fb0b - c551baab adds the bound and the flight key, b936707e8 adds the evidence fragment, 92d3ec6ca moves the bounding helpers into fleet_supervisor.py beside trim_service_log; all inside the declared scope and the reviewed worktree is clean at 92d3ec6ca.\nCALL_SITES: reckon/crew_run_commands.py:1219 (crew gc -> garbage_collect), reckon/crew/routing.py:2068 (garbage_collect -> bound_run_files), reckon/crew/fleet_supervisor.py:841 (trim_service_log -> trim_file_ends), reckon/crew/fleet_supervisor.py:756 (run_file_limit_bytes -> flight.run_file_max_mb)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/fleet_supervisor.py:667 _bound_run_file bounds an over-limit text file to head + one-line marker + tail (containing the original sha256), reports a *.pt/*.h5/*.npz row without touching it (:685), and reckon/crew/routing.py:2068 reaches only ledgered, non-live runs, so an unpromoted run is untouched.\nSCORE evidence: 11\nJUSTIFICATION evidence: the plan's done-when gate (tests/test_gc_bounds_a_run_file.py) passes and I reproduced it at the new limit (90 passed with tests/test_flight.py), and negative_control.log shows the mutation failing at EXIT=1, but the base/head importer arms the node's done_when also names are unrecorded - suite_base.log stops at 26% and suite_head.log at 3% after the srun step was cancelled at 2026-10-11T04:04:31 (stderr.log), with no summary line or FAILED id in either.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 84e2fb0b..92d3ec6ca touches only the eight declared paths, and no plan, index or unrelated module is modified.\nSCORE durability: 18\nJUSTIFICATION durability: the assertions at tests/test_gc_bounds_a_run_file.py:118-146 compare the bounded file's size and its head/tail lines against independently-derived values (a marker length computed from the test's own template and the pre-move sha256), so reinstating an unbounded write or dropping the marker reddens them; negative_control.log independently shows the unpromoted-run assertion failing when the promoted filter is removed.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/fleet_supervisor.py:549 trim_file_ends follows the module's trim_service_log idiom and the new names carry no plan, ticket or version identifier, though the gc walk now lives in fleet_supervisor.py rather than the routing.py home the brief assigned it.\nSCORE reuse: 13\nJUSTIFICATION reuse: the cut genuinely extends the existing owner (fleet_supervisor.py:627 RUN_FILE_BINARY_SUFFIXES sits beside trim_service_log, which now calls trim_file_ends with head=0), but fleet_supervisor.py:636 _run_directory_captured_files re-implements the run-directory pruning policy reckon/crew/routing.py:527 _run_directory_extractions already owns and does not extend it, and fleet_supervisor.py:658 _sha256_of duplicates reckon/project_state.py:344 _sha256_path without extending it.\nFINDING r-20261011T012957477999-gc-bounds-a-run-file/manifest.md:16 blocking: the run's base/head importer-suite evidence - named in its own done_when (\"the tests importing reckon/crew/routing.py, reckon/crew/fleet_supervisor.py or reckon/flight.py show no added failure against base\") - is unrecorded: suite_base.log stops at 26% and suite_head.log at 3% with no summary line, killed when the srun step was cancelled at 2026-10-11T04:04:31, so the repository's own derivation (reckon/crew/review.py:1887 added_failures_from_gate_logs) reads the two surviving logs as a measured (0, []) false zero while the earlier completed arms in the run's stream report 7 failed / 1378 passed on both sides - a reader comparing the record to the evidence is told nothing added a failure by logs that never finished.\nFINDING r-20261011T012957477999-gc-bounds-a-run-file/manifest.md:17 follow-on: baseline_suite and after_suite carry prose rather than the contract's JSON, so reckon/crew/review.py:1412 _gate_log_path resolves each field to the whole sentence (not a path) and the review read path reports the count unmeasured even though both named logs exist on disk; recording revision, command, exit_status, completed and failure_ids would let the count be derived at all.\nFINDING reckon/crew/fleet_supervisor.py:636 follow-on: _run_directory_captured_files re-implements the run-directory pruning policy that reckon/crew/routing.py:527 _run_directory_extractions already owns (the checkouts/ children and the base-* trees, and the .git test that separates a real worktree from a plain extraction) rather than extending it; the two homes have already drifted, since the new walk also prunes .venv and node_modules and the owner does not, and the brief assigned the walk to routing.py explicitly.\nFINDING reckon/crew/fleet_supervisor.py:658 follow-on: _sha256_of is a second file-digest helper beside reckon/project_state.py:344 _sha256_path; the chunked read is justified for the multi-gigabyte logs this node exists to bound, but the duplication should be folded onto one owner or the reason the owner cannot be extended stated at the definition.\n",
+  "review_run_id": "r-20261011T020447334702-review-of-gc-bounds-a-run-file",
+  "reviewed_base_sha": "84e2fb0b58ad875ffbacc0285f72b67597af10d3",
+  "reviewed_head_sha": "92d3ec6ca7a804b3509b77de8b00713058bf7185",
+  "reviewed_run_id": "r-20261011T012957477999-gc-bounds-a-run-file",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 18,
+    "evidence": 11,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 13,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T02:14:59.651869+00:00",
+  "total": 97
+}
