@@ -25,7 +25,7 @@
   <title>Nothing Lands Unreached | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="24">
+<meta name="plan-version" content="25">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -204,6 +204,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261011T000713071756-dead-serving-helpers-deleted" data-who="reckon-build" data-when="2026-10-11T00:20:00.823Z">
     <div class="r-comment-body"><p>Deleted three unreached helpers — reckon/serve.py::_FleetChangeWatch.armed_roots, reckon/crew_dispatch_commands.py::_OneDocumentStdout.seekable, reckon/crew/session_host.py::_SessionHost._record_name — 13 lines removed, 0 added (source delta −13/+0); grep -rnw over reckon/ tests/ skills/ returns no hit for any of the three; the 89 test files importing the three touched modules pass at 1 failed/875 passed/27 skipped with the sole failure pre-existing (identical in a base-arm scratch tree), added_failure_count 0; negative control fires (a restored call site makes the grep non-empty).</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261011T002016715106-review-of-dead-serving-helpers-deleted" data-who="reckon-build" data-when="2026-10-11T00:27:48.981Z">
+    <div class="r-comment-body"><p>Independent review of dead-serving-helpers-deleted (base 8d56aba9, head edbe7939) stored: goal_fidelity 19, evidence 16, scope_discipline 19, durability 16, fit 20, reuse 20 (total 110); two follow-on findings — the done_when EXIT=0 clause is unmet (head gate EXIT=1, 1 pre-existing failure answered by the base-arm delta) and the reviewed manifest omits the baseline_suite/after_suite fields; added_failure_count 0 derived from the run&#x27;s own base-arm-full.log and gate log.</p></div>
 </div>
 </section>
 </main>
