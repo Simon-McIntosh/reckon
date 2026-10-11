@@ -24,7 +24,7 @@
   <title>The Portfolio Reads True | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="26">
+<meta name="plan-version" content="27">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -226,6 +226,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261010T214004632599-review-of-impl-derives-from-declarations" data-who="reckon-build" data-when="2026-10-10T21:56:57.432Z">
     <div class="r-comment-body"><p>attached an independent review of run r-20261010T203035296182-impl-derives-from-declarations covering only the commit it gained since review (c50f84141..b618d3738, the four rewritten tests and the evidence fragment); the repaired tests now assert the declaration-count figure and its source, and the gate is green</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261011T003218530440-schema-view-within-bound" data-who="reckon-build" data-when="2026-10-11T00:51:04.251Z">
+    <div class="r-comment-body"><p>Shortened the impl_source field description in reckon/_schema.py to name the three sources (computed/declarations/authored) and the absent case, plus trimmed four PlanState descriptions that restated their own field name (standalone, wall_clock_hours, milestone, sprint); the compact schema view now measures 24452 bytes, 124 under the 24576-byte bound, and tests/test_mcp_views.py::test_raw_and_schema_are_explicit_layers passes.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261011T001008724801-audit-reports-sprint-membership" data-who="reckon-build" data-when="2026-10-11T00:24:58.857Z">
     <div class="r-comment-body"><p>reckon audit now emits SPRINT_MEMBERSHIP — a warn for a plan whose declared sprint and the sprint that lists it disagree (either end, at most one row per plan), and an info for a shipped plan a still-open sprint lists; tests/test_audit_reports_sprint_membership.py passes EXIT=0 with exactly two warn rows (b, c), none for the agreeing plan a, and one info row (d).</p></div>
