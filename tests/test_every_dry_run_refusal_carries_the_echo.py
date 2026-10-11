@@ -65,14 +65,6 @@ def _host_flight(*, local_backend: str | None = None) -> str:
 
 
 @pytest.fixture()
-def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    config_home = tmp_path / "config"
-    config_home.mkdir()
-    monkeypatch.setenv("RECKON_HOME", str(config_home))
-    return config_home
-
-
-@pytest.fixture()
 def repo(tmp_path: Path, home: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """A project whose backend command is a synthetic catalog on PATH."""
     bin_dir = tmp_path / "bin"

@@ -36,14 +36,6 @@ IN_PROGRESS_MANIFEST = "node: n\nstatus: in-progress\ncommits: none\n"
 
 
 @pytest.fixture()
-def crew_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    config_home = tmp_path / "config"
-    config_home.mkdir()
-    monkeypatch.setenv("RECKON_HOME", str(config_home))
-    return config_home
-
-
-@pytest.fixture()
 def live_pid():
     """A live process owned by this test, so its pid answers the process table."""
     child = subprocess.Popen(["sleep", "300"])
@@ -101,7 +93,7 @@ def _write(path: Path, text: str, *, age_seconds: float) -> None:
 
 
 def test_a_fresh_run_with_only_its_orientation_write_is_not_unwritten(
-    tmp_path: Path, crew_home: Path, live_pid: int
+    tmp_path: Path, home: Path, live_pid: int
 ) -> None:
     # The worker's first write records where it is working and no status; read
     # seconds later it is a run in motion, not a delivery with a missing word.
@@ -125,7 +117,7 @@ def test_a_fresh_run_with_only_its_orientation_write_is_not_unwritten(
 
 
 def test_a_manifest_caught_mid_rewrite_keeps_the_previous_reading(
-    tmp_path: Path, crew_home: Path, live_pid: int
+    tmp_path: Path, home: Path, live_pid: int
 ) -> None:
     # The previous read saw a working manifest; the next read catches the file
     # between a rewrite's truncate and write, four bytes and a second old. That
@@ -153,7 +145,7 @@ def test_a_manifest_caught_mid_rewrite_keeps_the_previous_reading(
 
 
 def test_a_settled_shrink_is_not_mid_rewrite_once_the_memory_expires(
-    tmp_path: Path, crew_home: Path, live_pid: int
+    tmp_path: Path, home: Path, live_pid: int
 ) -> None:
     # The shrink signature is bounded in time. A path that once held a larger
     # readable manifest and is now smaller and unreadable, its mtime long settled,
@@ -183,7 +175,7 @@ def test_a_settled_shrink_is_not_mid_rewrite_once_the_memory_expires(
 
 
 def test_a_retry_does_not_inherit_the_size_a_predecessor_left(
-    tmp_path: Path, crew_home: Path, live_pid: int
+    tmp_path: Path, home: Path, live_pid: int
 ) -> None:
     # A retry reuses its run directory's manifest path, so a size remembered by
     # path alone would let the second attempt inherit the first attempt's larger
@@ -222,7 +214,7 @@ def test_a_retry_does_not_inherit_the_size_a_predecessor_left(
 
 
 def test_the_size_memory_stays_within_its_bound(
-    tmp_path: Path, crew_home: Path, live_pid: int
+    tmp_path: Path, home: Path, live_pid: int
 ) -> None:
     # A long-lived reader classifies every run it is shown. The memory cannot
     # grow with the fleet's history, so it holds a bounded number of entries and
@@ -247,7 +239,7 @@ def test_the_size_memory_stays_within_its_bound(
 
 
 def test_a_run_past_the_grace_with_no_verdict_still_reads_unwritten(
-    tmp_path: Path, crew_home: Path, live_pid: int
+    tmp_path: Path, home: Path, live_pid: int
 ) -> None:
     # The guard keeps the word's purpose: a live run well past its launch window
     # whose manifest carries no status is genuinely unwritten, so the reading is

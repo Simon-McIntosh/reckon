@@ -50,14 +50,6 @@ def _commit_repository(root: Path, *paths: str) -> None:
 
 
 @pytest.fixture()
-def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    config_home = tmp_path / "config"
-    config_home.mkdir()
-    monkeypatch.setenv("RECKON_HOME", str(config_home))
-    return config_home
-
-
-@pytest.fixture()
 def repositories(tmp_path: Path, home: Path) -> tuple[Path, Path]:
     work_repo = tmp_path / "work-repository"
     (work_repo / "skills" / "reckon-build" / "scripts").mkdir(parents=True)

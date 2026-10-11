@@ -37,14 +37,6 @@ CONFIG = {
 
 
 @pytest.fixture()
-def isolated_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    config_home = tmp_path / "config"
-    config_home.mkdir()
-    monkeypatch.setenv("RECKON_HOME", str(config_home))
-    return config_home
-
-
-@pytest.fixture()
 def repository(tmp_path: Path) -> Path:
     root = tmp_path / "repo"
     (root / "skills" / "reckon-build" / "scripts").mkdir(parents=True)
@@ -92,7 +84,7 @@ def _node(node_id: str, manifest: Path) -> crew.TaskNode:
 
 
 def test_unnamed_dispatches_are_isolated_and_never_reuse_a_captured_session(
-    isolated_home: Path, repository: Path
+    home: Path, repository: Path
 ) -> None:
     """Two unnamed dispatches are disposable; neither registers nor composes a session.
 
@@ -108,7 +100,7 @@ def test_unnamed_dispatches_are_isolated_and_never_reuse_a_captured_session(
 
     def launch(node_id: str, coordinator_session: str) -> dict:
         return crew.dispatch(
-            node=_node(node_id, isolated_home / f"{node_id}.md"),
+            node=_node(node_id, home / f"{node_id}.md"),
             project="proj",
             repo=repository,
             config=CONFIG,

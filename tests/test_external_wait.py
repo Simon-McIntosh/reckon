@@ -21,14 +21,6 @@ def _absent_pid() -> int:
     return int(Path("/proc/sys/kernel/pid_max").read_text().strip()) + 4096
 
 
-@pytest.fixture()
-def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    config_home = tmp_path / "config"
-    config_home.mkdir()
-    monkeypatch.setenv("RECKON_HOME", str(config_home))
-    return config_home
-
-
 def _waiting_run(
     tmp_path: Path,
     run_id: str,

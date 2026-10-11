@@ -34,14 +34,6 @@ from tests.test_crew_recover import PROJECT, _refused_run, _stated_reset
 LIVE_PID = 4_242_424
 
 
-@pytest.fixture()
-def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    config_home = tmp_path / "config"
-    config_home.mkdir()
-    monkeypatch.setenv("RECKON_HOME", str(config_home))
-    return config_home
-
-
 class _Launcher:
     """Stands in for the spawn, recording what was launched, not launching it."""
 

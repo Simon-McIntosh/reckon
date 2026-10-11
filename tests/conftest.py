@@ -1170,6 +1170,21 @@ def isolated_reckon_home(request, tmp_path_factory, monkeypatch):
     return home
 
 
+@pytest.fixture()
+def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    # A test's own configuration home; overrides the session default set by the
+    # autouse ``isolated_reckon_home`` with a path under the test's own tmp_path.
+    config_home = tmp_path / "config"
+    config_home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(config_home))
+    return config_home
+
+
+def test_shared_home_fixture_never_targets_the_real_store(home: Path) -> None:
+    """The shared fixture hands a test a temporary home, never the operator's."""
+    real_store_is_not_a_fixture_target(home)
+
+
 @pytest.fixture(scope="session", autouse=True)
 def isolated_claude_skills_dir(tmp_path_factory):
     """No test's sync or doctor reads or writes the real ~/.claude/skills.
