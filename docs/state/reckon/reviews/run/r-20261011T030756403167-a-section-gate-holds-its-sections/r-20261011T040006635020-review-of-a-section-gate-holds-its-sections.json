@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/roadmap.py:_build_roadmap",
+    "reckon/serve.py:_derive_lifecycle",
+    "reckon/mcp_views.py:_blocking",
+    "reckon/mcp_views.py:_section_gate_blockers"
+  ],
+  "completed_at": "2026-10-11T04:08:02.043Z",
+  "dispatched_at": "2026-10-11T04:00:37Z",
+  "findings": [
+    {
+      "file": "tests/test_a_section_gate_holds_its_sections.py",
+      "line": "67",
+      "severity": "follow-on",
+      "text": "follow-on: the test hands in-memory plan dicts straight to build_roadmap, _derive_lifecycle and resource_view, so it never exercises the production wiring that attaches section_declarations to the served inventory row (reckon/serve.py:1951) or parses gated_sections from the plan HTML (reckon/_plan_html.py:1239); a regression dropping either would keep this gate green while production reverts to blocking the whole plan."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read both commits 658ffe50f and d8192ddc3 against base 6be3fa597; the split, its three callers, the served section declarations, the two tests and the landing fragment all land inside the declared scope.",
+    "done_when": "the done_when names tests/test_a_section_gate_holds_its_sections.py and the importer arms; the manifest and logs/gate-head.log record the focused gate at 49 passed EXIT=0.",
+    "goal": "the node goal is to hold only the named sections when a gate names sections the plan can work around; reckon/roadmap.py:798 split_unpassed_gates returns a naming gate in the section-holding list when the plan still declares a free implementable section, and the three readiness readers consume it.",
+    "manifest": "read; it states the focused gate 49 passed, the head importer arm 902 passed EXIT=0, the base arm 899 passed with one scaffolding failure, and the negative control red at EXIT=1.",
+    "write_paths": "read the manifest's declared paths and the node brief; the five paths in the diff all sit inside the six declared write paths."
+  },
+  "justifications": {
+    "durability": "the negative control at logs/negative-control.log reinstates the regression and reddens test_an_ungated_section_keeps_the_plan_unblocked_across_every_reader at :130 with p reading blocked.",
+    "evidence": "tests/test_a_section_gate_holds_its_sections.py:123 asserts p unblocked and :148 asserts q, r and t blocked across the roadmap row, the served plan and the MCP view, and logs/gate-head.log records 49 passed EXIT=0.",
+    "fit": "split_unpassed_gates sits beside execution_gates at reckon/roadmap.py:798 and follows the module's voice, and no plan, sprint or ticket label appears in any added name or comment.",
+    "goal_fidelity": "reckon/roadmap.py:815-822 returns a naming gate into the section-holding list while the plan row reads unblocked, matching the deliverable at docs/plans/the-portfolio-reads-true.html:160.",
+    "reuse": "split_unpassed_gates composes the existing owners execution_gates and unpassed_gate_blockers (reckon/roadmap.py, reckon/lifecycle.py) rather than duplicating them, and no prior reader scoped a gate to its sections.",
+    "scope_discipline": "git diff 6be3fa597..d8192ddc3 touches exactly five paths, every one inside the declared write paths the manifest lists."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to hold only the named sections when a gate names sections the plan can work around; reckon/roadmap.py:798 split_unpassed_gates returns a naming gate in the section-holding list when the plan still declares a free implementable section, and the three readiness readers consume it.\nVERDICT done_when: the done_when names tests/test_a_section_gate_holds_its_sections.py and the importer arms; the manifest and logs/gate-head.log record the focused gate at 49 passed EXIT=0.\nVERDICT write_paths: read the manifest's declared paths and the node brief; the five paths in the diff all sit inside the six declared write paths.\nVERDICT manifest: read; it states the focused gate 49 passed, the head importer arm 902 passed EXIT=0, the base arm 899 passed with one scaffolding failure, and the negative control red at EXIT=1.\nVERDICT diff: read both commits 658ffe50f and d8192ddc3 against base 6be3fa597; the split, its three callers, the served section declarations, the two tests and the landing fragment all land inside the declared scope.\nCALL_SITES: reckon/roadmap.py:_build_roadmap, reckon/serve.py:_derive_lifecycle, reckon/mcp_views.py:_blocking, reckon/mcp_views.py:_section_gate_blockers\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/roadmap.py:815-822 returns a naming gate into the section-holding list while the plan row reads unblocked, matching the deliverable at docs/plans/the-portfolio-reads-true.html:160.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_a_section_gate_holds_its_sections.py:123 asserts p unblocked and :148 asserts q, r and t blocked across the roadmap row, the served plan and the MCP view, and logs/gate-head.log records 49 passed EXIT=0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 6be3fa597..d8192ddc3 touches exactly five paths, every one inside the declared write paths the manifest lists.\nSCORE durability: 18\nJUSTIFICATION durability: the negative control at logs/negative-control.log reinstates the regression and reddens test_an_ungated_section_keeps_the_plan_unblocked_across_every_reader at :130 with p reading blocked.\nSCORE fit: 19\nJUSTIFICATION fit: split_unpassed_gates sits beside execution_gates at reckon/roadmap.py:798 and follows the module's voice, and no plan, sprint or ticket label appears in any added name or comment.\nSCORE reuse: 20\nJUSTIFICATION reuse: split_unpassed_gates composes the existing owners execution_gates and unpassed_gate_blockers (reckon/roadmap.py, reckon/lifecycle.py) rather than duplicating them, and no prior reader scoped a gate to its sections.\nFINDING tests/test_a_section_gate_holds_its_sections.py:67 follow-on: the test hands in-memory plan dicts straight to build_roadmap, _derive_lifecycle and resource_view, so it never exercises the production wiring that attaches section_declarations to the served inventory row (reckon/serve.py:1951) or parses gated_sections from the plan HTML (reckon/_plan_html.py:1239); a regression dropping either would keep this gate green while production reverts to blocking the whole plan.\n",
+  "review_run_id": "r-20261011T040006635020-review-of-a-section-gate-holds-its-sections",
+  "reviewed_base_sha": "6be3fa597197d79d58c28135b89a0edcd5179de2",
+  "reviewed_head_sha": "d8192ddc37f233dd88e77dff9be76c1a6c802ba8",
+  "reviewed_run_id": "r-20261011T030756403167-a-section-gate-holds-its-sections",
+  "reviewer": {
+    "backend": "local",
+    "effort": "standard",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261011T040006635020-review-of-a-section-gate-holds-its-sections",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T04:06:55.402799+00:00",
+  "total": 114
+}
