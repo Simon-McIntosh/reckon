@@ -14,9 +14,9 @@
 <meta name="plan-status" content="active">
 <meta name="plan-sprint" content="S26">
 <meta name="plan-informs" content="a-review-is-sized-to-its-risk">
-<meta name="plan-version" content="6">
+<meta name="plan-version" content="8">
 <meta name="plan-modified" content="2026-10-11">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
 </head>
 <body>
 <main class="plan-doc">
@@ -25,7 +25,7 @@
 <p>Measured on 2026-10-11 in coordinator session <code>health-review-1010</code>, with its follower attached and the producer live throughout. The review reflex launched no review for these deliveries, and each was dispatched by hand from the live view's <code>next_action</code>:</p><ul><li>first deliveries: <code>source-text-assertions-multi-site</code>, <code>source-text-assertions-single-site</code>, <code>structural-guards-have-one-home</code>, <code>home-fixture-has-one-home</code> and <code>git-test-helper-has-one-home</code>;</li><li>resumed runs whose head moved, for which the reflex launched no review at the new head: <code>structural-guards-have-one-home</code> (<code>c47c99ef6</code> to <code>71bb011d8</code>), <code>gc-bounds-a-run-file</code> (<code>92d3ec6ca</code> to <code>2cf592a55</code> to <code>3fa0ce0ef</code>) and <code>dispatch-names-the-health-review</code> (<code>29185a66a</code> to <code>624314887</code>).</li></ul><p>The review store holds a review at every one of those heads today, but every review in this list was dispatched by the coordinator with <code>reckon crew dispatch --role review</code> after the reflex had launched nothing, not by the reflex itself. A resumed run reads <code>complete</code> again while its stored review is keyed to a superseded head, so the head that merges goes unreviewed unless the coordinator notices. The mechanism meant to prevent this already exists and is reached: <code>dispatch_review_for_run</code> in <code>reckon/crew/recovery_review_dispatch.py</code> calls <code>review_head_move</code> and <code>carry_review_forward</code>, and the watch path in <code>reckon/crew/recovery_watch.py</code> calls it. a-review-is-sized-to-its-risk §5 landed it, saying that a runtime-source move earns a light re-review. So the question is why that path did not launch here, not how to build one.</p>
 
 <h2 id="s2">§2 — Why the reflex launched nothing is recorded</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
 <p><strong>Deliverable.</strong> A read-only investigation, recorded as a report in the run directory, that explains for each of the nine deliveries in §1 why the reflex launched no review. For each delivery, the report records three things. First, whether <code>dispatch_review_for_run</code> was reached for it at all, read from the producer's watch log and the run's review-dispatch records. Second, what <code>review_head_move</code> and <code>carry_review_forward</code> returned for it, reproduced against the run's stored review and its two heads. Third, whether an admission or concurrency bound deferred a launch that was never retried. It ends with one stated cause, or several each with the deliveries it explains, and the module and function a fix must change.</p><p><strong>Done when</strong> the report names a cause for each of the nine deliveries, each cause cited to a log line or a reproduced return value, and names the function §3 changes. A delivery the logs cannot explain is listed as unexplained, with what was missing. The negative control is the report's own reproduction: for one resumed run, calling <code>review_head_move</code> with the run's two heads must return the value the report says it returned. Write paths: the run's own directory.</p>
 
 
@@ -51,6 +51,12 @@
 <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s3" data-id="c-s3-runtime-move-1011" data-who="reckon-build" data-when="2026-10-11T07:00:00Z">
     <div class="r-comment-body"><p>To apply to §3's text before its dispatch (content review finding <code>done_when-1</code>): the first case's resume from A to B must state that the move changes runtime source, because a data-only move is carried forward under a-review-is-sized-to-its-risk §5 and launches nothing. Add a fourth case: a data-only resume carries the stored review forward and launches none. The test file is named for the mechanism (<code>tests/test_a_resumed_head_is_reviewed.py</code>) rather than for this plan's slug.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-10-11T07:55:00Z">
+    <div class="r-comment-body"><p>§2 done. Six of the nine are the review tier's designed skip of test-only changes; two are a re-review whose reused node id collides with the first round's worktree; one is a race with the coordinator's hand dispatch. §3's write path is <code>dispatch_review_for_run</code> in <code>reckon/crew/recovery_review_dispatch.py</code>. Whether test-only runs should skip review is put to the lead. <a href="/reckon/evidence/archive/a-moved-head-is-reviewed-landed.html#s2-why-the-reflex-launched-nothing">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261011T045938262731-why-the-reflex-launched-nothing" data-who="reckon-build" data-when="2026-10-11T05:21:00.452Z">
+    <div class="r-comment-body"><p>read-only investigation; no repository commits by this node, and no repository file was written — every artifact is under the fenced reports directory</p></div>
 </div>
 </section>
 </main>
