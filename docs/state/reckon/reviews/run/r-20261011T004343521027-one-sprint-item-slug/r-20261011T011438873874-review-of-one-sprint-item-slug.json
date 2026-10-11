@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "69043115a6a2cabe499026034a7de1ad799d337a",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/_store.py:2805",
+    "reckon/_store.py:3256",
+    "reckon/doccheck.py:607",
+    "reckon/roadmap.py:1500",
+    "reckon/mcp_discovery.py:653",
+    "reckon/mcp.py:202"
+  ],
+  "completed_at": "2026-10-11T01:21:03.061Z",
+  "dispatched_at": "2026-10-11T01:15:07Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-portfolio-reads-true/one-sprint-item-slug.html",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the base and head roadmap and audit arms are byte-identical because reckon's sprint items are bare slug strings, so the real-data control discriminates string-shape regressions only and the widened slug-then-path mapping rests on the unit test and its negative control alone."
+    }
+  ],
+  "head_log_revision": "69043115a6a2cabe499026034a7de1ad799d337a",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s): reckon/_store.py:2805 and :3256, reckon/doccheck.py:607, reckon/roadmap.py:1500, reckon/mcp_discovery.py:653 and the re-export reckon/mcp.py:202.",
+    "diff": "read 69043115a..37ab7441 commit by commit; one commit moves the four private slug readers into reckon/_store.py:2462 and imports it in the three callers, adds tests/test_one_sprint_item_slug.py and the evidence fragment.",
+    "done_when": "the measure is a grep finding one definition plus tests/test_one_sprint_item_slug.py EXIT=0 plus identical masked roadmap/audit at base and head plus an importer delta plus a negative control; gate.node.txt records 8 passed, negative_control.txt ends EXIT=1, diff.masked.txt reads IDENTICAL, and git diff --numstat over reckon/ is -17.",
+    "goal": "the node's goal is \"Read a sprint item's plan slug through one helper in the store module\"; reckon/_store.py:2462 defines sprint_item_slug and doccheck.py:607, roadmap.py:1500 and mcp_discovery.py:653 reach it, so every reader now reads the slug through one helper.",
+    "manifest": "read; status complete, commits 37ab7441, all six changed_paths inside the fence, tests names the head gate and result, baseline_suite and after_suite are populated with their logs, negative_control_log is set to the red log's bare path.",
+    "write_paths": "read the manifest's declared paths; git diff --numstat 69043115a..37ab7441 touches only reckon/_store.py, reckon/doccheck.py, reckon/roadmap.py, reckon/mcp_discovery.py, tests/test_one_sprint_item_slug.py and the evidence fragment, all inside the fence."
+  },
+  "justifications": {
+    "durability": "negative_control.txt reddens test_reads_a_path_mapping and test_blank_slug_falls_through_to_path when reckon/_store.py:2462 is mutated to ignore the path key, so the guard is verified by reinstating the regression rather than by a green suite.",
+    "evidence": "gate.node.txt records tests/test_one_sprint_item_slug.py 8 passed EXIT=0 and negative_control.txt ends EXIT=1, both re-read, but suite.base.log and suite.head.log both stamp revision 69043115a so the head arm's revision label is the base rather than 37ab7441.",
+    "fit": "reckon/_store.py:2462 follows the module's existing Mapping/Any idiom and its public name matches the doccheck helper it replaces, with no plan or ticket identifier in any symbol, comment or fragment id.",
+    "goal_fidelity": "reckon/_store.py:2462 is the single definition and doccheck.py:607, roadmap.py:1500 and mcp_discovery.py:653 import it, so every reader of the slug now reaches one helper in the store module.",
+    "reuse": "the change extends the lowest-layer owner of the capability at reckon/_store.py:2462 and deletes the three private copies, so no capability the repository owns is forked.",
+    "scope_discipline": "git diff --numstat 69043115a..37ab7441 touches only the declared reckon modules, the test and the fragment, leaving the declared figures directory unused as a done-when with no named artifact requires."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is \"Read a sprint item's plan slug through one helper in the store module\"; reckon/_store.py:2462 defines sprint_item_slug and doccheck.py:607, roadmap.py:1500 and mcp_discovery.py:653 reach it, so every reader now reads the slug through one helper.\nVERDICT done_when: the measure is a grep finding one definition plus tests/test_one_sprint_item_slug.py EXIT=0 plus identical masked roadmap/audit at base and head plus an importer delta plus a negative control; gate.node.txt records 8 passed, negative_control.txt ends EXIT=1, diff.masked.txt reads IDENTICAL, and git diff --numstat over reckon/ is -17.\nVERDICT write_paths: read the manifest's declared paths; git diff --numstat 69043115a..37ab7441 touches only reckon/_store.py, reckon/doccheck.py, reckon/roadmap.py, reckon/mcp_discovery.py, tests/test_one_sprint_item_slug.py and the evidence fragment, all inside the fence.\nVERDICT manifest: read; status complete, commits 37ab7441, all six changed_paths inside the fence, tests names the head gate and result, baseline_suite and after_suite are populated with their logs, negative_control_log is set to the red log's bare path.\nVERDICT diff: read 69043115a..37ab7441 commit by commit; one commit moves the four private slug readers into reckon/_store.py:2462 and imports it in the three callers, adds tests/test_one_sprint_item_slug.py and the evidence fragment.\nCALL_SITES: reckon/_store.py:2805, reckon/_store.py:3256, reckon/doccheck.py:607, reckon/roadmap.py:1500, reckon/mcp_discovery.py:653, reckon/mcp.py:202\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/_store.py:2462 is the single definition and doccheck.py:607, roadmap.py:1500 and mcp_discovery.py:653 import it, so every reader of the slug now reaches one helper in the store module.\nSCORE evidence: 19\nJUSTIFICATION evidence: gate.node.txt records tests/test_one_sprint_item_slug.py 8 passed EXIT=0 and negative_control.txt ends EXIT=1, both re-read, but suite.base.log and suite.head.log both stamp revision 69043115a so the head arm's revision label is the base rather than 37ab7441.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --numstat 69043115a..37ab7441 touches only the declared reckon modules, the test and the fragment, leaving the declared figures directory unused as a done-when with no named artifact requires.\nSCORE durability: 20\nJUSTIFICATION durability: negative_control.txt reddens test_reads_a_path_mapping and test_blank_slug_falls_through_to_path when reckon/_store.py:2462 is mutated to ignore the path key, so the guard is verified by reinstating the regression rather than by a green suite.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/_store.py:2462 follows the module's existing Mapping/Any idiom and its public name matches the doccheck helper it replaces, with no plan or ticket identifier in any symbol, comment or fragment id.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the lowest-layer owner of the capability at reckon/_store.py:2462 and deletes the three private copies, so no capability the repository owns is forked.\nFINDING docs/evidence/fragments/the-portfolio-reads-true/one-sprint-item-slug.html:1 follow-on: the base and head roadmap and audit arms are byte-identical because reckon's sprint items are bare slug strings, so the real-data control discriminates string-shape regressions only and the widened slug-then-path mapping rests on the unit test and its negative control alone.",
+  "review_run_id": "r-20261011T011438873874-review-of-one-sprint-item-slug",
+  "reviewed_base_sha": "69043115a6a2cabe499026034a7de1ad799d337a",
+  "reviewed_head_sha": "37ab7441c73307dd72a326a39f761673209253ea",
+  "reviewed_run_id": "r-20261011T004343521027-one-sprint-item-slug",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T01:20:04+00:00",
+  "total": 119
+}

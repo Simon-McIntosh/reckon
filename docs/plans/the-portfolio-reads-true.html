@@ -24,7 +24,7 @@
   <title>The Portfolio Reads True | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="32">
+<meta name="plan-version" content="33">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -249,7 +249,10 @@
     <div class="r-comment-body"><p>review of run r-20261011T004248005716-membership-severity-reaches-readers read at base 69043115a6a2cabe499026034a7de1ad799d337a..head 9f98ff9db34c63eba5a9f71ced5f377c1e522aa4; the record scores all six dimensions 0..20 (total 114; goal_fidelity 19, evidence 18, scope_discipline 20, durability 19, fit 19, reuse 19), carries added_failure_count 2 (the two test_capability ids the head importers arm shows beyond base, verified pass 25/25 isolated) and one follow-on finding that the flag-fallback severity rule is duplicated between reckon/mcp.py:2543 and reckon/project_maintenance_commands.py:1355.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261011T004343521027-one-sprint-item-slug" data-who="reckon-build" data-when="2026-10-11T01:12:31.586Z">
-    <div class="r-comment-body"><p>One public helper reckon._store.sprint_item_slug replaces the four private sprint-item slug readers (store, roadmap, doccheck, mcp_discovery); grep -rn &quot;def .*item_slug&quot; reckon/ returns one definition imported by the other three; line delta over reckon/ is -17; reckon roadmap and reckon audit for the reckon project are byte-identical at base and head with timestamps and ages masked; tests/test_one_sprint_item_slug.py 8 passed EXIT=0.</p></div>
+    <div class="r-comment-body"><p>One public helper reckon._store.sprint_item_slug replaces the four private sprint-item slug readers (store, roadmap, doccheck, mcp_discovery); grep -rn "def .*item_slug" reckon/ returns one definition imported by the other three; line delta over reckon/ is -17; reckon roadmap and reckon audit for the reckon project are byte-identical at base and head with timestamps and ages masked; tests/test_one_sprint_item_slug.py 8 passed EXIT=0.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261011T011438873874-review-of-one-sprint-item-slug" data-who="reckon-build" data-when="2026-10-11T01:21:03.061Z">
+    <div class="r-comment-body"><p>Reviewed r-20261011T004343521027-one-sprint-item-slug at head 37ab7441 (base 69043115a), the four-to-one slug-reader consolidation: scores goal_fidelity 20, evidence 19, scope_discipline 20, durability 20, fit 20, reuse 20; one follow-on finding that the base/head real-data arms are byte-identical because reckon sprint items are bare slug strings, so the widened slug-then-path mapping rests on the unit test and its negative control alone.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-s7-boundary-1011" data-who="reckon-build" data-when="2026-10-11T03:10:00Z">
     <div class="r-comment-body"><p>To apply to §'s text before its dispatch (content review finding <code>reasoning-1</code>): the deliverable leaves undefined the boundary that decides the outcome, a plan that declares no implementable section outside its gated ones. That includes a plan with no section declarations at all. It is held by the gate, so the plan-level reading stands. This keeps <code>tests/test_roadmap.py::test_gate_verdict_blocks_and_releases_downstream_sections_without_status_edit</code> passing unchanged: its plan carries a gate naming <code>deployment</code> and <code>release</code> and declares no sections, and it must still read <code>blocked</code> and stay out of <code>ready_now</code>. A gate holds only its sections when the plan declares at least one implementable section that no unpassed gate names. The done-when gains that test as a named keep, and the temporary project gains a fourth plan with a section gate and no declarations, asserted blocked.</p></div>
