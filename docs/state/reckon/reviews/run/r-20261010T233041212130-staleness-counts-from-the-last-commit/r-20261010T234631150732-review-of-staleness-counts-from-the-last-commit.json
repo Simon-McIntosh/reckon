@@ -1,0 +1,85 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed run recorded no baseline_suite and no after_suite arm (classification.json manifest prints both null), so the added-failure count was not taken by the run; I reproduced the head gate (118 passed EXIT=0) and the negative control (EXIT=1) but did not run a base arm, so no delta is asserted.",
+  "backend": "clive",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/archive.py:86",
+    "reckon/doccheck.py:593",
+    "reckon/roadmap.py:957"
+  ],
+  "completed_at": "2026-10-10T23:57:11.280Z",
+  "dispatched_at": "2026-10-10T23:46:55Z",
+  "findings": [
+    {
+      "file": "tests/test_doccheck.py",
+      "line": "124",
+      "severity": "follow-on",
+      "text": "follow-on: the plan names the three direct callers of derived_plan_age in tests/test_doccheck.py (lines 124,135,150) as callers that must pass the new arguments, but they were left unchanged, so only the fallback chain (plan-modified, file-created, file-mtime) is exercised and the new last-commit-first branch has no test at this level; low severity - the fallback tests remain correct and the plan's own new module covers the new branch end to end, but the node did not do what the plan wrote."
+    },
+    {
+      "file": "reckon/roadmap.py",
+      "line": "938",
+      "severity": "follow-on",
+      "text": "follow-on: the functional change in this file is _authorisation_age routing through repo_dir/docs_dir, but ~8 additional hunks are formatting-only (import reordering and collapsed conditionals across _plan_dependency_satisfied, _plan_dependency_judgment, sprint_summary_rows, _drift_is_member_progress, target_row, _judgment_member, _gate_section_edges); the repo rule asks that mechanical reformatting not be folded into a feature change because it hides the intended change from a reviewer."
+    },
+    {
+      "file": "reckon/doccheck.py",
+      "line": "653",
+      "severity": "follow-on",
+      "text": "follow-on: the AGING/STALE boundary at exactly 30 days is untested: the new test covers 20 (AGING) and 40 (STALE) only, and the split depends on lifecycle_staleness returning stale only for age_days > ACTIVE_PLAN_STALE_AFTER_DAYS; a plan at exactly 30 days is reported AGING, which matches the plan's 'past 30 days STALE', but no test pins the boundary."
+    },
+    {
+      "file": "tests/test_staleness_counts_from_the_last_commit.py",
+      "line": "130",
+      "severity": "follow-on",
+      "text": "follow-on: the test asserts both _age_of(fixture date) and a literal 20 (40 for the stale plan); the plan's done-when says the ages are derived from the fixture's own dates never written as literals. The literals are stable band checks that do not move with the calendar - not the encoded-current-date defect - so this is a redundant duplicate assertion rather than a fuse."
+    }
+  ],
+  "head_log_revision": "c597bb9997fac182f38dadd197826139854bf90c",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s): reckon/archive.py:86, reckon/doccheck.py:593, reckon/roadmap.py:957",
+    "diff": "read 07d083d4f..c597bb999; five files, +292/-43.",
+    "done_when": "reproduced the gate at head (118 passed EXIT=0, review-gate-head.log) and the negative control (2 failed EXIT=1, review-negctl.log); the new test asserts an AGING row age 20 source commit and a 40-day STALE row, both derived from the fixture's own dates.",
+    "goal": "the head makes derived_plan_age the last-commit-first age owner and routes the audit loop, roadmap _authorisation_age and archive through it; the three production call sites pass repo_dir/docs_dir and every finding carries age_source, so the goal is met. The plan additionally requires the three direct callers in tests/test_doccheck.py to pass the new arguments; they were left unchanged.",
+    "manifest": "read the reviewed manifest; status complete, head gate 118 passed EXIT=0, negative control EXIT=1; no baseline_suite/after_suite arm recorded, and it declares the wider git-date readers for the code-mode review.",
+    "write_paths": "read the plan's declared write paths; the change touches doccheck.py, roadmap.py, archive.py and the new test module plus the evidence fragment, all inside the fence; tests/test_doccheck.py is declared but untouched."
+  },
+  "justifications": {
+    "durability": "the guard has a driving test that flips on the mutation: disabling the lookup makes both test_staleness_counts_from_the_last_commit.py cases fail (reproduced, review-negctl.log EXIT=1) while they pass at head; the assertion reads age_source=='commit' and an age derived from the fixture's own date, so it cannot pass on the mtime path, and every lifecycle finding carries the source. Gaps: the new branch has no unit-level test outside the new module (the three test_doccheck.py callers never pass repo_dir/docs_dir), and the exact 30-day AGING/STALE boundary is untested - only 20 (AGING) and 40 (STALE) are covered, and the split relies on lifecycle_staleness's strict >30.",
+    "evidence": "I reran the named gate at head c597bb999 in the reviewed worktree (118 passed EXIT=0, review-gate-head.log with a header naming revision/tree/command) and independently reproduced the negative control in a scratch export with the commit lookup disabled (_plan_last_committed returns None), where both tests fail with KeyError('aging','AGING') at EXIT=1 (review-negctl.log), so the guard fires under mutation as the reviewed run claims. Docked because the reviewed run recorded no baseline_suite and no after_suite arm (classification.json prints both null), so the added-failure count is unmeasured rather than measured-zero; no base arm was run to establish a delta.",
+    "fit": "the change edits existing readers in place and routes them through the existing owner rather than adding a reader; the new _plan_last_committed is named by what it does, AGING joins the existing SEVERITIES/flag_order scheme, and the message carries a conventional subject with a body and no AI attribution.",
+    "goal_fidelity": "the deliverable lands: derived_plan_age now reads the last one first through the existing _git_last_committed whole-tree map, keyed by the plan path made relative to the repo, falling back to plan-modified, created, then mtime; the audit loop, roadmap's _authorisation_age and archive's find_archive_candidates all pass repo_dir/docs_dir and every finding carries age_source; the AGING band (active, impl<1.0, age 14..30) sits before STALE (>30) with no overlap because lifecycle_staleness returns stale only past 30. Docked because the plan explicitly names the three direct callers in tests/test_doccheck.py as callers that must pass the new arguments, and they were left unchanged (the calls at tests/test_doccheck.py:124,135,150 still pass no repo_dir/docs_dir, so they exercise only the fallback chain).",
+    "reuse": "derived_plan_age stays the single age owner and the new source reuses serve._git_last_committed - the whole-tree map the server already builds - rather than a new git reader; _plan_last_committed is a thin path lookup over that map, and the existing _parse_last_committed/_GitCreationEntry cache is reused unchanged.",
+    "scope_discipline": "the change is confined to the declared write paths plus one evidence fragment, all inside the section's fence, and nothing outside is modified; the naming and attribution checks over the added lines and the message body are clean. Docked for two reasons: the declared write path tests/test_doccheck.py is untouched, so a named deliverable is left undone rather than deferred; and the roadmap.py diff folds ~8 formatting-only hunks (import reordering and collapsed conditionals in _plan_dependency_satisfied, _plan_dependency_judgment, sprint_summary_rows, _drift_is_member_progress, target_row, _judgment_member, _gate_section_edges) into the functional change, which the repo rule discourages - mechanical reformatting mixed with intent is what makes both unreviewable."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a plan's age has an owner, derived_plan_age, that reads the plan's last change first, and that the audit, roadmap and archive report one age and one source; at head c597bb999 derived_plan_age resolves the last one through _plan_last_committed -> serve._git_last_committed(repo_dir, docs_dir), returning source 'commit', and the three production callers (archive.py:86, doccheck.py:593 audit_lifecycle, roadmap.py:957 _authorisation_age) all pass repo_dir/docs_dir; an active plan with impl<1.0 and age 14..30 is reported AGING and past 30 STALE.\nVERDICT done_when: the done-when requires tests/test_staleness_counts_from_the_last_commit.py to build a temp git repo with a plan last-changed 20 days ago and touched today, assert an AGING row age 20 source commit, a second plan last-changed 40 days ago reports STALE, and the negative control to be executed and logged; I reran the gate at head (118 passed EXIT=0, review-gate-head.log) and independently reproduced the negative control in a scratch export with the lookup disabled (2 failed EXIT=1, review-negctl.log).\nVERDICT write_paths: the plan's write paths are reckon/doccheck.py, reckon/roadmap.py, reckon/archive.py, tests/test_doccheck.py, tests/test_staleness_counts_from_the_last_commit.py; the change touches doccheck.py, roadmap.py, archive.py, the new test module and the evidence fragment - tests/test_doccheck.py is declared but untouched.\nVERDICT manifest: read the reviewed manifest and classification.json; status complete, after-arm gate 118 passed EXIT=0, negative control EXIT=1 with the two expected failures; it records NO baseline_suite and NO after_suite arm (classification.json manifest prints both null), so no added-failure delta was taken by the run; it lists the wider git-date readers under evidence_inputs and declares the untouched ones under follow_ons.\nVERDICT diff: read 07d083d4f..c597bb999 change by change; five files, +292/-43: doccheck.py gains _plan_last_committed, the last-commit-first branch in derived_plan_age, age_source on LifecycleFinding and the AGING code; roadmap.py routes _authorisation_age through the new args and carries formatting-only churn; archive.py passes created_at/repo_dir/docs_dir; the new test module and the evidence fragment are added.\nVERDICT call_sites: verified 3 production call site(s)\nSCORE goal_fidelity: 17\nSCORE evidence: 17\nSCORE scope_discipline: 17\nSCORE durability: 17\nSCORE fit: 19\nSCORE reuse: 19\nJUSTIFICATION goal_fidelity: the deliverable lands: derived_plan_age now reads the last one first through the existing _git_last_committed whole-tree map, keyed by the plan path made relative to the repo, falling back to plan-modified, created, then mtime; the audit loop, roadmap's _authorisation_age and archive's find_archive_candidates all pass repo_dir/docs_dir and every finding carries age_source; the AGING band (active, impl<1.0, age 14..30) sits before STALE (>30) with no overlap because lifecycle_staleness returns stale only past 30. Docked because the plan explicitly names the three direct callers in tests/test_doccheck.py as callers that must pass the new arguments, and they were left unchanged (the calls at tests/test_doccheck.py:124,135,150 still pass no repo_dir/docs_dir, so they exercise only the fallback chain).\nJUSTIFICATION evidence: I reran the named gate at head c597bb999 in the reviewed worktree (118 passed EXIT=0, review-gate-head.log with a header naming revision/tree/command) and independently reproduced the negative control in a scratch export with the commit lookup disabled (_plan_last_committed returns None), where both tests fail with KeyError('aging','AGING') at EXIT=1 (review-negctl.log), so the guard fires under mutation as the reviewed run claims. Docked because the reviewed run recorded no baseline_suite and no after_suite arm (classification.json prints both null), so the added-failure count is unmeasured rather than measured-zero; no base arm was run to establish a delta.\nJUSTIFICATION scope_discipline: the change is confined to the declared write paths plus one evidence fragment, all inside the section's fence, and nothing outside is modified; the naming and attribution checks over the added lines and the message body are clean. Docked for two reasons: the declared write path tests/test_doccheck.py is untouched, so a named deliverable is left undone rather than deferred; and the roadmap.py diff folds ~8 formatting-only hunks (import reordering and collapsed conditionals in _plan_dependency_satisfied, _plan_dependency_judgment, sprint_summary_rows, _drift_is_member_progress, target_row, _judgment_member, _gate_section_edges) into the functional change, which the repo rule discourages - mechanical reformatting mixed with intent is what makes both unreviewable.\nJUSTIFICATION durability: the guard has a driving test that flips on the mutation: disabling the lookup makes both test_staleness_counts_from_the_last_commit.py cases fail (reproduced, review-negctl.log EXIT=1) while they pass at head; the assertion reads age_source=='commit' and an age derived from the fixture's own date, so it cannot pass on the mtime path, and every lifecycle finding carries the source. Gaps: the new branch has no unit-level test outside the new module (the three test_doccheck.py callers never pass repo_dir/docs_dir), and the exact 30-day AGING/STALE boundary is untested - only 20 (AGING) and 40 (STALE) are covered, and the split relies on lifecycle_staleness's strict >30.\nJUSTIFICATION fit: the change edits existing readers in place and routes them through the existing owner rather than adding a reader; the new _plan_last_committed is named by what it does, AGING joins the existing SEVERITIES/flag_order scheme, and the message carries a conventional subject with a body and no AI attribution.\nJUSTIFICATION reuse: derived_plan_age stays the single age owner and the new source reuses serve._git_last_committed - the whole-tree map the server already builds - rather than a new git reader; _plan_last_committed is a thin path lookup over that map, and the existing _parse_last_committed/_GitCreationEntry cache is reused unchanged.\nFINDING tests/test_doccheck.py:124 the plan names the three direct callers of derived_plan_age in tests/test_doccheck.py (lines 124,135,150) as callers that must pass the new arguments, but they were left unchanged, so only the fallback chain (plan-modified, file-created, file-mtime) is exercised and the new last-commit-first branch has no test at this level; low severity - the fallback tests remain correct and the plan's own new module covers the new branch end to end, but the node did not do what the plan wrote.\nFINDING reckon/roadmap.py:938 the functional change in this file is _authorisation_age routing through repo_dir/docs_dir, but ~8 additional hunks are formatting-only (import reordering and collapsed conditionals across _plan_dependency_satisfied, _plan_dependency_judgment, sprint_summary_rows, _drift_is_member_progress, target_row, _judgment_member, _gate_section_edges); the repo rule asks that mechanical reformatting not be folded into a feature change because it hides the intended change from a reviewer.\nFINDING reckon/doccheck.py:653 the AGING/STALE boundary at exactly 30 days is untested: the new test covers 20 (AGING) and 40 (STALE) only, and the split depends on lifecycle_staleness returning stale only for age_days > ACTIVE_PLAN_STALE_AFTER_DAYS; a plan at exactly 30 days is reported AGING, which matches the plan's 'past 30 days STALE', but no test pins the boundary.\nFINDING tests/test_staleness_counts_from_the_last_commit.py:130 minor: the test asserts both _age_of(fixture date) and a literal 20 (40 for the stale plan); the plan's done-when says the ages are derived from the fixture's own dates never written as literals. The literals are stable band checks that do not move with the calendar - not the encoded-current-date defect - so this is a redundant duplicate assertion rather than a fuse.\nreviewed_base_sha: 07d083d4fa47df37bb9ace53d885b0e127c89708\nreviewed_head_sha: c597bb9997fac182f38dadd197826139854bf90c\n",
+  "review_run_id": "r-20261010T234631150732-review-of-staleness-counts-from-the-last-commit",
+  "reviewed_base_sha": "07d083d4fa47df37bb9ace53d885b0e127c89708",
+  "reviewed_head_sha": "c597bb9997fac182f38dadd197826139854bf90c",
+  "reviewed_run_id": "r-20261010T233041212130-staleness-counts-from-the-last-commit",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "reuse": 19,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T23:55:01.200204+00:00",
+  "total": 106
+}
