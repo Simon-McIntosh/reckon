@@ -1,0 +1,72 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-10T23:57:48.253Z",
+  "dispatched_at": "2026-10-10T23:52:47Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/lane-and-model-routing.html:120",
+      "id": "reasoning-1",
+      "reason": "a node dispatched to leave \"one owner\" would leave this identity-based resolution in place, so the plan's stated goal is met only in appearance unless \u00a716 names or excludes this site as it did for `dispatch_sections`.",
+      "text": "\u00a716 states the repository-to-projects resolution has two spellings and that \"Only \u00a710's compares git identity\", but `_resolved_node_scope_entries` (reckon/crew/dispatch_claims.py:904-916) builds its repositories as `repository_identity(root) or Path(root).resolve()` and then reads the same `mounted_repository_projects()` map keyed by that identity (dispatch_claims.py:905-907, consumed by `_scope_derivation_project`'s `repository_projects.get(repository, ())`), so a linked worktree is collapsed onto its main checkout's projects there too; \u00a716 gives an explicit exclusion for the sibling `project_mount_repository` but is silent on this one",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "e8ac3286a36ff30210d243e0660d9b1e4660706f5bf5540d2317c8554caff1f6",
+  "plan_slug": "lane-and-model-routing",
+  "plan_version": 72,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-11T00:02:14.807029+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-11T00:02:14.807029+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-lane-and-model-routing.v72.json",
+  "review_run_id": "r-20261010T235217349413-plan-review-of-lane-and-model-routing",
+  "reviewed_blob_sha": "c3c7ecce690073e24771c8883ec3b4613a3d4308",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every symbol \u00a716 cites resolves: `_repository_owning_projects` (reckon/crew_dispatch_commands.py:518), `shadow_source` (reckon/crew/dispatch.py:198, the lookup at :205), `repository_identity` (reckon/crew/node.py:1340), `project_mount_repository` (reckon/crew/dispatch_sections.py:42); the landed-section evidence archive carries anchors s1\u2013s13 and s15.",
+    "done_when": "pass \u2014 \u00a716's measure names a base-arm control: the new test fails on main because `shadow_source` finds no project for the linked worktree, which matches the code (dispatch.py:205 returns `()` for a worktree path, and the fallback scan finds no `crew.json`).",
+    "evidence_paths": "pass \u2014 \u00a716 asserts no gate log of its own; the \"new test module\" is a source path and no session-scratchpad or node-local temporary path is named.",
+    "naming": "pass \u2014 \u00a716 names no new symbol and carries no plan label, ticket number or version tag into a code path.",
+    "reasoning": "a finding \u2014 the population claim (\"Only \u00a710's compares git identity\") omits a third identity-based repository-to-projects site in `reckon/crew/dispatch_claims.py`.",
+    "single_goal": "pass \u2014 one deliverable (one repository-to-projects resolver) with both call sites named, verified by one test module.",
+    "wiring": "pass \u2014 \u00a716 declares no `depends-on` entry, but its only shared-write-path peer (\u00a714, which also edits `reckon/crew_dispatch_commands.py`) and their ordering are carried by the open driving followup `f-lmr-009` (\"Build \u00a714, then \u00a716\", body: \"they run one at a time, \u00a714 first\"); no declared relationship points at a wrong node."
+  },
+  "section_digests": {
+    "_document": "8aee0b66d26dc5ce7edb18efdcbaf5fe43cf7a90b751f9320700da6c7c5ac8c1",
+    "s0": "19f29ce7f4d739b631468c119c6d758faff1d1bd15018de2a5e1e7c1957203ea",
+    "s1": "6760f63ebdb0d0db10c3c004f30d4f4253bfb7582bc7a0e4054fed73e017a02d",
+    "s10": "9f3b98da9be42bc1d1dad77d11079186c59e62315308454b2f442bdfffa7755c",
+    "s11": "2e566713b8ee8cbfcf94503cba2640bac78329b96f748ff0334a858e08287755",
+    "s12": "8a7841af15c5beacc75bf716eab0a317f722daab3a302ec190299ce0c3315350",
+    "s13": "6cc9f5f5d1d9a0d7a981363b2961d554bc1670d016cf5da011e18fd20d24b604",
+    "s14": "f4192a6b66ca1a9df3c0c8b84d6a76f9b7e2708145600fc43403217b7a52c540",
+    "s15": "f771307d6c5f071d884953878a527fd166185d3d25c88171a3028f27f2a174b8",
+    "s16": "382e9551defd3094561a81926ba471b28b2974f0d99715d56c7234cf6744b6c1",
+    "s2": "0c6488cdae0f23d0600410d02191390e773858e9bc75008234f71cc66f01889b",
+    "s3": "6cb602347e0232fe459028eff2010884381d987053d550c4565f581c23032095",
+    "s4": "aa5a29a8662005607992ae17fc914d47e8e48c68b7e65395b4865f6d33ea37f4",
+    "s5": "2ffa1a3b1d2b09433f25a83f8a7a59b1774249bac29b945f2c2273ace57cb1ba",
+    "s6": "6c8117bcfdc7d4b0bafdc4fb2185779998c71b1730b07a0d900b543f02c08ec1",
+    "s7": "07952e2e354db24e76860530568500cc2066b69b4255c020db83677e46cb18e2",
+    "s8": "7ca129403c95fcbc111273a2b419b29279191bc54c157bb6f7d8de0d5b160d34",
+    "s9": "0c546f1c0ce99eb4f03333edf6955f597fcb37c49baa31305dfd52c6b03364d8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T00:02:11.462959+00:00"
+}
