@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 2,
+  "added_failure_ids": [
+    "tests/test_capability.py::test_new_mcp_items_reject_legacy_tier[followups-item0]",
+    "tests/test_capability.py::test_new_mcp_items_reject_legacy_tier[sprints.current.items-item1]"
+  ],
+  "backend": "clive",
+  "base_log_revision": "69043115a6a2cabe499026034a7de1ad799d337a",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/mcp.py:2830",
+    "reckon/mcp.py:2704",
+    "reckon/project_maintenance_commands.py:1295"
+  ],
+  "completed_at": "2026-10-11T01:11:40.007Z",
+  "dispatched_at": "2026-10-11T01:04:57Z",
+  "findings": [
+    {
+      "file": "reckon/mcp.py",
+      "line": "2543",
+      "severity": "follow-on",
+      "text": "follow-on: the flag-fallback severity rule is duplicated verbatim in reckon/project_maintenance_commands.py:1355 (the `\"error\" if item.flag == \"MISSING_IMPL\" else getattr(item, \"severity\", None) or \"warn\"` expression), so the two readers must be edited together if either the fallback or the MISSING_IMPL case changes; the brief fenced reckon/doccheck.py out, but a single resolver outside it would keep one copy."
+    }
+  ],
+  "head_log_revision": "9f98ff9db34c63eba5a9f71ced5f377c1e522aa4",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s): the audit MCP tool entry reckon/mcp.py:2830 registers _audit_tool, which calls _audit at reckon/mcp.py:2704, and the audit CLI at reckon/project_maintenance_commands.py:1295 calls _echo_lifecycle_findings; the node's own test file is not counted.",
+    "diff": "read 6904311..9f98ff9 commit by commit; one commit touches four files \u2014 mcp.py:2536-2551 resolves each lifecycle finding's severity from the finding, project_maintenance_commands.py:1345-1370 adds a severity column to the audit table, and a new test file and evidence fragment are added.",
+    "done_when": "the node's measure is tests/test_lifecycle_severity_reaches_readers.py EXIT=0 with info/warn/error reaching the MCP read and the CLI table and the audit exit code still 1, an importers delta against base, and a negative control; gate-head.log records 2 passed EXIT=0 and I reproduced it at head 9f98ff9db.",
+    "goal": "the source node's goal is `Carry each lifecycle finding's own severity to the MCP and CLI audit readers`; reckon/mcp.py:2543 now derives severity from item.severity and reckon/project_maintenance_commands.py:1350 prints a severity column, so a shipped-plan-in-an-open-sprint row reaches both readers as info.",
+    "manifest": "read; status complete, commits 9f98ff9db, changed_paths name mcp.py, project_maintenance_commands.py, the new test and the evidence fragment, all inside the fence; tests names the head gate and its result, baseline_suite and after_suite are populated with their logs, failure_attribution is empty, and follow_ons names the pre-existing importers failures.",
+    "write_paths": "the run was fenced to reckon/mcp.py, reckon/project_maintenance_commands.py, tests/test_lifecycle_severity_reaches_readers.py, docs/evidence/fragments/the-portfolio-reads-true/membership-severity-reaches-readers.html and a figures directory (prompt.txt); git diff --numstat 6904311..9f98ff9 touches only the first four and leaves the figures directory unused."
+  },
+  "justifications": {
+    "durability": "negative-control.log shows test_mcp_audit_reads_each_finding_own_severity reddening (assert 'warn' == 'info') when mcp.py is mutated to derive severity from the flag, and tests/test_lifecycle_severity_reaches_readers.py:145 fails if the printed severity column is dropped.",
+    "evidence": "gate-head.log records tests/test_lifecycle_severity_reaches_readers.py 2 passed EXIT=0, which I reproduced at head 9f98ff9db, and negative-control.log shows that test reddening on the flag-derived revert at EXIT=1; the importers arm records 2 head-only added ids (test_capability) that I confirmed pass 25/25 isolated at head.",
+    "fit": "the readers follow the inline idiom at reckon/mcp.py:2543 and the existing table formatter at reckon/project_maintenance_commands.py:1345, the commit carries a conventional subject and body with no AI attribution, and the added names carry no plan or ticket label.",
+    "goal_fidelity": "reckon/mcp.py:2543 and reckon/project_maintenance_commands.py:1350 both now take a row's own severity, so an info SPRINT_MEMBERSHIP row reaches MCP and CLI as info; the MISSING_IMPL special case at mcp.py:2544 cannot read an explicit severity on that row, but doccheck.py:813 leaves it at the dataclass default so no current row is misclassified.",
+    "reuse": "no repository capability resolves a lifecycle finding's severity with a flag fallback (a grep of reckon/ found only direct .severity reads on the distinct compliance-finding type at reckon/mcp.py:2219), so nothing is forked; the rule is however written twice.",
+    "scope_discipline": "git diff --numstat 6904311..9f98ff9 touches only the four in-fence files (mcp.py 6/2, project_maintenance_commands.py 17/1, the new test 162/0, the new fragment 28/0) and mutates no plan, index or sprint state."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is `Carry each lifecycle finding's own severity to the MCP and CLI audit readers`; reckon/mcp.py:2543 now derives severity from `item.severity` and reckon/project_maintenance_commands.py:1350 prints a severity column, so a shipped-plan-in-an-open-sprint row reaches both readers as info.\nVERDICT done_when: the node's measure is `tests/test_lifecycle_severity_reaches_readers.py` EXIT=0 with info/warn/error reaching the MCP read and the CLI table and the audit exit code still 1, an importers delta against base, and a negative control; gate-head.log records 2 passed EXIT=0 and I reproduced it at head 9f98ff9db.\nVERDICT write_paths: the run was fenced to reckon/mcp.py, reckon/project_maintenance_commands.py, tests/test_lifecycle_severity_reaches_readers.py, docs/evidence/fragments/the-portfolio-reads-true/membership-severity-reaches-readers.html and a figures directory (prompt.txt); git diff --numstat 6904311..9f98ff9 touches only the first four and leaves the figures directory unused.\nVERDICT manifest: read; status complete, commits 9f98ff9db, changed_paths name mcp.py, project_maintenance_commands.py, the new test and the evidence fragment, all inside the fence; tests names the head gate and its result, baseline_suite and after_suite are populated with their logs, failure_attribution is empty, and follow_ons names the pre-existing importers failures.\nVERDICT diff: read 6904311..9f98ff9 commit by commit; one commit touches four files \u2014 mcp.py:2536-2551 resolves each lifecycle finding's severity from the finding, project_maintenance_commands.py:1345-1370 adds a severity column to the audit table, and a new test file and evidence fragment are added, all inside the declared fence.\nCALL_SITES: reckon/mcp.py:2830, reckon/mcp.py:2704, reckon/project_maintenance_commands.py:1295\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/mcp.py:2543 and reckon/project_maintenance_commands.py:1350 both now take a row's own severity, so an info SPRINT_MEMBERSHIP row reaches MCP and CLI as info; the MISSING_IMPL special case at mcp.py:2544 cannot read an explicit severity on that row, but doccheck.py:813 leaves it at the dataclass default so no current row is misclassified.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-head.log records tests/test_lifecycle_severity_reaches_readers.py `2 passed` EXIT=0, which I reproduced at head 9f98ff9db, and negative-control.log shows that test reddening on the flag-derived revert at EXIT=1; the importers arm records 2 head-only added ids (test_capability) that I confirmed pass 25/25 isolated at head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --numstat 6904311..9f98ff9 touches only the four in-fence files (mcp.py 6/2, project_maintenance_commands.py 17/1, the new test 162/0, the new fragment 28/0) and mutates no plan, index or sprint state.\nSCORE durability: 19\nJUSTIFICATION durability: negative-control.log shows test_mcp_audit_reads_each_finding_own_severity reddening (`assert 'warn' == 'info'`) when mcp.py is mutated to derive severity from the flag, and tests/test_lifecycle_severity_reaches_readers.py:145 test_cli_audit_table_prints_each_severity_and_exits_one fails if the printed severity column is dropped.\nSCORE fit: 19\nJUSTIFICATION fit: the readers follow the inline idiom at reckon/mcp.py:2543 and the existing table formatter at reckon/project_maintenance_commands.py:1345, the commit carries a conventional subject and body with no AI attribution, and the added names carry no plan or ticket label.\nSCORE reuse: 19\nJUSTIFICATION reuse: no repository capability resolves a lifecycle finding's severity with a flag fallback (a grep of reckon/ found only direct .severity reads on the distinct compliance-finding type at reckon/mcp.py:2219), so nothing is forked; the rule is however written twice.\nFINDING reckon/mcp.py:2543 follow-on: the flag-fallback severity rule is duplicated verbatim in reckon/project_maintenance_commands.py:1355 (the `\"error\" if item.flag == \"MISSING_IMPL\" else getattr(item, \"severity\", None) or \"warn\"` expression), so the two readers must be edited together if either the fallback or the MISSING_IMPL case changes; the brief fenced reckon/doccheck.py out, but a single resolver outside it would keep one copy.",
+  "review_run_id": "r-20261011T010429701141-review-of-membership-severity-reaches-readers",
+  "reviewed_base_sha": "69043115a6a2cabe499026034a7de1ad799d337a",
+  "reviewed_head_sha": "9f98ff9db34c63eba5a9f71ced5f377c1e522aa4",
+  "reviewed_run_id": "r-20261011T004248005716-membership-severity-reaches-readers",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T01:10:00+00:00",
+  "total": 114
+}
