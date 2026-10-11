@@ -347,3 +347,134 @@ def test_a_confined_run_offers_its_tree_while_it_is_live(tmp_path, monkeypatch):
         if row["run_id"] == "live-tree"
     }
     assert offered == {held_tree}
+
+
+# ── The run directory is shared, so its ledger set is read across every mount ──
+
+
+def repository_named(root: Path, name: str) -> Path:
+    """A minimal committed checkout carrying project ``name``'s ledger."""
+    repo = root / f"repo-{name}"
+    repo.mkdir(parents=True)
+    _git(repo, "init", "-q", "-b", "main")
+    _git(repo, "config", "user.name", "Test User")
+    _git(repo, "config", "user.email", "test@example.invalid")
+    (repo / "seed.txt").write_text("seed\n")
+    _git(repo, "add", "seed.txt")
+    _git(repo, "commit", "-q", "-m", "test: seed")
+    (repo / "docs" / "state" / name).mkdir(parents=True)
+    return repo
+
+
+def register_mounts(tmp_path: Path, projects: dict[str, Path]) -> Path:
+    """Write the mount registry the gc sweep reads, isolated to the fixture."""
+    mounts = tmp_path / "config" / "mounts.json"
+    mounts.parent.mkdir(parents=True, exist_ok=True)
+    mounts.write_text(
+        json.dumps({"mounts": {name: str(docs) for name, docs in projects.items()}}),
+        encoding="utf-8",
+    )
+    return mounts
+
+
+def record_run_in(project: str, repo: Path, run_id: str) -> None:
+    ledger.append_run(
+        project,
+        ledger.build_record(run_id=run_id, plan="plan-a", gate="passed", node="node-a"),
+        root=repo,
+    )
+
+
+def gc_for(repo: Path, project: str, *, apply: bool) -> dict:
+    result = CliRunner().invoke(
+        cli.main,
+        [
+            "crew",
+            "gc",
+            "--repo",
+            str(repo),
+            "--project",
+            project,
+            "--retention-days",
+            str(RETENTION),
+            *(["--apply"] if apply else []),
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    return json.loads(result.output)
+
+
+def test_gc_keeps_a_peer_projects_run_directory(tmp_path, monkeypatch):
+    """gc from project A offers only the past-retention run directory that no
+    registered project's ledger holds, leaving a peer project's directory on
+    disk even though A's own ledger carries no row for it."""
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
+    repo_a = repository_named(tmp_path, "project-a")
+    repo_b = repository_named(tmp_path, "project-b")
+    monkeypatch.setenv(
+        "RECKON_MOUNTS_PATH",
+        str(
+            register_mounts(
+                tmp_path,
+                {"project-a": repo_a / "docs", "project-b": repo_b / "docs"},
+            )
+        ),
+    )
+    record_run_in("project-a", repo_a, "held-by-a")
+    record_run_in("project-b", repo_b, "held-by-b")
+    dir_a = write_run_dir("held-by-a", age_days=OLD_DAYS)
+    dir_b = write_run_dir("held-by-b", age_days=OLD_DAYS)
+    dir_none = write_run_dir("held-by-none", age_days=OLD_DAYS)
+
+    dry = gc_for(repo_a, "project-a", apply=False)
+    assert {row["path"] for row in dry["unledgered_run_directories"]} == {str(dir_none)}
+
+    applied = gc_for(repo_a, "project-a", apply=True)
+    assert {row["path"] for row in applied["unledgered_run_directories"]} == {
+        str(dir_none)
+    }
+    assert not dir_none.exists()
+    # A's own ledger row spares its directory; B's ledger row, read across the
+    # mount, spares B's. The peer's run directory stays on disk.
+    assert dir_a.is_dir()
+    assert dir_b.is_dir()
+
+
+def test_an_unreadable_peer_ledger_withholds_the_sweep(tmp_path, monkeypatch):
+    """An unreadable registered ledger fails the unledgered sweep closed:
+    nothing is removed, and every would-be row names the unreadable project."""
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
+    repo_a = repository_named(tmp_path, "project-a")
+    repo_b = repository_named(tmp_path, "project-b")
+    monkeypatch.setenv(
+        "RECKON_MOUNTS_PATH",
+        str(
+            register_mounts(
+                tmp_path,
+                {"project-a": repo_a / "docs", "project-b": repo_b / "docs"},
+            )
+        ),
+    )
+    record_run_in("project-a", repo_a, "held-by-a")
+    dir_a = write_run_dir("held-by-a", age_days=OLD_DAYS)
+    record_run_in("project-b", repo_b, "held-by-b")
+    dir_b = write_run_dir("held-by-b", age_days=OLD_DAYS)
+    dir_none = write_run_dir("held-by-none", age_days=OLD_DAYS)
+    # B's ledger is unreadable: a collection that is not list-valued.
+    (repo_b / "docs" / "state" / "project-b" / "crew.json").write_text(
+        json.dumps({"members": [], "runs": "corrupt", "holds": []}), encoding="utf-8"
+    )
+
+    dry = gc_for(repo_a, "project-a", apply=False)
+    rows = {row["path"]: row for row in dry["unledgered_run_directories"]}
+    # A's own directory is unambiguously ledgered, so it is not a candidate;
+    # B's directory and the unledgered one are both withheld rather than offered.
+    assert set(rows) == {str(dir_b), str(dir_none)}
+    assert all("withheld" in row for row in rows.values())
+    assert all("project-b" in row["withheld"] for row in rows.values())
+
+    applied = gc_for(repo_a, "project-a", apply=True)
+    assert all(not row["removed"] for row in applied["unledgered_run_directories"])
+    assert dir_a.is_dir()
+    assert dir_b.is_dir()
+    assert dir_none.is_dir()
