@@ -301,14 +301,18 @@ DOCS_DIR="$REPO_ROOT/docs"
 4. **Wire the plan before writing it.** A live plan that is implementable —
    `plan-status` is not shipped, done, superseded, abandoned, archived,
    historical or reference — must declare at least one of `plan-depends-on`,
-   `plan-blocks`, `plan-informs` or a gate. The audit reports `unwired-plan`
-   and `edit_plan(create=True)` refuses without one, so settle this now rather
-   than discovering it at the write boundary.
+   `plan-blocks`, `plan-informs`, a gate, a section-level wire
+   (`plan-section-depends-on`) or a soft `plan-after`. The audit reports
+   `unwired-plan` and `edit_plan(create=True)` refuses without one, so settle
+   this now rather than discovering it at the write boundary. A plan-level
+   wire is not the only form that silences the finding: a section-scoped wait
+   and a soft sequencing edge count too, so the right wire is also the one the
+   audit accepts.
 
    Work down the sprint's plan list and fill a row per candidate. "It" below is
    the candidate slug in the first column:
 
-   | Candidate (slug) | Does my first section wait on it? | Does it consume my evidence? | Does one section of mine wait on one section of it? | Would starting before it ships be wrong? | Relation to write |
+   | Candidate (slug) | Does my first section wait on it? | Does it consume my evidence? | Does one section of mine wait on one section of it? (`plan-section-depends-on`) | Would starting before it ships be wrong? (`plan-after`) | Relation to write |
    |---|---|---|---|---|---|
    | `…` | | | | | |
    | `…` | | | | | |
