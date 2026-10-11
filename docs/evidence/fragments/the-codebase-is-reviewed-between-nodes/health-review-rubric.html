@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-codebase-is-reviewed-between-nodes">
+  <meta name="plan-evidence-for" content="reckon:the-codebase-is-reviewed-between-nodes">
+  <meta name="plan-verifies" content="reckon:the-codebase-is-reviewed-between-nodes#s5">
+  <meta name="plan-recorded-at" content="2026-10-11">
+  <meta name="plan-verdict" content="passed">
+  <title>Health-review rubric and its parser | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="health-review-rubric-landing" data-node="health-review-rubric" data-reckon="landed" data-when="2026-10-11">
+  <h2>A neighbourhood health review emits six verdicts, classed findings and exactly one treatment</h2>
+  <p><code>reckon/crew/prompts/health_review.md</code> is the rubric for a read-only review of a neighbourhood of code, naming six items — <code>known_findings</code>, <code>duplicate_capability</code>, <code>unreached</code>, <code>interface_growth</code>, <code>width</code>, <code>test_debt</code> — with a <code>RUBRIC_ITEMS</code> line and the one-treatment rule. <code>parse_health_review</code> in <code>reckon/crew/review.py</code> reads the emitted form: six verdicts, findings carrying a class and a citation row, and exactly one <code>TREATMENT</code> line, either the warranted form with its write paths and done-when or <code>TREATMENT: none — &lt;reason&gt;</code>. The gate <code>tests/test_health_review_parses.py</code> passes nine tests at <code>EXIT=0</code>, parses the fixed output to six verdicts and the treatment's write paths, refuses a two-treatment output and a no-write-path treatment by name, and holds the prompt's <code>RUBRIC_ITEMS</code> line equal to the parser's item constant in both directions; the declared negative control, the one-treatment check removed, parses the two-treatment output and fails one test at <code>EXIT=1</code> (the review parser cohort, 65 tests, stays green).</p>
+</article>
+</body>
+</html>
