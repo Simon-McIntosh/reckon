@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-standalone" content="Storage bounds for the crew home and caches; no live plan waits on them and they wait on none. The pick-input index belongs to one-typesafe-model-picker&#x27;s code and is fixed here because its growth is independent of the picker&#x27;s open sections.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
   <title>The Crew Home Has A Bound | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="21">
+<meta name="plan-version" content="22">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -94,7 +94,7 @@
       <code>tests/test_gc_reaches_every_crew_store.py</code>. This section runs after §2, which also writes <code>routing.py</code>.</p>
 
     <h2 id="s4">§4 — A run's captured file has a size limit</h2>
-<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> After a run is promoted, <code>gc</code> reports any file in its run directory over a configured size
       (flight key <code>gc.run_file_max_mb</code>, default 256, added as a <code>gc</code> namespace in
       <code>reckon/schema/flight.yaml</code> with <code>reckon/_flight_schema.py</code> and <code>docs/_shared/flight.schema.json</code>
@@ -165,7 +165,10 @@
     <div class="r-comment-body"><p>landed — gc bounds a promoted run's captured file to gc.run_file_max_mb (default 256): tests/test_gc_bounds_a_run_file.py 3 passed at a 1 MB limit, the log bounded to limit+marker with its first and last line and its original sha256 intact, the .pt reported and untouched, an unpromoted run untouched, and the declared mutation truncating the unpromoted log and failing (EXIT=1)</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261011T034237057470-review-of-gc-bounds-a-run-file" data-who="reckon-build" data-when="2026-10-11T04:04:21.613Z">
-    <div class="r-comment-body"><p>review-of-gc-bounds-a-run-file landed — an independent review of r-20261011T012957477999-gc-bounds-a-run-file stored at both assigned paths as a parsed record (goal_fidelity 19, evidence 18, scope_discipline 12, durability 19, fit 16, reuse 19; total 103), reviewed_base_sha 84e2fb0b, reviewed_head_sha 3fa0ce0ef, added_failure_count 0 with added_failure_ids [] derived from the reviewed run&#x27;s own suite_base.log and suite_head.log</p></div>
+    <div class="r-comment-body"><p>review-of-gc-bounds-a-run-file landed — an independent review of r-20261011T012957477999-gc-bounds-a-run-file stored at both assigned paths as a parsed record (goal_fidelity 19, evidence 18, scope_discipline 12, durability 19, fit 16, reuse 19; total 103), reviewed_base_sha 84e2fb0b, reviewed_head_sha 3fa0ce0ef, added_failure_count 0 with added_failure_ids [] derived from the reviewed run's own suite_base.log and suite_head.log</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-10-11T06:10:00Z">
+    <div class="r-comment-body"><p>§4 landed: a promoted run's captured file is bounded to <code>gc.run_file_max_mb</code>, keeping head, tail and sha256 (merge <code>6492218f8</code>); 0 added failures; review 103/120 after two repair rounds. §5, the operational reclaim, is now unblocked. It is held for the lead's go-ahead because <code>gc --apply</code> over the shared crew home cannot be undone. <a href="/reckon/evidence/archive/the-crew-home-has-a-bound-landed.html#s4-run-file-bound">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261010T230023876216-gc-reaches-every-crew-store" data-who="reckon-build" data-when="2026-10-10T23:40:27.524Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/the-crew-home-has-a-bound/gc-reaches-every-crew-store.html</p></div>
