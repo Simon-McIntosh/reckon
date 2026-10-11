@@ -2459,12 +2459,20 @@ def _comment_entries(comments: Any) -> list:
     ]
 
 
-def _item_slug(it: Any) -> str:
-    return (
-        it
-        if isinstance(it, str)
-        else (it.get("slug", "") if isinstance(it, dict) else "")
-    )
+def sprint_item_slug(item: Any) -> str:
+    """The plan slug a sprint item names, from either item shape on read.
+
+    A sprint item is either a bare slug string or a mapping; a mapping names
+    its plan under ``slug``, with ``path`` accepted as the older spelling.
+    """
+    if isinstance(item, str):
+        return item.strip()
+    if isinstance(item, Mapping):
+        for key in ("slug", "path"):
+            value = item.get(key)
+            if isinstance(value, str) and value.strip():
+                return value.strip()
+    return ""
 
 
 def _apply_set(working: dict, op: dict, is_index: bool, warnings: list[str]) -> None:
@@ -2794,7 +2802,7 @@ def _apply_append(working: dict, op: dict, is_index: bool, warnings: list[str]) 
             if hit is None:
                 raise OpError(f"sprint {sprint_id!r} not found")
             idx, el = hit
-            slug = _item_slug(item)
+            slug = sprint_item_slug(item)
             if not slug:
                 raise OpError("sprint item must have a slug")
             if (
@@ -2806,7 +2814,7 @@ def _apply_append(working: dict, op: dict, is_index: bool, warnings: list[str]) 
                     "new sprint items must use capability instead of legacy tier"
                 )
             items = list(el.get("items", []))
-            if slug in {_item_slug(x) for x in items}:
+            if slug in {sprint_item_slug(x) for x in items}:
                 raise OpError(f"{slug!r} already in sprint {sprint_id}")
             items.append(item)
             sprints[idx] = {**el, "items": items}
@@ -3245,14 +3253,14 @@ def _apply_move(working: dict, op: dict, is_index: bool, warnings: list[str]) ->
     moved = None
     new_from: list = []
     for it in from_items:
-        if _item_slug(it) == slug:
+        if sprint_item_slug(it) == slug:
             moved = it
         else:
             new_from.append(it)
     if moved is None:
         raise OpError(f"{slug!r} not found in sprint {frm}")
     to_items = list(ts.get("items", []))
-    if slug in {_item_slug(x) for x in to_items}:
+    if slug in {sprint_item_slug(x) for x in to_items}:
         raise OpError(f"{slug!r} already in sprint {to}")
     to_items.append(moved)
     sprints[fi] = {**fs, "items": new_from}
