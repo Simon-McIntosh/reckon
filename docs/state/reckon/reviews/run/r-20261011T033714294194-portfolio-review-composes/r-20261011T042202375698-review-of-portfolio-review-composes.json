@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:2066",
+    "reckon/crew_dispatch_commands.py:2165",
+    "reckon/crew_dispatch_commands.py:2173",
+    "reckon/crew/promotion_checks.py:1873",
+    "reckon/crew/routing.py:3180"
+  ],
+  "completed_at": "2026-10-11T04:30:54.541Z",
+  "dispatched_at": "2026-10-11T04:22:24Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261011T033714294194-portfolio-review-composes/negative-control.log",
+      "line": "45",
+      "severity": "blocking",
+      "text": "blocking: the declared negative-control log ends at \"1 failed, 3 passed in 5.73s\" with no bare EXIT code line, so reckon crew check-manifest on r-20261011T033714294194-portfolio-review-composes returns ok false (its last non-blank line is not a bare EXIT line) and promotion refuses the control it was to evidence."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261011T033714294194-portfolio-review-composes/head-importers.log",
+      "line": "3",
+      "severity": "follow-on",
+      "text": "follow-on: the broader importer run records three failing tests (an F near 20 percent and two more in the final line) that the manifest neither attributes under failure_attribution nor names under follow_ons, so added failures outside the cited 35-file subset are not established."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "one landed revision 058bc96c over base 776a5d59; five files \u2014 plan_review.py +617 (composer, parser and store), crew_dispatch_commands.py +82/-14 (--portfolio, --sprint and --rubric currency plus the one-subject refusal), the rubric prompt, the test file and the evidence fragment.",
+    "done_when": "the done_when names tests/test_portfolio_review_composes.py; gate.log records \"4 passed in 4.07s\" EXIT=0, and the file asserts the three non-shipped plans with their impl and age (:164-166), a fixed output parsing to three dispositions (:175), and an omitted plan refused naming it (:188).",
+    "goal": "the node's goal is a portfolio review proposing one disposition per live plan; reckon/crew/plan_review.py:3061 portfolio_review_subject resolves the non-shipped plans in scope, :3137 portfolio_review_brief emits one figure line per plan, and :2888 parse_portfolio_review reads one DISPOSITION per plan, matching the section deliverable.",
+    "manifest": "read; it records status complete, the gate 4 passed EXIT=0, the negative control red at negative-control.log, the head arm 295 passed EXIT=0 at head-review-subset.log, and follow_ons naming the exhaustive importer set as not run to a summary.",
+    "write_paths": "the manifest declares six paths (prompts/portfolio_review.md, crew/plan_review.py, crew_dispatch_commands.py, tests/test_portfolio_review_composes.py, the evidence fragment and the figures dir); git diff --stat 776a5d59..058bc96c shows every changed file inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_portfolio_review_composes.py:166 fails when the shipped filter is removed (the declared mutation reddens it), and :164 asserts the derived impl against a literal the composer cannot move.",
+    "evidence": "gate.log records \"4 passed in 4.07s\" EXIT=0, but the declared control at negative-control.log has no terminal EXIT record, so reckon crew check-manifest on r-20261011T033714294194-portfolio-review-composes returns ok false and the control cannot be admitted.",
+    "fit": "the portfolio store at reckon/crew/plan_review.py:3322 mirrors the sibling code-review store (code_review_path, :2700) under a distinct portfolio prefix, and no added symbol carries a plan, sprint or version label.",
+    "goal_fidelity": "reckon/crew/plan_review.py:3061 filters to plans whose status is not shipped and :3137 emits one DISPOSITION figure line per plan while :2888 refuses an omission by name, matching the node's goal.",
+    "reuse": "every figure is read from the owner that already holds it \u2014 implementable_sections (reckon/roadmap.py:109), derived_plan_age (reckon/doccheck.py:290) and SHIPPED_PLAN_STATUSES (reckon/doccheck.py:176) \u2014 and the new parser and store extend plan_review.py rather than forking one.",
+    "scope_discipline": "all five files in git diff --stat 776a5d59..058bc96c lie inside the manifest's declared write paths, with no edit outside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is a portfolio review proposing one disposition per live plan; reckon/crew/plan_review.py:3061 portfolio_review_subject resolves the non-shipped plans in scope, :3137 portfolio_review_brief emits one figure line per plan, and :2888 parse_portfolio_review reads one DISPOSITION per plan, matching the section deliverable.\nVERDICT done_when: the done_when names tests/test_portfolio_review_composes.py; gate.log records \"4 passed in 4.07s\" EXIT=0, and the file asserts the three non-shipped plans with their impl and age (:164-166), a fixed output parsing to three dispositions (:175), and an omitted plan refused naming it (:188).\nVERDICT write_paths: the manifest declares six paths (prompts/portfolio_review.md, crew/plan_review.py, crew_dispatch_commands.py, tests/test_portfolio_review_composes.py, the evidence fragment and the figures dir); git diff --stat 776a5d59..058bc96c shows every changed file inside them.\nVERDICT manifest: read; it records status complete, the gate 4 passed EXIT=0, the negative control red at negative-control.log, the head arm 295 passed EXIT=0 at head-review-subset.log, and follow_ons naming the exhaustive importer set as not run to a summary.\nVERDICT diff: one landed revision 058bc96c over base 776a5d59; five files \u2014 plan_review.py +617 (composer, parser and store), crew_dispatch_commands.py +82/-14 (--portfolio, --sprint and --rubric currency plus the one-subject refusal), the rubric prompt, the test file and the evidence fragment.\nCALL_SITES: reckon/crew_dispatch_commands.py:2066, reckon/crew_dispatch_commands.py:2165, reckon/crew_dispatch_commands.py:2173, reckon/crew/promotion_checks.py:1873, reckon/crew/routing.py:3180\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:3061 filters to plans whose status is not shipped and :3137 emits one DISPOSITION figure line per plan while :2888 refuses an omission by name, matching the node's goal.\nSCORE evidence: 11\nJUSTIFICATION evidence: gate.log records \"4 passed in 4.07s\" EXIT=0, but the declared control at negative-control.log has no terminal EXIT record, so reckon crew check-manifest on r-20261011T033714294194-portfolio-review-composes returns ok false and the control cannot be admitted.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all five files in git diff --stat 776a5d59..058bc96c lie inside the manifest's declared write paths, with no edit outside them.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_portfolio_review_composes.py:166 fails when the shipped filter is removed (the declared mutation reddens it), and :164 asserts the derived impl against a literal the composer cannot move.\nSCORE fit: 18\nJUSTIFICATION fit: the portfolio store at reckon/crew/plan_review.py:3322 mirrors the sibling code-review store (code_review_path, :2700) under a distinct portfolio prefix, and no added symbol carries a plan, sprint or version label.\nSCORE reuse: 18\nJUSTIFICATION reuse: every figure is read from the owner that already holds it \u2014 implementable_sections (reckon/roadmap.py:109), derived_plan_age (reckon/doccheck.py:290) and SHIPPED_PLAN_STATUSES (reckon/doccheck.py:176) \u2014 and the new parser and store extend plan_review.py rather than forking one.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261011T033714294194-portfolio-review-composes/negative-control.log:45 blocking: the declared negative-control log ends at \"1 failed, 3 passed in 5.73s\" with no bare EXIT code line, so reckon crew check-manifest on r-20261011T033714294194-portfolio-review-composes returns ok false (its last non-blank line is not a bare EXIT line) and promotion refuses the control it was to evidence.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261011T033714294194-portfolio-review-composes/head-importers.log:3 follow-on: the broader importer run records three failing tests (an F near 20 percent and two more in the final line) that the manifest neither attributes under failure_attribution nor names under follow_ons, so added failures outside the cited 35-file subset are not established.\n",
+  "review_run_id": "r-20261011T042202375698-review-of-portfolio-review-composes",
+  "reviewed_base_sha": "776a5d59b48da3f9c65070c2168ff478699e9ffa",
+  "reviewed_head_sha": "058bc96c3d5b32a58d34f394ecf7b6366f854a6f",
+  "reviewed_run_id": "r-20261011T033714294194-portfolio-review-composes",
+  "reviewer": {
+    "backend": "local",
+    "effort": "standard",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261011T042202375698-review-of-portfolio-review-composes",
+  "scores": {
+    "durability": 19,
+    "evidence": 11,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T04:30:03.189693+00:00",
+  "total": 105
+}
