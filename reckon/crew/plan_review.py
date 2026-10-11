@@ -2370,6 +2370,90 @@ def _project_repository(project: str) -> str:
     return str(resolve_project_repository(project, None))
 
 
+def _module_probes(path: str, package: str) -> list[str]:
+    """The dotted module a ``--path`` token names, as absolute candidates.
+
+    ``neighbourhood`` reads a module name or a package-relative ``.py`` file
+    path, so a token is normalised the same way it normalises one: strip a
+    ``.py`` suffix, turn separators into dots, and try the token both as given
+    and under the package. The caller pops trailing components to fall back to
+    an enclosing module, mirroring the reachability instrument's resolution.
+    """
+
+    text = path.replace("\\", "/").strip().rstrip("/")
+    dotted = text.removesuffix(".py").replace("/", ".")
+    if not dotted:
+        return []
+    if dotted.startswith(f"{package}."):
+        return [dotted]
+    return [dotted, f"{package}.{dotted}"]
+
+
+def _modules_beneath(path: str, modules: frozenset[str], package: str) -> list[str]:
+    """The production modules strictly beneath ``path`` when it names a directory.
+
+    The modules come from the package snapshot :func:`neighbourhood` reads, so a
+    file outside the package or untracked at the reviewed revision is not
+    admitted. A path that names a plain file or a leaf module has no module
+    beneath it and yields the empty list, as does a directory carrying no
+    ``.py`` module.
+    """
+
+    for probe in _module_probes(path, package):
+        beneath = sorted(m for m in modules if m.startswith(f"{probe}."))
+        if beneath:
+            return beneath
+    return []
+
+
+def _names_a_module(path: str, modules: frozenset[str], package: str) -> bool:
+    """Whether ``path`` names a production module exactly in the snapshot.
+
+    A file or leaf-module token resolves to the module it spells; the search
+    does not fall back to an enclosing module, so a directory carrying no
+    ``.py`` module is not silently read as the package around it.
+    """
+
+    return any(probe in modules for probe in _module_probes(path, package))
+
+
+def _expand_code_review_paths(
+    repository: str, head: str, paths: Iterable[str]
+) -> list[str]:
+    """Expand each ``--path`` to the production modules it names.
+
+    A path naming a directory expands to every production module beneath it in
+    the package snapshot at ``head``, so naming a directory reviews its modules
+    rather than matching nothing. A path naming a file or a leaf module is kept
+    verbatim, so a single-file subject composes as it did before directories
+    were accepted. A path resolving to no production module is refused by name
+    rather than composing a brief with no neighbourhood.
+    """
+    from reckon import served_code
+    from reckon.crew.node import CrewError
+
+    modules = served_code.package_modules(repository, head)
+    package = next((m.split(".", 1)[0] for m in modules), "")
+    named: list[str] = []
+    for path in paths:
+        text = str(path).strip()
+        if not text:
+            continue
+        expanded = _modules_beneath(text, modules, package)
+        if expanded:
+            for module in expanded:
+                if module not in named:
+                    named.append(module)
+        elif _names_a_module(text, modules, package):
+            if text not in named:
+                named.append(text)
+        else:
+            raise CrewError(
+                f"--path {text!r} matched no production module at the reviewed head"
+            )
+    return named
+
+
 def code_review_subject(
     project: str,
     session: str,
@@ -2406,16 +2490,17 @@ def code_review_subject(
             raise CrewError(
                 f"plan {around!r} names no implementable section write paths"
             )
-    for path in paths:
-        text = str(path).strip()
-        if text and text not in named:
-            named.append(text)
-    if not named:
-        raise CrewError("a code review names a plan (--around) or one or more --path")
     repository = str(repo or _project_repository(project))
     from reckon import fleet_index
 
     head = revision or str(fleet_index._git_head(Path(repository)) or "")
+    requested = [str(path).strip() for path in paths if str(path).strip()]
+    if requested:
+        for module in _expand_code_review_paths(repository, head, requested):
+            if module not in named:
+                named.append(module)
+    if not named:
+        raise CrewError("a code review names a plan (--around) or one or more --path")
     adjacent = sorted(neighbourhood(repository, head, named))
     return {
         "subject": "code",
