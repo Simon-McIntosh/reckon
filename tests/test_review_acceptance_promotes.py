@@ -24,7 +24,6 @@ write.
 from __future__ import annotations
 
 import json
-import subprocess
 from pathlib import Path
 
 import pytest
@@ -33,22 +32,12 @@ from reckon import _plan_html, crew, ledger
 from reckon.crew import recovery
 from reckon.crew import review as review_module
 from reckon.crew.runs import _write_json, crew_home, pointer_path
+from tests.helpers.git import git as _git
 
 PROJECT = "review-acceptance-fixture"
 PLAN = "acceptance-target"
 RUN_ID = "r-20261002T120000000000-acceptance-target"
 GATE_COMMAND = "sh gate.sh"
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    result = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout.strip()
 
 
 def _write_resource(path: Path, state: dict) -> None:

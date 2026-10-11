@@ -8,17 +8,7 @@ from click.testing import CliRunner
 
 from reckon import ledger
 from reckon.cli import main as cli_main
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    result = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout.strip()
+from tests.helpers.git import git as _git
 
 
 def _repository(tmp_path: Path) -> Path:

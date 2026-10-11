@@ -17,7 +17,6 @@ measured rather than restated: the audit through
 
 from __future__ import annotations
 
-import subprocess
 from pathlib import Path
 
 import pytest
@@ -26,6 +25,7 @@ from reckon import crew
 from reckon.crew import promotion, reports
 from reckon.crew.node import TaskNode
 from tests.conftest import EXECUTABLE_GATE_COMMAND
+from tests.helpers.git import git as _git
 
 CITATION_SHAPES = ("none", "[]", "0", "sha")
 
@@ -33,17 +33,6 @@ CITATION_SHAPES = ("none", "[]", "0", "sha")
 SHAPE_SLUGS = {"none": "none", "[]": "empty-list", "0": "zero", "sha": "sha"}
 
 CITES_A_COMMIT = {"none": False, "[]": False, "0": False, "sha": True}
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    result = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout.strip()
 
 
 @pytest.fixture()

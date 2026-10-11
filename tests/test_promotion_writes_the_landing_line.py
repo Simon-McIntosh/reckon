@@ -10,7 +10,6 @@ versioned edit and never depends on a git merge of the plan HTML.
 from __future__ import annotations
 
 import json
-import subprocess
 from pathlib import Path
 
 import pytest
@@ -18,6 +17,7 @@ import pytest
 from reckon import _plan_html, _store, crew
 from reckon.crew import promotion
 from reckon.crew.runs import _write_json, pointer_path
+from tests.helpers.git import git as _git
 
 PROJECT = "landing-line-fixture"
 PLAN = "landing-target"
@@ -35,17 +35,6 @@ LANDING_LINE = (
     "docs/evidence/fragments/landing-target/promotion-writes-the-landing-line.html "
     "carries the anchor"
 )
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    result = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout.strip()
 
 
 def _write_plan(root: Path) -> Path:

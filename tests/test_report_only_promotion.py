@@ -19,7 +19,6 @@ not prove an isolated write.
 from __future__ import annotations
 
 import json
-import subprocess
 from pathlib import Path
 
 import pytest
@@ -27,6 +26,7 @@ import pytest
 from reckon import _plan_html, crew, ledger
 from reckon.crew.runs import _write_json, pointer_path
 from tests.conftest import EXECUTABLE_GATE_COMMAND
+from tests.helpers.git import git as _git
 
 PROJECT = "report-only-fixture"
 PLAN = "report-only-target"
@@ -36,17 +36,6 @@ RUN_IDS = (
     "r-20260917T120000000003-inside-mixed",
     "r-20260917T120000000004-inside-absolute",
 )
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    result = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout.strip()
 
 
 def _write_plan(root: Path) -> Path:

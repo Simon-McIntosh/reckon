@@ -3,23 +3,12 @@
 from __future__ import annotations
 
 import re
-import subprocess
 from pathlib import Path
 
 import pytest
 
 from reckon.crew.dispatch import _lane_prompt
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    result = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout.strip()
+from tests.helpers.git import git as _git
 
 
 @pytest.fixture()

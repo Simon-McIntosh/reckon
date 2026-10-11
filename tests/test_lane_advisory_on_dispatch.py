@@ -5,7 +5,6 @@ from __future__ import annotations
 import copy
 import importlib
 import json
-import subprocess
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -18,6 +17,7 @@ from reckon import _plan_html, crew, crew_dispatch_commands, ledger
 from reckon import cli as cli_module
 from reckon.crew.runs import _write_json, pointer_path
 from tests import test_dispatch_names_its_backend as existing_backend_tests
+from tests.helpers.git import git as _git
 
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
 
@@ -410,17 +410,6 @@ def test_the_refusal_renders_the_count_that_fired_it_not_the_lane_total() -> Non
 PROMOTION_PROJECT = "advisory-project"
 PROMOTION_PLAN = "advisory-plan"
 PROMOTED_AT = "2030-01-02T03:04:05Z"
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    result = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout.strip()
 
 
 @pytest.fixture()

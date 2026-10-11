@@ -28,6 +28,7 @@ import pytest
 
 from reckon import crew, ledger
 from reckon.crew import routing
+from tests.helpers.git import git as _git
 
 PROJECT = "proj"
 ROSTER = f"docs/state/{PROJECT}/crew.json"
@@ -49,17 +50,6 @@ CONFIG = {
     "roles": {"implement": {}},
     "fences": {"time_budget": "25m", "needs_help_after_failures": 2},
 }
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    result = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout.strip()
 
 
 def _run(repository: Path, *arguments: str) -> None:

@@ -32,6 +32,7 @@ from reckon import _plan_html, ledger
 from reckon.cli import main as cli_main
 from reckon.crew import promotion
 from reckon.crew.runs import run_dir
+from tests.helpers.git import git as _git
 
 PROJECT = "proj"
 PLAN = "plan-a"
@@ -48,17 +49,6 @@ GATE_LOG_BODY = (
 # than the bound derived from the recorded duration. A run of exactly this
 # length would pass under one bound and time out under the other.
 STUBBED_REPLAY_SECONDS = 330.0
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    result = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout.strip()
 
 
 def _write_resource(path: Path, state: dict) -> None:

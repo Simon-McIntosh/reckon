@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import ast
 import json
-import subprocess
 from pathlib import Path
 
 import pytest
@@ -21,6 +20,7 @@ from reckon import crew, ledger
 from reckon.crew import routing
 from reckon.crew.runs import _write_json, pointer_path
 from tests.conftest import EXECUTABLE_GATE_COMMAND
+from tests.helpers.git import git as _git
 
 PROJECT = "sample"
 
@@ -90,17 +90,6 @@ def format_stamp(value):
         return _from_iso8601(value)
     return None
 '''
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    result = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout.strip()
 
 
 @pytest.fixture()

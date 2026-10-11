@@ -42,6 +42,7 @@ import reckon.crew.dispatch_launch as dispatch_launch_module
 from reckon import _plan_html, crew
 from reckon.crew import promotion, promotion_release
 from reckon.crew.runs import _write_json, pointer_path
+from tests.helpers.git import git as _git
 
 # `reckon.crew.dispatch` is shadowed by the `dispatch` function the package
 # re-exports, so the module is reached by importlib rather than by attribute.
@@ -70,17 +71,6 @@ MOVED_ROOT_CONTROL_MUTATION = (
     "accept a recorded path whose parent is not the current scratch root"
 )
 MOVED_ROOT_CONTROL = os.environ.get("RECKON_WORKER_SCRATCH_MOVED_NEGATIVE") == "1"
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    result = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout.strip()
 
 
 def _write_resource(path: Path, state: dict) -> None:

@@ -34,6 +34,7 @@ import pytest
 
 from reckon import _backends, _worker_fence, crew, ledger
 from reckon.crew.runs import live_dir, pointer_path, runs_dir
+from tests.helpers.git import git as _git
 
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
 
@@ -91,17 +92,6 @@ class _FailedProbe:
 
     returncode = 1
     stderr = "namespace creation failed: permission denied"
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    result = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout.strip()
 
 
 def _build_repository(config_home: Path, root: Path) -> Path:

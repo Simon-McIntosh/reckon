@@ -18,7 +18,6 @@ review runs of one reviewed run can never name the same committed file.
 from __future__ import annotations
 
 import json
-import subprocess
 from pathlib import Path
 
 import pytest
@@ -29,6 +28,7 @@ from reckon.crew import review as review_module
 from reckon.crew.review import review_path, store_committed_review
 from reckon.crew.runs import _write_json, crew_home, pointer_path, read_pointer
 from tests.conftest import EXECUTABLE_GATE_COMMAND
+from tests.helpers.git import git as _git
 
 PROJECT = "review-record-commit-fixture"
 PLAN = "review-record-commit-target"
@@ -38,17 +38,6 @@ RUN_ID = "r-20261006T120000000000-review-of-a-landed-node"
 REVIEWED_RUN = "r-20261006T110000000000-landed-node"
 
 DISPATCH_TS = "2026-10-06T12:00:00Z"
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    result = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout.strip()
 
 
 def _read(path: Path) -> dict:

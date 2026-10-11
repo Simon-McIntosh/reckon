@@ -12,7 +12,6 @@ rather than by a copy that could drift from it.
 from __future__ import annotations
 
 import json
-import subprocess
 import tempfile
 from pathlib import Path
 
@@ -31,6 +30,7 @@ from reckon.crew.runs import (
     runs_dir,
 )
 from tests.conftest import EXECUTABLE_GATE_COMMAND
+from tests.helpers.git import git as _git
 
 PROJECT = "sample"
 
@@ -83,17 +83,6 @@ def _node(
         manifest_path=manifest_path or str(run_dir("r-role-scope-node") / "manifest.md"),
         spec_level="exact",
     )
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    result = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout.strip()
 
 
 @pytest.fixture()

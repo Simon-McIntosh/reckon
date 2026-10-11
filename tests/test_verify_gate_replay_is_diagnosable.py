@@ -19,7 +19,6 @@ from __future__ import annotations
 
 import json
 import shutil
-import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -30,6 +29,7 @@ from click.testing import CliRunner
 from reckon import _plan_html, ledger
 from reckon.cli import main as cli_main
 from reckon.crew.runs import run_dir
+from tests.helpers.git import git as _git
 
 PROJECT = "proj"
 PLAN = "plan-a"
@@ -53,17 +53,6 @@ FAILING_TEST = (
     "    raise AssertionError('the replayed gate fails')\n"
 )
 STDERR_MARKER = "replay-stderr-marker"
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    result = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout.strip()
 
 
 def _write_resource(path: Path, state: dict) -> None:
