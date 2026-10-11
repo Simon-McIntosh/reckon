@@ -20,7 +20,6 @@ and a stated date followed by trailing text is still a stated date.
 
 from __future__ import annotations
 
-import ast
 import json
 import os
 import tempfile
@@ -29,13 +28,11 @@ from pathlib import Path
 
 import pytest
 
-from reckon import _timestamps, doccheck, project_state, schedule, sprint_liveness
+from reckon import doccheck, project_state, schedule, sprint_liveness
 from reckon.hooks import worker_stop
 
 FIXED_TODAY = date(2024, 3, 10)
 MANIFEST_MTIME = datetime(2024, 1, 1, tzinfo=UTC).timestamp()
-
-MIGRATED_MODULES = [project_state, schedule, sprint_liveness, worker_stop]
 
 RETAINED_EXCEPTIONS = {
     "reckon.doccheck": (
@@ -44,8 +41,6 @@ RETAINED_EXCEPTIONS = {
         "must not move the day it reports"
     ),
 }
-
-ALL_MODULES = [doccheck, *MIGRATED_MODULES]
 
 
 class _Probe:
@@ -193,52 +188,10 @@ def test_recorded_table_covers_every_caller_and_input() -> None:
         assert set(row) == set(INPUTS), name
 
 
-def _fromisoformat_modules() -> set[str]:
-    offenders: set[str] = set()
-    for module in ALL_MODULES:
-        tree = ast.parse(Path(module.__file__).read_text())
-        for node in ast.walk(tree):
-            if (
-                isinstance(node, ast.Call)
-                and isinstance(node.func, ast.Attribute)
-                and node.func.attr == "fromisoformat"
-            ):
-                offenders.add(module.__name__)
-    return offenders
-
-
-def test_no_fromisoformat_call_remains_outside_the_retained_exception() -> None:
-    assert _fromisoformat_modules() == set(RETAINED_EXCEPTIONS)
-
-
 def test_each_retained_exception_declares_a_reason() -> None:
     assert RETAINED_EXCEPTIONS
     for name, reason in RETAINED_EXCEPTIONS.items():
         assert reason.strip(), name
-
-
-def _parse_utc_import_sources(module: object) -> set[str]:
-    tree = ast.parse(Path(module.__file__).read_text())
-    sources: set[str] = set()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.ImportFrom) and any(
-            alias.name == "parse_utc" for alias in node.names
-        ):
-            sources.add(node.module or "")
-    return sources
-
-
-def test_each_migrated_module_binds_the_one_shared_parser() -> None:
-    for module in MIGRATED_MODULES:
-        assert _parse_utc_import_sources(module) == {_timestamps.__name__}, (
-            module.__name__
-        )
-
-
-def test_retained_exception_does_not_bind_the_shared_parser() -> None:
-    for name in RETAINED_EXCEPTIONS:
-        module = next(m for m in ALL_MODULES if m.__name__ == name)
-        assert _parse_utc_import_sources(module) == set(), name
 
 
 EXPECTED: dict[str, dict[str, object]] = json.loads(

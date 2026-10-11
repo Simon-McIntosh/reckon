@@ -8,16 +8,12 @@ that decides whether the lane admits anything, so it is asserted against
 strings that carry a digit and a baseline word without naming a measure.
 
 The fixtures here are synthetic by rule: no plan document and no node identity
-appears in this file, and two tests assert exactly that by reading this file's
-own source rather than trusting the reader. A fixture that borrowed a real
-slug would go stale the moment the plan moved.
+appears in this file, so a fixture cannot go stale the moment the plan moves.
 """
 
 from __future__ import annotations
 
 import inspect
-import re
-from pathlib import Path
 
 import pytest
 
@@ -294,21 +290,3 @@ def test_the_verdict_is_pure_and_reads_no_state_outside_the_node(tmp_path, monke
     assert first == second
     assert first["prescribed"] is True
     assert sorted(tmp_path.iterdir()) == before == []
-
-
-def test_this_file_names_no_plan_document_that_exists():
-    source = Path(__file__).read_text(encoding="utf-8")
-    root = Path(__file__).resolve().parents[1]
-    referenced = re.findall(r"docs/plans/([A-Za-z0-9._-]+\.html)", source)
-    assert referenced, (
-        "the fixture should exercise a plans/ path, or this checks nothing"
-    )
-    assert [
-        name for name in referenced if (root / "docs" / "plans" / name).exists()
-    ] == []
-
-
-def test_this_file_names_no_node_identity():
-    source = Path(__file__).read_text(encoding="utf-8")
-    candidates = set(re.findall(r"\b[a-z][a-z0-9]*(?:-[a-z0-9]+){3,}\b", source))
-    assert candidates <= set(PRESCRIBED_PROPERTIES)

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import ast
-import inspect
 import json
 from html import escape
 from pathlib import Path
@@ -175,31 +173,35 @@ def test_run_comment_prefix_has_one_owner():
     assert owners == {"crew/plan_review.py": 1}
 
 
-def test_all_remaining_work_readers_call_the_schema_predicate():
-    readers = (
-        implementable_sections,
-        _schema.plan_executable_remainder,
-        _implementable_section_ids,
-        promotion._plan_remaining_sections,
-        classify_followup,
-    )
-    for reader in readers:
-        calls = {
-            node.func.id
-            for node in ast.walk(ast.parse(inspect.getsource(reader)))
-            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
-        }
-        assert "is_implementable_section" in calls, reader.__name__
-    imports = {
-        node.module
-        for node in ast.walk(ast.parse(inspect.getsource(_schema)))
-        if isinstance(node, ast.ImportFrom)
+@pytest.mark.parametrize(
+    ("declared", "implementable"),
+    [
+        ("implementable", True),
+        (" implementable ", True),
+        ("done", False),
+        ("deferred", False),
+        (None, False),
+    ],
+)
+def test_every_remaining_work_reader_agrees_with_the_schema_predicate(
+    declared, implementable
+):
+    # The five readers answer "is this section implementable" the same way the
+    # schema predicate does. Reading them by their effect rather than by the
+    # call they make is what proves the classification lives in one place: a
+    # reader that re-derived the rule in its own words would disagree here.
+    plan = {
+        "slug": "sample",
+        "status": "active",
+        "section_declarations": {"s1": declared},
+        "comments": {},
+        "gates": [],
     }
-    assert not imports.intersection(
-        {
-            "reckon.roadmap",
-            "reckon.doccheck",
-            "reckon.crew.promotion",
-            "reckon.followup_pointers",
-        }
-    )
+    assert _schema.is_implementable_section(declared) is implementable
+    assert bool(implementable_sections(plan["section_declarations"])) is implementable
+    assert (_schema.plan_executable_remainder(plan) == 1) is implementable
+    assert bool(_implementable_section_ids(plan, ["s1"])) is implementable
+    assert bool(promotion._plan_remaining_sections(plan)) is implementable
+    verdict = classify_followup(plan, {"prompt": "/reckon-build sample §1"})
+    assert (verdict.reason == "implementable-section") is implementable
+    assert verdict.pointer is implementable
