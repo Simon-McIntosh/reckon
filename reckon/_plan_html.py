@@ -2048,9 +2048,17 @@ def write_state(html_text: str, state: dict) -> str:
     # that figure stays out of the block there — on either side of the write,
     # since regeneration must stay byte-stable whether the records are on disk
     # or only in the state, and a derived figure must never be stored as the
-    # authored one.
+    # authored one. A figure the state derived from the declarations is likewise
+    # the server's, not the file's: a plan that authored no plan-impl meta must
+    # not gain one from a derived count, or a no-change parse and serialise would
+    # stop being byte-identical.
     lifecycle_block: list[tuple[str, str]] = []
-    if "impl" in state and not _impl_is_carried_by_records(state, html_text):
+    impl_is_derived = state.get("impl_source") in {"computed", "declarations"}
+    if (
+        "impl" in state
+        and not impl_is_derived
+        and not _impl_is_carried_by_records(state, html_text)
+    ):
         lifecycle_block.append(("plan-impl", state["impl"]))
     if "version" in state:
         lifecycle_block.append(("plan-version", int(state.get("version") or 0)))
