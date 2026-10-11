@@ -1,0 +1,57 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-11T00:12:41.672Z",
+  "dispatched_at": "2026-10-11T00:09:53Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-codebase-is-reviewed-between-nodes.html:203",
+      "id": "done_when-1",
+      "reason": "as written \u00a77 cannot close on its own measure, and once \u00a77 removes the alias the command those strings hand a coordinator (`reckon crew review-plan ...`) stops existing, so the coordinator must either add `reckon/crew/plan_review.py` to \u00a77's write paths or move the emitted-string rename into \u00a76, whose write paths already cover the file.",
+      "text": "\u00a77's done-when asserts `grep -rn \"review-plan\" skills/ reckon/` returns no hit and enumerates only `reckon/crew/refusals.py`, `reckon/hooks/coordinator_obligations.py` and `reckon/schema/flight-defaults.yaml`, but `reckon/crew/plan_review.py` also holds three hits \u2014 the comment at :144 (\"Spelled as the ``review-plan`` verb takes them\") and the two emitted command strings at :176 (`review_invocation`) and :184 (`answer_invocation`) \u2014 and `plan_review.py` is not among \u00a77's write paths (it is \u00a76's), so the grep cannot pass with the writes \u00a77 is granted",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-codebase-is-reviewed-between-nodes.html:152",
+      "id": "anchors_resolve-1",
+      "reason": "each anchor names its own symbol beside the line, so a reader resolves it by search; the drift is cosmetic and the plan is unchanged by correcting it.",
+      "text": "\u00a75 cites `parse_plan_review_report, line 742` in `reckon/crew/review.py` and \u00a76 cites `crew_review_plan, line 1782` in `reckon/crew_dispatch_commands.py`, but those symbols now sit at `review.py:814` and `crew_dispatch_commands.py:1918` (lines 742 and 1782 land in a comment block and a `click.option` respectively), and \u00a73's \"3,264 lines\" for `review.py` reads 3,458 at this head",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "f811b57b1cf0c18c74c32395edfd514b53865ac34c29409889ae81d1e8cb5bdc",
+  "plan_slug": "the-codebase-is-reviewed-between-nodes",
+  "plan_version": 18,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261011T000926631576-plan-review-of-the-codebase-is-reviewed-between-nodes",
+  "reviewed_blob_sha": "60642fadb4493107cbdf68d19714c0e1def0114c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the symbol anchors resolve by name but two cited line numbers no longer name their symbol.",
+    "done_when": "a finding \u2014 \u00a77's done-when requires `grep -rn \"review-plan\" skills/ reckon/` to return no hit, but `reckon/crew/plan_review.py` holds three hits and is not in \u00a77's write paths.",
+    "evidence_paths": "pass \u2014 deliverables write tests under `tests/`, the composer writes review records under the crew reports root, and \u00a79/\u00a710 gates read committed ledgers and stores; no gate is routed to a session scratchpad or node-local path.",
+    "naming": "pass \u2014 the only symbols the plan introduces (`known_findings`, `duplicate_capability`, `unreached`, `interface_growth`, `width`, `test_debt`, `findings.py`) name mechanisms; no plan label, sprint id, ticket number or version tag reaches code, and no changelog prose was added.",
+    "reasoning": "pass \u2014 the stated root cause matches the cited evidence (verified: `control_summary.json` `recurrence_pre` 650 repeat + 784 first = 1,434; `reach_graph.log` \"test-only modules: 7\" including `reckon/crew/hold.py`; `portfolio.csv` 63 non-shipped + header; `control_out.txt` 55 findings / 55 distinct on `dispatch.py`), each section's mechanism can produce its done-when, and every mechanism names the caller that runs it (\u00a73 the MCP view and `reckon crew ledger`; \u00a76 the dispatch path; \u00a79 `dispatch_admission`; \u00a710 the velocity view).",
+    "single_goal": "pass \u2014 each implementable section names one deliverable (s6 one renamed verb, s7 the skill and its adoption, s8 the portfolio rubric, s9 the dispatch payload block, s10 the velocity field, s11 the proving run); no section carries two independently-closable goals.",
+    "wiring": "pass \u2014 `plan-section-depends-on` declares only `s6 \u2192 nothing-lands-unreached#s2`, which resolves to the reach instrument now present at `reckon/served_code.py:1013` (`neighbourhood`), and both evidence gates (`g-tcirbn-reach-instrument` on s6, `g-tcirbn-cited-commands` on s7) are closed/passed at the integrated head; the followup f-tcirbn-002 order (\u00a73; \u00a74; \u00a75; \u00a76 after the reach gate; \u00a77, \u00a78, \u00a79; \u00a710; \u00a711) agrees with each section's own \"runs after\" prose, so the previously-raised order inversion is resolved."
+  },
+  "section_digests": {
+    "_document": "d0b7c95c017d519b16e9d4ffc1a346e61415c5c2e83d1dada0dedd21c4f3b5fd",
+    "s1": "9b90bb5d52612fe5176b665cf841e1e32b7f38a28ba1b61073a75cc3d069801a",
+    "s10": "fd23d07301f3cad0c97fef7db3a37873185ea49a190df387e6b4c9c4842520cc",
+    "s11": "9e366a36d7c955b9e20809f7f939f7e5341dea805985ebb4bbd30a8a826983f7",
+    "s2": "449650cf3f83a3d58ac9fd8300f391af35ba5aa8ae747d9364d73ed77c82aa7e",
+    "s3": "2c449e0173e76fffe6ccc80b5373b095fe1d7916e7948747fa0976dfb315f33e",
+    "s4": "d90c4e0ae9e513908951452540ead3c635b9c43faa46f9400dd8449543cce1d6",
+    "s5": "6ffcc77242984ec10be759d78f7a93debe73b3743dc9186527661e58ccfe8316",
+    "s6": "cff9b0b879d09b64cc4138b82c72e4814e531c6cf053920f3c05931bbf43abc4",
+    "s7": "d4bab6166d5c436fc12815244f86a04121deb2ca67fc71c1fd66d0498d89fbcf",
+    "s8": "1b50194c1f0c6912b871f624cbfcfc01fc0e693a036d87844203a29ba311f17b",
+    "s9": "f03878914cabdb64631b914dba06b3963c765228e774c1419ab91b13e71b1e9d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T00:20:48.713286+00:00"
+}
