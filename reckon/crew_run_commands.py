@@ -493,38 +493,59 @@ def crew_dispose(
             "index must be named to answer it"
         )
 
-    try:
-        pointer = runs.read_pointer(reviewed_run_id)
-    except runs.CrewError:
-        pointer = None
-    if pointer is None:
-        # A promoted run has no live pointer, and an empty mapping here is a
-        # tree of ``.``: the head would be resolved from the caller's own
-        # repository and the review selected against a revision belonging to
-        # something else.
-        tree = None
-        try:
-            head = _reviewed_head_from_run_records(project, reviewed_run_id)
-        except ValueError as exc:
-            raise click.ClickException(str(exc)) from exc
-    else:
-        # The revision the run's work is at, named by the refusal below when the
-        # store's record describes another; the record itself is selected
-        # through the reading both readers share.
-        head, _tree = recovery._review_head_and_tree(pointer)
-    try:
-        if pointer is None:
-            stored, described = recovery.select_review_for_head(
-                project, reviewed_run_id, head, tree=tree
-            )
-        else:
-            stored, described = obligations_module.stored_review_for_run(
-                project, reviewed_run_id, pointer
-            )
-    except (OSError, ValueError) as exc:
+    # A code review scores no dimensions, so its only disposition space is its
+    # findings: a dimension named against one is refused by name rather than
+    # resolved to a dimension no code review carries.
+    code_key = review_module.code_review_identity(reviewed_run_id)
+    if code_key and named_dimension:
         raise click.ClickException(
-            f"cannot read the stored review for run {reviewed_run_id!r}: {exc}"
-        ) from exc
+            f"run {reviewed_run_id!r} is a code review, and a code review "
+            "scores no dimensions; name one of its findings with --finding, "
+            "which is the only space a code review's entries live in"
+        )
+
+    if code_key:
+        # A code review is keyed by the neighbourhood it read rather than by a
+        # revision, so its record is resolved through the store's own path
+        # builder and read directly; no head or run pointer is consulted.
+        _record_path, stored = review_module.code_review_record_for_run(
+            project, reviewed_run_id
+        )
+        described = ""
+        head = str((stored or {}).get("reviewed_revision") or "")
+    else:
+        try:
+            pointer = runs.read_pointer(reviewed_run_id)
+        except runs.CrewError:
+            pointer = None
+        if pointer is None:
+            # A promoted run has no live pointer, and an empty mapping here is a
+            # tree of ``.``: the head would be resolved from the caller's own
+            # repository and the review selected against a revision belonging to
+            # something else.
+            tree = None
+            try:
+                head = _reviewed_head_from_run_records(project, reviewed_run_id)
+            except ValueError as exc:
+                raise click.ClickException(str(exc)) from exc
+        else:
+            # The revision the run's work is at, named by the refusal below when
+            # the store's record describes another; the record itself is
+            # selected through the reading both readers share.
+            head, _tree = recovery._review_head_and_tree(pointer)
+        try:
+            if pointer is None:
+                stored, described = recovery.select_review_for_head(
+                    project, reviewed_run_id, head, tree=tree
+                )
+            else:
+                stored, described = obligations_module.stored_review_for_run(
+                    project, reviewed_run_id, pointer
+                )
+        except (OSError, ValueError) as exc:
+            raise click.ClickException(
+                f"cannot read the stored review for run {reviewed_run_id!r}: {exc}"
+            ) from exc
     if stored is None:
         if described:
             raise click.ClickException(
@@ -564,7 +585,7 @@ def crew_dispose(
             )
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
-    _, record = review_module.stored_record(
+    record = review_module.stored_record_for_disposition(
         project, reviewed_run_id, reviewed_head_sha=reviewed_head_sha
     )
     if finding_index is None:

@@ -28,7 +28,7 @@ against it.
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping
 from pathlib import Path
 from typing import Any
 
@@ -59,13 +59,16 @@ _PLAN_DIRNAME = _review.COMMITTED_PLAN_DIRNAME
 
 
 def _record_kind(record: Mapping[str, Any]) -> str:
-    """Whether a stored record is a run review or a plan review.
+    """Whether a stored record is a code review, a run review or a plan review.
 
-    A run review names the run it reviews; a plan review names no reviewed run
-    and carries plan findings whose anchor is a plan path or a plan section.
-    The reviewed run id, present or absent, is the one key the two populations
-    differ on.
+    A code review names its ``subject`` as ``code``. A run review names the run
+    it reviews; a plan review names no reviewed run and carries plan findings
+    whose anchor is a plan path or a plan section. The subject key is consulted
+    first because a code review names neither a reviewed run nor a plan, so it
+    would otherwise be read as a plan review and its findings dropped.
     """
+    if str(record.get("subject") or "").strip() == "code":
+        return "code"
     if str(record.get("reviewed_run_id") or "").strip():
         return "run"
     return "plan"
@@ -162,9 +165,40 @@ def _plan_findings(record: Mapping[str, Any]) -> list[dict[str, Any]]:
     return rows
 
 
+def _code_findings(record: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """The findings a code review carries, each with a path and line split out.
+
+    A code review's finding names its location the same way a plan finding does
+    — an ``anchor`` of ``<file>:<line>`` — so the split is the plan reader's.
+    Its finding class is carried as ``severity``, the spelling the rows present,
+    so the class a code reviewer assigned reads beside the text it qualifies.
+    """
+    findings = record.get("findings")
+    if not isinstance(findings, list):
+        return []
+    rows: list[dict[str, Any]] = []
+    for finding in findings:
+        if not isinstance(finding, Mapping):
+            continue
+        path, line = _split_anchor(str(finding.get("anchor") or ""))
+        rows.append(
+            {
+                "id": str(finding.get("id") or "").strip(),
+                "path": path,
+                "line": line,
+                "text": str(finding.get("text") or "").strip(),
+                "severity": str(finding.get("class") or "").strip() or None,
+            }
+        )
+    return rows
+
+
 def _record_findings(record: Mapping[str, Any]) -> list[dict[str, Any]]:
     """Every finding a stored record carries, whatever its subject kind."""
-    if _record_kind(record) == "plan":
+    kind = _record_kind(record)
+    if kind == "code":
+        return _code_findings(record)
+    if kind == "plan":
         return _plan_findings(record)
     return _run_findings(record)
 
@@ -223,6 +257,11 @@ def _record_rows(record: Mapping[str, Any], root: Path | None) -> list[dict[str,
     reviewed_run_id = str(record.get("reviewed_run_id") or "").strip()
     _carried_base, _base, carried_head, head = _review.carried_revision_pair(record)
     reviewed_head_sha = str(head or "").strip() if carried_head else ""
+    # A code review names the revision it read ``reviewed_revision`` rather than
+    # the run-review pair, so its head is that field; a run or plan review
+    # resolves its head from the shared revision pair.
+    if str(record.get("subject") or "").strip() == "code":
+        reviewed_head_sha = str(record.get("reviewed_revision") or "").strip()
     rows: list[dict[str, Any]] = []
     for index, finding in enumerate(_record_findings(record)):
         raw_path = str(finding.get("path") or "").strip()
@@ -264,6 +303,35 @@ def _committed_record_paths(project: str, root: Path | None) -> list[Path]:
     ]
 
 
+def _stored_code_reviews(project: str) -> list[dict[str, Any]]:
+    """The project's stored code reviews, read from the store that holds them.
+
+    A code review is written to the crew home's review store rather than the
+    code-review tree the committed walk covers, so it is read through the
+    store's own listing — the reader that already knows the file family and the
+    key — rather than by a second walk of a directory this module would have to
+    name.
+    """
+    from reckon.crew import plan_review
+
+    return plan_review.list_code_reviews(project=project)
+
+
+def _project_records(project: str, root: Path | None) -> Iterator[dict[str, Any]]:
+    """Every stored review finding source of a project, committed and home alike.
+
+    The committed run and plan reviews are walked from the project's own tree;
+    the code reviews live only in the crew home store, so they are appended from
+    the reader that owns them. Yielding records rather than paths lets one row
+    builder read both populations.
+    """
+    for record_path in _committed_record_paths(project, root):
+        record = _review._committed_record_at(record_path)
+        if record is not None:
+            yield record
+    yield from _stored_code_reviews(project)
+
+
 def findings_by_path(
     project: str,
     *,
@@ -297,10 +365,7 @@ def findings_by_path(
     artefacts: list[dict[str, Any]] = []
     all_rows: list[dict[str, Any]] = []
     records_read = 0
-    for record_path in _committed_record_paths(project, root_path):
-        record = _review._committed_record_at(record_path)
-        if record is None:
-            continue
+    for record in _project_records(project, root_path):
         records_read += 1
         for row in _record_rows(record, root_path):
             if prefix and not row["path"].startswith(prefix):
