@@ -2040,7 +2040,16 @@ def _run_review(
 
     code_subject = bool(around_plan or paths)
     detail = ""
-    if answer:
+    if plan_slug and code_subject:
+        # The two subject kinds read different subjects and are keyed
+        # differently — a plan by its content, a code review by its
+        # neighbourhood — so a command naming both would silently drop one of
+        # them and report a review of something nobody asked for.
+        detail = (
+            "--plan names a plan review and --around or --path names a code "
+            "review; name one subject"
+        )
+    elif answer:
         if acted == (declined is not None):
             detail = "--answer requires exactly one of --acted or --declined REASON"
         elif dry_run or local:

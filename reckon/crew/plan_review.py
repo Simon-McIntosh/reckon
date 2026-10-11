@@ -59,7 +59,7 @@ import json
 import re
 import shlex
 import subprocess
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -1872,6 +1872,7 @@ def write_review_sidecar(
     report_path: Path | None = None,
     payload: Mapping[str, Any] | None = None,
     store_error: str | None = None,
+    name: str = _REVIEW_SIDECAR_NAME,
 ) -> Path:
     """Write the sidecar that joins a report to the plan content it read.
 
@@ -1886,6 +1887,9 @@ def write_review_sidecar(
     rewrites the delivery's own bytes rather than re-deriving them. A store
     that refuses the delivery records its reason under ``store_error``; a
     delivery stored cleanly carries no such key.
+
+    ``name`` is the sidecar's file name, so a code delivery's sidecar is written
+    by this one writer under the name its own report kind is read by.
     """
     directory = Path(directory)
     if payload is None:
@@ -1903,7 +1907,7 @@ def write_review_sidecar(
         payload = dict(payload)
     if store_error is not None:
         payload["store_error"] = str(store_error)
-    path = directory / _REVIEW_SIDECAR_NAME
+    path = directory / name
     write_json_atomically(path, payload, indent=2, sort_keys=True, mode=None)
     return path
 
@@ -1916,6 +1920,54 @@ def _stored_review_run_ids(project: str) -> set[str]:
         if run_id:
             ids.add(run_id)
     return ids
+
+
+def _delivered_report_sidecars(
+    root: Path,
+    *,
+    keep: Callable[[Mapping[str, Any]], bool],
+    stored: set[str],
+    sidecar_name: str | None = None,
+) -> list[dict[str, Any]]:
+    """Return the delivered reports under a report root, newest first.
+
+    One walker serves both report roots. A delivered report is a directory
+    carrying the report file and a sidecar beside it, and the caller supplies
+    the predicate that recognises the kind it is reading, so the plan-review and
+    code-review deliveries are enumerated the same way rather than by two walks
+    that can disagree. Each returned dict is the sidecar plus ``report_path``
+    (the report file's path), ``sidecar_path``, ``review_run_id`` (the
+    directory's name unless the sidecar names its own) and ``stored`` — whether
+    a stored record already carries that run id, so a composed report is not
+    re-stored.
+    """
+    if not root.is_dir():
+        return []
+    name = sidecar_name or _REVIEW_SIDECAR_NAME
+    found: list[dict[str, Any]] = []
+    for directory in root.iterdir():
+        if not directory.is_dir():
+            continue
+        sidecar_path = directory / name
+        report_path = directory / _REVIEW_REPORT_NAME
+        if not (sidecar_path.is_file() and report_path.is_file()):
+            continue
+        sidecar = _load(sidecar_path)
+        if sidecar is None or not keep(sidecar):
+            continue
+        entry = dict(sidecar)
+        entry["report_path"] = str(report_path)
+        entry["sidecar_path"] = str(sidecar_path)
+        entry["review_run_id"] = str(
+            sidecar.get("review_run_id") or directory.name
+        ).strip()
+        entry["stored"] = entry["review_run_id"] in stored
+        entry["_mtime_ns"] = report_path.stat().st_mtime_ns
+        found.append(entry)
+    found.sort(key=lambda item: item["_mtime_ns"], reverse=True)
+    for entry in found:
+        entry.pop("_mtime_ns", None)
+    return found
 
 
 def delivered_reports(
@@ -1940,42 +1992,55 @@ def delivered_reports(
     legacy fingerprints, taking precedence over ``plan_fingerprint``.
     """
     root = _plan_review_report_root(project, plan_slug)
-    if not root.is_dir():
-        return []
-    stored = _stored_review_run_ids(project)
     wanted = (
         _fingerprint_forms(plan)
         if plan is not None
         else _wanted_fingerprints(plan_fingerprint)
     )
-    found: list[dict[str, Any]] = []
-    for directory in root.iterdir():
-        if not directory.is_dir():
-            continue
-        sidecar_path = directory / _REVIEW_SIDECAR_NAME
-        report_path = directory / _REVIEW_REPORT_NAME
-        if not (sidecar_path.is_file() and report_path.is_file()):
-            continue
-        sidecar = _load(sidecar_path)
-        if sidecar is None:
-            continue
-        if (
-            wanted is not None
-            and str(sidecar.get("plan_fingerprint") or "") not in wanted
-        ):
-            continue
-        entry = dict(sidecar)
-        entry["report_path"] = str(report_path)
-        entry["review_run_id"] = str(
-            sidecar.get("review_run_id") or directory.name
-        ).strip()
-        entry["stored"] = entry["review_run_id"] in stored
-        entry["_mtime_ns"] = report_path.stat().st_mtime_ns
-        found.append(entry)
-    found.sort(key=lambda item: item["_mtime_ns"], reverse=True)
-    for entry in found:
-        entry.pop("_mtime_ns", None)
-    return found
+    return _delivered_report_sidecars(
+        root,
+        keep=lambda sidecar: (
+            wanted is None or str(sidecar.get("plan_fingerprint") or "") in wanted
+        ),
+        stored=_stored_review_run_ids(project),
+    )
+
+
+def delivered_code_reviews(
+    project: str,
+    *,
+    around: str | None = None,
+) -> list[dict[str, Any]]:
+    """Return the delivered code-review reports under a project, newest first.
+
+    A delivered code review is a neighbourhood directory carrying both
+    ``report.md`` and its ``code-review.json`` sidecar, enumerated by the walker
+    the plan deliveries use, so both kinds of delivery are read one way. Each
+    returned dict is the sidecar plus ``report_path``, ``sidecar_path``,
+    ``review_run_id`` and ``stored``, under the same keys a plan delivery
+    carries. ``around`` keeps only the reviews composed around one plan, which
+    is how a plan's build finds the code reviews its own sections prompted
+    without reading a review another plan composed.
+    """
+    return _delivered_report_sidecars(
+        _code_review_report_root(project),
+        keep=lambda sidecar: (
+            str(sidecar.get("subject") or "") == "code"
+            and (not around or str(sidecar.get("around") or "") == around)
+        ),
+        stored=_stored_code_review_run_ids(project),
+        sidecar_name=CODE_REVIEW_SIDECAR_NAME,
+    )
+
+
+def _stored_code_review_run_ids(project: str) -> set[str]:
+    """Return the review-run ids the stored code reviews for ``project`` carry."""
+    ids: set[str] = set()
+    for record in list_code_reviews(project=project):
+        run_id = str(record.get("review_run_id") or "").strip()
+        if run_id:
+            ids.add(run_id)
+    return ids
 
 
 def report_carries_review_lines(text: str) -> bool:
@@ -2007,6 +2072,8 @@ def delivered_report_record(sidecar: Mapping[str, Any]) -> dict[str, Any]:
     composed-but-undelivered directory is refused here rather than stored as an
     empty review.
     """
+    if str(sidecar.get("subject") or "") == "code":
+        return _code_review_record(sidecar)
     report_path = Path(str(sidecar.get("report_path") or ""))
     if not report_path.is_file():
         raise ValueError(f"delivered review report {report_path} does not exist")
@@ -2038,6 +2105,54 @@ def delivered_report_record(sidecar: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
+def _code_review_record(sidecar: Mapping[str, Any]) -> dict[str, Any]:
+    """Build the store record a delivered code review's sidecar and report describe.
+
+    The sidecar names the neighbourhood the review read; the report named by
+    ``report_path`` supplies the item verdicts, the findings and the one
+    treatment through :func:`reckon.crew.review.parse_health_review`, the
+    health rubric's own reader, so a delivered report is read by the grammar it
+    was emitted under rather than re-parsed here. The record is keyed by the
+    neighbourhood rather than a plan version, so two reviews of one
+    neighbourhood land under one key and a changed neighbourhood earns its own;
+    ``review_run_id`` is the report directory the delivery was read from, which
+    is what makes a re-read of the same delivered report idempotent. A report
+    with no ``RUBRIC`` or ``FINDING`` line, or one that breaks the rubric's
+    one-treatment rule, raises here rather than being stored as a review nobody
+    made.
+    """
+    report_path = Path(str(sidecar.get("report_path") or ""))
+    if not report_path.is_file():
+        raise ValueError(f"delivered code review report {report_path} does not exist")
+    key = str(sidecar.get("neighbourhood_key") or "").strip()
+    if not key:
+        raise ValueError("delivered code review sidecar is missing neighbourhood_key")
+    text = report_path.read_text(encoding="utf-8", errors="replace")
+    if not report_carries_review_lines(text):
+        raise ValueError(
+            f"delivered code review report {report_path} carries no RUBRIC or "
+            "FINDING line, so it is not a review"
+        )
+    parsed = _review_store.parse_health_review(text)
+    return {
+        "subject": "code",
+        "project": str(sidecar.get("project") or "").strip(),
+        "neighbourhood_key": key,
+        "around": str(sidecar.get("around") or ""),
+        "reviewed_revision": str(sidecar.get("reviewed_revision") or ""),
+        "named_paths": [str(path) for path in sidecar.get("named_paths") or ()],
+        "modules": [str(module) for module in sidecar.get("modules") or ()],
+        "rubric": parsed["rubric"],
+        "rubric_items": parsed["rubric_items"],
+        "absent_items": parsed["absent_items"],
+        "findings": parsed["findings"],
+        "treatment": parsed["treatment"],
+        "responses": {},
+        "status": DEFAULT_STATUS,
+        "review_run_id": str(sidecar.get("review_run_id") or report_path.parent.name),
+    }
+
+
 def _store_delivered_report(
     sidecar: Mapping[str, Any],
     *,
@@ -2047,10 +2162,14 @@ def _store_delivered_report(
 
     The record is built by :func:`delivered_report_record`, so the staging store
     and the commit importer build one record from one reader. The write goes
-    through :func:`store_plan_review`, so it is atomic and keyed the same way
-    every stored review is.
+    through the store that owns the record's subject — :func:`store_code_review`
+    for a code review, :func:`store_plan_review` otherwise — so it is atomic and
+    keyed the way every stored review of that kind is.
     """
-    return store_plan_review(delivered_report_record(sidecar), base_dir=base_dir)
+    record = delivered_report_record(sidecar)
+    if str(record.get("subject") or "") == "code":
+        return store_code_review(record, base_dir=base_dir)
+    return store_plan_review(record, base_dir=base_dir)
 
 
 def store_delivered_reviews(
@@ -2063,16 +2182,39 @@ def store_delivered_reviews(
 
     A delivered review is a report a review run left on the durable report path
     with a sidecar beside it. It is stored at the moment the plan is built, so
-    the coordinator never runs a store step; a delivery the store refuses is
-    recorded on its own sidecar, under ``store_error``, with the reason, rather
-    than skipped, so the next reader sees why the review did not take rather
-    than the gate's missing-review symptom. A delivery that stores on a later
-    pass has that reason cleared from its sidecar, so the file never contradicts
-    the stored review beside it. The returned list names each refused delivery
-    and its reason, for a caller that reports them.
+    the coordinator never runs a store step. The plan's code reviews are stored
+    on the same pass — the ones composed around this plan, so a code review
+    takes the plan-build route a plan review does rather than needing a store
+    step of its own. A delivery the store refuses is recorded on its own
+    sidecar, under ``store_error``, with the reason, rather than skipped, so the
+    next reader sees why the review did not take rather than the review's own
+    absence. A delivery that stores on a later pass has that reason cleared from
+    its sidecar, so the file never contradicts the stored review beside it. The
+    returned list names each refused delivery and its reason, for a caller that
+    reports them.
+    """
+    refused = _store_deliveries(
+        delivered_reports(project, plan_slug), base_dir=base_dir
+    )
+    refused += _store_deliveries(
+        delivered_code_reviews(project, around=plan_slug), base_dir=base_dir
+    )
+    return refused
+
+
+def _store_deliveries(
+    sidecars: Iterable[Mapping[str, Any]],
+    *,
+    base_dir: str | Path | None = None,
+) -> list[dict[str, Any]]:
+    """Store each delivered review, recording a refusal on its own sidecar.
+
+    One loop serves both delivery kinds, so a plan report and a code report are
+    stored, refused and cleared the same way. An already-stored delivery is
+    skipped. The returned list names each refused delivery and its reason.
     """
     refused: list[dict[str, Any]] = []
-    for sidecar in delivered_reports(project, plan_slug):
+    for sidecar in sidecars:
         if sidecar.get("stored"):
             continue
         try:
@@ -2088,6 +2230,20 @@ def store_delivered_reviews(
     return refused
 
 
+def _delivery_sidecar_path(sidecar: Mapping[str, Any]) -> Path:
+    """Return a delivery's own sidecar file, whatever its report kind named it.
+
+    The walker records the sidecar path it read, so a code delivery's
+    ``code-review.json`` is amended through the same helpers a plan delivery's
+    ``plan-review.json`` is; a sidecar dict that carries no path falls back to
+    the plan-review name beside its report.
+    """
+    named = str(sidecar.get("sidecar_path") or "")
+    if named:
+        return Path(named)
+    return Path(str(sidecar.get("report_path") or "")).parent / _REVIEW_SIDECAR_NAME
+
+
 def _record_store_error(sidecar: Mapping[str, Any], reason: str) -> None:
     """Write a refused delivery's reason onto its own sidecar.
 
@@ -2098,10 +2254,13 @@ def _record_store_error(sidecar: Mapping[str, Any], reason: str) -> None:
     """
     report_path = Path(str(sidecar.get("report_path") or ""))
     directory = report_path.parent
-    payload = _load(directory / _REVIEW_SIDECAR_NAME)
+    sidecar_path = _delivery_sidecar_path(sidecar)
+    payload = _load(sidecar_path)
     if payload is None:
         return
-    write_review_sidecar(directory, payload=payload, store_error=reason)
+    write_review_sidecar(
+        directory, payload=payload, store_error=reason, name=sidecar_path.name
+    )
 
 
 def _clear_store_error(sidecar: Mapping[str, Any]) -> None:
@@ -2115,11 +2274,12 @@ def _clear_store_error(sidecar: Mapping[str, Any]) -> None:
     """
     report_path = Path(str(sidecar.get("report_path") or ""))
     directory = report_path.parent
-    payload = _load(directory / _REVIEW_SIDECAR_NAME)
+    sidecar_path = _delivery_sidecar_path(sidecar)
+    payload = _load(sidecar_path)
     if payload is None or "store_error" not in payload:
         return
     payload.pop("store_error", None)
-    write_review_sidecar(directory, payload=payload)
+    write_review_sidecar(directory, payload=payload, name=sidecar_path.name)
 
 
 # ── Code reviews: one neighbourhood as the subject ──────────────────────────
@@ -2140,6 +2300,15 @@ CODE_REVIEW_NODE_PREFIX = "review-code-"
 # under the crew reports directory: ``<reports>/<project>/code-review/<key>``,
 # where ``<key>`` is the neighbourhood it read.
 CODE_REVIEW_REPORTS_DIRNAME = "code-review"
+# The sidecar a code review's report directory carries, named for its kind so a
+# reader of the directory is not told the report is a plan review, and so the
+# delivery walker finds it by the name this kind writes.
+CODE_REVIEW_SIDECAR_NAME = "code-review.json"
+# The name a stored code review occupies in the review store, which it shares
+# with plan reviews: ``code-<neighbourhood>.json`` beside the
+# ``plan-<slug>.v<N>.json`` family, so the plan-review listing — which takes
+# only that family — never mixes the two populations.
+CODE_REVIEW_FILE_PREFIX = "code-"
 
 # The write-path sentence a plan section carries, and the path-shaped tokens it
 # names. A section's write paths are authored prose rather than markup, so the
@@ -2181,24 +2350,6 @@ def code_review_paths_from_plan(plan: Mapping[str, Any] | str | Path) -> list[st
             if token not in found:
                 found.append(token)
     return found
-
-
-def _git_head(repo: str | Path) -> str:
-    """The head revision of ``repo``, or empty when it resolves none."""
-    try:
-        completed = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            cwd=repo,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-    except OSError:
-        return ""
-    head = completed.stdout.strip()
-    if completed.returncode or not re.fullmatch(r"[0-9A-Fa-f]{40,64}", head):
-        return ""
-    return head
 
 
 def code_review_key(named: Iterable[str], modules: Iterable[str]) -> str:
@@ -2264,7 +2415,9 @@ def code_review_subject(
     if not named:
         raise CrewError("a code review names a plan (--around) or one or more --path")
     repository = str(repo or _project_repository(project))
-    head = revision or _git_head(repository)
+    from reckon import fleet_index
+
+    head = revision or str(fleet_index._git_head(Path(repository)) or "")
     adjacent = sorted(neighbourhood(repository, head, named))
     return {
         "subject": "code",
@@ -2352,6 +2505,16 @@ def code_review_brief(subject: Mapping[str, Any]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def _code_review_report_root(project: str) -> Path:
+    """The directory a project's code-review report keys live under.
+
+    One owner for the report-root layout: :func:`code_review_report_directory`
+    extends it with a neighbourhood key and :func:`delivered_code_reviews` lists
+    it, so the ``code-review`` path segment is spelled here alone.
+    """
+    return runs.reports_dir() / project / CODE_REVIEW_REPORTS_DIRNAME
+
+
 def code_review_report_directory(
     subject: Mapping[str, Any] | None = None,
     *,
@@ -2373,12 +2536,7 @@ def code_review_report_directory(
             (subject or {}).get("modules") or (),
         )
     )
-    return (
-        runs.reports_dir()
-        / resolved_project
-        / CODE_REVIEW_REPORTS_DIRNAME
-        / resolved_key
-    )
+    return _code_review_report_root(resolved_project) / resolved_key
 
 
 def code_review_fields(
@@ -2396,10 +2554,16 @@ def code_review_fields(
     if write:
         directory.mkdir(parents=True, exist_ok=True)
         brief.write_text(brief_text, encoding="utf-8")
+        write_review_sidecar(
+            directory,
+            payload=_code_review_sidecar(subject),
+            name=CODE_REVIEW_SIDECAR_NAME,
+        )
     key = code_review_key(
         subject.get("named_paths") or (), subject.get("modules") or ()
     )
     return {
+        "subject": "code",
         "run_id": str(subject.get("run_id") or ""),
         "project": str(subject.get("project") or ""),
         "repo": str(subject.get("repo") or ""),
@@ -2423,37 +2587,32 @@ def code_review_fields(
     }
 
 
-def code_review_argv(fields: Mapping[str, Any], lane: Sequence[str] = ()) -> list[str]:
-    """The ordinary dispatch command for a code review, ready to print or run."""
-    path_args: list[str] = []
-    for path in fields["write_paths"]:
-        path_args += ["--write-path", str(path)]
-    return [
-        "reckon",
-        "crew",
-        "dispatch",
-        "--project",
-        str(fields["project"]),
-        "--brief",
-        str(fields["brief"]),
-        "--role",
-        "review",
-        "--spec-level",
-        "exact",
-        "--node",
-        str(fields["node_id"]),
-        "--goal",
-        str(fields["goal"]),
-        "--done-when",
-        str(fields["done_when"]),
-        *path_args,
-        "--time-budget",
-        str(fields["time_budget"]),
-        "--session",
-        str(fields["session"]),
-        "--allow-unreconciled-runs",
-        *lane,
-    ]
+def _code_review_sidecar(subject: Mapping[str, Any]) -> dict[str, Any]:
+    """The sidecar payload that joins a code report to the neighbourhood it read.
+
+    The identity a code review is stored under is its neighbourhood, so the
+    sidecar carries the key together with the paths and modules it was taken
+    over, the revision the reviewer read and the plan it was composed around.
+    ``review_run_id`` is carried so the report directory, which is keyed by the
+    neighbourhood rather than by the run, still tells the store which delivery a
+    record came from and a re-read of one report stores idempotently.
+    """
+    key = code_review_key(
+        subject.get("named_paths") or (), subject.get("modules") or ()
+    )
+    return {
+        "subject": "code",
+        "project": str(subject.get("project") or ""),
+        "around": str(subject.get("around") or ""),
+        "neighbourhood_key": key,
+        "reviewed_revision": str(subject.get("head") or ""),
+        "named_paths": [str(path) for path in subject.get("named_paths") or ()],
+        "modules": [str(module) for module in subject.get("modules") or ()],
+        "report_path": str(code_review_report_directory(subject) / _REVIEW_REPORT_NAME),
+        "node_id": f"{CODE_REVIEW_NODE_PREFIX}{key}",
+        "session": str(subject.get("session") or ""),
+        "review_run_id": str(subject.get("run_id") or ""),
+    }
 
 
 def dispatch_code_review(
@@ -2473,6 +2632,7 @@ def dispatch_code_review(
     import importlib
 
     from reckon.crew.node import TaskNode
+    from reckon.crew.recovery_review_subject import _review_dispatch_tokens
 
     fields = code_review_fields(subject, write=not dry_run)
     node = TaskNode(
@@ -2493,7 +2653,7 @@ def dispatch_code_review(
             "dry_run": True,
             "brief_text": fields["brief_text"],
             "node": node.as_dict(),
-            "argv": code_review_argv(
+            "argv": _review_dispatch_tokens(
                 fields, ["--local"] if subject.get("local") else []
             ),
         }
@@ -2520,6 +2680,26 @@ def dispatch_code_review(
     return {**result, "brief_text": fields["brief_text"]}
 
 
+def _code_review_store_dir(project: str, base_dir: str | Path | None = None) -> Path:
+    """The directory a project's stored code reviews occupy.
+
+    The store root is the one plan reviews use; a code review's file is named
+    ``code-<neighbourhood>.json``, so both populations share the root without
+    the plan-review readers seeing a code review as one of theirs.
+    """
+    return _review_store.review_store_root(base_dir) / project
+
+
+def code_review_path(
+    project: str, key: str, base_dir: str | Path | None = None
+) -> Path:
+    """Return the durable path of the code review a neighbourhood key names."""
+    return (
+        _code_review_store_dir(project, base_dir)
+        / f"{CODE_REVIEW_FILE_PREFIX}{key}.json"
+    )
+
+
 def store_code_review(
     record: Mapping[str, Any],
     *,
@@ -2529,8 +2709,12 @@ def store_code_review(
 
     A code review's record is keyed by the neighbourhood it read rather than by
     a plan version, so two reviews of one neighbourhood land under one key and a
-    changed neighbourhood earns its own record. The write is atomic, through the
-    shared writer's temporary-and-rename.
+    changed neighbourhood earns its own record. The record must name a subject:
+    a neighbourhood key with the findings or the rubric verdicts of a review, so
+    a file that carries no review material is refused here rather than read
+    later as an empty review. A missing ``timestamp`` is stamped with the
+    current UTC moment. The write is atomic, through the shared writer's
+    temporary-and-rename.
     """
     project = str(record.get("project") or "").strip()
     key = str(record.get("neighbourhood_key") or "").strip()
@@ -2538,14 +2722,72 @@ def store_code_review(
         raise ValueError("code review record is missing project")
     if not key:
         raise ValueError("code review record is missing neighbourhood_key")
+    if not _review_store.carries_review_material(record):
+        raise ValueError(
+            "code review record carries no review material — findings, rubric "
+            "verdicts a treatment or a reviewed revision — so it is not a review"
+        )
     stored = dict(record)
+    stored["project"] = project
+    stored["neighbourhood_key"] = key
+    if not stored.get("status"):
+        stored["status"] = DEFAULT_STATUS
     if not stored.get("timestamp"):
         stored["timestamp"] = datetime.now(UTC).isoformat()
-    root = Path(base_dir) if base_dir is not None else runs.reports_dir()
-    directory = root / project / CODE_REVIEW_REPORTS_DIRNAME
-    directory.mkdir(parents=True, exist_ok=True)
-    path = directory / f"{key}.json"
+    path = code_review_path(project, key, base_dir)
+    path.parent.mkdir(parents=True, exist_ok=True)
     write_json_atomically(
         path, stored, indent=2, sort_keys=True, fsync=False, mode=None
     )
     return path
+
+
+def list_code_reviews(
+    project: str | None = None,
+    *,
+    base_dir: str | Path | None = None,
+) -> list[dict[str, Any]]:
+    """Return every stored code review, newest last.
+
+    Code reviews share the store root with plan reviews; only files named
+    ``code-<neighbourhood>.json`` are read here, so a listing never returns a
+    plan review as a code review. ``project`` restricts the walk to one project
+    directory; omitted, every project directory under the root is read. Each
+    record carries its ``review_path`` so a caller can rewrite the file it read.
+    """
+    root = _review_store.review_store_root(base_dir)
+    if project is None:
+        directories = (
+            sorted(child for child in root.iterdir() if child.is_dir())
+            if root.is_dir()
+            else []
+        )
+    else:
+        directories = [root / project]
+    found: list[dict[str, Any]] = []
+    for directory in directories:
+        if not directory.is_dir():
+            continue
+        for path in sorted(directory.glob(f"{CODE_REVIEW_FILE_PREFIX}*.json")):
+            record = _load(path)
+            if record is None:
+                continue
+            record["review_path"] = str(path)
+            found.append(record)
+    found.sort(key=lambda record: str(record.get("timestamp") or ""))
+    return found
+
+
+def code_review_record(
+    project: str,
+    key: str,
+    *,
+    base_dir: str | Path | None = None,
+) -> dict[str, Any] | None:
+    """Read one stored code review by the neighbourhood it is keyed under.
+
+    The store is keyed by the neighbourhood rather than by a plan version, so
+    this is the whole lookup: a review of a neighbourhood that has not changed
+    is the record this returns, and no fingerprint comparison is involved.
+    """
+    return _load(code_review_path(project, key, base_dir))

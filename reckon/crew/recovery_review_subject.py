@@ -670,7 +670,14 @@ def _review_dispatch_argv(
 def _review_dispatch_tokens(
     fields: Mapping[str, Any], lane: Sequence[str]
 ) -> list[str]:
-    """The dispatch argv for a resolved ``lane``, ready to run or to print."""
+    """The dispatch argv for a resolved ``lane``, ready to run or to print.
+
+    One builder serves every review subject, so a plan review, a run review and
+    a code review cannot drift into three spellings of the same command. The
+    plan/section pair is emitted for a plan subject alone: a code review's
+    subject is a neighbourhood of modules, which no plan names, so it carries
+    the composed brief and its report directory and no plan.
+    """
     write_paths: list[str] = []
     for path in fields["write_paths"]:
         write_paths += ["--write-path", path]
@@ -687,7 +694,7 @@ def _review_dispatch_tokens(
     ]
     if str(fields.get("brief") or ""):
         tokens += ["--brief", str(fields["brief"])]
-    if str(fields.get("plan") or ""):
+    if str(fields.get("subject") or "") != "code" and str(fields.get("plan") or ""):
         tokens += ["--plan", str(fields["plan"]), "--section", str(fields["section"])]
     tokens += [
         "--role",

@@ -61,6 +61,19 @@ Done when the module is extended and the suite passes.</p>
 
 FINDING_TEXT = "a re-implements the capability b already owns"
 
+# A delivered health review of the fixture neighbourhood, in the grammar the
+# rubric's reader takes: one RUBRIC line per item, one FINDING line, and the
+# single TREATMENT line the store refuses a report without.
+HEALTH_REPORT = """RUBRIC known_findings: pass — the brief names no open finding.
+RUBRIC duplicate_capability: a finding — `reckon/b.py:1` owns the constant `a` re-reads.
+RUBRIC unreached: pass — every module is reached by an entry point.
+RUBRIC interface_growth: pass — no public surface was added.
+RUBRIC width: pass — one module changed.
+RUBRIC test_debt: pass — no test asserts source text.
+FINDING duplicate_capability reckon/a.py:3 — CLASS: duplicated_capability — `a` re-reads a constant `b` already owns — CITES: new
+TREATMENT: none — the neighbourhood is healthy
+"""
+
 
 @pytest.fixture
 def project(tmp_path, monkeypatch):
@@ -230,3 +243,65 @@ def test_review_plan_alias_prints_a_deprecation_line(project):
     assert result.exit_code == 0, result.output
     stderr = getattr(result, "stderr", "") or ""
     assert "deprecated" in stderr
+
+
+def test_a_delivered_code_report_is_stored_under_its_neighbourhood(project):
+    """The plan-build delivery path stores a code review beside a plan's.
+
+    A composed code review writes its brief and its sidecar into the report
+    directory its neighbourhood keys, and the reviewer's report lands beside
+    them. Storing the plan's deliveries must take that report through the health
+    rubric's own reader and store it under the neighbourhood, so the stored half
+    of the review exists without a store step of its own.
+    """
+    _home, _repo, _plan = project
+    subject = plan_review.code_review_subject("sample", "coordinator", around="fixture")
+    plan_review.code_review_fields(subject, write=True)
+    directory = plan_review.code_review_report_directory(subject)
+    (directory / "report.md").write_text(HEALTH_REPORT, encoding="utf-8")
+    key = plan_review.code_review_key(subject["named_paths"], subject["modules"])
+    assert plan_review.code_review_record("sample", key) is None
+
+    refused = plan_review.store_delivered_reviews("sample", "fixture")
+
+    assert refused == []
+    record = plan_review.code_review_record("sample", key)
+    assert record is not None, plan_review.code_review_path("sample", key)
+    assert plan_review.code_review_path("sample", key).is_file()
+    assert record["subject"] == "code"
+    assert record["neighbourhood_key"] == key
+    assert record["around"] == "fixture"
+    assert record["review_run_id"] == subject["run_id"]
+    assert [finding["anchor"] for finding in record["findings"]] == ["reckon/a.py:3"]
+    assert record["treatment"] == {"none": "the neighbourhood is healthy"}
+    # The delivery is stored once: a later pass finds the record already there.
+    assert plan_review.store_delivered_reviews("sample", "fixture") == []
+    assert plan_review.list_code_reviews("sample") != []
+
+
+def test_the_review_verb_refuses_a_plan_given_with_a_code_subject(project):
+    """Naming both subject kinds is refused rather than silently preferring one."""
+    _home, _repo, _plan = project
+    for extra in (["--around", "fixture"], ["--path", "reckon/a.py"]):
+        result = _runner().invoke(
+            cli.main,
+            [
+                "crew",
+                "review",
+                "--project",
+                "sample",
+                "--plan",
+                "fixture",
+                "--session",
+                "coordinator",
+                "--dry-run",
+                *extra,
+            ],
+        )
+        assert result.exit_code != 0
+        payload = json.loads(result.stdout)
+        assert payload["error"] == "crew_error"
+        assert len(payload["detail"].splitlines()) == 1
+        assert "--plan" in payload["detail"]
+        assert "--around" in payload["detail"] or "--path" in payload["detail"]
+        assert "brief_text" not in payload

@@ -45,6 +45,7 @@ STATE_PHRASES: dict[CommandPath, str] = {
     ("repair-status",): "a manifest's status word",
     ("resume",): "one blocked run with advice",
     ("resume-ready",): "provider hold or declared external wait has ended",
+    ("review",): "one plan's current content or a code neighbourhood",
     ("review-plan",): "one plan's current content",
     ("shadow",): "committed run",
     # `split-runs` is a registered leaf of `crew`, so the census of reachable
