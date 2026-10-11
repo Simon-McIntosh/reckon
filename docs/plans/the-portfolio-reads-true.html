@@ -24,7 +24,7 @@
   <title>The Portfolio Reads True | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="37">
+<meta name="plan-version" content="38">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -244,6 +244,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261011T010943942184-impl-derivation-keeps-round-trips" data-who="reckon-build" data-when="2026-10-11T01:48:35.346Z">
     <div class="r-comment-body"><p>landing: write_state now gates plan-impl emission on impl_source, so a plan that authored no plan-impl meta keeps a byte-identical no-change round trip while the derived figure stays on the parsed state (source declarations) — the three round-trip tests and test_committed_schema_matches_generated pass at head, EXIT=0 over the gate.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-s2-repairs-1011" data-who="reckon-build" data-when="2026-10-11T04:22:00Z">
+    <div class="r-comment-body"><p>§2's landing added five failures on main, found later inside other nodes' populations. Two repair nodes fixed them (merges <code>cabdcd2b6</code>, <code>c492c76d6</code>), and the 4,683-test importer population now reads 0 added and 5 fixed against base. <a href="/reckon/evidence/archive/the-portfolio-reads-true-landed.html#s2-repairs">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261011T001008724801-audit-reports-sprint-membership" data-who="reckon-build" data-when="2026-10-11T00:24:58.857Z">
     <div class="r-comment-body"><p>reckon audit now emits SPRINT_MEMBERSHIP — a warn for a plan whose declared sprint and the sprint that lists it disagree (either end, at most one row per plan), and an info for a shipped plan a still-open sprint lists; tests/test_audit_reports_sprint_membership.py passes EXIT=0 with exactly two warn rows (b, c), none for the agreeing plan a, and one info row (d).</p></div>
