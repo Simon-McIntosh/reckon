@@ -1,0 +1,45 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-11T05:31:29.274Z",
+  "dispatched_at": "2026-10-11T05:28:03Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-portfolio-reads-true.html:196",
+      "id": "wiring-1",
+      "reason": "the followup must be re-pointed at \u00a76 (its gating is now satisfied, `g-tprt-portfolio-mode` passed), or the plan's last section is unreachable by the route the plan itself declares.",
+      "text": "the open driving followup `f-tprt-003` carries `data-recommends-skill=\"/reckon-build the-portfolio-reads-true \u00a75\"` and body \"Build \u00a75, then \u00a77, then \u00a76\", yet \u00a75 is declared `done` (meta `plan-section-declarations` s5:done; comment `c-close-s5`, merge `08984a146`) and \u00a77 is declared `done` (comment `c-close-s7`, merge `06d02d423`), leaving \u00a76 the only open section \u2014 so the one route a coordinator dispatches from names a section that has already landed and never reaches \u00a76, the same defect class the earlier review raised on `f-tprt-002`",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "84e7fc19dff4aac70007a351224a97378b7aedef3264d792bb7d42ef2e880bcd",
+  "plan_slug": "the-portfolio-reads-true",
+  "plan_version": 46,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261011T052735639056-plan-review-of-the-portfolio-reads-true",
+  "reviewed_blob_sha": "438b48e36a163aae4faf1f1b3966a86630e71f2b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `the-codebase-is-reviewed-between-nodes#s8` resolves (`docs/plans/the-codebase-is-reviewed-between-nodes.html:215`, `data-id=\"s8\"`, `done`), self-refs `#s2`/`#s3` resolve, the archive anchors `#s2`, `#s2-repairs`, `#s3-staleness-from-last-commit`, `#s4-sprint-membership`, `#s5-section-relations-wire`, `#s7-section-gate` all exist, and the gate-evidence `path#section: label` form is the house convention.",
+    "done_when": "pass \u2014 every section names an executable negative control (\u00a76's is the 2026-10-10 count `63` taken before the round), and each `_document` gate carries a measure that could fail.",
+    "evidence_paths": "pass \u2014 gate evidence resolves to in-repo plan anchors and the archive (`docs/evidence/archive/the-portfolio-reads-true-landed.html`); \u00a76's round record is `docs/state/reckon/review.html`; no scratchpad or node-local path is named.",
+    "naming": "pass \u2014 new audit codes (`AGING`, `SPRINT_MEMBERSHIP`, `impl-meta-stale`) and gate ids are emitted data labels; cited code symbols (`derived_plan_age`, `unwired_plan_finding`, `derive_impl_from_sections`, `split_unpassed_gates`) are mechanism-named with no ticket, version or stage tags.",
+    "reasoning": "pass \u2014 \u00a77's root cause matches its cited evidence (comment `c-gate-blocks-plan-1010`), the gate close is supported by the-codebase-is-reviewed-between-nodes \u00a78 landing, and the callers each mechanism relies on are named (`serve.py`, `mcp_views.py`, the three `unwired_plan_finding` callers).",
+    "single_goal": "pass \u2014 each section and each gate names one deliverable/measure; \u00a76 is a single proving run.",
+    "wiring": "a finding \u2014 the sole open followup `f-tprt-003` still recommends `/reckon-build the-portfolio-reads-true \u00a75`, but \u00a75 (and \u00a77) are declared done, so the one dispatch route into the remaining section \u00a76 names a completed section."
+  },
+  "section_digests": {
+    "_document": "b45238f58a0f6b5571f85cd74e82b86b8824fc92e883eba8c36f12d6b02d48c1",
+    "s1": "56204248c9050844c40ac7e00bff909830602caaa4b95be87bacea51b1495a03",
+    "s2": "69b86246adb4ea89719f367ac57f43940ed14fb88c5c89408cf18a6b59911f57",
+    "s3": "5902125b920ccad233230b403ba1e4cb62c75743d8265014bc35f38e0c9915c3",
+    "s4": "9280ec81cafc36b7de1295b0f22745c6162986e93d9731a8e8b99c51d658a217",
+    "s5": "e5d24ffe43f8fdfcdb88130b1632bc368dc94fd8641f628befb77b4c1f95b435",
+    "s6": "3b386242a01bc207ce0810ef1ee5ccbd8a9d5ea78f77a5dd6fc61b2f207c53d0",
+    "s7": "b5d0f90a4e8a113321b55e0ed0aeaa0624369e3b41b03dde61dc10c9a6f8e5ef"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T05:32:37.097687+00:00"
+}
