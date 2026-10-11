@@ -19,7 +19,6 @@ uses to decide the contract is read against them.
 from __future__ import annotations
 
 import json
-import subprocess
 from pathlib import Path
 
 import pytest
@@ -31,6 +30,7 @@ from reckon.crew.dispatch import (
 )
 from reckon.crew.prompts import BRIEF_LANDING_CONTRACT, PLAN_LANDING_CONTRACT
 from reckon.crew.runs import run_dir
+from tests.helpers.git import git as _git
 
 PROJECT = "sample"
 NODE_ID = "landing-grant-node"
@@ -76,17 +76,6 @@ def home(tmp_path, monkeypatch):
     config_home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(config_home))
     return config_home
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    result = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout.strip()
 
 
 def _plan_html() -> str:

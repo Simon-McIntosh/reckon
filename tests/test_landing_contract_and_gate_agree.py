@@ -15,7 +15,6 @@ real dispatch resolves rather than a copy kept here.
 from __future__ import annotations
 
 import json
-import subprocess
 from pathlib import Path
 
 import pytest
@@ -30,6 +29,7 @@ from reckon.crew.prompts import (
 )
 from reckon.crew.runs import run_dir
 from reckon.flight import resolve
+from tests.helpers.git import git as _git
 
 PROJECT = "sample"
 PLAN_SECTION = "landing-gate"
@@ -48,17 +48,6 @@ def home(tmp_path, monkeypatch):
     config_home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(config_home))
     return config_home
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    result = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout.strip()
 
 
 def _plan_html() -> str:

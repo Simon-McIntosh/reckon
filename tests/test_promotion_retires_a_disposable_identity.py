@@ -26,20 +26,10 @@ from reckon.crew.runs import (
     pointer_path,
     process_alive,
 )
+from tests.helpers.git import git as _git
 
 PROJECT = "proj"
 PLAN = "plan-a"
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    result = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout.strip()
 
 
 def _write_plan(path: Path) -> None:

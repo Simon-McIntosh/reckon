@@ -17,7 +17,6 @@ prove an isolated write.
 from __future__ import annotations
 
 import json
-import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -26,6 +25,7 @@ import pytest
 from reckon import _plan_html, _store, crew, ledger
 from reckon.crew import promotion
 from reckon.crew.runs import _write_json, pointer_path
+from tests.helpers.git import git as _git
 
 PROJECT = "refused-promotion-fixture"
 PLAN = "promotion-target"
@@ -46,17 +46,6 @@ GATE_CHECK: dict[str, Any] = {
     "log_path": "/tmp/refused-promotion-gate.log",
     "log_digest": "sha256:0",
 }
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    result = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout.strip()
 
 
 def _write_plan(root: Path, comments: dict[str, list[dict]] | None = None) -> Path:

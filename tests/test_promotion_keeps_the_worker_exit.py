@@ -12,7 +12,6 @@ because a present empty key reads as a supervisor that ran and recorded nothing.
 from __future__ import annotations
 
 import json
-import subprocess
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -20,6 +19,7 @@ import pytest
 
 from reckon import _plan_html, crew, ledger
 from reckon.crew.runs import _write_json, pointer_path, run_dir
+from tests.helpers.git import git as _git
 
 PROJECT = "proj"
 PLAN = "plan-a"
@@ -36,17 +36,6 @@ def _write_resource(path: Path, state: dict) -> None:
         '</head><body><main class="plan-doc"></main></body></html>\n'
     )
     path.write_text(_plan_html.write_state(bare, state), encoding="utf-8")
-
-
-def _git(repository: Path, *arguments: str) -> str:
-    result = subprocess.run(
-        ["git", *arguments],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout.strip()
 
 
 @pytest.fixture()
