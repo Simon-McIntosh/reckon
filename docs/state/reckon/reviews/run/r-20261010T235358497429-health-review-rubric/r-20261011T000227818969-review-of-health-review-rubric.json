@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "backend": "clive",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-11T00:11:00.752Z",
+  "dispatched_at": "2026-10-11T00:02:52Z",
+  "findings": [
+    {
+      "file": "reckon/crew/review.py",
+      "line": "912",
+      "severity": "follow-on",
+      "text": "follow-on: _HEALTH_RUBRIC_LINE_RE is byte-identical to _PLAN_RUBRIC_LINE_RE at review.py:792, a second copy of the RUBRIC-line grammar the module already owns, so the two can drift and the change's claim that the line reading is shared so the two cannot drift does not hold for this line."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261010T235358497429-health-review-rubric/manifest.md",
+      "line": "16",
+      "severity": "follow-on",
+      "text": "follow-on: the recorded parser-tests.log and negative-control-one-treatment.log are both stamped \"revision 8b3334ba\" but each command names tests/test_health_review_parses.py, which git shows is absent at that revision, so the logs misstate the tree they measured and a reader cannot tie them to the revision they ran at."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read the single landed change b6f6eeee against its parent 8b3334ba; four files, +524/-0, all inside the declared scope.",
+    "done_when": "the done_when names tests/test_health_review_parses.py passing at EXIT=0 with the six verdicts, classed findings, one treatment, both refusals by name and the prompt/parser item mirror; gate-health-review.log records 9 passed EXIT=0 at revision b6f6eeee and the manifest records the negative control at EXIT=1.",
+    "goal": "the node's goal is to write the health-review rubric and the parser of its output; reckon/crew/prompts/health_review.md (six items, a RUBRIC_ITEMS line and the one-treatment rule) and parse_health_review at reckon/crew/review.py:1024 both landed.",
+    "manifest": "read; it reports the gate 9 passed at EXIT=0 and the negative control EXIT=1 and names its logs, but its baseline_suite and after_suite fields are empty and its two base-side logs are stamped at a revision where their own command cannot run.",
+    "write_paths": "the manifest declares five paths; the diff changes four of them (the prompt, review.py, the test, the evidence fragment) and no path outside them."
+  },
+  "justifications": {
+    "durability": "removing the one-treatment check reddens tests/test_health_review_parses.py:107 as negative-control-one-treatment.log shows at EXIT=1, and tests/test_health_review_parses.py:144 shows the prompt/parser mirror rejects a drifted item list.",
+    "evidence": "gate-health-review.log records 9 passed at EXIT=0 at head b6f6eeee, the done_when's own measure, though parser-tests.log (manifest line 16) is stamped 8b3334ba while its command names a file absent at that revision.",
+    "fit": "the health grammar sits beside the plan grammar at reckon/crew/review.py:912-923 and follows the module's rubric-and-loader idiom, with no plan label or version in any name.",
+    "goal_fidelity": "parse_health_review at reckon/crew/review.py:1024 reads the six-item rubric's emitted form and reckon/crew/prompts/health_review.md:46 names the same six items, so the goal's two halves both landed.",
+    "reuse": "_HEALTH_RUBRIC_LINE_RE at reckon/crew/review.py:912 re-declares _PLAN_RUBRIC_LINE_RE at reckon/crew/review.py:792 byte-for-byte, forking a grammar the module already owns rather than extending its owner.",
+    "scope_discipline": "the diff's four changed paths are all inside the declared write paths, and no figure was written because the done-when names no artifact."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to write the health-review rubric and the parser of its output; reckon/crew/prompts/health_review.md (six items, a RUBRIC_ITEMS line and the one-treatment rule) and parse_health_review at reckon/crew/review.py:1024 both landed.\nVERDICT done_when: the done_when names tests/test_health_review_parses.py passing at EXIT=0 with the six verdicts, classed findings, one treatment, both refusals by name and the prompt/parser item mirror; gate-health-review.log records 9 passed EXIT=0 at revision b6f6eeee and the manifest records the negative control at EXIT=1.\nVERDICT write_paths: the manifest declares five paths; the diff changes four of them (the prompt, review.py, the test, the evidence fragment) and no path outside them.\nVERDICT manifest: read; it reports the gate 9 passed at EXIT=0 and the negative control EXIT=1 and names its logs, but its baseline_suite and after_suite fields are empty and its two base-side logs are stamped at a revision where their own command cannot run.\nVERDICT diff: read the single landed change b6f6eeee against its parent 8b3334ba; four files, +524/-0, all inside the declared scope.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: parse_health_review at reckon/crew/review.py:1024 reads the six-item rubric's emitted form and reckon/crew/prompts/health_review.md:46 names the same six items, so the goal's two halves both landed.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-health-review.log records 9 passed at EXIT=0 at head b6f6eeee, the done_when's own measure, though parser-tests.log (manifest line 16) is stamped 8b3334ba while its command names a file absent at that revision.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff's four changed paths are all inside the declared write paths, and no figure was written because the done-when names no artifact.\nSCORE durability: 18\nJUSTIFICATION durability: removing the one-treatment check reddens tests/test_health_review_parses.py:107 as negative-control-one-treatment.log shows at EXIT=1, and tests/test_health_review_parses.py:144 shows the prompt/parser mirror rejects a drifted item list.\nSCORE fit: 18\nJUSTIFICATION fit: the health grammar sits beside the plan grammar at reckon/crew/review.py:912-923 and follows the module's rubric-and-loader idiom, with no plan label or version in any name.\nSCORE reuse: 5\nJUSTIFICATION reuse: _HEALTH_RUBRIC_LINE_RE at reckon/crew/review.py:912 re-declares _PLAN_RUBRIC_LINE_RE at reckon/crew/review.py:792 byte-for-byte, forking a grammar the module already owns rather than extending its owner.\nFINDING reckon/crew/review.py:912 follow-on: _HEALTH_RUBRIC_LINE_RE is byte-identical to _PLAN_RUBRIC_LINE_RE at review.py:792, a second copy of the RUBRIC-line grammar the module already owns, so the two can drift and the change's claim that the line reading is shared so the two cannot drift does not hold for this line.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261010T235358497429-health-review-rubric/manifest.md:16 follow-on: the recorded parser-tests.log and negative-control-one-treatment.log are both stamped \"revision 8b3334ba\" but each command names tests/test_health_review_parses.py, which git shows is absent at that revision, so the logs misstate the tree they measured and a reader cannot tie them to the revision they ran at.",
+  "review_run_id": "r-20261011T000227818969-review-of-health-review-rubric",
+  "reviewed_base_sha": "8b3334ba9b111aa4af67e203be73d77eeb3c7008",
+  "reviewed_head_sha": "b6f6eeee4939f17da42de302e9b37137c125077d",
+  "reviewed_run_id": "r-20261010T235358497429-health-review-rubric",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T00:10:15.189441+00:00",
+  "total": 95
+}
