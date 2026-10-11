@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite/after_suite arm, so no suite delta was taken",
+  "backend": "clive",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:195",
+    "reckon/ledger.py:2581"
+  ],
+  "completed_at": "2026-10-10T23:54:31.507Z",
+  "dispatched_at": "2026-10-10T23:46:33Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261010T232416940731-pick-wait-starts-at-the-pick/gate.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the gate log's own header names head=3961854c22921a072d1de3bf32be1b2b79c08007, the base revision, while the run it recorded collected 139 tests including the two that exist only at the landed head 21e069bcf, so the header cannot tell a later reader which revision the gate actually ran against."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261010T232416940731-pick-wait-starts-at-the-pick/manifest.md",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest names no baseline_suite or after_suite arm, so the reviewed run carries no head/base delta."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read 3961854c..21e069bcf commit by commit; one commit, four files, +119/-4, threading the pick's recorded start through _shadow_pick_deadline via the new _shadow_pick_started and admitting the overridden-hold route mode in promoted_route_mode, plus the two new tests and an evidence fragment.",
+    "done_when": "the done-when names a test with a launch slower than the pick's bound that records the pick's selection and fails on main, and a test building a row through build_record for an overridden hold that keeps its route mode and fails on main; tests/test_promotion_records_the_pick.py adds test_promotion_waits_from_the_pick_start_not_the_run_start and test_build_record_keeps_an_overridden_hold_route_mode, which I re-ran independently at head (2 passed, EXIT=0, review-head-arm.log) and reproduced red against base product code (2 failed, EXIT=1, review-negctl.log).",
+    "goal": "the node goal is that promotion's pick wait starts at the pick and the ledger keeps the overridden-hold mode; at head 21e069bcf reckon/crew/promotion.py _shadow_pick_started (:566) reads the shadow-picker.json spec mtime as the pick's recorded start and _shadow_pick_deadline (:538) runs its bound from it with created_at as fallback, and reckon/ledger.py promoted_route_mode (:2178) now accepts OVERRIDDEN_HOLD_ROUTE_MODE imported from reckon/crew/picker/outcomes.py:44, so both halves of the goal land.",
+    "manifest": "read the reviewed manifest; status complete, commit 21e069bcf, gate reports 139 passed EXIT=0, negative control EXIT=1 with both new tests failing; it names no baseline_suite/after_suite arm, so no suite delta was taken, and it records no follow-ons or blockers.",
+    "write_paths": "the declared section paths are reckon/crew/promotion.py, reckon/ledger.py and tests/test_promotion_records_the_pick.py; the single commit 21e069bcf touches exactly those three plus docs/evidence/fragments/one-typesafe-model-picker/pick-wait-starts-at-the-pick.html, all inside the declared scope."
+  },
+  "justifications": {
+    "durability": "I reinstated the base product code (promotion.py and ledger.py at 3961854c) under the head tests and both added tests reddened (2 failed, EXIT=1, review-negctl.log) while they pass at head, so each names a condition under which it fails; the created_at fallback branch carries no test of its own.",
+    "evidence": "my independent re-run reproduced the head arm (2 passed, EXIT=0, review-head-arm.log) and the negative control (2 failed, EXIT=1, review-negctl.log), but the reviewed manifest names no baseline_suite/after_suite arm so the added-failure count is unmeasured, and the gate log's header (gate.log:1) names head=3961854c, the base revision, while the tests it ran include two that exist only at head.",
+    "fit": "reckon/crew/promotion.py:566 _shadow_pick_started is named by what it does and sits with _await_in_flight_shadow_pick, and the header and docstring follow the module's sentence idiom; no plan or version label appears in the added lines.",
+    "goal_fidelity": "reckon/crew/promotion.py:566 _shadow_pick_started reads the spec mtime and _shadow_pick_deadline:553 uses it with created_at as the fallback, matching the section's \"measure from the pick's recorded start, and fall back to created_at\", and reckon/ledger.py:2193 admits OVERRIDDEN_HOLD_ROUTE_MODE per the section's \"accept every route mode\".",
+    "reuse": "reckon/ledger.py:2186 imports OVERRIDDEN_HOLD_ROUTE_MODE from its owner reckon/crew/picker/outcomes.py:44 rather than re-literalising it, and _shadow_pick_started reads the spec file no existing helper reads, though the picker/shadow/explicit literals remain written in both reckon/ledger.py:2193 and that owner's report.",
+    "scope_discipline": "the single commit 21e069bcf touches exactly reckon/crew/promotion.py, reckon/ledger.py, tests/test_promotion_records_the_pick.py and the declared evidence fragment, all inside the three declared write paths."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that promotion's pick wait starts at the pick and the ledger keeps the overridden-hold mode; at head 21e069bcf reckon/crew/promotion.py _shadow_pick_started (:566) reads the shadow-picker.json spec mtime as the pick's recorded start and _shadow_pick_deadline (:538) runs its bound from it with created_at as fallback, and reckon/ledger.py promoted_route_mode (:2178) now accepts OVERRIDDEN_HOLD_ROUTE_MODE imported from reckon/crew/picker/outcomes.py:44, so both halves of the goal land.\nVERDICT done_when: the done-when names a test with a launch slower than the pick's bound that records the pick's selection and fails on main, and a test building a row through build_record for an overridden hold that keeps its route mode and fails on main; tests/test_promotion_records_the_pick.py adds test_promotion_waits_from_the_pick_start_not_the_run_start and test_build_record_keeps_an_overridden_hold_route_mode, which I re-ran independently at head (2 passed, EXIT=0, review-head-arm.log) and reproduced red against base product code (2 failed, EXIT=1, review-negctl.log).\nVERDICT write_paths: the declared section paths are reckon/crew/promotion.py, reckon/ledger.py and tests/test_promotion_records_the_pick.py; the single commit 21e069bcf touches exactly those three plus docs/evidence/fragments/one-typesafe-model-picker/pick-wait-starts-at-the-pick.html, all inside the declared scope.\nVERDICT manifest: read the reviewed manifest; status complete, commit 21e069bcf, gate reports 139 passed EXIT=0, negative control EXIT=1 with both new tests failing; it names no baseline_suite/after_suite arm, so no suite delta was taken, and it records no follow-ons or blockers.\nVERDICT diff: read 3961854c..21e069bcf commit by commit; one commit, four files, +119/-4, threading the pick's recorded start through _shadow_pick_deadline via the new _shadow_pick_started and admitting the overridden-hold route mode in promoted_route_mode, plus the two new tests and an evidence fragment.\nCALL_SITES: reckon/crew/promotion.py:195, reckon/ledger.py:2581\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:566 _shadow_pick_started reads the spec mtime and _shadow_pick_deadline:553 uses it with created_at as the fallback, matching the section's \"measure from the pick's recorded start, and fall back to created_at\", and reckon/ledger.py:2193 admits OVERRIDDEN_HOLD_ROUTE_MODE per the section's \"accept every route mode\".\nSCORE evidence: 15\nJUSTIFICATION evidence: my independent re-run reproduced the head arm (2 passed, EXIT=0, review-head-arm.log) and the negative control (2 failed, EXIT=1, review-negctl.log), but the reviewed manifest names no baseline_suite/after_suite arm so the added-failure count is unmeasured, and the gate log's header (gate.log:1) names head=3961854c, the base revision, while the tests it ran include two that exist only at head.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the single commit 21e069bcf touches exactly reckon/crew/promotion.py, reckon/ledger.py, tests/test_promotion_records_the_pick.py and the declared evidence fragment, all inside the three declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: I reinstated the base product code (promotion.py and ledger.py at 3961854c) under the head tests and both added tests reddened (2 failed, EXIT=1, review-negctl.log) while they pass at head, so each names a condition under which it fails; the created_at fallback branch carries no test of its own.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/promotion.py:566 _shadow_pick_started is named by what it does and sits with _await_in_flight_shadow_pick, and the header and docstring follow the module's sentence idiom; no plan or version label appears in the added lines.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/ledger.py:2186 imports OVERRIDDEN_HOLD_ROUTE_MODE from its owner reckon/crew/picker/outcomes.py:44 rather than re-literalising it, and _shadow_pick_started reads the spec file no existing helper reads, though the picker/shadow/explicit literals remain written in both reckon/ledger.py:2193 and that owner's report.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261010T232416940731-pick-wait-starts-at-the-pick/gate.log:1 follow-on: the gate log's own header names head=3961854c22921a072d1de3bf32be1b2b79c08007, the base revision, while the run it recorded collected 139 tests including the two that exist only at the landed head 21e069bcf, so the header cannot tell a later reader which revision the gate actually ran against.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261010T232416940731-pick-wait-starts-at-the-pick/manifest.md:1 follow-on: the manifest names no baseline_suite or after_suite arm, so the reviewed run carries no head/base delta.\n\nreview_run_id: r-20261010T234606979601-review-of-pick-wait-starts-at-the-pick\nreviewed_base_sha: 3961854c22921a072d1de3bf32be1b2b79c08007\nreviewed_head_sha: 21e069bcf4badffc48b91b45c354b36474348398\n",
+  "review_run_id": "r-20261010T234606979601-review-of-pick-wait-starts-at-the-pick",
+  "reviewed_base_sha": "3961854c22921a072d1de3bf32be1b2b79c08007",
+  "reviewed_head_sha": "21e069bcf4badffc48b91b45c354b36474348398",
+  "reviewed_run_id": "r-20261010T232416940731-pick-wait-starts-at-the-pick",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-10T23:53:39.990291+00:00",
+  "total": 108
+}
