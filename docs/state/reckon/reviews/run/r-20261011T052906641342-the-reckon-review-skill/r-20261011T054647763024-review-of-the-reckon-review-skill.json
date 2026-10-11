@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "backend": "clive",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli_entry.py:_skills_source",
+    "reckon/project_maintenance_commands.py:install_skills",
+    "reckon/crew/routing.py:_fleet_script"
+  ],
+  "completed_at": "2026-10-11T05:54:27.484Z",
+  "dispatched_at": "2026-10-11T05:47:28Z",
+  "findings": [
+    {
+      "file": "skills/reckon-review/SKILL.md",
+      "line": "129",
+      "severity": "follow-on",
+      "text": "follow-on: the new skill ends at its last byte with no trailing newline while every sibling SKILL.md ends with one, so each future edit shows a spurious \"\\ No newline at end of file\" hunk."
+    },
+    {
+      "file": "tests/test_skill_contracts.py",
+      "line": "1118",
+      "severity": "follow-on",
+      "text": "follow-on: the flagship CLI table reads only skills/reckon-build/SKILL.md, so the review-plan-to-review re-point is guarded for that skill alone and a silent revert in skills/reckon-create/SKILL.md or skills/reckon-edit/SKILL.md passes every test at this revision."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against 1ccaa9188 \u2014 ca72a1aca adds the skill, re-points four review-plan citations and extends the contract test; 5745a8162 makes the review resource path project-agnostic.",
+    "done_when": "the done-when names the contract test, the cited-command test and the padded-body negative control; gate-contract.log records 3 passed EXIT=0 at 5745a8162 and negative-control-padded-body.log records 1 failed EXIT=1 for the padded body.",
+    "goal": "the goal is a reckon-review skill carrying code, plan and portfolio modes; skills/reckon-review/SKILL.md:14-129 delivers exactly that \u2014 a target-to-mode table and one numbered loop per mode.",
+    "manifest": "read; it names both commits, both gate logs, the 776-word body and two follow-ons, and its grep over skills/ (exit 1, no hit) reproduces.",
+    "write_paths": "read the manifest's declared paths; git diff --name-only 1ccaa9188..5745a8162 lists six files, every one inside the declared scope and nothing else."
+  },
+  "justifications": {
+    "durability": "the added test at tests/test_skill_contracts.py:157 fails if the skill is absent or its body passes 1,500 words (proved by negative-control-padded-body.log), but the citation re-point is guarded only in reckon-build via tests/test_skill_contracts.py:1118, so a revert in skills/reckon-create/SKILL.md or skills/reckon-edit/SKILL.md fails nothing.",
+    "evidence": "gate-contract.log ran tests/test_skill_contracts.py::test_review_skill_is_discovered_beside_the_other_reckon_skills and tests/test_cited_commands_exist.py (3 passed, EXIT=0) and negative-control-padded-body.log shows the padded body failing (EXIT=1), so the done-when's measure and its negative control are both recorded.",
+    "fit": "skills/reckon-review/SKILL.md:1-11 matches the peer-skill frontmatter and fan-out-boundary idiom of skills/reckon-status/SKILL.md:1-18 and introduces no version, sprint or ticket label.",
+    "goal_fidelity": "skills/reckon-review/SKILL.md:14-129 carries the mode table and a loop for each of the code, plan and portfolio modes the goal names, plus the busy-work and stop rules \u00a77 states.",
+    "reuse": "no owner of a code/plan/portfolio review skill existed \u2014 the search over skills/ found none \u2014 and the change re-points the three peer skills' citations rather than forking a capability they own.",
+    "scope_discipline": "every path in git diff --name-only 1ccaa9188..5745a8162 is one of the manifest's declared write paths, and the declared skills/reckon-review and figure directories carry only the skill."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is a reckon-review skill carrying code, plan and portfolio modes; skills/reckon-review/SKILL.md:14-129 delivers exactly that \u2014 a target-to-mode table and one numbered loop per mode.\nVERDICT done_when: the done-when names the contract test, the cited-command test and the padded-body negative control; gate-contract.log records 3 passed EXIT=0 at 5745a8162 and negative-control-padded-body.log records 1 failed EXIT=1 for the padded body.\nVERDICT write_paths: read the manifest's declared paths; git diff --name-only 1ccaa9188..5745a8162 lists six files, every one inside the declared scope and nothing else.\nVERDICT manifest: read; it names both commits, both gate logs, the 776-word body and two follow-ons, and its grep over skills/ (exit 1, no hit) reproduces.\nVERDICT diff: read commit by commit against 1ccaa9188 \u2014 ca72a1aca adds the skill, re-points four review-plan citations and extends the contract test; 5745a8162 makes the review resource path project-agnostic.\nCALL_SITES: reckon/cli_entry.py:_skills_source, reckon/project_maintenance_commands.py:install_skills, reckon/crew/routing.py:_fleet_script\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: skills/reckon-review/SKILL.md:14-129 carries the mode table and a loop for each of the code, plan and portfolio modes the goal names, plus the busy-work and stop rules \u00a77 states.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-contract.log ran tests/test_skill_contracts.py::test_review_skill_is_discovered_beside_the_other_reckon_skills and tests/test_cited_commands_exist.py (3 passed, EXIT=0) and negative-control-padded-body.log shows the padded body failing (EXIT=1), so the done-when's measure and its negative control are both recorded.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff --name-only 1ccaa9188..5745a8162 is one of the manifest's declared write paths, and the declared skills/reckon-review and figure directories carry only the skill.\nSCORE durability: 17\nJUSTIFICATION durability: the added test at tests/test_skill_contracts.py:157 fails if the skill is absent or its body passes 1,500 words (proved by negative-control-padded-body.log), but the citation re-point is guarded only in reckon-build via tests/test_skill_contracts.py:1118, so a revert in skills/reckon-create/SKILL.md or skills/reckon-edit/SKILL.md fails nothing.\nSCORE fit: 18\nJUSTIFICATION fit: skills/reckon-review/SKILL.md:1-11 matches the peer-skill frontmatter and fan-out-boundary idiom of skills/reckon-status/SKILL.md:1-18 and introduces no version, sprint or ticket label.\nSCORE reuse: 19\nJUSTIFICATION reuse: no owner of a code/plan/portfolio review skill existed \u2014 the search over skills/ found none \u2014 and the change re-points the three peer skills' citations rather than forking a capability they own.\nFINDING skills/reckon-review/SKILL.md:129 follow-on: the new skill ends at its last byte with no trailing newline while every sibling SKILL.md ends with one, so each future edit shows a spurious \"\\ No newline at end of file\" hunk.\nFINDING tests/test_skill_contracts.py:1118 follow-on: the flagship CLI table reads only skills/reckon-build/SKILL.md, so the review-plan-to-review re-point is guarded for that skill alone and a silent revert in skills/reckon-create/SKILL.md or skills/reckon-edit/SKILL.md passes every test at this revision.",
+  "review_run_id": "r-20261011T054647763024-review-of-the-reckon-review-skill",
+  "reviewed_base_sha": "1ccaa9188b9e1e451e7936ba6f8b2f4cfa825462",
+  "reviewed_head_sha": "5745a816228fc49dffe2f762083a56e8f329d604",
+  "reviewed_run_id": "r-20261011T052906641342-the-reckon-review-skill",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T05:52:09.006153+00:00",
+  "total": 110
+}
