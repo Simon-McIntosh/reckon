@@ -3587,6 +3587,123 @@ def record_dimension_disposition(
 FINDING_DISPOSITIONS_KEY = "finding_dispositions"
 
 
+def code_review_identity(run_id: str) -> str:
+    """The neighbourhood key a code review's identity names, or ``""``.
+
+    A code review is keyed by the neighbourhood it read, and the run id it was
+    dispatched and composed under carries the node id, which carries the store's
+    own prefix. The key is therefore the suffix after that prefix, so the
+    dispatched run id, the composer's run id and the store file's stem
+    (``code-<key>``) all name one neighbourhood through one rule. A run id that
+    names no code review yields the empty string, so a caller can tell a code
+    review from a run review without a second lookup.
+    """
+    from reckon.crew import plan_review
+
+    text = str(run_id or "").strip()
+    if not text:
+        return ""
+    prefix = plan_review.CODE_REVIEW_NODE_PREFIX
+    marker = text.rfind(f"-{prefix}")
+    if marker >= 0:
+        return text[marker + len(prefix) + 1 :]
+    if text.startswith(prefix):
+        return text[len(prefix) :]
+    if text.startswith(plan_review.CODE_REVIEW_FILE_PREFIX):
+        return text[len(plan_review.CODE_REVIEW_FILE_PREFIX) :]
+    return ""
+
+
+def code_review_record_for_run(
+    project: str, run_id: str, *, base_dir: str | Path | None = None
+) -> tuple[Path | None, dict[str, Any] | None]:
+    """The stored code review a run names, or ``(None, None)`` when it names none.
+
+    The record is resolved through the store's own path builder,
+    :func:`reckon.crew.plan_review.code_review_path`, so a code review is read
+    from the one place it is written and no second path rule is introduced. A
+    run id that names no code review returns ``(None, None)``; one that names a
+    code review whose record is not on disk returns the path it would occupy
+    beside ``None``, so a caller can report the absence against the path.
+    """
+    key = code_review_identity(run_id)
+    if not key:
+        return None, None
+    from reckon.crew import plan_review
+
+    path = plan_review.code_review_path(project, key, base_dir)
+    record = plan_review.code_review_record(project, key, base_dir=base_dir)
+    return path, (dict(record) if record is not None else None)
+
+
+def stored_record_for_disposition(
+    project: str,
+    run_id: str,
+    *,
+    base_dir: str | Path | None = None,
+    reviewed_head_sha: str | None = None,
+) -> dict[str, Any] | None:
+    """The stored record a disposition rewrites, whatever kind the run names.
+
+    A code review's record and a run review's record share one store root under
+    different file families, so a reader that has already resolved a
+    disposition's run needs one accessor that reaches whichever record the run
+    names rather than selecting the family itself. A run that names no code
+    review is read through :func:`stored_record`, the selection every
+    run-review reader shares.
+    """
+    if code_review_identity(run_id):
+        _path, record = code_review_record_for_run(project, run_id, base_dir=base_dir)
+        return record
+    _path, record = stored_record(
+        project,
+        run_id,
+        base_dir=base_dir,
+        reviewed_head_sha=reviewed_head_sha,
+    )
+    return record
+
+
+def _record_code_finding_disposition(
+    project: str,
+    run_id: str,
+    finding_index: int,
+    disposition: Mapping[str, Any],
+    *,
+    base_dir: str | Path | None = None,
+) -> Path:
+    """Write one finding disposition into a stored code review's own record.
+
+    The entry lands under the same key and in the same shape the run-review
+    writer stores, so the findings reader reports a code review's disposition
+    with no branch of its own. The index is validated against the same
+    enumeration the findings reader prints, so the index a caller sees is the
+    index this writer answers.
+    """
+    from reckon.crew import findings as findings_module
+
+    path, record = code_review_record_for_run(project, run_id, base_dir=base_dir)
+    if record is None or path is None:
+        raise ValueError(
+            f"no stored review for run {run_id!r} in project {project!r} to "
+            "record a disposition against"
+        )
+    findings = findings_module._record_findings(record)
+    if finding_index >= len(findings):
+        raise ValueError(
+            f"run {run_id!r} carries {len(findings)} findings; "
+            f"--finding {finding_index} names none of them"
+        )
+    dispositions = record.get(FINDING_DISPOSITIONS_KEY)
+    merged = dict(dispositions) if isinstance(dispositions, Mapping) else {}
+    merged[str(finding_index)] = dict(disposition)
+    record[FINDING_DISPOSITIONS_KEY] = merged
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    _write_record(path, record)
+    return path
+
+
 def record_finding_disposition(
     project: str,
     reviewed_run_id: str,
@@ -3625,6 +3742,15 @@ def record_finding_disposition(
             f"got {finding_index!r}"
         )
     disposition = _build_disposition_entry(kind, node, reason)
+
+    if code_review_identity(reviewed_run_id):
+        return _record_code_finding_disposition(
+            project,
+            reviewed_run_id,
+            finding_index,
+            disposition,
+            base_dir=base_dir,
+        )
 
     path, record = stored_record(
         project,
