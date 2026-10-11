@@ -25,7 +25,7 @@
   <title>The Codebase Is Reviewed Between Nodes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="21">
+<meta name="plan-version" content="22">
 <meta name="plan-modified" content="2026-10-11">
 </head>
 <body>
@@ -361,6 +361,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261011T000227818969-review-of-health-review-rubric" data-who="reckon-build" data-when="2026-10-11T00:11:00.752Z">
     <div class="r-comment-body"><p>Reviewed run r-20261010T235358497429-health-review-rubric (base 8b3334ba, head b6f6eeee) and stored a parsed six-dimension record: goal_fidelity 18, evidence 17, scope_discipline 19, durability 18, fit 18, reuse 5 (total 95), two follow-on findings — a byte-identical RUBRIC-line regex forked from _PLAN_RUBRIC_LINE_RE at reckon/crew/review.py:792, and two base-side gate logs in the reviewed manifest stamped at a revision where their own command cannot run; added_failure_count unmeasured (the reviewed manifest arms no baseline_suite/after_suite).</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-s7-write-path-1011" data-who="reckon-build" data-when="2026-10-11T02:25:00Z">
+    <div class="r-comment-body"><p>Write-path grant for §7's dispatch (content review finding <code>done_when-1</code>): <code>reckon/crew/plan_review.py</code> holds three <code>review-plan</code> strings: the comment above the invocation builders, and the emitted <code>review_invocation</code> and <code>answer_invocation</code> commands. §'s grep cannot pass without editing that file, so §7's node is dispatched with it as a write path, provided §6 has not already renamed the emitted strings. The section text is left as written, because a §7 edit now would reopen the plan-wide review gate while §6 builds.</p></div>
 </div>
 </section>
 </main>
