@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest at head 71bb011d names no baseline_suite or after_suite gate log, so the added-failure count was not derivable; the reviewed node ran a single-module gate (tests/test_structural_invariants.py), which I reproduced at head (6 passed EXIT=0) and which has no base arm because the module does not exist at 02e06d66.",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-11T02:42:44.628Z",
+  "dispatched_at": "2026-10-11T02:34:01Z",
+  "findings": [
+    {
+      "file": "tests/test_structural_invariants.py",
+      "line": "150",
+      "severity": "follow-on",
+      "text": "follow-on: the parse_utc/parse_iso definition scan at :150 hand-rolls an ast.walk over every function definition, a capability tests/test_picker_helpers_have_one_owner.py:80 _defined_names already owns; the second commit reused served_code._source_files for the path enumeration but left this half of the prior reuse finding open."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read bbbb range 02e06d66..71bb011d: c47c99ef adds tests/test_structural_invariants.py (305 lines) and a 23-line evidence fragment; 71bb011d hardens the module (37 lines changed) and adds the fragment's final newline, touching nothing else.",
+    "done_when": "the module passes EXIT=0 at the head, the manifest maps every guard the brief lists, the one-parser invariant covers every module under reckon/ including all seven promotion_* modules, and a negative control fails the intended check; the manifest and gate-head.log record all of it and I reproduced the head pass and both negative controls independently.",
+    "goal": "restore the guards the two count-reducing merges deleted or narrowed as repo-wide invariants in one module, because plan s5 keeps a source-text site that guards a structural invariant no behaviour shows; tests/test_structural_invariants.py holds six such invariants in one module.",
+    "manifest": "read; it maps every guard the brief lists to an invariant in the new module, records the gate command and its 6-passed result, the two negative controls with log paths, and follow_ons naming crew/budget_reset._parse and crew/reports._instant as migration candidates outside its scope.",
+    "write_paths": "the reviewed run pointer declares tests/test_structural_invariants.py, docs/evidence/fragments/the-suite-tests-behaviour/structural-guards-have-one-home.html and the docs/figures/... directory; the range adds only the first two, and the second commit edits the same two files."
+  },
+  "justifications": {
+    "durability": "both weaknesses the prior review opened are closed and independently verified: the parse_utc/parse_iso scan now walks the whole ast tree (tests/test_structural_invariants.py:151), which my nested-def injection proves catches a definition the earlier tree.body scan missed, and the node-identity check at :308 now admits three-segment identities and asserts at least one candidate, which at head finds two real candidates (file-and-line, literal-negative-control) instead of the prior vacuous empty set; the only residual is the reuse finding below.",
+    "evidence": "gate-head.log records \"6 passed in 9.37s\" EXIT=0 at 71bb011d and negative-control.log records \"1 failed, 5 passed\" EXIT=1 naming crew/promotion_gate.py:_probe_iso; I re-ran the module in the reviewed worktree at the head and reproduced 6 passed EXIT=0 (log review-gate.log), and I regenerated both negative controls in scratch trees: a fromisoformat call appended to promotion_gate.py fails test_only_the_shared_parser_calls_fromisoformat naming crew/promotion_gate.py (review-negative-control-iso.log, EXIT=1) and a nested def parse_utc appended to crew/reports.py fails test_the_shared_parser_is_the_one_definition_of_its_helpers (review-negative-control-nested.log, EXIT=1).",
+    "fit": "the module keeps the suite's ast-source-read idiom, its docstrings name the mechanism rather than any plan or ticket identifier, and the evidence fragment now ends with a terminating newline (diff no longer carries \"\\\\ No newline at end of file\"; verified the file's last byte is 0x0a).",
+    "goal_fidelity": "plan the-suite-tests-behaviour s5 keeps a source-text site that guards a structural invariant no behaviour shows; tests/test_structural_invariants.py:1 restores the guards the two count-reducing merges deleted or narrowed as six repo-wide ast invariants in one module, and the two prescription-fixture checks are restored with a stated reason (a repo-wide form would fail on peers' correct fixtures).",
+    "reuse": "the source enumeration now reuses reckon/served_code.py:83 _source_files instead of a private walker, and I verified its file set is identical to the prior rglob walk (168 files, empty symmetric difference); the definition-uniqueness scan at tests/test_structural_invariants.py:150 still hand-rolls a whole-tree function-definition scan that tests/test_picker_helpers_have_one_owner.py:80 _defined_names already owns, neither extending nor importing it.",
+    "scope_discipline": "the range 02e06d66..71bb011d touches only tests/test_structural_invariants.py and docs/evidence/fragments/the-suite-tests-behaviour/structural-guards-have-one-home.html, both inside the reviewed run's declared write paths, and edits none of the files the two count-reducing nodes changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: restore the guards the two count-reducing merges deleted or narrowed as repo-wide invariants in one module, because plan s5 keeps a source-text site that guards a structural invariant no behaviour shows; tests/test_structural_invariants.py holds six such invariants in one module.\nVERDICT done_when: the module passes EXIT=0 at the head, the manifest maps every guard the brief lists, the one-parser invariant covers every module under reckon/ including all seven promotion_* modules, and a negative control fails the intended check; the manifest and gate-head.log record all of it and I reproduced the head pass and both negative controls independently.\nVERDICT write_paths: the reviewed run pointer declares tests/test_structural_invariants.py, docs/evidence/fragments/the-suite-tests-behaviour/structural-guards-have-one-home.html and the docs/figures/... directory; the range adds only the first two, and the second commit edits the same two files.\nVERDICT manifest: read; it maps every guard the brief lists to an invariant in the new module, records the gate command and its 6-passed result, the two negative controls with log paths, and follow_ons naming crew/budget_reset._parse and crew/reports._instant as migration candidates outside its scope.\nVERDICT diff: read range 02e06d66..71bb011d: c47c99ef adds tests/test_structural_invariants.py (305 lines) and a 23-line evidence fragment; 71bb011d hardens the module (37 lines changed) and adds the fragment's final newline, touching nothing else.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: plan the-suite-tests-behaviour s5 keeps a source-text site that guards a structural invariant no behaviour shows; tests/test_structural_invariants.py:1 restores the guards the two count-reducing merges deleted or narrowed as six repo-wide ast invariants in one module, and the two prescription-fixture checks are restored with a stated reason.\nSCORE evidence: 19\nJUSTIFICATION evidence: gate-head.log records \"6 passed in 9.37s\" EXIT=0 at 71bb011d and negative-control.log records \"1 failed, 5 passed\" EXIT=1 naming crew/promotion_gate.py:_probe_iso; I re-ran the module at the head and reproduced 6 passed EXIT=0 (review-gate.log), and regenerated both negative controls in scratch trees (review-negative-control-iso.log and review-negative-control-nested.log, both EXIT=1).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the range touches only tests/test_structural_invariants.py and the one evidence fragment, both inside the reviewed run's declared write paths, and edits none of the files the two count-reducing nodes changed.\nSCORE durability: 18\nJUSTIFICATION durability: both prior weaknesses are closed and independently verified by my own scratch injections, which caught the nested parse_utc and the added fromisoformat call; only the reuse finding below remains.\nSCORE fit: 18\nJUSTIFICATION fit: the module keeps the suite's ast-source-read idiom, its docstrings carry no plan or ticket identifier, and the evidence fragment now ends with a newline (last byte 0x0a).\nSCORE reuse: 15\nJUSTIFICATION reuse: the source enumeration now reuses reckon/served_code.py:83 _source_files (identical 168-file set verified), but the definition-uniqueness scan at tests/test_structural_invariants.py:150 still hand-rolls a scan tests/test_picker_helpers_have_one_owner.py:80 _defined_names already owns.\nFINDING tests/test_structural_invariants.py:150 follow-on: the parse_utc/parse_iso definition scan at :150 hand-rolls an ast.walk over every function definition, a capability tests/test_picker_helpers_have_one_owner.py:80 _defined_names already owns; the second commit reused served_code._source_files for the path enumeration but left this half of the prior reuse finding open.",
+  "review_run_id": "r-20261011T023305655678-review-of-structural-guards-have-one-home",
+  "reviewed_base_sha": "02e06d665f64f67d0304f5148b3ec9c088f3f182",
+  "reviewed_head_sha": "71bb011d8f3c4e5d32035d35c71989b56c5b2b4b",
+  "reviewed_run_id": "r-20261011T014220490358-structural-guards-have-one-home",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 15,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T02:49:00.000000+00:00",
+  "total": 107
+}
