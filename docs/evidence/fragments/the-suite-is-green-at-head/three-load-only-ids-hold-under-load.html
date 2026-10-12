@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s3">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-recorded-at" content="2026-10-12">
+  <meta name="plan-tags" content="crew,dispatch,test-race,load">
+  <title>Three load-only ids hold under -n 8 load | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="three-load-only-ids-hold-under-load" data-reckon="landed" data-when="2026-10-12" id="three-load-only-ids-hold-under-load">
+  <h2>Three load-only ids hold under -n 8 load</h2>
+  <p>The three ids the followup names already wait on their observed condition at
+  <code>77362a554</code>, so no source change was needed. The killed-resume case
+  (<code>test_every_attempt_is_supervised.py</code>) now polls for the current-attempt exit
+  record with the file's bounded <code>_wait_until</code> rather than a 3&nbsp;s cap
+  (<code>cb1d09bd5</code>). The dispatch case
+  (<code>test_dispatch_returns_without_worker.py</code>) bounds its clock by the supervisor's
+  survival window plus eight units of an interpreter-import reference measured on the host
+  beside the dispatch, so the bound widens with the load instead of failing on a constant
+  (<code>d153dd8c5</code>). The SPA reap case (<code>test_spa_browser_harness.py</code>) already
+  polls the driver's process group for reap with a bounded deadline and has no commit after the
+  pinned measure.</p>
+  <p><strong>Measure.</strong> Three consecutive <code>-n 8</code> full-file runs of the three
+  files on the fleet node each report 22 passed and 1 skipped, exit 0, with the killed-resume id
+  at 4.7&ndash;5.0&nbsp;s and the dispatch id at 8.3&ndash;9.1&nbsp;s. Three concurrent
+  <code>-n 8</code> arms at load 12&ndash;18 also pass every case of the three ids in each arm
+  that completed. A scratch base arm that restores the two fixed bounds (killed-resume
+  <code>timeout=3.0</code>, dispatch bound pinned to 8.0&nbsp;s) still passes at the loads
+  reached here, so the pinned measure's contention sits above this node's reach and the base-arm
+  control is recorded rather than reproduced. One concurrent base arm exited non-zero in
+  pytest's own teardown (<code>cleanup_dead_symlinks</code> racing the shared basetemp under
+  three simultaneous workers) with all 23 tests passed, which is a harness crash and not a test
+  failure.</p>
+</article>
+</body>
+</html>
