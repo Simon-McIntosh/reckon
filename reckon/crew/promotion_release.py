@@ -405,12 +405,18 @@ def _release_run_workspace(
             )
         else:
             released = _release_worktree_whole(repo, worktree, run_id=run_id)
-            result["worktree_released"] = True
-            if not released.get("trash_removed"):
-                # The tree is off its registered path and deregistered, so the
-                # release itself is whole; only the copy's deletion is left
-                # behind, and gc sweeps it. This is not a withheld release.
-                result["worktree_trash_left"] = released["trash"]
+            if not released.get("released", True):
+                # The named path is not a disposable linked worktree — a
+                # pointer naming the checkout itself, say — so nothing moved
+                # and the tree is left exactly where it is.
+                result["worktree_withheld"] = released["withheld"]
+            else:
+                result["worktree_released"] = True
+                if not released.get("trash_removed"):
+                    # The tree is off its registered path and deregistered, so
+                    # the release itself is whole; only the copy's deletion is
+                    # left behind, and gc sweeps it. Not a withheld release.
+                    result["worktree_trash_left"] = released["trash"]
 
     pid = record.get("pid")
     if keep_process:

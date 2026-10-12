@@ -1151,6 +1151,48 @@ def _worktree_is_locked(repo: Path, tree: Path) -> bool:
     return bool(record and record["locked"])
 
 
+def _main_worktree(repo: Path) -> Path | None:
+    """The primary checkout, whose directory git does not register as linked.
+
+    Read from the common git directory, which every worktree of the repository
+    resolves to, so a linked tree and the main checkout give the same answer.
+    ``None`` when git cannot name it, and the caller then treats the repository
+    it was handed as the main worktree.
+    """
+    probe = _git(
+        repo, "rev-parse", "--path-format=absolute", "--git-common-dir", check=False
+    )
+    if probe.returncode or not probe.stdout.strip():
+        return None
+    common = Path(probe.stdout.strip()).resolve()
+    return common.parent if common.name == ".git" else None
+
+
+def _release_withhold_reason(repo: Path, tree: Path) -> str:
+    """Why ``tree`` must not be vacated, or the empty string when it may be.
+
+    Only a linked worktree that this repository registers, that lies inside a
+    managed worktree root, and that is neither the repository nor one of its
+    ancestors is a release candidate. Without these the release would move
+    something other than a disposable tree: a run pointer naming the main
+    checkout would take the checkout itself, and the directory it moved to
+    would be swept as trash.
+    """
+    resolved = tree.resolve()
+    repository = repo.resolve()
+    if repository.is_relative_to(resolved):
+        return "worktree names the repository root or one of its ancestors"
+    main = _main_worktree(repo)
+    if main is not None and resolved == main:
+        return "worktree names the main checkout, which is not a linked worktree"
+    if resolved not in _registered_worktrees(repo):
+        return "worktree is not registered with the repository"
+    roots = _workspace_roots(repo)
+    if not any(resolved.is_relative_to(root) for root in roots):
+        return "worktree lies outside the managed worktree root"
+    return ""
+
+
 def _delete_worktree_copy(trash: Path) -> None:
     """Delete a moved-aside tree copy. No deadline: a failure leaves trash.
 
@@ -1177,8 +1219,15 @@ def _release_worktree_whole(
     deleted with no deadline; a deletion that fails or does not finish leaves
     trash — which ``crew gc`` sweeps — rather than a half-removed registered
     tree.
+
+    A path that is not a disposable linked worktree is refused before anything
+    moves, and the refusal comes back as a withheld release rather than an
+    exception, so a caller holding a bad pointer leaves everything where it is.
     """
     tree = Path(path)
+    withheld = _release_withhold_reason(repo, tree)
+    if withheld:
+        return {"path": str(tree), "released": False, "withheld": withheld}
     if _worktree_is_locked(repo, tree):
         raise CrewError(f"refusing to release locked worktree {tree}")
     admin = _worktree_admin_dir(repo, tree)
@@ -1192,6 +1241,7 @@ def _release_worktree_whole(
         shutil.rmtree(admin, ignore_errors=True)
     result: dict[str, Any] = {
         "path": str(tree),
+        "released": True,
         "trash": str(trash),
         "trash_removed": False,
     }
@@ -1397,7 +1447,9 @@ def _save_and_release_worktree(
         raise CrewError(
             f"worktree {path} remains dirty after residue was saved at {destination}"
         )
-    _release_worktree_whole(repo, path)
+    released = _release_worktree_whole(repo, path)
+    if not released.get("released", True):
+        raise CrewError(f"refusing to release worktree {path}: {released['withheld']}")
     saved: dict[str, Any] = {
         "residue_patch": str(patch_path),
         "residue_tar": str(tar_path),
@@ -2882,7 +2934,9 @@ def _remove_worktree(repo: Path, path: str) -> None:
             f"refusing to remove worktree {path}: claimed by live runs "
             f"{', '.join(sorted(claims))}"
         )
-    _release_worktree_whole(repo, path)
+    released = _release_worktree_whole(repo, path)
+    if not released.get("released", True):
+        raise CrewError(f"refusing to remove worktree {path}: {released['withheld']}")
 
 
 # The run directory's own record of who signalled it. One line per signal,

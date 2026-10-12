@@ -278,6 +278,73 @@ def test_releasing_one_tree_leaves_a_peer_registration_whose_directory_vanished(
     )
 
 
+def test_a_pointer_naming_the_repository_root_is_withheld_and_the_checkout_survives(
+    repository: Path,
+) -> None:
+    """The checkout is not a disposable tree, however a pointer names it.
+
+    A run record whose worktree is the repository itself reached the deletion
+    step before the move-aside existed, and only ``git worktree remove``'s
+    refusal of the main worktree kept the checkout alive. The rename has no such
+    refusal, so the path is checked before anything moves.
+    """
+    run_id = "r-20261012T050000000000-checkout-pointer"
+    result = promotion_release_module._release_run_workspace(
+        _record(repository, repository, run_id)
+    )
+
+    assert not result.get("worktree_released"), result
+    assert "repository root" in str(result.get("worktree_withheld")), result
+    assert (repository / ".git").exists(), "the checkout lost its git directory"
+    assert (repository / "tracked-0.txt").is_file(), "the checkout lost its files"
+    assert (repository / "docs" / "state" / PROJECT).is_dir()
+    assert _trash_entries(repository) == []
+    assert str(repository) in _registered(repository)
+
+
+def test_a_registered_tree_outside_the_worktree_root_is_withheld(
+    repository: Path, tmp_path: Path
+) -> None:
+    """A registered worktree outside the managed root is not this tool's to take.
+
+    Registration alone is not the licence to move a tree: a tree git knows about
+    but the workspace does not manage is left alone, and the refusal names the
+    root rather than the registration.
+    """
+    outsider = tmp_path / "outside-root"
+    _git(repository, "worktree", "add", "-q", "--detach", str(outsider), "HEAD")
+    keeper = outsider / "tracked-0.txt"
+    assert keeper.is_file()
+    assert str(outsider) in _registered(repository)
+
+    released = routing_module._release_worktree_whole(repository, outsider)
+
+    assert released["released"] is False, released
+    assert "outside the managed worktree root" in released["withheld"], released
+    assert keeper.is_file()
+    with pytest.raises(routing_module.CrewError):
+        routing_module._remove_worktree(repository, str(outsider))
+    assert keeper.is_file()
+    assert str(outsider) in _registered(repository)
+    assert _trash_entries(repository) == []
+
+
+def test_a_path_that_is_no_worktree_at_all_is_withheld(
+    repository: Path, tmp_path: Path
+) -> None:
+    plain = tmp_path / "plain-directory"
+    plain.mkdir()
+    keeper = plain / "keeper.txt"
+    keeper.write_text("not a worktree\n", encoding="utf-8")
+
+    released = routing_module._release_worktree_whole(repository, plain)
+
+    assert released["released"] is False, released
+    assert "not registered" in released["withheld"], released
+    assert keeper.is_file()
+    assert _trash_entries(repository) == []
+
+
 def _literal_argv(call: ast.Call) -> list[str]:
     values: list[str] = []
     for argument in call.args:
