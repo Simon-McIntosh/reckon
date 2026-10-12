@@ -1,0 +1,51 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-12T21:38:30.263Z",
+  "dispatched_at": "2026-10-12T21:30:39Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-shows-the-work-it-watches.html:45",
+      "id": "done_when-1",
+      "reason": "a worker must either encode four fields and drop an enumerated value or carry five against a done-when that says four, so the section's own measure is unsatisfiable as written.",
+      "text": "\u00a72's done-when asserts the start row carries \"the four fields\" while the deliverable at line 42 enumerates five values (run id, node, lane, model, time budget), so the measure cannot be written unambiguously and a node may implement or test a row missing one of the named fields",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-shows-the-work-it-watches.html:107",
+      "id": "reasoning-1",
+      "reason": "naming `DISPLAY_HUE` (and the classifier vocabulary) as part of what the seven-word table reconciles is the difference between the pane resolving a hue for every new word and it dropping every row to the dim fallback.",
+      "text": "\u00a75 says the mapping is \"owned in one place\" and retires `DISPLAY`, but colour for the seven words is resolved by `DISPLAY_HUE` (reckon/crew/ticker.py:195, read at :897) keyed on the old alias words, and the section's done-when checks only that words come from the set, never that they render in-colour, so retiring `DISPLAY` alone leaves the new words rendering dim and \u00a75's single-owner claim false",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "a3369379a8d866c74ce4915ab5e2f9d4ca3a015d8ffbe79b9eaf605debc2bffb",
+  "plan_slug": "the-monitor-shows-the-work-it-watches",
+  "plan_version": 7,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261012T213010486715-plan-review-of-the-monitor-shows-the-work-it-watches",
+  "reviewed_blob_sha": "deb5ab64cec64ed23100528783434b51a023723f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/ticker.py`, `reckon/crew/recovery_watch.py`, `reckon/crew_follow_commands.py`, `reckon/crew/session_host.py` exist; `Ticker._stats`/`_fleet_counts`/`_partition_session_rows`/`_population_has_live_work`/`DISPLAY`/`_WAIT_CELL`/`_COUNT_FIELD`/`_session_host_runs_follower` all resolve; the `/reckon/plans/a-follower-row-is-worth-a-wake` href resolves as `.html` and its decision `start-rows=held-back` matches \u00a71; the three cited commits (089cd7741, 79d3a5458, 778219ba2) resolve and their subjects match \u00a71's claims.",
+    "done_when": "a finding \u2014 \u00a72's done-when says the start row carries \"the four fields\" while the deliverable enumerates five values.",
+    "evidence_paths": "pass \u2014 each gate writes its negative-control log under the durable run directory (`runs/<run>/`), not a scratchpad or node-local temp path.",
+    "naming": "pass \u2014 the proposed test filenames and the plan prose carry no plan labels, version tags or ticket numbers, and \u00a7-labels stay in the plan where the tracker owns them.",
+    "reasoning": "a finding \u2014 \u00a75 claims the state-word mapping is \"owned in one place\" and retires only `DISPLAY`, but colour for the rendered words is a second owner the section never names.",
+    "single_goal": "pass \u2014 each of \u00a72\u2013\u00a75 names one deliverable (a start row, a roll-up cell, a settling child, and one state-word table); \u00a74's settle-then-restart is one follower-child lifecycle change.",
+    "wiring": "pass \u2014 \u00a72\u2190(\u00a75)\u2190\u00a72 and \u00a74\u2192\u00a72 in `plan-section-depends-on` are correct: \u00a73 and \u00a75 both write `reckon/crew/ticker.py` and are serialized s2\u2192s5\u2192s3, \u00a74's done-when requires \u00a72's start row, and `plan-standalone` is right that no live plan waits on this one (a-follower-row-is-worth-a-wake is `shipped`)."
+  },
+  "section_digests": {
+    "_document": "c31606cc455cd57732b1f14315954b644ca9b25b58806c22f1158e4d8402d2e5",
+    "s1": "52c4b79a6da0bc1e71b00748d6314e8a255bd5fa91b6acae30f6943e3c16cee5",
+    "s2": "eeca9b70e096de79d92846f4178d8f31832962cb9c7c73d122ac2a9e06546f32",
+    "s3": "a37e4f17cfa5318f2229db2eabe7a7b80adf7bb6fcb474e3d262981478abba8e",
+    "s4": "e5f07e3ea31c43d6e133cf46f6c77d728b7e7c22b682c2792ab8442d8a147850",
+    "s5": "615bef7cf6f431389401211cbec444c9120902f5e2803db750f504ad286f86ee"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-12T21:54:53.066156+00:00"
+}
