@@ -1,0 +1,49 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-12T22:13:48.701Z",
+  "dispatched_at": "2026-10-12T22:03:24Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-writer.html:63",
+      "id": "reasoning-1",
+      "reason": "the repo's own rule is to verify an already-correct guard and add the missing test rather than reimplement it, so a node following \u00a72 as written may edit working liveness code instead of establishing why that guard did not fire in the reproduction.",
+      "text": "\u00a72 states \"`local_liveness` is extended for the state the reproduction named, so a run whose worker lives is never classified complete or scoring\", but `local_liveness` (reckon/crew/recovery_liveness.py:730) already reads the run directory's worker record and returns alive when the supervisor's pointer pid is gone \u2014 its own docstring names exactly this case (\"a supervisor that exits before its worker takes the pointer pid with it \u2026 The worker record is asked next\"), and recovery_classification.py:149 already calls it; \u00a72's \"What already exists\" inventory lists only the precedence test and omits this, so the section reads as though the guard is missing",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-writer.html:50",
+      "id": "reasoning-2",
+      "reason": "the count is given as the justification for growing `signal_worker` as the single interface, and that design is unaffected; session_host signals only its own session children, which the node does not touch.",
+      "text": "\u00a72 asserts \"`signal_worker` in `reckon/crew/routing.py` is the only function in the crew that sends a signal\", but `session_host.py` sends SIGTERM/SIGKILL through its own `_signal` (reckon/crew/session_host.py:649-653, called at 518/522), an independent signal path in the same package",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "a7b0314c40394d2eb5f3e7d7a1c8a4bc83f64d9fbba1e710f91751da4d1c30f6",
+  "plan_slug": "a-run-has-one-live-writer",
+  "plan_version": 3,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261012T220255730703-plan-review-of-a-run-has-one-live-writer",
+  "reviewed_blob_sha": "12541a28e56609d39b0d6c0615ce9cd9736a5471",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited module and symbol resolves (`signal_worker` routing.py:2837, `_process_children`/`_live_descendant` recovery_liveness.py:258/289, `_processes_holding` routing.py:2512, `local_liveness` recovery_liveness.py:730, `terminate` dispatch_sessions.py:1752, all four test files exist); the new test file is correctly absent. No extensionless hrefs. (`STOP_GRACE` is stated where the code defines `STOP_GRACE_ENV`/`STOP_GRACE_DEFAULT`; a reader still finds the grace.)",
+    "done_when": "pass \u2014 s2 and s3 each carry a measurable done-when and each declares a negative control that fails a named case (s2 line 73 signals the supervisor pid alone; s3 line 98 restores the reproduced cause).",
+    "evidence_paths": "pass \u2014 negative-control and gate logs are declared \"logged under the run directory\" (durable, `~/.config/reckon/crew/runs/<run>/`), and the tests run in a `$TMPDIR`-scoped temporary tree, not a session scratchpad.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach the new symbols or the cited write paths; `\u00a747` appears only as plan prose.",
+    "reasoning": "a finding \u2014 \u00a72 commits to *extending* `local_liveness` for the supervisor-exited/worker-alive state, but that state is already the case `local_liveness` exists to cover, so the stated repair targets a guard that is already present.",
+    "single_goal": "pass \u2014 s2 carries one goal (a run's tree has one live writer: end its process tree and never classify a live worker as done); the process-ending and classification repairs serve that one verdict.",
+    "wiring": "pass \u2014 `plan-section-depends-on` wires `s3 \u2192 a-run-has-one-live-writer#s2`, and the new section gate `g-arholw-routing-released` (`data-gated-sections=\"s2\"`) resolves its required evidence to a real anchor, `crew-runtime-positive-controls#s47`; the live run `a-worktree-release-is-whole` it names exists in the live pointer set."
+  },
+  "section_digests": {
+    "_document": "0c3344f50d8c7751b53cce52cbef8cceef98bafec58c475efcef4e6cc6f0e906",
+    "s1": "4be3aec3ea6b964559fb976fc71b0e9fed16762c724c109c88a97413ad274f1d",
+    "s2": "57e74985c8b91a8d0bd3708104a994c1f1b0ec693904f7712f66d2f51197d3e4",
+    "s3": "47a6bee480ce06c34de5ed11e8e80c6d72dfbf192a803511337a59a49084e2f6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-12T22:29:20.155984+00:00"
+}
