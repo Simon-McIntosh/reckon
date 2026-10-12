@@ -1,0 +1,47 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-12T21:23:37.978Z",
+  "dispatched_at": "2026-10-12T21:18:04Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/repair.py:286",
+      "id": "reuse_search-1",
+      "reason": "reusing the owner's convention (`<prefix><source>-<head[:12]>`) makes both round identities one rule instead of two that drift, and the review could then also reuse the head already resolved in `_review_dispatch_fields` (`head`) rather than invent a separate discriminator.",
+      "text": "`repair_node_id` already implements exactly the rule \u00a73 proposes: \"a run reviewed again at a later head composes a different id, so a later round is not mistaken for another attempt of the first\" (`repair-of-<source>-<head[:12]>`), and `reckon/crew/review.py:344` (`carried_revision_pair`) supplies the head it keys on; \u00a73's text names neither, so the author appears not to have searched for the existing per-round identity rule before proposing one",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/repair.py:286",
+      "id": "duplicate_owner-1",
+      "reason": "naming the owner tells the author to extend `repair_node_id`'s convention once rather than add a second id rule, and the census exposes the plan-review and code-review sites where the same collision can recur, which a section scoped to the run-review site alone would leave in place.",
+      "text": "the round-identity mechanism is owned by `repair_node_id` / `review.carried_revision_pair`, and \u00a73 proposes a review-side rule beside it; the same defect class has further round-independent node-id sites, each a candidate for the one rule: `reckon/crew/recovery_review_subject.py:652` (run review, `review-of-<source_node>`), `reckon/crew/recovery_review_subject.py:588` (plan review, `plan-review-of-<slug>`, guarded today only by the project/slug `fcntl.flock` at `recovery_review_dispatch.py:1332`), `reckon/crew/plan_review.py:2516` and the code-review ids at `reckon/crew/plan_review.py:2655` and `reckon/crew/plan_review.py:2695` (`review-code-<key>`, keyed to the code-review key rather than a head); the head-keyed store path already in use at `reckon/crew/recovery_review_subject.py:610`\u2013`613` (`review_path(project, run_id, reviewed_head_sha=head)`) shows the head is already the round identity the store recognises",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "44216984876d55ae03940a7b5e32c57f3dc8474d385cb26e37cd703f0247c912",
+  "plan_slug": "a-moved-head-is-reviewed",
+  "plan_version": 13,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261012T211732266236-plan-review-of-a-moved-head-is-reviewed",
+  "reviewed_blob_sha": "88c2645e13cf0fe67d529d927620f2e15de2b7f9",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the change lands inside `dispatch_review_for_run` and `_review_dispatch_fields`, both already deep modules that hide the claim, lane and launch behind one call; \u00a73 adds no wrapper layer.",
+    "duplicate_owner": "a finding \u2014 the round-identity mechanism already has an owner (`repair.py` via `review.carried_revision_pair`), and \u00a73's rule for review node ids is the same mechanism applied to a second prefix.",
+    "interface_budget": "a finding \u2014 public_definitions 1682, cli_options 349, mcp_views 34, refusal_families 23; \u00a73 adds no CLI option, MCP view, public definition or refusal family, so nothing is retired or merged and none is owed, but the section also does not say so, and the review would have the author state that \u00a73 adds no interface surface rather than leave it implicit.",
+    "reuse_search": "a finding \u2014 \u00a73 mints a per-round review node id without citing `repair_node_id` in `reckon/crew/repair.py`, which already derives a distinct id per reviewed head for the sibling mechanism.",
+    "thin_wrapper": "pass \u2014 \u00a73 states in its own text that the repair extends the existing path through `dispatch_review_for_run`/`review_head_move`/`carry_review_forward` and that \"No second launch path is added\"."
+  },
+  "section_digests": {
+    "_document": "885c3985fdc995ffc912923d8a04de109792bb9e7aafad45b13ff488d0c0edfe",
+    "s1": "a3a1b8eb4f84292df6d31e99043de92c9c4916a619d1de95917df87aae676d63",
+    "s2": "48dd7ab841931b559865e55c8d35fc2c6ff607e66a332ba21e17c336aebe001e",
+    "s3": "f57b1ed9222a217d074e981e0c581ee5e790b45e9982d76a0e383e4535860bd2"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-12T21:25:53.928179+00:00"
+}
