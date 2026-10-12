@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery_review_dispatch.py:807",
+    "reckon/crew/promotion_checks.py",
+    "reckon/crew/recovery_review_subject.py"
+  ],
+  "completed_at": "2026-10-12T05:49:35.907Z",
+  "dispatched_at": "2026-10-12T05:42:21Z",
+  "findings": [
+    {
+      "file": "tests/test_review_gate_reads_the_hot_set.py",
+      "line": "458",
+      "severity": "follow-on",
+      "text": "follow-on: the diff edits a file outside the node's declared write paths (tests/test_review_lifecycle.py:64 is the second), so the change exceeds its fence even though the added status line is what the new validation requires."
+    },
+    {
+      "file": "tests/test_a_stored_review_carries_a_known_status.py",
+      "line": "122",
+      "severity": "follow-on",
+      "text": "follow-on: the assertion compares stored[\"status\"] against the literal status the test passed in at line 111, so both sides move together; the refusal cases at lines 83 and 99, not this one, are what redden if the guard regresses."
+    },
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": "807",
+      "severity": "follow-on",
+      "text": "follow-on: this is store_review's only production caller, re-storing a record read back from disk, so a legacy record carrying an unrecognised status (the 39 in the census) now raises ValueError here rather than re-storing; reachable only if such a record is carried forward."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit (0428e9638, 5cdcd33c4, 11f58bdd9, 585f5936c): the public constant and the refusal in review.py, the new test file, two fixture status lines and the evidence fragment; no reader was changed.",
+    "done_when": "the done-when names tests/test_a_stored_review_carries_a_known_status.py and a negative control that removes the status check; the manifest records that file at 4 passed (gate-new-test.log) and the negative control red (negative-control-removes-status-check.log EXIT=1), plus a 39-record read-only census.",
+    "goal": "the goal is to make the review store refuse a run-review record whose status its readers do not act on; reckon/crew/review.py:2164 refuses an absent status and review.py:2170 an unrecognised one, each naming the status found and the accepted set before any write.",
+    "manifest": "read; it declares status complete, records the gate commands, both arm revisions, a 0 added-failure derivation and the read-only census path unrecognised-status-census.txt.",
+    "write_paths": "the prompt's FENCE-SCOPE names reckon/crew/review.py, tests/test_a_stored_review_carries_a_known_status.py, docs/evidence/fragments/scoring-should-stop-a-promotion/a-stored-review-carries-a-known-status.html and a figures dir; the diff also changes tests/test_review_gate_reads_the_hot_set.py and tests/test_review_lifecycle.py, which are outside that scope."
+  },
+  "justifications": {
+    "durability": "removing the status check reddens tests/test_a_stored_review_carries_a_known_status.py:83 and :99 with DID NOT RAISE ValueError, recorded as 2 failed EXIT=1.",
+    "evidence": "the file the done-when names, tests/test_a_stored_review_carries_a_known_status.py, is recorded as 4 passed in gate-new-test.log and the negative control is recorded red at negative-control-removes-status-check.log with EXIT=1.",
+    "fit": "RECOGNISED_REVIEW_STATUSES is placed at reckon/crew/review.py:559 beside parse_review and mirrors the neighbouring frozenset vocabularies used across reckon/crew.",
+    "goal_fidelity": "reckon/crew/review.py:2164 and :2170 refuse an absent or unrecognised status naming the status found and the accepted set, which is the goal, though the accepted set also admits \"unparsed\" and \"incomplete\" that promotion still reads as no review.",
+    "reuse": "no owner of a review-status vocabulary exists; a search of reckon/crew for a status-set constant found none, and the check extends store_review's own validation block at review.py:2164 rather than duplicating one.",
+    "scope_discipline": "the diff edits tests/test_review_gate_reads_the_hot_set.py:458 and tests/test_review_lifecycle.py:64, which are outside the FENCE-SCOPE paths, although each edit is the single status line the new validation requires."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to make the review store refuse a run-review record whose status its readers do not act on; reckon/crew/review.py:2164 refuses an absent status and review.py:2170 an unrecognised one, each naming the status found and the accepted set before any write.\nVERDICT done_when: the done-when names tests/test_a_stored_review_carries_a_known_status.py and a negative control that removes the status check; the manifest records that file at 4 passed (gate-new-test.log) and the negative control red (negative-control-removes-status-check.log EXIT=1), plus a 39-record read-only census.\nVERDICT write_paths: the prompt's FENCE-SCOPE names reckon/crew/review.py, tests/test_a_stored_review_carries_a_known_status.py, docs/evidence/fragments/scoring-should-stop-a-promotion/a-stored-review-carries-a-known-status.html and a figures dir; the diff also changes tests/test_review_gate_reads_the_hot_set.py and tests/test_review_lifecycle.py, which are outside that scope.\nVERDICT manifest: read; it declares status complete, records the gate commands, both arm revisions, a 0 added-failure derivation and the read-only census path unrecognised-status-census.txt.\nVERDICT diff: read commit by commit (0428e9638, 5cdcd33c4, 11f58bdd9, 585f5936c): the public constant and the refusal in review.py, the new test file, two fixture status lines and the evidence fragment; no reader was changed.\nCALL_SITES: reckon/crew/recovery_review_dispatch.py:807, reckon/crew/promotion_checks.py, reckon/crew/recovery_review_subject.py\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:2164 and :2170 refuse an absent or unrecognised status naming the status found and the accepted set, which is the goal, though the accepted set also admits \"unparsed\" and \"incomplete\" that promotion still reads as no review.\nSCORE evidence: 19\nJUSTIFICATION evidence: the file the done-when names, tests/test_a_stored_review_carries_a_known_status.py, is recorded as 4 passed in gate-new-test.log and the negative control is recorded red at negative-control-removes-status-check.log with EXIT=1.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: the diff edits tests/test_review_gate_reads_the_hot_set.py:458 and tests/test_review_lifecycle.py:64, which are outside the FENCE-SCOPE paths, although each edit is the single status line the new validation requires.\nSCORE durability: 19\nJUSTIFICATION durability: removing the status check reddens tests/test_a_stored_review_carries_a_known_status.py:83 and :99 with DID NOT RAISE ValueError, recorded as 2 failed EXIT=1.\nSCORE fit: 18\nJUSTIFICATION fit: RECOGNISED_REVIEW_STATUSES is placed at reckon/crew/review.py:559 beside parse_review and mirrors the neighbouring frozenset vocabularies used across reckon/crew.\nSCORE reuse: 20\nJUSTIFICATION reuse: no owner of a review-status vocabulary exists; a search of reckon/crew for a status-set constant found none, and the check extends store_review's own validation block at review.py:2164 rather than duplicating one.\nFINDING tests/test_review_gate_reads_the_hot_set.py:458 follow-on: the diff edits a file outside the node's declared write paths (tests/test_review_lifecycle.py:64 is the second), so the change exceeds its fence even though the added status line is what the new validation requires.\nFINDING tests/test_a_stored_review_carries_a_known_status.py:122 follow-on: the assertion compares stored[\"status\"] against the literal status the test passed in at line 111, so both sides move together; the refusal cases at lines 83 and 99, not this one, are what redden if the guard regresses.\nFINDING reckon/crew/recovery_review_dispatch.py:807 follow-on: this is store_review's only production caller, re-storing a record read back from disk, so a legacy record carrying an unrecognised status (the 39 in the census) now raises ValueError here rather than re-storing; reachable only if such a record is carried forward.",
+  "review_run_id": "r-20261012T054155412103-review-of-a-stored-review-carries-a-known-status",
+  "reviewed_base_sha": "ae53ec6dd60c4e6afc48e4c06e725948e7d7c8be",
+  "reviewed_head_sha": "585f5936c708dd89d70963cc73d3db2d2945a005",
+  "reviewed_run_id": "r-20261012T042018924874-a-stored-review-carries-a-known-status",
+  "reviewer_run_id": "r-20261012T054155412103-review-of-a-stored-review-carries-a-known-status",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-12T05:48:26.518367+00:00",
+  "total": 109
+}
