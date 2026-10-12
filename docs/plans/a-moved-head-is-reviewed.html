@@ -11,10 +11,10 @@
 <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-title" content="A Moved Head Is Reviewed">
 <meta name="plan-summary" content="The review reflex skipped first deliveries and never re-reviewed a resumed run&#x27;s moved head; every head that merges gets a review keyed to it.">
-<meta name="plan-status" content="active">
+<meta name="plan-status" content="done">
 <meta name="plan-sprint" content="S26">
 <meta name="plan-informs" content="a-review-is-sized-to-its-risk">
-<meta name="plan-version" content="21">
+<meta name="plan-version" content="22">
 <meta name="plan-modified" content="2026-10-13">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;}">
 </head>
@@ -56,10 +56,11 @@
     <pre class="r-fu-prompt">/reckon-build a-moved-head-is-reviewed §2</pre>
     <p class="r-fu-outcome">§2's investigation is done (six tier-none skips by design, two re-review worktree collisions, one race with a hand dispatch); superseded by f-amhir-003, which names §3.</p>
     </article>
-<article class="r-fu" data-id="f-amhir-003" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build (health-review-1010)" data-written-at="2026-10-11" data-recommends-skill="/reckon-build a-moved-head-is-reviewed §3" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-amhir-003" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build (health-review-1010)" data-written-at="2026-10-11" data-recommends-skill="/reckon-build a-moved-head-is-reviewed §3" data-resolved-at="2026-10-12T23:59:32+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Give a re-review round its own identity (§3)</h4>
     <div class="r-fu-body"><p>Apply comment <code>c-s3-runtime-move-1011</code> to §3's text first, and take §2's finding into it. The fix is in <code>dispatch_review_for_run</code>: a re-review round's node id and worktree path must differ from the round before. Whether test-only deliveries should skip review stays with the lead.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-moved-head-is-reviewed §3</pre>
+    <p class="r-fu-outcome">done — no followup; §3 landed at e4c010554, and the test-only tier change landed as the-review-loop-runs-without-hand-steps §3</p>
     </article>
 </section>
 <section data-reckon="comments" id="comments" class="r-comments">
@@ -73,7 +74,10 @@
     <div class="r-comment-body"><p>the review for r-20261012T225451838591-a-re-review-round-has-its-own-identity scores all six dimensions (goal_fidelity 19, evidence 16, scope_discipline 20, durability 18, fit 19, reuse 20; total 112) at base 0d2b36ff7 / head f5c9157f8 with added_failure_count 0 and two follow-on findings; no blocking finding.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261012T225451838591-a-re-review-round-has-its-own-identity" data-who="reckon-build" data-when="2026-10-12T23:43:32.997Z">
-    <div class="r-comment-body"><p>A review round&#x27;s node id now carries the head it read, so a re-review of a resumed run cannot reuse the first round&#x27;s id and collide with its worktree: the run-review id is composed by the same &lt;prefix&gt;&lt;source&gt;-&lt;head[:12]&gt; rule repair_node_id already applied, shared as round_node_id and round_node_source in reckon/crew/repair.py, and both head-stripping readers resolve every round&#x27;s id back to the run; tests/test_a_resumed_head_is_reviewed.py passes 4/4, and the 41 test files importing recovery_review_dispatch or recovery_watch show no added failure against base (head 2 failed / 398 passed vs base 2 failed / 394 passed, identical failure ids).</p></div>
+    <div class="r-comment-body"><p>A review round's node id now carries the head it read, so a re-review of a resumed run cannot reuse the first round's id and collide with its worktree: the run-review id is composed by the same &lt;prefix&gt;&lt;source&gt;-&lt;head[:12]&gt; rule repair_node_id already applied, shared as round_node_id and round_node_source in reckon/crew/repair.py, and both head-stripping readers resolve every round's id back to the run; tests/test_a_resumed_head_is_reviewed.py passes 4/4, and the 41 test files importing recovery_review_dispatch or recovery_watch show no added failure against base (head 2 failed / 398 passed vs base 2 failed / 394 passed, identical failure ids).</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-13T00:05:00Z">
+    <div class="r-comment-body"><p>§3 landed: a review round's node id carries the head it read, and both id readers resolve every round (merge <code>e4c010554</code>); 18 passed at the merged head; review 112/120. Every section of this plan is now done. <a href="/reckon/evidence/archive/a-moved-head-is-reviewed-landed.html#s3-review-round-identity">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-10-11T07:55:00Z">
     <div class="r-comment-body"><p>§2 done. Six of the nine are the review tier's designed skip of test-only changes; two are a re-review whose reused node id collides with the first round's worktree; one is a race with the coordinator's hand dispatch. §3's write path is <code>dispatch_review_for_run</code> in <code>reckon/crew/recovery_review_dispatch.py</code>. Whether test-only runs should skip review is put to the lead. <a href="/reckon/evidence/archive/a-moved-head-is-reviewed-landed.html#s2-why-the-reflex-launched-nothing">evidence</a></p></div>
