@@ -7,10 +7,10 @@ how many changed since the record was written — and then draws the runs whose
 state differs from the record, as ordinary transitions from the recorded state.
 A run that did not move draws nothing, and a run the record does not name at all
 is replayed from ``dispatched``, the state every launch passes through. The
-pane withholds observer context, so the replay draws only the rows that ask the
-coordinator for something: a run whose replay resolves into a progress state
-such as ``working`` is held back, and the record therefore holds only the action
-states the pane showed.
+pane delivers its own session's run starts, so a replay that resolves into a
+progress state such as ``working`` is drawn once as that run's start, while a
+peer session's start is still held back as observer context the pane withholds.
+The record holds the states the pane actually showed.
 
 The record is written where a row is written to the pane, never where one is
 generated: a row this reader never received is not one it saw, and a replay
@@ -237,15 +237,15 @@ def test_a_reattach_replays_only_the_runs_that_moved(home, follow_lines) -> None
 def test_a_run_the_record_does_not_name_is_replayed_from_dispatched(
     home, follow_lines
 ) -> None:
-    """A run dispatched while nothing was attached is counted, and held back.
+    """A run dispatched while nothing was attached is counted, and its start drawn.
 
     The record names the two runs the pane was last shown. A third pointer is
     written afterwards, so the re-attach finds a live run the record does not
     name; it is replayed from ``dispatched``, which is the state its launch
-    passed through, but the replay resolves into ``working``, an observer state,
-    so the pane withholds it. The two runs the record does name and that did not
-    move draw nothing either, while the header still counts the new run among
-    the changed.
+    passed through, and resolves into ``working``. The replay is this session's
+    own run's start, so the pane delivers it once. The two runs the record does
+    name and that did not move draw nothing, while the header still counts the
+    new run among the changed.
     """
     _two_live_runs(home)
     _deliver(home, RUN_A, "failed")
@@ -268,10 +268,11 @@ def test_a_run_the_record_does_not_name_is_replayed_from_dispatched(
     assert "3 live runs" in header, header
     assert "1 changed" in header, header
     arrived = _naming(follow_lines, "node-c")
-    assert arrived == [], (
-        f"a run replayed from dispatched into working is observer context the "
-        f"pane withholds; got {follow_lines!r}"
+    assert len(arrived) == 1, (
+        f"a run the pane's own session dispatched is delivered once as its "
+        f"start; got {follow_lines!r}"
     )
+    assert "dispatched → working" in arrived[0], arrived[0]
     assert not _naming(follow_lines, "node-a"), follow_lines
     assert not _naming(follow_lines, "node-b"), follow_lines
 
@@ -320,7 +321,7 @@ def test_a_json_arming_records_only_what_a_pane_would_draw(
     attach would diff against a state it never showed, and read the run's
     re-dispatch as a promotion the reader was never told about. The run shown as
     failed is the pane's own row, so it is recorded; the re-dispatched run's
-    replay resolves into working, an observer state, and is withheld.
+    replay resolves into working, this session's own start, and is delivered.
     """
     repo = home / "repo"
     repo.mkdir()
@@ -350,7 +351,8 @@ def test_a_json_arming_records_only_what_a_pane_would_draw(
 
     assert "re-attached" in follow_lines[0], follow_lines
     rows = _naming(follow_lines, "node-p")
-    assert rows == [], (
-        f"a run replayed from dispatched into working is observer context the "
-        f"pane withholds; got {follow_lines!r}"
+    assert len(rows) == 1, (
+        f"a run the pane's own session dispatched is delivered once as its "
+        f"start; got {follow_lines!r}"
     )
+    assert "dispatched → working" in rows[0], rows[0]
