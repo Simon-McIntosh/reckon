@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "f43cf0a8c8e86125ece11f4ef7c9afe7f717a0cb",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/promotion_release.py:407",
+    "reckon/crew/promotion.py:1403",
+    "reckon/crew/routing.py:1361",
+    "reckon/crew/routing.py:2141",
+    "reckon/crew/routing.py:2155",
+    "reckon/crew/routing.py:2846",
+    "reckon/crew/dispatch.py:1863"
+  ],
+  "completed_at": "2026-10-12T06:08:13.545Z",
+  "dispatched_at": "2026-10-12T05:59:46Z",
+  "findings": [
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "1153",
+      "severity": "follow-on",
+      "text": "follow-on: the helper runs a global `git worktree prune` on every removal, including inside garbage_collect, whose own comment at routing.py:2187 states the pass deliberately runs no blanket prune because it would drop the registration of a tree whose directory vanished outside git, the another-session record the pass reports and leaves in place."
+    },
+    {
+      "file": "tests/test_every_removal_path_reads_the_wide_claim.py",
+      "line": "50",
+      "severity": "follow-on",
+      "text": "follow-on: the file is edited outside the node's declared write paths; the edit is required for the wide-claim caller test to pass and is disclosed in follow_ons, but the fence was not extended first."
+    },
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "1103",
+      "severity": "follow-on",
+      "text": "follow-on: `_worktree_is_locked` re-parses `git worktree list --porcelain` rather than extending `_registered_worktrees` at routing.py:520, a small capability duplication a future reader could see drift."
+    }
+  ],
+  "head_log_revision": "d3e4b44f7229d52cf1e088c3a3a81829053d8d71",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "read commits d3e4b44f7 and 39b5e7122 against base f43cf0a8 commit by commit; routing.py adds the helper and the trash sweep and rewires four removals, promotion_release.py sets worktree_released true and names leftover trash, and the new test file plus the caller-test edit land with them.",
+    "done_when": "the done_when names tests/test_a_worktree_release_is_whole.py and requires a caller-enumerating assertion plus a red negative control; tests/test_a_worktree_release_is_whole.py:295 enumerates the helper callers and the manifest records head gate 55 passed EXIT=0 and the negative control EXIT=1 with two failing ids.",
+    "goal": "the node goal is that one helper owns every worktree removal, vacating the registered path in a single rename onto a same-filesystem trash directory, pruning the registration, and deleting the copy with no deadline; reckon/crew/routing.py:1130 `_release_worktree_whole` implements exactly that, and the four listed sites plus promotion now route through it.",
+    "manifest": "read manifest.md; status complete, commits d3e4b44f7 39b5e7122, gate 55 passed EXIT=0 at d3e4b44f7, negative control EXIT=1, evidence_inputs candidly records that the base arm imported head code through the shared editable install, blockers none.",
+    "write_paths": "the declared scope is reckon/crew/promotion_release.py, reckon/crew/routing.py and tests/test_a_worktree_release_is_whole.py; the diff also changes tests/test_every_removal_path_reads_the_wide_claim.py, which is outside that scope, and docs/evidence/fragments/crew-runtime-positive-controls/a-worktree-release-is-whole.html under the orientation grant."
+  },
+  "justifications": {
+    "durability": "tests/test_a_worktree_release_is_whole.py:170 asserts worktree_released true and a partial-tree-free path, and negative-control.log shows that assertion reddens when `git worktree remove` under the deadline is restored.",
+    "evidence": "head-arm.log records 55 passed EXIT=0 and negative-control.log records EXIT=1, but base-arm.log's own header names the worktree's routing.py as the imported module, so the base arm measured head code and is not an independent baseline as the manifest admits.",
+    "fit": "reckon/crew/routing.py:1078-1206 uses mechanism names (`_release_worktree_whole`, `_sweep_worktree_trash`, `WORKTREE_TRASH_DIRNAME`) with no plan label, matching the surrounding module style.",
+    "goal_fidelity": "reckon/crew/routing.py:1130 renames the tree aside then prunes then deletes with no deadline, and promotion_release.py:408 records worktree_released true with leftover trash named separately, matching the goal's whole-or-not-at-all release.",
+    "reuse": "the change consolidates four inline removals onto one helper rather than forking removal, but reckon/crew/routing.py:1103 re-parses `git worktree list --porcelain` where routing.py:520 already parses the same command.",
+    "scope_discipline": "every diff path is inside the declared scope except tests/test_every_removal_path_reads_the_wide_claim.py, which the worker edited to keep the required caller test passing and disclosed in follow_ons."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that one helper owns every worktree removal, vacating the registered path in a single rename onto a same-filesystem trash directory, pruning the registration, and deleting the copy with no deadline; reckon/crew/routing.py:1130 `_release_worktree_whole` implements exactly that, and the four listed sites plus promotion now route through it.\nVERDICT done_when: the done_when names tests/test_a_worktree_release_is_whole.py and requires a caller-enumerating assertion plus a red negative control; tests/test_a_worktree_release_is_whole.py:295 enumerates the helper callers and the manifest records head gate 55 passed EXIT=0 and the negative control EXIT=1 with two failing ids.\nVERDICT write_paths: the declared scope is reckon/crew/promotion_release.py, reckon/crew/routing.py and tests/test_a_worktree_release_is_whole.py; the diff also changes tests/test_every_removal_path_reads_the_wide_claim.py, which is outside that scope, and docs/evidence/fragments/crew-runtime-positive-controls/a-worktree-release-is-whole.html under the orientation grant.\nVERDICT manifest: read manifest.md; status complete, commits d3e4b44f7 39b5e7122, gate 55 passed EXIT=0 at d3e4b44f7, negative control EXIT=1, evidence_inputs candidly records that the base arm imported head code through the shared editable install, blockers none.\nVERDICT diff: read commits d3e4b44f7 and 39b5e7122 against base f43cf0a8 commit by commit; routing.py adds the helper and the trash sweep and rewires four removals, promotion_release.py sets worktree_released true and names leftover trash, and the new test file plus the caller-test edit land with them.\nCALL_SITES: reckon/crew/promotion_release.py:407, reckon/crew/promotion.py:1403, reckon/crew/routing.py:1361, reckon/crew/routing.py:2141, reckon/crew/routing.py:2155, reckon/crew/routing.py:2846, reckon/crew/dispatch.py:1863\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/routing.py:1130 renames the tree aside then prunes then deletes with no deadline, and promotion_release.py:408 records worktree_released true with leftover trash named separately, matching the goal's whole-or-not-at-all release.\nSCORE evidence: 14\nJUSTIFICATION evidence: head-arm.log records 55 passed EXIT=0 and negative-control.log records EXIT=1, but base-arm.log's own header names the worktree's routing.py as the imported module, so the base arm measured head code and is not an independent baseline as the manifest admits.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: every diff path is inside the declared scope except tests/test_every_removal_path_reads_the_wide_claim.py, which the worker edited to keep the required caller test passing and disclosed in follow_ons.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_worktree_release_is_whole.py:170 asserts worktree_released true and a partial-tree-free path, and negative-control.log shows that assertion reddens when `git worktree remove` under the deadline is restored.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/routing.py:1078-1206 uses mechanism names (`_release_worktree_whole`, `_sweep_worktree_trash`, `WORKTREE_TRASH_DIRNAME`) with no plan label, matching the surrounding module style.\nSCORE reuse: 17\nJUSTIFICATION reuse: the change consolidates four inline removals onto one helper rather than forking removal, but reckon/crew/routing.py:1103 re-parses `git worktree list --porcelain` where routing.py:520 already parses the same command.\nFINDING reckon/crew/routing.py:1153 follow-on: the helper runs a global `git worktree prune` on every removal, including inside garbage_collect, whose own comment at routing.py:2187 states the pass deliberately runs no blanket prune because it would drop the registration of a tree whose directory vanished outside git, the another-session record the pass reports and leaves in place.\nFINDING tests/test_every_removal_path_reads_the_wide_claim.py:50 follow-on: the file is edited outside the node's declared write paths; the edit is required for the wide-claim caller test to pass and is disclosed in follow_ons, but the fence was not extended first.\nFINDING reckon/crew/routing.py:1103 follow-on: `_worktree_is_locked` re-parses `git worktree list --porcelain` rather than extending `_registered_worktrees` at routing.py:520, a small capability duplication a future reader could see drift.",
+  "review_run_id": "r-20261012T055921194456-review-of-a-worktree-release-is-whole",
+  "reviewed_base_sha": "f43cf0a8c8e86125ece11f4ef7c9afe7f717a0cb",
+  "reviewed_head_sha": "39b5e71221a549b522d0143ebcf3a19562d15eb0",
+  "reviewed_run_id": "r-20261012T051827498181-a-worktree-release-is-whole",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-12T06:05:56.894747+00:00",
+  "total": 102
+}
