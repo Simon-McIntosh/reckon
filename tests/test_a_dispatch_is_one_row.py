@@ -4,8 +4,11 @@ Every run opens the pane with an arrival row — its first sighting in
 ``dispatched`` — and then, within the same minute, the run's first transition
 out of ``dispatched``. The arrival says nothing the dispatch payload did not
 already carry, and a launch that settles into an observer kind such as
-``working`` says nothing either, so the pane receives no row for it. An arrival
-that never moves prints at its window, because a run still sitting in
+``working`` says nothing either, so the pane receives no row for it — with one
+exception: the pane's own session's start. That exception lives in
+``tests/test_a_pane_shows_its_own_starts.py``; the cases here are a pane that
+follows no session, where every start is a foreign run's and stays held. An
+arrival that never moves prints at its window, because a run still sitting in
 ``dispatched`` is a duty the pane must show, and an arrival whose first
 transition is a coordinator row prints as the arrival collapsed into it.
 
@@ -48,12 +51,16 @@ def _kinds(rows):
     return [(row.get("from_state"), row.get("to_state")) for row in rows]
 
 
-def test_arrival_then_working_prints_no_row() -> None:
-    path = ticker.PaneRowPath()
-    assert path.feed(_arrival(), now=0.0) == []
-    # The arrival resolves into the observer kind ``working``, which asks the
-    # coordinator for nothing, so the launch reaches the pane as no row at all.
-    assert path.feed(_row("dispatched", "working"), now=19.0) == []
+def test_arrival_then_working_prints_no_row_for_a_foreign_session() -> None:
+    """A start that is not the pane's own session is still observer context.
+
+    The pane delivers its own session's start (``test_a_pane_shows_its_own_starts``),
+    but a peer session's run is work this reader does not own, so the launch
+    resolves into the observer kind ``working`` and reaches the pane as no row.
+    """
+    path = ticker.PaneRowPath(own_session="s-mine")
+    assert path.feed(_arrival(session="s-peer"), now=0.0) == []
+    assert path.feed(_row("dispatched", "working", session="s-peer"), now=19.0) == []
     assert path.flush(now=1e9) == []
 
 
