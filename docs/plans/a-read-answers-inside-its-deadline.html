@@ -25,7 +25,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="24">
+<meta name="plan-version" content="25">
 <meta name="plan-modified" content="2026-10-13">
 </head>
 <body>
@@ -205,7 +205,10 @@
     <div class="r-comment-body"><p>reckon:a-read-answers-inside-its-deadline §4 — independent review of r-20261010T212226904790-git-head-resolved-once for the commit it gained since review r-20261010T213605774740 (reviewed_base_sha 4685373af, reviewed_head_sha 323a2a62f): total 115/120 (goal_fidelity 19, evidence 18, scope_discipline 20, durability 19, fit 20, reuse 19). The gained commit fixes the prior review's sole blocking finding: _head_identity now resolves the branch ref through _common_git_directory(git_dir), so a commit in a linked worktree changes the memo identity and _git_head re-resolves; I reproduced the repair with the run's own four-file head arm (20 passed EXIT=0 at 323a2a62f) and my own mutation arm reverting the fix (1 failed EXIT=1, the worktree test reddens, the main-checkout test still passes). Two non-blocking follow-ons (unbounded _GIT_HEAD_MEMO; no baseline_suite/after_suite recorded so the added-failure count is unmeasured). No blocking findings.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261012T210514131486-reads-measured-at-head" data-who="reckon-build" data-when="2026-10-12T22:04:43.969Z">
-    <div class="r-comment-body"><p>§6 head arm at 0f57ee7b2 on exclusive all_debug node 98dci4-clu-3141 (job 1284023): medians n=5, 0 errors — roadmap 100.081 s cold / 18.435 s warm, audit 157.018 / 21.434, discovery 74.230 / 14.095 — and one roadmap tools/call to a fresh reckon mcp server returned storage-slow at 30.09 s, so §6&#x27;s done-when (warm roadmap &lt;= 2 s, warm audit &lt;= 3 s, cold roadmap &lt; 30 s, MCP without storage-slow) is NOT met at head; the base arm is the parallel node&#x27;s control</p></div>
+    <div class="r-comment-body"><p>§6 head arm at 0f57ee7b2 on exclusive all_debug node 98dci4-clu-3141 (job 1284023): medians n=5, 0 errors — roadmap 100.081 s cold / 18.435 s warm, audit 157.018 / 21.434, discovery 74.230 / 14.095 — and one roadmap tools/call to a fresh reckon mcp server returned storage-slow at 30.09 s, so §6's done-when (warm roadmap &lt;= 2 s, warm audit &lt;= 3 s, cold roadmap &lt; 30 s, MCP without storage-slow) is NOT met at head; the base arm is the parallel node's control</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261012T210609812866-reads-measured-at-base" data-who="reckon-build" data-when="2026-10-12T21:59:37.362Z">
+    <div class="r-comment-body"><p>Base arm at d249200c7 — roadmap completes at 66.454 s cold / 10.721 s warm (n=5; cold exceeds the 30 s MCP deadline, so the plan&#x27;s negative control holds); audit and discovery die EROFS on the read-only live corpus; on a writable copy audit is 233.013 s cold / 12.607 s warm (n=3) and discovery 125.602 s cold / 0.843 s warm (n=3)</p></div>
 </div>
 </section>
 </main>
