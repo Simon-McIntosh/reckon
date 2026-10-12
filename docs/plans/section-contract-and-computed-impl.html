@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="section-contract-and-computed-impl">
   <meta name="plan-title" content="Section contract and computed impl — every section states its effort, depth, risk and attempts, and the plan figure is calculated from them">
   <meta name="plan-summary" content="Sections carry a schema-enforced contract (effort, reasoning, risk, attempts); impl is computed from it; attempts steer the capability class.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="done">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="27.0">
   <meta name="plan-capability-version" content="1.0">
@@ -21,13 +21,13 @@
   <meta name="plan-tags" content="reckon-tooling,crew,spa">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-informs" content="work-scheduling-surface">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s0&quot;:&quot;done&quot;,&quot;s-contract&quot;:&quot;done&quot;}">
   <title>Section contract and computed impl | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="104">
-<meta name="plan-modified" content="2026-10-07">
+<meta name="plan-version" content="105">
+<meta name="plan-modified" content="2026-10-13">
 </head>
 <body>
   <main class="plan-doc">
@@ -558,6 +558,12 @@
     <div class="r-fu-body"><p>From the final review of section-routing-reaches-dispatch (95). _dispatch_section_routing in reckon/crew/dispatch.py (near line 409) catches CrewError, PlanVisibilityError, ResourceCollision, OSError and ValueError, and returns None. plan_dispatch then falls back to role routing. So a malformed capability_raise rule or an unexpected record-parser failure silently disables the raise, and the dispatch record's section_routing reads None, exactly as for a node with no section. Record the failure on the dispatch payload and the pointer, with the exception class and the section, so a reader can tell 'no raise applies' from 'the raise could not be resolved'. Keep falling back, so a broken rule never blocks a dispatch. Done when a malformed rule's dispatch records the failure, a section with no rule records none, and the control (the failure dropped) makes the two indistinguishable again.</p></div>
     <pre class="r-fu-prompt">/reckon-build section-contract-and-computed-impl</pre>
     <p class="r-fu-outcome">A dispatch whose section routing rule cannot be resolved records a routing failure, naming the exception class and the section, on its payload and pointer, and still falls back to role routing. A section with no rule records no failure, and a valid rule records its raise (merged a3f641c8f, review 95). The control drops the failure, and the two cases become indistinguishable. Follow-on: an unresolvable plan resource and the two earlier early returns (no section reference; no repository and no authority) still record None.</p>
+    </article>
+<article class="r-fu" data-id="f-scaci-close" data-status="resolved" data-written-by="reckon-build" data-written-at="2026-10-12" data-recommends-skill="/reckon-build section-contract-and-computed-impl" data-resolved-at="2026-10-12T23:15:00Z" data-resolved-by="reckon-build">
+    <h4 class="r-fu-title">The plan closes</h4>
+    <div class="r-fu-body"><p>§0 and the contract heading are the plan's rationale; §1 to §15 landed. The portfolio review of 2026-10-12 found the section contract and computed impl landed.</p></div>
+    <pre class="r-fu-prompt">/reckon-build section-contract-and-computed-impl</pre>
+    <p class="r-fu-outcome">done — no followup; closed by the second portfolio round of the-portfolio-reads-true §6</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
