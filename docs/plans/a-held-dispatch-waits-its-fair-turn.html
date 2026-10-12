@@ -24,8 +24,8 @@
   <title>A Held Dispatch Waits Its Fair Turn | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="18">
-<meta name="plan-modified" content="2026-10-10">
+<meta name="plan-version" content="19">
+<meta name="plan-modified" content="2026-10-12">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="3c837fc1">
 </head>
@@ -72,6 +72,7 @@
       <li>A paused fleet gate launches nothing, and a launch failure leaves the run queued with the failure recorded.</li>
       <li>The drainer is declared through the fleet services configuration, and the coordinator's follower sees the run's phase leave <code>queued</code> for the launch phases, <code>starting</code> then <code>working</code>, as it reports a run its coordinator launched itself.</li>
     </ul>
+    <p><strong>Entry point.</strong> The declared service runs a new verb, <code>reckon crew admit --lane &lt;lane&gt;</code>, which repeats its admission pass on a cadence until it is stopped; <code>--once</code> runs a single pass, which is what the tests drive. No existing command launches a queued dispatch, so nothing is retired or merged into it: <code>reckon crew drain</code> is the session-closure report, and <code>reckon crew recover --dispatch-reviews</code> launches reviews for scoring runs. The interface grows by one verb with two options. The node ships the verb and a test that declares it in a temporary services configuration. Declaring the service on a workstation is an operator step taken after the merge.</p>
 
     <h2 id="s5">&sect;5 &mdash; Queued work shows where held work already shows</h2>
 <section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
@@ -179,7 +180,7 @@
     <div class="r-comment-body"><p>Review §6 of r-20261008T104719513535-a-requeue-racing-its-discard-queues-afresh: the fix is correct and load-bearing; scored goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 19, reuse 20, total 117, added_failure_count 0, no blocking findings.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261008T104719513535-a-requeue-racing-its-discard-queues-afresh" data-who="reckon-build" data-when="2026-10-08T10:59:23.501Z">
-    <div class="r-comment-body"><p>§6 — queue_dispatch now treats a queued pointer discarded between the scan and the per-run lock as absent and writes one fresh queued pointer under the request&#x27;s own run id instead of raising &quot;no live run&quot;; new case removes the gate at that seam; gate 12 passed, EXIT=0.</p></div>
+    <div class="r-comment-body"><p>§6 — queue_dispatch now treats a queued pointer discarded between the scan and the per-run lock as absent and writes one fresh queued pointer under the request's own run id instead of raising "no live run"; new case removes the gate at that seam; gate 12 passed, EXIT=0.</p></div>
 </div>
 </section>
 </main>
