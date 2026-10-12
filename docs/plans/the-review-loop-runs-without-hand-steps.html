@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-standalone" content="Lead rulings of 2026-10-12 that amend landed review, promotion and hook mechanisms; no live plan waits on these sections and they wait on none.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
   <title>The Review Loop Runs Without Hand Steps | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="9">
+<meta name="plan-version" content="10">
 <meta name="plan-modified" content="2026-10-12">
 </head>
 <body>
@@ -45,7 +45,7 @@
     <p>The lead ruled on 2026-10-12 to make all four mechanical. Each section below amends one landed mechanism and adds no new verb.</p>
 
     <h2 id="s2">§2 — A review run promotes itself once its record is stored</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> A run in the review role promotes itself, with <code>promoted_by: review-self</code> on its ledger row, when all of these hold:</p>
     <ul>
       <li>its manifest reads <code>complete</code>;</li>
@@ -81,7 +81,7 @@
     <p>Write paths: <code>reckon/review_tiers.py</code>, <code>tests/test_a_test_only_change_earns_a_light_review.py</code>, plus the existing test files whose test-only assertion changes, each named at dispatch.</p>
 
     <h2 id="s4">§4 — A manifest's evidence is checked before promotion</h2>
-<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> <code>audit_manifest</code> in <code>reckon/crew/reports.py</code>, which <code>reckon crew check-manifest</code> calls, gains two findings.</p>
     <ul>
       <li><strong>Gate logs.</strong> Every file named in <code>test_logs</code> must carry its literal command near its head and end with an <code>EXIT=&lt;n&gt;</code> line. Whether that command is abbreviated is judged by the existing gate-command reader <code>gate_command_prose</code> (<code>reckon/crew/promotion_gate.py</code>), which already classifies an angle-bracket placeholder in a recorded gate command, so the two judges cannot disagree. The <code>EXIT=</code> line is read through the reader that promotion already uses for a gate log's exit status, if one exists, and the manifest names it.</li>
