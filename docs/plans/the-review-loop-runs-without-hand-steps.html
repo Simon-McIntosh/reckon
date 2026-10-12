@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-standalone" content="Lead rulings of 2026-10-12 that amend landed review, promotion and hook mechanisms; no live plan waits on these sections and they wait on none.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;}">
   <title>The Review Loop Runs Without Hand Steps | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="15">
+<meta name="plan-version" content="16">
 <meta name="plan-modified" content="2026-10-12">
 </head>
 <body>
@@ -101,7 +101,7 @@
     <p>Write paths: <code>reckon/crew/reports.py</code>, <code>tests/test_a_manifest_evidence_is_checked.py</code>, and <code>reckon/crew/promotion_gate.py</code> only if <code>gate_command_prose</code> needs a public name to be called from <code>reports.py</code>.</p>
 
     <h2 id="s5">§5 — A producer seated on another node reads as live</h2>
-<section data-reckon="section" data-id="s5" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s5" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> <code>freshness</code> in <code>reckon/crew/obligation_snapshot.py</code> stops reading a producer on another node as absent. The snapshot it reads records no producer host: <code>document_for</code> writes the pid, its start time, the start instant and the code stamp. <code>freshness</code> is called with the document alone, from two sites in <code>reckon/hooks/coordinator_obligations.py</code>. So <code>freshness</code> gains the project, and both callers pass it. When the recorded pid is not running locally, it asks the existing owner of that judgement, <code>reckon/crew/watch_unit.py</code>, whether the project's seat names a foreign host whose stream is still fresh (<code>_seat_names_a_foreign_host</code>, <code>_seat_stream_fresh</code>). A yes counts as a live producer, and the hook then reports stale or fresh as usual. No new host comparison is written; if those helpers need a public name to be called from <code>obligation_snapshot</code>, they get one where they are. A seat on this host whose pid is dead, or a foreign seat whose stream is stale, still reads as <code>no-producer</code>.</p>
     <p><strong>Done when</strong> <code>tests/test_a_remote_producer_reads_as_live.py</code> passes:</p>
     <ul>
