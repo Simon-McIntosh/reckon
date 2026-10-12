@@ -175,9 +175,11 @@ RECORD_FIELDS = (
     "clone_matches",
     "review_tier",
     # What promoted the run: "review-acceptance" when a clean stored review
-    # accepted it without a coordinator, null on every row a coordinator
-    # promoted. Always present so a reader can tell an accepted row is
-    # distinguishable from one whose value was never written.
+    # accepted it without a coordinator, "review-self" when a review run
+    # promoted itself once its stored record parsed, null on every row a
+    # coordinator promoted. Always present so a reader can tell an
+    # autonomously promoted row is distinguishable from one whose value was
+    # never written.
     "promoted_by",
     "picker_selection",
     "route_mode",
@@ -2613,10 +2615,12 @@ def build_record(
         # pair could be measured for carries the unmeasured marker instead, so
         # the two never read alike.
         "clone_matches": _clone_report(clone_matches),
-        # What promoted this run. Null on every row a coordinator promoted and
-        # "review-acceptance" on a row a clean stored review accepted, so the
-        # two never read alike. Present on every row, like the other declared
-        # fields, so a reader can tell an absent value from one never written.
+        # What promoted this run. Null on every row a coordinator promoted,
+        # "review-acceptance" on a row a clean stored review accepted, and
+        # "review-self" on a review run that promoted itself once its stored
+        # record parsed, so the three never read alike. Present on every row,
+        # like the other declared fields, so a reader can tell an absent value
+        # from one never written.
         "promoted_by": str(promoted_by).strip() or None,
         "picker_selection": promoted_picker_selection(run_id),
         "route_mode": promoted_route_mode(run_id),

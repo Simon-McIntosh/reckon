@@ -12,6 +12,7 @@ from reckon.crew.node import (
 )
 from reckon.crew.runs import (
     list_live,
+    record_process_alive,
 )
 
 
@@ -244,6 +245,118 @@ def accept_clean_review(
     }
 
 
+def promote_review_run_itself(
+    pointer: Mapping[str, Any],
+    *,
+    config: Mapping[str, Any] | None = None,
+) -> dict[str, Any] | None:
+    """Promote a completed review run itself, once its record is stored.
+
+    A review run's whole deliverable is the record it writes for the run it
+    reads, so nothing a coordinator would add stands between that record
+    landing and the run's own promotion. Once its manifest reads complete, its
+    worker and supervisor have exited, and the record it was dispatched to
+    store parses, the run is promoted with ``promoted_by: review-self`` on its
+    ledger row and its live pointer is deleted, so the run no longer counts as
+    unreconciled at dispatch. The reviewed run is untouched: acceptance of it
+    stays scoped to merged runs, so this branch adds an act rather than
+    widening that one.
+
+    This runs for review-role pointers only, and it promotes the review run
+    itself and never dispatches a review of it, so no chain of reviews of
+    reviews can start. The reflex's skip of every review node stays in force
+    for acceptance and for review dispatch. A review run whose manifest is not
+    complete, whose worker is still alive, whose supervisor has not recorded
+    an exit, or whose record is missing or unparsed is left for the
+    coordinator, and the refusal returned names which of those held.
+
+    ``None`` is returned for a run that is not a review run at all, because an
+    ordinary or implement run is never promoted by this path. A dict is
+    returned whenever a review run was considered, so the sweep records why an
+    unpromoted review is still waiting.
+    """
+    if not _is_review_run(pointer):
+        return None
+    run_id = str(pointer.get("run_id") or "")
+    if not run_id:
+        return None
+    project = str(pointer.get("project") or "")
+    manifest_path = Path(str(pointer.get("manifest_path") or ""))
+    if _complete_manifest_write_time(manifest_path) is None:
+        return {
+            "run_id": run_id,
+            "promoted": False,
+            "reason": (
+                "the review run's manifest does not read complete, so its "
+                "verdict has not been written"
+            ),
+        }
+    # The worker must have exited: a live worker owns the run, and promoting it
+    # would delete the pointer out from under a process still producing the
+    # record this branch reads.
+    if record_process_alive(pointer) is True:
+        return {
+            "run_id": run_id,
+            "promoted": False,
+            "reason": "the review run's worker is still alive",
+        }
+    # The supervisor records its exit in the run directory before it ends, so
+    # its exit record is the run's receipt that both processes have stopped.
+    if _run_exit_record(pointer) is None:
+        return {
+            "run_id": run_id,
+            "promoted": False,
+            "reason": (
+                "the review run's supervisor has recorded no exit, so the run "
+                "has not ended"
+            ),
+        }
+    stored = _delivered_review_record(pointer, project)
+    if stored is None:
+        return {
+            "run_id": run_id,
+            "promoted": False,
+            "reason": (
+                "the review run stored no readable record for the run it read, "
+                "so it has nothing a coordinator would not add"
+            ),
+        }
+    _, record_path = stored
+    from reckon.crew import promotion as promotion_module
+
+    checkout_value = str(pointer.get("repo") or "").strip()
+    checkout = Path(checkout_value).expanduser() if checkout_value else None
+    root = checkout if (checkout is not None and checkout.is_dir()) else None
+    try:
+        result = promotion_module.complete(
+            run_id,
+            gate="not-run",
+            root=root,
+            promoted_by="review-self",
+        )
+    except (CrewError, OSError) as refusal:
+        return {
+            "run_id": run_id,
+            "promoted": False,
+            "reason": str(refusal),
+            "record_path": str(record_path),
+        }
+    return {
+        "run_id": run_id,
+        "promoted": True,
+        "promoted_by": "review-self",
+        "record_path": str(record_path),
+        "ledger": {
+            "path": str(result.get("ledger_path") or ""),
+            "promoted_by": (
+                str((result.get("record") or {}).get("promoted_by") or "")
+                if isinstance(result.get("record"), Mapping)
+                else "review-self"
+            ),
+        },
+    }
+
+
 def dispatch_awaiting_reviews(
     *,
     project: str | None = None,
@@ -275,6 +388,8 @@ def dispatch_awaiting_reviews(
     dispatched: list[str] = []
     refused: list[dict[str, Any]] = []
     accepted: list[str] = []
+    self_promoted: list[str] = []
+    review_self_refused: list[dict[str, Any]] = []
     awaiting_lane: list[str] = []
     lane_paused: list[str] = []
     repaired: list[str] = []
@@ -290,10 +405,25 @@ def dispatch_awaiting_reviews(
             # Another session's run: its review is that session's to compose,
             # because only that coordinator chose its lane and its member.
             continue
-        # A review run is never its own source run: counting one as a run
-        # awaiting review is what composes a review of a review, and each link
-        # of that chain is a real dispatch against a real member.
-        if _is_review_node(pointer):
+        # Every review run is handled here and not by the compose and accept
+        # passes below: a review run is never its own source run, because
+        # counting one as a run awaiting review is what composes a review of a
+        # review, and each link of that chain is a real dispatch against a real
+        # member. A review run whose stored record is present promotes itself;
+        # one that is not ready is left for its coordinator and is never
+        # dispatched a review of.
+        if _is_review_run(pointer):
+            self_promotion = promote_review_run_itself(pointer, config=config)
+            if self_promotion is not None:
+                if self_promotion.get("promoted"):
+                    self_promoted.append(str(self_promotion.get("run_id") or ""))
+                else:
+                    # A refused self-promotion is kept in its own list rather
+                    # than in ``reports``: that list is what a caller reads to
+                    # find the runs a review was composed or accepted for, and
+                    # a review run only ever promotes itself, so it is not a
+                    # run awaiting review and must not displace that reading.
+                    review_self_refused.append(self_promotion)
             continue
         # A run resumed since its queued review was recorded carries a head the
         # review no longer speaks for; the queued attempt is withdrawn rather
@@ -395,6 +525,8 @@ def dispatch_awaiting_reviews(
         "dispatched": dispatched,
         "refused": refused,
         "accepted": accepted,
+        "self_promoted": self_promoted,
+        "review_self_refused": review_self_refused,
         "awaiting_lane": awaiting_lane,
         "lane_paused": lane_paused,
         "repaired": repaired,
@@ -403,6 +535,14 @@ def dispatch_awaiting_reviews(
 
 from .recovery_classification import (  # noqa: E402
     classify_pointer,
+)
+from .recovery_liveness import (  # noqa: E402
+    _run_exit_record,
+)
+from .recovery_review_delivery import (  # noqa: E402
+    _complete_manifest_write_time,
+    _delivered_review_record,
+    _is_review_run,
 )
 from .recovery_repair_dispatch import (  # noqa: E402
     _sweep_review_tier,
@@ -417,7 +557,6 @@ from .recovery_review_dispatch import (  # noqa: E402
     withdraw_superseded_review,
 )
 from .recovery_review_subject import (  # noqa: E402
-    _is_review_node,
     _review_is_complete,
     select_review_for_head,
 )
