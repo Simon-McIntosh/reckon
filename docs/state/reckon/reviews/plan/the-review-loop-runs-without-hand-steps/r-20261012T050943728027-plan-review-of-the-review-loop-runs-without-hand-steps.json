@@ -1,0 +1,60 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-12T05:22:42.110Z",
+  "dispatched_at": "2026-10-12T05:10:30Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-review-loop-runs-without-hand-steps.html:85",
+      "id": "single_goal-1",
+      "reason": "all four are additions to one function's finding list covered by one test file and one section title (\"a manifest's evidence is checked before promotion\"), so one evidence-hygiene verdict does close the node; the bundling does not misdirect a builder.",
+      "text": "\u00a74 bundles four independently-failable checks (a `test_logs` file must carry its command near its head; it must end with an `EXIT=<n>` line; that command must not be abbreviated, judged by `gate_command_prose`; and added production comments/docstrings must not carry a `\u00a7<digit>` reference) into one node with one test file, so a reviewer cannot close the node on a single verdict when the gate-format checks pass but the plan-label scan fails",
+      "type": "single_goal",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "d6574b41b82e87365e22bada7ac6d2f67da6a07d7b63c73c1dbe3c61ad20a962",
+  "plan_slug": "the-review-loop-runs-without-hand-steps",
+  "plan_version": 1,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "single_goal-1",
+      "reason": "The four checks are entries in one function's finding list (audit_manifest), covered by one test file under one section title. As the finding itself concludes, one evidence-hygiene verdict closes the node and the bundling does not misdirect a builder.",
+      "when": "2026-10-12T05:26:22.809954+00:00"
+    }
+  ],
+  "responses": {
+    "single_goal-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "The four checks are entries in one function's finding list (audit_manifest), covered by one test file under one section title. As the finding itself concludes, one evidence-hygiene verdict closes the node and the bundling does not misdirect a builder.",
+      "when": "2026-10-12T05:26:22.809954+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-review-loop-runs-without-hand-steps.v1.json",
+  "review_run_id": "r-20261012T050943728027-plan-review-of-the-review-loop-runs-without-hand-steps",
+  "reviewed_blob_sha": "750acfc16bb6a5f3ba3e5915a12c8eae93d471e7",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited file and symbol resolves: `accept_clean_review` and `_is_review_node` in `reckon/crew/recovery_review_acceptance.py`; `review_tier` in `reckon/review_tiers.py`; `audit_manifest` in `reckon/crew/reports.py`; `freshness`, `_records_the_live_producer` and `document_for` in `reckon/crew/obligation_snapshot.py`; `_seat_names_a_foreign_host` and `_seat_stream_fresh` in `reckon/crew/watch_unit.py`; `gate_command_prose` in `reckon/crew/promotion_gate.py`; the `promoted_by` vocabulary in `reckon/ledger.py`; the two `freshness` call sites at `reckon/hooks/coordinator_obligations.py:875` and `:1108`; the classifier sentence at `reckon/crew/recovery_classification.py:510`; and both cited plans and their sections.",
+    "done_when": "pass \u2014 each of \u00a72\u2013\u00a75 names a measurable gate (a named test file) plus a declared negative control whose direction falsifies it: \u00a72 drops the exited-worker condition and fails the live-worker case (line 64), \u00a73 restores `none` for test source and fails the test-only case (line 79), \u00a74 drops the `EXIT=` check and fails its case (line 99), \u00a75 judges every producer by local pid and fails the remote-live case (line 112).",
+    "evidence_paths": "pass \u2014 negative-control and gate logs are declared under the run directory (a durable crew-home path under `/home/ITER/mcintos/.config/reckon/crew/runs/`), not a session scratchpad or node-local temp path.",
+    "naming": "pass \u2014 the new symbols and the new ledger value `review-self` carry no plan label, stage name, ticket number or version tag; the new test filenames are capability-named (`test_a_test_only_change_earns_a_light_review.py` and peers).",
+    "reasoning": "pass \u2014 the three checks hold. The stated root causes match the cited evidence (the pid check at `obligation_snapshot.py` `_records_the_live_producer` is local-only; `review_tier` returns `none` when no runtime source changed; `document_for` records pid/start-time/start-instant/code-stamp and no host). Each mechanism produces its done-when (\u00a73's `tests` class exists in `path_classes.path_class`; \u00a75's foreign-seat evidence is what `_seat_stream_fresh` reads). Each mechanism runs on a named, real caller: \u00a72's new branch sits in the `dispatch_awaiting_reviews` sweep that already skips review nodes via `_is_review_node`; \u00a73's `review_tier` is reached by `promotion... promotion_checks._run_review_tier` and the review-dispatch sweep's `_sweep_review_tier`; \u00a74's `audit_manifest` is reached by `reckon crew check-manifest`, which the worker prompt names (`reckon/crew/prompts.py:553`); \u00a75's two callers are the named sites at `coordinator_obligations.py:875`/`:1108`.",
+    "single_goal": "a finding \u2014 \u00a74 (lines 85\u2013101) delivers four independently-failable assertions under one node and one verdict.",
+    "wiring": "pass \u2014 the plan declares plan-standalone (line 23) and its four build nodes (\u00a72\u2013\u00a75) carry disjoint write paths; the two plans it cites (`a-moved-head-is-reviewed`, `a-review-is-sized-to-its-risk`) are landed, so no depends-on/informs/gates edge is missing and none points at the wrong node."
+  },
+  "section_digests": {
+    "_document": "de00a1a0d860b11a940a7d74319320b1ae4a5d3571988105eaf41440becbcedc",
+    "s1": "b7ebfdcdef3107f4ef480a613b4d3b55cb9964d170f2548ecb6be8965ab463b9",
+    "s2": "74fb1d61377bd931eb999932aa253cc65d1f3653969c03869953c75b1b56e82d",
+    "s3": "ab808a9aeb65e6f2eadfe1b3e1e581bab52d4479e218f1e371479237ed14b2f6",
+    "s4": "d561a8d7966d17489b10d45ce36e858d97ad800d2c14b07109afb0c5e5cd836d",
+    "s5": "a648d01ef39ce3b5660767a866e72f3a179956db4c5c54cf330f7df1966d160c"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-12T05:26:21.653381+00:00"
+}
