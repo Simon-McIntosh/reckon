@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's arm logs: head-arm.log (tests, 2 failed/398 passed) and base-arm.log (2 failed/394 passed) carry the same two failure ids (test_follower_freshness.py::test_running_follower_reloads_without_stream_or_registration_gap, test_follower_reload_is_safe.py::test_syntax_error_in_a_follower_module_defers_the_reload), so no failure was added.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/recovery_review_dispatch.py:283",
+    "reckon/crew/recovery_review_dispatch.py:1441",
+    "reckon/crew/recovery_review_delivery.py:143",
+    "reckon/crew/dispatch_sessions.py:535",
+    "reckon/crew/promotion_checks.py:2027",
+    "reckon/crew/repair.py:347"
+  ],
+  "completed_at": "2026-10-12T23:40:30.448Z",
+  "dispatched_at": "2026-10-12T23:29:10Z",
+  "findings": [
+    {
+      "file": "tests/test_a_resumed_head_is_reviewed.py",
+      "line": "271",
+      "severity": "follow-on",
+      "text": "follow-on: the assertion compares the captured worker id against round_node_id(...), the same helper the production code composes with, so a regression inside round_node_id moves both sides together and this line still passes; the head-carrying property is nonetheless guarded independently at :272 and :274, so the exposure is narrow."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261012T225451838591-a-re-review-round-has-its-own-identity/head-arm.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the head arm's header stamps its revision as the base 0d2b36ff7 rather than the head f5c9157f8 it measured, so reckon/crew/review.py:1539 recorded_log_revision reads the base for the head arm and a promoted head_log_revision would misname the revision the count was taken at."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read the single commit f5c9157f8 against 0d2b36ff7; reckon/crew/repair.py:293 adds round_node_id and :310 round_node_source and rewrites repair_node_id at :347 to share the rule, and recovery_review_subject.py:653, dispatch_sessions.py:439 and recovery_review_delivery.py:77 route through the shared pair.",
+    "done_when": "read the four clauses at reckon:a-moved-head-is-reviewed#s3; tests/test_a_resumed_head_is_reviewed.py:242,277,305,328 cover the four cases and re-run at f5c9157f8 give 4 passed; head-arm.log records the importing population at 2 failed/398 passed vs base-arm.log's 2 failed/394 passed with identical failure ids, so no clause-2 failure was added; negative-control.log records 1 failed/3 passed EXIT=1 with the reused round id restored, so the gate's guard fires.",
+    "goal": "read the source node goal (\"Every review round of a run gets a node id and worktree path carrying the head it reviews, by repair_node_id's rule, and both review-of- id readers strip the head suffix\") against f5c9157f8; reckon/crew/recovery_review_subject.py:653 now composes the run-review node id with round_node_id(REVIEW_NODE_PREFIX, source_node, head), so each round's id carries its head and its worktree path follows it.",
+    "manifest": "read; it records status complete at f5c9157f8, the gate's four cases, the two arm logs named under test_logs (head-arm.log, base-arm.log), the negative-control log and note, and follow_ons/blockers none.",
+    "write_paths": "read the manifest's declared fence (reckon/crew/repair.py, recovery_review_subject.py, dispatch_sessions.py, recovery_review_delivery.py, tests/test_a_resumed_head_is_reviewed.py, the evidence fragment); git diff 0d2b36ff7..f5c9157f8 touches only those six paths and nothing outside them."
+  },
+  "justifications": {
+    "durability": "the head-carrying property reddens if the composition loses its suffix, caught independently at tests/test_a_resumed_head_is_reviewed.py:274 (endswith(head[:12])) and :272 (!= first_round_id), and negative-control.log confirms it fires; line 271's equality alone would not, its oracle being the same round_node_id the code uses.",
+    "evidence": "the four cases are recorded at 4 passed and the importing population at 2/398 vs 2/394 with identical failure ids, but head-arm.log:1 stamps the arm's revision as the base 0d2b36ff7 instead of the head f5c9157f8 it measured.",
+    "fit": "the added names round_node_id/round_node_source/_ROUND_HEAD_DIGITS at reckon/crew/repair.py:291-334 are mechanism-descriptive with no plan, ticket or plan-label name.",
+    "goal_fidelity": "reckon/crew/recovery_review_subject.py:653 composes round_node_id(REVIEW_NODE_PREFIX, source_node, head) so each round's id and worktree path carry the head it read, and reckon/crew/dispatch_sessions.py:439 and reckon/crew/recovery_review_delivery.py:77 strip it via round_node_source.",
+    "reuse": "round_node_id extends the owner at reckon/crew/repair.py:347 and is now shared by both prefixes; a search over reckon/ found no other round-id composer or head-suffix stripper, the two readers being the only strippers and both now calling round_node_source.",
+    "scope_discipline": "git diff 0d2b36ff7..f5c9157f8 touches only reckon/crew/repair.py, recovery_review_subject.py, dispatch_sessions.py, recovery_review_delivery.py, tests/test_a_resumed_head_is_reviewed.py and the evidence fragment, all inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the source node goal (\"Every review round of a run gets a node id and worktree path carrying the head it reviews, by repair_node_id's rule, and both review-of- id readers strip the head suffix\") against f5c9157f8; reckon/crew/recovery_review_subject.py:653 now composes the run-review node id with round_node_id(REVIEW_NODE_PREFIX, source_node, head), so each round's id carries its head and its worktree path follows it.\nVERDICT done_when: read the four clauses at reckon:a-moved-head-is-reviewed#s3; tests/test_a_resumed_head_is_reviewed.py:242,277,305,328 cover the four cases and re-run at f5c9157f8 give 4 passed; head-arm.log records the importing population at 2 failed/398 passed vs base-arm.log's 2 failed/394 passed with identical failure ids, so no clause-2 failure was added; negative-control.log records 1 failed/3 passed EXIT=1 with the reused round id restored, so the gate's guard fires.\nVERDICT write_paths: read the manifest's declared fence (reckon/crew/repair.py, recovery_review_subject.py, dispatch_sessions.py, recovery_review_delivery.py, tests/test_a_resumed_head_is_reviewed.py, the evidence fragment); git diff 0d2b36ff7..f5c9157f8 touches only those six paths and nothing outside them.\nVERDICT manifest: read; it records status complete at f5c9157f8, the gate's four cases, the two arm logs named under test_logs (head-arm.log, base-arm.log), the negative-control log and note, and follow_ons/blockers none.\nVERDICT diff: read the single commit f5c9157f8 against 0d2b36ff7; reckon/crew/repair.py:293 adds round_node_id and :310 round_node_source and rewrites repair_node_id at :347 to share the rule, and recovery_review_subject.py:653, dispatch_sessions.py:439 and recovery_review_delivery.py:77 route through the shared pair.\nCALL_SITES: reckon/crew/recovery_review_dispatch.py:283, reckon/crew/recovery_review_dispatch.py:1441, reckon/crew/recovery_review_delivery.py:143, reckon/crew/dispatch_sessions.py:535, reckon/crew/promotion_checks.py:2027, reckon/crew/repair.py:347\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_subject.py:653 composes round_node_id(REVIEW_NODE_PREFIX, source_node, head) so each round's id and worktree path carry the head it read, and reckon/crew/dispatch_sessions.py:439 and reckon/crew/recovery_review_delivery.py:77 strip it via round_node_source.\nSCORE evidence: 16\nJUSTIFICATION evidence: the four cases are recorded at 4 passed and the importing population at 2/398 vs 2/394 with identical failure ids, but head-arm.log:1 stamps the arm's revision as the base 0d2b36ff7 instead of the head f5c9157f8 it measured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 0d2b36ff7..f5c9157f8 touches only reckon/crew/repair.py, recovery_review_subject.py, dispatch_sessions.py, recovery_review_delivery.py, tests/test_a_resumed_head_is_reviewed.py and the evidence fragment, all inside the manifest's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: the head-carrying property reddens if the composition loses its suffix, caught independently at tests/test_a_resumed_head_is_reviewed.py:274 (endswith(head[:12])) and :272 (!= first_round_id), and negative-control.log confirms it fires; line 271's equality alone would not, its oracle being the same round_node_id the code uses.\nSCORE fit: 19\nJUSTIFICATION fit: the added names round_node_id/round_node_source/_ROUND_HEAD_DIGITS at reckon/crew/repair.py:291-334 are mechanism-descriptive with no plan, ticket or plan-label name.\nSCORE reuse: 20\nJUSTIFICATION reuse: round_node_id extends the owner at reckon/crew/repair.py:347 and is now shared by both prefixes; a search over reckon/ found no other round-id composer or head-suffix stripper, the two readers being the only strippers and both now calling round_node_source.\nFINDING tests/test_a_resumed_head_is_reviewed.py:271 follow-on: the assertion compares the captured worker id against round_node_id(...), the same helper the production code composes with, so a regression inside round_node_id moves both sides together and this line still passes; the head-carrying property is nonetheless guarded independently at :272 and :274, so the exposure is narrow.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261012T225451838591-a-re-review-round-has-its-own-identity/head-arm.log:1 follow-on: the head arm's header stamps its revision as the base 0d2b36ff7 rather than the head f5c9157f8 it measured, so reckon/crew/review.py:1539 recorded_log_revision reads the base for the head arm and a promoted head_log_revision would misname the revision the count was taken at.\n",
+  "review_run_id": "r-20261012T232846638026-review-of-a-re-review-round-has-its-own-identity",
+  "reviewed_base_sha": "0d2b36ff7fea955c377ea789ae71146f2d33a4bb",
+  "reviewed_head_sha": "f5c9157f8eaa1c4d1e2caeb8fd82a4e16b757b94",
+  "reviewed_run_id": "r-20261012T225451838591-a-re-review-round-has-its-own-identity",
+  "reviewer": {
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-12T23:40:33.378781+00:00",
+  "total": 112
+}
