@@ -44,6 +44,16 @@
         written; a <code>parsed</code> record stores as before. Head arm 4 passed /
         0 failed; the declared negative control removes the status check and both
         refusal cases fail, 2 failed / 2 passed, <code>EXIT=1</code>.</p>
+      <p>Two run-review fixtures that built records with no status —
+        <code>_loader_run_record</code> and <code>_run_record</code> — now carry
+        <code>"status": "parsed"</code>, as a stored run review does. The named
+        selection (tests/test_review<code>*</code>.py plus the
+        <code>promotion_checks</code> importers) then measures <strong>1 failed /
+        365 passed</strong> at head against <strong>1 failed / 365 passed</strong>
+        at base <code>ae53ec6dd</code> — <strong>0 newly failing</strong>. The lone
+        failure is <code>test_a_runtime_source_commit_dispatches_a_light_scoped_review</code>,
+        which also fails at this base (a node-contract dispatch refusal unrelated
+        to the status change).</p>
     </section>
   </main>
 </body>
