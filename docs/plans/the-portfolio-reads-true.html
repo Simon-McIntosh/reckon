@@ -24,8 +24,8 @@
   <title>The Portfolio Reads True | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="50">
-<meta name="plan-modified" content="2026-10-11">
+<meta name="plan-version" content="51">
+<meta name="plan-modified" content="2026-10-12">
 </head>
 <body>
   <main class="plan-doc">
@@ -269,6 +269,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261011T054217201561-review-of-impl-move-guard-fires-again" data-who="reckon-build" data-when="2026-10-11T05:53:41.582Z">
     <div class="r-comment-body"><p>The review of run r-20261011T052220361106-impl-move-guard-fires-again is stored at both assigned paths as a parsed six-dimension record (goal_fidelity 18, evidence 16, scope_discipline 20, durability 18, fit 17, reuse 12; total 101) reading base 981a7457b8da84949e11d14a652a37ff58396952 and head d2ea795330563a897ce1dd7c3406ae6dd327c8d6, with three follow-on findings (duplicated plan-impl meta reader, a base-sha mislabelled importers gate log, and the authored-vs-derived guard scope) and no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261011T052220361106-impl-move-guard-fires-again" data-who="reckon-build" data-when="2026-10-11T05:41:36.003Z">
+    <div class="r-comment-body"><p>The impl-move promotion guard now reads a plan&#x27;s authored plan-impl meta at both ends — the dispatch record stores it and the completion state carries it in place of the parser&#x27;s derived figure, so the two readings compare like with like; tests/test_promotion_requires_impl_move.py passes 22/22 EXIT=0 (was 3 failed), tests/test_impl_derives_from_declarations.py passes 8/8, and the 13 test files importing the guard&#x27;s module pass 103/103 EXIT=0.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261011T001008724801-audit-reports-sprint-membership" data-who="reckon-build" data-when="2026-10-11T00:24:58.857Z">
     <div class="r-comment-body"><p>reckon audit now emits SPRINT_MEMBERSHIP — a warn for a plan whose declared sprint and the sprint that lists it disagree (either end, at most one row per plan), and an info for a shipped plan a still-open sprint lists; tests/test_audit_reports_sprint_membership.py passes EXIT=0 with exactly two warn rows (b, c), none for the agreeing plan a, and one info row (d).</p></div>
