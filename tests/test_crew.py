@@ -3640,10 +3640,10 @@ def test_a_complete_manifest_emits_an_authorised_review_dispatch(
     )
     command = shlex.split(row["next_action"])
     # The classifier is a read and writes nothing, so the brief its command
-    # names is materialized the way the reflex dispatch does — by composing the
-    # fields with the delta that marks a dispatch. The dry-run then proves the
-    # emitted command is one dispatch accepts, not that the file is absent.
-    recovery._review_dispatch_fields(crew.read_pointer(record["run_id"]), delta=None)
+    # names is absent when a reflex never composed it. The dry-run proves the
+    # emitted command is one dispatch accepts as printed: dispatch composes the
+    # reviewed run's own review-brief.md itself, so no file is placed for it.
+    assert not (runs.run_dir(record["run_id"]) / "review-brief.md").exists()
     result = CliRunner().invoke(
         cli_module.main,
         [*command[1:], "--repo", str(repo), "--dry-run"],

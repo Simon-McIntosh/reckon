@@ -302,15 +302,33 @@ def _run_record(repository: Path, run_id: str, node: dict) -> dict:
     }
 
 
-def _materialized_argv(record: dict) -> list[str]:
-    """Materialize the review brief as the reflex does, then build the command.
+def _live_pointer(record: dict) -> None:
+    """Persist the run as the live pointer every printing reader resolves.
 
-    The classifier's read composes the same path and text but creates nothing,
-    so the brief a printed command names is written by the dispatch that passes
-    ``delta``. Writing it here reproduces that dispatch, so the dry-run proves
-    the emitted command is accepted rather than the file's absence.
+    The obligations view, the classifier and dispatch's unreconciled-runs
+    refusal all print a run review's command from a live pointer, so the run the
+    command names exists on disk. The pointer is also what dispatch resolves when
+    it composes the brief the command's path names, since the printed path is the
+    reviewed run's own composed brief rather than a caller's document.
     """
-    _compose(record)
+    path = runs.pointer_path(record["run_id"])
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(record), encoding="utf-8")
+
+
+def _brief_path(record: dict) -> Path:
+    """The reviewed run's composed brief path, as the command names it."""
+    return runs.run_dir(record["run_id"]) / "review-brief.md"
+
+
+def _printed_argv(record: dict) -> list[str]:
+    """The review command a reader prints, with nothing composed beforehand.
+
+    Every reader composes the same path and text and writes neither, so the
+    command names a brief no reflex may have written. Building the argv here
+    without a prior composition is what lets the dry-run prove dispatch accepts
+    the command as printed rather than because a file was placed for it.
+    """
     return recovery._review_dispatch_argv(record, config=CONFIG)
 
 
@@ -321,11 +339,15 @@ def test_a_plan_section_review_command_is_dispatchable(
     record = _run_record(
         repository, "r-plan-section", {"plan": "fixture", "section": "s2"}
     )
-    argv = _materialized_argv(record)
+    _live_pointer(record)
+    argv = _printed_argv(record)
 
     assert argv[argv.index("--brief") + 1]
     assert argv[argv.index("--plan") + 1] == "fixture"
     assert argv[argv.index("--section") + 1] == "s2"
+    # The read that printed the command created the path's directory behind it
+    # and wrote no brief: reading a review composes text, never a file.
+    assert not _brief_path(record).exists()
 
     result = _dry_run(argv, repository)
 
@@ -338,7 +360,8 @@ def test_a_plan_without_a_section_review_command_is_dispatchable(
 ) -> None:
     """Plan-and-no-section: the brief is the authority, so no sectionless plan."""
     record = _run_record(repository, "r-plan-no-section", {"plan": "fixture"})
-    argv = _materialized_argv(record)
+    _live_pointer(record)
+    argv = _printed_argv(record)
 
     # The dry-run is what proves dispatch accepts the command: emitting
     # ``--brief`` beside the sectionless plan makes dispatch refuse the pair,
@@ -359,12 +382,55 @@ def test_a_brief_carried_review_command_is_dispatchable(
     record = _run_record(
         repository, "r-brief-run", {"brief": str(brief), "brief_path": str(brief)}
     )
-    argv = _materialized_argv(record)
+    _live_pointer(record)
+    argv = _printed_argv(record)
 
     assert argv[argv.index("--brief") + 1]
     assert "--plan" not in argv and "--section" not in argv
+    assert not _brief_path(record).exists()
 
     result = _dry_run(argv, repository)
 
     assert result.exit_code == 0, result.output
     assert json.loads(result.output)["ok"] is True
+
+
+def test_a_moved_head_recomposes_the_printed_review_brief(
+    crew_home: Path, repository: Path, authority_plan: Path
+) -> None:
+    """A command printed for a moved head names that head, not a stale one.
+
+    A prior dispatch leaves ``review-brief.md`` naming the head the run carried
+    then. Once the run gains a commit, a reader prints the review command for the
+    new head; run verbatim it must compose the brief afresh — naming the head the
+    run's tree carries now — rather than digest the stale file a previous
+    dispatch left, which would dispatch a review of a superseded revision.
+    """
+    record = _run_record(repository, "r-moved-head", {"plan": "fixture", "section": "s2"})
+    _live_pointer(record)
+    first = _head(repository)
+
+    # A previous dispatch composed and wrote the brief at the original head.
+    recovery._review_dispatch_fields(record, delta=None)
+    assert f"Reviewed head: {first}" in _brief_path(record).read_text(encoding="utf-8")
+
+    (repository / "seed.txt").write_text("seed\nmore\n", encoding="utf-8")
+    subprocess.run(["git", "add", "seed.txt"], cwd=repository, check=True)
+    subprocess.run(
+        ["git", "commit", "-q", "-m", "feat: move the head"],
+        cwd=repository,
+        check=True,
+        capture_output=True,
+    )
+    moved = _head(repository)
+    assert moved != first
+
+    argv = _printed_argv(record)
+    result = _dry_run(argv, repository)
+
+    assert result.exit_code == 0, result.output
+    assert json.loads(result.output)["ok"] is True
+
+    text = _brief_path(record).read_text(encoding="utf-8")
+    assert f"Reviewed head: {moved}" in text
+    assert f"Reviewed head: {first}" not in text

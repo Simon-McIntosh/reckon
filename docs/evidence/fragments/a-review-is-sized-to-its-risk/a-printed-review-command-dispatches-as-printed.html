@@ -1,0 +1,37 @@
+<article class="landed-report" data-run-id="r-20261012T044641243868-a-printed-review-command-dispatches-as-printed" data-node="a-printed-review-command-dispatches-as-printed">
+      <h3 id="a-printed-review-command-dispatches-as-printed-heading">a-printed-review-command-dispatches-as-printed — every printed run-review command dispatches as printed</h3>
+      <p id="a-printed-review-command-dispatches-as-printed-anchor">
+        A run review's brief is a composition keyed on the reviewed run, but only
+        the dispatch that launched the review wrote it. The readers that print the
+        review command — the <code>review-missing</code> obligation, the
+        classifier's <code>next_action</code>, and dispatch's unreconciled-runs
+        refusal — name the path without writing it, so a command retyped verbatim
+        was refused <em>the brief ... is not readable</em> whenever no reflex had
+        composed one, and after the reviewed head moved it digested a stale
+        <code>review-brief.md</code> naming the superseded revision.
+      </p>
+      <p id="a-printed-review-command-dispatches-as-printed-fix">
+        <code>materialize_run_review_brief</code> composes the brief from the
+        reviewed run's record when the named path is that run's own
+        <code>review-brief.md</code>; <code>_brief_digest</code> calls it before
+        taking the digest, so dispatch composes the text itself — naming the head
+        the run's tree carries now — and every other brief (a coordinator's, a
+        plan review's, a review run's stored copy) is left untouched. No CLI
+        option was added; the read path still writes nothing.
+      </p>
+      <p id="a-printed-review-command-dispatches-as-printed-measure">
+        <strong>Measure.</strong> In
+        <code>tests/test_a_review_receives_its_rubric.py</code>, for each of the
+        three run shapes the printed command — built with no prior composition —
+        is accepted by <code>crew dispatch --dry-run</code>, the reviewed run's
+        directory holds no <code>review-brief.md</code> after the read, and a case
+        moves the reviewed head and asserts the dispatched brief names the new
+        head. The materialising workaround was removed from
+        <code>test_a_complete_manifest_emits_an_authorised_review_dispatch</code>,
+        which still passes. Gate: 11 passed (rubric file), 206 passed
+        (<code>test_crew.py</code>), 2 + 9 + 9 passed across the three files
+        importing <code>recovery_review_subject</code>, all EXIT=0. Negative
+        control — restoring dispatch's refusal of an absent brief — fails the four
+        new cases (4 failed, EXIT=1).
+      </p>
+    </article>
