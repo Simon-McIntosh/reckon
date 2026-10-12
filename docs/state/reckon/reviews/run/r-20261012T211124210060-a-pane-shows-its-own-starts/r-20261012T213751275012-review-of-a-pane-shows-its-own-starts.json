@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "66dafdd4b6031a5baa8795476fc63c93d80ecd9f",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:793"
+  ],
+  "completed_at": "2026-10-12T21:45:38.633Z",
+  "dispatched_at": "2026-10-12T21:38:17Z",
+  "findings": [
+    {
+      "file": "tests/test_a_pane_shows_its_own_starts.py",
+      "line": "69",
+      "severity": "follow-on",
+      "text": "follow-on: the field assertions at lines 69-72 (row.get(field) for run_id/node/lane/model/time_budget, then row[\"run_id\"] == RUN and row[\"node\"] == \"claude-1\") compare the delivered row against the very values the test's own _start() fixture supplied, so they hold whenever the policy echoes the event through and cannot fail if the production event omits lane or time_budget; the goal names those two fields and the production transition builder carries neither, so this test does not actually verify the goal's field set."
+    },
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": "793",
+      "severity": "follow-on",
+      "text": "follow-on: follower_row_path constructs PaneRowPath without own_session, so the live pane never hands the policy a session, _is_own_start returns False for every row, and the start-row rule is inert in production; the source manifest records this as a follow-on, out of the node's declared write paths."
+    },
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": "1653",
+      "severity": "follow-on",
+      "text": "follow-on: the _watch_transition event dict that feeds the (\"dispatched\", \"working\") start row carries model but neither lane nor time_budget, so even once own_session is wired the delivered row cannot name two of the five fields the goal requires."
+    },
+    {
+      "file": "manifest.md",
+      "line": "17",
+      "severity": "follow-on",
+      "text": "follow-on: after_suite records revision 66dafdd4b6031a5baa8795476fc63c93d80ecd9f (the base) although its command runs the head worktree at 2ebba9f55, and gate_head_final.log line 1 likewise reads rev=66dafdd4b; the head arm's own header names the wrong revision, and the baseline_suite/after_suite command fields carry angle-bracket placeholders for the test-path list instead of the literal command."
+    }
+  ],
+  "head_log_revision": "2ebba9f55",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site: reckon/crew_follow_commands.py:793 builds the follower's PaneRowPath and does not pass own_session, so the rule it can reach is inert; the event producer is reckon/crew/recovery_watch.py:1653.",
+    "diff": "read 2ebba9f55 against base 66dafdd4b commit-by-commit; one commit changes reckon/crew/ticker.py (+START_KIND, own_session plumbing, two own-start branches and a stale-arrival guard), adds tests/test_a_pane_shows_its_own_starts.py, updates tests/test_a_dispatch_is_one_row.py's never-a-start case, and adds the evidence fragment; every path is inside the declared write paths.",
+    "done_when": "the source done_when names tests/test_a_pane_shows_its_own_starts.py's three cases, the updated existing never-a-start tests named in the manifest, no added failure across the ticker-importing files, and a logged negative control; gate_head_final.log records 629 passed EXIT=0 against gate_base.log 625 passed EXIT=0 (added_failure_count 0) and negative_control.log ends EXIT=1 with three failures.",
+    "goal": "the goal is that the ticker row policy delivers one start row for the pane's own session's run as it starts working, naming run id, node, lane, model and time budget; reckon/crew/ticker.py:1154 (START_KIND), :1280 (_is_own_start) and :1423/:1532 (the two feed branches) deliver that row for an own_session, but the policy is never constructed with a session in production and the source event carries no lane or time_budget.",
+    "manifest": "read; it reads complete with commit 2ebba9f55 and records the gate and the negative control, but after_suite at manifest.md:17 names revision 66dafdd4b (the base) for the head arm and its command fields carry placeholders.",
+    "write_paths": "the source declared six write paths; the single commit touches four files, every one inside them, and the declared figures path carries no change."
+  },
+  "justifications": {
+    "durability": "the declared negative control that holds own starts back reddens tests/test_a_pane_shows_its_own_starts.py at lines 65-67 exactly as recorded (3 failed, 1 passed, EXIT=1 in negative_control.log), so the own-start branches are guarded, but the field-naming assertions at lines 69-72 are non-independent and guard nothing the production event does not already carry.",
+    "evidence": "the gate measures the done_when's four parts (tests/test_a_pane_shows_its_own_starts.py passes 4, no added failure 629 vs 625, a red negative control) but the head arm's own header at gate_head_final.log:1 and after_suite at manifest.md:17 both name the base revision 66dafdd4b rather than the head 2ebba9f55.",
+    "fit": "the new START_KIND constant at reckon/crew/ticker.py:1154, the own_session keyword in the row-path plumbing at :1614, and the _is_own_start helper at :1280 all follow the module's existing ARRIVAL_KIND/PaneRowPath idiom and introduce no name the repository naming rules forbid.",
+    "goal_fidelity": "reckon/crew/ticker.py:1423 and :1532 do deliver one (\"dispatched\", \"working\") row for an own session at :1280, which is what the goal's policy asks, but reckon/crew_follow_commands.py:793 never supplies the session and reckon/crew/recovery_watch.py:1653 supplies neither lane nor time_budget, so the goal's five named fields are not all reachable in production.",
+    "reuse": "the change extends the existing owner RowPolicy/PaneRowPath in reckon/crew/ticker.py and reuses _arrival_resolution at :1174 rather than writing a second row resolver; the only production constructor is followed at reckon/crew_follow_commands.py:793, and no other owner of an own-session start-row judgement exists.",
+    "scope_discipline": "every path in commit 2ebba9f55 (ticker.py, tests/test_a_pane_shows_its_own_starts.py, tests/test_a_dispatch_is_one_row.py, the evidence fragment) is inside the source node's declared write paths in the run prompt."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that the ticker row policy delivers one start row for the pane's own session's run as it starts working, naming run id, node, lane, model and time budget; reckon/crew/ticker.py:1154 (START_KIND), :1280 (_is_own_start) and :1423/:1532 (the two feed branches) deliver that row for an own_session, but the policy is never constructed with a session in production and the source event carries no lane or time_budget.\nVERDICT done_when: the source done_when names tests/test_a_pane_shows_its_own_starts.py's three cases, the updated existing never-a-start tests named in the manifest, no added failure across the ticker-importing files, and a logged negative control; gate_head_final.log records 629 passed EXIT=0 against gate_base.log 625 passed EXIT=0 (added_failure_count 0) and negative_control.log ends EXIT=1 with three failures.\nVERDICT write_paths: the source declared six write paths; the single commit touches four files, every one inside them, and the declared figures path carries no change.\nVERDICT manifest: read; it reads complete with commit 2ebba9f55 and records the gate and the negative control, but after_suite at manifest.md:17 names revision 66dafdd4b (the base) for the head arm and its command fields carry placeholders.\nVERDICT diff: read 2ebba9f55 against base 66dafdd4b commit-by-commit; one commit changes reckon/crew/ticker.py (+START_KIND, own_session plumbing, two own-start branches and a stale-arrival guard), adds tests/test_a_pane_shows_its_own_starts.py, updates tests/test_a_dispatch_is_one_row.py's never-a-start case, and adds the evidence fragment; every path is inside the declared write paths.\nCALL_SITES: reckon/crew_follow_commands.py:793\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: reckon/crew/ticker.py:1423 and :1532 do deliver one (\"dispatched\", \"working\") row for an own session at :1280, which is what the goal's policy asks, but reckon/crew_follow_commands.py:793 never supplies the session and reckon/crew/recovery_watch.py:1653 supplies neither lane nor time_budget, so the goal's five named fields are not all reachable in production.\nSCORE evidence: 14\nJUSTIFICATION evidence: the gate measures the done_when's four parts (tests/test_a_pane_shows_its_own_starts.py passes 4, no added failure 629 vs 625, a red negative control) but the head arm's own header at gate_head_final.log:1 and after_suite at manifest.md:17 both name the base revision 66dafdd4b rather than the head 2ebba9f55.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in commit 2ebba9f55 (ticker.py, tests/test_a_pane_shows_its_own_starts.py, tests/test_a_dispatch_is_one_row.py, the evidence fragment) is inside the source node's declared write paths in the run prompt.\nSCORE durability: 16\nJUSTIFICATION durability: the declared negative control that holds own starts back reddens tests/test_a_pane_shows_its_own_starts.py at lines 65-67 exactly as recorded (3 failed, 1 passed, EXIT=1 in negative_control.log), so the own-start branches are guarded, but the field-naming assertions at lines 69-72 are non-independent and guard nothing the production event does not already carry.\nSCORE fit: 18\nJUSTIFICATION fit: the new START_KIND constant at reckon/crew/ticker.py:1154, the own_session keyword in the row-path plumbing at :1614, and the _is_own_start helper at :1280 all follow the module's existing ARRIVAL_KIND/PaneRowPath idiom and introduce no name the repository naming rules forbid.\nSCORE reuse: 19\nJUSTIFICATION reuse: the change extends the existing owner RowPolicy/PaneRowPath in reckon/crew/ticker.py and reuses _arrival_resolution at :1174 rather than writing a second row resolver; the only production constructor is followed at reckon/crew_follow_commands.py:793, and no other owner of an own-session start-row judgement exists.\nFINDING tests/test_a_pane_shows_its_own_starts.py:69 follow-on: the field assertions at lines 69-72 (row.get(field) for run_id/node/lane/model/time_budget, then row[\"run_id\"] == RUN and row[\"node\"] == \"claude-1) compare the delivered row against the very values the test's own _start() fixture supplied, so they hold whenever the policy echoes the event through and cannot fail if the production event omits lane or time_budget.\nFINDING reckon/crew_follow_commands.py:793 follow-on: follower_row_path constructs PaneRowPath without own_session, so the live pane never hands the policy a session, _is_own_start returns False for every row, and the start-row rule is inert in production.\nFINDING reckon/crew/recovery_watch.py:1653 follow-on: the _watch_transition event dict that feeds the (\"dispatched\", \"working\") start row carries model but neither lane nor time_budget, so even once own_session is wired the delivered row cannot name two of the five fields the goal requires.\nFINDING manifest.md:17 follow-on: after_suite records revision 66dafdd4b (the base) although its command runs the head worktree at 2ebba9f55, gate_head_final.log line 1 likewise reads rev=66dafdd4b, and the baseline_suite/after_suite command fields carry angle-bracket placeholders for the test-path list instead of the literal command.",
+  "review_run_id": "r-20261012T213751275012-review-of-a-pane-shows-its-own-starts",
+  "reviewed_base_sha": "66dafdd4b6031a5baa8795476fc63c93d80ecd9f",
+  "reviewed_head_sha": "2ebba9f55642121191ad201914fcce13bd59f702",
+  "reviewed_run_id": "r-20261012T211124210060-a-pane-shows-its-own-starts",
+  "scores": {
+    "durability": 16,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 14,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-12T21:40:00+00:00",
+  "total": 100
+}
