@@ -15,8 +15,11 @@
     the highest-ranked queued run only; two racing passes launch each run once; a paused gate
     launches nothing; a failed spawn leaves the pointer queued carrying the failure; a
     <code>launch-failed</code> run is re-queued; a temporary services configuration declaring
-    the verb is accepted by the supervisor's reader; a launched run leaves the queued phase).
-    Negative control (launch without restoring the queued pointer) fails the failed-spawn case:
-    <code>negative-control-admit.log</code> EXIT=1.
+    the verb is accepted by the supervisor's reader; a launched run's phase sequence is
+    observed as queued, then starting, then working as the follower folds the worker's own
+    stream back). Negative controls: launching without restoring the queued pointer fails the
+    failed-spawn case (<code>negative-control-admit.log</code> EXIT=1); stopping the launched
+    run at <code>starting</code> without the follower fold fails the phase-sequence case
+    (<code>negative-control-phase.log</code> EXIT=1).
   </p>
 </section>
