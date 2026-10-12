@@ -36,18 +36,63 @@ def _landing_comment(section: str) -> dict:
     }
 
 
-def _write_plan(path: Path, state: dict) -> None:
+_HEADING_TEXT = {"s2": "Section two", "s3": "Section three"}
+
+
+def _section_record(section: str, status: str, hours: float = 1.0) -> str:
+    """Markup for one section record, beside its own h2 as the parser needs.
+
+    The h2 keeps the fixture's own heading text, so the record is a region the
+    store owns rather than an authored-prose edit the landing boundary refuses.
+    """
+    heading = _HEADING_TEXT.get(section, f"Section {section}")
+    return (
+        f'<h2 id="{section}">&sect;{section[1:]} &mdash; {heading}</h2>'
+        f'<section data-reckon="section" data-id="{section}"'
+        f' data-effort-hours="{hours}" data-capability-version="1.0"'
+        f' data-capability-class="general" data-capability-reasoning="deep"'
+        f' data-capability-verification="strict" data-capability-risk="low"'
+        f' data-status="{status}" data-links=""></section>'
+    )
+
+
+def _write_plan(
+    path: Path,
+    state: dict,
+    *,
+    records: dict[str, tuple[float, str]] | None = None,
+    impl_meta: float | None = None,
+) -> None:
+    """Author a plan file whose served impl the section records derive.
+
+    A plan authored with records carries its impl as those records rather than as
+    a ``plan-impl`` meta, which is what the parser serves and what the impl-move
+    guard compares at both ends. ``impl_meta`` writes a stale authored meta beside
+    them, as a plan that predates record-based impl still does.
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
+    if records:
+        body = "".join(
+            _section_record(section, status, hours)
+            for section, (hours, status) in records.items()
+        )
+    else:
+        body = (
+            '<h2 id="s2">&sect;2 &mdash; Section two</h2>'
+            '<h2 id="s3">&sect;3 &mdash; Section three</h2>'
+        )
     bare = (
         "<!doctype html><html><head>"
         f'<meta name="docs-project" content="{PROJECT}">'
         f"<title>{state['slug']}</title>"
         '</head><body><main class="plan-doc">'
-        '<h2 id="s2">&sect;2 &mdash; Section two</h2>'
-        '<h2 id="s3">&sect;3 &mdash; Section three</h2>'
+        f"{body}"
         "</main></body></html>\n"
     )
-    path.write_text(_plan_html.write_state(bare, state), encoding="utf-8")
+    text = _plan_html.write_state(bare, state)
+    if impl_meta is not None:
+        text = _plan_html._set_meta(text, "plan-impl", impl_meta)
+    path.write_text(text, encoding="utf-8")
 
 
 @pytest.fixture()
@@ -88,6 +133,40 @@ def _set_plan(repository: Path, **fields) -> None:
     state, version = _store.read_plan(PROJECT, PLAN, repository, artifact_type="plan")
     state.update(fields)
     _store.write_plan(PROJECT, PLAN, state, version, repository, artifact_type="plan")
+
+
+def _author_plan(
+    repository: Path,
+    *,
+    declarations: dict[str, str] | None = None,
+    records: dict[str, tuple[float, str]] | None = None,
+    comments: dict | None = None,
+    impl_meta: float | None = None,
+) -> None:
+    """Rewrite the fixture plan from section records, not a plan-impl meta.
+
+    The served impl is the figure the plan read, the roadmap and the SPA all
+    report, and it is derived from the section records rather than the authored
+    meta. A fixture that wants the guard to compare the served figure authors
+    the records that produce it.
+    """
+    state: dict = {
+        "type": "plan",
+        "slug": PLAN,
+        "title": "Plan A",
+        "status": "active",
+        "version": 0,
+    }
+    if declarations is not None:
+        state["section_declarations"] = declarations
+    if comments is not None:
+        state["comments"] = comments
+    _write_plan(
+        repository / "docs" / "plans" / f"{PLAN}.html",
+        state,
+        records=records,
+        impl_meta=impl_meta,
+    )
 
 
 def _write_pointer(
@@ -133,10 +212,10 @@ def _ledger_row(repository: Path, run_id: str) -> dict:
 def test_a_passing_implement_landing_refuses_when_impl_did_not_move(
     repository: Path,
 ) -> None:
-    _set_plan(
+    _author_plan(
         repository,
-        impl=0.5,
-        section_declarations={"s2": "implementable", "s3": "implementable"},
+        declarations={"s2": "done", "s3": "implementable"},
+        records={"s2": (1.0, "done"), "s3": (1.0, "implementable")},
     )
     run_id = "r-20260918T080000000000-node-a"
     _write_pointer(repository, run_id, plan_impl_at_dispatch=0.5)
@@ -152,7 +231,7 @@ def test_a_passing_implement_landing_refuses_when_impl_did_not_move(
     message = str(refusal.value)
     assert "impl" in message
     assert "0.5" in message
-    assert "s2" in message and "s3" in message
+    assert "s3" in message
     assert "--no-impl-change" in message
     # The pointer survives a refusal, so the coordinator can retry it.
     assert pointer_path(run_id).exists()
@@ -405,14 +484,14 @@ def test_a_section_that_already_landed_is_not_listed_as_outstanding(
     up, and the reader is sent at work that is already delivered. A comment
     written for another reason carries another id and stays outstanding.
     """
-    _set_plan(
+    _author_plan(
         repository,
-        impl=0.5,
-        section_declarations={"s2": "implementable", "s3": "implementable"},
+        declarations={"s2": "implementable", "s3": "implementable"},
+        records={"s2": (1.0, "implementable"), "s3": (1.0, "implementable")},
         comments={"s2": [_landing_comment("s2")]},
     )
     run_id = "r-20260918T080850000000-node-a"
-    _write_pointer(repository, run_id, plan_impl_at_dispatch=0.5)
+    _write_pointer(repository, run_id, plan_impl_at_dispatch=0.0)
 
     with pytest.raises(crew.CrewError) as refusal:
         _promote(repository, run_id, gate="passed", outcome="the work landed")
@@ -426,10 +505,10 @@ def test_a_plan_whose_sections_carry_no_landing_comment_still_lists_them(
     repository: Path,
 ) -> None:
     """Subtraction is keyed on the landing id, not on a comment existing."""
-    _set_plan(
+    _author_plan(
         repository,
-        impl=0.5,
-        section_declarations={"s2": "implementable"},
+        declarations={"s2": "implementable"},
+        records={"s2": (1.0, "implementable")},
         comments={
             "s2": [
                 {
@@ -443,7 +522,7 @@ def test_a_plan_whose_sections_carry_no_landing_comment_still_lists_them(
         },
     )
     run_id = "r-20260918T080900000000-node-a"
-    _write_pointer(repository, run_id, plan_impl_at_dispatch=0.5)
+    _write_pointer(repository, run_id, plan_impl_at_dispatch=0.0)
 
     with pytest.raises(crew.CrewError) as refusal:
         _promote(repository, run_id, gate="passed", outcome="the work landed")
@@ -486,6 +565,68 @@ def test_a_plan_recording_no_impl_is_exempt_and_says_so(repository: Path) -> Non
 
     assert promoted["impl_move"]["verdict"] == "exempt"
     assert promoted["impl_move"]["reason"] == "plan-records-no-impl"
+
+
+def test_a_derived_plan_is_refused_unmoved_and_passes_when_a_section_is_ticked(
+    repository: Path,
+) -> None:
+    """The guard reads the served figure, so a derived plan must move to land.
+
+    Two implementable records derive an impl of 0.0; a landing that leaves both
+    open is refused. Ticking one to done, with the landing comment a promotion
+    writes, derives 0.5 and the same run then promotes.
+    """
+    _author_plan(
+        repository,
+        declarations={"s2": "implementable", "s3": "implementable"},
+        records={"s2": (1.0, "implementable"), "s3": (1.0, "implementable")},
+    )
+    run_id = "r-20260918T081400000000-node-a"
+    _write_pointer(repository, run_id, plan_impl_at_dispatch=0.0)
+
+    with pytest.raises(crew.CrewError) as refusal:
+        _promote(repository, run_id, gate="passed", outcome="no section moved")
+    outstanding = str(refusal.value).split("Sections still to land:")[1]
+    assert "s2" in outstanding and "s3" in outstanding
+
+    _author_plan(
+        repository,
+        declarations={"s2": "done", "s3": "implementable"},
+        records={"s2": (1.0, "done"), "s3": (1.0, "implementable")},
+        comments={"s2": [_landing_comment("s2")]},
+    )
+    promoted = _promote(repository, run_id, gate="passed", outcome="s2 landed")
+
+    assert promoted["impl_move"]["verdict"] == "moved"
+    assert promoted["impl_move"]["at_complete"] == 0.5
+
+
+def test_a_stale_authored_meta_is_read_through_the_served_figure(
+    repository: Path,
+) -> None:
+    """A plan keeping an old plan-impl meta reads the figure its records derive.
+
+    Landings no longer move the authored meta for a record-carrying plan, so it
+    goes stale and a guard that read it at both ends would compare 0.9 with
+    itself and pass. The served figure is 0.5 and unmoved across this landing, so
+    the refusal is what a reader of the served figure sees.
+    """
+    from reckon.crew.dispatch import _plan_impl_at_dispatch
+
+    _author_plan(
+        repository,
+        declarations={"s2": "done", "s3": "implementable"},
+        records={"s2": (1.0, "done"), "s3": (1.0, "implementable")},
+        impl_meta=0.9,
+    )
+    assert _plan_impl_at_dispatch(PROJECT, PLAN, repository) == 0.5
+
+    run_id = "r-20260918T081500000000-node-a"
+    _write_pointer(repository, run_id, plan_impl_at_dispatch=0.5)
+
+    with pytest.raises(crew.CrewError) as refusal:
+        _promote(repository, run_id, gate="passed", outcome="the work landed")
+    assert "0.5" in str(refusal.value)
 
 
 def _invoke_complete_cli(run_id: str, gate_log: Path, *extra: str):
