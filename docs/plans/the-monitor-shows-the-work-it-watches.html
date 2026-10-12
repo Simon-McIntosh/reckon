@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-standalone" content="The lead&#x27;s 2026-10-12 requirements for the session-host pane, revising the start-row rule of the shipped a-follower-row-is-worth-a-wake; no live plan waits on it and it waits on none.">
-  <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;the-monitor-shows-the-work-it-watches#s2&quot;], &quot;s4&quot;: [&quot;the-monitor-shows-the-work-it-watches#s2&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;the-monitor-shows-the-work-it-watches#s5&quot;], &quot;s4&quot;: [&quot;the-monitor-shows-the-work-it-watches#s2&quot;], &quot;s5&quot;: [&quot;the-monitor-shows-the-work-it-watches#s2&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="5">
 <meta name="plan-modified" content="2026-10-12">
 </head>
 <body>
@@ -49,12 +49,12 @@
     <p>The existing tests that encode the never-a-start rule are updated to the new rule, never deleted, each named in the manifest. The test files that import <code>ticker</code> pass. The negative control, which holds own starts back again, fails the first case. It is logged under the run directory.</p>
     <p>Write paths: <code>reckon/crew/ticker.py</code>, <code>tests/test_a_pane_shows_its_own_starts.py</code>, plus the existing test files whose start-row assertion changes, each named at dispatch.</p>
 
-    <h2 id="s3">§3 — Every delivered row carries the session's live roll-up</h2>
+    <h2 id="s3">§3 — Every printed row carries the session's live roll-up</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
     <p><strong>Deliverable.</strong> Each row the pane delivers ends with a compact roll-up of the session's live runs: a count, and the node of each, in the ticker's existing abbreviated form. So "all work active" is visible on the latest line without the full stream. The roll-up reads the same live classification that <code>crew(view="live")</code> uses, and computes nothing of its own. It adds no row: a pane with no deliverable change stays quiet.</p>
     <p><strong>Done when</strong> <code>tests/test_a_pane_row_carries_the_live_rollup.py</code> passes:</p>
     <ul>
-      <li>With three live runs in session S and one in a peer session, S's delivered row reports three, names their nodes, and omits the peer's run.</li>
+      <li>With three live runs in session S and one in a peer session, S's printed row reports three, names their nodes, and omits the peer's run.</li>
       <li>When the last live run settles, its row reports none live.</li>
       <li>The roll-up matches <code>crew(view="live", session=S)</code> for the same fixture.</li>
     </ul>
@@ -80,6 +80,41 @@
       </ul>
     </div>
     <p>Write paths: <code>reckon/crew/session_host.py</code>, <code>reckon/crew_follow_commands.py</code>, <code>tests/test_a_pane_settles_when_no_work_is_live.py</code>.</p>
+
+    <h2 id="s5">§5 — The pane speaks seven state words, in pairs</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> The pane prints whatever word each layer leaves behind: pointer phase, recovery classification, watch state and display alias. On 2026-10-12 it showed both <code>completed_unpromoted</code> and its alias <code>unpromoted</code> for one state. It also printed <code>unpromoted → complete</code> for a run moving forwards, and <code>complete → unpromoted</code> for a reviewed run that went back for fixes. The classifier grew a state for each incident: <code>wait-aged</code>, <code>stopped</code>, <code>unwritten</code>, <code>exited-unfinished</code> and others. Each is right for choosing a recovery action, and each was printed as its own word. Measured over every project's watch stream (11,408 runs, 39,042 transitions), the pane has used 19 state words in 143 distinct pairs. The dwell times show which ones carry no information for a reader:</p>
+<ul>
+<li><code>dispatched</code>: median 95 s, followed by <code>working</code> 6,307 times.</li>
+<li><code>running</code>: median 49 s, a duplicate of <code>working</code>.</li>
+<li><code>promoted</code>: median 3 s, re-announced 365 times.</li>
+<li><code>stopped</code>: median 30 s.</li>
+<li>Awaiting review (median 784 s) and reviewed-awaiting-promotion (median 118 s) follow each other 2,937 times.</li>
+</ul>
+<p><strong>Deliverable.</strong> The pane uses exactly these seven words (lead's choice, 2026-10-12):</p>
+<table>
+<thead><tr><th>Word</th><th>Means</th><th>Internal states it covers</th></tr></thead>
+<tbody>
+<tr><td><code>queued</code></td><td>held for a lane slot</td><td>queued</td></tr>
+<tr><td><code>working</code></td><td>launched or running</td><td>dispatched, starting, running, working</td></tr>
+<tr><td><code>waiting</code></td><td>on a declared external wait</td><td>waiting, paused, wait-aged (an overdue wait keeps the word and carries the existing action marker)</td></tr>
+<tr><td><code>halted</code></td><td>stopped short; a decision is needed</td><td>blocked, needs-help, held, stalled, stopped, abandoned, failed, unreadable, unwritten, exited-unfinished, ended-without-manifest, launch-failed, refused-at-admission</td></tr>
+<tr><td><code>delivered</code></td><td>the worker finished; not yet landed</td><td>scoring / completed_unpromoted, promotable / complete</td></tr>
+<tr><td><code>landed</code></td><td>promoted or recorded</td><td>promoted, recorded</td></tr>
+<tr><td><code>dropped</code></td><td>left without landing</td><td>withdrawn, discarded, departed</td></tr>
+</tbody>
+</table>
+<p>Every row is a pair drawn from these words. A run's first row reads <code>new → working</code> or <code>new → queued</code>, where <code>new</code> appears only on the left of a first row. A pair whose two words are the same is never printed. The reason clause, not the state word, names the specific cause: what a halted run asks, what a waiting run waits on, which review a delivered run is in. The internal classifications and their recovery verbs are unchanged. The mapping is one table, owned in one place, which every surface that prints a run's state reads: the row, the run counters and the roll-up of §3. Replayed over the same history, this mapping prints 28,408 rows instead of 39,042, in 22 distinct pairs.</p>
+<p><strong>Done when</strong> <code>tests/test_the_pane_speaks_seven_words.py</code> passes:</p>
+<ul>
+<li>Every classification and watch state the code can emit maps to exactly one of the seven words. The test enumerates them from the code's own vocabularies, so a new internal state without a mapping fails the test.</li>
+<li>A rendered row's left and right words both come from the set, and a raw internal word such as <code>completed_unpromoted</code> never appears.</li>
+<li>A same-word pair prints nothing.</li>
+<li>A run's first row starts with <code>new</code>.</li>
+<li>The run counters use the same words.</li>
+</ul>
+<p>The existing ticker and follower tests that assert today's words are updated to the new words, never deleted, and each is named in the manifest. The negative control adds an unmapped internal state, and the enumeration test must then fail. It is logged under the run directory.</p>
+<p>Write paths: <code>reckon/crew/ticker.py</code>, <code>tests/test_the_pane_speaks_seven_words.py</code>, plus the existing test files whose expected words change, each named at dispatch. It runs after §2 and before §3, which renders states in its roll-up.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
