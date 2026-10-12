@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-review-loop-runs-without-hand-steps-landed">
+  <meta name="plan-title" content="The Review Loop Runs Without Hand Steps — landed record">
+  <meta name="plan-summary" content="Closure synthesis for The Review Loop Runs Without Hand Steps: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="the-review-loop-runs-without-hand-steps">
+  <meta name="plan-verdict" content="qualified">
+  <title>The Review Loop Runs Without Hand Steps — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>The Review Loop Runs Without Hand Steps — landed record</h1>
+  <p>Closure synthesis for The Review Loop Runs Without Hand Steps: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s3-test-only-light-review">
+    <h2>§3 — a test-only change earns a light review</h2>
+    <p>Run <code>r-20261012T151501127010-a-test-only-change-earns-a-light-review</code> (local lane), commits <code>d66a90839</code> and <code>5578ce98b</code>, merged at <code>7c923144a</code>. <code>review_tier</code> in <code>reckon/review_tiers.py</code> now returns <code>light</code> for a run whose changed paths include test source but no runtime source, through a new <code>changes_test_source</code> helper read between the runtime-source check and the <code>none</code> fallback. A run changing only plans, evidence, research, figures or state stays <code>none</code>; a runtime-source run keeps the light/full rule.</p><p>Existing assertions of the retired rule were updated, not deleted: <code>none-tests</code> and <code>none-mixed-tests-and-plan</code> in <code>tests/test_review_tiers.py</code>, <code>test_tests_only_run_promotes_unreviewed_with_tier_none</code> in <code>tests/test_promotion_reads_the_review_tier.py</code>, and two cases in <code>tests/test_standing_suite_holds_promotion.py</code>. That last file was outside the dispatched write paths; it was accepted at promotion under the section's clause for existing test files whose test-only assertion changes.</p><p>Gate: 40 passed (the new file and the two named files) plus 5 passed (the standing-suite file), EXIT=0. Negative control (restore <code>none</code> for test source): 4 failed, EXIT=1. Review 105/120, no blocker. Integrated gate at the merged head: 45 passed, EXIT=0. Worker record: <a href="/reckon/evidence/fragments/the-review-loop-runs-without-hand-steps/a-test-only-change-earns-a-light-review.html">fragment</a>.</p>
+  </section>
+
+</main>
+</body>
+</html>

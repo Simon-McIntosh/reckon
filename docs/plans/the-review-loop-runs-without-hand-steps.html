@@ -25,7 +25,7 @@
   <title>The Review Loop Runs Without Hand Steps | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="5">
+<meta name="plan-version" content="6">
 <meta name="plan-modified" content="2026-10-12">
 </head>
 <body>
@@ -128,6 +128,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261012T151501127010-a-test-only-change-earns-a-light-review" data-who="reckon-build" data-when="2026-10-12T15:47:09.367Z">
     <div class="r-comment-body"><p>landing: `review_tier` in `reckon/review_tiers.py` gives the light tier to a run whose changed paths include test source and no runtime source, through a new `changes_test_source` helper read between `changes_runtime_source` and the `none` fallback: a test-only run is light at any size and specification level, a docs/state-only run stays none, and a runtime-source run keeps the light/full rule. Five existing test-only none assertions were updated to the new tier rather than deleted (`none-tests` and `none-mixed-tests-and-plan` in `tests/test_review_tiers.py`, `test_tests_only_run_promotes_unreviewed_with_tier_none` in `tests/test_promotion_reads_the_review_tier.py`, and the two tier assertions in `tests/test_standing_suite_holds_promotion.py`). Gate: `tests/test_a_test_only_change_earns_a_light_review.py` plus the two named files, 40 passed EXIT=0 (gate-node.log).</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-12T20:40:00Z">
+    <div class="r-comment-body"><p>§3 landed: a test-only run earns the light review tier, and docs/state-only runs stay none (merge <code>7c923144a</code>); 45 passed at the merged head; review 105/120. A test-only run now owes a stored review before promotion. <a href="/reckon/evidence/archive/the-review-loop-runs-without-hand-steps-landed.html#s3-test-only-light-review">evidence</a></p></div>
 </div>
 </section>
 </main>
