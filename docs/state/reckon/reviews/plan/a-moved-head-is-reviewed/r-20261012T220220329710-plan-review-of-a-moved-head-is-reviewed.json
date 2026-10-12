@@ -1,0 +1,49 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-12T22:12:34.189Z",
+  "dispatched_at": "2026-10-12T22:02:48Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-moved-head-is-reviewed.html:35",
+      "id": "reasoning-1",
+      "reason": "a builder who trusts \"both also recognise the head suffix\" may not extend the two readers, and the claim must instead state that they are extended to strip the suffix.",
+      "text": "\u00a73 states \"Both also recognise the head suffix, so a later round still resolves to the run it reviewed\", but neither `_task_identity`/`_reviewed_run_id` (`reckon/crew/dispatch_sessions.py:436`) nor `_resolved_reviewed_run_id` (`reckon/crew/recovery_review_delivery.py:65`) strips a trailing `-<head[:12]>`: called with the later-round id \u00a73 proposes they each return `structural-guards-have-one-home-71bb011d8abc` rather than the reviewed run's id, so \u00a73's fourth case (\"resolve every round's id to the reviewed run\") cannot pass on the tree as it stands",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-moved-head-is-reviewed.html:43",
+      "id": "reasoning-2",
+      "reason": "the shared rule must be applied where the id is actually composed (or the printed `next_action` command composed by `_review_dispatch_action` at `recovery_review_subject.py:844` would still carry the reused id and collide on a hand run), so `recovery_review_subject.py` belongs in \u00a73's write paths.",
+      "text": "\u00a73 declares the reused id is repaired \"In `dispatch_review_for_run`\" and lists its write paths as `recovery_review_dispatch.py`, `repair.py`, the two id readers and the new test, but the run-review node id is composed at `reckon/crew/recovery_review_subject.py:652` (`\"node_id\": f\"{REVIEW_NODE_PREFIX}{source_node}\"`), and that file is not a write path \u2014 \u00a73 names only the plan-review and code-review id sites there as \"outside this section\"",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "98f87ef33cf8f733ca09fc099e3a16c9c9bd82595209adb562cae7d0626e2849",
+  "plan_slug": "a-moved-head-is-reviewed",
+  "plan_version": 16,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261012T220220329710-plan-review-of-a-moved-head-is-reviewed",
+  "reviewed_blob_sha": "4525c0300119b17836d2c6ea21cd833531b58c3a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every href resolves once extensionless targets are read as `<path>.html` (`/reckon/plans/the-review-loop-runs-without-hand-steps`, `/reckon/plans/a-review-is-sized-to-its-risk`, and the evidence anchor `/reckon/evidence/archive/a-moved-head-is-reviewed-landed.html#s2-why-the-reflex-launched-nothing`, which exists at that file's `id=\"s2-why-the-reflex-launched-nothing\"`).",
+    "done_when": "pass \u2014 each of \u00a73's four cases is a measurable outcome (one review keyed to B, a carried-forward review, no launch, distinct third-round id) and \u00a73 declares and executes a negative control (the reused round id restored must fail the runtime-source resume case).",
+    "evidence_paths": "pass \u2014 \u00a73's negative control is logged under the run directory, a durable crew path outside any session scratchpad or node-local temporary.",
+    "naming": "pass \u2014 \u00a73 carries no plan label, ticket number or version tag into a symbol; the test file is named for the mechanism (`tests/test_a_resumed_head_is_reviewed.py`), not for this plan's slug.",
+    "reasoning": "a finding \u2014 \u00a73 asserts both id readers already recognise the head suffix, and it places the node-id composition \"in `dispatch_review_for_run`\" although the review node id is composed once, in `_review_dispatch_fields` at `reckon/crew/recovery_review_subject.py:652`, a file \u00a73 does not list among its write paths.",
+    "single_goal": "pass \u2014 \u00a73 carries one deliverable: give a re-review round a node identity and worktree path distinct from the round before.",
+    "wiring": "pass \u2014 the plan's `informs` relationship (`a-review-is-sized-to-its-risk`) resolves, and \u00a73's cross-plan citations (`the-review-loop-runs-without-hand-steps` \u00a73, merge `7c923144a`) name a landed commit, so no dependency \u00a73 needs is missing."
+  },
+  "section_digests": {
+    "_document": "885c3985fdc995ffc912923d8a04de109792bb9e7aafad45b13ff488d0c0edfe",
+    "s1": "a3a1b8eb4f84292df6d31e99043de92c9c4916a619d1de95917df87aae676d63",
+    "s2": "48dd7ab841931b559865e55c8d35fc2c6ff607e66a332ba21e17c336aebe001e",
+    "s3": "c8377f5d51ba4ee5b7669ecb239810d6ca128d537f9170bf77ed4d392486b433"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-12T22:28:19.338382+00:00"
+}
