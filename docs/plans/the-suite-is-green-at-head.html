@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.98">
-<meta name="plan-version" content="271">
+<meta name="plan-version" content="272">
 <meta name="plan-modified" content="2026-10-13">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
@@ -755,9 +755,15 @@
     <pre class="r-fu-prompt">/reckon-build the-suite-is-green-at-head §3</pre>
     <p class="r-fu-outcome">Corrected and replaced. The two test_obligations_snapshot_is_published.py ids are not load-only. s22-coord measured an order-dependent module split: two by-path loaders, snapshot_module() in reckon/hooks/coordinator_obligations.py and the loader near reckon/cli.py:3012, assign sys.modules['reckon.crew.obligation_snapshot'] unconditionally. A hook test earlier in the same xdist worker therefore leaves the producer's _SWEEPS in a second module instance. s22-coord's the-snapshot-loader-keeps-one-instance owns the fix. The three remaining ids carry over to the followup below.</p>
     </article>
-<article class="r-fu" data-id="f-tsigah-three-load-only-ids-for-section-three" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-04T03:00:00Z" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tsigah-three-load-only-ids-for-section-three" data-status="resolved" data-written-by="reckon-build" data-written-at="2026-10-04T03:00:00Z" data-recommends-skill="/reckon-build" data-resolved-at="2026-10-12T23:11:14+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Three load-only ids from the pinned measure join §3&#x27;s list</h4>
     <div class="r-fu-body">The full-suite run at 76ed64992 found three ids that fail under -n 8 and pass when run alone. The first is test_every_attempt_is_supervised.py::test_a_killed_resumed_worker_leaves_its_attempt_exit_record, which waits 3 s for an exit record. The second is test_dispatch_returns_without_worker.py::test_dispatch_returns_once_its_supervisor_runs, which took 10.4 s against its 8.0 s bound at load 11 to 24, after s25-picker's dispatch fix had brought the median to 5 s when run alone. The third is test_spa_browser_harness.py::test_timeout_reap_takes_the_spawned_child_with_the_driver. §3's measure 'Load-sensitive ids robust' covers them. The two obligations-snapshot ids from the same run are not load-only. They are a module split owned by s22-coord (the-snapshot-loader-keeps-one-instance).</div>
+    <pre class="r-fu-prompt">/reckon-build the-suite-is-green-at-head §3</pre>
+    <p class="r-fu-outcome">the three load-only ids pass in three consecutive -n 8 runs at 77362a554 with no code change (merge e554dce74); §3's remaining measure is the bounded full run, carried by f-tsigah-bounded-full-run</p>
+    </article>
+<article class="r-fu" data-id="f-tsigah-bounded-full-run" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-12" data-recommends-skill="/reckon-build the-suite-is-green-at-head §3" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Measure the bounded full run (§3)</h4>
+    <div class="r-fu-body"><p>§3's last measure: the full suite under <code>-n 8</code> on the fleet node, in a stated wall time, with zero failures apart from ids attributed to a named owner outside this plan. Two follower-reload ids failed at base on 2026-10-12 and need that attribution.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-suite-is-green-at-head §3</pre>
     </article>
 </section>
@@ -1484,6 +1490,9 @@ reviewed worktree is untouched (git status --porcelain empty).</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261012T223321511154-three-load-only-ids-hold-under-load" data-who="reckon-build" data-when="2026-10-12T23:01:40.512Z">
     <div class="r-comment-body"><p>Verified the three load-only ids hold under -n 8 at 77362a554: test_every_attempt_is_supervised.py::test_a_killed_resumed_worker_leaves_its_attempt_exit_record, test_dispatch_returns_without_worker.py::test_dispatch_returns_once_its_supervisor_runs and test_spa_browser_harness.py::test_timeout_reap_takes_the_spawned_child_with_the_driver each passed in three consecutive -n 8 full-file runs (22 passed, 0 failed, 1 skipped, exit 0 every run), so no source change was needed; each already waits on its observed condition (bounded exit-record poll, load-adaptive reference bound, bounded reap poll).</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-s3-load-only-ids-hold-1012" data-who="reckon-build" data-when="2026-10-12T23:30:00Z">
+    <div class="r-comment-body"><p>The three load-only ids hold under <code>-n 8</code>, with no code change (merge <code>e554dce74</code>). §3's remaining measure is the bounded full run. <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed.html#s3-load-only-ids-hold">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260928T142353317590-s21-audit-placement" data-who="reckon-build" data-when="2026-09-28T15:23:36.908Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/the-suite-is-green-at-head/s21-audit-placement.html</p></div>

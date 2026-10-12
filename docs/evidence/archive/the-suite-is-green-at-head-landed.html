@@ -2848,6 +2848,11 @@ reckon/crew/dispatch.py:4535: TypeError
     </div>
   </section>
 
+  <section id="s3-load-only-ids-hold">
+    <h2>§3 — the three load-only ids hold under -n 8</h2>
+    <p>Run <code>r-20261012T223321511154-three-load-only-ids-hold-under-load</code>, merged at <code>e554dce74</code>. It made no code change. It found the three ids the open followup named passing in three consecutive <code>-n 8</code> full-file runs at <code>77362a554</code>, 22 passed and 1 skipped each:</p><ul><li><code>test_every_attempt_is_supervised.py::test_a_killed_resumed_worker_leaves_its_attempt_exit_record</code></li><li><code>test_dispatch_returns_without_worker.py::test_dispatch_returns_once_its_supervisor_runs</code></li><li><code>test_spa_browser_harness.py::test_timeout_reap_takes_the_spawned_child_with_the_driver</code></li></ul><p>It also ran contended arms, two concurrent <code>-n 8</code> runs at load 19, which held too. The work landed since the measure was taken fixed them. Gate log: <code>~/.config/reckon/crew/runs/r-20261012T223321511154-three-load-only-ids-hold-under-load/logs/gate.log</code>.</p><p>Separately, on 2026-10-12 a monitor node's wider arm found two follower-reload ids failing at its base, <code>66dafdd4b</code>:</p><ul><li><code>test_follower_freshness.py::test_running_follower_reloads_without_stream_or_registration_gap</code></li><li><code>test_follower_reload_is_safe.py::test_syntax_error_in_a_follower_module_defers_the_reload</code></li></ul><p>The bounded full run must attribute them.</p>
+  </section>
+
 </main>
 </body>
 </html>
