@@ -1,0 +1,41 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-12T21:34:19.790Z",
+  "dispatched_at": "2026-10-12T21:27:11Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-moved-head-is-reviewed.html:35",
+      "id": "reasoning-1",
+      "reason": "a node fenced to the declared write paths cannot extend the shared rule, so it would either write the rule a second time (which \u00a73 forbids) or stop with a scope blocker; the section must add `reckon/crew/repair.py` to its write paths or restate the id mechanism as a rule it owns.",
+      "text": "\u00a73 declares its write paths as `reckon/crew/recovery_review_dispatch.py` and the new test only (line 43), yet the mechanism it describes (\"The later-round id follows the rule `repair_node_id` in `reckon/crew/repair.py` ... That rule is extended once so both prefixes share it, rather than written a second time\") requires editing `repair_node_id` in `reckon/crew/repair.py`, which hardcodes `REPAIR_NODE_PREFIX` and takes no prefix argument (repair.py:286-305)",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "1da2ce435b720880807bfd4d7742386b79f85c6155cb3f00bf67f1272bc64da2",
+  "plan_slug": "a-moved-head-is-reviewed",
+  "plan_version": 14,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261012T212642880265-plan-review-of-a-moved-head-is-reviewed",
+  "reviewed_blob_sha": "4de366b947bbe977ed402682316b8d92ba8c851a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 recovery_review_dispatch.py, recovery_watch.py, repair.py, recovery_review_subject.py, plan_review.py, repair_node_id, _review_dispatch_fields, a-review-is-sized-to-its-risk \u00a75 and the extensionless href to the-review-loop-runs-without-hand-steps all resolve.",
+    "done_when": "pass \u2014 \u00a73 names four measurable cases and an executed, logged negative control (\"with the reused round id restored, the runtime-source resume case fails\"), so the gate can fail when the guard is absent.",
+    "evidence_paths": "pass \u2014 the gate log and the negative-control log are written under the run directory, which survives the run; no session scratchpad or node-local temporary path is named.",
+    "naming": "pass \u2014 \u00a73 names no plan label, stage name, ticket number or version tag in a symbol or comment; the test filename rename raised earlier was declined and applied.",
+    "reasoning": "a finding \u2014 \u00a73 says the later-round id shares `repair_node_id`'s rule (\"That rule is extended once so both prefixes share it\"), but `repair_node_id` lives in `reckon/crew/repair.py`, which \u00a73's write paths exclude.",
+    "single_goal": "pass \u2014 \u00a73 carries one deliverable, giving a re-review round a node identity distinct from the round before; the tier and hand-dispatch material is context \u00a72 already settled.",
+    "wiring": "pass \u2014 the plan's `informs` edge to a-review-is-sized-to-its-risk resolves, \u00a73 states its run-after-\u00a72 ordering, and the cited peer plans and merge (`7c923144a`) all resolve."
+  },
+  "section_digests": {
+    "_document": "885c3985fdc995ffc912923d8a04de109792bb9e7aafad45b13ff488d0c0edfe",
+    "s1": "a3a1b8eb4f84292df6d31e99043de92c9c4916a619d1de95917df87aae676d63",
+    "s2": "48dd7ab841931b559865e55c8d35fc2c6ff607e66a332ba21e17c336aebe001e",
+    "s3": "ceb6f5f95bf30375329dc86f5820d1edfe495e20b418bdd17076df9b6c49d4f5"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-12T21:36:32.940494+00:00"
+}
