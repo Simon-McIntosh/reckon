@@ -42,12 +42,15 @@ reader.
 
 from __future__ import annotations
 
+import ast
+import io
 import json
 import os
 import re
 import subprocess
 import tempfile
 import time
+import tokenize
 from collections.abc import Iterable, Iterator, Mapping
 from datetime import UTC, datetime
 from pathlib import Path, PurePath, PurePosixPath
@@ -1210,6 +1213,288 @@ def _gate_log_revision_findings(
     return findings
 
 
+# A gate log carries the command it ran near its head, written behind the label
+# the capture convention and the replay header share — ``# command: <cmd>`` or a
+# compact ``cmd=<cmd>``. The label is what makes a command extractable: without
+# it a head of bare pytest output names none, and the check would have to guess
+# which line is a command rather than reading the one the log declares.
+_TEST_LOG_COMMAND_LABEL = re.compile(
+    r"\b(?:command|cmd)\b[^\S\n]*[:=][^\S\n]*(\S.*?)[^\S\n]*$",
+    re.IGNORECASE,
+)
+
+# "Near its head" is the header block a capture writes before the command's own
+# output begins, read as the first few non-blank lines.
+_TEST_LOG_HEAD_LINES = 5
+
+
+def _test_log_command(text: str) -> str | None:
+    """The command a test log names near its head, or ``None`` when it names none."""
+    seen = 0
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        seen += 1
+        if seen > _TEST_LOG_HEAD_LINES:
+            break
+        match = _TEST_LOG_COMMAND_LABEL.search(line)
+        if match is not None:
+            return match.group(1).strip()
+    return None
+
+
+def _test_log_findings(
+    manifest: dict[str, Any],
+    *,
+    manifest_path: Path | None,
+) -> list[str]:
+    """Judge every log the manifest says is a test log for the evidence it holds.
+
+    A test log is the manifest's own evidence for the run that passed: a
+    coordinator reads the command it ran and the status it exited with. A log
+    that names no command near its head, or that records none of the status
+    lines, cannot show either, and nothing checked it — so a log holding only
+    the command's output read as evidence of a run nobody could reconstruct.
+
+    The command is extracted from the log's head and judged by the same reader
+    promotion applies to a recorded gate command (``gate_command_prose``), so an
+    abbreviated command — a placeholder like ``<five tests>`` — is refused
+    identically whether it is written in the manifest or in the log. The exit
+    status is read through the reader the manifest's own status field uses
+    (``_terminal_exit_status``), which reads only an end-of-log ``EXIT=<n>``
+    record, so a status token inside the command's output is not the evidence
+    the capture convention names. A log that cannot be read is left to the
+    readers that judge citations, since whether a path resolves is a different
+    question from what the log it names contains.
+    """
+    findings: list[str] = []
+    for entry in manifest.get("test_logs") or ():
+        cited = str(entry).strip()
+        if not cited:
+            continue
+        text, resolved = _read_control_log(cited, manifest_path=manifest_path)
+        if text is None:
+            continue
+        command = _test_log_command(text)
+        if command is None:
+            findings.append(
+                f"test log {str(resolved)!r} carries no command near its head: "
+                "every file named in test_logs must carry its literal command "
+                "near its head and end with an EXIT=<n> line"
+            )
+        else:
+            prose = _gate_command_prose(command)
+            if prose is not None:
+                token_class, token = prose
+                findings.append(
+                    f"test log {str(resolved)!r} records the command "
+                    f"{command!r}, which carries a {token_class} ({token!r}): "
+                    "that describes the check rather than running it, so the "
+                    "log names no command that could be re-executed"
+                )
+        if _terminal_exit_status(text) is None:
+            findings.append(
+                f"test log {str(resolved)!r} ends with no EXIT=<n> line: a "
+                "gate log must record the command's own status as its final "
+                "line, so a reader can tell a passing run from a truncated one"
+            )
+    return findings
+
+
+def _gate_command_prose(command: str) -> tuple[str, str] | None:
+    """Judge a command with promotion's own reader, imported at the use.
+
+    The deferred import keeps this module importable while promotion, which
+    imports this one, is loading. Reading the command through the same function
+    promotion applies to a recorded gate command is what keeps the two judges
+    from disagreeing about what an abbreviated command is.
+    """
+    from reckon.crew.promotion_gate import gate_command_prose
+
+    return gate_command_prose(command)
+
+
+# A plan-section reference: the section sign followed by a section number. The
+# plan system's own labels, which never belong in production source because the
+# source must stand without the plan that motivated it.
+_PLAN_SECTION_REFERENCE = re.compile(r"§\s*\d")
+
+_HUNK_HEADER = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@")
+
+
+def _is_production_python(path: str) -> bool:
+    """Whether a repository-relative path is production Python source.
+
+    Test source is exempt from the plan-label check, because a fixture
+    legitimately carries a section identifier as data; anything under the
+    ``tests`` directory is therefore not production source.
+    """
+    parts = PurePosixPath(path).parts
+    if not parts or parts[-1].endswith(".py") is False:
+        return False
+    return "tests" not in parts
+
+
+def _comment_or_docstring_lines(source: str) -> set[int]:
+    """The 1-based line numbers a source carries in a comment or a docstring.
+
+    Comment lines come from the tokenizer so a ``#`` inside a string is not
+    read as a comment. Docstring ranges come from the parse tree, so an ordinary
+    string literal — a fixture or a message — is not read as a docstring. A
+    source that does not parse contributes whatever the tokenizer already found.
+    """
+    lines: set[int] = set()
+    try:
+        for token in tokenize.generate_tokens(io.StringIO(source).readline):
+            if token.type == tokenize.COMMENT:
+                lines.add(token.start[0])
+    except (tokenize.TokenError, IndentationError, SyntaxError):
+        pass
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return lines
+    for node in ast.walk(tree):
+        body = getattr(node, "body", None)
+        if not isinstance(body, list) or not body:
+            continue
+        first = body[0]
+        if not isinstance(first, ast.Expr):
+            continue
+        value = first.value
+        if not isinstance(value, ast.Constant) or not isinstance(value.value, str):
+            continue
+        start = getattr(value, "lineno", None)
+        end = getattr(value, "end_lineno", None)
+        if start is None:
+            continue
+        for line in range(start, (end if end is not None else start) + 1):
+            lines.add(line)
+    return lines
+
+
+def _added_lines_since(store: Path, base: str) -> dict[str, dict[int, str]]:
+    """The lines added to ``store`` since ``base``, keyed by path then line.
+
+    The diff is read post-image: a hunk header names the first new-side line,
+    and each added line advances it, so the line number a finding reports is the
+    one a reader opens the file at. A diff that a store cannot produce — an
+    unresolvable base — yields no added lines rather than an error, because an
+    unanswerable store measures the absence of a store rather than of a defect.
+    """
+    probe = subprocess.run(
+        ["git", "-C", str(store), "diff", "--unified=0", "--no-color", base],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if probe.returncode != 0:
+        return {}
+    added: dict[str, dict[int, str]] = {}
+    path: str | None = None
+    new_line = 0
+    for raw in probe.stdout.splitlines():
+        if raw.startswith("+++ "):
+            header = raw[4:].strip()
+            path = None if header == "/dev/null" else header.removeprefix("b/")
+            continue
+        if raw.startswith("@@"):
+            match = _HUNK_HEADER.match(raw)
+            new_line = int(match.group(1)) if match else 0
+            continue
+        if path is None:
+            continue
+        if raw.startswith("+"):
+            added.setdefault(path, {})[new_line] = raw[1:]
+            new_line += 1
+    return added
+
+
+def _read_source_or_none(path: Path) -> str | None:
+    """Read a source file, returning ``None`` when it cannot be read."""
+    try:
+        return path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return None
+
+
+def _run_diff_store(
+    stores: tuple[Path, ...], *, worktree: Path | None, repository: Path | None
+) -> Path:
+    """The store a run's own added lines live in.
+
+    The change this run made sits in the worktree it worked in, not in the
+    repository that worktree belongs to. The repository is commonly the main
+    checkout, which does not yet hold the run's unmerged commit, so diffing it
+    against the orientation base reports the checkout's own later changes and
+    never the lines this run added — the plan-label half of the check then never
+    fires on the run it audits. The worktree is therefore chosen whenever git
+    reported it as a repository; the repository is the fall-back for a run that
+    recorded no separate worktree.
+    """
+    for candidate in (worktree, repository):
+        if candidate is None:
+            continue
+        root = Path(candidate)
+        if root in stores:
+            return root
+    return stores[0]
+
+
+def _plan_label_findings(
+    manifest: dict[str, Any],
+    *,
+    worktree: Path | None = None,
+    repository: Path | None = None,
+) -> list[str]:
+    """Report plan-section labels added to production Python source.
+
+    A production comment or docstring that cites a plan section ties the source
+    to a plan that can be renamed or deleted, so the source stops standing on
+    its own. The label is judged only on lines the change *adds* — an untouched
+    file carrying one is not this change's to answer for — and only in comment
+    or docstring text, because a string literal is data and a fixture may
+    legitimately record a section as such.
+
+    The base revision is the one the manifest records at orientation and the
+    diff is read from the worktree the run worked in, so the check judges the
+    change this run made rather than the whole file. A manifest that records no
+    resolvable base, or a tree that is not a repository, leaves the check
+    unarmed rather than refusing on work no one can inspect.
+    """
+    base = str(manifest.get("orientation_base_sha") or "").strip()
+    if not base or base.lower() in _NONE_VALUES or "<" in base or "|" in base:
+        return []
+    stores = _citation_stores(worktree=worktree, repository=repository)
+    if not stores:
+        return []
+    store = _run_diff_store(stores, worktree=worktree, repository=repository)
+    added = _added_lines_since(store, base)
+    findings: list[str] = []
+    for path in sorted(added):
+        if not _is_production_python(path):
+            continue
+        source = _read_source_or_none(store / path)
+        if source is None:
+            continue
+        eligible = _comment_or_docstring_lines(source)
+        if not eligible:
+            continue
+        for lineno in sorted(added[path]):
+            if lineno not in eligible:
+                continue
+            match = _PLAN_SECTION_REFERENCE.search(added[path][lineno])
+            if match is None:
+                continue
+            findings.append(
+                f"{path}:{lineno} adds a plan-section reference "
+                f"{match.group(0)!r} in a comment or docstring, which ties "
+                "production source to a plan that can be renamed or deleted"
+            )
+    return findings
+
+
 # ── A finding with no declared severity cannot be acted on ───────────────────
 # A review run's whole deliverable is the record it stores, and a finding in
 # that record says whether it blocks the reviewed node's landing by opening
@@ -2013,6 +2298,10 @@ def audit_manifest(
     )
     findings.extend(
         _gate_log_revision_findings(manifest, manifest_path=resolved_manifest_path)
+    )
+    findings.extend(_test_log_findings(manifest, manifest_path=resolved_manifest_path))
+    findings.extend(
+        _plan_label_findings(manifest, worktree=worktree, repository=repository)
     )
     findings.extend(
         _commit_citation_findings(manifest, worktree=worktree, repository=repository)
