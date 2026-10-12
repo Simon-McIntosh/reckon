@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "0f57ee7b23a1d4bb2592c5fb82d92f3dec2104b5",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/hooks/coordinator_obligations.py:875",
+    "reckon/hooks/coordinator_obligations.py:1108"
+  ],
+  "completed_at": "2026-10-12T21:36:05.806Z",
+  "dispatched_at": "2026-10-12T21:22:26Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "17",
+      "severity": "follow-on",
+      "text": "follow-on: baseline_suite records completed true with three failure ids, but gate-base.log stops after twelve progress dots with no summary or EXIT line, so the recorded base arm is unreadable and the no-added-failure claim rests on the head arm's own zero failures rather than on a second readable arm."
+    },
+    {
+      "file": "tests/test_a_remote_producer_reads_as_live.py",
+      "line": "124",
+      "severity": "follow-on",
+      "text": "follow-on: the positive control derives the start time it hands to _document from obligation_snapshot.process_start_time, the same helper freshness calls internally, so a consistently wrong process_start_time leaves this assertion green."
+    },
+    {
+      "file": "manifest.md",
+      "line": "17",
+      "severity": "follow-on",
+      "text": "follow-on: the baseline_suite and after_suite command fields carry placeholders for the test-path lists in place of the literal command the manifest contract requires."
+    }
+  ],
+  "head_log_revision": "27af6d92c",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read 27af6d92c against base 0f57ee7b2 commit-by-commit; it edits obligation_snapshot.py, watch_unit.py and coordinator_obligations.py, adds the test file and an evidence fragment, and nothing else.",
+    "done_when": "the source brief's done_when names the four cases of tests/test_a_remote_producer_reads_as_live.py, a no-added-failure check across the importing files, and a logged negative control; gate-head.log records 171 passed EXIT=0 with the new file's 4 passing and negative-control.log ends EXIT=1.",
+    "goal": "the goal is that freshness reads a producer seated on another host with a fresh stream as live through the watch_unit seat judgement; reckon/crew/obligation_snapshot.py:301 adds the foreign-seat consult and reckon/crew/watch_unit.py:143 exposes the seat judgement, so the landed change does exactly that.",
+    "manifest": "read; it reads complete with commit 27af6d92c and records the gate and the negative control, but baseline_suite at manifest.md:17 claims completed true, exit_status 1 and three failure ids that gate-base.log does not carry.",
+    "write_paths": "the source declared six write paths; commit 27af6d92c touches five files, every one inside them, and the declared figures path carries no change."
+  },
+  "justifications": {
+    "durability": "the declared negative control that drops the foreign-seat consult reddens tests/test_a_remote_producer_reads_as_live.py:76 exactly as the manifest records, 1 failed 3 passed EXIT=1.",
+    "evidence": "tests/test_a_remote_producer_reads_as_live.py passes 4 and the head arm records 171 passed EXIT=0, but gate-base.log ends after twelve progress dots with no summary or EXIT line, so the baseline_suite recorded at manifest.md:17 is unreadable from its own log.",
+    "fit": "the deferred import at reckon/crew/obligation_snapshot.py:311 and the helper naming match the prompt-path constraint the module docstring states at reckon/crew/obligation_snapshot.py:1.",
+    "goal_fidelity": "reckon/crew/obligation_snapshot.py:301 consults the project seat and reckon/crew/watch_unit.py:143 carries the seat judgement the goal names.",
+    "reuse": "seat_names_a_live_foreign_producer at reckon/crew/watch_unit.py:143 composes the existing _seat_names_a_foreign_host at line 60 and _seat_stream_fresh at line 71 rather than re-deriving them, and no other public owner of the project-seat judgement exists.",
+    "scope_discipline": "every path in commit 27af6d92c is inside the source node's declared write paths in manifest.md:1."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that freshness reads a producer seated on another host with a fresh stream as live through the watch_unit seat judgement; reckon/crew/obligation_snapshot.py:301 adds the foreign-seat consult and reckon/crew/watch_unit.py:143 exposes the seat judgement, so the landed change does exactly that.\nVERDICT done_when: the source brief's done_when names the four cases of tests/test_a_remote_producer_reads_as_live.py, a no-added-failure check across the importing files, and a logged negative control; gate-head.log records 171 passed EXIT=0 with the new file's 4 passing and negative-control.log ends EXIT=1.\nVERDICT write_paths: the source declared six write paths; commit 27af6d92c touches five files, every one inside them, and the declared figures path carries no change.\nVERDICT manifest: read; it reads complete with commit 27af6d92c and records the gate and the negative control, but baseline_suite at manifest.md:17 claims completed true, exit_status 1 and three failure ids that gate-base.log does not carry.\nVERDICT diff: read 27af6d92c against base 0f57ee7b2 commit-by-commit; it edits obligation_snapshot.py, watch_unit.py and coordinator_obligations.py, adds the test file and an evidence fragment, and nothing else.\nCALL_SITES: reckon/hooks/coordinator_obligations.py:875, reckon/hooks/coordinator_obligations.py:1108\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/obligation_snapshot.py:301 consults the project seat and reckon/crew/watch_unit.py:143 carries the seat judgement the goal names.\nSCORE evidence: 14\nJUSTIFICATION evidence: tests/test_a_remote_producer_reads_as_live.py passes 4 and the head arm records 171 passed EXIT=0, but gate-base.log ends after twelve progress dots with no summary or EXIT line, so the baseline_suite recorded at manifest.md:17 is unreadable from its own log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in commit 27af6d92c is inside the source node's declared write paths in manifest.md:1.\nSCORE durability: 19\nJUSTIFICATION durability: the declared negative control that drops the foreign-seat consult reddens tests/test_a_remote_producer_reads_as_live.py:76 exactly as the manifest records, 1 failed 3 passed EXIT=1.\nSCORE fit: 19\nJUSTIFICATION fit: the deferred import at reckon/crew/obligation_snapshot.py:311 and the helper naming match the prompt-path constraint the module docstring states at reckon/crew/obligation_snapshot.py:1.\nSCORE reuse: 19\nJUSTIFICATION reuse: seat_names_a_live_foreign_producer at reckon/crew/watch_unit.py:143 composes the existing _seat_names_a_foreign_host at line 60 and _seat_stream_fresh at line 71 rather than re-deriving them, and no other public owner of the project-seat judgement exists.\nFINDING manifest.md:17 follow-on: baseline_suite records completed true with three failure ids, but gate-base.log stops after twelve progress dots with no summary or EXIT line, so the recorded base arm is unreadable and the no-added-failure claim rests on the head arm's own zero failures rather than on a second readable arm.\nFINDING tests/test_a_remote_producer_reads_as_live.py:124 follow-on: the positive control derives the start time it hands to _document from obligation_snapshot.process_start_time, the same helper freshness calls internally, so a consistently wrong process_start_time leaves this assertion green.\nFINDING manifest.md:17 follow-on: the baseline_suite and after_suite command fields carry placeholders for the test-path lists in place of the literal command the manifest contract requires.",
+  "review_run_id": "r-20261012T212201196573-review-of-a-remote-producer-reads-as-live",
+  "reviewed_base_sha": "0f57ee7b23a1d4bb2592c5fb82d92f3dec2104b5",
+  "reviewed_head_sha": "27af6d92c375d93541883b76aa156751dcc66b1c",
+  "reviewed_run_id": "r-20261012T205954318662-a-remote-producer-reads-as-live",
+  "scores": {
+    "durability": 19,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-12T21:39:09.845949+00:00",
+  "total": 111
+}
