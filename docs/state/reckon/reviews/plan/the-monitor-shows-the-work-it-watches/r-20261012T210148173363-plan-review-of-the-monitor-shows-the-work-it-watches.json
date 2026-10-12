@@ -1,0 +1,121 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-12T21:08:04.165Z",
+  "dispatched_at": "2026-10-12T21:02:15Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/recovery_watch.py:1264",
+      "id": "reuse_search-1",
+      "reason": "\u00a73/\u00a74 must cite `_fleet_counts`, `_population_has_live_work`, `--exit-on-empty` and `--lifetime` as the mechanisms they extend, or the sections rebuild machinery that already runs.",
+      "text": "\u00a73 proposes a per-session live roll-up that \"reads the same live classification that crew(view='live') uses, and computes nothing of its own\", but `_fleet_counts(snapshots, *, session=...)` already IS that computation: it partitions the fleet into working/blocked/unpromoted/waiting and narrows to a session via `_partition_session_rows` (reckon/crew/recovery_watch.py:264), and every row already carries its output as the counter cell (`recovery_watch.py:1622` builds every transition with `_fleet_counts(running)`, rendered by `Ticker._stats` at reckon/crew/ticker.py:2138). Separately, the plan cites no prior art for \u00a74 at all: `_population_has_live_work(project, *, session)` (reckon/crew_follow_commands.py:567) is exactly \"does this session's own fleet still hold a run that has not ended\", and `crew follow --lifetime DURATION` (reckon/crew_follow_commands.py:2214) already prints one final line naming the session's runs that need the coordinator \u2014 the end-of-follower line \u00a74 reinvents. `crew watch --once/--exit-on-empty` (reckon/crew_follow_commands.py:2601) likewise already exits when no live pointers remain. `_session_host_child`/`_session_host_runs_follower` (reckon/crew_follow_commands.py:599) already read the host-child relation \u00a74's \"start a new child on the next request\" depends on. The plan searched only `ticker.py` and the shipped `a-follower-row-is-worth-a-wake` contract; the other four mechanisms are absent from its text.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/ticker.py:2138",
+      "id": "thin_wrapper-1",
+      "reason": "the section must either extend `_stats`'s cells (naming nodes there) or justify a second status block, else the row carries two overlapping reports of one fleet.",
+      "text": "\u00a73 adds a compact roll-up (\"a count, and the node of each\") to the end of every printed row, but the row already ends with a counter block built by `Ticker._stats` from the same event counts, and those counts come from the same live classification `crew(view=\"live\")` uses. The new block is a second rendering of the same population in the same row; the plan gives no reason the existing counter cells cannot be extended to name nodes instead of adding a parallel block.",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew_follow_commands.py:567",
+      "id": "duplicate_owner-1",
+      "reason": "the honest change is to extend `_population_has_live_work` and to supersede `DISPLAY` in place; two owners of \"no live work\" and two state-to-word tables drift apart silently, which is the failure the plan's own \u00a75 argues against.",
+      "text": "\u00a74 makes the follower child settle and exit when the session has no live run, re-deriving \"no live work\" logic that `_population_has_live_work` already owns for exactly this population. \u00a75 compounds this: its seven-word table is proposed as \"one table, owned in one place, which every surface that prints a run's state reads\", yet the state-to-word owner already exists as `DISPLAY` (reckon/crew/ticker.py:298, consumed solely at ticker.py:884). The plan names neither owner.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "the-monitor-shows-the-work-it-watches.html#s5",
+      "id": "interface_budget-1",
+      "reason": "the section must name `DISPLAY` and the counter bucket labels as retired or reconciled, per the interface-budget rule that an added family accounts for itself in its own text.",
+      "text": "\u00a75 introduces a new state-word mapping table and adds to the public definition surface (public_definitions 1682, cli_options 349, mcp_views 34, refusal_families 23), and its own text says the run counters and \u00a73's roll-up will read it, but it names nothing it retires or merges: `DISPLAY = {\"completed_unpromoted\": \"unpromoted\", \"lane-event\": \"lane event\"}` (reckon/crew/ticker.py:298) is superseded by the seven words and is left unnamed, and \u00a73's bucket labels (`_WAIT_CELL = \"queued\"` with `_COUNT_FIELD = {\"queued\": \"waiting\"}`, ticker.py:365,371) must be reconciled with the word set. The plan neither retires the old table nor states why it must remain.",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "bfeb82f08a4a21bfd67c7ce372c7636ccc91a21ae1d94e7905f7c8b90c4050d3",
+  "plan_slug": "the-monitor-shows-the-work-it-watches",
+  "plan_version": 5,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "reuse_search-1",
+      "reason": "\u00a73 and \u00a74: recorded in comments c-s3-design-review-1012 and c-s4-design-review-1012 and applied to their text before each dispatches; \u00a72, dispatching now, extends the existing row policy in ticker.py as the review found",
+      "when": "2026-10-12T21:10:48.608067+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "thin_wrapper-1",
+      "reason": "\u00a73: deferred to its dispatch; comment c-s3-design-review-1012 records that \u00a73 extends the Ticker._stats counter cell rather than adding a second status block",
+      "when": "2026-10-12T21:10:50.852864+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "duplicate_owner-1",
+      "reason": "\u00a74 and \u00a75: deferred to their dispatch; comments c-s4-design-review-1012 and c-s5-design-review-1012 record that \u00a74 extends _population_has_live_work and \u00a75 supersedes DISPLAY in place",
+      "when": "2026-10-12T21:10:53.281749+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "interface_budget-1",
+      "reason": "\u00a75: deferred to its dispatch; comment c-s5-design-review-1012 records that \u00a75 retires DISPLAY and reconciles _WAIT_CELL and _COUNT_FIELD",
+      "when": "2026-10-12T21:10:55.945318+00:00"
+    }
+  ],
+  "responses": {
+    "duplicate_owner-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "\u00a74 and \u00a75: deferred to their dispatch; comments c-s4-design-review-1012 and c-s5-design-review-1012 record that \u00a74 extends _population_has_live_work and \u00a75 supersedes DISPLAY in place",
+      "when": "2026-10-12T21:10:53.281749+00:00"
+    },
+    "interface_budget-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "\u00a75: deferred to its dispatch; comment c-s5-design-review-1012 records that \u00a75 retires DISPLAY and reconciles _WAIT_CELL and _COUNT_FIELD",
+      "when": "2026-10-12T21:10:55.945318+00:00"
+    },
+    "reuse_search-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "\u00a73 and \u00a74: recorded in comments c-s3-design-review-1012 and c-s4-design-review-1012 and applied to their text before each dispatches; \u00a72, dispatching now, extends the existing row policy in ticker.py as the review found",
+      "when": "2026-10-12T21:10:48.608067+00:00"
+    },
+    "thin_wrapper-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "\u00a73: deferred to its dispatch; comment c-s3-design-review-1012 records that \u00a73 extends the Ticker._stats counter cell rather than adding a second status block",
+      "when": "2026-10-12T21:10:50.852864+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-monitor-shows-the-work-it-watches.v5.json",
+  "review_run_id": "r-20261012T210148173363-plan-review-of-the-monitor-shows-the-work-it-watches",
+  "reviewed_blob_sha": "1b78f9e0bb182935d8511400ee9eb6793bd5d54e",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a75 puts one state-to-word table behind one mapping, and \u00a73 reads that classification rather than deriving its own; no proposed module spreads behaviour across shallow wrappers.",
+    "duplicate_owner": "a finding \u2014 \u00a74 re-derives live-work/exit logic beside `_population_has_live_work` and the existing empty-exit path, and \u00a75's seven-word table would sit beside the existing `DISPLAY` alias owner; both should extend the named owner rather than fork it.",
+    "interface_budget": "a finding \u2014 public_definitions 1682, cli_options 349, mcp_views 34, refusal_families 23; \u00a75 adds a state-word mapping table and states the run counters and \u00a73's roll-up read it, but names nothing it retires \u2014 `DISPLAY` at reckon/crew/ticker.py:298 is superseded by the seven words and is not named.",
+    "reuse_search": "a finding \u2014 the plan cites no existing mechanism for \u00a73 (\u00a72's row policy excepted): the per-session roll-up it \"computes nothing of its own\" for already exists as `_fleet_counts`, the settle predicate \u00a74 needs already exists as `_population_has_live_work`, and the state-word table \u00a75 adds already has an owner in `DISPLAY`.",
+    "thin_wrapper": "a finding \u2014 \u00a73 adds a second per-row status block beside the counter block `Ticker._stats` already renders from the same live classification, without saying why the existing cell cannot carry the node names."
+  },
+  "section_digests": {
+    "_document": "c31606cc455cd57732b1f14315954b644ca9b25b58806c22f1158e4d8402d2e5",
+    "s1": "52c4b79a6da0bc1e71b00748d6314e8a255bd5fa91b6acae30f6943e3c16cee5",
+    "s2": "eeca9b70e096de79d92846f4178d8f31832962cb9c7c73d122ac2a9e06546f32",
+    "s3": "8b189483de10634b3c7b012821a8c2482f0e7c977426bebd32632e6691b82d17",
+    "s4": "a14bad6ca3f57812abd67e82dfa8b4f92ab7060839c5bb856e65c6305d08a0eb",
+    "s5": "d288ba7aa9fa8e2dca05e915aea7ccd37b9a9c1017b74e2ab150e26d10e3f21e"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-12T21:09:44.498235+00:00"
+}
