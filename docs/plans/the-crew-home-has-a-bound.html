@@ -25,7 +25,7 @@
   <title>The Crew Home Has A Bound | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="27">
+<meta name="plan-version" content="28">
 <meta name="plan-modified" content="2026-10-12">
 </head>
 <body>
@@ -176,6 +176,9 @@
 <div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-10-11T06:10:00Z">
     <div class="r-comment-body"><p>§4 landed: a promoted run's captured file is bounded to <code>gc.run_file_max_mb</code>, keeping head, tail and sha256 (merge <code>6492218f8</code>); 0 added failures; review 103/120 after two repair rounds. §5, the operational reclaim, is now unblocked. It is held for the lead's go-ahead because <code>gc --apply</code> over the shared crew home cannot be undone. <a href="/reckon/evidence/archive/the-crew-home-has-a-bound-landed.html#s4-run-file-bound">evidence</a></p></div>
 </div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261011T223154203301-a-run-file-bound-writes-only-its-own-file" data-who="reckon-build" data-when="2026-10-11T22:40:53.678Z">
+    <div class="r-comment-body"><p>bound_run_files now decides on lstat: a symlink, a file with more than one hard link, and a declared gate log resolving outside the run directory are each reported with a reason and left untouched, a file with an execute bit or a NUL byte in its head is binary whatever its suffix, and the bound writes head+marker+tail to a temp file and os.replace&#x27;s it, catching an OSError per file so one failure leaves the rest bounded; tests/test_gc_bounds_a_run_file.py 8 passed, the three tests/test_fleet_supervisor*.py 33 passed, negative control (decide on stat instead of lstat) EXIT=1 with the symlink case failing.</p></div>
+</div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261010T230023876216-gc-reaches-every-crew-store" data-who="reckon-build" data-when="2026-10-10T23:40:27.524Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/the-crew-home-has-a-bound/gc-reaches-every-crew-store.html</p></div>
 </div>
@@ -198,7 +201,7 @@
     <div class="r-comment-body"><p>gc keeps a peer project's run directory — the unledgered sweep's known set is the union of the gc repository's own ledgered rows with every registered mount's, and it fails closed on an unreadable one; three new cases in tests/test_gc_reaches_every_crew_store.py (9 passed, EXIT=0) and tests/test_crew_gc.py (27 passed, EXIT=0); gc --apply from project A leaves project B's directory on disk, a repository that is not a registered mount spares its own ledgered directory, and a withheld row sets action to "withheld"; the declared own-ledgers-only mutation fails the two-project case and dropping the union fails the unregistered-repository case (both mutation logs EXIT=1).</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261011T215229406865-review-of-gc-keeps-every-project-run-directory" data-who="reckon-build" data-when="2026-10-11T22:04:19.615Z">
-    <div class="r-comment-body"><p>independent review of r-20261011T205927099279 §3&#x27;s follow-up repair (f96124f7a..4ba14caea) scores 115/120 — goal_fidelity 20, evidence 16, scope_discipline 20, durability 20, fit 19, reuse 20 — with one follow-on finding: the gate log header names rev f96124f7a while the run measured 9 tests that exist only from b1977c78e; the two prior-review follow-ons (withheld row&#x27;s action, own-project-not-a-mount) are both repaired and each carries a guard that reddens without it</p></div>
+    <div class="r-comment-body"><p>independent review of r-20261011T205927099279 §3's follow-up repair (f96124f7a..4ba14caea) scores 115/120 — goal_fidelity 20, evidence 16, scope_discipline 20, durability 20, fit 19, reuse 20 — with one follow-on finding: the gate log header names rev f96124f7a while the run measured 9 tests that exist only from b1977c78e; the two prior-review follow-ons (withheld row's action, own-project-not-a-mount) are both repaired and each carries a guard that reddens without it</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261011T002644790277-gc-sweeps-ledger-indexes" data-who="reckon-build" data-when="2026-10-11T01:11:49.247Z">
     <div class="r-comment-body"><p>crew gc now sweeps ledger indexes whose checkout is gone: each run index records the resolved ledger path it serves in its metadata table, and gc reports, and under --apply removes, every ledger-*.sqlite in the pick-input cache root whose recorded path no longer exists or which records no path and has not been opened for seven days, leaving picker-*.json inputs and any index a live process holds — the record sits at docs/evidence/fragments/the-crew-home-has-a-bound/gc-sweeps-ledger-indexes.html</p></div>
