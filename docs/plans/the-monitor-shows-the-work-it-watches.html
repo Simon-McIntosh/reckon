@@ -22,11 +22,11 @@
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-standalone" content="The lead&#x27;s 2026-10-12 requirements for the session-host pane, revising the start-row rule of the shipped a-follower-row-is-worth-a-wake; no live plan waits on it and it waits on none.">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;the-monitor-shows-the-work-it-watches#s5&quot;], &quot;s4&quot;: [&quot;the-monitor-shows-the-work-it-watches#s2&quot;], &quot;s5&quot;: [&quot;the-monitor-shows-the-work-it-watches#s2&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="12">
+<meta name="plan-version" content="13">
 <meta name="plan-modified" content="2026-10-13">
 </head>
 <body>
@@ -38,7 +38,7 @@
     <p>The lead's requirements, in their words: "it should not be overly verbose, but also not empty"; "I should be able to see all work active"; "the monitor should auto stop when there is no live work"; and "the monitor is for me too, I want to see what is going on". The pane has two readers, the coordinator and the lead. The policy that is right for waking the coordinator is not enough for the person watching.</p>
 
     <h2 id="s2">§2 — A run's start is one row on its own session's pane</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> The row policy in <code>reckon/crew/ticker.py</code> delivers one row when a run that the pane's own session dispatched starts working. The row names the run id, node, lane and model, and time budget. It revises the start-row rule of <code>a-follower-row-is-worth-a-wake</code> for the session's own runs only. A peer session's start, a bare re-announcement, an echo and a replay are still held, so nothing is added to a pane for work that is not its own.</p>
     <p><strong>Done when</strong> a new test file, <code>tests/test_a_pane_shows_its_own_starts.py</code>, passes:</p>
     <ul>
