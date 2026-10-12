@@ -1082,6 +1082,10 @@ CREW_VERBS_OUTSIDE_ORCHESTRATION = {
         "prints one state path for a consumer repository to call; an "
         "orchestrator reads state through the crew views, never by path"
     ),
+    ("crew", "admit"): (
+        "the fleet service that launches queued dispatches when the lane opens "
+        "a slot; the supervisor runs it, an orchestrator never calls it"
+    ),
 }
 
 

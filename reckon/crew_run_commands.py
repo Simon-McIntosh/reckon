@@ -2529,3 +2529,35 @@ def crew_repair_completion(project, write_changes, checkout_path, pretty):
         raise click.ClickException(str(exc)) from exc
     _emit_crew_result(report, pretty)
 
+
+@crew.command(name="admit")
+@click.option(
+    "--lane",
+    default="",
+    help="Lane whose queued dispatches are admitted; the default admits every lane.",
+)
+@click.option(
+    "--once",
+    is_flag=True,
+    help="Run a single admission pass and return instead of looping on a cadence.",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_admit(lane, once, pretty):
+    """Launch queued dispatches while the lane grants a slot.
+
+    One pass reads the fleet gate, then the queued run pointers, and launches
+    each in fair-share order through the same dispatch path a coordinator uses.
+    A held or paused gate launches nothing, and a launch the shared path
+    refuses leaves the request queued with the failure recorded. Declared as a
+    fleet service, the verb repeats its pass on a cadence until stopped;
+    ``--once`` is the single pass a caller drives directly.
+    """
+    from reckon.crew import queue_admission
+    from reckon.crew.node import CrewError
+
+    try:
+        result = queue_admission.admit_until_stopped(lane=lane, once=once)
+    except CrewError as exc:
+        raise click.ClickException(str(exc)) from exc
+    _emit({"ok": True, **result}, pretty)
+

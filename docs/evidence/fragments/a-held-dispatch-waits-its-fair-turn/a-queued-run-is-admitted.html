@@ -1,0 +1,22 @@
+<section id="a-queued-run-is-admitted" class="evidence-fragment">
+  <h2>A queued run is admitted</h2>
+  <p class="landing">
+    Added <code>reckon crew admit</code> (<code>reckon/crew/queue_admission.py</code>):
+    one admission pass reads the fleet gate and the queued pointers, ranks them by
+    <code>queue_order.admission_order</code>, and launches each in turn through the shared
+    <code>dispatch</code> path while the lane grants its session room. A held or paused gate
+    launches nothing; a launch the shared path refuses leaves the request queued with the
+    failure and its time recorded; a run the reaper marks <code>launch-failed</code> is
+    re-queued by the next pass. Declared as a fleet service the verb repeats on a cadence,
+    and <code>--once</code> drives a single pass.
+  </p>
+  <p>
+    Measure: <code>tests/test_a_queued_run_is_admitted.py</code> 7 passed (one slot launches
+    the highest-ranked queued run only; two racing passes launch each run once; a paused gate
+    launches nothing; a failed spawn leaves the pointer queued carrying the failure; a
+    <code>launch-failed</code> run is re-queued; a temporary services configuration declaring
+    the verb is accepted by the supervisor's reader; a launched run leaves the queued phase).
+    Negative control (launch without restoring the queued pointer) fails the failed-spawn case:
+    <code>negative-control-admit.log</code> EXIT=1.
+  </p>
+</section>
