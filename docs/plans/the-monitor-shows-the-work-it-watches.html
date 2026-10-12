@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-standalone" content="The lead&#x27;s 2026-10-12 requirements for the session-host pane, revising the start-row rule of the shipped a-follower-row-is-worth-a-wake; no live plan waits on it and it waits on none.">
-  <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;the-monitor-shows-the-work-it-watches#s2&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;deferred&quot;}">
+  <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;the-monitor-shows-the-work-it-watches#s2&quot;], &quot;s4&quot;: [&quot;the-monitor-shows-the-work-it-watches#s2&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="3">
 <meta name="plan-modified" content="2026-10-12">
 </head>
 <body>
@@ -62,14 +62,16 @@
     <p>Write paths: <code>reckon/crew/ticker.py</code>, <code>tests/test_a_pane_row_carries_the_live_rollup.py</code>. This section runs after §2, since both write <code>ticker.py</code>.</p>
 
     <h2 id="s4">§4 — The pane ends when no work is live</h2>
-<section data-reckon="section" data-id="s4" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="deferred" data-links=""></section>
-    <p><strong>Deliverable.</strong> When the session has no live run, the pane says so in one closing line and stops. The design is deferred to the lead's decision below. The session host exists so that a session does not spend a turn re-arming a follower, and Claude Code does not restart a plugin monitor that exits.</p>
-    <p><strong>Done when</strong> the decision is locked and a test drives the chosen design:</p>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> When the session has no live run, its follower child prints one idle line, <code>no live work in &lt;session&gt; since HH:MM</code>, and exits. The session host stays alive, and the pane's last line reads idle. When the session next dispatches, the request that dispatch already writes to the host's pipe starts a new follower child for that project and session. The new child replays nothing it has already printed and delivers the new run's start row. No turn is spent re-arming. The host itself still never exits on its own, because a plugin monitor that exits is never restarted in the session (decision <code>pane-end</code>). Claude Code therefore still lists the monitor as running, which this section accepts.</p>
+    <p><strong>Done when</strong> <code>tests/test_a_pane_settles_when_no_work_is_live.py</code> passes over a temporary host state directory:</p>
     <ul>
-      <li>The last live run settles and the closing line is delivered once.</li>
-      <li>The pane process ends, or its child does, as decided.</li>
-      <li>A later dispatch in the same session brings the pane back, by the decided route, with no row lost between.</li>
+      <li>When the last live run of session S settles, the idle line is delivered once and the follower child exits, while the host process stays alive.</li>
+      <li>A follower with a peer session's run still live does not settle.</li>
+      <li>A later request for S starts one new child, which delivers the next run's start row and replays no row the settled child already printed.</li>
+      <li>Two requests for S arriving together start one child.</li>
     </ul>
+    <p>The existing session-host and follower tests pass. The negative control, which restarts a settled child immediately as today's backoff does, fails the first case. It is logged under the run directory.</p>
     <div class="r-dec" data-key="pane-end" data-choice="">
       <p><strong>Decision: how the pane ends.</strong></p>
       <ul>
@@ -77,7 +79,7 @@
         <li><strong>Child settles.</strong> The follower child ends on a settled summary line, and the host stays and starts a new child when the session next dispatches. No turn is spent, but Claude Code still shows the monitor as running.</li>
       </ul>
     </div>
-    <p>Write paths: fixed when the decision is locked; expected <code>reckon/crew/session_host.py</code> and its tests.</p>
+    <p>Write paths: <code>reckon/crew/session_host.py</code>, <code>reckon/crew_follow_commands.py</code>, <code>tests/test_a_pane_settles_when_no_work_is_live.py</code>.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
@@ -88,6 +90,13 @@
     <p class="r-fu-outcome">The work lives in §2 and §3, which are implementable, with §3 wired after §2, and in §4, deferred on the pane-end decision. A seed followup naming no section hid the work from the roadmap.</p>
     </article>
 </section>
-  </main>
+  <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="pane-end" data-choice="child-settles" data-by="Simon McIntosh" data-when="2026-10-12T05:30:51+00:00">
+    <p class="r-dec-q">pane-end</p>
+    <p class="r-dec-rat">A plugin monitor that exits is never restarted in the session. Claude Code starts one only at session start or plugin reload (&#x27;always&#x27;), or the first time a named skill runs (&#x27;on-skill-invoke&#x27;), and no hook, skill or CLI command can restart it. So &#x27;host exits&#x27; would leave a resumed session with no pane. The host stays alive and the follower child settles on an idle line, and the next dispatch restarts the child through the host&#x27;s request pipe at no turn cost. The cost is that Claude Code still shows the monitor as running.</p>
+    </div>
+</section>
+</main>
 </body>
 </html>
