@@ -7,7 +7,7 @@
   <meta name="reckon-type" content="plan">
   <meta name="plan-slug" content="a-run-has-one-live-writer">
   <meta name="plan-title" content="A Run Has One Live Writer">
-  <meta name="plan-summary" content="Two nova incidents put a second writer in a run's tree: a worker outlived its supervisor, and a resume launched beside a live one. Each run gets one writer.">
+  <meta name="plan-summary" content="Two nova incidents put a second writer in a run&#x27;s tree: a worker outlived its supervisor, and a resume launched beside a live one. Each run gets one writer.">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="3.25">
@@ -26,6 +26,8 @@
   <title>A Run Has One Live Writer | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-10-12">
 </head>
 <body>
   <main class="plan-doc">
@@ -43,39 +45,59 @@
 
     <h2 id="s2">§2 — A worker never outlives its supervisor</h2>
 <section data-reckon="section" data-id="s2" data-effort-hours="1.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> First reproduce the polygon-moment-owner shape: a supervisor that receives SIGTERM while its worker is working, and a worker that has started children of its own. Establish from that reproduction why the worker survived, whether because it changed its process group, or the signal reached the supervisor alone, or the handler did not forward it. Then repair three things:</p>
+    <p><strong>What already exists.</strong> Most of the machinery this section needs is already in the code:</p>
     <ul>
-      <li>The supervisor's exit path ends the worker's whole process tree before it records the exit, and records which pids it ended.</li>
-      <li><code>crew stop</code> (<code>terminate</code>) ends every live descendant of the run's recorded supervisor and worker pids, plus any process whose working directory lies in the run's worktree. It lists each pid it signals, and reports any process still alive afterwards rather than returning ok.</li>
-      <li>A run whose recorded worker pid is still alive is never classified complete or scoring, so the review reflex cannot dispatch against a tree that is still moving.</li>
+      <li>The supervisor already escalates its direct worker to SIGKILL after <code>STOP_GRACE</code> (<code>reckon/crew/dispatch_launch.py</code>), and <code>tests/test_a_stopped_run_ends_its_supervisor.py</code> locks that in.</li>
+      <li><code>signal_worker</code> in <code>reckon/crew/routing.py</code> is the only function in the crew that sends a signal. Nine modules import it.</li>
+      <li>Descendants are enumerated by <code>_process_children</code> and <code>_live_descendant</code> in <code>reckon/crew/recovery_liveness.py</code>. Processes holding a path as their working directory are found by <code>_processes_holding</code> in <code>routing.py</code>.</li>
+      <li><code>tests/test_live_process_outranks_classification.py</code> already asserts that a live process outranks a manifest-derived classification, through <code>local_liveness</code> in <code>reckon/crew/recovery_classification.py</code>.</li>
     </ul>
+    <p><strong>Deliverable.</strong> First reproduce the polygon-moment-owner shape: a supervisor that receives SIGTERM while its worker is working, and a worker that has started children of its own. Against the machinery above, establish two things, and record both in the manifest:</p>
+    <ul>
+      <li>whether the direct worker or only its children survived;</li>
+      <li>which state let that run classify complete and then scoring while its worker lived, despite the existing precedence test.</li>
+    </ul>
+    <p>Then repair by extending those owners rather than adding a kill path beside them:</p>
+    <ul>
+      <li><code>signal_worker</code> gains the reach to end a pid's live descendants, and the processes holding the run's worktree as their working directory, through the existing enumerators. It returns the pids it ended. Every one of its callers inherits this, not <code>terminate</code> alone.</li>
+      <li>The supervisor's exit path and <code>crew stop</code> (<code>terminate</code> in <code>reckon/crew/dispatch_sessions.py</code>) end the run's tree through it, and record the pids ended. <code>crew stop</code> reports any process still alive afterwards, rather than returning ok.</li>
+      <li><code>local_liveness</code> is extended for the state the reproduction named, so a run whose worker lives is never classified complete or scoring.</li>
+    </ul>
+    <p>No new public definition or refusal family is added; <code>signal_worker</code>'s reach is the only interface that grows.</p>
     <p><strong>Done when</strong> <code>tests/test_a_worker_never_outlives_its_supervisor.py</code> passes, using real child processes in a temporary tree:</p>
     <ul>
       <li>SIGTERM to the supervisor leaves no worker and no worker child alive, and the exit record names the pids ended.</li>
       <li><code>crew stop</code> on a run whose worker was reparented to init ends that worker and its children, and names them.</li>
-      <li>A run whose supervisor has exited while its worker pid lives is not classified complete or scoring.</li>
+      <li>A run in the state the reproduction named, whose supervisor has exited while its worker pid lives, is not classified complete or scoring.</li>
     </ul>
     <p>The negative control, which signals the supervisor pid alone, fails the first case. It is logged under the run directory. The reproduction's finding (why the worker survived) is recorded in the manifest. The test files that import <code>dispatch_launch</code> or exercise <code>terminate</code> pass. Every process the tests start is ended by the tests themselves, and is checked by pid afterwards.</p>
-    <p>Write paths: <code>reckon/crew/dispatch_launch.py</code>, <code>reckon/crew/dispatch_sessions.py</code> (<code>terminate</code>), <code>reckon/crew/recovery_classification.py</code>, <code>tests/test_a_worker_never_outlives_its_supervisor.py</code>.</p>
+    <p>Write paths: <code>reckon/crew/routing.py</code> (<code>signal_worker</code>), <code>reckon/crew/dispatch_launch.py</code>, <code>reckon/crew/dispatch_sessions.py</code> (<code>terminate</code>), <code>reckon/crew/recovery_classification.py</code>, <code>tests/test_a_worker_never_outlives_its_supervisor.py</code>. <code>routing.py</code> is also written by the in-flight run <code>a-worktree-release-is-whole</code>, so this section waits for that run to merge.</p>
 
     <h2 id="s3">§3 — A resume never launches beside a live attempt</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> <code>crew resume</code> and the wait sweep's auto-resume both check, under the run's pointer lock, whether a supervisor or worker for the run is alive.</p>
+    <p><strong>What already exists.</strong> The guards this section needs are already in the code. <code>resume_plan</code> in <code>reckon/crew/dispatch_sessions.py</code> refuses a resume while the run "still has a live process", and <code>_launcher_refusal</code> in <code>reckon/crew/resumption.py</code> holds the same guard for the dry run. <code>_observed_end_refusal</code> in <code>resumption.py</code> refuses a sweep lift that has not observed the attempt end. Three test files, landed 2026-10-03, lock these in: <code>tests/test_resume_refuses_a_live_worker.py</code>, <code>tests/test_resume_sweep_needs_an_observed_death.py</code> and <code>tests/test_direct_resume_needs_an_observed_death.py</code>. Yet on 2026-10-12, attempt 7 launched beside attempt 6.</p>
+    <p><strong>Deliverable.</strong> First reproduce that sequence: the sweep's auto-resume launches an attempt, and a coordinator's <code>crew resume</code> follows a minute later. Establish why <code>resume_plan</code>'s check did not fire, and record it in the manifest. Candidates include:</p>
     <ul>
-      <li>If one is, a coordinator's <code>crew resume</code> does not launch. It refuses, naming the live attempt and its pids. Its advice is kept in the run directory as pending advice, and the live attempt's next resume delivers it, so the text is never lost.</li>
-      <li>The sweep never resumes a run whose attempt is alive.</li>
-      <li>A launch that ends before it holds the session (as with the "active writer" refusal) records its own attempt's failure, and never overwrites the live attempt's pointer fields or its classification.</li>
+      <li>a pointer read before the new attempt's pids were recorded;</li>
+      <li>a check made outside the run's pointer lock;</li>
+      <li>a liveness read keyed on the previous attempt's pids.</li>
     </ul>
-    <p><strong>Done when</strong> <code>tests/test_a_resume_never_launches_beside_a_live_attempt.py</code> passes:</p>
+    <p>Then repair it inside <code>resume_plan</code>'s own check, moving the check under the pointer lock if the window is the cause, so that no second refusal is written:</p>
     <ul>
-      <li>A <code>crew resume</code> while the run's supervisor pid is alive launches nothing, exits non-zero naming the live attempt, and leaves its advice stored.</li>
+      <li>The refused resume keeps its advice text in the run directory beside the existing resume records. The existing refusal names that file, and the live attempt's next resume delivers it, so the text is never lost.</li>
+      <li>A launch that ends before it holds the session (as with the "active writer" refusal) records its own attempt's failure. It never overwrites the live attempt's pointer fields or its classification.</li>
+    </ul>
+    <p>No refusal family is added. The stored advice file is the one new piece of state, and the manifest says why the existing resume record cannot carry it.</p>
+    <p><strong>Done when</strong> the existing <code>tests/test_resume_refuses_a_live_worker.py</code> and <code>tests/test_resume_sweep_needs_an_observed_death.py</code> are extended with these cases, and pass:</p>
+    <ul>
+      <li>The reproduced sequence: after an auto-resume launches an attempt, a <code>crew resume</code> launches nothing, exits non-zero naming the live attempt and its pids, and leaves its advice stored.</li>
       <li>The next resume of that run carries the stored advice.</li>
       <li>A sweep pass over a run whose attempt is alive resumes nothing.</li>
       <li>A launch failing on an active-writer refusal leaves the live attempt's pointer phase and pids unchanged.</li>
     </ul>
-    <p>The negative control, which drops the liveness check from <code>crew resume</code>, fails the first case. It is logged under the run directory. The test files that import <code>resumption</code> or <code>dispatch_sessions</code> pass.</p>
-    <p>Write paths: <code>reckon/crew/resumption.py</code>, <code>reckon/crew/dispatch_sessions.py</code>, <code>tests/test_a_resume_never_launches_beside_a_live_attempt.py</code>. It runs after §2, which also writes <code>dispatch_sessions.py</code>.</p>
-    <section data-reckon="followups"></section>
+    <p>The negative control, which restores the cause the reproduction named, fails the reproduced case. It is logged under the run directory. The test files that import <code>resumption</code> or <code>dispatch_sessions</code> show no added failure against base.</p>
+    <p>Write paths: <code>reckon/crew/resumption.py</code>, <code>reckon/crew/dispatch_sessions.py</code>, <code>tests/test_resume_refuses_a_live_worker.py</code>, <code>tests/test_resume_sweep_needs_an_observed_death.py</code>. It runs after §2, which also writes <code>dispatch_sessions.py</code>.</p>
+    
   </main>
 </body>
 </html>
