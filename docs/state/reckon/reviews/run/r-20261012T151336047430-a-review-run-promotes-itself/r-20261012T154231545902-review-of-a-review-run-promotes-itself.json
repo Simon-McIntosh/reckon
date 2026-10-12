@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/resumption.py:1398",
+    "reckon/crew/recovery.py:193"
+  ],
+  "completed_at": "2026-10-12T15:58:03.203Z",
+  "dispatched_at": "2026-10-12T15:42:55Z",
+  "findings": [
+    {
+      "file": "head-full.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the recorded head-arm gate log declares rev 65f1b1d (the base sha) in its header, so the related-batch result it carries cannot be tied to the head commit f60c9416f; the done_when's no-added-failure-against-base claim therefore rests on logs whose head arm is unlabelled."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read the single commit f60c9416f against base 65f1b1d; it adds promote_review_run_itself, wires it into the review branch of dispatch_awaiting_reviews, widens the review skip from _is_review_node to _is_review_run, records self_promoted and review_self_refused on the sweep result, and adds the review-self value to ledger.py, all inside the declared scope.",
+    "done_when": "the done_when names tests/test_a_review_run_promotes_itself.py in a temporary crew home and repository plus a logged negative control; the manifest records 4 passed and negative-control.log shows EXIT=1, and I re-ran the gate at HEAD (4 passed) and the recovery_review_acceptance-importing batch (90 passed) green.",
+    "goal": "the node's goal is that a review-role run promotes itself with promoted_by review-self once its manifest is complete, its worker and supervisor have exited, and its stored record parses; reckon/crew/recovery_review_acceptance.py:248 promote_review_run_itself implements exactly that and the gate run at HEAD passes its four cases.",
+    "manifest": "read; it reports the gate 4 passed, related batch 121 passed, negative control EXIT=1, and names head-full.log and head.log.",
+    "write_paths": "read the manifest's five declared paths; every path in the diff (recovery_review_acceptance.py, ledger.py, test_a_review_run_promotes_itself.py, the fragment) is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_review_run_promotes_itself.py:207 fails the live-worker case when the exited-worker guard is dropped, shown by negative-control.log EXIT=1, and test_review_role_is_not_reviewed.py:229 fails if the skip reverts to a prefix-only test.",
+    "evidence": "the gate is real and green at HEAD, but both run-directory logs name rev 65f1b1d (the base) on head-full.log:1, so the head arm's revision is not recorded and a reader cannot confirm which revision its 121 passed measured.",
+    "fit": "reckon/crew/recovery_review_acceptance.py:248 follows the surrounding return-a-refusal-dict idiom and added lines carry no plan label or section reference.",
+    "goal_fidelity": "reckon/crew/recovery_review_acceptance.py:248 gates promotion on _complete_manifest_write_time, record_process_alive, _run_exit_record and _delivered_review_record exactly as the goal states.",
+    "reuse": "reckon/crew/recovery_review_acceptance.py:335 composes the existing promotion.complete call rather than forking a promotion path, and reuses _delivered_review_record, _run_exit_record, record_process_alive and _is_review_run from their owners.",
+    "scope_discipline": "every changed path (reckon/crew/recovery_review_acceptance.py, reckon/ledger.py, tests/test_a_review_run_promotes_itself.py, the fragment) is inside the five declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a review-role run promotes itself with promoted_by review-self once its manifest is complete, its worker and supervisor have exited, and its stored record parses; reckon/crew/recovery_review_acceptance.py:248 promote_review_run_itself implements exactly that and the gate run at HEAD passes its four cases.\nVERDICT done_when: the done_when names tests/test_a_review_run_promotes_itself.py in a temporary crew home and repository plus a logged negative control; the manifest records 4 passed and negative-control.log shows EXIT=1, and I re-ran the gate at HEAD (4 passed) and the recovery_review_acceptance-importing batch (90 passed) green.\nVERDICT write_paths: read the manifest's five declared paths; every path in the diff (recovery_review_acceptance.py, ledger.py, test_a_review_run_promotes_itself.py, the fragment) is inside them.\nVERDICT manifest: read; it reports the gate 4 passed, related batch 121 passed, negative control EXIT=1, and names head-full.log and head.log.\nVERDICT diff: read the single commit f60c9416f against base 65f1b1d; it adds promote_review_run_itself, wires it into the review branch of dispatch_awaiting_reviews, widens the review skip from _is_review_node to _is_review_run, records self_promoted and review_self_refused on the sweep result, and adds the review-self value to ledger.py, all inside the declared scope.\nCALL_SITES: reckon/crew/resumption.py:1398, reckon/crew/recovery.py:193\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_acceptance.py:248 gates promotion on _complete_manifest_write_time, record_process_alive, _run_exit_record and _delivered_review_record exactly as the goal states.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate is real and green at HEAD, but both run-directory logs name rev 65f1b1d (the base) on head-full.log:1, so the head arm's revision is not recorded and a reader cannot confirm which revision its 121 passed measured.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every changed path (reckon/crew/recovery_review_acceptance.py, reckon/ledger.py, tests/test_a_review_run_promotes_itself.py, the fragment) is inside the five declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_review_run_promotes_itself.py:207 fails the live-worker case when the exited-worker guard is dropped, shown by negative-control.log EXIT=1, and test_review_role_is_not_reviewed.py:229 fails if the skip reverts to a prefix-only test.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/recovery_review_acceptance.py:248 follows the surrounding return-a-refusal-dict idiom and added lines carry no plan label or section reference.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/recovery_review_acceptance.py:335 composes the existing promotion.complete call rather than forking a promotion path, and reuses _delivered_review_record, _run_exit_record, record_process_alive and _is_review_run from their owners.\nFINDING head-full.log:1 follow-on: the recorded head-arm gate log declares rev 65f1b1d (the base sha) in its header, so the related-batch result it carries cannot be tied to the head commit f60c9416f; the done_when's no-added-failure-against-base claim therefore rests on logs whose head arm is unlabelled.\n",
+  "review_run_id": "r-20261012T154231545902-review-of-a-review-run-promotes-itself",
+  "reviewed_base_sha": "65f1b1d94ee98dd298c7fdbc5f0c4ed0efb407dc",
+  "reviewed_head_sha": "f60c9416f8633407b70ed3bb0d084c7cae8dcb08",
+  "reviewed_run_id": "r-20261012T151336047430-a-review-run-promotes-itself",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-12T20:31:25.727304+00:00",
+  "total": 106
+}
