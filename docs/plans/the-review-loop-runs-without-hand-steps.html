@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="the-review-loop-runs-without-hand-steps">
+  <meta name="plan-title" content="The Review Loop Runs Without Hand Steps">
+  <meta name="plan-summary" content="Four hand steps in the review loop, measured 2026-10-12, become mechanical: self-promoting reviews, test-only review, evidence checks, remote producers.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="4.25">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-sprint" content="S26">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-north-star" content="unattended-execution">
+  <meta name="plan-standalone" content="Lead rulings of 2026-10-12 that amend landed review, promotion and hook mechanisms; no live plan waits on these sections and they wait on none.">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <title>The Review Loop Runs Without Hand Steps | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: the overnight run of 2026-10-12 needed a coordinator at four points it should not</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-status="done" data-links=""></section>
+    <p>The health-review session (<code>health-review-1010</code>) ran three repairs through review and merge overnight. The review reflex itself worked: each repair was reviewed automatically within minutes of finishing, and a moved head earned a light re-review within a minute. Four other points needed a person, or reported something false.</p>
+    <table>
+      <thead><tr><th>Point</th><th>Measured</th><th>Where it lives</th></tr></thead>
+      <tbody>
+        <tr><td>A finished review run waits for a hand promotion</td><td>Three stored, parsed reviews sat unpromoted. A dispatch refused with exit 6, <code>unreconciled-runs</code>, until each was promoted by hand with <code>--gate not-run</code>.</td><td>The live classifier marks a review run <code>promotable</code> with "promote the completed review run once its verdict is read". <code>accept_clean_review</code> in <code>reckon/crew/recovery_review_acceptance.py</code> promotes reviewed runs only.</td></tr>
+        <tr><td>A test-only change is not reviewed</td><td>In <code>a-moved-head-is-reviewed</code> §2, six of nine moved heads that earned no re-review were this designed skip. The lead was asked whether test-only runs should skip review.</td><td><code>review_tier</code> in <code>reckon/review_tiers.py</code> returns <code>none</code> whenever no runtime source changed, tests included.</td></tr>
+        <tr><td>Evidence defects reach review instead of being refused at the start</td><td>Three review findings were mechanical. A source comment cited a plan section (<code>§9</code>). A gate log carried no <code>EXIT=</code> line. A gate log's command line was abbreviated (<code>&lt;five tests&gt;</code>).</td><td><code>audit_manifest</code> in <code>reckon/crew/reports.py</code>, which <code>reckon crew check-manifest</code> calls.</td></tr>
+        <tr><td>The obligations hook says "no producer" while one publishes</td><td>Every prompt of the session carried "not current: no producer". Meanwhile the reckon producer, seated on another node (<code>98dci4-clu-2018</code>), published every transition, and <code>crew(view="live")</code> reported it alive.</td><td><code>_records_the_live_producer</code> in <code>reckon/crew/obligation_snapshot.py</code> tests the recorded pid on the local host only.</td></tr>
+      </tbody>
+    </table>
+    <p>The lead ruled on 2026-10-12 to make all four mechanical. Each section below amends one landed mechanism and adds no new verb.</p>
+
+    <h2 id="s2">§2 — A review run promotes itself once its record is stored</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> A run in the review role promotes itself, with <code>promoted_by: review-self</code> on its ledger row, when all of these hold:</p>
+    <ul>
+      <li>its manifest reads <code>complete</code>;</li>
+      <li>its worker and supervisor have exited;</li>
+      <li>the record it was dispatched to store is on disk with a status the readers act on.</li>
+    </ul>
+    <p>This covers run reviews, plan reviews and code reviews. The review's record is its whole deliverable, so promoting the run reads nothing a coordinator would add. The reviewed run is untouched: its acceptance stays scoped to merged runs, as the lead ruled for <code>a-review-is-sized-to-its-risk</code> §4.</p>
+    <p>The promotion is taken by the same pass that runs <code>accept_clean_review</code>, and reuses its promotion call. A review run whose record is missing or unparsed is left for the coordinator, with the reason recorded.</p>
+    <p><strong>Done when</strong> <code>tests/test_a_review_run_promotes_itself.py</code> passes in a temporary crew home and repository:</p>
+    <ul>
+      <li>A complete review run with an exited worker and a stored parsed record is promoted with <code>promoted_by: review-self</code>, and no longer counts as unreconciled at dispatch.</li>
+      <li>One whose worker pid is alive is not promoted.</li>
+      <li>One with no stored record is not promoted, and its reason is recorded.</li>
+      <li>An implement run is never promoted by this path.</li>
+      <li>The negative control, which drops the exited-worker condition, fails the live-worker case. It is logged under the run directory.</li>
+      <li>The existing tests that import <code>recovery_review_acceptance</code> pass.</li>
+    </ul>
+    <p>Write paths: <code>reckon/crew/recovery_review_acceptance.py</code>, <code>tests/test_a_review_run_promotes_itself.py</code>.</p>
+
+    <h2 id="s3">§3 — A test-only change earns a light review</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> The tiers in <code>review_tier</code> (<code>reckon/review_tiers.py</code>) change for a run whose changed paths include test source but no runtime source. Such a run earns the <code>light</code> tier, not <code>none</code>. A weakened, skipped or deleted assertion is a change to what the suite protects, and only a reader can see it. A run that changes only plans, evidence, research, figures or state keeps <code>none</code>. A run that changes runtime source keeps today's <code>light</code>/<code>full</code> rule.</p>
+    <p><strong>Done when</strong> <code>tests/test_a_test_only_change_earns_a_light_review.py</code> passes:</p>
+    <ul>
+      <li>A run changing only <code>tests/…</code> is <code>light</code>.</li>
+      <li>A run changing only <code>docs/…</code> is <code>none</code>.</li>
+      <li>A run changing <code>reckon/…</code> and its test keeps the tier the current rule gives.</li>
+      <li>Existing tests that assert <code>none</code> for a test-only change are updated to the new tier, never deleted, each named in the manifest.</li>
+      <li>The test files that import <code>review_tiers</code> pass.</li>
+      <li>The negative control, which restores <code>none</code> for test source, fails the first case. It is logged under the run directory.</li>
+    </ul>
+    <p>Write paths: <code>reckon/review_tiers.py</code>, <code>tests/test_a_test_only_change_earns_a_light_review.py</code>, plus the existing test files whose test-only assertion changes, each named at dispatch.</p>
+
+    <h2 id="s4">§4 — A manifest's evidence is checked before promotion</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> <code>audit_manifest</code> in <code>reckon/crew/reports.py</code>, which <code>reckon crew check-manifest</code> calls, gains two findings.</p>
+    <ul>
+      <li><strong>Gate logs.</strong> Every file named in <code>test_logs</code> must carry its literal command near its head and end with an <code>EXIT=&lt;n&gt;</code> line. A command abbreviated with an angle-bracket placeholder is refused.</li>
+      <li><strong>Plan labels.</strong> Added lines in production Python source (not under <code>tests/</code>) whose comment or docstring text carries a plan-section reference (<code>§</code> followed by a digit) are refused. Each finding names the file and line.</li>
+    </ul>
+    <p>A worker runs <code>check-manifest</code> before it finishes, so it sees these findings while it can still fix them. Test source is exempt from the plan-label check, because fixtures legitimately carry section identifiers as data.</p>
+    <p><strong>Done when</strong> <code>tests/test_a_manifest_evidence_is_checked.py</code> passes:</p>
+    <ul>
+      <li>A gate log with no <code>EXIT=</code> line is a finding.</li>
+      <li>So is a log whose command reads <code>pytest -q &lt;five tests&gt;</code>.</li>
+      <li>So is an added production comment carrying <code>§9</code>.</li>
+      <li>An added test fixture string carrying <code>§3</code> is not.</li>
+      <li>A well-formed manifest has no findings.</li>
+      <li>The test files that call <code>audit_manifest</code> or <code>check-manifest</code> pass.</li>
+      <li>The negative control, which drops the <code>EXIT=</code> check, fails its case. It is logged under the run directory.</li>
+    </ul>
+    <p>Write paths: <code>reckon/crew/reports.py</code>, <code>tests/test_a_manifest_evidence_is_checked.py</code>.</p>
+
+    <h2 id="s5">§5 — A producer seated on another node reads as live</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> <code>freshness</code> in <code>reckon/crew/obligation_snapshot.py</code> judges a snapshot whose recorded producer host differs from the local host by that producer's lease, not by a local pid check. It uses the lease reading <code>producer_lease_is_live</code> already exposes. A live lease means the producer is live, and the hook then reports staleness or freshness as usual. A lapsed lease still reads as <code>no-producer</code>. A producer on the local host is judged as today, by pid and start time.</p>
+    <p><strong>Done when</strong> <code>tests/test_a_remote_producer_reads_as_live.py</code> passes:</p>
+    <ul>
+      <li>A snapshot naming a producer on another host with a live lease is not <code>no-producer</code>.</li>
+      <li>The same snapshot with a lapsed lease is <code>no-producer</code>.</li>
+      <li>A local producer whose pid is dead is <code>no-producer</code>.</li>
+      <li>The test files that import <code>obligation_snapshot</code> or <code>reckon/hooks/coordinator_obligations.py</code> pass.</li>
+      <li>The negative control, which judges every producer by local pid, fails the remote-live case. It is logged under the run directory.</li>
+    </ul>
+    <p>Write paths: <code>reckon/crew/obligation_snapshot.py</code>, <code>tests/test_a_remote_producer_reads_as_live.py</code>.</p>
+
+    <section data-reckon="followups">
+      <article class="r-fu" data-id="f-trlrwhs-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-build (health-review-1010)" data-written-at="2026-10-12" data-recommends-skill="/reckon-build the-review-loop-runs-without-hand-steps" data-resolved-at="" data-resolved-by="">
+        <h4 class="r-fu-title">Build §2 to §5</h4>
+        <div class="r-fu-body"><p>Four independent nodes, with disjoint write paths. Each is reviewed and merged on its own.</p></div>
+        <pre class="r-fu-prompt">/reckon-build the-review-loop-runs-without-hand-steps</pre>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
