@@ -1,9 +1,9 @@
-"""The fleet counter's blocked bucket says when its number is an infrastructure fault.
+"""The fleet counter's halted bucket says when its number is an infrastructure fault.
 
 A run whose launcher exited before writing any stream record never reached a
 model, so it is an infrastructure fault rather than a worker turn wanting a
 decision. The counter block keeps four cells, so that run's number arrives under
-the blocked bucket, which leaves the row's reason clause as the only place the
+the halted bucket, which leaves the row's reason clause as the only place the
 line can say what kind of stop it is. These cases read the fleet the way a
 follower does, through the producer's own fleet partition and transition
 builder, so the counts on each row are the counts a pane receives.
@@ -26,11 +26,11 @@ WIDTH = 180
 # today: a fifth cell or a wider label fails on the literal. Each cell is two
 # right-aligned digits and its letter, one space between cells; a count above
 # two digits widens its own cell, which is why the counts here stay single.
-BLOCK = " 1w  2b  0u  1q"
+BLOCK = " 1w  2h  0d  1W"
 BLOCK_WIDTH = 15
 
 # The same block for a reading with no launch-failed run in it.
-CONTROL_BLOCK = " 1w  1b  0u  1q"
+CONTROL_BLOCK = " 1w  1h  0d  1W"
 
 # A verbatim classifier cause for a backend that was not on the path, and an
 # ordinary blocked worker's own reason: the launch cause names the launcher as
@@ -45,7 +45,7 @@ BLOCK_DETAIL = (
 )
 
 # What a launch-failed row renders when its record carries no cause of its own.
-# The clause names the fault itself rather than leaving a blocked number
+# The clause names the fault itself rather than leaving a halted number
 # explained by nothing; the case asserts the leading words, which survive the
 # elision a pane's margin applies.
 FAULT_CLAUSE_PREFIX = "the launch failed before any turn"
@@ -128,16 +128,16 @@ def _launch_failed_and_blocked() -> dict[str, str]:
 
 
 def test_launch_failed_row_names_the_launch_failure_the_number_counts() -> None:
-    """The row a launch failure produces explains the blocked number it raises."""
+    """The row a launch failure produces explains the halted number it raises."""
     rows = _launch_failed_and_blocked()
 
-    # The number is right and is unchanged: both stops arrive under blocked, and
+    # The number is right: both stops arrive under halted, and
     # the four-cell block says so on every row of the reading.
     assert BLOCK in rows["r-launch"]
     assert BLOCK in rows["r-blocked"]
 
     # The launch failure's own row names the launcher, so a reader who sees the
-    # blocked number learn from the line what kind of stop part of that number
+    # halted number learn from the line what kind of stop part of that number
     # is. The classifier's cause travels to the pane rather than being dropped.
     launch_clause = rows["r-launch"][rows["r-launch"].index(BLOCK) + BLOCK_WIDTH :]
     assert "launch" in launch_clause.lower()
@@ -163,7 +163,7 @@ def test_the_counter_block_keeps_four_cells_and_its_width() -> None:
 
     # Four cells and three single-space gaps, at the width the module states
     # for the block: the number's bucket layout did not move to carry the fault.
-    assert re.findall(r"\d[wbuq]", launch) == ["1w", "2b", "0u", "1q"]
+    assert re.findall(r"\d[whdW]", launch) == ["1w", "2h", "0d", "1W"]
     assert BLOCK in launch
     assert launch.count("·") == 0
     assert len(BLOCK) == BLOCK_WIDTH == STATS
@@ -199,7 +199,7 @@ def test_a_reading_without_a_launch_failure_names_no_launch_fault() -> None:
 def test_a_launch_failure_without_a_recorded_cause_still_names_the_fault() -> None:
     """A record that carries the state and no cause still explains its number.
 
-    The state is reachable without a cause, and a blocked number rendering no
+    The state is reachable without a cause, and a halted number rendering no
     reason is the defect this repair exists to close, so the row names the fault
     itself rather than depending on the classifier's sentence being present.
     """
@@ -208,11 +208,11 @@ def test_a_launch_failure_without_a_recorded_cause_still_names_the_fault() -> No
     )
 
     row = rows["r-launch"]
-    assert " 0w  1b  0u" in row
+    assert " 0w  1h  0d" in row
     assert "launch" in row.lower()
     assert FAULT_CLAUSE_PREFIX in row
 
 
-def test_the_launch_failure_is_still_counted_under_the_blocked_bucket() -> None:
-    """The classification and the count are unchanged; only the line changed."""
-    assert ticker_module._bucket_of("launch-failed", "launch-failed") == "blocked"
+def test_the_launch_failure_is_still_counted_under_the_halted_bucket() -> None:
+    """A launch failure contributes to the pane's halted count."""
+    assert ticker_module._bucket_of("launch-failed", "launch-failed") == "halted"
