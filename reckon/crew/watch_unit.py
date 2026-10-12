@@ -140,6 +140,24 @@ def _stream_says_alive(record: Mapping[str, Any], project: str | None) -> bool:
     return bool(name) and _seat_stream_fresh(name, record)
 
 
+def seat_names_a_live_foreign_producer(project: str) -> bool:
+    """Report whether a project's seat names a foreign host still producing.
+
+    A reader on the seat's own host cannot read a foreign producer's process
+    table, so the two facts the shared home carries are the ones it has: the
+    seat names a host other than this one, and that seat's transition stream
+    moved within its stall window. Both together are a producer still at work
+    elsewhere; either alone is not, because a stale-or-absent stream marks a
+    foreign producer no more alive than a local dead pid does.
+    """
+    try:
+        with watch_lock_path(project).open("rb") as handle:
+            record = _read_watch_record(handle)
+    except OSError:
+        return False
+    return _seat_names_a_foreign_host(record) and _seat_stream_fresh(project, record)
+
+
 def watch_state(project: str, *, session: str | None = None) -> dict[str, Any]:
     """Return the paste-ready arming line and process-backed watcher liveness."""
     arming_line = _watch_arming_line(project)
