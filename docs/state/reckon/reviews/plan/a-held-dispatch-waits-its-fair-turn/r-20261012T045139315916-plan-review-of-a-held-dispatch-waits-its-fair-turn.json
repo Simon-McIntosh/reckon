@@ -1,0 +1,63 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-12T04:57:08.895Z",
+  "dispatched_at": "2026-10-12T04:52:08Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-held-dispatch-waits-its-fair-turn.html:67",
+      "id": "reasoning-1",
+      "reason": "the node's mechanism contradicts its own done-when, so a builder reusing the dispatch path as written either fails the test (pointer not queued) or silently loses the queued run; the plan must specify that the drainer captures the launch failure and rewrites the pointer back to `queued` (with the failure recorded), rather than inheriting the coordinator path's terminal rollback.",
+      "text": "\u00a74 says the drainer \"admits the highest-ranked entry by launching that run through the same dispatch path a coordinator uses\" and that \"A launch that fails leaves the pointer queued with the failure recorded\" (repeated in done-when bullet 3, line 72), but the shared dispatch path does neither thing: on a spawn failure it rolls back with `_release_launch_claim(run_id)`, which unlinks the pointer and `rmtree`s the run directory (`reckon/crew/dispatch_claims.py:619`), and a post-spawn failure with no manifest raises `_publish_stored_phase`, which sets `phase = \"launch-failed\"` and stops further lifting (`reckon/crew/dispatch_launch.py:328-337`, `LAUNCH_FAILED_PHASE = \"launch-failed\"`). A test driving the drainer over a queued pointer would therefore observe the pointer gone or `launch-failed`, never \"queued\", and the queued request the operator is waiting on would be destroyed rather than retained",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "b39cbb8593f33ea8625606432d61bc58a06cf31f3f9f65987819bf36445d9cd1",
+  "plan_slug": "a-held-dispatch-waits-its-fair-turn",
+  "plan_version": 19,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-12T05:02:56.260031+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-12T05:02:56.260031+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-held-dispatch-waits-its-fair-turn.v19.json",
+  "review_run_id": "r-20261012T045139315916-plan-review-of-a-held-dispatch-waits-its-fair-turn",
+  "reviewed_blob_sha": "344d2c343028ca298269e44bc6b82d8e74a237cd",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the commands \u00a74 distinguishes resolve: `reckon crew drain` is the session-closure report (`reckon/crew_run_commands.py:929`), `reckon crew recover --dispatch-reviews` launches reviews (`reckon/crew/recovery_watch.py:2352`), the fleet services configuration exists (`reckon/crew/fleet_supervisor.py:43`), and both launch-phase words are in the pointer vocabulary (`starting` in `_PRE_SPAWN_PHASES` at `reckon/crew/recovery_liveness.py:48`, written at `reckon/crew/dispatch.py:1459`; `working` written by the supervisor/observer).",
+    "done_when": "pass \u2014 \u00a74's four bullets are measurable and each carries a control: \"and no other\" (bullet 1), the two-drainer race (bullet 2), \"a paused fleet gate launches nothing\" (bullet 3), and the follower's report of a run the coordinator launched itself as the comparison for the phase transition (bullet 4).",
+    "evidence_paths": "pass \u2014 \u00a74 claims no log path, and none it names is a scratchpad or node-local path; its tests sit under `tests/` and its landed record under `docs/evidence/archive/`.",
+    "naming": "pass \u2014 \u00a74 introduces `admit`, `--lane`, `--once`; no plan label, stage name, ticket or version reaches a symbol or comment.",
+    "reasoning": "a finding \u2014 \u00a74 states a failed launch \"leaves the pointer queued with the failure recorded\" while launching \"through the same dispatch path a coordinator uses\"; that path's refusal rollback unlinks the run's pointer (and removes its run directory), so the stated mechanism cannot produce the plan's own done-when.",
+    "single_goal": "pass \u2014 \u00a74 has one deliverable, the drainer that launches queued work; the `admit` verb and the temporary services config are its means, not a second goal.",
+    "wiring": "pass \u2014 \u00a74's dependencies are stated in the open followup (`f-ahdwft-build-locked`: \"\u00a74 needs both\" \u00a72 and \u00a73) and its declared predecessor resolves: `docs/plans/the-local-lane-is-the-default.html` exists."
+  },
+  "section_digests": {
+    "_document": "398ad37c8fa14bcc673d4343a2d721bb121e0748a3d62bb65eaa40208d76d93e",
+    "s1": "e09f72c38fa12dd06b1fede9137b6a8731c7f42dad95ea4d7873e48b6bcebc93",
+    "s2": "c37ed4ecb2dad1331b0b031fb8351608243790308312236d375bede3594285b7",
+    "s3": "ef687123318fac196bded366330cf2e92b586c4991b5c1cc8670f228182f916c",
+    "s4": "3fe85745b39d9dfd7111c6b18708b59a1c25bd7ec1cd8ebdb5416c4e9529186f",
+    "s5": "4b674f96924c3dbfde217945d16c606df376d034dc060f02360a4336412e74f8",
+    "s6": "9e35fc2341a06de64fed9ff7f176a0e83b22c1482c1b5a04a5539b6e4c07aab4",
+    "s7": "764a72dad2d59bddd4d3b1209f07c0c210ff6c46cd14147d4bcc7ffe9fa9426d",
+    "s8": "1b92313fdf672f4b813b45aa8e26f1304ca363cdc5a4d1752238f794a2019e27"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-12T05:02:32.761259+00:00"
+}
