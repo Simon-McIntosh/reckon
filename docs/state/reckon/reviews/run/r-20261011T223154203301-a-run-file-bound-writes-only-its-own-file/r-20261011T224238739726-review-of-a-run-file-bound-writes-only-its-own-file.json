@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/routing.py:garbage_collect"
+  ],
+  "completed_at": "2026-10-11T22:49:07.071Z",
+  "dispatched_at": "2026-10-11T22:43:04Z",
+  "findings": [
+    {
+      "file": "tests/test_gc_bounds_a_run_file.py",
+      "line": "286",
+      "severity": "follow-on",
+      "text": "follow-on: the recorded negative control (negative-control.log) fails at the link-integrity assertion with the symlink replaced, not with its target truncated as the source brief's negative control specifies, so the control falsifies the guard but does not reproduce the stated damage manifestation."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit 62801d9d3 against 6ebdc8584 (its parent); two files changed, +269/-25, all inside the declared scope.",
+    "done_when": "the done_when names cases in tests/test_gc_bounds_a_run_file.py (symlink out, symlink into the stores, hard link, extensionless NUL blob, executable script, outside declared gate log, byte-identity after --apply); the manifest records 8 passed EXIT=0 and the negative control EXIT=1.",
+    "goal": "the reviewed node's goal is to make the run-file bound rewrite only a file the run directory itself owns; reckon/crew/fleet_supervisor.py:776 bound_run_files now decides on os.lstat and skips a symlink, a multi-hard-link file and an outside declared gate log, which is that goal.",
+    "manifest": "read; it reports the two gate runs (8 passed, 33 passed), the negative control (EXIT=1), commit 62801d9d3 and the two changed paths, with no blockers.",
+    "write_paths": "the manifest declares reckon/crew/fleet_supervisor.py and tests/test_gc_bounds_a_run_file.py; git diff --name-only 6ebdc8584 62801d9d3 lists exactly those two files."
+  },
+  "justifications": {
+    "durability": "reverting the lstat decision reddens tests/test_gc_bounds_a_run_file.py:286 (the recorded negative control, EXIT=1), so the guard fails on the regression it was added for.",
+    "evidence": "tests/test_gc_bounds_a_run_file.py:219 test_gc_skips_files_the_run_directory_does_not_own asserts byte-identity and link integrity after --apply, and the manifest records 8 passed EXIT=0 in gate-gc-bounds.log.",
+    "fit": "_run_file_is_binary and _skipped_run_file_row at reckon/crew/fleet_supervisor.py:709 follow the module's existing helper idiom beside RUN_FILE_BINARY_SUFFIXES at line 629.",
+    "goal_fidelity": "reckon/crew/fleet_supervisor.py:826 consider() decides on os.lstat and skips on S_ISLNK, st_nlink>1 and an outside gate-log before _bound_run_file can write.",
+    "reuse": "_run_file_is_binary extends the module's own suffix test at reckon/crew/fleet_supervisor.py:718, and a search of reckon/crew found no other binary-detection owner to duplicate.",
+    "scope_discipline": "git diff --name-only 6ebdc8584 62801d9d3 lists only reckon/crew/fleet_supervisor.py and tests/test_gc_bounds_a_run_file.py."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is to make the run-file bound rewrite only a file the run directory itself owns; reckon/crew/fleet_supervisor.py:776 bound_run_files now decides on os.lstat and skips a symlink, a multi-hard-link file and an outside declared gate log, which is that goal.\nVERDICT done_when: the done_when names cases in tests/test_gc_bounds_a_run_file.py (symlink out, symlink into the stores, hard link, extensionless NUL blob, executable script, outside declared gate log, byte-identity after --apply); the manifest records 8 passed EXIT=0 and the negative control EXIT=1.\nVERDICT write_paths: the manifest declares reckon/crew/fleet_supervisor.py and tests/test_gc_bounds_a_run_file.py; git diff --name-only 6ebdc8584 62801d9d3 lists exactly those two files.\nVERDICT manifest: read; it reports the two gate runs (8 passed, 33 passed), the negative control (EXIT=1), commit 62801d9d3 and the two changed paths, with no blockers.\nVERDICT diff: read commit 62801d9d3 against 6ebdc8584 (its parent); two files changed, +269/-25, all inside the declared scope.\nCALL_SITES: reckon/crew/routing.py:garbage_collect\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/fleet_supervisor.py:826 consider() decides on os.lstat and skips on S_ISLNK, st_nlink>1 and an outside gate-log before _bound_run_file can write.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_gc_bounds_a_run_file.py:219 test_gc_skips_files_the_run_directory_does_not_own asserts byte-identity and link integrity after --apply, and the manifest records 8 passed EXIT=0 in gate-gc-bounds.log.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --name-only 6ebdc8584 62801d9d3 lists only reckon/crew/fleet_supervisor.py and tests/test_gc_bounds_a_run_file.py.\nSCORE durability: 19\nJUSTIFICATION durability: reverting the lstat decision reddens tests/test_gc_bounds_a_run_file.py:286 (the recorded negative control, EXIT=1), so the guard fails on the regression it was added for.\nSCORE fit: 19\nJUSTIFICATION fit: _run_file_is_binary and _skipped_run_file_row at reckon/crew/fleet_supervisor.py:709 follow the module's existing helper idiom beside RUN_FILE_BINARY_SUFFIXES at line 629.\nSCORE reuse: 20\nJUSTIFICATION reuse: _run_file_is_binary extends the module's own suffix test at reckon/crew/fleet_supervisor.py:718, and a search of reckon/crew found no other binary-detection owner to duplicate.\nFINDING tests/test_gc_bounds_a_run_file.py:286 follow-on: the recorded negative control (negative-control.log) fails at the link-integrity assertion with the symlink replaced, not with its target truncated as the source brief's negative control specifies, so the control falsifies the guard but does not reproduce the stated damage manifestation.\nreviewed_base_sha: 6ebdc8584282b38ee271acfac91f963ee169e49c\nreviewed_head_sha: 62801d9d39798e47b3e36f1ee507724f82ccbc1e",
+  "review_run_id": "r-20261011T224238739726-review-of-a-run-file-bound-writes-only-its-own-file",
+  "reviewed_base_sha": "6ebdc8584282b38ee271acfac91f963ee169e49c",
+  "reviewed_head_sha": "62801d9d39798e47b3e36f1ee507724f82ccbc1e",
+  "reviewed_run_id": "r-20261011T223154203301-a-run-file-bound-writes-only-its-own-file",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-12T04:16:40.602021+00:00",
+  "total": 114
+}

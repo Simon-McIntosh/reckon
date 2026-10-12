@@ -25,7 +25,7 @@
   <title>The Crew Home Has A Bound | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="28">
+<meta name="plan-version" content="29">
 <meta name="plan-modified" content="2026-10-12">
 </head>
 <body>
@@ -177,7 +177,10 @@
     <div class="r-comment-body"><p>§4 landed: a promoted run's captured file is bounded to <code>gc.run_file_max_mb</code>, keeping head, tail and sha256 (merge <code>6492218f8</code>); 0 added failures; review 103/120 after two repair rounds. §5, the operational reclaim, is now unblocked. It is held for the lead's go-ahead because <code>gc --apply</code> over the shared crew home cannot be undone. <a href="/reckon/evidence/archive/the-crew-home-has-a-bound-landed.html#s4-run-file-bound">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261011T223154203301-a-run-file-bound-writes-only-its-own-file" data-who="reckon-build" data-when="2026-10-11T22:40:53.678Z">
-    <div class="r-comment-body"><p>bound_run_files now decides on lstat: a symlink, a file with more than one hard link, and a declared gate log resolving outside the run directory are each reported with a reason and left untouched, a file with an execute bit or a NUL byte in its head is binary whatever its suffix, and the bound writes head+marker+tail to a temp file and os.replace&#x27;s it, catching an OSError per file so one failure leaves the rest bounded; tests/test_gc_bounds_a_run_file.py 8 passed, the three tests/test_fleet_supervisor*.py 33 passed, negative control (decide on stat instead of lstat) EXIT=1 with the symlink case failing.</p></div>
+    <div class="r-comment-body"><p>bound_run_files now decides on lstat: a symlink, a file with more than one hard link, and a declared gate log resolving outside the run directory are each reported with a reason and left untouched, a file with an execute bit or a NUL byte in its head is binary whatever its suffix, and the bound writes head+marker+tail to a temp file and os.replace's it, catching an OSError per file so one failure leaves the rest bounded; tests/test_gc_bounds_a_run_file.py 8 passed, the three tests/test_fleet_supervisor*.py 33 passed, negative control (decide on stat instead of lstat) EXIT=1 with the symlink case failing.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261011T224238739726-review-of-a-run-file-bound-writes-only-its-own-file" data-who="reckon-build" data-when="2026-10-11T22:49:07.071Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261011T223154203301-a-run-file-bound-writes-only-its-own-file at head 62801d9d3 (base 6ebdc8584): a parsed record scoring all six dimensions (goal_fidelity 19, evidence 18, scope_discipline 19, durability 19, fit 19, reuse 20; total 114) is stored at both fenced store paths, carrying the revision pair, one follow-on finding, and the added-failure fields derived from the reviewed run&#x27;s own baseline_suite/after_suite gate logs (unmeasured — the reviewed manifest declares neither).</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261010T230023876216-gc-reaches-every-crew-store" data-who="reckon-build" data-when="2026-10-10T23:40:27.524Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/the-crew-home-has-a-bound/gc-reaches-every-crew-store.html</p></div>
