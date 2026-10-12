@@ -1,0 +1,57 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-12T21:41:21.683Z",
+  "dispatched_at": "2026-10-12T21:35:16Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-writer.html:62",
+      "id": "reasoning-1",
+      "reason": "without an ownership/identity guard the repair kills unrelated processes, so the section must state what qualifies a pid to be ended before it can be implemented safely.",
+      "text": "\u00a72 makes `signal_worker` kill every process whose cwd or open fd resolves under the run's worktree via `_processes_holding`, but that enumerator has no ownership or identity attribution (it returns any pid holding the path, including a peer session or a coordinator that cd'd in) and its cited contract is \"never killed\", so a node implementing \u00a72 literally builds an over-broad kill path \u2014 the `kill -1`-class hazard `signal_worker`'s docstring exists to prevent \u2014 while the plan asserts the extension is safe by pointing at those very enumerators",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-writer.html:51",
+      "id": "reasoning-2",
+      "reason": "the true blast radius is smaller than claimed, which does not alter the decision to extend the one signal owner.",
+      "text": "\u00a72 states \"Nine modules import it\" of `signal_worker`, but only four production modules import it (`dispatch_launch`, `standing_suite`, etc., excluding the definition site in `routing.py`; test modules account for the rest)",
+      "type": "reasoning",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-writer.html:74",
+      "id": "wiring-1",
+      "reason": "the dependency the roadmap reads does not carry it, so a dispatch of \u00a72 will be scheduled without serialization and two writers will collide on `routing.py`.",
+      "text": "\u00a72 serializes on the live run `a-worktree-release-is-whole` because that run also writes `reckon/crew/routing.py` (confirmed: its pointer's `write_paths` includes that file and it belongs to a different plan, crew-runtime-positive-controls \u00a747), yet the dependency appears only in \u00a72 prose; `plan-section-depends-on` declares only `s3\u2192s2`, and `plan-standalone` states the plan waits on none",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "2337d6940c39be623bad24497d4463ea4ee5ade297da2be45ef2b7d341317b74",
+  "plan_slug": "a-run-has-one-live-writer",
+  "plan_version": 1,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261012T213446242642-plan-review-of-a-run-has-one-live-writer",
+  "reviewed_blob_sha": "8fb5c62568d7ea9971207c1fc44d28b723e2bb1f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited file, symbol and test resolves (`signal_worker`, `_processes_holding`, `_process_children`/`_live_descendant`, `local_liveness`, `resume_plan`, `_launcher_refusal`, `_observed_end_refusal`, `terminate`, and all six named test files exist); the run id `a-worktree-release-is-whole` resolves to a live pointer, and the `#s2` depends-on target is a real section.",
+    "done_when": "pass \u2014 both nodes name a declared negative control that can fail (\u00a72 \"signals the supervisor pid alone, fails the first case\"; \u00a73 \"restores the cause the reproduction named, fails the reproduced case\").",
+    "evidence_paths": "pass \u2014 negative controls are \"logged under the run directory\", a durable path under the operator's crew state, not a scratchpad or node-local temp.",
+    "naming": "pass \u2014 new symbols and the new test file are named by mechanism (`test_a_worker_never_outlives_its_supervisor.py`); no plan labels, ticket numbers or changelog prose reach the code.",
+    "reasoning": "a finding \u2014 \u00a72's mechanism extends `signal_worker` to end \"the processes holding the run's worktree as their working directory, through the existing enumerators\", but `_processes_holding` is documented report-only (\"A holder is only ever reported, never killed\") and `signal_worker`'s own docstring states its invariant is that \"ending one worker is never worth the risk of ending everything\"; the plan reverses both cited contracts without naming what makes a holder safe to kill.",
+    "single_goal": "pass \u2014 \u00a72 carries one deliverable (a worker never outlives its supervisor, incl. its classification) and \u00a73 one (a resume never launches beside a live attempt); each closes on a single test verdict.",
+    "wiring": "a finding \u2014 \u00a72 declares in prose that it waits for the external run `a-worktree-release-is-whole` (crew-runtime-positive-controls \u00a747) to merge before writing `reckon/crew/routing.py`, but `plan-section-depends-on` carries only `s3\u2192s2` and `plan-standalone` asserts the plan \"wait[s] on none\"."
+  },
+  "section_digests": {
+    "_document": "d351894ab11386013a5ef12b57d90b93700e6bae008682778835a45971d02f53",
+    "s1": "4be3aec3ea6b964559fb976fc71b0e9fed16762c724c109c88a97413ad274f1d",
+    "s2": "bec8dbbb4111aaeec0b713dae11919b6e8146b1c4ed869ae69036b65cf648455",
+    "s3": "47a6bee480ce06c34de5ed11e8e80c6d72dfbf192a803511337a59a49084e2f6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-12T21:57:30.758398+00:00"
+}
