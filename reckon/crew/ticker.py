@@ -2173,9 +2173,13 @@ class Ticker:
         # past that word — leaving an empty reason where a shorter one belonged.
         # Cutting last is what lets a clause longer than its field keep its head
         # instead of collapsing to the ellipsis alone.
+        # Producer labels may name the internal state while the cell uses its
+        # pane word, so either label can repeat the cell's meaning.
         state_word = _display_state(entry_state)
         clause = _fit_clause(
-            self._strip_repeated_label(_first_clause(detail), state_word),
+            self._strip_repeated_label(
+                _first_clause(detail), f"{state_word} {entry_state}"
+            ),
             room_for_clause,
         )
         if not clause and entry_state == LAUNCH_FAULT_STATE:
