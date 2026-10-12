@@ -25,6 +25,8 @@
   <title>The Review Loop Runs Without Hand Steps | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-10-12">
 </head>
 <body>
   <main class="plan-doc">
@@ -51,7 +53,8 @@
       <li>the record it was dispatched to store is on disk with a status the readers act on.</li>
     </ul>
     <p>This covers run reviews, plan reviews and code reviews. The review's record is its whole deliverable, so promoting the run reads nothing a coordinator would add. The reviewed run is untouched: its acceptance stays scoped to merged runs, as the lead ruled for <code>a-review-is-sized-to-its-risk</code> §4.</p>
-    <p>The promotion is taken by the same pass that runs <code>accept_clean_review</code>, and reuses its promotion call. A review run whose record is missing or unparsed is left for the coordinator, with the reason recorded.</p>
+    <p>The promotion reuses the promotion call that <code>accept_clean_review</code> makes (<code>reckon/crew/recovery_review_acceptance.py</code>). It runs as a separate branch, for review-role pointers only, because that pass skips every review node (<code>_is_review_node</code>) to stop a chain of reviews of reviews. The skip stays in force for acceptance and for review dispatch. The new branch only promotes the review run itself and never dispatches a review of it, so no chain can start. A review run whose record is missing or unparsed is left for the coordinator, with the reason recorded.</p>
+    <p><strong>Interface.</strong> <code>promoted_by: review-self</code> is one more value in the ledger's existing promoted-by vocabulary (<code>reckon/ledger.py</code>), beside <code>review-acceptance</code>. It stays distinct because it names a different act: a review run's own promotion, not acceptance of the run it reviewed. It retires a hand step: the live classifier's next action "promote the completed review run once its verdict is read" no longer appears for a run this branch promotes.</p>
     <p><strong>Done when</strong> <code>tests/test_a_review_run_promotes_itself.py</code> passes in a temporary crew home and repository:</p>
     <ul>
       <li>A complete review run with an exited worker and a stored parsed record is promoted with <code>promoted_by: review-self</code>, and no longer counts as unreconciled at dispatch.</li>
@@ -81,10 +84,10 @@
 <section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
     <p><strong>Deliverable.</strong> <code>audit_manifest</code> in <code>reckon/crew/reports.py</code>, which <code>reckon crew check-manifest</code> calls, gains two findings.</p>
     <ul>
-      <li><strong>Gate logs.</strong> Every file named in <code>test_logs</code> must carry its literal command near its head and end with an <code>EXIT=&lt;n&gt;</code> line. A command abbreviated with an angle-bracket placeholder is refused.</li>
+      <li><strong>Gate logs.</strong> Every file named in <code>test_logs</code> must carry its literal command near its head and end with an <code>EXIT=&lt;n&gt;</code> line. Whether that command is abbreviated is judged by the existing gate-command reader <code>gate_command_prose</code> (<code>reckon/crew/promotion_gate.py</code>), which already classifies an angle-bracket placeholder in a recorded gate command, so the two judges cannot disagree. The <code>EXIT=</code> line is read through the reader that promotion already uses for a gate log's exit status, if one exists, and the manifest names it.</li>
       <li><strong>Plan labels.</strong> Added lines in production Python source (not under <code>tests/</code>) whose comment or docstring text carries a plan-section reference (<code>§</code> followed by a digit) are refused. Each finding names the file and line.</li>
     </ul>
-    <p>A worker runs <code>check-manifest</code> before it finishes, so it sees these findings while it can still fix them. Test source is exempt from the plan-label check, because fixtures legitimately carry section identifiers as data.</p>
+    <p>A worker runs <code>check-manifest</code> before it finishes, so it sees these findings while it can still fix them. Test source is exempt from the plan-label check, because fixtures legitimately carry section identifiers as data. Both checks are new entries in <code>audit_manifest</code>'s existing finding list. They open no new refusal family and add no option.</p>
     <p><strong>Done when</strong> <code>tests/test_a_manifest_evidence_is_checked.py</code> passes:</p>
     <ul>
       <li>A gate log with no <code>EXIT=</code> line is a finding.</li>
@@ -95,28 +98,29 @@
       <li>The test files that call <code>audit_manifest</code> or <code>check-manifest</code> pass.</li>
       <li>The negative control, which drops the <code>EXIT=</code> check, fails its case. It is logged under the run directory.</li>
     </ul>
-    <p>Write paths: <code>reckon/crew/reports.py</code>, <code>tests/test_a_manifest_evidence_is_checked.py</code>.</p>
+    <p>Write paths: <code>reckon/crew/reports.py</code>, <code>tests/test_a_manifest_evidence_is_checked.py</code>, and <code>reckon/crew/promotion_gate.py</code> only if <code>gate_command_prose</code> needs a public name to be called from <code>reports.py</code>.</p>
 
     <h2 id="s5">§5 — A producer seated on another node reads as live</h2>
 <section data-reckon="section" data-id="s5" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> <code>freshness</code> in <code>reckon/crew/obligation_snapshot.py</code> judges a snapshot whose recorded producer host differs from the local host by that producer's lease, not by a local pid check. It uses the lease reading <code>producer_lease_is_live</code> already exposes. A live lease means the producer is live, and the hook then reports staleness or freshness as usual. A lapsed lease still reads as <code>no-producer</code>. A producer on the local host is judged as today, by pid and start time.</p>
+    <p><strong>Deliverable.</strong> <code>freshness</code> in <code>reckon/crew/obligation_snapshot.py</code> stops reading a producer on another node as absent. The snapshot it reads records no producer host: <code>document_for</code> writes the pid, its start time, the start instant and the code stamp. <code>freshness</code> is called with the document alone, from two sites in <code>reckon/hooks/coordinator_obligations.py</code>. So <code>freshness</code> gains the project, and both callers pass it. When the recorded pid is not running locally, it asks the existing owner of that judgement, <code>reckon/crew/watch_unit.py</code>, whether the project's seat names a foreign host whose stream is still fresh (<code>_seat_names_a_foreign_host</code>, <code>_seat_stream_fresh</code>). A yes counts as a live producer, and the hook then reports stale or fresh as usual. No new host comparison is written; if those helpers need a public name to be called from <code>obligation_snapshot</code>, they get one where they are. A seat on this host whose pid is dead, or a foreign seat whose stream is stale, still reads as <code>no-producer</code>.</p>
     <p><strong>Done when</strong> <code>tests/test_a_remote_producer_reads_as_live.py</code> passes:</p>
     <ul>
-      <li>A snapshot naming a producer on another host with a live lease is not <code>no-producer</code>.</li>
-      <li>The same snapshot with a lapsed lease is <code>no-producer</code>.</li>
+      <li>A project whose seat names another host with a fresh stream is not <code>no-producer</code>.</li>
+      <li>The same seat with a stale stream is <code>no-producer</code>.</li>
       <li>A local producer whose pid is dead is <code>no-producer</code>.</li>
       <li>The test files that import <code>obligation_snapshot</code> or <code>reckon/hooks/coordinator_obligations.py</code> pass.</li>
       <li>The negative control, which judges every producer by local pid, fails the remote-live case. It is logged under the run directory.</li>
     </ul>
-    <p>Write paths: <code>reckon/crew/obligation_snapshot.py</code>, <code>tests/test_a_remote_producer_reads_as_live.py</code>.</p>
+    <p>Write paths: <code>reckon/crew/obligation_snapshot.py</code>, <code>reckon/hooks/coordinator_obligations.py</code>, <code>reckon/crew/watch_unit.py</code> (a public name only), <code>tests/test_a_remote_producer_reads_as_live.py</code>.</p>
 
-    <section data-reckon="followups">
-      <article class="r-fu" data-id="f-trlrwhs-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-build (health-review-1010)" data-written-at="2026-10-12" data-recommends-skill="/reckon-build the-review-loop-runs-without-hand-steps" data-resolved-at="" data-resolved-by="">
-        <h4 class="r-fu-title">Build §2 to §5</h4>
-        <div class="r-fu-body"><p>Four independent nodes, with disjoint write paths. Each is reviewed and merged on its own.</p></div>
-        <pre class="r-fu-prompt">/reckon-build the-review-loop-runs-without-hand-steps</pre>
-      </article>
-    </section>
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-trlrwhs-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-build (health-review-1010)" data-written-at="2026-10-12" data-recommends-skill="/reckon-build the-review-loop-runs-without-hand-steps" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §2 to §5</h4>
+    <div class="r-fu-body"><p>Four independent nodes, with disjoint write paths. Each is reviewed and merged on its own.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-review-loop-runs-without-hand-steps</pre>
+    </article>
+</section>
   </main>
 </body>
 </html>
