@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-section-depends-on" content="{&quot;s6&quot;: [&quot;nothing-lands-unreached#s2&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;deferred&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;deferred&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
   <title>The Codebase Is Reviewed Between Nodes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="56">
+<meta name="plan-version" content="57">
 <meta name="plan-modified" content="2026-10-12">
 </head>
 <body>
@@ -274,6 +274,10 @@
       coordinator accepts in writing on this section; the promoted treatment's product line delta is negative; and <code>reckon.clones.clone_matches</code> over the three modules,
       run the same way as the §1 figure, is reported at the integrated head beside the 107 measured at <code>646bbacf5</code>. Write paths: the treatment node's own,
       named by the review.</p>
+
+    <h2 id="s12">§12 — A health review whose records wrap across lines still stores</h2>
+<section data-reckon="section" data-id="s12" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> On 2026-10-12, health review <code>r-20261012T210306162650-review-code-46f5fd5115fb</code> delivered a sound report of the-review-loop-runs-without-hand-steps' neighbourhood, and the store refused it with <code>HealthReviewError: treatment names no write path</code>. The reviewer had wrapped its <code>TREATMENT</code> record, so <code>WRITE_PATHS:</code> began on the next line. <code>parse_health_review</code> in <code>reckon/crew/review.py</code> reads each record as one line, so it saw no write path. The same report also wraps its <code>FINDING</code> records after <code>CLASS:</code>, so a stored finding keeps only its first line. Every later plan build retries the delivery and records the same refusal.</p><p><strong>Deliverable.</strong> <code>parse_health_review</code> joins a record's continuation lines to the record they continue. A continuation line is one that is not blank and does not open a new <code>RUBRIC</code>, <code>FINDING</code> or <code>TREATMENT</code> record, or a heading. A one-line report parses exactly as it does today. No new record type, option or refusal is added.</p><p><strong>Done when</strong> <code>tests/test_a_wrapped_health_record_parses.py</code> passes these cases:</p><ul><li>The delivered report of that run, copied as a fixture, parses with the treatment's write paths <code>reckon/crew/obligation_snapshot.py</code> and <code>reckon/crew/obligations.py</code>, and an expected delta of -18.</li><li>A wrapped <code>FINDING</code> keeps its class and its whole text.</li><li>A report with one line per record parses to the same record as before the change.</li></ul><p>The test files importing <code>reckon/crew/review.py</code> show no added failure against base. The negative control reads lines alone again, and the wrapped-treatment case must then fail. It is logged under the run directory. Write paths: <code>reckon/crew/review.py</code>, <code>tests/test_a_wrapped_health_record_parses.py</code>, and its fixture under <code>tests/fixtures/</code>.</p>
 
     <section data-reckon="gates" id="gates" class="r-gates">
 <h2><span class="sec">§</span> Evidence gates</h2>
