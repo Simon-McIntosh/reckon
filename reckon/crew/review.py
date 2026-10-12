@@ -972,6 +972,76 @@ class HealthReviewError(ValueError):
         super().__init__(message)
 
 
+# A reviewer wraps a long record across source lines, so a field labelled at the
+# end of one line (``WRITE_PATHS:``) has its value on the next. Reading each
+# record as one source line then loses everything after the wrap — the treatment
+# parses as naming no write path and the store refuses a sound report. A
+# continuation is any non-blank line that neither opens a new record nor starts
+# a heading, so the records are reassembled before they are parsed.
+_HEALTH_HEADING_RE = re.compile(r"^#{1,6}\s")
+
+# What may follow ``TREATMENT`` on a line that opens a wrapped record and carries
+# nothing else yet: only separators and whitespace, as in ``TREATMENT`` or
+# ``TREATMENT —`` with the labelled fields on the lines below. A line carrying
+# any other text is prose, so a wrapped record's own words cannot open another.
+_TREATMENT_BARE_CHARS = "—- "
+
+
+def _opens_health_record(line: str) -> bool:
+    """Whether ``line`` begins a record the parser acts on.
+
+    The record patterns are case-insensitive, so a wrapped record's prose can
+    begin with an ordinary word like ``finding`` and match the FINDING shape
+    without being a finding. A line opens a record only when it carries a rubric
+    item the parser would keep, or a treatment in its none, labelled or bare
+    form — the bare form being the keyword and its separator alone, its fields
+    wrapped onto the lines below — the same relevance test the parse loop
+    applies to what it reads.
+    """
+    match = _PLAN_RUBRIC_LINE_RE.match(line)
+    if match and match.group(1).lower() in HEALTH_REVIEW_ITEMS:
+        return True
+    match = _HEALTH_FINDING_LINE_RE.match(line)
+    if match and match.group(1).lower() in HEALTH_REVIEW_ITEMS:
+        return True
+    match = _TREATMENT_LINE_RE.match(line)
+    if match:
+        remainder = match.group(1).strip()
+        if (
+            _TREATMENT_NONE_RE.match(remainder)
+            or _TREATMENT_LABEL_RE.search(remainder)
+            or not remainder.strip(_TREATMENT_BARE_CHARS)
+        ):
+            return True
+    return False
+
+
+def _health_records(text: str) -> Iterator[str]:
+    """Yield each emitted health-review record with its continuation lines joined.
+
+    A record opens on a RUBRIC, FINDING or TREATMENT line and runs until a blank
+    line, a heading, or the next record. Prose that follows no open record is
+    ignored, as the line-by-line reader ignored it, so a report whose records
+    each fit one line yields exactly the lines it did before.
+    """
+    current = ""
+    for line in _review_text_lines(text):
+        if current:
+            if (
+                line
+                and not _opens_health_record(line)
+                and not _HEALTH_HEADING_RE.match(line)
+            ):
+                current = f"{current} {line}"
+                continue
+            yield current
+            current = ""
+        if _opens_health_record(line):
+            current = line
+    if current:
+        yield current
+
+
 def _health_finding_tail(remainder: str) -> dict[str, Any]:
     """Parse one health FINDING line's tail into class, text and citation.
 
@@ -1069,7 +1139,7 @@ def parse_health_review(text: str) -> dict[str, Any]:
     findings: list[dict[str, Any]] = []
     counters: dict[str, int] = {}
     treatments: list[str] = []
-    for line in _review_text_lines(text):
+    for line in _health_records(text):
         match = _PLAN_RUBRIC_LINE_RE.match(line)
         if match:
             item = match.group(1).lower()
