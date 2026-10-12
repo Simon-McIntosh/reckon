@@ -1,0 +1,55 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": null,
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/recovery_review_dispatch.py:283",
+    "reckon/crew/recovery_review_dispatch.py:1441",
+    "reckon/crew/recovery_repair_dispatch.py:588",
+    "reckon/crew/obligations.py:143",
+    "reckon/crew_dispatch_commands.py:2146",
+    "reckon/crew/recovery_review_subject.py:660"
+  ],
+  "completed_at": "2026-10-12T04:35:51.325Z",
+  "dispatched_at": "2026-10-12T04:31:12Z",
+  "findings": [],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commit 41869bec4 against its base 26f87686f; one file changed, reckon/crew/recovery_review_subject.py +3/-4, every changed line a comment line, so the guard at :577 and all surrounding code are unchanged.",
+    "done_when": "the done_when asks the five red tests to pass with a per-test decision each, tests/test_a_review_receives_its_rubric.py to gain a dry-run acceptance test per run shape and pass, and the plan-without-section negative control to fail with dispatch's refusal; the manifest records the base arm 5 failed (base-five.log), the head gate 15 passed EXIT=0 (gate.log) and negative-control.log 1 failed EXIT=1 on the refusal, and the gained commit adds no test and changes no behaviour.",
+    "goal": "the source node's goal is that the review dispatch the reflex emits is accepted by crew dispatch for every run shape the ledger holds; the gained commit restates the sectionless-plan guard's comment by mechanism at reckon/crew/recovery_review_subject.py:570 and leaves the guard at :577 unchanged, so the composed command stays brief-carried for a plan-with-no-section run.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261011T223501570468-a-review-dispatch-fits-every-run-shape/manifest.md; it lists commits 26f87686f and 41869bec4, status complete, after_suite 216 passed EXIT=0, a bare negative_control_log path and no blockers.",
+    "write_paths": "the fence granted reckon/crew/recovery_review_subject.py and four test files plus the evidence fragment; git diff --stat 26f87686f 41869bec4 lists only reckon/crew/recovery_review_subject.py, inside the fence."
+  },
+  "justifications": {
+    "durability": "the gained commit adds no assertion and no behaviour, and the guard it comments is held by tests/test_a_review_receives_its_rubric.py::test_a_plan_without_a_section_review_command_is_dispatchable, which negative-control.log reddens when the guard at reckon/crew/recovery_review_subject.py:577 is disabled.",
+    "evidence": "the manifest's after_suite names revision 26f87686f rather than the gained head 41869bec4, so no gate ran at the head, but the change is comment-only and the reviewed run's added-failure count is 0 against its 5-failure base arm (base-five.log).",
+    "fit": "the comment at reckon/crew/recovery_review_subject.py:570-577 now states the mechanism and carries no plan-section reference, resolving the prior review's fit finding on the same lines.",
+    "goal_fidelity": "the gained commit's only change is the guard's comment at reckon/crew/recovery_review_subject.py:570-577, and the guard at :577 that makes every run shape's composed command dispatchable is untouched.",
+    "reuse": "the diff adds no definition; a search over reckon/crew for the sectionless-plan guard found its sole owner is _review_dispatch_fields at reckon/crew/recovery_review_subject.py:413, and the change extends that comment in place.",
+    "scope_discipline": "git diff --stat 26f87686f 41869bec4 lists only reckon/crew/recovery_review_subject.py, a declared write path, with no code and nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that the review dispatch the reflex emits is accepted by crew dispatch for every run shape the ledger holds; the gained commit restates the sectionless-plan guard's comment by mechanism at reckon/crew/recovery_review_subject.py:570 and leaves the guard at :577 unchanged, so the composed command stays brief-carried for a plan-with-no-section run.\nVERDICT done_when: the done_when asks the five red tests to pass with a per-test decision each, tests/test_a_review_receives_its_rubric.py to gain a dry-run acceptance test per run shape and pass, and the plan-without-section negative control to fail with dispatch's refusal; the manifest records the base arm 5 failed (base-five.log), the head gate 15 passed EXIT=0 (gate.log) and negative-control.log 1 failed EXIT=1 on the refusal, and the gained commit adds no test and changes no behaviour.\nVERDICT write_paths: the fence granted reckon/crew/recovery_review_subject.py and four test files plus the evidence fragment; git diff --stat 26f87686f 41869bec4 lists only reckon/crew/recovery_review_subject.py, inside the fence.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261011T223501570468-a-review-dispatch-fits-every-run-shape/manifest.md; it lists commits 26f87686f and 41869bec4, status complete, after_suite 216 passed EXIT=0, a bare negative_control_log path and no blockers.\nVERDICT diff: read commit 41869bec4 against its base 26f87686f; one file changed, reckon/crew/recovery_review_subject.py +3/-4, every changed line a comment line, so the guard at :577 and all surrounding code are unchanged.\nCALL_SITES: reckon/crew/recovery_review_dispatch.py:283, reckon/crew/recovery_review_dispatch.py:1441, reckon/crew/recovery_repair_dispatch.py:588, reckon/crew/obligations.py:143, reckon/crew_dispatch_commands.py:2146, reckon/crew/recovery_review_subject.py:660\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the gained commit's only change is the guard's comment at reckon/crew/recovery_review_subject.py:570-577, and the guard at :577 that makes every run shape's composed command dispatchable is untouched.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest's after_suite names revision 26f87686f rather than the gained head 41869bec4, so no gate ran at the head, but the change is comment-only and the reviewed run's added-failure count is 0 against its 5-failure base arm (base-five.log).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 26f87686f 41869bec4 lists only reckon/crew/recovery_review_subject.py, a declared write path, with no code and nothing the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: the gained commit adds no assertion and no behaviour, and the guard it comments is held by tests/test_a_review_receives_its_rubric.py::test_a_plan_without_a_section_review_command_is_dispatchable, which negative-control.log reddens when the guard at reckon/crew/recovery_review_subject.py:577 is disabled.\nSCORE fit: 20\nJUSTIFICATION fit: the comment at reckon/crew/recovery_review_subject.py:570-577 now states the mechanism and carries no plan-section reference, resolving the prior review's fit finding on the same lines.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition; a search over reckon/crew for the sectionless-plan guard found its sole owner is _review_dispatch_fields at reckon/crew/recovery_review_subject.py:413, and the change extends that comment in place.\nreviewed_base_sha: 26f87686f5efca878c3daa97c913ab242100e632\nreviewed_head_sha: 41869bec4dae0c4937ff991df32cb32d341d9617\n",
+  "review_run_id": "r-20261012T043040563243-review-of-a-review-dispatch-fits-every-run-shape",
+  "reviewed_base_sha": "26f87686f5efca878c3daa97c913ab242100e632",
+  "reviewed_head_sha": "41869bec4dae0c4937ff991df32cb32d341d9617",
+  "reviewed_run_id": "r-20261011T223501570468-a-review-dispatch-fits-every-run-shape",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-12T04:40:00+00:00",
+  "total": 117
+}
