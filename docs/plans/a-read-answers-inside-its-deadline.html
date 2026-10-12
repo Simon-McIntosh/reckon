@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="reckon-tooling">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
   <meta name="plan-standalone" content="It restores what reckon-reads-answer-in-seconds shipped; that plan is complete, and no live plan&#x27;s section waits on read latency.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="25">
+<meta name="plan-version" content="26">
 <meta name="plan-modified" content="2026-10-13">
 </head>
 <body>
@@ -134,6 +134,10 @@
       same way in the same session, which must exceed the deadline for the comparison to count. Write paths: the run's own log directory.</p>
 
     
+    <h2 id="s7">§7 — The residual read time is attributed at base and head on one quiet node</h2>
+<section data-reckon="section" data-id="s7" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> §6's first measurement, on 2026-10-12, found the reads still far outside their deadline after §2 to §5 merged: roadmap at 100 s cold and 18.4 s warm. Its base arm ran on the busy fleet node, so it cannot say whether §2 to §5 helped, and the profile dumps that would attribute the residual time were lost with node-local <code>/tmp</code>.</p><p><strong>Deliverable.</strong> One read-only node on one exclusive <code>all_debug</code> allocation measures roadmap, audit and discovery, cold and warm, at both <code>d249200c7</code> (base) and current <code>main</code>. It uses §6's profiler, and the reads run against one frozen copy of the corpus, so that run-record churn cannot move the figures. It keeps every <code>.prof</code> dump under its run's report directory. For the warm roadmap, warm audit and warm discovery at head, it names the five functions with the most cumulative time, and for each one whether it re-walks the tree, re-parses plans, spawns git, or computes the roadmap itself.</p><p><strong>Done when</strong> the report under the run directory carries base and head medians from the same node and the same corpus copy, the kept <code>.prof</code> files, and the attribution table. The negative control is the base arm, which must read slower than head on cold roadmap for §2 to §5 to count as an improvement; if it does not, the report says so. Write paths: the run's own report directory.</p>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-araiid-001" data-status="resolved" data-written-by="reckon-create" data-written-at="2026-10-10" data-recommends-skill="/reckon-build a-read-answers-inside-its-deadline" data-resolved-at="2026-10-10T20:06:47+00:00" data-resolved-by="reckon-build coordinator (health-review-1010)">
@@ -208,7 +212,10 @@
     <div class="r-comment-body"><p>§6 head arm at 0f57ee7b2 on exclusive all_debug node 98dci4-clu-3141 (job 1284023): medians n=5, 0 errors — roadmap 100.081 s cold / 18.435 s warm, audit 157.018 / 21.434, discovery 74.230 / 14.095 — and one roadmap tools/call to a fresh reckon mcp server returned storage-slow at 30.09 s, so §6's done-when (warm roadmap &lt;= 2 s, warm audit &lt;= 3 s, cold roadmap &lt; 30 s, MCP without storage-slow) is NOT met at head; the base arm is the parallel node's control</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261012T210609812866-reads-measured-at-base" data-who="reckon-build" data-when="2026-10-12T21:59:37.362Z">
-    <div class="r-comment-body"><p>Base arm at d249200c7 — roadmap completes at 66.454 s cold / 10.721 s warm (n=5; cold exceeds the 30 s MCP deadline, so the plan&#x27;s negative control holds); audit and discovery die EROFS on the read-only live corpus; on a writable copy audit is 233.013 s cold / 12.607 s warm (n=3) and discovery 125.602 s cold / 0.843 s warm (n=3)</p></div>
+    <div class="r-comment-body"><p>Base arm at d249200c7 — roadmap completes at 66.454 s cold / 10.721 s warm (n=5; cold exceeds the 30 s MCP deadline, so the plan's negative control holds); audit and discovery die EROFS on the read-only live corpus; on a writable copy audit is 233.013 s cold / 12.607 s warm (n=3) and discovery 125.602 s cold / 0.843 s warm (n=3)</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-s6-first-measurement-1012" data-who="reckon-build" data-when="2026-10-12T22:15:00Z">
+    <div class="r-comment-body"><p>First measurement: not met. At head on a quiet node, roadmap reads 100 s cold and 18.4 s warm, and audit reads 157 s cold and 21.4 s warm. A fresh MCP roadmap still returns <code>storage-slow</code>. The base arm is not a valid control. §6 stays open, and §7 attributes the residual time before any further fix. <a href="/reckon/evidence/archive/a-read-answers-inside-its-deadline-landed.html#s6-first-measurement">evidence</a></p></div>
 </div>
 </section>
 </main>
