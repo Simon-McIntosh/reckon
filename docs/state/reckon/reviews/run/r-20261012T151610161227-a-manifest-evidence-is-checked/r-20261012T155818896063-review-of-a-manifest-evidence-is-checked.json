@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed run's after arm head-audit-tests.log records 671 passed EXIT=0 with no failing id, so nothing was added against base; the base arm baseline-audit-tests.log is truncated at 42% and reaches no summary, so the base failure set is unreadable and the zero rests on the fully green head arm",
+  "base_log_revision": null,
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew_run_commands.py:663"
+  ],
+  "completed_at": "2026-10-12T16:16:01.565Z",
+  "dispatched_at": "2026-10-12T15:58:43Z",
+  "findings": [
+    {
+      "file": "reckon/crew/reports.py",
+      "line": "1449",
+      "severity": "blocking",
+      "text": "blocking: `store = stores[0]` uses the store `_citation_stores` returns first, which is the repository, not the worktree the run worked in as the docstring at reports.py:1438 claims. In a real dispatch the recorded repo is the main checkout (record repo=/home/ITER/mcintos/Code/reckon, worktree the detached tree), and that checkout does not hold the run's unmerged commit, so `git -C <repo> diff <base>` shows the repository's own changes since base and never the lines the run added. Measured: stores[0] resolves to the main checkout; `diff base` there yields only docs/plans/a-moved-head-is-reviewed.html and four docs/state JSON files (no production Python), while the same call against the worktree yields reckon/crew/reports.py and the new test file. The plan-label half of the goal therefore never fires on the run it audits."
+    },
+    {
+      "file": "tests/test_a_manifest_evidence_is_checked.py",
+      "line": "175",
+      "severity": "follow-on",
+      "text": "follow-on: the five plan-label cases pass `worktree=repo, repository=repo` (the fixture returns one directory for both arguments), so `_citation_stores` returns a single store and the test cannot observe which store the check reads. The production shape, where repository and worktree differ, is never exercised, so the blocking store-selection defect above is invisible to this suite. The log-half cases are unaffected and are sound."
+    }
+  ],
+  "head_log_revision": "7c52a3d3959e7cdfbb66f51e90f9b066cee52078",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "one production call site, reckon/crew_run_commands.py:663, the check-manifest command a worker runs before finishing; reckon/crew.py:193 is only the module facade export list, not a caller.",
+    "diff": "read commit by commit against base 65f1b1d94; the single commit 7c52a3d39 adds three files (reports.py +266, the new test file, the evidence fragment), all inside the declared write paths; the label-check helpers read the diff from the wrong store.",
+    "done_when": "the done_when names tests/test_a_manifest_evidence_is_checked.py passing the section cases, no added failure among the audit-calling test files, and a logged negative control; gate-new-test.log records 11 passed EXIT=0, head-audit-tests.log 671 passed EXIT=0, and negative-control-missing-exit.log records EXIT=1.",
+    "goal": "the goal is that audit_manifest refuses a test log without its literal command and terminal EXIT line, and an added production comment citing a plan section; reports.py:1287 fires the log half, but reports.py:1449 reads the wrong tree so the label half does not fire in production.",
+    "manifest": "read; it records the gate results, the negative control with its declared mutation, follow_ons none and blockers none, and does not disclose the truncated base arm."
+  },
+  "justifications": {
+    "durability": "negative-control-missing-exit.log restores the dropped EXIT= check and test_a_log_with_no_exit_record_is_a_finding fails at tests/test_a_manifest_evidence_is_checked.py:100 (assert 0 == 1), so the log half is guarded; the label cases at tests/test_a_manifest_evidence_is_checked.py:175 pass one directory as both trees and so cannot fail on the store-selection defect.",
+    "evidence": "gate-new-test.log and head-audit-tests.log are complete and match the done_when, but baseline-audit-tests.log stops at 42% with no summary line and no EXIT record, so the base arm can show no result and the no-added-failure claim rests only on the green head arm.",
+    "fit": "the findings are strings appended to the existing list, matching _gate_log_revision_findings at reckon/crew/reports.py:1158, and no symbol or comment carries a plan label; the docstring at reports.py:1438 states the diff is read from the worktree while reports.py:1449 reads the repository.",
+    "goal_fidelity": "reckon/crew/reports.py:1449 reads the repository store, so in a real dispatch the added-plan-label refusal of the goal never fires on the run's own change, leaving only the log half delivered.",
+    "reuse": "reports.py:1313 delegates to gate_command_prose at reckon/crew/promotion_gate.py:182, the owner of the command-shape judgement, and a search of reckon/crew for an added-lines-with-line-numbers reader found only name-only and numstat diff readers in promotion_scope.py and promotion_evidence.py, none owning this capability.",
+    "scope_discipline": "every path the diff changes (reckon/crew/reports.py, tests/test_a_manifest_evidence_is_checked.py, docs/evidence/fragments/the-review-loop-runs-without-hand-steps/a-manifest-evidence-is-checked.html) is inside the five declared write paths, and the declared-but-unused promotion_gate.py and figures path are untouched rather than stray."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that audit_manifest refuses a test log without its literal command and terminal EXIT line, and an added production comment citing a plan section; reports.py:1287 fires the log half, but reports.py:1449 reads the wrong tree so the label half does not fire in production.\nVERDICT done_when: the done_when names tests/test_a_manifest_evidence_is_checked.py passing the section cases, no added failure among the audit-calling test files, and a logged negative control; gate-new-test.log records 11 passed EXIT=0, head-audit-tests.log 671 passed EXIT=0, and negative-control-missing-exit.log records EXIT=1.\nVERDICT write_paths: five declared write paths; the diff changes three files, all inside them.\nVERDICT manifest: read; it records the gate results, the negative control with its declared mutation, follow_ons none and blockers none, and does not disclose the truncated base arm.\nVERDICT diff: read commit by commit against base 65f1b1d94; the single commit 7c52a3d39 adds three files (reports.py +266, the new test file, the evidence fragment), all inside the declared write paths; the label-check helpers read the diff from the wrong store.\nCALL_SITES: reckon/crew_run_commands.py:663\nSCORE goal_fidelity: 10\nJUSTIFICATION goal_fidelity: reckon/crew/reports.py:1449 reads the repository store, so in a real dispatch the added-plan-label refusal of the goal never fires on the run's own change, leaving only the log half delivered.\nSCORE evidence: 14\nJUSTIFICATION evidence: gate-new-test.log and head-audit-tests.log are complete and match the done_when, but baseline-audit-tests.log stops at 42% with no summary line and no EXIT record, so the base arm can show no result and the no-added-failure claim rests only on the green head arm.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path the diff changes (reckon/crew/reports.py, tests/test_a_manifest_evidence_is_checked.py, docs/evidence/fragments/the-review-loop-runs-without-hand-steps/a-manifest-evidence-is-checked.html) is inside the five declared write paths, and the declared-but-unused promotion_gate.py and figures path are untouched rather than stray.\nSCORE durability: 13\nJUSTIFICATION durability: negative-control-missing-exit.log restores the dropped EXIT= check and test_a_log_with_no_exit_record_is_a_finding fails at tests/test_a_manifest_evidence_is_checked.py:100 (assert 0 == 1), so the log half is guarded; the label cases at tests/test_a_manifest_evidence_is_checked.py:175 pass one directory as both trees and so cannot fail on the store-selection defect.\nSCORE fit: 16\nJUSTIFICATION fit: the findings are strings appended to the existing list, matching _gate_log_revision_findings at reckon/crew/reports.py:1158, and no symbol or comment carries a plan label; the docstring at reports.py:1438 states the diff is read from the worktree while reports.py:1449 reads the repository.\nSCORE reuse: 19\nJUSTIFICATION reuse: reports.py:1313 delegates to gate_command_prose at reckon/crew/promotion_gate.py:182, the owner of the command-shape judgement, and a search of reckon/crew for an added-lines-with-line-numbers reader found only name-only and numstat diff readers in promotion_scope.py and promotion_evidence.py, none owning this capability.\nFINDING reckon/crew/reports.py:1449 blocking: `store = stores[0]` uses the store `_citation_stores` returns first, which is the repository, not the worktree the run worked in as the docstring at reports.py:1438 claims. In a real dispatch the recorded repo is the main checkout (record repo=/home/ITER/mcintos/Code/reckon, worktree the detached tree), and that checkout does not hold the run's unmerged commit, so `git -C <repo> diff <base>` shows the repository's own changes since base and never the lines the run added. Measured: stores[0] resolves to the main checkout; `diff base` there yields only docs/plans/a-moved-head-is-reviewed.html and four docs/state JSON files (no production Python), while the same call against the worktree yields reckon/crew/reports.py and the new test file. The plan-label half of the goal therefore never fires on the run it audits.\nFINDING tests/test_a_manifest_evidence_is_checked.py:175 follow-on: the five plan-label cases pass `worktree=repo, repository=repo` (the fixture returns one directory for both arguments), so `_citation_stores` returns a single store and the test cannot observe which store the check reads. The production shape, where repository and worktree differ, is never exercised, so the blocking store-selection defect above is invisible to this suite. The log-half cases are unaffected and are sound.\n",
+  "review_run_id": "r-20261012T155818896063-review-of-a-manifest-evidence-is-checked",
+  "reviewed_base_sha": "65f1b1d94ee98dd298c7fdbc5f0c4ed0efb407dc",
+  "reviewed_head_sha": "7c52a3d3959e7cdfbb66f51e90f9b066cee52078",
+  "reviewed_run_id": "r-20261012T151610161227-a-manifest-evidence-is-checked",
+  "scores": {
+    "durability": 13,
+    "evidence": 14,
+    "fit": 16,
+    "goal_fidelity": 10,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-12T16:07:56.520983+00:00",
+  "total": 91
+}
