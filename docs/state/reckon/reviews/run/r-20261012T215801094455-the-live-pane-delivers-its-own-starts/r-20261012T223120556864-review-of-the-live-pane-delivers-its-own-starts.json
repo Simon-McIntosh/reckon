@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:1105",
+    "reckon/crew/recovery_watch.py:2222",
+    "reckon/crew/recovery_watch.py:2238",
+    "reckon/crew/lift_watch.py:206",
+    "reckon/crew/runs.py:1724"
+  ],
+  "completed_at": "2026-10-12T22:43:38.294Z",
+  "dispatched_at": "2026-10-12T22:31:53Z",
+  "findings": [
+    {
+      "file": "tests/test_follow_replays_the_gap.py",
+      "line": "237",
+      "severity": "follow-on",
+      "text": "follow-on: the file was written although it is not among the node's declared write paths; the plan directs the never-a-start cases be updated so the gate stays green, but the dispatch did not name this file, so the exclusive scope was breached and a scope grant should be recorded."
+    },
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": "1150",
+      "severity": "follow-on",
+      "text": "follow-on: the added snapshot field reading time_budget from node.as_dict() is not covered by any test \u2014 the node's cases hand-build the snapshot with time_budget=\"30m\", so a regression in this read from a real pointer stays green."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/the-live-pane-delivers-its-own-starts.html",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the dispatch stated the done-when names no artifact and the node writes no evidence prose, yet the fragment carries a prose account and a measure table."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit 847487a0e against base 2d55797d0 commit by commit; one commit changes reckon/crew_follow_commands.py, reckon/crew/recovery_watch.py, two test files and an evidence fragment.",
+    "done_when": "the done_when names tests/test_the_live_pane_delivers_its_own_starts.py driving a real dispatched->working transition through follower_row_path and receiving one row naming run id, node, lane, model and time budget; tests/test_the_live_pane_delivers_its_own_starts.py:76 asserts exactly that and the manifest records 3 passed.",
+    "goal": "the node's goal is that the live follower passes its session to the row policy and the watch transition carries lane and time budget so a session's own run start reaches its pane naming five fields; reckon/crew_follow_commands.py:802 now passes own_session=session, and reckon/crew/recovery_watch.py:1677 carries lane, so the goal is met.",
+    "manifest": "read; manifest.md records status complete, the head gate 2 failed 554 passed against the base arm 2 failed 551 passed with 0 added failures, and the negative control at negative-control.log.",
+    "write_paths": "the manifest declares reckon/crew_follow_commands.py, reckon/crew/recovery_watch.py, tests/test_the_live_pane_delivers_its_own_starts.py, the evidence fragment and a figures directory; the diff also writes tests/test_follow_replays_the_gap.py, which is outside that fence."
+  },
+  "justifications": {
+    "durability": "tests/test_the_live_pane_delivers_its_own_starts.py:83 fails when the follower_row_path change is reverted, but the added snapshot time_budget read at reckon/crew/recovery_watch.py:1150 is untested because the cases hand-build the snapshot.",
+    "evidence": "the gate log gate-head.log reads rev=847487a0e03260ab4a16b9e31d475aa1b71c96fb and its last lines read 2 failed, 554 passed, matching the manifest's recorded result.",
+    "fit": "the added read at reckon/crew/recovery_watch.py:1150 mirrors the existing (pointer.get(\"node\") or {}).get(...) idiom at reckon/crew/recovery_watch.py:493 and introduces no banned name.",
+    "goal_fidelity": "reckon/crew_follow_commands.py:802 passes own_session=session and reckon/crew/recovery_watch.py:1677 adds lane and time_budget to the event, so the own start reaches the pane naming all five fields.",
+    "reuse": "the change adds no definition; it wires the existing PaneRowPath.own_session and the existing snapshot lane and time_budget fields, so no capability is forked.",
+    "scope_discipline": "tests/test_follow_replays_the_gap.py:237 is changed although the fence listed only crew_follow_commands.py, recovery_watch.py, the new test file and the evidence/figures paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the live follower passes its session to the row policy and the watch transition carries lane and time budget so a session's own run start reaches its pane naming five fields; reckon/crew_follow_commands.py:802 now passes own_session=session, and reckon/crew/recovery_watch.py:1677 carries lane, so the goal is met.\nVERDICT done_when: the done_when names tests/test_the_live_pane_delivers_its_own_starts.py driving a real dispatched->working transition through follower_row_path and receiving one row naming run id, node, lane, model and time budget; tests/test_the_live_pane_delivers_its_own_starts.py:76 asserts exactly that and the manifest records 3 passed.\nVERDICT write_paths: the manifest declares reckon/crew_follow_commands.py, reckon/crew/recovery_watch.py, tests/test_the_live_pane_delivers_its_own_starts.py, the evidence fragment and a figures directory; the diff also writes tests/test_follow_replays_the_gap.py, which is outside that fence.\nVERDICT manifest: read; manifest.md records status complete, the head gate 2 failed 554 passed against the base arm 2 failed 551 passed with 0 added failures, and the negative control at negative-control.log.\nVERDICT diff: read commit 847487a0e against base 2d55797d0 commit by commit; one commit changes reckon/crew_follow_commands.py, reckon/crew/recovery_watch.py, two test files and an evidence fragment.\nCALL_SITES: reckon/crew_follow_commands.py:1105, reckon/crew/recovery_watch.py:2222, reckon/crew/recovery_watch.py:2238, reckon/crew/lift_watch.py:206, reckon/crew/runs.py:1724\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_follow_commands.py:802 passes own_session=session and reckon/crew/recovery_watch.py:1677 adds lane and time_budget to the event, so the own start reaches the pane naming all five fields.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate log gate-head.log reads rev=847487a0e03260ab4a16b9e31d475aa1b71c96fb and its last lines read 2 failed, 554 passed, matching the manifest's recorded result.\nSCORE scope_discipline: 13\nJUSTIFICATION scope_discipline: tests/test_follow_replays_the_gap.py:237 is changed although the fence listed only crew_follow_commands.py, recovery_watch.py, the new test file and the evidence/figures paths.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_the_live_pane_delivers_its_own_starts.py:83 fails when the follower_row_path change is reverted, but the added snapshot time_budget read at reckon/crew/recovery_watch.py:1150 is untested because the cases hand-build the snapshot.\nSCORE fit: 19\nJUSTIFICATION fit: the added read at reckon/crew/recovery_watch.py:1150 mirrors the existing (pointer.get(\"node\") or {}).get(...) idiom at reckon/crew/recovery_watch.py:493 and introduces no banned name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition; it wires the existing PaneRowPath.own_session and the existing snapshot lane and time_budget fields, so no capability is forked.\nFINDING tests/test_follow_replays_the_gap.py:237 follow-on: the file was written although it is not among the node's declared write paths; the plan directs the never-a-start cases be updated so the gate stays green, but the dispatch did not name this file, so the exclusive scope was breached and a scope grant should be recorded.\nFINDING reckon/crew/recovery_watch.py:1150 follow-on: the added snapshot field reading time_budget from node.as_dict() is not covered by any test \u2014 the node's cases hand-build the snapshot with time_budget=\"30m\", so a regression in this read from a real pointer stays green.\nFINDING docs/evidence/fragments/the-monitor-shows-the-work-it-watches/the-live-pane-delivers-its-own-starts.html:1 follow-on: the dispatch stated the done-when names no artifact and the node writes no evidence prose, yet the fragment carries a prose account and a measure table.",
+  "review_run_id": "r-20261012T223120556864-review-of-the-live-pane-delivers-its-own-starts",
+  "reviewed_base_sha": "2d55797d08a9633737479e20e44941e5d14b3120",
+  "reviewed_head_sha": "847487a0e03260ab4a16b9e31d475aa1b71c96fb",
+  "reviewed_run_id": "r-20261012T215801094455-the-live-pane-delivers-its-own-starts",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-12T22:40:12.932669+00:00",
+  "total": 103
+}

@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="11">
+<meta name="plan-version" content="12">
 <meta name="plan-modified" content="2026-10-13">
 </head>
 <body>
@@ -151,6 +151,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-s2-row-policy-landed-1012" data-who="reckon-build" data-when="2026-10-12T22:05:00Z">
     <div class="r-comment-body"><p>First node landed: <code>RowPolicy</code> in <code>reckon/crew/ticker.py</code> takes the pane's own session and delivers one start row for that session's runs (merge <code>5f24c855c</code>). At the merged head, 629 tests passed across 34 ticker-importing files. Review 100/120.</p><p>The rule is inert in the live pane, for two reasons. <code>follower_row_path</code> in <code>reckon/crew_follow_commands.py</code> builds <code>PaneRowPath</code> without <code>own_session</code>. And <code>_watch_transition</code> in <code>reckon/crew/recovery_watch.py</code> carries neither lane nor time budget, so the row could not name them.</p><p>§2 stays open. A second node wires both and proves the row end to end through the follower path. The section's write paths named only <code>ticker.py</code>; the coordinator under-scoped them.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261012T223120556864-review-of-the-live-pane-delivers-its-own-starts" data-who="reckon-build" data-when="2026-10-12T22:43:38.294Z">
+    <div class="r-comment-body"><p>independent review of r-20261012T215801094455-the-live-pane-delivers-its-own-starts at head 847487a0e (base 2d55797d0) scoring all six dimensions (goal_fidelity 19, evidence 17, scope_discipline 13, durability 15, fit 19, reuse 20; total 103, no dimension absent) with three follow-on findings (write outside the declared fence at tests/test_follow_replays_the_gap.py, the untested snapshot time_budget read at reckon/crew/recovery_watch.py:1150, and evidence prose the dispatch forbade); the stored record carries reviewed_base_sha 2d55797d0 and reviewed_head_sha 847487a0e and added_failure_count 0.</p></div>
 </div>
 </section>
 </main>
