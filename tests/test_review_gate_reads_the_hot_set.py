@@ -455,6 +455,7 @@ def _loader_run_record() -> dict:
         "project": LOADER_PROJECT,
         "reviewed_run_id": LOADER_REVIEWED_RUN,
         "review_run_id": LOADER_RUN_REVIEW,
+        "status": "parsed",
         "dispatched_at": "2026-10-06T13:00:00+00:00",
         "findings": [{"id": "f1", "severity": "follow-on"}],
         "responses": {},
