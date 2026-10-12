@@ -1,0 +1,57 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-12T22:40:17.407Z",
+  "dispatched_at": "2026-10-12T22:31:58Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-run-has-one-live-writer.html:42",
+      "id": "reasoning-1",
+      "reason": "a \u00a72 node starting from \"stop only targets the pid\" hunts the wrong mechanism, where the plan's own evidence points at why a group signal failed to reach a reparented worker.",
+      "text": "\u00a71 states the orphan survived because `crew stop` \"targets only the recorded pid\", but the cited path signals the whole process group: `terminate` (dispatch_sessions.py:1752) calls `_signal_process_group` (routing.py:2915), whose docstring reads \"os.killpg signals the whole process group\". \u00a71 itself then notes the group stop \"should end it\", so the sentence asserts a cause the plan's own citation contradicts, and \u00a72's candidate list (worker record absent / pid changed by reparenting / classifier bypass) never covers the group-signal path that is the actual open question",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-run-has-one-live-writer.html:63",
+      "id": "reasoning-2",
+      "reason": "a node that establishes the gap in `local_liveness` is fenced out of the only file that can close it, so the plan must add recovery_liveness.py to the write paths or drop that candidate from the list.",
+      "text": "\u00a72's deliverable leaves the classification repair open among three named sites (\"in `local_liveness`, in the worker record's writer, or in the classifier's call\") but the declared write paths are routing.py, dispatch_launch.py, dispatch_sessions.py, recovery_classification.py and the new test file, so the `local_liveness` site \u2014 which lives in `reckon/crew/recovery_liveness.py` \u2014 is outside the node's fence. Verified: `local_liveness` is defined at recovery_liveness.py:730 and recovery_classification.py:149 calls it, and recovery_liveness.py is in no live claim and no other section's write paths",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-run-has-one-live-writer.html:78",
+      "id": "anchors_resolve-1",
+      "reason": "a provenance date on background files; the three tests exist and the guards they name are real, so the measure is unaffected.",
+      "text": "\u00a73 says \"Three test files, landed 2026-10-03\" lock the guards in, but `git log --diff-filter=A` shows test_resume_refuses_a_live_worker.py added 2026-10-03 while test_resume_sweep_needs_an_observed_death.py and test_direct_resume_needs_an_observed_death.py were added 2026-09-29",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "8543d275e4c1cefc349882ed44bc1be6ab634186f5b01a54e5dddccac199a443",
+  "plan_slug": "a-run-has-one-live-writer",
+  "plan_version": 4,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261012T223120570289-plan-review-of-a-run-has-one-live-writer",
+  "reviewed_blob_sha": "124e521710be7e0c341716970b4609e64f592b7a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a73 dates three cited test files to a single landing day that two of them do not have.",
+    "done_when": "pass \u2014 \u00a72's done-when names four measurable cases (real processes in a temp tree, checked by pid afterwards) with a declared negative control that signals the supervisor pid alone and fails the first case; \u00a73's names four cases with a declared control that restores the reproduced cause and fails the reproduced case.",
+    "evidence_paths": "pass \u2014 both negative controls are \"logged under the run directory\" (the durable crew run dir, not a scratchpad) and reproduction findings are recorded in the manifest, a persisted path.",
+    "naming": "pass \u2014 the plan proposes extending `signal_worker` and names no new symbol by plan label, ticket number or version tag; `s1`/`s2`/`s3`, the gate id and the cross-plan `crew-runtime-positive-controls \u00a747` reference are plan-structure data, not code.",
+    "reasoning": "findings \u2014 \u00a71's stated cause is refuted by the code it cites, and \u00a72's open repair-site list exceeds its declared write paths.",
+    "single_goal": "pass \u2014 \u00a72 carries one invariant (a worker never outlives its supervisor) and \u00a73 one (a resume never launches beside a live attempt); \u00a72's three repair bullets enforce the same invariant at termination and classification layers and close on one gate.",
+    "wiring": "pass \u2014 the one depends-on (`s3 \u2192 a-run-has-one-live-writer#s2`) resolves to a section that exists, the single gate `g-arholw-routing-released` gates `s2` and names the in-flight run that holds `reckon/crew/routing.py`, and a live-claim scan of the files \u00a72/\u00a73 write shows routing.py is the only claimed path and it is the one gated."
+  },
+  "section_digests": {
+    "_document": "0c3344f50d8c7751b53cce52cbef8cceef98bafec58c475efcef4e6cc6f0e906",
+    "s1": "4be3aec3ea6b964559fb976fc71b0e9fed16762c724c109c88a97413ad274f1d",
+    "s2": "55fbfc923ad4f7052cb354c3180606a70570aafe455626c7667d90c34c77499a",
+    "s3": "47a6bee480ce06c34de5ed11e8e80c6d72dfbf192a803511337a59a49084e2f6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-12T22:42:11.670808+00:00"
+}
