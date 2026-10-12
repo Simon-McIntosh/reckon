@@ -720,7 +720,7 @@ class ExecutedSource:
 # ── Reach graph ────────────────────────────────────────────────────────────
 #
 # A node's gate proves its code works when called; it does not prove anything
-# calls it. This resolves, for one revision's ``reckon/`` tree, which modules
+# calls it. This resolves, for one revision's package tree, which modules
 # and module-level definitions are reachable from the production entry points —
 # the console scripts in ``pyproject.toml``, the MCP server, the HTTP server and
 # every module launched by ``python -m`` from reckon's own source. It reads the
@@ -767,19 +767,137 @@ class Reach:
     roots: frozenset[str]
 
 
+#: Directories that never name the reviewed repository's import package.
+_NON_PACKAGE_DIRS = frozenset({"tests", "docs", "scripts"})
+
+
+class PackageNotFoundError(ValueError):
+    """A reviewed repository declares no single import package to read."""
+
+
+def _tracked_init_dirs(repo, revision) -> set[str]:
+    """Every directory holding a tracked ``__init__.py`` at ``revision``."""
+
+    listing = _git(repo, "ls-tree", "-r", "--name-only", revision or "HEAD") or ""
+    return {
+        path.rsplit("/", 1)[0]
+        for path in listing.splitlines()
+        if path.endswith("__init__.py") and "/" in path
+    }
+
+
+def _project_name_at(repo, revision) -> str | None:
+    """The ``[project] name`` in ``pyproject.toml`` at ``revision``, normalised."""
+
+    import tomllib
+
+    from reckon.velocity import read_blobs
+
+    spec = (revision, "pyproject.toml")
+    blob = read_blobs(repo, [spec]).get(spec)
+    if not blob:
+        return None
+    try:
+        data = tomllib.loads(blob.decode("utf-8"))
+    except (tomllib.TOMLDecodeError, UnicodeDecodeError):
+        return None
+    name = data.get("project", {}).get("name")
+    return name.replace("-", "_") if isinstance(name, str) and name else None
+
+
+def _package_candidates(directories: Iterable[str]) -> list[str]:
+    """Top-level (or ``src/`` child) directories that could be the package."""
+
+    found: list[str] = []
+    for directory in sorted(set(directories)):
+        parts = directory.split("/")
+        if (len(parts) == 1 and parts[0] not in _NON_PACKAGE_DIRS) or (
+            len(parts) == 2 and parts[0] == "src" and parts[1] not in _NON_PACKAGE_DIRS
+        ):
+            found.append(directory)
+    return found
+
+
+def package_directory(repo, revision) -> str:
+    """The reviewed repository's own import package, as a repo-relative path.
+
+    The package is the directory the code under review imports: the project's
+    declared name when a directory of that name (or ``src/<name>``) holds a
+    tracked ``__init__.py``, otherwise the single top-level package directory
+    (or ``src/`` child) that does. A repository that declares none, or several,
+    is refused by name rather than guessed at.
+    """
+
+    directories = _tracked_init_dirs(repo, revision)
+    name = _project_name_at(repo, revision)
+    if name is not None:
+        for candidate in (name, f"src/{name}"):
+            if candidate in directories:
+                return candidate
+    candidates = _package_candidates(directories)
+    if len(candidates) == 1:
+        return candidates[0]
+    if candidates:
+        named = ", ".join(repr(candidate) for candidate in candidates)
+        raise PackageNotFoundError(f"no single import package to review: {named}")
+    raise PackageNotFoundError(
+        "no import package to review: no tracked directory holds an __init__.py"
+    )
+
+
+def dotted_token(path: str, package: str) -> str:
+    """A module name or file path token as a dotted name, under ``package``.
+
+    A leading ``<package>/`` path prefix is dropped, a ``.py`` suffix is
+    stripped, and path separators become dots, so ``reckon/crew/runs.py`` and
+    ``crew/runs.py`` both read ``crew.runs``. This is the one place a review's
+    path normalisation happens.
+    """
+
+    text = path.replace("\\", "/").strip().rstrip("/")
+    text = text.removeprefix(f"{package}/")
+    return text.removesuffix(".py").replace("/", ".")
+
+
+def as_module(name: str, modules: Iterable[str], package: str) -> str | None:
+    """The snapshot module a module name or path token names, or None.
+
+    A token is tried as given, then under ``package``; trailing components are
+    dropped until a known module is found, so a directory resolves to its
+    nearest enclosing module.
+    """
+
+    known = modules if isinstance(modules, (frozenset, set)) else frozenset(modules)
+    if name in known:
+        return name
+    candidate = dotted_token(name, package)
+    for probe in (candidate, f"{package}.{candidate}"):
+        parts = probe.split(".")
+        while parts:
+            joined = ".".join(parts)
+            if joined in known:
+                return joined
+            parts.pop()
+    return None
+
+
 def _package_snapshot(repo, revision) -> SourceSnapshot:
-    """Read one revision's ``reckon/`` tree into a snapshot keyed package-relative."""
+    """Read the reviewed package's tree into a snapshot keyed package-relative."""
 
     from reckon.velocity import read_sources
 
+    directory = package_directory(repo, revision)
     sources: dict[str, str] = {}
     files: dict[str, tuple[_Signature, str]] = {}
-    for path, text in read_sources(repo, revision, prefix="reckon").items():
-        relative = path.removeprefix("reckon/")
+    for path, text in read_sources(repo, revision, prefix=directory).items():
+        relative = path.removeprefix(directory + "/")
         sources[relative] = text.decode("utf-8-sig")
         files[relative] = ((0, 0, 0, 0, 0), "")
     return SourceSnapshot(
-        root=Path("reckon"), files=files, sources=sources, revision=revision or None
+        root=Path(directory),
+        files=files,
+        sources=sources,
+        revision=revision or None,
     )
 
 
@@ -1002,7 +1120,7 @@ def reached(repo, revision) -> Reach:
 
 
 def package_modules(repo, revision) -> frozenset[str]:
-    """Every module name under ``reckon/`` at ``revision``."""
+    """Every module name under the reviewed package at ``revision``."""
 
     snapshot = _package_snapshot(repo, revision)
     return frozenset(
@@ -1013,7 +1131,7 @@ def package_modules(repo, revision) -> frozenset[str]:
 def neighbourhood(repo, revision, paths) -> frozenset[str]:
     """The production modules one import away from ``paths``, in either direction.
 
-    ``paths`` are module names or ``reckon/``-relative file paths. The result
+    ``paths`` are module names or package-relative file paths. The result
     holds every module that imports one of the named modules and every module one
     of them imports, excluding the named modules themselves.
     """
@@ -1024,21 +1142,13 @@ def neighbourhood(repo, revision, paths) -> frozenset[str]:
         for relative in snapshot.sources
     }
     known = frozenset(module_of)
+    package = snapshot.root.name
 
-    def as_module(name: str) -> str | None:
-        if name in module_of:
-            return name
-        candidate = name.removeprefix("reckon/").removesuffix(".py").replace("/", ".")
-        for probe in (candidate, f"{snapshot.root.name}.{candidate}"):
-            parts = probe.split(".")
-            while parts:
-                joined = ".".join(parts)
-                if joined in module_of:
-                    return joined
-                parts.pop()
-        return None
-
-    named = {m for m in (as_module(path) for path in paths) if m is not None}
+    named = {
+        module
+        for module in (as_module(path, known, package) for path in paths)
+        if module is not None
+    }
     if not named:
         return frozenset()
 

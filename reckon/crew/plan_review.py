@@ -2374,18 +2374,18 @@ def _module_probes(path: str, package: str) -> list[str]:
     """The dotted module a ``--path`` token names, as absolute candidates.
 
     ``neighbourhood`` reads a module name or a package-relative ``.py`` file
-    path, so a token is normalised the same way it normalises one: strip a
-    ``.py`` suffix, turn separators into dots, and try the token both as given
-    and under the package. The caller pops trailing components to fall back to
-    an enclosing module, mirroring the reachability instrument's resolution.
+    path, so the token is normalised by the same owner: strip a ``.py`` suffix,
+    drop a leading ``<package>/`` path prefix, turn separators into dots, and
+    try the token both as given and under the package. The caller pops trailing
+    components to fall back to an enclosing module, mirroring the reachability
+    instrument's resolution.
     """
 
-    text = path.replace("\\", "/").strip().rstrip("/")
-    dotted = text.removesuffix(".py").replace("/", ".")
+    from reckon import served_code
+
+    dotted = served_code.dotted_token(path, package)
     if not dotted:
         return []
-    if dotted.startswith(f"{package}."):
-        return [dotted]
     return [dotted, f"{package}.{dotted}"]
 
 
