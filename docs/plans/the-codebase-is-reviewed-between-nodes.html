@@ -25,7 +25,7 @@
   <title>The Codebase Is Reviewed Between Nodes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="52">
+<meta name="plan-version" content="53">
 <meta name="plan-modified" content="2026-10-12">
 </head>
 <body>
@@ -424,6 +424,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261011T220555890305-review-of-a-code-review-finding-is-disposable" data-who="reckon-build" data-when="2026-10-11T22:11:24.523Z">
     <div class="r-comment-body"><p>reviewed r-20261011T214057310393-a-code-review-finding-is-disposable at b0d4fdab against base 9c2fe707; six dimensions scored 19/18/20/19/19/20 (total 115), one follow-on finding; no blocking defects; record stored at both assigned paths</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261011T223357048735-a-code-review-reads-its-projects-package" data-who="reckon-build" data-when="2026-10-11T22:44:17.934Z">
+    <div class="r-comment-body"><p>served_code now resolves the reviewed repository&#x27;s own import package at the revision (pyproject project name, else single top-level package, else refuse by name) and reads it instead of a literal reckon prefix; one normaliser (dotted_token/as_module) is shared with plan_review; gate tests/test_a_code_review_reads_its_projects_package.py — acme_tools cases plus tests importing served_code ran 74 passed EXIT=0, declared negative control (restore literal reckon prefix) 4 failed/1 passed EXIT=1.</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-s11-known-gate-hole-1011" data-who="reckon-build" data-when="2026-10-11T04:20:00Z">
     <div class="r-comment-body"><p>A known finding for the proving run's neighbourhood, measured on 2026-10-11. The contradiction guard in <code>reckon/crew/promotion_evidence.py</code> refuses a passing gate only when an asserted exit status differs from the log's <code>EXIT=</code> record. With no <code>--gate-exit-status</code>, the status is taken from the log itself, so a log recording <code>EXIT=1</code> promotes as <code>gate: passed</code> with <code>exit_status: 1</code> stored side by side. The guard compares equal values and finds nothing. It happened on run <code>r-20261011T003218530440-schema-view-within-bound</code>, which was promoted citing its base arm; the ledger row was corrected at the next commit after <code>2d3275928</code>. The same guard refused the identical mistake when the status was passed explicitly. A passing verdict with a non-zero exit status is itself the contradiction, so the review this section runs should read it as a known finding, not report it as new.</p></div>
