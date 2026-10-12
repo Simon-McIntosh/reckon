@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches-landed">
+  <meta name="plan-title" content="The Monitor Shows The Work It Watches — landed record">
+  <meta name="plan-summary" content="Closure synthesis for The Monitor Shows The Work It Watches: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verdict" content="qualified">
+  <title>The Monitor Shows The Work It Watches — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>The Monitor Shows The Work It Watches — landed record</h1>
+  <p>Closure synthesis for The Monitor Shows The Work It Watches: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s2-own-starts">
+    <h2>§2 — a run&#x27;s start is one row on its own session&#x27;s pane</h2>
+    <p>Two nodes landed it.</p><p><strong>The row policy.</strong> Run <code>r-20261012T211124210060-a-pane-shows-its-own-starts</code>, commit <code>2ebba9f55</code>, merged at <code>5f24c855c</code>. <code>RowPolicy</code> in <code>reckon/crew/ticker.py</code> takes the pane's own session and delivers one <code>dispatched → working</code> row for that session's runs only. A peer's start, a re-announcement and a replay stay held. Gate: 629 passed across 34 ticker-importing files. Negative control (hold own starts back): 3 failed. Review 100/120, which found the rule inert in the live pane.</p><p><strong>The wiring.</strong> Run <code>r-20261012T215801094455-the-live-pane-delivers-its-own-starts</code>, commit <code>847487a0e</code>, merged at <code>0d2b36ff7</code>. <code>follower_row_path</code> in <code>reckon/crew_follow_commands.py</code> builds <code>PaneRowPath</code> with the follower's session, and <code>_watch_transition</code> in <code>reckon/crew/recovery_watch.py</code> and its snapshot carry lane and time budget. The never-a-start cases in <code>tests/test_follow_replays_the_gap.py</code> were updated, a path accepted at promotion. Gate: 7 passed in the new file and the updated one. Negative control (build <code>PaneRowPath</code> without the session): 1 failed. Review 103/120. Its wider arm showed two follower-reload failures, in <code>test_follower_freshness.py</code> and <code>test_follower_reload_is_safe.py</code>, which also fail at base.</p><p>Integrated gates at the merged heads: 629 passed, and 7 passed. Observed live: minutes after the merge, this session's pane printed a <code>dispatched → working</code> row for its own run <code>a-re-review-round-has-its-own-identity</code>.</p>
+  </section>
+
+</main>
+</body>
+</html>
