@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-worktree-release-is-whole">
+  <meta name="plan-title" content="A worktree release is whole or not at all">
+  <meta name="plan-summary" content="Every worktree removal now vacates the registered path in one rename onto a same-filesystem trash directory, prunes the registration, and deletes the copy with no deadline; a locked tree is still refused and gc sweeps leftover trash.">
+  <meta name="plan-evidence-for" content="crew-runtime-positive-controls">
+  <meta name="plan-verifies" content="crew-runtime-positive-controls#s47">
+  <meta name="plan-verdict" content="pass">
+  <title>A worktree release is whole or not at all &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <h1 id="a-worktree-release-is-whole">A worktree release is whole or not at all</h1>
+  <section id="a-worktree-release-is-whole-outcome">
+    <p>One helper, <code>_release_worktree_whole</code>, owns removal for every site: it renames the tree onto a same-filesystem trash directory, runs <code>git worktree prune</code>, then deletes the copy with no deadline. Gate at head d3e4b44f7: 55 passed, 0 failed. The negative control restoring <code>git worktree remove</code> under the 180 s deadline reddens the timeout case with a partial tree (EXIT=1).</p>
+  </section>
+</main>
+</body>
+</html>
