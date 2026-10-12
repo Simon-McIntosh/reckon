@@ -192,6 +192,7 @@ def test_a_complete_review_run_promotes_itself(
     assert not pointer_path(REVIEW_RUN_ID).exists()
     [row] = ledger.runs(PROJECT, root=repository)
     assert row["run_id"] == REVIEW_RUN_ID
+    assert row["gate"] == "not-run"
     assert row["promoted_by"] == "review-self"
     # No longer unreconciled at dispatch: the pointer is gone, so the
     # reconciliation counter that reads live pointers cannot see it.

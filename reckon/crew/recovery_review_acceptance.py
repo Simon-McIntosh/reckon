@@ -330,7 +330,7 @@ def promote_review_run_itself(
     try:
         result = promotion_module.complete(
             run_id,
-            gate="passed",
+            gate="not-run",
             root=root,
             promoted_by="review-self",
         )
