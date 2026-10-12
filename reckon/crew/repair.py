@@ -28,6 +28,7 @@ id is meaningful only against that record, which is what re-reading it returns.
 from __future__ import annotations
 
 import hashlib
+import re
 from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
 from typing import Any
@@ -283,6 +284,50 @@ def repair_round_id(
     return f"{run_id}@{head}" if head else run_id
 
 
+# How many hexadecimal digits of the reviewed head a round's node id keeps. The
+# composition rule and the reader that strips the suffix share it, so a reader
+# parses by the grammar the writer enforced.
+_ROUND_HEAD_DIGITS = 12
+
+
+def round_node_id(prefix: str, source: str, head: str) -> str:
+    """The node id a round of work carries: ``<prefix><source>[-<head[:12]>]``.
+
+    A round's id carries the head it read, so two rounds of one source at
+    different heads never share an id and each gets its own worktree path. The
+    rule is shared by the repair and review prefixes rather than written once
+    per prefix, so both cannot drift into different spellings of one identity.
+    A round with no head to name — a source that predates the field — keeps the
+    bare ``<prefix><source>`` spelling.
+    """
+    source = str(source or "").strip()
+    head = str(head or "").strip()
+    if head:
+        return f"{prefix}{source}-{head[:_ROUND_HEAD_DIGITS]}"
+    return f"{prefix}{source}"
+
+
+def round_node_source(node_id: str, prefix: str) -> str:
+    """Strip ``prefix`` and a trailing head suffix from a round node id.
+
+    The inverse of :func:`round_node_id`: a reader recovering the source a
+    round was composed from removes the prefix and, when present, the
+    ``-<head[:12]>`` suffix. A node id carrying no such suffix — one written
+    before rounds were head-keyed — is returned with only the prefix removed,
+    so both spellings resolve to the same source.
+    """
+    text = str(node_id or "")
+    if not text.startswith(prefix):
+        return ""
+    source = text[len(prefix) :]
+    cut = len(source) - (_ROUND_HEAD_DIGITS + 1)
+    if cut > 0 and source[cut] == "-":
+        tail = source[cut + 1 :]
+        if re.fullmatch(rf"[0-9A-Fa-f]{{{_ROUND_HEAD_DIGITS}}}", tail):
+            return source[:cut]
+    return source
+
+
 def repair_node_id(
     review: Mapping[str, Any],
     *,
@@ -299,10 +344,7 @@ def repair_node_id(
     run_id = str(review.get("reviewed_run_id") or reviewed_run_id or "").strip()
     source = str(source_node or run_id).strip()
     _, _, _, head = review_module.carried_revision_pair(review)
-    head = str(head or "").strip()
-    if head:
-        return f"{REPAIR_NODE_PREFIX}{source}-{head[:12]}"
-    return f"{REPAIR_NODE_PREFIX}{source}"
+    return round_node_id(REPAIR_NODE_PREFIX, source, str(head or "").strip())
 
 
 def _run_fence(run_record: Mapping[str, Any] | None) -> list[str]:

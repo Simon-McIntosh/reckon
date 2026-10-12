@@ -15,6 +15,7 @@ from reckon.crew.reports import (
     manifest_status_is_template,
     parse_manifest,
 )
+from reckon.crew.repair import round_node_source
 from reckon.crew.routing import _signal_process_group
 from reckon.crew.runs import (
     _mutate_pointer,
@@ -73,9 +74,7 @@ def _resolved_reviewed_run_id(record: Mapping[str, Any], project: str) -> str:
     was resolved to a run id at dispatch.
     """
     node_id = str((record.get("node") or {}).get("id") or "")
-    if not node_id.startswith(REVIEW_NODE_PREFIX):
-        return ""
-    source = node_id[len(REVIEW_NODE_PREFIX) :]
+    source = round_node_source(node_id, REVIEW_NODE_PREFIX)
     if not source:
         return ""
     if source.startswith("r-"):

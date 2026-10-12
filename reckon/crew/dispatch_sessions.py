@@ -29,6 +29,9 @@ from reckon.crew.recovery import (
     _resolve_commit,
     resume_window_refusal,
 )
+from reckon.crew.repair import (
+    round_node_source,
+)
 from reckon.crew.routing import (
     _agent_configuration,
     _budget_verdict,
@@ -433,7 +436,7 @@ def _task_identity(
     of several tasks — which is exactly why the member is the wrong key.
     """
     if _is_review_run(record):
-        source = _record_node_id(record)[len(REVIEW_NODE_PREFIX) :]
+        source = round_node_source(_record_node_id(record), REVIEW_NODE_PREFIX)
         return ("review", str(project), _reviewed_run_id(source, records))
     return ("node", str(project), _record_plan(record), _record_node_id(record))
 

@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-moved-head-is-reviewed">
+  <meta name="plan-evidence-for" content="reckon:a-moved-head-is-reviewed">
+  <meta name="plan-verifies" content="reckon:a-moved-head-is-reviewed#s3">
+  <meta name="plan-recorded-at" content="2026-10-12">
+  <meta name="plan-verdict" content="passed">
+  <title>A re-review round carries its own identity | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-re-review-round-has-its-own-identity-landing" data-node="a-re-review-round-has-its-own-identity" data-reckon="landed" data-when="2026-10-12">
+  <h2>A review round composes a node id and worktree path carrying the head it reviews</h2>
+  <p>The run-review node id is composed by the shared <code>round_node_id</code> rule that <code>repair_node_id</code> already applied to repair rounds — <code>&lt;prefix&gt;&lt;source&gt;-&lt;head[:12]&gt;</code> — so a re-review of a resumed run cannot reuse the first round's id and collide with its worktree, and both head-stripping readers (<code>_task_identity</code>, <code>_resolved_reviewed_run_id</code>) resolve every round's id back to the run it reviewed. <code>tests/test_a_resumed_head_is_reviewed.py</code> passes its four watch-path cases; the 41 test files importing <code>recovery_review_dispatch</code> or <code>recovery_watch</code> show no added failure against base.</p>
+</article>
+</body>
+</html>
