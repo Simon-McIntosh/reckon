@@ -1,0 +1,63 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-12T05:19:18.831Z",
+  "dispatched_at": "2026-10-12T05:10:17Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-held-dispatch-waits-its-fair-turn.html:67",
+      "id": "reasoning-1",
+      "reason": "without a rule that treats a `launch-failed` pointer as re-queueable, the drainer's stated loop strands exactly the request the paragraph promises it preserves, and done-when bullet 3 (\"a launch failure leaves the run queued\") cannot be met for the post-spawn case; the node must add that re-queue step to the drainer pass.",
+      "text": "\u00a74 says the drainer keeps the queued pointer and \"on either outcome it writes the pointer back as `queued` \u2026 so a failed attempt never destroys the request\", but the second outcome it names (a post-spawn failure with no manifest) is marked `launch-failed` by `_record_launch_failure`, which runs in `_reap_launched_workers`/the supervisor, not inside the drainer's dispatch call \u2014 and \u00a74's own cadence only \"reads the lane document and the queued pointers\", so a pointer left in `launch-failed` is never surfaced as queued work",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "9de347fe3ecb2f8f6ef2db8ab718693051c7f632f7cb115b85a720804861903d",
+  "plan_slug": "a-held-dispatch-waits-its-fair-turn",
+  "plan_version": 20,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-12T05:19:40.292650+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-12T05:19:40.292650+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-held-dispatch-waits-its-fair-turn.v20.json",
+  "review_run_id": "r-20261012T050934578337-plan-review-of-a-held-dispatch-waits-its-fair-turn",
+  "reviewed_blob_sha": "eec8aed4e8feef44527d5751f7c1c43217ffe971",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_release_launch_claim` (dispatch_claims.py:619) and `LAUNCH_FAILED_PHASE`/`launch-failed` (dispatch_launch.py:93) resolve; the shared evidence link `a-held-dispatch-waits-its-fair-turn-landed.html#s2/#s3` resolves to ids present in that file.",
+    "done_when": "pass \u2014 \u00a74's four bullets are measurable, and bullets 2 and 3 carry declared negative controls (two racing drainers launch each run once; a paused fleet gate launches nothing), so the guard can be shown to fire.",
+    "evidence_paths": "pass \u2014 \u00a74 cites durable repository paths (`reckon/crew/dispatch_claims.py`, `reckon/crew/dispatch_launch.py`) and names no scratchpad or node-local path; the node's gate log is supplied by the runner.",
+    "naming": "pass \u2014 the new symbols are mechanism words (`admit`, `--lane`, `--once`), and the phase words `queued`/`starting`/`working`/`launch-failed` are code vocabulary, not plan labels or ticket numbers.",
+    "reasoning": "a finding \u2014 \u00a74 states the drainer restores the pointer \"on either outcome\", but its cited `launch-failed` marking is written asynchronously by the reaper, so a queued-pointer cadence cannot observe it.",
+    "single_goal": "pass \u2014 \"One drainer launches queued work\" is a single deliverable; the admit verb and its temporary-services-config test are the same deliverable's surface, not a second one.",
+    "wiring": "pass \u2014 \u00a74's relationships are unchanged (plan-after `the-local-lane-is-the-default`, standalone); nothing \u00a74 relies on is a missing edge."
+  },
+  "section_digests": {
+    "_document": "398ad37c8fa14bcc673d4343a2d721bb121e0748a3d62bb65eaa40208d76d93e",
+    "s1": "e09f72c38fa12dd06b1fede9137b6a8731c7f42dad95ea4d7873e48b6bcebc93",
+    "s2": "c37ed4ecb2dad1331b0b031fb8351608243790308312236d375bede3594285b7",
+    "s3": "ef687123318fac196bded366330cf2e92b586c4991b5c1cc8670f228182f916c",
+    "s4": "e6a41eadc72e4752cc0ebe35a14a9bce3f28bc1061ec677e8f779fa09d8c037c",
+    "s5": "4b674f96924c3dbfde217945d16c606df376d034dc060f02360a4336412e74f8",
+    "s6": "9e35fc2341a06de64fed9ff7f176a0e83b22c1482c1b5a04a5539b6e4c07aab4",
+    "s7": "764a72dad2d59bddd4d3b1209f07c0c210ff6c46cd14147d4bcc7ffe9fa9426d",
+    "s8": "1b92313fdf672f4b813b45aa8e26f1304ca363cdc5a4d1752238f794a2019e27"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-12T05:19:39.301885+00:00"
+}
