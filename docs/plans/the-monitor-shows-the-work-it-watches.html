@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="6">
+<meta name="plan-version" content="7">
 <meta name="plan-modified" content="2026-10-12">
 </head>
 <body>
@@ -51,19 +51,19 @@
 
     <h2 id="s3">§3 — Every printed row carries the session's live roll-up</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> Each row the pane delivers ends with a compact roll-up of the session's live runs: a count, and the node of each, in the ticker's existing abbreviated form. So "all work active" is visible on the latest line without the full stream. The roll-up reads the same live classification that <code>crew(view="live")</code> uses, and computes nothing of its own. It adds no row: a pane with no deliverable change stays quiet.</p>
+    <p><strong>Deliverable.</strong> Every row the pane delivers already ends with a counter cell. <code>Ticker._stats</code> in <code>reckon/crew/ticker.py</code> renders it from <code>_fleet_counts</code> in <code>reckon/crew/recovery_watch.py</code>, which narrows to a session through <code>_partition_session_rows</code>. That cell gains the session's live nodes, in the ticker's existing abbreviated form, so "all work active" is visible on the latest line without the full stream. No second status block is added to the row, and nothing is computed outside <code>_fleet_counts</code>. It adds no row: a pane with no deliverable change stays quiet.</p>
     <p><strong>Done when</strong> <code>tests/test_a_pane_row_carries_the_live_rollup.py</code> passes:</p>
     <ul>
-      <li>With three live runs in session S and one in a peer session, S's printed row reports three, names their nodes, and omits the peer's run.</li>
+      <li>With three live runs in session S and one in a peer session, the counter cell of S's printed row reports three, names their nodes, and omits the peer's run.</li>
       <li>When the last live run settles, its row reports none live.</li>
       <li>The roll-up matches <code>crew(view="live", session=S)</code> for the same fixture.</li>
     </ul>
     <p>The test files that import <code>ticker</code> pass. The negative control, which counts every session's runs, fails the first case. It is logged under the run directory.</p>
-    <p>Write paths: <code>reckon/crew/ticker.py</code>, <code>tests/test_a_pane_row_carries_the_live_rollup.py</code>. This section runs after §2, since both write <code>ticker.py</code>.</p>
+    <p>Write paths: <code>reckon/crew/ticker.py</code>, <code>reckon/crew/recovery_watch.py</code> (only if <code>_fleet_counts</code> must carry the node names), <code>tests/test_a_pane_row_carries_the_live_rollup.py</code>. This section runs after §2, since both write <code>ticker.py</code>.</p>
 
     <h2 id="s4">§4 — The pane ends when no work is live</h2>
 <section data-reckon="section" data-id="s4" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> When the session has no live run, its follower child prints one idle line, <code>no live work in &lt;session&gt; since HH:MM</code>, and exits. The session host stays alive, and the pane's last line reads idle. When the session next dispatches, the request that dispatch already writes to the host's pipe starts a new follower child for that project and session. The new child replays nothing it has already printed and delivers the new run's start row. No turn is spent re-arming. The host itself still never exits on its own, because a plugin monitor that exits is never restarted in the session (decision <code>pane-end</code>). Claude Code therefore still lists the monitor as running, which this section accepts.</p>
+    <p><strong>Deliverable.</strong> When the session has no live run, its follower child prints one idle line, <code>no live work in &lt;session&gt; since HH:MM</code>, and exits. "No live run" is the answer of <code>_population_has_live_work(project, session=...)</code> in <code>reckon/crew_follow_commands.py</code>, which already owns that judgement; it is not derived a second time. The idle line extends the final-line path <code>crew follow --lifetime</code> already prints.</p><p> The session host stays alive, and the pane's last line reads idle. When the session next dispatches, the request that dispatch already writes to the host's pipe starts a new follower child for that project and session. The new child replays nothing it has already printed and delivers the new run's start row. No turn is spent re-arming. The host itself still never exits on its own, because a plugin monitor that exits is never restarted in the session (decision <code>pane-end</code>). Claude Code therefore still lists the monitor as running, which this section accepts.</p>
     <p><strong>Done when</strong> <code>tests/test_a_pane_settles_when_no_work_is_live.py</code> passes over a temporary host state directory:</p>
     <ul>
       <li>When the last live run of session S settles, the idle line is delivered once and the follower child exits, while the host process stays alive.</li>
@@ -104,7 +104,7 @@
 <tr><td><code>dropped</code></td><td>left without landing</td><td>withdrawn, discarded, departed</td></tr>
 </tbody>
 </table>
-<p>Every row is a pair drawn from these words. A run's first row reads <code>new → working</code> or <code>new → queued</code>, where <code>new</code> appears only on the left of a first row. A pair whose two words are the same is never printed. The reason clause, not the state word, names the specific cause: what a halted run asks, what a waiting run waits on, which review a delivered run is in. The internal classifications and their recovery verbs are unchanged. The mapping is one table, owned in one place, which every surface that prints a run's state reads: the row, the run counters and the roll-up of §3. Replayed over the same history, this mapping prints 28,408 rows instead of 39,042, in 22 distinct pairs.</p>
+<p>Every row is a pair drawn from these words. A run's first row reads <code>new → working</code> or <code>new → queued</code>, where <code>new</code> appears only on the left of a first row. A pair whose two words are the same is never printed. The reason clause, not the state word, names the specific cause: what a halted run asks, what a waiting run waits on, which review a delivered run is in. The internal classifications and their recovery verbs are unchanged. The mapping is one table, owned in one place, which every surface that prints a run's state reads: the row, the run counters and the roll-up of §3. It supersedes <code>DISPLAY</code> in <code>reckon/crew/ticker.py</code> in place, and <code>DISPLAY</code> is retired. The counter bucket labels <code>_WAIT_CELL</code> and <code>_COUNT_FIELD</code> are reconciled with the seven words. Replayed over the same history, this mapping prints 28,408 rows instead of 39,042, in 22 distinct pairs.</p>
 <p><strong>Done when</strong> <code>tests/test_the_pane_speaks_seven_words.py</code> passes:</p>
 <ul>
 <li>Every classification and watch state the code can emit maps to exactly one of the seven words. The test enumerates them from the code's own vocabularies, so a new internal state without a mapping fails the test.</li>
