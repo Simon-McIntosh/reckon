@@ -1,0 +1,41 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-12T21:45:07.136Z",
+  "dispatched_at": "2026-10-12T21:37:54Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-moved-head-is-reviewed.html:35",
+      "id": "reasoning-1",
+      "reason": "the fix as scoped breaks review-to-run resolution and review session continuation, so \u00a73 must either change the id scheme so the source stays recoverable or add `dispatch_sessions.py`/`recovery_review_delivery.py` (with a parser update) to its write paths.",
+      "text": "\u00a73 declares the later-round node id as `<prefix><source>-<head[:12]>` with `prefix` = `review-of-`, but two live readers recover the reviewed run by stripping exactly that prefix: `_task_identity` at `reckon/crew/dispatch_sessions.py:436` and `_resolved_reviewed_run_id` at `reckon/crew/recovery_review_delivery.py:78`; with the head appended, `review-of-r-<stamp>-<head12>` yields a corrupted source that `_reviewed_run_id` (dispatch_sessions.py:397) falls back to returning verbatim, so a re-review no longer resolves to its reviewed run's task and `_resolved_reviewed_run_id` (used by promotion_checks.py:2027 and recovery_review_dispatch.py:177) returns a run id that names no run \u2014 while \u00a73's declared write paths (`recovery_review_dispatch.py`, `repair.py`, the new test) and its statement that `recovery_review_subject.py` id sites are \"outside this section\" exclude both affected modules",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "64ff0ce91bc5db4b688459c189b1aff01513915e61503ada39c84f1daaab108c",
+  "plan_slug": "a-moved-head-is-reviewed",
+  "plan_version": 15,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261012T213724713064-plan-review-of-a-moved-head-is-reviewed",
+  "reviewed_blob_sha": "47bd625b43a22c2cf94c5a70a09f24e1ff5f325b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `dispatch_review_for_run`/`review_head_move`/`carry_review_forward` exist in `reckon/crew/recovery_review_dispatch.py`, `repair_node_id` in `reckon/crew/repair.py` composes `repair-of-<source>-<head[:12]>`, merge `7c923144a` resolves and its diff lands the test-only-light tier in `reckon/review_tiers.py`, and `/reckon/plans/the-review-loop-runs-without-hand-steps` and `/reckon/evidence/archive/a-moved-head-is-reviewed-landed.html#s2-why-the-reflex-launched-nothing` both resolve (extensionless href reads as `.html`).",
+    "done_when": "pass \u2014 \u00a73's done-when names four measurable watch-path cases and a declared negative control (\"with the reused round id restored, the runtime-source resume case fails\"), so its gate can show the guard fires.",
+    "evidence_paths": "pass \u2014 the negative control is logged under the run directory and the gate list is built from the head tree, both durable paths, not a node-local temp dir.",
+    "naming": "pass \u2014 the test is now `tests/test_a_resumed_head_is_reviewed.py`, a mechanism name distinct from the plan slug `a-moved-head-is-reviewed`, and no plan label, ticket number or version tag reaches a symbol or comment.",
+    "reasoning": "a finding \u2014 the root cause is corroborated by \u00a72's cited evidence, but the mechanism \u00a73 chooses to fix it (embedding the head in the review node id) corrupts two existing consumers of that id, and neither lives in \u00a73's declared write paths.",
+    "single_goal": "pass \u2014 \u00a73 carries one deliverable, giving a re-review round an identity distinct from the round before, and its four cases all measure that one mechanism.",
+    "wiring": "pass \u2014 the plan's `informs` points at `a-review-is-sized-to-its-risk`, whose landed \u00a75 carries a data-only move forward, which \u00a73 relies on; \u00a73's own ordering (\"This section runs after \u00a72\") is satisfied because \u00a72 is `done`, so no missing or misdirected relationship."
+  },
+  "section_digests": {
+    "_document": "885c3985fdc995ffc912923d8a04de109792bb9e7aafad45b13ff488d0c0edfe",
+    "s1": "a3a1b8eb4f84292df6d31e99043de92c9c4916a619d1de95917df87aae676d63",
+    "s2": "48dd7ab841931b559865e55c8d35fc2c6ff607e66a332ba21e17c336aebe001e",
+    "s3": "85c913974e529607e35c3c08ca5ef8253622278d6abb4ef8afbc46aeb12868b3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-12T22:01:29.883650+00:00"
+}
