@@ -24,7 +24,7 @@
   <title>The Portfolio Reads True | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="51">
+<meta name="plan-version" content="52">
 <meta name="plan-modified" content="2026-10-12">
 </head>
 <body>
@@ -271,7 +271,10 @@
     <div class="r-comment-body"><p>The review of run r-20261011T052220361106-impl-move-guard-fires-again is stored at both assigned paths as a parsed six-dimension record (goal_fidelity 18, evidence 16, scope_discipline 20, durability 18, fit 17, reuse 12; total 101) reading base 981a7457b8da84949e11d14a652a37ff58396952 and head d2ea795330563a897ce1dd7c3406ae6dd327c8d6, with three follow-on findings (duplicated plan-impl meta reader, a base-sha mislabelled importers gate log, and the authored-vs-derived guard scope) and no blocking finding.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261011T052220361106-impl-move-guard-fires-again" data-who="reckon-build" data-when="2026-10-11T05:41:36.003Z">
-    <div class="r-comment-body"><p>The impl-move promotion guard now reads a plan&#x27;s authored plan-impl meta at both ends — the dispatch record stores it and the completion state carries it in place of the parser&#x27;s derived figure, so the two readings compare like with like; tests/test_promotion_requires_impl_move.py passes 22/22 EXIT=0 (was 3 failed), tests/test_impl_derives_from_declarations.py passes 8/8, and the 13 test files importing the guard&#x27;s module pass 103/103 EXIT=0.</p></div>
+    <div class="r-comment-body"><p>The impl-move promotion guard now reads a plan's authored plan-impl meta at both ends — the dispatch record stores it and the completion state carries it in place of the parser's derived figure, so the two readings compare like with like; tests/test_promotion_requires_impl_move.py passes 22/22 EXIT=0 (was 3 failed), tests/test_impl_derives_from_declarations.py passes 8/8, and the 13 test files importing the guard's module pass 103/103 EXIT=0.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-s2-impl-guard-ruling-1012" data-who="reckon-build (health-review-1010)" data-when="2026-10-12T05:20:00Z">
+    <div class="r-comment-body"><p>Lead ruling, 2026-10-12, on the question in <code>c-s2-impl-move-guard-1011</code>: the impl-move guard compares the <strong>served</strong> figure at dispatch and at completion, through one reader. The three tests' fixtures author section records instead of a <code>plan-impl</code> meta. The held run <code>r-20261011T052220361106-impl-move-guard-fires-again</code>, which compared the authored meta, was recorded as <code>work-rejected</code>. Its head <code>d2ea79533</code> is kept at <code>refs/reckon/archive/r-20261011T052220361106-impl-move-guard-fires-again</code>. Node <code>r-20261012T044933796620-the-impl-guard-reads-the-served-figure</code> carries the ruling.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261011T001008724801-audit-reports-sprint-membership" data-who="reckon-build" data-when="2026-10-11T00:24:58.857Z">
     <div class="r-comment-body"><p>reckon audit now emits SPRINT_MEMBERSHIP — a warn for a plan whose declared sprint and the sprint that lists it disagree (either end, at most one row per plan), and an info for a shipped plan a still-open sprint lists; tests/test_audit_reports_sprint_membership.py passes EXIT=0 with exactly two warn rows (b, c), none for the agreeing plan a, and one info row (d).</p></div>
@@ -308,6 +311,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-s6-first-round-1011" data-who="reckon-build" data-when="2026-10-11T07:55:00Z">
     <div class="r-comment-body"><p>First portfolio round: 67 dispositions; 2 closes applied, 8 closes refused by the store's terminal rule (legacy headings without declarations, open sections, an unrecorded followup end), and 2 merges, 3 retires and 1 re-sprint put to the lead. §6 stays open on those decisions. <a href="/reckon/evidence/archive/the-portfolio-reads-true-landed.html#s6-first-portfolio-round">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-s6-lead-dispositions-1012" data-who="reckon-build (health-review-1010)" data-when="2026-10-12T05:20:00Z">
+    <div class="r-comment-body"><p>The lead approved the round's put-to-lead dispositions on 2026-10-12, and they are applied:</p><ul><li><strong>Retired (archived):</strong> <code>clive-local-workers</code>, <code>registered-repo-state-migration</code>, <code>the-auditor-passes-what-the-reader-rejects</code>.</li><li><strong>Merged</strong> (superseded and archived, each with a merge record and a comment on its target): <code>a-worker-owns-its-own-record</code> into <code>worker-authors-its-own-record</code>, and <code>one-fact-has-one-reader</code> into <code>derived-gate-state</code>.</li><li><strong>Re-sprinted into S26:</strong> <code>the-suite-is-green-at-head</code> (from S21) and <code>a-plan-is-done-when-every-section-is-ticked</code>. The coordinator's proposal to mark the latter shipped was not applied, because its deferred §8 is real work.</li></ul><p>§6 stays open. The eight closes the store's terminal rule refused, the S22 closure and the 50-plan measure remain.</p></div>
 </div>
 </section>
 </main>

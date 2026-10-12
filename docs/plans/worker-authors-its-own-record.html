@@ -22,8 +22,8 @@
   <title>The Worker Authors Its Own Record | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="9">
+<meta name="plan-version" content="10">
+<meta name="plan-modified" content="2026-10-12">
 <meta name="plan-impl" content="0.75">
 <meta name="plan-section-declarations" content="{&quot;s5&quot;:&quot;done&quot;}">
 </head>
@@ -154,6 +154,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-waior-s5-already-landed" data-who="" data-when="">
     <div class="r-comment-body"><p>§5's done-when was met before this section was moved here from its followup. <code>e33f0ca1c</code> (the land-record contract mirrors the runtime prompt, adding the parity test) and <code>77a44905b</code> (alignment) are on main. <code>tests/test_skill_contract_parity.py</code> derives its expected sentence from the prompt's own strings at test time. Found by the read-only audit moved-sections-already-landed (run r-20261003T055306768573, reviewed at 95). s22-coord confirmed that both commits are ancestors of main and that the test file exists.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-absorbed-portfolio-1012" data-who="reckon-build (health-review-1010)" data-when="2026-10-12T05:10:00Z">
+    <div class="r-comment-body"><p>This plan absorbs the draft <a href="/reckon/plans/a-worker-owns-its-own-record">a-worker-owns-its-own-record</a>, now superseded and archived, under the first portfolio round (<code>the-portfolio-reads-true</code> §6). The draft's subject was every node scoped by default to its own plan, evidence record and figures directory. Any part of that this plan does not yet carry belongs in a section here.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-read-only-tier-cannot-author" data-who="reckon-ship" data-when="2026-09-15T07:55:00Z">
     <div class="r-comment-body">A limit on this plan's own rule, found by a peer session and measured here before recording it. The rule as written — the worker authors its landing record and its plan comment in its own worktree — holds only for execution-capable roles. A read-only reviewer or investigator cannot write docs/research/ at all: every writable grant on that tier is outside the repository, so the roles that produce investigative output are fenced out of the directory this repository's own rules say it belongs in. The consequence is measured rather than argued: 638 files in the crew reports directory against 15 tracked in docs/research/, counted independently here after a peer reported the same ratio. Essentially all investigative output this project has produced is machine-local and unversioned, and nobody chose that. Two things follow. First, anyone implementing this plan must not write the rule as though it holds for every role, because a worker on a read-only tier told to author its record will be unable to comply and the contract will be wrong for it in the same way the old prohibition was wrong for implement roles. Second, this is not this plan's defect to fix: the fence behaviour belongs to the session that reported it, which is tracking it as one class rather than four separate defects, and a role regression at 86aafc6 today has made review and investigate undispatchable entirely. Until that lands, read-only-shaped work is dispatched at implement role with the report as its only declared write path, which keeps the fence and changes only the tier.</div>
