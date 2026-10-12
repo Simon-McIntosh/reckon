@@ -1,0 +1,142 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-12T05:00:01.971Z",
+  "dispatched_at": "2026-10-12T04:55:46Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/obligation_snapshot.py:607",
+      "id": "reuse_search-1",
+      "reason": "the section cannot be implemented as written; it must add the host to `document_for` and thread `project` into `freshness`, both of which are design decisions the plan currently leaves unstated.",
+      "text": "\u00a75 judges \"a snapshot whose recorded producer host differs from the local host\", but the snapshot writer `document_for` records only `pid`, `pid_start_time`, `started_at` and `code_stamp`; no producer host is stored, so the premise of the section is absent from the record it reads, and `freshness` (line 354) is also called with the document alone (`coordinator_obligations.py:875`, `:1108`) while `producer_lease_is_live` is keyed by project \u2014 the plan names neither the new writer field nor the signature change that would make the lease readable at that call site",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/recovery_review_acceptance.py:296",
+      "id": "reuse_search-2",
+      "reason": "\u00a72 must either lift or narrow that guard, and the plan does not say which branch becomes reachable for review pointers, which changes the section's scope.",
+      "text": "\u00a72 promotes a review run \"by the same pass that runs `accept_clean_review`\", but that pass begins by skipping every review node (`if _is_review_node(pointer): continue`), a guard documented as the one that stops an unbounded chain of reviews-of-reviews; the reuse the plan describes reaches only non-review runs",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/watch_unit.py:60",
+      "id": "duplicate_owner-1",
+      "reason": "the honest change extends the existing owner (or moves the lease/host reading into `obligation_snapshot` once and reuses it) rather than adding a third site of the same host comparison that will drift against the two already in the tree.",
+      "text": "\u00a75 adds a remote-vs-local producer and lease test inside `freshness`, but the same distinction is already owned by `watch_unit.py`: `_seat_names_a_foreign_host` (:60) tells a foreign host from a missing one, `_fresh_watch_holder` (:39) uses a remote lease while clearing only a local dead holder, and `_seat_stream_fresh` (:71) already answers \"is a producer I cannot see still producing\" from shared-storage evidence; `runs.py:2125` (`_seat_host_is_local`) and `recovery_watch.py:356` apply the same `holder.host != socket.gethostname()` test",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/promotion_gate.py:182",
+      "id": "duplicate_owner-2",
+      "reason": "\u00a74 should name `gate_command_prose` as the mechanism it extends (or move that reader down a layer both callers reach), so the two placeholder judges cannot disagree about what a runnable command is.",
+      "text": "\u00a74 refuses \"a command abbreviated with an angle-bracket placeholder\", but `gate_command_prose` in `promotion_gate.py` already returns the class `\"angle-bracket placeholder\"` for exactly that shape (regex at :170, used at :229 to refuse a recorded gate command); the plan writes a parallel check in `audit_manifest` instead of citing the gate-command reader",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-review-loop-runs-without-hand-steps.html#s2",
+      "id": "interface_budget-1",
+      "reason": "against a budget of 1676 public definitions and 23 refusal families the section must state in its own text what the new ledger value and refusal surface displace or subsume, or that they extend an existing family rather than opening one.",
+      "text": "\u00a72 introduces the ledger value `promoted_by: review-self` (the vocabulary is declared in `reckon/ledger.py:181`, beside `\"review-acceptance\"`) and \u00a74 adds two new refusal findings to `audit_manifest`, and neither section names a value, finding or mechanism it retires, merges, or folds into an existing one, nor states why nothing can be",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "f02b367e0aa3712484b3ab808633b26932fc852399f5fcb77d65e24d16603ba5",
+  "plan_slug": "the-review-loop-runs-without-hand-steps",
+  "plan_version": 0,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reuse_search-1",
+      "reason": "",
+      "when": "2026-10-12T05:07:55.448854+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reuse_search-2",
+      "reason": "",
+      "when": "2026-10-12T05:08:03.560419+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "duplicate_owner-1",
+      "reason": "",
+      "when": "2026-10-12T05:08:09.817286+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "duplicate_owner-2",
+      "reason": "",
+      "when": "2026-10-12T05:08:18.441851+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "interface_budget-1",
+      "reason": "",
+      "when": "2026-10-12T05:08:23.275774+00:00"
+    }
+  ],
+  "responses": {
+    "duplicate_owner-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-12T05:08:09.817286+00:00"
+    },
+    "duplicate_owner-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-12T05:08:18.441851+00:00"
+    },
+    "interface_budget-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-12T05:08:23.275774+00:00"
+    },
+    "reuse_search-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-12T05:07:55.448854+00:00"
+    },
+    "reuse_search-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-12T05:08:03.560419+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-review-loop-runs-without-hand-steps.v0.json",
+  "review_run_id": "r-20261012T045514248997-plan-review-of-the-review-loop-runs-without-hand-steps",
+  "reviewed_blob_sha": "d0a504c0dd11af2293ced4926cf6f75b02ac3363",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the plan adds no new module; each of \u00a72\u2013\u00a75 is an amendment inside an existing owner file, so no new interface is spread over the same machinery.",
+    "duplicate_owner": "a finding \u2014 \u00a75 re-implements remote-producer liveness that `reckon/crew/watch_unit.py` already owns, and \u00a74 re-implements the angle-bracket placeholder check `reckon/crew/promotion_gate.py` already owns.",
+    "interface_budget": "a finding \u2014 public_definitions 1676, cli_options 346, mcp_views 34, refusal_families 23; \u00a72 adds a `promoted_by` ledger value and \u00a74 adds refusal findings without naming what either retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 \u00a75 rests on a producer host and a lease reader",
+    "thin_wrapper": "pass \u2014 \u00a72 reuses `promotion.complete`, \u00a73 extends `review_tier`, \u00a74 extends `audit_manifest`, \u00a75 extends `freshness`; none wraps an existing mechanism in a parallel layer without extending it."
+  },
+  "section_digests": {
+    "_document": "de00a1a0d860b11a940a7d74319320b1ae4a5d3571988105eaf41440becbcedc",
+    "s1": "b7ebfdcdef3107f4ef480a613b4d3b55cb9964d170f2548ecb6be8965ab463b9",
+    "s2": "eccf4a00f5527606c3d2318b2e0e222461ada840d4111972c2964b67139e5f07",
+    "s3": "ab808a9aeb65e6f2eadfe1b3e1e581bab52d4479e218f1e371479237ed14b2f6",
+    "s4": "074961034efc0f38d9b41521a37415f41b42ad379c05c40587fb88f523ef0f95",
+    "s5": "4ca70065364b01736bca1cd6414d2ca16791c251a2f132cdcc23d22e1f9da139"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-12T05:07:52.388293+00:00"
+}
