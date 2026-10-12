@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_run_commands.py:2544",
+    "reckon/cli.py:409"
+  ],
+  "completed_at": "2026-10-12T15:13:34.960Z",
+  "dispatched_at": "2026-10-12T14:48:26Z",
+  "findings": [
+    {
+      "file": "reckon/crew_run_commands.py",
+      "line": "2568",
+      "severity": "follow-on",
+      "text": "follow-on: the derived verdict reads result.get(\"failed\") and result.get(\"gate\"), but admit_until_stopped returns {\"passes\": N} with neither key in its default loop mode (reckon/crew/queue_admission.py:346), so a service that failed every launch still reports ok true; only --once reaches the negative verdict."
+    }
+  ],
+  "head_log_revision": "48c0b84ecda3a2b1d0f70cd31e319b8432151594",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commits 29530ab7a and 48c0b84ec against base 520d4de85 commit by commit; 29530ab7a replaces the literal _emit({\"ok\": True, **result}, pretty) with _emit_crew_result deriving ok from result[\"failed\"] and the gate state, and 48c0b84ec adds the matching sentence to the evidence fragment; two files, both inside the fence.",
+    "done_when": "the done_when names tests/test_a_queued_run_is_admitted.py; the worker's manifest records 7 passed alone (gate-admit.log) and 103 passed combined (gate-combined.log), both EXIT=0 at 48c0b84ec, and the AST guard the increment must satisfy is in that combined gate.",
+    "goal": "the source node's goal is a `crew admit` verb that launches the highest-ranked queued run while the lane grants a slot and keeps a failed launch queued; the reviewed increment changes only how that verb reports its verdict, at reckon/crew_run_commands.py:2565.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261012T052002082137-a-queued-run-is-admitted/manifest.md; status complete, commits 8514b9773 53f1d13ce 520d4de85 29530ab7a 48c0b84ec, combined gate 103 passed EXIT=0, both negative controls named, blockers none.",
+    "write_paths": "the fence granted six source paths, the evidence fragment and docs/figures; the reviewed increment changes only reckon/crew_run_commands.py and docs/evidence/fragments/a-held-dispatch-waits-*/a-queued-run-is-admitted.html, both inside the grant."
+  },
+  "justifications": {
+    "durability": "tests/test_a_crew_verb_ok_reads_its_outcome.py:66 test_crew_emit_sites_do_not_put_literal_success_beside_a_result reddens on the exact regression (the restored crew_admit:2562), which I reproduced by its predicate against the pre-fix source, but no test asserts the derived ok values themselves.",
+    "evidence": "the gate result is recorded, not claimed, at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261012T052002082137-a-queued-run-is-admitted/gate-combined.log (103 passed, EXIT=0), and the done_when names tests/test_a_queued_run_is_admitted.py.",
+    "fit": "reckon/crew_run_commands.py:2565 uses the same _emit_crew_result idiom as the sibling verbs at reckon/crew_run_commands.py:2530 and carries a mechanism-only comment with no plan or ticket labels.",
+    "goal_fidelity": "reckon/crew_run_commands.py:2565 emits the admit verdict through the shared emitter so the verb's reported outcome matches the pass it ran, which is what the node goal's verb promises.",
+    "reuse": "reckon/crew_run_commands.py:2565 extends the shared emitter _emit_crew_result/_crew_result_ok owned by reckon/crew_dispatch_commands.py:144 rather than adding a local verdict rule.",
+    "scope_discipline": "git diff 520d4de85..48c0b84ec lists exactly the two fenced files, reckon/crew_run_commands.py and the a-queued-run-is-admitted.html fragment, and nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is a `crew admit` verb that launches the highest-ranked queued run while the lane grants a slot and keeps a failed launch queued; the reviewed increment changes only how that verb reports its verdict, at reckon/crew_run_commands.py:2565.\nVERDICT done_when: the done_when names tests/test_a_queued_run_is_admitted.py; the worker's manifest records 7 passed alone (gate-admit.log) and 103 passed combined (gate-combined.log), both EXIT=0 at 48c0b84ec, and the AST guard the increment must satisfy is in that combined gate.\nVERDICT write_paths: the fence granted six source paths, the evidence fragment and docs/figures; the reviewed increment changes only reckon/crew_run_commands.py and docs/evidence/fragments/a-held-dispatch-waits-*/a-queued-run-is-admitted.html, both inside the grant.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261012T052002082137-a-queued-run-is-admitted/manifest.md; status complete, commits 8514b9773 53f1d13ce 520d4de85 29530ab7a 48c0b84ec, combined gate 103 passed EXIT=0, both negative controls named, blockers none.\nVERDICT diff: read commits 29530ab7a and 48c0b84ec against base 520d4de85 commit by commit; 29530ab7a replaces the literal _emit({\"ok\": True, **result}, pretty) with _emit_crew_result deriving ok from result[\"failed\"] and the gate state, and 48c0b84ec adds the matching sentence to the evidence fragment; two files, both inside the fence.\nCALL_SITES: reckon/crew_run_commands.py:2544, reckon/cli.py:409\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew_run_commands.py:2565 emits the admit verdict through the shared emitter so the verb's reported outcome matches the pass it ran, which is what the node goal's verb promises.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate result is recorded, not claimed, at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261012T052002082137-a-queued-run-is-admitted/gate-combined.log (103 passed, EXIT=0), and the done_when names tests/test_a_queued_run_is_admitted.py.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 520d4de85..48c0b84ec lists exactly the two fenced files, reckon/crew_run_commands.py and the a-queued-run-is-admitted.html fragment, and nothing else.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_crew_verb_ok_reads_its_outcome.py:66 test_crew_emit_sites_do_not_put_literal_success_beside_a_result reddens on the exact regression (the restored crew_admit:2562), which I reproduced by its predicate against the pre-fix source, but no test asserts the derived ok values themselves.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew_run_commands.py:2565 uses the same _emit_crew_result idiom as the sibling verbs at reckon/crew_run_commands.py:2530 and carries a mechanism-only comment with no plan or ticket labels.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew_run_commands.py:2565 extends the shared emitter _emit_crew_result/_crew_result_ok owned by reckon/crew_dispatch_commands.py:144 rather than adding a local verdict rule.\nFINDING reckon/crew_run_commands.py:2568 follow-on: the derived verdict reads result.get(\"failed\") and result.get(\"gate\"), but admit_until_stopped returns {\"passes\": N} with neither key in its default loop mode (reckon/crew/queue_admission.py:346), so a service that failed every launch still reports ok true; only --once reaches the negative verdict.\nReviewed base: 520d4de8589898c2ef2cc165ee25ec0ce358994c\nReviewed head: 48c0b84ecda3a2b1d0f70cd31e319b8432151594",
+  "review_run_id": "r-20261012T144759861454-review-of-a-queued-run-is-admitted",
+  "reviewed_base_sha": "520d4de8589898c2ef2cc165ee25ec0ce358994c",
+  "reviewed_head_sha": "48c0b84ecda3a2b1d0f70cd31e319b8432151594",
+  "reviewed_run_id": "r-20261012T052002082137-a-queued-run-is-admitted",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-12T15:01:32.752487+00:00",
+  "total": 109
+}
