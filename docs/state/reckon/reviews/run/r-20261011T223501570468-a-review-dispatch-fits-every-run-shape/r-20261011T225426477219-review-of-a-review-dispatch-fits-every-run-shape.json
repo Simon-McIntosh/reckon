@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": null,
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/recovery_review_dispatch.py:1441",
+    "reckon/crew/recovery_repair_dispatch.py:588",
+    "reckon/crew/recovery_classification.py:550",
+    "reckon/crew/promotion_checks.py:724",
+    "reckon/crew/obligations.py:143",
+    "reckon/crew_dispatch_commands.py:2146"
+  ],
+  "completed_at": "2026-10-11T23:00:15.964Z",
+  "dispatched_at": "2026-10-11T22:54:49Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_subject.py",
+      "line": "574",
+      "severity": "follow-on",
+      "text": "follow-on: the added comment cites the plan section '\u00a79' ('The brief is the half \u00a79 exists to deliver'), a plan-document section reference the repository naming rules ban from source comments and which the naming check flags as '\u00a7[0-9]'; state the mechanism (the brief carries the rubric and the reviewed run's identity) without the plan's section identity."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261011T223501570468-a-review-dispatch-fits-every-run-shape/gate.log",
+      "line": "2",
+      "severity": "follow-on",
+      "text": "follow-on: the head gate log's first line names only the revision and tree and its second line states the command as 'pytest -q <five tests> tests/test_a_review_receives_its_rubric.py', an angle-bracket abbreviation rather than the literal command, so the log alone cannot reproduce the run without the manifest's after_suite.command."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commit 26f87686f against 6ebdc8584; four files changed, +188/-7 \u2014 a 4-line guard at reckon/crew/recovery_review_subject.py:578, three per-shape dry-run tests with an authority_plan fixture in tests/test_a_review_receives_its_rubric.py, three spelling updates in tests/test_crew.py and the evidence fragment \u2014 all inside the declared write paths.",
+    "done_when": "the done_when asks that the five red tests pass with a per-test decision each, that tests/test_a_review_receives_its_rubric.py gains one dry-run acceptance test per run shape and passes, and that the plan-without-section negative control fails with dispatch's refusal; the manifest records 15 passed EXIT=0 (gate.log), a per-test decision for all five, 10 passed in tests/test_a_review_receives_its_rubric.py, and the log negative-control.log failing the plan-without-section case on dispatch's own refusal.",
+    "goal": "the source node's goal is that the review dispatch the reflex emits is accepted by crew dispatch for every run shape the ledger holds; reckon/crew/recovery_review_subject.py:578 blanks the plan for a plan-with-no-section run so the composed command is brief-carried, and the three end-to-end and dry-run tests confirm dispatch accepts plan+section, plan-without-section and brief-without-plan.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261011T223501570468-a-review-dispatch-fits-every-run-shape/manifest.md; it reports commit 26f87686f, status complete, the 15-passed gate EXIT=0, the base arm 5 failed, a per-test composer-versus-test decision for each of the five, one bare negative_control_log path and no blockers.",
+    "write_paths": "the fence granted reckon/crew/recovery_review_subject.py, the two test files and the evidence fragment plus two unused test files; git diff --stat 6ebdc8584 26f87686f lists exactly four files, all inside the fence, with tests/test_review_carries_forward.py and tests/test_a_running_review_finishes_across_a_resume.py left untouched because the composer fix alone green them."
+  },
+  "justifications": {
+    "durability": "the recorded negative control (negative-control.log) reinstates the brief-beside-sectionless-plan and reddens test_a_plan_without_a_section_review_command_is_dispatchable on dispatch's own contract refusal, and the two end-to-end dispatch tests red at base would red again on a reverted guard.",
+    "evidence": "the manifest records the head gate 15 passed EXIT=0 (gate.log) and the base arm 5 failed (base-five.log), and the negative control negative-control.log shows the plan-without-section dry-run failing on dispatch's refusal, though gate.log:2 states the command with a '<five tests>' placeholder rather than its first line naming it literally.",
+    "fit": "the guard and the tests follow the module idiom, but the added comment at reckon/crew/recovery_review_subject.py:574 cites the plan section '\u00a79', a plan-document reference the repository naming rules ban from source comments.",
+    "goal_fidelity": "reckon/crew/recovery_review_subject.py:578 blanks the plan when a section is absent, so _review_dispatch_tokens at :709 stops emitting the plan/section pair and every run shape the ledger holds composes a command dispatch accepts.",
+    "reuse": "the change adds no production definition and extends the existing composer at reckon/crew/recovery_review_subject.py:578, while the test helpers are test-local and match the per-file helper idiom the suite already uses.",
+    "scope_discipline": "git diff --stat 6ebdc8584 26f87686f lists only reckon/crew/recovery_review_subject.py, tests/test_a_review_receives_its_rubric.py, tests/test_crew.py and the evidence fragment, every path inside the fence and nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that the review dispatch the reflex emits is accepted by crew dispatch for every run shape the ledger holds; reckon/crew/recovery_review_subject.py:578 blanks the plan for a plan-with-no-section run so the composed command is brief-carried, and the three end-to-end and dry-run tests confirm dispatch accepts plan+section, plan-without-section and brief-without-plan.\nVERDICT done_when: the done_when asks that the five red tests pass with a per-test decision each, that tests/test_a_review_receives_its_rubric.py gains one dry-run acceptance test per run shape and passes, and that the plan-without-section negative control fails with dispatch's refusal; the manifest records 15 passed EXIT=0 (gate.log), a per-test decision for all five, 10 passed in tests/test_a_review_receives_its_rubric.py, and the log negative-control.log failing the plan-without-section case on dispatch's own refusal.\nVERDICT write_paths: the fence granted reckon/crew/recovery_review_subject.py, the two test files and the evidence fragment plus two unused test files; git diff --stat 6ebdc8584 26f87686f lists exactly four files, all inside the fence, with tests/test_review_carries_forward.py and tests/test_a_running_review_finishes_across_a_resume.py left untouched because the composer fix alone green them.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261011T223501570468-a-review-dispatch-fits-every-run-shape/manifest.md; it reports commit 26f87686f, status complete, the 15-passed gate EXIT=0, the base arm 5 failed, a per-test composer-versus-test decision for each of the five, one bare negative_control_log path and no blockers.\nVERDICT diff: read commit 26f87686f against 6ebdc8584; four files changed, +188/-7 \u2014 a 4-line guard at reckon/crew/recovery_review_subject.py:578, three per-shape dry-run tests with an authority_plan fixture in tests/test_a_review_receives_its_rubric.py, three spelling updates in tests/test_crew.py and the evidence fragment \u2014 all inside the declared write paths.\nCALL_SITES: reckon/crew/recovery_review_dispatch.py:1441, reckon/crew/recovery_repair_dispatch.py:588, reckon/crew/recovery_classification.py:550, reckon/crew/promotion_checks.py:724, reckon/crew/obligations.py:143, reckon/crew_dispatch_commands.py:2146\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_subject.py:578 blanks the plan when a section is absent, so _review_dispatch_tokens at :709 stops emitting the plan/section pair and every run shape the ledger holds composes a command dispatch accepts.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest records the head gate 15 passed EXIT=0 (gate.log) and the base arm 5 failed (base-five.log), and the negative control negative-control.log shows the plan-without-section dry-run failing on dispatch's refusal, though gate.log:2 states the command with a '<five tests>' placeholder rather than its first line naming it literally.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 6ebdc8584 26f87686f lists only reckon/crew/recovery_review_subject.py, tests/test_a_review_receives_its_rubric.py, tests/test_crew.py and the evidence fragment, every path inside the fence and nothing the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: the recorded negative control (negative-control.log) reinstates the brief-beside-sectionless-plan and reddens test_a_plan_without_a_section_review_command_is_dispatchable on dispatch's own contract refusal, and the two end-to-end dispatch tests red at base would red again on a reverted guard.\nSCORE fit: 16\nJUSTIFICATION fit: the guard and the tests follow the module idiom, but the added comment at reckon/crew/recovery_review_subject.py:574 cites the plan section '\u00a79', a plan-document reference the repository naming rules ban from source comments.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no production definition and extends the existing composer at reckon/crew/recovery_review_subject.py:578, while the test helpers are test-local and match the per-file helper idiom the suite already uses.\nFINDING reckon/crew/recovery_review_subject.py:574 follow-on: the added comment cites the plan section '\u00a79' ('The brief is the half \u00a79 exists to deliver'), a plan-document section reference the repository naming rules ban from source comments and which the naming check flags as '\u00a7[0-9]'; state the mechanism (the brief carries the rubric and the reviewed run's identity) without the plan's section identity.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261011T223501570468-a-review-dispatch-fits-every-run-shape/gate.log:2 follow-on: the head gate log's first line names only the revision and tree and its second line states the command as 'pytest -q <five tests> tests/test_a_review_receives_its_rubric.py', an angle-bracket abbreviation rather than the literal command, so the log alone cannot reproduce the run without the manifest's after_suite.command.\nreviewed_base_sha: 6ebdc8584282b38ee271acfac91f963ee169e49c\nreviewed_head_sha: 26f87686f5efca878c3daa97c913ab242100e632",
+  "review_run_id": "r-20261011T225426477219-review-of-a-review-dispatch-fits-every-run-shape",
+  "reviewed_base_sha": "6ebdc8584282b38ee271acfac91f963ee169e49c",
+  "reviewed_head_sha": "26f87686f5efca878c3daa97c913ab242100e632",
+  "reviewed_run_id": "r-20261011T223501570468-a-review-dispatch-fits-every-run-shape",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-11T22:59:26.224418+00:00",
+  "total": 111
+}
