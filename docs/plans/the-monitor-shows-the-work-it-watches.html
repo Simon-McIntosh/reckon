@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="9">
+<meta name="plan-version" content="10">
 <meta name="plan-modified" content="2026-10-12">
 </head>
 <body>
@@ -146,7 +146,10 @@
     <div class="r-comment-body"><p>review record written for r-20261012T211124210060-a-pane-shows-its-own-starts (head 2ebba9f55, base 66dafdd4b) scoring all six dimensions with reviewed_base_sha/reviewed_head_sha and added_failure_count 0</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261012T211124210060-a-pane-shows-its-own-starts" data-who="reckon-build" data-when="2026-10-12T21:37:05.605Z">
-    <div class="r-comment-body"><p>RowPolicy in reckon/crew/ticker.py now takes own_session and delivers one start row (dispatched -&gt; working), naming run id, node, lane, model and time budget, for the pane&#x27;s own session&#x27;s runs only; tests/test_a_pane_shows_its_own_starts.py passes 4/4 and the head gate is 629 passed with 0 added failures against the base arm&#x27;s 625.</p></div>
+    <div class="r-comment-body"><p>RowPolicy in reckon/crew/ticker.py now takes own_session and delivers one start row (dispatched -&gt; working), naming run id, node, lane, model and time budget, for the pane's own session's runs only; tests/test_a_pane_shows_its_own_starts.py passes 4/4 and the head gate is 629 passed with 0 added failures against the base arm's 625.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-s2-row-policy-landed-1012" data-who="reckon-build" data-when="2026-10-12T22:05:00Z">
+    <div class="r-comment-body"><p>First node landed: <code>RowPolicy</code> in <code>reckon/crew/ticker.py</code> takes the pane's own session and delivers one start row for that session's runs (merge <code>5f24c855c</code>). At the merged head, 629 tests passed across 34 ticker-importing files. Review 100/120.</p><p>The rule is inert in the live pane, for two reasons. <code>follower_row_path</code> in <code>reckon/crew_follow_commands.py</code> builds <code>PaneRowPath</code> without <code>own_session</code>. And <code>_watch_transition</code> in <code>reckon/crew/recovery_watch.py</code> carries neither lane nor time budget, so the row could not name them.</p><p>§2 stays open. A second node wires both and proves the row end to end through the follower path. The section's write paths named only <code>ticker.py</code>; the coordinator under-scoped them.</p></div>
 </div>
 </section>
 </main>
