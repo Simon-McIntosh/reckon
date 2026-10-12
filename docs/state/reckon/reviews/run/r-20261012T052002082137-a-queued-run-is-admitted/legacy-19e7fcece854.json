@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew_run_commands.py:2559"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-12T05:20:38Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "36",
+      "severity": "follow-on",
+      "text": "follow-on: _GATE_WAITING_STATES duplicates the owned constant _LANE_GATE_WAITING_STATES at reckon/crew/dispatch_admission.py:1147, which four modules already import, so the two can drift while the comment claims it is shared."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "348",
+      "severity": "follow-on",
+      "text": "follow-on: the file has no trailing newline, a defect the repository's ruff target flags as W292 and that no other module in reckon/crew shares."
+    },
+    {
+      "file": "tests/test_a_queued_run_is_admitted.py",
+      "line": "337",
+      "severity": "follow-on",
+      "text": "follow-on: the done_when requires the launched run's phase to leave queued for starting then working but the gate asserts only phases == {starting}, so the queued-to-working transition the done_when names is unguarded."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit 8514b9773 against its base f43cf0a8c commit by commit; it adds reckon/crew/queue_admission.py (348 lines), the admit verb in reckon/crew_run_commands.py, three tests and one evidence fragment, all inside the fence.",
+    "done_when": "the done_when names tests/test_a_queued_run_is_admitted.py and the manifest records it at 78 passed EXIT=0, matching gate-admit.log, but the launched-run clause asking for starting then working is asserted only as starting at tests/test_a_queued_run_is_admitted.py:337.",
+    "goal": "the node goal is a reckon crew admit verb that launches the highest-ranked queued run whenever the lane grants a slot and keeps a failed launch queued; reckon/crew/queue_admission.py:213 admit_once and reckon/crew_run_commands.py:2533 crew_admit implement exactly that.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261012T052002082137-a-queued-run-is-admitted/manifest.md; status complete, commit 8514b9773, tests 78 passed EXIT=0, negative_control_log named, blockers none.",
+    "write_paths": "the fence granted reckon/crew/queue_admission.py, reckon/crew_run_commands.py, tests/test_a_queued_run_is_admitted.py, tests/test_crew_help_names_its_state.py, tests/test_skill_contracts.py and one evidence fragment; git show --stat 8514b9773 lists exactly those six files, nothing outside."
+  },
+  "justifications": {
+    "durability": "negative-control-admit.log reddens tests/test_a_queued_run_is_admitted.py:258 when the queued-pointer restore at reckon/crew/queue_admission.py:191 is removed, but the LaneHeld hold branch at reckon/crew/queue_admission.py:283 has no test.",
+    "evidence": "the gate tests/test_a_queued_run_is_admitted.py covers six of the seven done-when clauses but asserts only starting, not starting then working, at tests/test_a_queued_run_is_admitted.py:337.",
+    "fit": "the module follows the surrounding fcntl-flock context-manager idiom of reckon/crew/runs.py:290 but ends without a trailing newline at reckon/crew/queue_admission.py:348.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:213 admit_once ranks queued pointers through queue_order.admission_order and launches each through the shared dispatch path while the lane allowance is positive, keeping a failed spawn queued at reckon/crew/queue_admission.py:191.",
+    "reuse": "it reuses queue_order.admission_order, dispatch_plan._dispatch_lane_allowance and dispatch_admission._dispatch_fleet_gate, but re-declares the waiting-state set at reckon/crew/queue_admission.py:36 instead of importing _LANE_GATE_WAITING_STATES.",
+    "scope_discipline": "git show --stat 8514b9773 lists six files and every one is inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is a reckon crew admit verb that launches the highest-ranked queued run whenever the lane grants a slot and keeps a failed launch queued; reckon/crew/queue_admission.py:213 admit_once and reckon/crew_run_commands.py:2533 crew_admit implement exactly that.\nVERDICT done_when: the done_when names tests/test_a_queued_run_is_admitted.py and the manifest records it at 78 passed EXIT=0, matching gate-admit.log, but the launched-run clause asking for starting then working is asserted only as starting at tests/test_a_queued_run_is_admitted.py:337.\nVERDICT write_paths: the fence granted reckon/crew/queue_admission.py, reckon/crew_run_commands.py, tests/test_a_queued_run_is_admitted.py, tests/test_crew_help_names_its_state.py, tests/test_skill_contracts.py and one evidence fragment; git show --stat 8514b9773 lists exactly those six files, nothing outside.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261012T052002082137-a-queued-run-is-admitted/manifest.md; status complete, commit 8514b9773, tests 78 passed EXIT=0, negative_control_log named, blockers none.\nVERDICT diff: read commit 8514b9773 against its base f43cf0a8c commit by commit; it adds reckon/crew/queue_admission.py (348 lines), the admit verb in reckon/crew_run_commands.py, three tests and one evidence fragment, all inside the fence.\nCALL_SITES: reckon/crew_run_commands.py:2559\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:213 admit_once ranks queued pointers through queue_order.admission_order and launches each through the shared dispatch path while the lane allowance is positive, keeping a failed spawn queued at reckon/crew/queue_admission.py:191.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate tests/test_a_queued_run_is_admitted.py covers six of the seven done-when clauses but asserts only starting, not starting then working, at tests/test_a_queued_run_is_admitted.py:337.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git show --stat 8514b9773 lists six files and every one is inside the declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: negative-control-admit.log reddens tests/test_a_queued_run_is_admitted.py:258 when the queued-pointer restore at reckon/crew/queue_admission.py:191 is removed, but the LaneHeld hold branch at reckon/crew/queue_admission.py:283 has no test.\nSCORE fit: 16\nJUSTIFICATION fit: the module follows the surrounding fcntl-flock context-manager idiom of reckon/crew/runs.py:290 but ends without a trailing newline at reckon/crew/queue_admission.py:348.\nSCORE reuse: 16\nJUSTIFICATION reuse: it reuses queue_order.admission_order, dispatch_plan._dispatch_lane_allowance and dispatch_admission._dispatch_fleet_gate, but re-declares the waiting-state set at reckon/crew/queue_admission.py:36 instead of importing _LANE_GATE_WAITING_STATES.\nFINDING reckon/crew/queue_admission.py:36 follow-on: _GATE_WAITING_STATES duplicates the owned constant _LANE_GATE_WAITING_STATES at reckon/crew/dispatch_admission.py:1147, which four modules already import, so the two can drift while the comment claims it is shared.\nFINDING reckon/crew/queue_admission.py:348 follow-on: the file has no trailing newline, a defect the repository's ruff target flags as W292 and that no other module in reckon/crew shares.\nFINDING tests/test_a_queued_run_is_admitted.py:337 follow-on: the done_when requires the launched run's phase to leave queued for starting then working but the gate asserts only phases == {starting}, so the queued-to-working transition the done_when names is unguarded.",
+  "review_run_id": "legacy-19e7fcece854",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "f43cf0a8c8e86125ece11f4ef7c9afe7f717a0cb",
+  "reviewed_head_sha": "8514b97730feda6975eff3d9fb6762713b9a0477",
+  "reviewed_run_id": "r-20261012T052002082137-a-queued-run-is-admitted",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-12T05:44:50.241383+00:00",
+  "total": 100
+}

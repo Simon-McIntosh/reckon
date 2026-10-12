@@ -1,0 +1,52 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew_run_commands.py:2559"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-12T05:20:38Z",
+  "findings": [],
+  "head_log_revision": "53f1d13cee252e4d1239ff97b906e0e32005b64d",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site reaching the module, reckon/crew_run_commands.py:2559 crew_admit -> queue_admission.admit_until_stopped",
+    "diff": "read commits 53f1d13ce and 520d4de85 against base 8514b9773 commit by commit; 53f1d13ce imports _LANE_GATE_WAITING_STATES from dispatch_admission, applies ruff format and rewrites the phase test; 520d4de85 updates the evidence fragment; all three changed files are inside the fence",
+    "done_when": "the done_when names tests/test_a_queued_run_is_admitted.py and the manifest records it at 78 passed EXIT=0 matching gate-admit.log; the launched-run clause queued then starting then working is now asserted in full at tests/test_a_queued_run_is_admitted.py:337",
+    "goal": "the node goal is a reckon crew admit verb that launches the highest-ranked queued run whenever the lane grants a slot and keeps a failed launch queued; the resumed commits do not alter the verb's behaviour and complete its follow-on repairs",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261012T052002082137-a-queued-run-is-admitted/manifest.md; status complete, commits 8514b9773 53f1d13ce 520d4de85, tests 78 passed EXIT=0, both negative controls named, blockers none",
+    "write_paths": "the fence granted six source paths plus docs/figures; the two resumed commits change only reckon/crew/queue_admission.py, tests/test_a_queued_run_is_admitted.py and docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/a-queued-run-is-admitted.html, all inside the grant"
+  },
+  "justifications": {
+    "durability": "negative-control-phase.log reddens tests/test_a_queued_run_is_admitted.py:337 when the fold at line 334 is dropped, showing the queued-then-starting-then-working assertion fails on regression",
+    "evidence": "the gate at 53f1d13ce is recorded 78 passed EXIT=0 in gate-admit.log, and the phase clause the prior review found unguarded is now asserted across all three phases at tests/test_a_queued_run_is_admitted.py:337",
+    "fit": "reckon/crew/queue_admission.py:346 now ends with a trailing newline and the module carries the surrounding ruff-formatted style of reckon/crew/dispatch_admission.py:1147",
+    "goal_fidelity": "the resumed change leaves reckon/crew/queue_admission.py:259 admitting through the shared dispatch path unchanged while repairing the reuse defect at line 28, so the verb's behaviour matches the goal",
+    "reuse": "reckon/crew/queue_admission.py:28 now imports _LANE_GATE_WAITING_STATES rather than re-declaring it, so the waiting-state set extends the owner at reckon/crew/dispatch_admission.py:1147",
+    "scope_discipline": "git diff --stat 8514b9773..520d4de85 lists exactly the three fenced files and nothing outside the declared write paths"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is a reckon crew admit verb that launches the highest-ranked queued run whenever the lane grants a slot and keeps a failed launch queued; the resumed commits do not alter the verb's behaviour and complete its follow-on repairs.\nVERDICT done_when: the done_when names tests/test_a_queued_run_is_admitted.py and the manifest records it at 78 passed EXIT=0 matching gate-admit.log; the launched-run clause queued then starting then working is now asserted in full at tests/test_a_queued_run_is_admitted.py:337.\nVERDICT write_paths: the fence granted six source paths plus docs/figures; the two resumed commits change only reckon/crew/queue_admission.py, tests/test_a_queued_run_is_admitted.py and docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/a-queued-run-is-admitted.html, all inside the grant.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261012T052002082137-a-queued-run-is-admitted/manifest.md; status complete, commits 8514b9773 53f1d13ce 520d4de85, tests 78 passed EXIT=0, both negative controls named, blockers none.\nVERDICT diff: read commits 53f1d13ce and 520d4de85 against base 8514b9773 commit by commit; 53f1d13ce imports _LANE_GATE_WAITING_STATES from dispatch_admission, applies ruff format and rewrites the phase test; 520d4de85 updates the evidence fragment; all three changed files are inside the fence.\nCALL_SITES: reckon/crew_run_commands.py:2559\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the resumed change leaves reckon/crew/queue_admission.py:259 admitting through the shared dispatch path unchanged while repairing the reuse defect at line 28, so the verb's behaviour matches the goal.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate at 53f1d13ce is recorded 78 passed EXIT=0 in gate-admit.log, and the phase clause the prior review found unguarded is now asserted across all three phases at tests/test_a_queued_run_is_admitted.py:337.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 8514b9773..520d4de85 lists exactly the three fenced files and nothing outside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: negative-control-phase.log reddens tests/test_a_queued_run_is_admitted.py:337 when the fold at line 334 is dropped, showing the queued-then-starting-then-working assertion fails on regression.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/queue_admission.py:346 now ends with a trailing newline and the module carries the surrounding ruff-formatted style of reckon/crew/dispatch_admission.py:1147.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/queue_admission.py:28 now imports _LANE_GATE_WAITING_STATES rather than re-declaring it, so the waiting-state set extends the owner at reckon/crew/dispatch_admission.py:1147.\n",
+  "review_run_id": "legacy-12a9d6a41bbc",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "8514b97730feda6975eff3d9fb6762713b9a0477",
+  "reviewed_head_sha": "520d4de8589898c2ef2cc165ee25ec0ce358994c",
+  "reviewed_run_id": "r-20261012T052002082137-a-queued-run-is-admitted",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-12T06:05:00.000000+00:00",
+  "total": 114
+}
