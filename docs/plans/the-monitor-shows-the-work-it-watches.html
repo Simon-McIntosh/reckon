@@ -26,8 +26,8 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="10">
-<meta name="plan-modified" content="2026-10-12">
+<meta name="plan-version" content="11">
+<meta name="plan-modified" content="2026-10-13">
 </head>
 <body>
   <main class="plan-doc">
@@ -104,7 +104,7 @@
 <tr><td><code>dropped</code></td><td>left without landing</td><td>withdrawn, discarded, departed</td></tr>
 </tbody>
 </table>
-<p>Every row is a pair drawn from these words. A run's first row reads <code>new → working</code> or <code>new → queued</code>, where <code>new</code> appears only on the left of a first row. A pair whose two words are the same is never printed. The reason clause, not the state word, names the specific cause: what a halted run asks, what a waiting run waits on, which review a delivered run is in. The internal classifications and their recovery verbs are unchanged. The mapping is one table, owned in one place, which every surface that prints a run's state reads: the row, the run counters and the roll-up of §3. It supersedes <code>DISPLAY</code> in <code>reckon/crew/ticker.py</code> in place, and <code>DISPLAY</code> is retired. The counter bucket labels <code>_WAIT_CELL</code> and <code>_COUNT_FIELD</code> are reconciled with the seven words. Replayed over the same history, this mapping prints 28,408 rows instead of 39,042, in 22 distinct pairs.</p>
+<p>Every row is a pair drawn from these words. A run's first row reads <code>new → working</code> or <code>new → queued</code>, where <code>new</code> appears only on the left of a first row. A pair whose two words are the same is never printed. The reason clause, not the state word, names the specific cause: what a halted run asks, what a waiting run waits on, which review a delivered run is in. The internal classifications and their recovery verbs are unchanged. The mapping is one table, owned in one place, which every surface that prints a run's state reads: the row, the run counters and the roll-up of §3. It supersedes <code>DISPLAY</code> in <code>reckon/crew/ticker.py</code> in place, and <code>DISPLAY</code> is retired. The counter bucket labels <code>_WAIT_CELL</code> and <code>_COUNT_FIELD</code> are reconciled with the seven words. So is <code>DISPLAY_HUE</code>, which resolves each word's colour and is keyed today on the old alias words, so every one of the seven words resolves its own hue rather than the dim fallback. Replayed over the same history, this mapping prints 28,408 rows instead of 39,042, in 22 distinct pairs.</p>
 <p><strong>Done when</strong> <code>tests/test_the_pane_speaks_seven_words.py</code> passes:</p>
 <ul>
 <li>Every classification and watch state the code can emit maps to exactly one of the seven words. The test enumerates them from the code's own vocabularies, so a new internal state without a mapping fails the test.</li>
@@ -112,6 +112,7 @@
 <li>A same-word pair prints nothing.</li>
 <li>A run's first row starts with <code>new</code>.</li>
 <li>The run counters use the same words.</li>
+<li>Each of the seven words resolves a hue in <code>DISPLAY_HUE</code>, so no rendered state word falls to the dim fallback.</li>
 </ul>
 <p>The existing ticker and follower tests that assert today's words are updated to the new words, never deleted, and each is named in the manifest. The negative control adds an unmapped internal state, and the enumeration test must then fail. It is logged under the run directory.</p>
 <p>Write paths: <code>reckon/crew/ticker.py</code>, <code>tests/test_the_pane_speaks_seven_words.py</code>, plus the existing test files whose expected words change, each named at dispatch. It runs after §2 and before §3, which renders states in its roll-up.</p>

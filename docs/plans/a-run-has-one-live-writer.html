@@ -20,14 +20,13 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-standalone" content="Process-lifetime and resume-launch repairs reported by the nova session on 2026-10-12; no live plan waits on them and they wait on none.">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;a-run-has-one-live-writer#s2&quot;]}">
   <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
   <title>A Run Has One Live Writer | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="1">
-<meta name="plan-modified" content="2026-10-12">
+<meta name="plan-version" content="3">
+<meta name="plan-modified" content="2026-10-13">
 </head>
 <body>
   <main class="plan-doc">
@@ -48,7 +47,7 @@
     <p><strong>What already exists.</strong> Most of the machinery this section needs is already in the code:</p>
     <ul>
       <li>The supervisor already escalates its direct worker to SIGKILL after <code>STOP_GRACE</code> (<code>reckon/crew/dispatch_launch.py</code>), and <code>tests/test_a_stopped_run_ends_its_supervisor.py</code> locks that in.</li>
-      <li><code>signal_worker</code> in <code>reckon/crew/routing.py</code> is the only function in the crew that sends a signal. Nine modules import it.</li>
+      <li><code>signal_worker</code> in <code>reckon/crew/routing.py</code> is the only function in the crew that sends a signal. Four production modules import it, besides <code>routing.py</code> itself.</li>
       <li>Descendants are enumerated by <code>_process_children</code> and <code>_live_descendant</code> in <code>reckon/crew/recovery_liveness.py</code>. Processes holding a path as their working directory are found by <code>_processes_holding</code> in <code>routing.py</code>.</li>
       <li><code>tests/test_live_process_outranks_classification.py</code> already asserts that a live process outranks a manifest-derived classification, through <code>local_liveness</code> in <code>reckon/crew/recovery_classification.py</code>.</li>
     </ul>
@@ -59,7 +58,7 @@
     </ul>
     <p>Then repair by extending those owners rather than adding a kill path beside them:</p>
     <ul>
-      <li><code>signal_worker</code> gains the reach to end a pid's live descendants, and the processes holding the run's worktree as their working directory, through the existing enumerators. It returns the pids it ended. Every one of its callers inherits this, not <code>terminate</code> alone.</li>
+      <li><code>signal_worker</code> gains the reach to end a run's own processes through the existing enumerators, and returns the pids it ended. Every one of its callers inherits this, not <code>terminate</code> alone. A process qualifies only if it descends from the run's recorded supervisor or worker, identity-checked by its start time, or if its environment carries <code>RECKON_RUN_ID</code> naming this run. A process that merely holds the worktree as its working directory is listed and never signalled. That covers a coordinator or a peer that changed into it, so the extension cannot widen into the kill-everything hazard <code>signal_worker</code> exists to prevent.</li>
       <li>The supervisor's exit path and <code>crew stop</code> (<code>terminate</code> in <code>reckon/crew/dispatch_sessions.py</code>) end the run's tree through it, and record the pids ended. <code>crew stop</code> reports any process still alive afterwards, rather than returning ok.</li>
       <li><code>local_liveness</code> is extended for the state the reproduction named, so a run whose worker lives is never classified complete or scoring.</li>
     </ul>
@@ -67,11 +66,12 @@
     <p><strong>Done when</strong> <code>tests/test_a_worker_never_outlives_its_supervisor.py</code> passes, using real child processes in a temporary tree:</p>
     <ul>
       <li>SIGTERM to the supervisor leaves no worker and no worker child alive, and the exit record names the pids ended.</li>
-      <li><code>crew stop</code> on a run whose worker was reparented to init ends that worker and its children, and names them.</li>
+      <li><code>crew stop</code> on a run whose worker was reparented to init ends that worker and its children, identified by their <code>RECKON_RUN_ID</code>, and names them.</li>
+      <li>A process holding the run's worktree as its working directory, with no ownership mark, is listed by <code>crew stop</code> and left alive.</li>
       <li>A run in the state the reproduction named, whose supervisor has exited while its worker pid lives, is not classified complete or scoring.</li>
     </ul>
     <p>The negative control, which signals the supervisor pid alone, fails the first case. It is logged under the run directory. The reproduction's finding (why the worker survived) is recorded in the manifest. The test files that import <code>dispatch_launch</code> or exercise <code>terminate</code> pass. Every process the tests start is ended by the tests themselves, and is checked by pid afterwards.</p>
-    <p>Write paths: <code>reckon/crew/routing.py</code> (<code>signal_worker</code>), <code>reckon/crew/dispatch_launch.py</code>, <code>reckon/crew/dispatch_sessions.py</code> (<code>terminate</code>), <code>reckon/crew/recovery_classification.py</code>, <code>tests/test_a_worker_never_outlives_its_supervisor.py</code>. <code>routing.py</code> is also written by the in-flight run <code>a-worktree-release-is-whole</code>, so this section waits for that run to merge.</p>
+    <p>Write paths: <code>reckon/crew/routing.py</code> (<code>signal_worker</code>), <code>reckon/crew/dispatch_launch.py</code>, <code>reckon/crew/dispatch_sessions.py</code> (<code>terminate</code>), <code>reckon/crew/recovery_classification.py</code>, <code>tests/test_a_worker_never_outlives_its_supervisor.py</code>. <code>routing.py</code> is also written by the in-flight run <code>a-worktree-release-is-whole</code> (crew-runtime-positive-controls §47). This section waits for that run to merge, through a section gate declared on it.</p>
 
     <h2 id="s3">§3 — A resume never launches beside a live attempt</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
@@ -98,6 +98,13 @@
     <p>The negative control, which restores the cause the reproduction named, fails the reproduced case. It is logged under the run directory. The test files that import <code>resumption</code> or <code>dispatch_sessions</code> show no added failure against base.</p>
     <p>Write paths: <code>reckon/crew/resumption.py</code>, <code>reckon/crew/dispatch_sessions.py</code>, <code>tests/test_resume_refuses_a_live_worker.py</code>, <code>tests/test_resume_sweep_needs_an_observed_death.py</code>. It runs after §2, which also writes <code>dispatch_sessions.py</code>.</p>
     
-  </main>
+  <section data-reckon="gates" id="gates" class="r-gates">
+<h2><span class="sec">§</span> Evidence gates</h2>
+<div class="r-gate" data-id="g-arholw-routing-released" data-section="s2" data-gated-sections="s2" data-status="open" data-verdict="">
+    <h4 class="r-gate-measure">the run a-worktree-release-is-whole has merged to main, releasing its claim on reckon/crew/routing.py</h4>
+    <p class="r-gate-required-evidence">crew-runtime-positive-controls#s47</p>
+    </div>
+</section>
+</main>
 </body>
 </html>
