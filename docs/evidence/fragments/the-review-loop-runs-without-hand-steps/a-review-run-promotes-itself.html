@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-review-loop-runs-without-hand-steps">
+  <meta name="plan-evidence-for" content="reckon:the-review-loop-runs-without-hand-steps">
+  <meta name="plan-verifies" content="reckon:the-review-loop-runs-without-hand-steps#s2">
+  <meta name="plan-recorded-at" content="2026-10-12">
+  <meta name="plan-verdict" content="passed">
+  <title>A review run promotes itself once its record is stored | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-review-run-promotes-itself-landing" data-node="a-review-run-promotes-itself" data-reckon="landed" data-when="2026-10-12">
+  <h2>A review run promotes itself once its stored record parses</h2>
+  <p><code>promote_review_run_itself</code> in <code>reckon/crew/recovery_review_acceptance.py</code> promotes a review-role run with <code>promoted_by: review-self</code> once its manifest reads complete, its worker and supervisor have exited, and the record it was dispatched to store parses, and deletes its live pointer so it no longer counts as unreconciled; a non-review run returns <code>None</code> and every unmet condition is refused with its reason recorded. Gate <code>tests/test_a_review_run_promotes_itself.py</code> (4 passed, <code>EXIT=0</code>); declared negative control — dropping the exited-worker condition — fails the live-worker case, <code>EXIT=1</code>.</p>
+</article>
+</body>
+</html>
