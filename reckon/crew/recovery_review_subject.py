@@ -13,6 +13,7 @@ from reckon.crew import review as review_module
 from reckon.crew.node import (
     CrewError,
 )
+from reckon.crew.repair import round_node_id
 
 
 # The role a read-only investigation is dispatched under. A run carrying it
@@ -649,7 +650,7 @@ def _review_dispatch_fields(
         "brief": str(brief_file),
         "brief_text": brief_text,
         "source_node": source_node,
-        "node_id": f"{REVIEW_NODE_PREFIX}{source_node}",
+        "node_id": round_node_id(REVIEW_NODE_PREFIX, source_node, head),
         "session": str(record.get("session") or "<session>"),
         "time_budget": str(node.get("time_budget") or "20m"),
         "goal": (
