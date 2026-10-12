@@ -25,7 +25,7 @@
   <title>The Review Loop Runs Without Hand Steps | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="13">
+<meta name="plan-version" content="14">
 <meta name="plan-modified" content="2026-10-12">
 </head>
 <body>
@@ -133,7 +133,7 @@
     <div class="r-comment-body"><p>a review run promotes itself with promoted_by review-self once its manifest reads complete, its worker and supervisor have exited, and its stored record parses (per §2); gate tests/test_a_review_run_promotes_itself.py 4 passed, related batch 121 passed, negative control EXIT=1</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261012T203425365750-review-of-a-review-run-promotes-itself" data-who="reckon-build" data-when="2026-10-12T20:49:44.946Z">
-    <div class="r-comment-body"><p>Reviewed run r-20261012T151336047430-a-review-run-promotes-itself at head 294d3e6a4 gained one commit since its prior review at f60c9416f; that fix records the self-promotion&#x27;s gate verdict as not-run (reckon/crew/recovery_review_acceptance.py:333) and guards it with the ledger-row assertion at tests/test_a_review_run_promotes_itself.py:195; all six dimensions scored, total 113/120, one follow-on (the reviewed manifest declares no baseline_suite/after_suite, so the added-failure annotation is unmeasured); record stored at both granted review-store paths.</p></div>
+    <div class="r-comment-body"><p>Reviewed run r-20261012T151336047430-a-review-run-promotes-itself at head 294d3e6a4 gained one commit since its prior review at f60c9416f; that fix records the self-promotion's gate verdict as not-run (reckon/crew/recovery_review_acceptance.py:333) and guards it with the ledger-row assertion at tests/test_a_review_run_promotes_itself.py:195; all six dimensions scored, total 113/120, one follow-on (the reviewed manifest declares no baseline_suite/after_suite, so the added-failure annotation is unmeasured); record stored at both granted review-store paths.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261012T151501127010-a-test-only-change-earns-a-light-review" data-who="reckon-build" data-when="2026-10-12T15:47:09.367Z">
     <div class="r-comment-body"><p>landing: `review_tier` in `reckon/review_tiers.py` gives the light tier to a run whose changed paths include test source and no runtime source, through a new `changes_test_source` helper read between `changes_runtime_source` and the `none` fallback: a test-only run is light at any size and specification level, a docs/state-only run stays none, and a runtime-source run keeps the light/full rule. Five existing test-only none assertions were updated to the new tier rather than deleted (`none-tests` and `none-mixed-tests-and-plan` in `tests/test_review_tiers.py`, `test_tests_only_run_promotes_unreviewed_with_tier_none` in `tests/test_promotion_reads_the_review_tier.py`, and the two tier assertions in `tests/test_standing_suite_holds_promotion.py`). Gate: `tests/test_a_test_only_change_earns_a_light_review.py` plus the two named files, 40 passed EXIT=0 (gate-node.log).</p></div>
@@ -149,6 +149,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261012T151610161227-a-manifest-evidence-is-checked" data-who="reckon-build" data-when="2026-10-12T16:20:58.619Z">
     <div class="r-comment-body"><p>audited manifests now refuse a test_logs entry whose head names no command or that ends without an EXIT=&lt;n&gt; line, and refuse added production comment/docstring lines citing a plan section by file:line; measure tests/test_a_manifest_evidence_is_checked.py 12 passed, audit-calling set 671 passed with no added failure, negative control EXIT=1</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261012T203457301748-review-of-a-manifest-evidence-is-checked" data-who="reckon-build" data-when="2026-10-12T20:45:57.297Z">
+    <div class="r-comment-body"><p>independent review of r-20261012T151610161227-a-manifest-evidence-is-checked covering the repair commit 75395580c (base 7c52a3d39); all six dimensions scored, one follow-on finding on the head-arm gate log; repair verified to close the previously blocking store-selection defect</p></div>
 </div>
 </section>
 </main>

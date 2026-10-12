@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed manifest names no baseline_suite/after_suite field, so the base and head arms were read from the run's own audit logs: head-audit-tests.log records 671 passed EXIT=0 at 75395580c with no failing id, so nothing was added against base; the base arm baseline-audit-tests.log is truncated at 42% with no summary, so the base failure set is unreadable and the zero rests on the green head arm",
+  "base_log_revision": null,
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew_run_commands.py:663"
+  ],
+  "completed_at": "2026-10-12T20:45:57.297Z",
+  "dispatched_at": "2026-10-12T20:35:22Z",
+  "findings": [
+    {
+      "file": "head-audit-tests.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the head arm the done_when names for \"no added failure\" lists 24 test files and omits tests/test_a_manifest_evidence_is_checked.py, and the only log naming that file (gate-new-test.log) is at the pre-repair revision 7c52a3d39 with 11 cases, so the repaired file's green run at 75395580c is recorded only in the manifest prose and not in any durable gate log."
+    }
+  ],
+  "head_log_revision": "75395580c3bdbc0f6cdeb9390ff479d852913ce5",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against base 7c52a3d3959e7cdfbb66f51e90f9b066cee52078; the single commit 75395580c adds _run_diff_store at reckon/crew/reports.py:1422 and one regression test at tests/test_a_manifest_evidence_is_checked.py:202, both inside the declared scope.",
+    "done_when": "the done_when names tests/test_a_manifest_evidence_is_checked.py passing the \u00a74 cases, no added failure among the audit-calling test files, and a logged negative control; the manifest records 12 passed at head (re-run here: 12 passed), head-audit-tests.log shows 671 passed at 75395580c, and repair-reproduction-buggy.log records EXIT=1.",
+    "goal": "the node goal is that audit_manifest refuses a test log without a command or terminal EXIT line and an added production comment citing a plan section; reckon/crew/reports.py:1472 now selects the run's worktree through _run_diff_store, so the plan-label half fires on the run it audits.",
+    "manifest": "read; it records the repair round, commits 7c52a3d39 75395580c, the negative control with its mutation, tests 12 passed, follow_ons none and blockers none.",
+    "write_paths": "five declared write paths; the incremental commit changes only reckon/crew/reports.py and tests/test_a_manifest_evidence_is_checked.py, both inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_manifest_evidence_is_checked.py:229 asserts len(findings) == 1 after asserting the repository copy carries no \u00a79, so restoring store = stores[0] at reckon/crew/reports.py:1472 reddens it, as repair-reproduction-buggy.log shows.",
+    "evidence": "repair-reproduction-buggy.log shows the new test red at 7c52a3d3959e7cdfbb66f51e90f9b066cee52078 (assert 0 == 1, EXIT=1), but the only log naming tests/test_a_manifest_evidence_is_checked.py is gate-new-test.log at the pre-repair revision 7c52a3d39 with 11 cases, and head-audit-tests.log at 75395580c excludes that file, so the head-revision green run is recorded only in the manifest prose.",
+    "fit": "_run_diff_store at reckon/crew/reports.py:1422 is a small docstringed helper sitting beside _citation_stores and _plan_label_findings, matching their idiom, with no plan or version token in its name.",
+    "goal_fidelity": "reckon/crew/reports.py:1472 passes the worktree-preferring store into _added_lines_since, so the added-plan-label refusal now fires on the run's own unmerged change.",
+    "reuse": "a search of reckon/crew for a worktree-over-repository diff-store selector found promotion_evidence.py:_worktree_git_paths and _record_worktree, which read a run's tree for other purposes, so _run_diff_store extends the local _citation_stores result rather than duplicating an owner.",
+    "scope_discipline": "the incremental diff touches only reckon/crew/reports.py and tests/test_a_manifest_evidence_is_checked.py, both declared write paths, and adds nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that audit_manifest refuses a test log without a command or terminal EXIT line and an added production comment citing a plan section; reckon/crew/reports.py:1472 now selects the run's worktree through _run_diff_store, so the plan-label half fires on the run it audits.\nVERDICT done_when: the done_when names tests/test_a_manifest_evidence_is_checked.py passing the \u00a74 cases, no added failure among the audit-calling test files, and a logged negative control; the manifest records 12 passed at head (re-run here: 12 passed), head-audit-tests.log shows 671 passed at 75395580c, and repair-reproduction-buggy.log records EXIT=1.\nVERDICT write_paths: five declared write paths; the incremental commit changes only reckon/crew/reports.py and tests/test_a_manifest_evidence_is_checked.py, both inside them.\nVERDICT manifest: read; it records the repair round, commits 7c52a3d39 75395580c, the negative control with its mutation, tests 12 passed, follow_ons none and blockers none.\nVERDICT diff: read commit by commit against base 7c52a3d3959e7cdfbb66f51e90f9b066cee52078; the single commit 75395580c adds _run_diff_store at reckon/crew/reports.py:1422 and one regression test at tests/test_a_manifest_evidence_is_checked.py:202, both inside the declared scope.\nCALL_SITES: reckon/crew_run_commands.py:663\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/reports.py:1472 passes the worktree-preferring store into _added_lines_since, so the added-plan-label refusal now fires on the run's own unmerged change.\nSCORE evidence: 15\nJUSTIFICATION evidence: repair-reproduction-buggy.log shows the new test red at 7c52a3d3959e7cdfbb66f51e90f9b066cee52078 (assert 0 == 1, EXIT=1), but the only log naming tests/test_a_manifest_evidence_is_checked.py is gate-new-test.log at the pre-repair revision 7c52a3d39 with 11 cases, and head-audit-tests.log at 75395580c excludes that file, so the head-revision green run is recorded only in the manifest prose.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the incremental diff touches only reckon/crew/reports.py and tests/test_a_manifest_evidence_is_checked.py, both declared write paths, and adds nothing the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_manifest_evidence_is_checked.py:229 asserts len(findings) == 1 after asserting the repository copy carries no \u00a79, so restoring store = stores[0] at reckon/crew/reports.py:1472 reddens it, as repair-reproduction-buggy.log shows.\nSCORE fit: 18\nJUSTIFICATION fit: _run_diff_store at reckon/crew/reports.py:1422 is a small docstringed helper sitting beside _citation_stores and _plan_label_findings, matching their idiom, with no plan or version token in its name.\nSCORE reuse: 19\nJUSTIFICATION reuse: a search of reckon/crew for a worktree-over-repository diff-store selector found promotion_evidence.py:_worktree_git_paths and _record_worktree, which read a run's tree for other purposes, so _run_diff_store extends the local _citation_stores result rather than duplicating an owner.\nFINDING head-audit-tests.log:1 follow-on: the head arm the done_when names for \"no added failure\" lists 24 test files and omits tests/test_a_manifest_evidence_is_checked.py, and the only log naming that file (gate-new-test.log) is at the pre-repair revision 7c52a3d39 with 11 cases, so the repaired file's green run at 75395580c is recorded only in the manifest prose and not in any durable gate log.\n",
+  "review_run_id": "r-20261012T203457301748-review-of-a-manifest-evidence-is-checked",
+  "reviewed_base_sha": "7c52a3d3959e7cdfbb66f51e90f9b066cee52078",
+  "reviewed_head_sha": "75395580c3bdbc0f6cdeb9390ff479d852913ce5",
+  "reviewed_run_id": "r-20261012T151610161227-a-manifest-evidence-is-checked",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-12T20:44:04.626007+00:00",
+  "total": 110
+}
