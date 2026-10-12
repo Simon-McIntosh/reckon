@@ -14,7 +14,7 @@
 <meta name="plan-status" content="active">
 <meta name="plan-sprint" content="S26">
 <meta name="plan-informs" content="a-review-is-sized-to-its-risk">
-<meta name="plan-version" content="11">
+<meta name="plan-version" content="12">
 <meta name="plan-modified" content="2026-10-12">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
 </head>
@@ -32,7 +32,16 @@
 
 <h2 id="s3">§3 — The reflex launches a review for every settled head</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-<p><strong>Deliverable.</strong> The cause §2 names is repaired in the function it names, by extending the existing path through <code>dispatch_review_for_run</code>, <code>review_head_move</code> and <code>carry_review_forward</code> in <code>reckon/crew/recovery_review_dispatch.py</code>. No second launch path is added. After the repair, the reflex launches a review whenever a run settles at a head that no stored review is keyed to. That covers a first delivery, a resumed run whose head moved, and a launch an admission bound deferred, once the bound clears. It still carries a review forward when §5 of a-review-is-sized-to-its-risk says the move needs none.</p><p><strong>Done when</strong> <code>tests/test_a_moved_head_is_reviewed.py</code> drives the watch path with a temporary run through three cases. A run completes and is reviewed at head A, then is resumed and completes again at head B: the reflex launches exactly one review keyed to B. A run whose stored review is keyed to its head gets no launch. A first delivery whose launch was deferred is launched once the bound clears. Each case that reproduces a cause from §2's report is named for it. The tests importing <code>reckon/crew/recovery_review_dispatch.py</code> or <code>reckon/crew/recovery_watch.py</code> show no added failure against base, their list built from the head tree. The negative control is executed and logged: with the cause §2 named restored, the case it explains fails. Write paths: the module and function §2's report names, and <code>tests/test_a_moved_head_is_reviewed.py</code>. This section runs after §2.</p>
+<p><strong>Deliverable.</strong> The cause §2 names is repaired in the function it names, by extending the existing path through <code>dispatch_review_for_run</code>, <code>review_head_move</code> and <code>carry_review_forward</code> in <code>reckon/crew/recovery_review_dispatch.py</code>. No second launch path is added. After the repair, the reflex launches a review whenever a run settles at a head that no stored review is keyed to. That covers a first delivery, a resumed run whose head moved, and a launch an admission bound deferred, once the bound clears. It still carries a review forward when §5 of a-review-is-sized-to-its-risk says the move needs none.</p><p><strong>The cause to repair.</strong> §2 named it: a re-review reuses the first round's node id, so its worktree path collides with the first round's and the launch fails. In <code>dispatch_review_for_run</code>, each review round of a run gets a node id and a worktree path that differ from every earlier round's. A first round keeps today's id. Review tiers are not changed here; the lead's 2026-10-12 ruling on test-only runs is built by <a href="/reckon/plans/the-review-loop-runs-without-hand-steps">the-review-loop-runs-without-hand-steps</a> §3.</p>
+<p><strong>Done when</strong> <code>tests/test_a_resumed_head_is_reviewed.py</code> drives the watch path with a temporary run through five cases:</p>
+<ul>
+<li>A run completes and is reviewed at head A, then is resumed and completes again at head B, where the move from A to B changes runtime source. The reflex launches exactly one review keyed to B, and its node id and worktree path differ from the first round's.</li>
+<li>A resume from A to B that changes only data (plans, evidence or state) carries the stored review forward and launches none, under §5 of a-review-is-sized-to-its-risk.</li>
+<li>A run whose stored review is keyed to its head gets no launch.</li>
+<li>A first delivery whose launch was deferred is launched once the bound clears.</li>
+<li>A third round of the same run gets an id and path distinct from both earlier rounds.</li>
+</ul>
+<p>Each case that reproduces a cause from §2's report is named for it. The tests importing <code>reckon/crew/recovery_review_dispatch.py</code> or <code>reckon/crew/recovery_watch.py</code> show no added failure against base, their list built from the head tree. The negative control is executed and logged under the run directory: with the reused round id restored, the runtime-source resume case fails. Write paths: <code>reckon/crew/recovery_review_dispatch.py</code> and <code>tests/test_a_resumed_head_is_reviewed.py</code>. This section runs after §2.</p>
 
 <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
