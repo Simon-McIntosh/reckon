@@ -556,6 +556,18 @@ def _review_text_lines(text: str) -> Iterator[str]:
         yield raw.strip()
 
 
+# The statuses a stored run-review record may carry, and the only values
+# ``parse_review`` writes: a review that recognised at least one score
+# (``"parsed"``), one that recognised none (``"unparsed"``), and one whose
+# revision pair could not identify the diff (``"incomplete"``). A reader acts
+# on ``"parsed"`` alone, so a record carrying any other status is one no reader
+# acts on. The set is public so a reader that selects reviews imports it rather
+# than restating the vocabulary and drifting from it.
+RECOGNISED_REVIEW_STATUSES: frozenset[str] = frozenset(
+    {"parsed", "unparsed", "incomplete"}
+)
+
+
 def parse_review(
     text: str, *, record: Mapping[str, Any] | None = None
 ) -> dict[str, Any]:
@@ -2123,6 +2135,12 @@ def store_review(
     its reviewing-run identity, so it can neither displace a complete review
     nor overwrite another partial record of the same run. The write is atomic.
 
+    A record whose ``status`` is absent or outside
+    :data:`RECOGNISED_REVIEW_STATUSES` is refused before anything is written,
+    naming the status found and the accepted set: no reader acts on such a
+    record, so storing it would file a review that every consumer reads as
+    absent while it sits on disk.
+
     The added-failure derivation is not applied here. Records are annotated
     when they are read, from the reviewed run's own manifest, so a record may be
     written by a caller with no access to that manifest — a review worker
@@ -2144,6 +2162,18 @@ def store_review(
         raise ValueError(
             "review record carries no review material — findings, scores, a "
             "rubric or a reviewed revision — so it is not a review"
+        )
+    accepted = ", ".join(sorted(RECOGNISED_REVIEW_STATUSES))
+    status = record.get("status")
+    if not status:
+        raise ValueError(
+            "review record carries no status, so no reader can act on it; the "
+            f"accepted statuses are {accepted}"
+        )
+    if status not in RECOGNISED_REVIEW_STATUSES:
+        raise ValueError(
+            f"review record carries status {status!r}, which no reader acts on; "
+            f"the accepted statuses are {accepted}"
         )
     base_carried, base_sha, head_carried, head_sha = carried_revision_pair(record)
     if base_carried or head_carried:
