@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-standalone" content="Storage bounds for the crew home and caches; no live plan waits on them and they wait on none. The pick-input index belongs to one-typesafe-model-picker&#x27;s code and is fixed here because its growth is independent of the picker&#x27;s open sections.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;deferred&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;deferred&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
   <title>The Crew Home Has A Bound | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="31">
+<meta name="plan-version" content="32">
 <meta name="plan-modified" content="2026-10-12">
 </head>
 <body>
@@ -136,6 +136,20 @@
       directory.</p>
 
     
+    <h2 id="s6">§6 — gc clears an abandoned clean tree and an already-removed one</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> The nova session reported two gaps on 2026-10-12, around run <code>r-20261008T122151393511-cfs-point-jet-custom-rule</code>, which the lead closed unmerged. It left a clean worktree whose 5 commits are not on <code>main</code>. <code>crew gc --run &lt;id&gt;</code> withholds such a tree as unintegrated, which is correct. But <code>--pin-unique-commits</code> releases only dirty trees, so a clean, deliberately abandoned tree has no route through gc. After nova pinned its head to <code>refs/reckon/archive/&lt;run-id&gt;</code> and removed the tree by hand, <code>crew gc --run &lt;id&gt; --apply</code> exited 1: "names worktree … which is not a worktree this repository registers". It should have cleared the run's remaining leftovers.</p>
+<p><strong>Deliverable.</strong> <code>--pin-unique-commits</code> also releases a clean tree classified unintegrated. It pins the commits with no patch-equivalent on the integration head under <code>refs/reckon/archive/&lt;run-id&gt;</code>, as it does for a dirty tree, and reports the ref. Without the flag, such a tree is still withheld. <code>crew gc --run &lt;id&gt;</code> on a run whose recorded worktree is gone or unregistered reports the tree as <code>already-removed</code>, clears the run's other leftovers, and exits 0 when nothing else fails. Every other path is unchanged, the live-claim checks included.</p>
+<p><strong>Done when</strong> <code>tests/test_gc_clears_an_abandoned_clean_tree.py</code> passes over temporary repositories:</p>
+<ul>
+<li>A clean tree with unique commits is withheld without the flag.</li>
+<li>With the flag, the same tree is pinned (the ref resolves to its head) and released.</li>
+<li><code>gc --run</code> on a run whose tree was removed by hand exits 0, reports <code>already-removed</code>, and clears the run's lock.</li>
+<li>A live-claimed tree is never pinned or removed.</li>
+</ul>
+<p>The existing gc tests pass. The negative control keeps the dirty-only condition for pinning, and the clean-tree case must then fail. It is logged under the run directory.</p>
+<p>Write paths: <code>reckon/crew/routing.py</code>, <code>tests/test_gc_clears_an_abandoned_clean_tree.py</code>. It runs after the whole-or-nothing worktree release (<code>r-20261012T051827498181-a-worktree-release-is-whole</code>) merges, since both write <code>routing.py</code>.</p>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-tchhab-001" data-status="resolved" data-written-by="reckon-create" data-written-at="2026-10-10" data-recommends-skill="/reckon-build the-crew-home-has-a-bound" data-resolved-at="2026-10-10T20:44:21+00:00" data-resolved-by="reckon-build coordinator (health-review-1010)">
