@@ -1142,6 +1142,12 @@ def _compute_watch_snapshot(
         # snapshot recomputes the same window the full classification did
         # rather than reading the one frozen onto the entry.
         "budget_seconds": row.get("budget_seconds"),
+        # The declared allowance in the fleet's own spelling, beside the
+        # resolved seconds above. The two answer different readers: the stall
+        # window compares a span numerically, while a row that names the
+        # allowance a run was dispatched under must read as it was declared
+        # ("30m"), which a bare second count does not.
+        "time_budget": str((pointer.get("node") or {}).get("time_budget") or ""),
         "recovery_classification": verdict["recovery_classification"],
         "recovery": verdict["recovery"],
         "lifting_condition": verdict.get("lifting_condition"),
@@ -1663,6 +1669,13 @@ def _watch_transition(
         # fact the renderer reads to dim the row.
         "lineage": snapshot.get("lineage"),
         "backend": str(snapshot.get("backend") or ""),
+        # The lane the run was dispatched through and the allowance it was
+        # launched under, so a row naming a run's start reads which lane took
+        # it and how long it was given. Both travel as facts; the lane is the
+        # resolved lane name and the allowance the fleet's own declaration, so
+        # a renderer needs no second read to place the run.
+        "lane": str(snapshot.get("lane") or ""),
+        "time_budget": str(snapshot.get("time_budget") or ""),
         "model": str(snapshot.get("model") or ""),
         "effort": str(snapshot.get("effort") or ""),
         "alias": str(snapshot.get("alias") or ""),

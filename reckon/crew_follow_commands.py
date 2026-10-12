@@ -795,6 +795,11 @@ def follower_row_path(
             event, session=session, observed=observed_sessions, run_ids=selected_runs
         ),
         reported=reported,
+        # The pane's own session, so the row policy delivers this session's own
+        # run starts. Without it the policy holds every start as observer
+        # context, and a live follower shows nothing between a run's launch and
+        # its end — the silence this pane's second reader cannot read.
+        own_session=session,
     )
 
 

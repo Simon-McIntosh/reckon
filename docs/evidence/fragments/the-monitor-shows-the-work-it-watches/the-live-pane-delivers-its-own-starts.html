@@ -1,0 +1,59 @@
+<section id="the-live-pane-delivers-its-own-starts-wiring">
+  <h2>The live pane delivers its own session's run starts</h2>
+  <p>
+    The row policy that delivers a pane's own session's run start was inert on
+    the live follower. Two facts were missing on the way through.
+    <code>follower_row_path</code> in <code>reckon/crew_follow_commands.py</code>
+    built its <code>PaneRowPath</code> without <code>own_session</code>, so the
+    policy could never tell which runs were the pane's own and held every start
+    as observer context. And the transition written by
+    <code>_watch_transition</code> in <code>reckon/crew/recovery_watch.py</code>
+    carried neither the lane nor the time budget, so a start row could not name
+    them even once delivered. The follower's own row path now carries its
+    session, and the transition carries the run's resolved lane and its declared
+    time budget.
+  </p>
+  <p>
+    Reproduced on the base revision before the repair: a real
+    <code>dispatched → working</code> transition built by the producer's own
+    builder, fed through <code>follower_row_path(session=S)</code>, delivered
+    <strong>0 rows</strong> and the event carried neither
+    <code>lane</code> nor <code>time_budget</code>. After the repair the same
+    path delivers <strong>1</strong> row reading <code>dispatched → working</code>
+    and naming run id, node, lane, model and time budget.
+  </p>
+  <table>
+    <thead>
+      <tr><th>Measure</th><th>Base <code>2d55797d0</code></th><th>Head</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>tests/test_the_live_pane_delivers_its_own_starts.py</code></td>
+        <td>n/a (new file)</td>
+        <td>3 passed</td>
+      </tr>
+      <tr>
+        <td>Files importing <code>crew_follow_commands</code> or <code>recovery_watch</code></td>
+        <td>2 failed, 551 passed</td>
+        <td>2 failed, 553 passed</td>
+      </tr>
+      <tr>
+        <td>Added failures against base</td>
+        <td>&mdash;</td>
+        <td>0</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>
+    The two failures carried by both arms are pre-existing and outside this
+    node's change: <code>test_follower_freshness.py::test_running_follower_reloads_without_stream_or_registration_gap</code>
+    and <code>test_follower_reload_is_safe.py::test_syntax_error_in_a_follower_module_defers_the_reload</code>.
+    Two existing cases in <code>tests/test_follow_replays_the_gap.py</code> that
+    encoded the never-a-start rule for the live path were updated to the new
+    rule, never deleted, as the section directs. The negative control, which
+    builds <code>PaneRowPath</code> in <code>follower_row_path</code> without
+    <code>own_session</code> again, fails the own-start case
+    (<code>test_the_live_follower_delivers_its_own_start_naming_all_five_fields</code>,
+    <code>EXIT=1</code>).
+  </p>
+</section>
