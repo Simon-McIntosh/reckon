@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-title" content="The Monitor Shows The Work It Watches">
+  <meta name="plan-summary" content="The session-host pane is empty while work runs and never stops after. Show each own run's start and a live roll-up, and end the pane when no work is live.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="4.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-sprint" content="S26">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-north-star" content="unattended-execution">
+  <meta name="plan-standalone" content="The lead's 2026-10-12 requirements for the session-host pane, revising the start-row rule of the shipped a-follower-row-is-worth-a-wake; no live plan waits on it and it waits on none.">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;deferred&quot;}">
+  <title>The Monitor Shows The Work It Watches | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: the pane is empty while work runs, and it never ends</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-status="done" data-links=""></section>
+    <p>The imas-codex coordinator session <code>6fe78f81</code> relayed this on 2026-10-12, at the lead's request. At 04:47Z on <code>98dci4-clu-2002</code> that session dispatched one review run, <code>r-20261012T044739534705-review-portfolio-4dde24777e04</code>. The host wiring was correct: crew host pid 2116694 started follower pid 2162620, and both write to the pane. The watch stream held the run's baseline row (04:47:43Z) and its <code>dispatched → running</code> row (04:47:56Z). After more than 12 minutes the lead's Monitor pane still read "Status: running · No output available".</p>
+    <p>The cause is the row policy shipped by <a href="/reckon/plans/a-follower-row-is-worth-a-wake">a-follower-row-is-worth-a-wake</a> (commits <code>089cd7741</code>, <code>79d3a5458</code>, contract <code>778219ba2</code>). It delivers only a row that asks the coordinator for action, or news nobody caused, and never a start. So a session with work in flight shows nothing. The host also never exits on its own, because Claude Code would not restart it (<code>reckon/crew/session_host.py</code>, module docstring). So the pane stays "running" after the work has ended.</p>
+    <p>The lead's requirements, in their words: "it should not be overly verbose, but also not empty"; "I should be able to see all work active"; "the monitor should auto stop when there is no live work"; and "the monitor is for me too, I want to see what is going on". The pane has two readers, the coordinator and the lead. The policy that is right for waking the coordinator is not enough for the person watching.</p>
+
+    <h2 id="s2">§2 — A run's start is one row on its own session's pane</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> The row policy in <code>reckon/crew/ticker.py</code> delivers one row when a run that the pane's own session dispatched starts working. The row names the run id, node, lane and model, and time budget. It revises the start-row rule of <code>a-follower-row-is-worth-a-wake</code> for the session's own runs only. A peer session's start, a bare re-announcement, an echo and a replay are still held, so nothing is added to a pane for work that is not its own.</p>
+    <p><strong>Done when</strong> a new test file, <code>tests/test_a_pane_shows_its_own_starts.py</code>, passes:</p>
+    <ul>
+      <li>A follower for session S receives exactly one start row for S's run as it moves from dispatched to working, carrying the four fields.</li>
+      <li>A peer session's start delivers nothing.</li>
+      <li>A re-announcement or replay of the same start delivers nothing.</li>
+    </ul>
+    <p>The existing tests that encode the never-a-start rule are updated to the new rule, never deleted, each named in the manifest. The test files that import <code>ticker</code> pass. The negative control, which holds own starts back again, fails the first case. It is logged under the run directory.</p>
+    <p>Write paths: <code>reckon/crew/ticker.py</code>, <code>tests/test_a_pane_shows_its_own_starts.py</code>, plus the existing test files whose start-row assertion changes, each named at dispatch.</p>
+
+    <h2 id="s3">§3 — Every delivered row carries the session's live roll-up</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> Each row the pane delivers ends with a compact roll-up of the session's live runs: a count, and the node of each, in the ticker's existing abbreviated form. So "all work active" is visible on the latest line without the full stream. The roll-up reads the same live classification that <code>crew(view="live")</code> uses, and computes nothing of its own. It adds no row: a pane with no deliverable change stays quiet.</p>
+    <p><strong>Done when</strong> <code>tests/test_a_pane_row_carries_the_live_rollup.py</code> passes:</p>
+    <ul>
+      <li>With three live runs in session S and one in a peer session, S's delivered row reports three, names their nodes, and omits the peer's run.</li>
+      <li>When the last live run settles, its row reports none live.</li>
+      <li>The roll-up matches <code>crew(view="live", session=S)</code> for the same fixture.</li>
+    </ul>
+    <p>The test files that import <code>ticker</code> pass. The negative control, which counts every session's runs, fails the first case. It is logged under the run directory.</p>
+    <p>Write paths: <code>reckon/crew/ticker.py</code>, <code>tests/test_a_pane_row_carries_the_live_rollup.py</code>. This section runs after §2, since both write <code>ticker.py</code>.</p>
+
+    <h2 id="s4">§4 — The pane ends when no work is live</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="deferred" data-links=""></section>
+    <p><strong>Deliverable.</strong> When the session has no live run, the pane says so in one closing line and stops. The design is deferred to the lead's decision below. The session host exists so that a session does not spend a turn re-arming a follower, and Claude Code does not restart a plugin monitor that exits.</p>
+    <p><strong>Done when</strong> the decision is locked and a test drives the chosen design:</p>
+    <ul>
+      <li>The last live run settles and the closing line is delivered once.</li>
+      <li>The pane process ends, or its child does, as decided.</li>
+      <li>A later dispatch in the same session brings the pane back, by the decided route, with no row lost between.</li>
+    </ul>
+    <div class="r-dec" data-key="pane-end" data-choice="">
+      <p><strong>Decision: how the pane ends.</strong></p>
+      <ul>
+        <li><strong>Host exits.</strong> The host writes a closing "no live work" line and exits, so Claude Code shows the monitor as stopped. The next dispatch re-arms the monitor, which costs the session one turn per idle-to-busy transition.</li>
+        <li><strong>Child settles.</strong> The follower child ends on a settled summary line, and the host stays and starts a new child when the session next dispatches. No turn is spent, but Claude Code still shows the monitor as running.</li>
+      </ul>
+    </div>
+    <p>Write paths: fixed when the decision is locked; expected <code>reckon/crew/session_host.py</code> and its tests.</p>
+
+    <section data-reckon="followups">
+      <article class="r-fu" data-id="f-tmstwiw-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-build (health-review-1010)" data-written-at="2026-10-12" data-recommends-skill="/reckon-build the-monitor-shows-the-work-it-watches" data-resolved-at="" data-resolved-by="">
+        <h4 class="r-fu-title">Build §2 then §3; put §4's decision to the lead</h4>
+        <div class="r-fu-body"><p>§2 and §3 both write <code>ticker.py</code>, so they run in that order. §4 waits on the <code>pane-end</code> decision.</p></div>
+        <pre class="r-fu-prompt">/reckon-build the-monitor-shows-the-work-it-watches</pre>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
