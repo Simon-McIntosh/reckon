@@ -517,12 +517,28 @@ def _workspace_roots(repo: Path) -> list[Path]:
     return roots
 
 
+def _worktree_registrations(repo: Path) -> list[dict[str, Any]]:
+    """One record per registered worktree, from a single porcelain read.
+
+    Each record carries the worktree's resolved path and whether git holds a
+    lock on it, so a caller that needs either does not parse the listing again.
+    """
+    records: list[dict[str, Any]] = []
+    current: dict[str, Any] | None = None
+    for line in _git(repo, "worktree", "list", "--porcelain").stdout.splitlines():
+        if line.startswith("worktree "):
+            current = {
+                "path": Path(line.removeprefix("worktree ")).resolve(),
+                "locked": False,
+            }
+            records.append(current)
+        elif current is not None and line.startswith("locked"):
+            current["locked"] = True
+    return records
+
+
 def _registered_worktrees(repo: Path) -> list[Path]:
-    return [
-        Path(line.removeprefix("worktree ")).resolve()
-        for line in _git(repo, "worktree", "list", "--porcelain").stdout.splitlines()
-        if line.startswith("worktree ")
-    ]
+    return [record["path"] for record in _worktree_registrations(repo)]
 
 
 def _run_directory_extractions(runs_root: Path) -> list[Path]:
@@ -1100,6 +1116,30 @@ def _worktree_trash_root(repo: Path, path: Path) -> Path:
     return roots[0] / WORKTREE_TRASH_DIRNAME
 
 
+def _worktree_registration(repo: Path, tree: Path) -> dict[str, Any] | None:
+    """The registration record for ``tree``, or ``None`` when git holds none."""
+    resolved = tree.resolve()
+    for record in _worktree_registrations(repo):
+        if record["path"] == resolved:
+            return record
+    return None
+
+
+def _worktree_admin_dir(repo: Path, tree: Path) -> Path | None:
+    """The administrative directory whose deletion deregisters this one tree.
+
+    ``git worktree list --porcelain`` omits ``gitdir`` for a worktree at the
+    standard location, so it is read from the tree itself. Only a directory
+    directly under a ``worktrees`` parent is returned, so the main repository's
+    git directory can never be named here.
+    """
+    probe = _git(tree, "rev-parse", "--absolute-git-dir", check=False)
+    if probe.returncode or not probe.stdout.strip():
+        return None
+    admin = Path(probe.stdout.strip()).resolve()
+    return admin if admin.parent.name == "worktrees" else None
+
+
 def _worktree_is_locked(repo: Path, tree: Path) -> bool:
     """Whether git holds a lock on ``tree``, which forbids its removal.
 
@@ -1107,15 +1147,8 @@ def _worktree_is_locked(repo: Path, tree: Path) -> bool:
     it would otherwise ignore the lock, so the lock is read and honoured here
     before the tree is moved rather than silently overridden.
     """
-    resolved = tree.resolve()
-    for record in _git(repo, "worktree", "list", "--porcelain").stdout.split("\n\n"):
-        lines = [line for line in record.splitlines() if line.strip()]
-        if not lines or not lines[0].startswith("worktree "):
-            continue
-        if Path(lines[0].removeprefix("worktree ")).resolve() != resolved:
-            continue
-        return any(line.startswith("locked") for line in lines)
-    return False
+    record = _worktree_registration(repo, tree)
+    return bool(record and record["locked"])
 
 
 def _delete_worktree_copy(trash: Path) -> None:
@@ -1136,21 +1169,27 @@ def _release_worktree_whole(
     """Vacate a worktree's registered path in one rename, then delete the copy.
 
     The tree is moved aside before git is told to forget it, so the registered
-    path is emptied in a single step no deadline can interrupt partway. ``git
-    worktree prune`` deregisters the moved tree, and the trash copy is deleted
-    with no deadline; a deletion that fails or does not finish leaves trash —
-    which ``crew gc`` sweeps — rather than a half-removed registered tree.
+    path is emptied in a single step no deadline can interrupt partway. The
+    moved tree's own administrative directory is then deleted, which deregisters
+    that tree and no other — a global ``git worktree prune`` would also drop the
+    registration of a peer tree whose directory vanished outside git, which is
+    another session's record and must be left in place. The trash copy is
+    deleted with no deadline; a deletion that fails or does not finish leaves
+    trash — which ``crew gc`` sweeps — rather than a half-removed registered
+    tree.
     """
     tree = Path(path)
     if _worktree_is_locked(repo, tree):
         raise CrewError(f"refusing to release locked worktree {tree}")
+    admin = _worktree_admin_dir(repo, tree)
     trash_root = _worktree_trash_root(repo, tree)
     trash_root.mkdir(parents=True, exist_ok=True)
     label = run_id or tree.name
     stamp = datetime.now(tz=UTC).strftime("%Y%m%dT%H%M%S%fZ")
     trash = trash_root / f"{label}-{stamp}"
     os.rename(tree, trash)
-    _git(repo, "worktree", "prune", check=False)
+    if admin is not None and admin.is_dir():
+        shutil.rmtree(admin, ignore_errors=True)
     result: dict[str, Any] = {
         "path": str(tree),
         "trash": str(trash),

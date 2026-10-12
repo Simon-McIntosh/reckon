@@ -17,6 +17,7 @@ import ast
 import importlib
 import itertools
 import json
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -246,6 +247,35 @@ def test_an_unreclaimable_tree_is_not_moved(repository: Path) -> None:
     assert tree.is_dir()
     assert str(tree) in _registered(repository)
     assert _trash_entries(repository) == []
+
+
+def test_releasing_one_tree_leaves_a_peer_registration_whose_directory_vanished(
+    repository: Path,
+) -> None:
+    """A vanish-outside-git registration is another session's record and survives.
+
+    The released tree's own registration is forgotten, but a global
+    ``git worktree prune`` would also drop the registration of a peer tree whose
+    directory was removed outside git — the record gc reports and leaves in
+    place — so releasing one tree must not touch another's.
+    """
+    released = _worktree(repository, "released-tree")
+    vanished = _worktree(repository, "vanished-tree")
+    run_id = "r-20261012T050000000000-released-tree"
+    # The directory is gone but git still registers the tree: exactly the state
+    # a removal by something outside git leaves behind.
+    shutil.rmtree(vanished)
+    assert str(vanished) in _registered(repository)
+
+    result = promotion_release_module._release_run_workspace(
+        _record(repository, released, run_id)
+    )
+
+    assert result["worktree_released"] is True, result
+    assert str(released) not in _registered(repository)
+    assert str(vanished) in _registered(repository), (
+        "releasing one tree dropped a peer's registration"
+    )
 
 
 def _literal_argv(call: ast.Call) -> list[str]:

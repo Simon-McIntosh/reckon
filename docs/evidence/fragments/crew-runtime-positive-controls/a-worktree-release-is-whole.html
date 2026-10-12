@@ -7,7 +7,7 @@
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="a-worktree-release-is-whole">
   <meta name="plan-title" content="A worktree release is whole or not at all">
-  <meta name="plan-summary" content="Every worktree removal now vacates the registered path in one rename onto a same-filesystem trash directory, prunes the registration, and deletes the copy with no deadline; a locked tree is still refused and gc sweeps leftover trash.">
+  <meta name="plan-summary" content="Every worktree removal now vacates the registered path in one rename onto a same-filesystem trash directory, deregisters that one tree, and deletes the copy with no deadline; a locked tree is still refused, a peer registration is left alone, and gc sweeps leftover trash.">
   <meta name="plan-evidence-for" content="crew-runtime-positive-controls">
   <meta name="plan-verifies" content="crew-runtime-positive-controls#s47">
   <meta name="plan-verdict" content="pass">
@@ -19,7 +19,7 @@
 <main class="plan-doc">
   <h1 id="a-worktree-release-is-whole">A worktree release is whole or not at all</h1>
   <section id="a-worktree-release-is-whole-outcome">
-    <p>One helper, <code>_release_worktree_whole</code>, owns removal for every site: it renames the tree onto a same-filesystem trash directory, runs <code>git worktree prune</code>, then deletes the copy with no deadline. Gate at head d3e4b44f7: 55 passed, 0 failed. The negative control restoring <code>git worktree remove</code> under the 180 s deadline reddens the timeout case with a partial tree (EXIT=1).</p>
+    <p>One helper, <code>_release_worktree_whole</code>, owns removal for every site: it renames the tree onto a same-filesystem trash directory, deletes that tree's own administrative directory to deregister it alone, then deletes the copy with no deadline. A global <code>git worktree prune</code> is deliberately not run, because it would also drop the registration of a peer tree whose directory vanished outside git &mdash; another session's record, which <code>crew gc</code> reports and leaves in place. Gate at head d3e4b44f7: 7 passed in the release suite, 3 in the wide-claim suite, 27 in <code>test_crew_gc.py</code>. The negative control restoring <code>git worktree remove</code> under the 180 s deadline reddens the timeout case with a partial tree (EXIT=1).</p>
   </section>
 </main>
 </body>
