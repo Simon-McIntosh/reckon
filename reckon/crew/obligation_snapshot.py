@@ -298,6 +298,21 @@ def _records_the_live_producer(producer: Mapping[str, Any]) -> bool:
     return process_start_time(pid) == recorded
 
 
+def _foreign_seat_is_live(project: str | None) -> bool:
+    """Whether another host's seat names a live producer for the project.
+
+    The watch module owns the judgement of whether a seat names a foreign host
+    whose stream is still fresh, so it is asked rather than re-derived here;
+    the import is deferred to this call so the reader's module-level surface,
+    which the prompt hook loads on a turn's opening, stays free of it.
+    """
+    if not project:
+        return False
+    from reckon.crew import watch_unit
+
+    return watch_unit.seat_names_a_live_foreign_producer(project)
+
+
 # ── Code stamp ──────────────────────────────────────────────────────────────
 
 _PACKAGE_DIR = Path(__file__).resolve().parent.parent
@@ -354,15 +369,24 @@ def source_code_stamp(package_dir: Path | None = None) -> str:
 def freshness(
     document: Mapping[str, Any] | None,
     *,
+    project: str | None = None,
     current_stamp: str | None = None,
     now: datetime | None = None,
 ) -> str:
-    """Classify a stored snapshot: ``fresh`` or one of three fixed reasons."""
+    """Classify a stored snapshot: ``fresh`` or one of three fixed reasons.
+
+    ``project`` names the seat to consult when the recorded pid is not running
+    on this host. A snapshot published by a producer on another node records
+    that node's pid, which this host's process table answers for only by
+    accident, so a locally-absent pid is not by itself an absence; the project's
+    seat, which crosses the shared home, is asked whether it names a foreign
+    host whose stream is still fresh, and a yes counts as a live producer.
+    """
     if not isinstance(document, Mapping) or not document:
         return NO_PRODUCER
     producer = document.get("producer")
     producer = producer if isinstance(producer, Mapping) else {}
-    if not _records_the_live_producer(producer):
+    if not _records_the_live_producer(producer) and not _foreign_seat_is_live(project):
         return NO_PRODUCER
     stamp = source_code_stamp() if current_stamp is None else current_stamp
     if str(producer.get("code_stamp") or "") != stamp:

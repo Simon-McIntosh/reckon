@@ -872,7 +872,7 @@ def _prompt(payload: dict[str, Any]) -> int:
     project, session = located
     module = snapshot_module()
     document = module.read_snapshot(project, session)
-    state = module.freshness(document)
+    state = module.freshness(document, project=project)
     if state == module.FRESH:
         _inject_list(
             payload,
@@ -1105,7 +1105,7 @@ def _stop(payload: dict[str, Any]) -> int:
     project, session = located
     module = snapshot_module()
     document = module.read_snapshot(project, session)
-    state = module.freshness(document)
+    state = module.freshness(document, project=project)
     if state == module.FRESH:
         resolved = recheck_worktree_held_rows(
             module.live_payload(document), project=project

@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-review-loop-runs-without-hand-steps">
+  <meta name="plan-evidence-for" content="reckon:the-review-loop-runs-without-hand-steps">
+  <meta name="plan-verifies" content="reckon:the-review-loop-runs-without-hand-steps#s5">
+  <meta name="plan-recorded-at" content="2026-10-12">
+  <meta name="plan-verdict" content="passed">
+  <title>A producer seated on another node reads as live through the watch seat | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-remote-producer-reads-as-live-landing" data-node="a-remote-producer-reads-as-live" data-reckon="landed" data-when="2026-10-12">
+  <h2>A producer on another host is read as live through its shared seat</h2>
+  <p>A snapshot records the producer's pid, start time and code stamp but no host, so a coordinator on another node read a live remote producer as absent. <code>freshness</code> in <code>reckon/crew/obligation_snapshot.py</code> now takes the <code>project</code>; when the recorded pid is not running on this host it asks <code>reckon/crew/watch_unit.py</code>'s new public <code>seat_names_a_live_foreign_producer</code>, which reports a seat naming a foreign host whose transition stream moved within its stall window. A yes counts as a live producer, so the hook then reports fresh or stale as usual; a dead local pid or a foreign seat with a stale stream still reads <code>no-producer</code>. Both call sites in <code>reckon/hooks/coordinator_obligations.py</code> pass the project. The remote consult is a lazy import, so the hook's fast path stays free of it. Gate <code>tests/test_a_remote_producer_reads_as_live.py</code> (4 passed, <code>EXIT=0</code>); the test files importing the two modules pass together (171 passed, <code>EXIT=0</code>); declared negative control — judging every producer by local pid alone — fails the remote-live case (<code>EXIT=1</code>).</p>
+</article>
+</body>
+</html>
