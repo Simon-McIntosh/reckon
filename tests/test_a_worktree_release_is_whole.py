@@ -1,0 +1,312 @@
+"""A worktree is released whole or not at all.
+
+``git worktree remove`` deletes a tree's files while deregistering it under one
+deadline; on a loaded filesystem that deadline has expired partway, leaving a
+registered tree holding a fraction of its files — neither whole nor gone. Every
+removal site now vacates the registered path in a single rename onto a trash
+directory before git is told to forget the tree, so a deadline or a failure
+during the copy's deletion can only leave trash, which ``crew gc`` sweeps.
+
+Every case works on a synthesised repository under a temporary config home; no
+real fleet directory is read or written.
+"""
+
+from __future__ import annotations
+
+import ast
+import importlib
+import itertools
+import json
+import subprocess
+from pathlib import Path
+
+import pytest
+
+from reckon.crew.runs import _write_json, pointer_path, run_dir
+from tests.helpers.git import git as _git
+
+routing_module = importlib.import_module("reckon.crew.routing")
+promotion_release_module = importlib.import_module("reckon.crew.promotion_release")
+velocity_module = importlib.import_module("reckon.velocity")
+
+PROJECT = "worktree-release-fixture"
+SESSION = "worktree-release-session"
+RELEASE_HELPER = "_release_worktree_whole"
+
+REPOSITORY_ROOT = Path(__file__).resolve().parent.parent
+
+# The removal sites the one helper must own. Named by module and function so a
+# site that stops routing through the helper — or a new one that never did — is
+# named rather than counted.
+EXPECTED_HELPER_CALLERS = {
+    "reckon/crew/routing.py": {
+        "_save_and_release_worktree",
+        "garbage_collect",
+        "_remove_worktree",
+    },
+    "reckon/crew/promotion_release.py": {"_release_run_workspace"},
+}
+
+
+def _dead_pid() -> int:
+    process = subprocess.Popen(["true"])
+    process.wait()
+    return process.pid
+
+
+@pytest.fixture()
+def repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """A synthesised checkout whose project keeps its ledger under docs/state."""
+    config_home = tmp_path / "config"
+    config_home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(config_home))
+    monkeypatch.setenv("RECKON_WORKER_SCRATCH_ROOT", str(tmp_path / "scratch"))
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / "docs" / "state" / PROJECT).mkdir(parents=True)
+    (repo / "seed.txt").write_text("seed\n", encoding="utf-8")
+    for index in range(6):
+        (repo / f"tracked-{index}.txt").write_text(f"file {index}\n", encoding="utf-8")
+    for arguments in (
+        ("init", "-q", "-b", "main"),
+        ("config", "user.email", "worker@example.invalid"),
+        ("config", "user.name", "Worker"),
+        ("add", "."),
+        ("commit", "-q", "-m", "test: seed the worktree-release fixture"),
+    ):
+        _git(repo, *arguments)
+    (config_home / "mounts.json").write_text(
+        json.dumps({PROJECT: str(repo / "docs")}), encoding="utf-8"
+    )
+    return repo
+
+
+def _worktree(repo: Path, name: str) -> Path:
+    """A managed tree at the same head as the repository, clean and integrated."""
+    root = routing_module._workspace_roots(repo)[0]
+    tree = root / SESSION / name
+    tree.parent.mkdir(parents=True, exist_ok=True)
+    _git(repo, "worktree", "add", "-q", "--detach", str(tree), "HEAD")
+    return tree
+
+
+def _registered(repo: Path) -> set[str]:
+    return {
+        str(Path(line.removeprefix("worktree ")).resolve())
+        for line in _git(repo, "worktree", "list", "--porcelain").splitlines()
+        if line.startswith("worktree ")
+    }
+
+
+def _delete_half(tree: Path) -> int:
+    """Delete about half the regular files under ``tree``, returning the count.
+
+    Simulates a deletion that stops partway: the instrument that sees a healthy
+    run must first see something present, so this returns a positive count
+    rather than nothing.
+    """
+    files = [path for path in sorted(tree.rglob("*")) if path.is_file()]
+    removed = 0
+    for path in files[: max(1, len(files) // 2)]:
+        path.unlink()
+        removed += 1
+    return removed
+
+
+def _trash_entries(repo: Path) -> list[Path]:
+    root = (
+        routing_module._workspace_roots(repo)[0] / routing_module.WORKTREE_TRASH_DIRNAME
+    )
+    if not root.is_dir():
+        return []
+    return sorted(path for path in root.iterdir() if path.is_dir())
+
+
+def _record(repo: Path, tree: Path, run_id: str) -> dict[str, object]:
+    return {
+        "run_id": run_id,
+        "worktree": str(tree),
+        "repo": str(repo),
+        "pid": _dead_pid(),
+    }
+
+
+def test_a_release_whose_deletion_times_out_leaves_no_partial_tree_and_gc_sweeps_its_trash(
+    repository: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    tree = _worktree(repository, "timeout-release")
+    run_id = "r-20261012T050000000000-timeout-release"
+
+    # The head's deletion step is the trash copy's removal. A partial deletion
+    # that times out there must leave the original path empty.
+    def _partial_then_timeout(trash: Path) -> None:
+        assert _delete_half(trash) > 0, "the deletion made nothing happen"
+        raise subprocess.TimeoutExpired(cmd=["delete", str(trash)], timeout=180)
+
+    monkeypatch.setattr(routing_module, "_delete_worktree_copy", _partial_then_timeout)
+
+    # The pre-change deletion step ran `git worktree remove` under velocity's
+    # 180 s deadline. This arm fires only if that step is restored, deleting part
+    # of the tree and then timing out exactly as the incident recorded.
+    real_run_git = velocity_module.run_git
+
+    def _timeout_on_git_remove(repo, *args, **kwargs):
+        if "worktree" in args and "remove" in args:
+            _delete_half(Path(args[-1]))
+            raise subprocess.TimeoutExpired(
+                cmd=["git", "worktree", "remove"], timeout=180
+            )
+        return real_run_git(repo, *args, **kwargs)
+
+    monkeypatch.setattr(velocity_module, "run_git", _timeout_on_git_remove)
+
+    try:
+        result = promotion_release_module._release_run_workspace(
+            _record(repository, tree, run_id)
+        )
+    except subprocess.TimeoutExpired:
+        result = {"worktree_released": False, "worktree_withheld": "removal timed out"}
+
+    assert result["worktree_released"] is True, result
+    assert not tree.exists(), "a partial tree was left at the registered path"
+    assert str(tree) not in _registered(repository), "the worktree was not deregistered"
+    trash_left = str(result.get("worktree_trash_left") or "")
+    assert trash_left, result
+    assert Path(trash_left).is_dir()
+
+    report = routing_module.garbage_collect(
+        repo=repository, project=PROJECT, apply=True
+    )
+    assert report["worktree_trash_removed"] == 1, report["worktree_trash"]
+    assert not Path(trash_left).exists()
+    assert _trash_entries(repository) == []
+
+
+def test_a_normal_release_removes_and_deregisters_the_tree(repository: Path) -> None:
+    tree = _worktree(repository, "normal-release")
+    run_id = "r-20261012T050000000000-normal-release"
+    marker = tree / "tracked-0.txt"
+    assert marker.is_file()
+
+    result = promotion_release_module._release_run_workspace(
+        _record(repository, tree, run_id)
+    )
+
+    assert result["worktree_released"] is True, result
+    assert not tree.exists()
+    assert str(tree) not in _registered(repository)
+    assert "worktree_trash_left" not in result
+    assert _trash_entries(repository) == []
+
+
+def test_a_live_claimed_tree_is_not_moved(repository: Path) -> None:
+    tree = _worktree(repository, "parked-share")
+    run_id = "r-20261012T050000000000-parked-share"
+    peer_id = "r-20261012T050000000001-parked-peer"
+    marker = tree / "tracked-0.txt"
+    # A peer parked between turns: its pointer carries a terminal-looking phase
+    # while it still names this tree, so the wide claim protects it.
+    _write_json(
+        Path(pointer_path(peer_id)),
+        {
+            "run_id": peer_id,
+            "pid": _dead_pid(),
+            "phase": "complete",
+            "worktree": str(tree),
+            "repo": str(repository),
+            "project": PROJECT,
+            "node": "parked-peer",
+        },
+    )
+    run_dir(peer_id).mkdir(parents=True, exist_ok=True)
+
+    result = promotion_release_module._release_run_workspace(
+        _record(repository, tree, run_id)
+    )
+
+    assert result["worktree_released"] is False, result
+    assert tree.is_dir() and marker.is_file()
+    assert str(tree) in _registered(repository)
+    assert _trash_entries(repository) == []
+    with pytest.raises(routing_module.CrewError):
+        routing_module._remove_worktree(repository, str(tree))
+    assert tree.is_dir() and marker.is_file()
+
+
+def test_an_unreclaimable_tree_is_not_moved(repository: Path) -> None:
+    tree = _worktree(repository, "dirty-tree")
+    run_id = "r-20261012T050000000000-dirty-tree"
+    (tree / "untracked.txt").write_text("uncommitted\n", encoding="utf-8")
+
+    result = promotion_release_module._release_run_workspace(
+        _record(repository, tree, run_id)
+    )
+
+    assert result["worktree_released"] is False, result
+    assert tree.is_dir()
+    assert str(tree) in _registered(repository)
+    assert _trash_entries(repository) == []
+
+
+def _literal_argv(call: ast.Call) -> list[str]:
+    values: list[str] = []
+    for argument in call.args:
+        if isinstance(argument, ast.Constant) and isinstance(argument.value, str):
+            values.append(argument.value)
+        elif isinstance(argument, (ast.List, ast.Tuple)):
+            values.extend(
+                element.value
+                for element in argument.elts
+                if isinstance(element, ast.Constant) and isinstance(element.value, str)
+            )
+    return values
+
+
+def _calls_helper(node: ast.AST) -> bool:
+    return any(
+        isinstance(child, ast.Call)
+        and isinstance(child.func, ast.Name)
+        and child.func.id == RELEASE_HELPER
+        for child in ast.walk(node)
+    )
+
+
+def _calls_git_remove(node: ast.AST) -> bool:
+    for child in ast.walk(node):
+        if not isinstance(child, ast.Call):
+            continue
+        argv = _literal_argv(child)
+        if any(
+            first == "worktree" and second == "remove"
+            for first, second in itertools.pairwise(argv)
+        ):
+            return True
+    return False
+
+
+def _functions(source: str) -> list[ast.FunctionDef | ast.AsyncFunctionDef]:
+    return [
+        node
+        for node in ast.parse(source).body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    ]
+
+
+def test_every_removal_site_goes_through_the_one_helper() -> None:
+    found: dict[str, set[str]] = {}
+    for relative in EXPECTED_HELPER_CALLERS:
+        source = (REPOSITORY_ROOT / relative).read_text(encoding="utf-8")
+        found[relative] = {
+            node.name for node in _functions(source) if _calls_helper(node)
+        }
+    assert found == EXPECTED_HELPER_CALLERS, found
+
+
+def test_no_removal_site_still_deletes_with_git_worktree_remove() -> None:
+    offenders = [
+        f"{source_path.name}::{node.name}"
+        for source_path in sorted((REPOSITORY_ROOT / "reckon").rglob("*.py"))
+        for node in _functions(source_path.read_text(encoding="utf-8"))
+        if _calls_git_remove(node)
+    ]
+    assert offenders == [], offenders

@@ -32,6 +32,7 @@ from reckon.crew.routing import (
     _git,
     _inspect_workspace,
     _live_pointer_worktrees,
+    _release_worktree_whole,
     _signal_process_group,
     run_directory_of,
 )
@@ -403,24 +404,13 @@ def _release_run_workspace(
                 classification, "unrecognised classification"
             )
         else:
-            force = classification == "disposable"
-            removal = _git(
-                repo,
-                "worktree",
-                "remove",
-                *(("--force",) if force else ()),
-                str(worktree),
-                check=False,
-            )
-            if removal.returncode or worktree.is_dir():
-                result["worktree_withheld"] = (
-                    removal.stderr.strip()
-                    or removal.stdout.strip()
-                    or "worktree remove did not report success"
-                )
-            else:
-                _git(repo, "worktree", "prune", check=False)
-                result["worktree_released"] = True
+            released = _release_worktree_whole(repo, worktree, run_id=run_id)
+            result["worktree_released"] = True
+            if not released.get("trash_removed"):
+                # The tree is off its registered path and deregistered, so the
+                # release itself is whole; only the copy's deletion is left
+                # behind, and gc sweeps it. This is not a withheld release.
+                result["worktree_trash_left"] = released["trash"]
 
     pid = record.get("pid")
     if keep_process:
