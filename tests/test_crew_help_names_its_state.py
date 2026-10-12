@@ -15,6 +15,7 @@ CommandPath = tuple[str, ...]
 
 STATE_PHRASES: dict[CommandPath, str] = {
     ("ack",): "one run's obligations",
+    ("admit",): "queued dispatches while the lane grants a slot",
     ("attach",): "prepared in-harness run",
     ("budget-lift",): "a budget group's pace",
     ("budget-lifts",): "active and recent budget lifts",
