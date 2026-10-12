@@ -188,7 +188,7 @@ def test_a_reattach_replays_only_the_runs_that_moved(home, follow_lines) -> None
     The first arming shows both failed runs and leaves the record behind. One run
     is then delivered — it stops failing and waits to be promoted — while the
     other stays exactly where it was. The re-attach opens with the header, draws
-    the moved run once as ``failed → unpromoted``, and draws nothing at all for
+    the moved run once as ``new → delivered``, and draws nothing at all for
     the run that did not move: a run still at the state the record names carries
     no news.
     """
@@ -226,7 +226,7 @@ def test_a_reattach_replays_only_the_runs_that_moved(home, follow_lines) -> None
     moved = _naming(follow_lines, "node-a")
     assert len(moved) == 1, f"the moved run is drawn exactly once; got {follow_lines!r}"
     row = moved[0]
-    assert "failed" in row and "unpromoted" in row, row
+    assert "new → delivered" in row, row
     assert ticker_module.ARROW in row, row
 
     assert not _naming(follow_lines, "node-b"), (
@@ -272,7 +272,7 @@ def test_a_run_the_record_does_not_name_is_replayed_from_dispatched(
         f"a run the pane's own session dispatched is delivered once as its "
         f"start; got {follow_lines!r}"
     )
-    assert "dispatched → working" in arrived[0], arrived[0]
+    assert "new → working" in arrived[0], arrived[0]
     assert not _naming(follow_lines, "node-a"), follow_lines
     assert not _naming(follow_lines, "node-b"), follow_lines
 
@@ -355,4 +355,4 @@ def test_a_json_arming_records_only_what_a_pane_would_draw(
         f"a run the pane's own session dispatched is delivered once as its "
         f"start; got {follow_lines!r}"
     )
-    assert "dispatched → working" in rows[0], rows[0]
+    assert "new → working" in rows[0], rows[0]

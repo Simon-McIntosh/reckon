@@ -86,7 +86,7 @@ def _event(**overrides):
         "run_id": "r-reads-cleanly",
         "node": "n-reads-cleanly",
         "role": "implement",
-        "from_state": "working",
+        "from_state": None,
         "to_state": "working",
         "working": 3,
         "blocked": 1,
@@ -146,7 +146,7 @@ def test_the_clause_begins_at_one_column_whatever_the_row_reports(grid):
                 assert state_cell == rendered_state, (key, line)
                 state_columns.add(NEW_STATE_COLUMN)
                 arrow_columns.add(line.index(ticker_module.ARROW))
-                counter_columns.add(re.search(r"\d+q", line).end())
+                counter_columns.add(re.search(r"\d+W", line).end())
                 cell = line[end - span : end]
                 assert len(cell) == span, (key, line)
                 assert cell.strip() == (
@@ -215,13 +215,13 @@ def test_every_counter_bucket_renders_at_one_width(grid):
         if queued:
             event["waiting"] = 9
         line = plain(grid.render(event))
-        block = re.search(r"\d+w *\d+b *\d+u *\d+q", line)
+        block = re.search(r"\d+w *\d+h *\d+d *\d+W", line)
         assert block, line
         counts.append(block.group(0))
     assert {len(block) for block in counts} == {len(counts[0])}, counts
     # The zeros are present, not absent: a fleet with nothing queued still
     # prints the bucket, which is the whole reason the column holds still.
-    assert "0q" in counts[0]
+    assert "0W" in counts[0]
 
 
 @pytest.mark.parametrize("classification", sorted(recovery.RECOVERY_VERBS))
@@ -279,7 +279,7 @@ def test_a_line_counter_includes_the_transition_it_reports():
     assert counts["blocked"] == 1, counts
     # And the rendered row prints that number, so the line and the fleet agree.
     line = plain(grid_row(snapshot, counts))
-    assert "1b" in line, line
+    assert "1h" in line, line
 
 
 def grid_row(snapshot, counts):
@@ -297,10 +297,10 @@ def test_a_departure_renders_the_producer_state_without_a_ledger_branch(
     """A renderer does not restate a producer verdict from a ledger side fact."""
     event = _event(to_state="promoted", ledger_row=ledger_row)
     line = plain(grid.render(event))
-    assert "promoted" in line
-    assert "withdrawn" not in line
+    assert "landed" in line
+    assert "dropped" not in line
 
 
 def test_a_withdrawn_producer_state_is_rendered_as_given(grid):
     event = _event(to_state="withdrawn", refused=True, detail="refused at admission")
-    assert "withdrawn" in plain(grid.render(event))
+    assert "dropped" in plain(grid.render(event))

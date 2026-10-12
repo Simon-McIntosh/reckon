@@ -804,8 +804,8 @@ def test_a_followers_trailing_figures_count_only_the_session_it_was_given(
     )
     scoped = recovery.format_watch_transition(event, session="mine")
     unscoped = recovery.format_watch_transition(event)
-    assert " 1w  0b  0u" in scoped, scoped
-    assert " 2w  1b  0u" in unscoped, unscoped
+    assert " 1w  0h  0d" in scoped, scoped
+    assert " 2w  1h  0d" in unscoped, unscoped
     assert scoped != unscoped
 
 
@@ -897,7 +897,7 @@ def test_observe_and_watch_render_failure_only_after_the_process_stops(
         recovery.format_watch_transition(event, ticker=wide) for event in events
     ]
     assert "working" in rendered[0]
-    assert "failed" in rendered[1]
+    assert "halted" in rendered[1]
     assert "implementation and required evidence" in rendered[1]
     assert not untouched_home.exists()
 

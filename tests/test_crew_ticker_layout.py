@@ -31,7 +31,7 @@ ESCAPES = re.compile(r"\x1b\[[0-9;]*m")
 # is two right-aligned digits and one letter, and the cells abut with the
 # second digit's own leading space as the gap — the middle-dot separators the
 # block once carried were reclaimed to fund the reason clause.
-COUNTERS = re.compile(r"(\s?\d{1,2})w( \s?\d{1,2})b( \s?\d{1,2})u")
+COUNTERS = re.compile(r"(\s?\d{1,2})w( \s?\d{1,2})h( \s?\d{1,2})d")
 
 # The roles a fleet node carries as its ordinary work, and the longest of them.
 # The role column is sized from these, so the two rare roles wider than the cell
@@ -55,7 +55,7 @@ def counters(line: str) -> re.Match[str]:
 def letter_columns(line: str) -> dict[str, int]:
     """Each counter suffix's screen column on this row."""
     found = counters(line)
-    return {letter: found.end(index) for index, letter in enumerate(("w", "b", "u"), 1)}
+    return {letter: found.end(index) for index, letter in enumerate(("w", "h", "d"), 1)}
 
 
 def _event(**overrides):
@@ -119,7 +119,7 @@ def test_a_row_with_no_clause_ends_at_its_last_glyph(grid):
     # Column alignment is unchanged: every fixed column starts on the same
     # screen column as the row whose clause reaches into the margin.
     assert counters(empty).start() == counters(with_clause).start()
-    assert empty.index("blocked") == with_clause.index("blocked")
+    assert empty.index("halted") == with_clause.index("halted")
 
 
 def test_columns_start_on_the_same_screen_column(grid):
@@ -127,24 +127,24 @@ def test_columns_start_on_the_same_screen_column(grid):
     rows = [
         (
             plain(grid.render(_event(from_state=None, to_state="dispatched"))),
-            "dispatched",
+            "working",
         ),
         (
             plain(grid.render(_event(from_state="complete", to_state="promoted"))),
-            "promoted",
+            "landed",
         ),
-        (plain(grid.render(_event(working=12, blocked=0, unpromoted=3))), "blocked"),
+        (plain(grid.render(_event(working=12, blocked=0, unpromoted=3))), "halted"),
     ]
     # The state cell begins on one column whether the row had a source or not.
     assert len({row.index(state) - ticker_module.MARKER for row, state in rows}) == 1
     # A transition carries both states around the arrow; a first sighting keeps
     # the same geometry with its left half blank.
-    assert "complete → promoted" in rows[1][0]
-    assert "working → blocked" in rows[2][0]
-    assert ticker_module.ARROW not in rows[0][0]
+    assert "delivered → landed" in rows[1][0]
+    assert "working → halted" in rows[2][0]
+    assert "new → working" in rows[0][0]
     # Located by the counter block's own shape: the reason is the trailing
     # column, so a `w` at the end of a row is free text rather than a suffix.
-    for letter in ("w", "b", "u"):
+    for letter in ("w", "h", "d"):
         assert len({letter_columns(row)[letter] for row, _ in rows}) == 1, letter
 
 
@@ -158,14 +158,14 @@ def test_stat_digits_align_across_one_and_two_digit_counts(grid):
 def test_the_fleet_counters_render_as_digits_followed_by_one_letter(grid):
     """Each counter is its number followed by the state's single letter.
 
-    `2 working · 4 blocked · 1 unpromoted` becomes `2w  4b  1u`: the word is
+    `2 working · 4 blocked · 1 unpromoted` becomes `2w  4h  1d`: the word is
     gone from the count column, and a zero still shows rather than vanishing.
     Each cell is two right-aligned digits followed by its letter, and one space
     separates each cell from the next, so two counts never touch and the block
     still measures the same whatever the counts.
     """
     line = plain(grid.render(_event(working=2, blocked=4, unpromoted=1)))
-    assert " 2w  4b  1u" in line
+    assert " 2w  4h  1d" in line
 
 
 def test_the_counter_block_carries_one_space_between_cells(grid):
@@ -178,8 +178,8 @@ def test_the_counter_block_carries_one_space_between_cells(grid):
     than running together.
     """
     line = plain(grid.render(_event(working=2, blocked=4, unpromoted=1)))
-    assert "w  4b" in line
-    assert "b  1u" in line
+    assert "w  4h" in line
+    assert "h  1d" in line
     assert "·" not in line
 
 
@@ -197,7 +197,7 @@ def test_the_counter_block_holds_one_width_across_counts(grid):
         count: letter_columns(plain(grid.render(_event(working=count))))
         for count in (0, 9, 10, 99)
     }
-    for letter in ("w", "b", "u"):
+    for letter in ("w", "h", "d"):
         assert len({rows[count][letter] for count in rows}) == 1, letter
 
 
@@ -210,7 +210,7 @@ def test_stat_letters_align_at_a_fixed_column_across_one_and_two_digits(grid):
     """
     one = plain(grid.render(_event(working=1, blocked=3, unpromoted=2)))
     twelve = plain(grid.render(_event(working=12, blocked=3, unpromoted=2)))
-    for letter in ("w", "b", "u"):
+    for letter in ("w", "h", "d"):
         assert letter_columns(one)[letter] == letter_columns(twelve)[letter], letter
 
 
@@ -226,9 +226,9 @@ def test_the_queued_counter_carries_the_initial_of_its_own_bucket(grid):
     the width a spelled word would take from the reason clause.
     """
     line = plain(grid.render(_event(working=2, blocked=0, unpromoted=0, waiting=3)))
-    assert ticker_module.STAT_LETTER["queued"] == "q"
-    assert ticker_module._COUNT_FIELD["queued"] == "waiting"
-    assert " 3q" in line
+    assert ticker_module.STAT_LETTER["waiting"] == "W"
+    assert ticker_module._COUNT_FIELD["waiting"] == "waiting"
+    assert " 3W" in line
     # The count still arrives in the event's own `waiting` field; only the
     # bucket the counter names has changed.
     assert "queued" not in line
@@ -260,7 +260,7 @@ def test_the_queued_counter_keeps_the_block_a_constant_width_across_counts():
         assert all(len(row) <= width for row in rows.values()), width
         # The block's right edge — where the spelled word ends — holds its own
         # column at every count, so the right edge never moves.
-        edges = {row.index("q", row.index("u")) + 1 for row in rows.values()}
+        edges = {row.index("W", row.index("d")) + 1 for row in rows.values()}
         assert len(edges) == 1, (width, edges)
         # And the digit columns still align too: the block begins at one column
         # whether the count beside it is one digit or two.
@@ -279,10 +279,10 @@ def test_the_queued_counter_still_renders_a_zero_rather_than_dropping_it(monkeyp
     monkeypatch.delenv("NO_COLOR", raising=False)
     painter = ticker_module.Ticker(width=180, color=True)
     line = painter.render(_event(working=0, blocked=0, unpromoted=0, waiting=0))
-    assert " 0q" in plain(line)
+    assert " 0W" in plain(line)
     assert ticker_module._DIM in line
     # The dimmed zero is the waiting cell's, not some neighbour's.
-    assert ticker_module._DIM + " 0q" in line
+    assert ticker_module._DIM + " 0W" in line
 
 
 def test_the_retired_baseline_marker_never_marks_a_row(grid):
@@ -298,7 +298,7 @@ def test_the_retired_baseline_marker_never_marks_a_row(grid):
     row = plain(
         grid.render(_event(event="baseline", from_state=None, to_state="working"))
     )
-    transition = plain(grid.render(_event(to_state="working")))
+    transition = plain(grid.render(_event(to_state="blocked")))
     # The retired word marks neither the inventory row nor a transition.
     assert ticker_module.BASELINE_MARKER not in row
     assert ticker_module.BASELINE_MARKER not in transition
@@ -306,10 +306,10 @@ def test_the_retired_baseline_marker_never_marks_a_row(grid):
     # The state cell lands on one screen column whether the record is inventory
     # or news, so a reader scanning the state column finds it wherever the word
     # once sat ahead of it.
-    assert row.rindex("working") == transition.rindex("working")
-    # Inventory has no arrow; a transition does.
-    assert "→" not in row
-    assert "working → working" in transition
+    assert row.rindex("working") == transition.rindex("halted")
+    # The first row has an explicit arrival word.
+    assert "new → working" in row
+    assert "working → halted" in transition
     assert "\N{BULLET}" not in row
 
 
@@ -317,8 +317,8 @@ def test_the_state_cell_holds_its_column_when_there_is_no_previous_state(grid):
     """A first sighting has no source, and its state cell still lines up."""
     first = plain(grid.render(_event(from_state=None, to_state="dispatched")))
     later = plain(grid.render(_event(from_state="dispatched", to_state="complete")))
-    assert first.index("dispatched") - ticker_module.MARKER == (
-        later.index("complete") - ticker_module.MARKER
+    assert first.index("working") - ticker_module.MARKER == (
+        later.index("delivered") - ticker_module.MARKER
     )
 
 
@@ -329,7 +329,7 @@ def test_long_internal_state_names_render_within_the_column(grid):
     one term means one thing across the whole line.
     """
     line = plain(grid.render(_event(to_state="completed_unpromoted")))
-    assert "unpromoted" in line
+    assert "delivered" in line
     assert "completed_unpromoted" not in line
     assert len(line) <= 180
 
@@ -492,12 +492,15 @@ def test_every_state_the_snapshot_can_emit_has_a_colour():
         "abandoned",
         "unknown",
         "promoted",
-    } | set(ticker_module.DISPLAY.values())
+    }
     for theme in ("light", "dark"):
         # Resolved the way the renderer resolves it, so a word with no hue in
         # either table still reads as the gap this test exists to find.
         missing = {
-            word for word in emitted if ticker_module._state_hue(theme, word) == "dim"
+            word
+            for word in emitted
+            if ticker_module._state_hue(theme, ticker_module._display_state(word))
+            == "dim"
         }
         assert not missing, (theme, sorted(missing))
 
@@ -543,16 +546,16 @@ def test_the_cli_theme_choices_match_the_palettes_they_select():
 def test_each_side_of_the_transition_is_painted_as_its_own_state(monkeypatch):
     monkeypatch.delenv("NO_COLOR", raising=False)
     painter = ticker_module.Ticker(theme="light", color=True)
-    hues = ticker_module.STATE_HUE["light"]
+    hues = ticker_module.DISPLAY_HUE["light"]
 
     recovered = painter.render(_event(from_state="blocked", to_state="promoted"))
-    assert f"\x1b[38;5;{hues['promoted']}m" in recovered
-    assert f"\x1b[38;5;{hues['blocked']}m" in recovered
+    assert f"\x1b[38;5;{hues['landed']}m" in recovered
+    assert f"\x1b[38;5;{hues['halted']}m" in recovered
 
     routine = ticker_module.Ticker(theme="light", color=True).render(
         _event(from_state="complete", to_state="promoted")
     )
-    assert f"\x1b[38;5;{hues['complete']}m" in routine
+    assert f"\x1b[38;5;{hues['delivered']}m" in routine
     assert plain(recovered) != plain(routine)
 
 
@@ -728,14 +731,14 @@ def test_a_role_column_still_leaves_every_other_column_on_its_own_position():
     """Adding the role column must not upset the column budget for the rest."""
     grid = ticker_module.Ticker(width=180, color=False)
     rows = [
-        plain(grid.render(_event(role="implement", to_state="dispatched"))),
+        plain(grid.render(_event(role="implement", to_state="queued"))),
         plain(grid.render(_event(role="review", to_state="promoted"))),
         plain(grid.render(_event(role="test", working=12, blocked=0, unpromoted=3))),
     ]
     assert all(len(row) <= 180 for row in rows)
     assert all("→" in row for row in rows)
     assert len({row.index("→") for row in rows}) == 1
-    for letter in ("w", "b", "u"):
+    for letter in ("w", "h", "d"):
         assert len({letter_columns(row)[letter] for row in rows}) == 1, letter
 
 
@@ -1249,7 +1252,7 @@ def test_a_crowded_line_stays_within_the_resolved_width(monkeypatch):
     # The counters sit ahead of the reason, at the same column a one-digit row
     # puts them, so a pane clipping its own right edge takes free text and
     # never a count.
-    assert "12w  9b  7u" in line
+    assert "12w  9h  7d" in line
     narrow = plain(grid.render(_event(working=1, blocked=2, unpromoted=3)))
     assert letter_columns(line) == letter_columns(narrow)
     assert counters(line).end() < len(line)
@@ -1457,7 +1460,7 @@ def test_a_dispatched_row_renders_a_blank_measure_not_the_marker():
         grid.render(
             _event(
                 from_state="dispatched",
-                to_state="working",
+                to_state="waiting",
                 spend_wall_seconds=None,
             )
         )
@@ -1471,7 +1474,7 @@ def test_a_dispatched_row_renders_a_blank_measure_not_the_marker():
         grid.render(
             _event(
                 from_state="dispatched",
-                to_state="working",
+                to_state="waiting",
                 spend_wall_seconds=1_234.0,
             )
         )
@@ -1568,4 +1571,4 @@ def test_a_follower_opened_at_a_pane_width_emits_a_grid_at_that_width(
     for row in rows:
         assert len(row) <= 208
         assert ("n-west-review-pr8-cut" in row) or ("second-node" in row)
-        assert "working → blocked" in row
+        assert "working → halted" in row

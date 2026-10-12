@@ -186,15 +186,28 @@ STATE_HUE = {
     },
 }
 
-# The hue of a word the cell spells that is not the word the fleet emits. The
-# state cell shows the display form (see :data:`DISPLAY`), and the display form
-# is what the renderer resolves a hue for, so the aliases carry their hue in
-# their own table rather than in :data:`STATE_HUE`: that table is the source of
-# :data:`CLASSIFIER_STATE_WORDS`, which names only words a producer or the
-# recovery classifier can put on either side of the transition.
+# The hue belongs to the word the pane prints, including the left-only arrival.
 DISPLAY_HUE = {
-    "light": {"lane event": 124, "unpromoted": 30},
-    "dark": {"lane event": 203, "unpromoted": 80},
+    "light": {
+        "queued": 97,
+        "working": 26,
+        "waiting": 97,
+        "halted": 124,
+        "delivered": 30,
+        "landed": 22,
+        "dropped": 130,
+        "new": 241,
+    },
+    "dark": {
+        "queued": 104,
+        "working": 75,
+        "waiting": 104,
+        "halted": 203,
+        "delivered": 80,
+        "landed": 71,
+        "dropped": 179,
+        "new": 245,
+    },
 }
 
 # Every state word the producer or recovery classifier can put on either side
@@ -214,23 +227,9 @@ CLASSIFIER_STATE_WORDS = frozenset(STATE_HUE["light"]) | frozenset(
     }
 )
 
-# A transition is two state words around one arrow. The previous word is
-# right-aligned and the destination is left-aligned, which pins the arrow to one
-# screen column even when either word changes length. A first sighting has no
-# previous word, so the left half and arrow are blank while the destination
-# keeps its column.
-#
-# Each half is ten columns, not the twenty-two the longest classifier word
-# (ended-without-manifest) would ask for. The two halves are the widest pair of
-# cells the row can fund, and giving up twelve of their columns is what buys the reason
-# clause its readable width: the row's whole purpose is the explanation beside
-# the transition, and a state word is decodable from its head while a clause cut
-# to nothing is not. The five words wider than the half are the rare recovery
-# spellings (ended-without-manifest, refused-at-admission, launch-failed,
-# interrupted, completed_unpromoted); each keeps the head that distinguishes it
-# and is elided the same way the model cell elides an id outside its alias set.
-# Every common lifecycle state — dispatched, abandoned, blocked, working,
-# unpromoted — fits whole.
+# A transition aligns its previous and destination words around one arrow.
+# Every printed state fits whole in a ten-column half. The first row uses
+# `new` on the left; the reason clause retains the internal distinction.
 STATE_WORD = 10
 ARROW = "→"
 ARROW_GAP = 1
@@ -292,10 +291,54 @@ CLAUSE_STATES = NEEDS_ACTION | frozenset(
     }
 )
 
-# An internal classification longer than the column it must occupy. The display
-# term matches the bucket the fleet counter already reports, so one word means
-# one thing across the whole line.
-DISPLAY = {"completed_unpromoted": "unpromoted", "lane-event": "lane event"}
+# The sole state vocabulary printed by the pane. Recovery distinctions and
+# capacity-lift causes stay in the event's reason clause.
+PANE_STATES = {
+    "queued": frozenset({"queued"}),
+    "working": frozenset(
+        {
+            "dispatched",
+            "starting",
+            "running",
+            "working",
+            "lift-granted",
+            "lift-in-force",
+        }
+    ),
+    "waiting": frozenset({"waiting", "paused", "wait-aged"}),
+    "halted": frozenset(
+        {
+            "blocked",
+            "needs-help",
+            "held",
+            "stalled",
+            "stopped",
+            "abandoned",
+            "failed",
+            "unreadable",
+            "unwritten",
+            "exited-unfinished",
+            "ended-without-manifest",
+            "launch-failed",
+            "refused-at-admission",
+            "ready",
+            "interrupted",
+            "lane-event",
+            "unknown",
+        }
+    ),
+    "delivered": frozenset(
+        {
+            "scoring",
+            "completed_unpromoted",
+            "promotable",
+            "complete",
+            "unpromoted",
+        }
+    ),
+    "landed": frozenset({"promoted", "recorded", "lift-ended"}),
+    "dropped": frozenset({"withdrawn", "discarded", "departed"}),
+}
 
 # The dispatch vocabulary, verbatim. Kept here rather than derived from a
 # config so that a role is known the moment it is dispatched; the word IS the
@@ -361,30 +404,20 @@ HIDDEN_AT_ATTACH = SETTLED_STATES - frozenset(
     {"completed_unpromoted", "failed", "abandoned"}
 )
 
-_CELLS = ("working", "blocked", "unpromoted")
-_WAIT_CELL = "queued"
+_CELLS = ("working", "halted", "delivered")
+_WAIT_CELL = "waiting"
 
-# The event field each bucket's count arrives in. Only the queued bucket is
-# named differently from its field: the scheduler's own word for a run it has
-# admitted but not started is `waiting`, and the counter names the bucket so
-# that its letter is the bucket's initial like every other one.
-_COUNT_FIELD = {"queued": "waiting"}
+# The event still carries the historical count-field keys. The visible buckets
+# use pane words; a waiting count includes queued and externally waiting runs.
+_COUNT_FIELD = {"halted": "blocked", "delivered": "unpromoted", "waiting": "waiting"}
 
-# What each fleet counter renders its bucket name as, appended to the count.
-# One character each, so the block stays narrow enough to leave the reason
-# clause readable on every pane this workstation measures: a label spelled out
-# in full costs every row five columns and takes them from the free text, which
-# is the cell a reader is actually trying to read. Three labels are the first
-# letter of the word the state column already prints — working, blocked,
-# unpromoted — so the pane teaches those without carrying a legend. The waiting
-# bucket's q is the initial of `queued`, the bucket's own name, which no column
-# prints today; that gap is a naming question for the state vocabulary and not
-# a reason to spend width here.
+# Compact counter labels preserve the clause width. Waiting uses an upper-case
+# initial to distinguish it from working without inventing an eighth state.
 STAT_LETTER = {
     "working": "w",
-    "blocked": "b",
-    "unpromoted": "u",
-    "queued": "q",
+    "halted": "h",
+    "delivered": "d",
+    "waiting": "W",
 }
 
 # Each counter is its count right-aligned to a fixed digit width followed by the
@@ -396,14 +429,11 @@ STAT_LETTER = {
 # count leaves sit at the left of its own cell rather than at the block's right
 # edge — so the block's width does not follow the counts and the clause after it
 # keeps its column. The separating space is what stops two counts touching:
-# `10w 12b` is two tokens and `10w12b` is not a shape this block prints. A count
+# `10w 12h` is two tokens and `10w12h` is not a shape this block prints. A count
 # above the fixed width carries its extra digits and widens its own cell, and so
 # its row's block, rather than eliding the figure a reader came for.
-# The label is one character for three buckets and the spelled word for the
-# waiting one, so the block is sized from the labels themselves rather than
-# assumed at one character each. Its width is the four widest cells plus the
-# three separators between them; those three columns are the price of keeping
-# the counts apart, and the reason's room pays them.
+# Each label takes one character. The block's width includes the three spaces
+# between its four cells, leaving the reason on the same column on every row.
 STAT_DIGITS = 2
 _MAX_CELLS = (*_CELLS, _WAIT_CELL)
 STATS = sum(STAT_DIGITS + len(STAT_LETTER[label]) for label in _MAX_CELLS) + (
@@ -611,9 +641,9 @@ def _bucket_of(state: Any, classification: Any) -> str | None:
         return _WAIT_CELL
     word = str(state or "")
     if word in FLEET_UNPROMOTED_STATES:
-        return "unpromoted"
+        return "delivered"
     if word in FLEET_BLOCKED_STATES:
-        return "blocked"
+        return "halted"
     if word in FLEET_WAITING_STATES:
         return _WAIT_CELL
     if word in FLEET_WORKING_STATES:
@@ -881,19 +911,14 @@ def lane_mean_from_text(raw: str | None, *, now: datetime) -> float | str:
 
 
 def _display_state(state: Any) -> str:
-    return elide(DISPLAY.get(str(state or ""), str(state or "")), STATE_WORD)
+    internal = str(state or "")
+    return next(
+        (word for word, states in PANE_STATES.items() if internal in states), ""
+    )
 
 
 def _state_hue(theme: str, word: str) -> Any:
-    """The hue for a word on the row, its display alias included.
-
-    The row's state cells carry display forms, so the lookup answers for both
-    tables: a classifier word finds its hue in :data:`STATE_HUE`, and a display
-    alias finds its own in :data:`DISPLAY_HUE`. A word in neither renders dim.
-    """
-    hues = STATE_HUE[theme]
-    if word in hues:
-        return hues[word]
+    """The hue of the pane's state word, or dim for a non-state marker."""
     return DISPLAY_HUE[theme].get(word, "dim")
 
 
@@ -2011,21 +2036,18 @@ class Ticker:
         run_id = str(event.get("run_id") or node)
         stream_event = bool(str(event.get("event") or "").strip())
         reported = self._reported.get(run_id) if stream_event else None
-        # The previous state a reader is shown is the remembered one when this
-        # grid has seen the run, and the event's own ``from_state`` otherwise.
-        # The fallback is what lets a row survive a re-arm that starts with no
-        # memory. It is also what makes the suppression below a comparison
-        # against the *effective* previous state rather than the remembered one
-        # alone: a run seen for the first time after it moved arrives carrying
-        # the state it left, and printing ``X → X`` when that equals the state
-        # it entered claims a transition that never happened. Only a row that
-        # arrived on the stream is suppressed: an event carrying no kind is a
-        # render probe rather than a transition claim, so it draws the row its
-        # caller asked for.
+        # The first streamed row begins at `new`, even when its event names an
+        # earlier internal state. Later rows use the word this painter showed.
+        # A direct render probe can supply its own left state. Either way, two
+        # internal states collapsing to one pane word produce no transition.
         from_state = reported
         if from_state is None:
-            from_state = _display_state(event.get("from_state"))
-        if stream_event and from_state == to_state:
+            from_state = (
+                "new"
+                if stream_event or event.get("from_state") is None
+                else _display_state(event.get("from_state"))
+            )
+        if from_state == to_state:
             return ""
         if stream_event:
             self._reported[run_id] = to_state
@@ -2108,15 +2130,10 @@ class Ticker:
 
         Only the state being entered may explain itself. Keying on the state
         being left is how a promotion ends up still reporting the block it
-        recovered from — describing a problem that is already over. A blocked
-        entry carries a glyph saying whether a resume can answer it, derived from
-        the persisted fact at render time rather than written into the record.
+        recovered from — describing a problem that is already over.
 
-        ``entry_state`` is the state word whole, not the form the state cell
-        renders: the cell is narrower than the longest word the classifier emits,
-        so the word is elided to fit it and the allow-list below holds the full
-        spellings. A gate reading the rendered form is a gate that says nothing
-        about work the pane is counting.
+        ``entry_state`` is the internal classification, because several causes
+        share one pane word while their reasons and recovery actions differ.
 
         The destination state's own word is derived here from the same input the
         row composes it from, so the clause can avoid saying it a second time.
@@ -2180,7 +2197,7 @@ class Ticker:
         The figure is right-aligned to its fixed width so the column a reader
         scans stays put as the span grows. An unmeasured span renders the dim
         absence marker, never a zero; a measured zero stays a zero. Elapsed time
-        on a row is what the run has spent, so a transition into dispatched
+        on a row is what the run has spent, so an internal dispatch event
         reads zero by definition and that cell blanks — blank rather than the
         absence marker, because the marker already means unmeasured and blanking
         noise with it would collapse two different facts. The row carries only
@@ -2194,7 +2211,7 @@ class Ticker:
             wall_style: Any = None
         else:
             wall, wall_style = DIM_MARKER, "dim"
-        if to_state == "dispatched":
+        if str(event.get("to_state") or "") == "dispatched":
             wall, wall_style = "", None
         return [
             (" " * SPEND_GAP, None),
@@ -2205,11 +2222,9 @@ class Ticker:
         """The fleet after this transition, as a grid whose digits line up.
 
         Each counter is its count right-aligned to :data:`STAT_DIGITS` digits
-        followed by the initial of the bucket it counts, so the letter is
-        decodable from the bucket's own name rather than from a legend the
-        stream does not carry, and the letter of every bucket holds one screen
-        column whatever the counts are. One space separates each cell from the
-        next, so two counts never touch: ``10w 12b`` is two tokens. Right
+        followed by its compact label, so each label holds one screen column
+        whatever the counts are. One space separates each cell from the
+        next, so two counts never touch: ``10w 12h`` is two tokens. Right
         alignment is what lets both hold at once — a single-digit count pads
         inside its own cell rather than shifting the letter beside it or
         widening the block, so the block measures the same for any counts up to
