@@ -1,0 +1,41 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-12T21:09:34.132Z",
+  "dispatched_at": "2026-10-12T21:02:51Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-moved-head-is-reviewed.html:35",
+      "id": "reasoning-1",
+      "reason": "the unconditional coverage claim asserts an outcome \u00a73's collision repair cannot produce alone, so a node could either reach past its declared scope into the tier gate or write a case-4 test that cannot pass, where scoping the claim to the collision repair (and cross-referencing the tier plan, as the \u00a73 prose already half does) changes the plan.",
+      "text": "\u00a73 states the repaired reflex \"launches a review whenever a run settles at a head that no stored review is keyed to\" and lists \"a launch an admission bound deferred\" among the cases it covers, but \u00a72's cited evidence (evidence archive \u00a72) records no admission bound: six of the nine misses are the tier gate returning `none` for test-only moves *before* `dispatch_review_for_run` is reached (`dispatch_awaiting_reviews()` in `reckon/crew/recovery_review_acceptance.py` records a skip), and the other real cause is a coordinator hand-dispatch race the reflex answered correctly \u2014 so the coverage claim is untrue for those six until the tier change owned by the-review-loop-runs-without-hand-steps \u00a73 lands, and test case 4 (line 41) asserts a deferral \u00a72 never observed",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "1d5f0f7caa18a7c2e876e42427da1b98dcadb731066fb4e45c5503e59fec6091",
+  "plan_slug": "a-moved-head-is-reviewed",
+  "plan_version": 12,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261012T210221800820-plan-review-of-a-moved-head-is-reviewed",
+  "reviewed_blob_sha": "9f30c3e48de38deaa73cd0f4c433030de0db092e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `review_head_move` (recovery_review_dispatch.py:589), `carry_review_forward` (:697) and `dispatch_review_for_run` (:1279) exist; the evidence anchor `#s2-why-the-reflex-launched-nothing`, a-review-is-sized-to-its-risk \u00a75 and the-review-loop-runs-without-hand-steps \u00a73 all resolve.",
+    "done_when": "pass \u2014 \u00a73's done-when drives the watch path through five named cases and declares an executed negative control (\"with the reused round id restored, the runtime-source resume case fails\"), which can fail.",
+    "evidence_paths": "pass \u2014 the negative control is logged under the run directory and the gate is a repository test path; no scratchpad or node-local temporary path is named.",
+    "naming": "pass \u2014 the test file is named for the behaviour (`tests/test_a_resumed_head_is_reviewed.py`) rather than the plan slug, and \u00a73 carries no plan labels, ticket numbers or version tags.",
+    "reasoning": "a finding \u2014 \u00a73's deliverable claims the repaired reflex launches a review for every head no stored review is keyed to, but \u00a72's cited evidence splits the remaining misses into a tier gate \u00a73 does not change and a coordinator race that is not a reflex defect.",
+    "single_goal": "pass \u2014 \u00a73 carries one deliverable: the re-review round's own identity in `dispatch_review_for_run`, with no second launch path added.",
+    "wiring": "pass \u2014 the plan declares `informs a-review-is-sized-to-its-risk`, \u00a73's anchors to a-review \u00a75 and to the-review-loop-runs-without-hand-steps \u00a73 both resolve, and \u00a72/\u00a73 name the reached caller `dispatch_review_for_run` (invoked at `reckon/crew/recovery_watch.py:2423`, defined at `reckon/crew/recovery_review_dispatch.py:1279`)."
+  },
+  "section_digests": {
+    "_document": "885c3985fdc995ffc912923d8a04de109792bb9e7aafad45b13ff488d0c0edfe",
+    "s1": "a3a1b8eb4f84292df6d31e99043de92c9c4916a619d1de95917df87aae676d63",
+    "s2": "48dd7ab841931b559865e55c8d35fc2c6ff607e66a332ba21e17c336aebe001e",
+    "s3": "6ded58adf206c70bd22862a3d161cf2b56560bd700087157b5d6cd3856a00224"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-12T21:13:23.650954+00:00"
+}
