@@ -61,6 +61,7 @@ def _run_record(
         "project": PROJECT,
         "reviewed_run_id": REVIEWED_RUN,
         "review_run_id": RUN_REVIEW,
+        "status": "parsed",
         "dispatched_at": dispatched,
         "findings": findings or [],
         "responses": responses or {},
