@@ -25,7 +25,7 @@
   <title>A Run Has One Live Writer | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="4">
+<meta name="plan-version" content="5">
 <meta name="plan-modified" content="2026-10-13">
 </head>
 <body>
@@ -39,7 +39,7 @@
       <li>committed <code>4523dc2f3</code>;</li>
       <li>rewrote <code>manifest.md</code>.</li>
     </ul>
-    <p>Meanwhile reckon classified the run as complete, then scoring, and the review reflex dispatched a review against <code>775370a7c</code> while the tree was still moving. <code>reckon crew stop --run</code> returned ok, but the orphan and its children were alive five seconds later, because it targets only the recorded pid. The worker is launched in the supervisor's process group (<code>start_new_session=False</code> in <code>reckon/crew/dispatch_launch.py</code>), so a stop aimed at the group should end it. Why it survived here is the first thing §2 establishes.</p>
+    <p>Meanwhile reckon classified the run as complete, then scoring, and the review reflex dispatched a review against <code>775370a7c</code> while the tree was still moving. <code>reckon crew stop --run</code> returned ok, but the orphan and its children were alive five seconds later. <code>terminate</code> signals the recorded pid's whole process group, through <code>_signal_process_group</code> in <code>reckon/crew/routing.py</code>, so the signal did not reach the group the worker was in. The worker is launched in the supervisor's process group (<code>start_new_session=False</code> in <code>reckon/crew/dispatch_launch.py</code>), so a stop aimed at the group should end it. Why it survived here is the first thing §2 establishes.</p>
     <p><strong>A resume launched beside a live attempt.</strong> Run <code>r-20261012T042612803730-proto-read-route</code> (codex) was auto-resumed by the wait sweep at about 10:07:30Z (attempt 6: supervisor 3206965, codex 3207785, still alive). At 10:08:49Z a coordinator's <code>crew resume --advice</code> launched attempt 7. Codex refused it with "thread … already has an active writer", and it exited in 4 s. The pointer then recorded attempt 7's exit and classified the run <code>exited-unfinished</code>, and its next action suggested <code>repair-status --status complete</code> while attempt 6 was still working. The coordinator's advice text was lost without any notice. The previous minute's <code>resume-3.stderr.log</code> shows the same conflict.</p>
 
     <h2 id="s2">§2 — A worker never outlives its supervisor</h2>
@@ -54,7 +54,7 @@
     <p><strong>Deliverable.</strong> First reproduce the polygon-moment-owner shape: a supervisor that receives SIGTERM while its worker is working, and a worker that has started children of its own. Against the machinery above, establish two things, and record both in the manifest:</p>
     <ul>
       <li>whether the direct worker or only its children survived;</li>
-      <li>why that run classified complete and then scoring while its worker lived, although <code>local_liveness</code> already reads the worker record. For example: the worker record was absent, it named a pid that the reparenting changed, or the classifier read a path that bypasses <code>local_liveness</code>.</li>
+      <li>why that run classified complete and then scoring while its worker lived, although <code>local_liveness</code> already reads the worker record. For example: the worker record was absent, it named a pid that the reparenting changed, or the classifier read a path that bypasses <code>local_liveness</code>. Check also why <code>terminate</code>'s process-group signal missed the worker: a worker launched through <code>srun --overlap</code> runs under <code>slurmstepd</code>, not as a child in the supervisor's process group.</li>
     </ul>
     <p>Then repair by extending those owners rather than adding a kill path beside them:</p>
     <ul>
@@ -71,11 +71,11 @@
       <li>A run in the state the reproduction named, whose supervisor has exited while its worker pid lives, is not classified complete or scoring.</li>
     </ul>
     <p>The negative control, which signals the supervisor pid alone, fails the first case. It is logged under the run directory. The reproduction's finding (why the worker survived) is recorded in the manifest. The test files that import <code>dispatch_launch</code> or exercise <code>terminate</code> pass. Every process the tests start is ended by the tests themselves, and is checked by pid afterwards.</p>
-    <p>Write paths: <code>reckon/crew/routing.py</code> (<code>signal_worker</code>), <code>reckon/crew/dispatch_launch.py</code>, <code>reckon/crew/dispatch_sessions.py</code> (<code>terminate</code>), <code>reckon/crew/recovery_classification.py</code>, <code>tests/test_a_worker_never_outlives_its_supervisor.py</code>. <code>routing.py</code> is also written by the in-flight run <code>a-worktree-release-is-whole</code> (crew-runtime-positive-controls §47). This section waits for that run to merge, through a section gate declared on it.</p>
+    <p>Write paths: <code>reckon/crew/routing.py</code> (<code>signal_worker</code>), <code>reckon/crew/dispatch_launch.py</code>, <code>reckon/crew/dispatch_sessions.py</code> (<code>terminate</code>), <code>reckon/crew/recovery_classification.py</code>, <code>reckon/crew/recovery_liveness.py</code> (<code>local_liveness</code>), <code>tests/test_a_worker_never_outlives_its_supervisor.py</code>. <code>routing.py</code> is also written by the in-flight run <code>a-worktree-release-is-whole</code> (crew-runtime-positive-controls §47). This section waits for that run to merge, through a section gate declared on it.</p>
 
     <h2 id="s3">§3 — A resume never launches beside a live attempt</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
-    <p><strong>What already exists.</strong> The guards this section needs are already in the code. <code>resume_plan</code> in <code>reckon/crew/dispatch_sessions.py</code> refuses a resume while the run "still has a live process", and <code>_launcher_refusal</code> in <code>reckon/crew/resumption.py</code> holds the same guard for the dry run. <code>_observed_end_refusal</code> in <code>resumption.py</code> refuses a sweep lift that has not observed the attempt end. Three test files, landed 2026-10-03, lock these in: <code>tests/test_resume_refuses_a_live_worker.py</code>, <code>tests/test_resume_sweep_needs_an_observed_death.py</code> and <code>tests/test_direct_resume_needs_an_observed_death.py</code>. Yet on 2026-10-12, attempt 7 launched beside attempt 6.</p>
+    <p><strong>What already exists.</strong> The guards this section needs are already in the code. <code>resume_plan</code> in <code>reckon/crew/dispatch_sessions.py</code> refuses a resume while the run "still has a live process", and <code>_launcher_refusal</code> in <code>reckon/crew/resumption.py</code> holds the same guard for the dry run. <code>_observed_end_refusal</code> in <code>resumption.py</code> refuses a sweep lift that has not observed the attempt end. Three test files, landed between 2026-09-29 and 2026-10-03, lock these in: <code>tests/test_resume_refuses_a_live_worker.py</code>, <code>tests/test_resume_sweep_needs_an_observed_death.py</code> and <code>tests/test_direct_resume_needs_an_observed_death.py</code>. Yet on 2026-10-12, attempt 7 launched beside attempt 6.</p>
     <p><strong>Deliverable.</strong> First reproduce that sequence: the sweep's auto-resume launches an attempt, and a coordinator's <code>crew resume</code> follows a minute later. Establish why <code>resume_plan</code>'s check did not fire, and record it in the manifest. Candidates include:</p>
     <ul>
       <li>a pointer read before the new attempt's pids were recorded;</li>
