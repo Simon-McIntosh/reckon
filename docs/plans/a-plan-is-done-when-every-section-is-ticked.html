@@ -19,12 +19,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,plan-format">
   <meta name="plan-blocks" content="plan-lifecycle-hygiene">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
   <title>A Plan Is Done When Every Section Is Ticked | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.87">
-<meta name="plan-version" content="51">
+<meta name="plan-version" content="52">
 <meta name="plan-modified" content="2026-10-12">
 <meta name="plan-sprint" content="S26">
 </head>
@@ -79,7 +79,7 @@
     <p>The plan-review session (<code>every-review-is-kept-as-a-committed-record</code>) confirmed on 2026-10-07 that
       no node of theirs depends on <code>collapse_section</code> or the landed card. One coupling remains:
       <code>plan_review._fingerprint_forms</code> keeps a pre-collapse digest form so that a collapse alone owes no
-      review. §8 owns it.</p>
+      review. <a href="/reckon/plans/the-fingerprint-has-one-form">the-fingerprint-has-one-form</a> owns it.</p>
 
     <h2 id="s3" data-reckon="section" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links="">§3 — The plan read carries its todo list</h2>
     <p><strong>Deliverable.</strong> One derivation function in <code>reckon/_plan_html.py</code>, called by both
@@ -171,7 +171,7 @@
       reference and <code>skills/reckon-edit/SKILL.md</code> becomes three ops: <code>append_evidence</code>, a
       <code>set</code> of the section's declaration to <code>done</code>, and a closing comment with the id
       <code>c-close-&lt;section&gt;</code> carrying the result and a link to the evidence, all in one call.
-      <code>collapse_section</code> stays available until §8 retires it, but no skill uses it, and the section body
+      <code>collapse_section</code> stays available until <a href="/reckon/plans/the-fingerprint-has-one-form">the-fingerprint-has-one-form</a> retires it, but no skill uses it, and the section body
       stays as authored. The
       two docstrings in <code>reckon/crew/review_lifecycle.py</code> that describe a landed plan as collapsed are
       reworded to the declaration, which is what that code already reads.</p>
@@ -179,18 +179,6 @@
       fixture plan and finds the section's body unchanged, its declaration <code>done</code>, its
       <code>c-close-</code> comment present, and the plan's review fingerprint unchanged. With a collapse put back in the examples, the test
       fails; that is its negative control.</p>
-
-    <h2 id="s8" data-reckon="section" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="deferred" data-links="">§8 — Retire the pre-collapse fingerprint form</h2>
-    <p><strong>Deliverable.</strong> Once no stored plan review depends on it, remove the pre-collapse form from
-      <code>plan_review._fingerprint_forms</code>. A change to the fingerprint's shape makes every plan owe a review at
-      its next build, so this section starts with a census of the stored review sidecars. It runs only when that
-      census shows the change orphans no review, or orphans a number the lead accepts. The same section then retires
-      the <code>collapse_section</code> op, which no skill uses after §7; plans already collapsed keep their cards.
-      Deferred until §7 has landed and the plan-review session's open edits to
-      <code>reckon/crew/plan_review.py</code> have merged.</p>
-    <p><strong>Done when</strong> the sidecar census is recorded, the form is removed, and a test shows a plan whose
-      collapsed card is unchanged keeps its review. The display path in <code>reckon/mcp_views.py</code>, which reads
-      landed cards for plans already collapsed, is left unchanged.</p>
 
     <h2 id="s9">§9 — A deferred section blocks only the work that names it</h2>
 <section data-reckon="section" data-id="s9" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
@@ -228,15 +216,15 @@
       </p>
     <p class="r-dec-rat">The lead chose to refuse only new gaps. A write is refused when it leaves a gap the plan did not carry before, the same transition keying the terminal-status guard uses, so the 109 plans with existing gaps stay writable while reckon audit-doc lists every one. New and edited sections must still be declared.</p>
     </div>
-<div class="r-dec" data-key="fingerprint-retirement-timing" data-choice="" data-by="" data-when="" data-sections="s8" data-recommended="undefer-when-census-allows" data-recommended-by="reckon-build">
+<div class="r-dec" data-key="fingerprint-retirement-timing" data-choice="drop-from-this-plan" data-by="Simon McIntosh" data-when="2026-10-12T21:19:50+00:00" data-sections="s8" data-recommended="undefer-when-census-allows" data-recommended-by="reckon-build">
     <p class="r-dec-q">When does the fingerprint retirement (section 8) un-defer?</p>
     <p class="r-dec-ctx">Every other section is done. Section 8 retires the pre-collapse fingerprint form, and a change to the fingerprint&#x27;s shape makes every plan owe a review at its next build. Its own text gates it on the plan-review session&#x27;s edits to reckon/crew/plan_review.py having merged and on a census of stored review sidecars showing the change orphans no review. Until it un-defers the plan stays open, and section 9&#x27;s judgment_required block reports that to any dependent plan. On un-deferral, write its cross-plan gate edge and a negative control into its done-when: two content-review findings asked for those and were declined while it stayed deferred.</p>
     <p class="r-dec-opts">
       <button class="r-opt" data-value="undefer-when-census-allows">undefer-when-census-allows</button>
       <button class="r-opt" data-value="keep-deferred">keep-deferred</button>
-      <button class="r-opt" data-value="drop-from-this-plan">drop-from-this-plan</button>
+      <button class="r-opt chosen" data-value="drop-from-this-plan">drop-from-this-plan</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">Every other section is done. The fingerprint retirement moves to its own plan, the-fingerprint-has-one-form, which carries the sidecar census as its own section and gates the retirement on the census&#x27;s count. That leaves this plan free to close.</p>
     </div>
 </section>
 
