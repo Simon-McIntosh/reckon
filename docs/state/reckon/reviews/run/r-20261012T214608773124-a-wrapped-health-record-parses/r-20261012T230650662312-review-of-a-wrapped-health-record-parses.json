@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest carries no baseline_suite or after_suite arm (classification.json data.baseline_suite=null and after_suite=null, and both named arm logs end EXIT=124 with no pytest summary), so the added-failure count was not taken",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/plan_review.py:2129"
+  ],
+  "completed_at": "2026-10-12T23:17:27.994Z",
+  "dispatched_at": "2026-10-12T23:07:15Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261012T214608773124-a-wrapped-health-record-parses/manifest.md",
+      "line": "9",
+      "severity": "follow-on",
+      "text": "follow-on: the done-when's importer-population clause (tests importing reckon/crew/review.py show no added failure against base) is unmeasured -- both arms end EXIT=124 and classification.json carries baseline_suite=null/after_suite=null -- so status complete is carried with an unmet, unmeasured clause."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit (single commit 4661ae85b) against 150b1b18d; review.py:987 adds _TREATMENT_BARE_CHARS and review.py:1013 a third opening condition, and the test file gains the two bare-TREATMENT cases.",
+    "done_when": "read the done_when's three clauses; the increment's gate log records tests/test_a_wrapped_health_record_parses.py plus tests/test_health_review_parses.py at 16 passed EXIT=0, but clause two (the test files importing reckon/crew/review.py show no added failure against base) stays unmeasured -- both arm logs end EXIT=124 with no summary line and classification.json carries baseline_suite=null and after_suite=null.",
+    "goal": "read the source node goal (\"parse_health_review joins a record's continuation lines to the record they continue, so a wrapped TREATMENT or FINDING keeps its labelled fields\") against the increment 150b1b18d..4661ae85b; reckon/crew/review.py:1013 admits a bare TREATMENT or TREATMENT-em-dash line as opening a record, so the wrap case the prior review left dropped now keeps its labelled fields.",
+    "manifest": "read; it records status complete at 4661ae85b, gate 16 passed EXIT=0, negative-control.log 4 failed EXIT=1 on the reverted join, and attributes the importer-population timeout as scaffolding measured at merge.",
+    "write_paths": "read the manifest's declared fence (reckon/crew/review.py, tests/test_a_wrapped_health_record_parses.py, tests/fixtures/wrapped-health-review.md, the evidence fragment); git diff 150b1b18d..4661ae85b touches only reckon/crew/review.py and tests/test_a_wrapped_health_record_parses.py, both inside it."
+  },
+  "justifications": {
+    "durability": "removing the condition at reckon/crew/review.py:1013 leaves a bare TREATMENT line unopened so tests/test_a_wrapped_health_record_parses.py:118 and :134 redden, and every added assertion compares parsed output against fixture-independent literals rather than a value the test passed in.",
+    "evidence": "gate-focused.log records 16 passed EXIT=0 at 4661ae85b and negative-control.log 4 failed EXIT=1, but the done_when's importer-population clause stays unmeasured with base-arm.log and head-arm.log both ending EXIT=124.",
+    "fit": "the added constant _TREATMENT_BARE_CHARS at reckon/crew/review.py:987 and its comment describe the mechanism with no plan, ticket or plan-label name.",
+    "goal_fidelity": "reckon/crew/review.py:1013 now opens a record on a bare TREATMENT keyword, which is exactly the case the prior review found unmet at :1002.",
+    "reuse": "the increment adds no function or module and extends the owner -- the \"what may open a record\" decision stays in _opens_health_record at reckon/crew/review.py:990, reusing _TREATMENT_NONE_RE and _TREATMENT_LABEL_RE; a search over reckon/ for another record-opening classifier found none.",
+    "scope_discipline": "git diff 150b1b18d..4661ae85b touches only reckon/crew/review.py and tests/test_a_wrapped_health_record_parses.py, both in the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the source node goal (\"parse_health_review joins a record's continuation lines to the record they continue, so a wrapped TREATMENT or FINDING keeps its labelled fields\") against the increment 150b1b18d..4661ae85b; reckon/crew/review.py:1013 admits a bare TREATMENT or TREATMENT-em-dash line as opening a record, so the wrap case the prior review left dropped now keeps its labelled fields.\nVERDICT done_when: read the done_when's three clauses; the increment's gate log records tests/test_a_wrapped_health_record_parses.py plus tests/test_health_review_parses.py at 16 passed EXIT=0, but clause two (the test files importing reckon/crew/review.py show no added failure against base) stays unmeasured -- both arm logs end EXIT=124 with no summary line and classification.json carries baseline_suite=null and after_suite=null.\nVERDICT write_paths: read the manifest's declared fence (reckon/crew/review.py, tests/test_a_wrapped_health_record_parses.py, tests/fixtures/wrapped-health-review.md, the evidence fragment); git diff 150b1b18d..4661ae85b touches only reckon/crew/review.py and tests/test_a_wrapped_health_record_parses.py, both inside it.\nVERDICT manifest: read; it records status complete at 4661ae85b, gate 16 passed EXIT=0, negative-control.log 4 failed EXIT=1 on the reverted join, and attributes the importer-population timeout as scaffolding measured at merge.\nVERDICT diff: read commit by commit (single commit 4661ae85b) against 150b1b18d; review.py:987 adds _TREATMENT_BARE_CHARS and review.py:1013 a third opening condition, and the test file gains the two bare-TREATMENT cases.\nCALL_SITES: reckon/crew/plan_review.py:2129\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:1013 now opens a record on a bare TREATMENT keyword, which is exactly the case the prior review found unmet at :1002.\nSCORE evidence: 15\nJUSTIFICATION evidence: gate-focused.log records 16 passed EXIT=0 at 4661ae85b and negative-control.log 4 failed EXIT=1, but the done_when's importer-population clause stays unmeasured with base-arm.log and head-arm.log both ending EXIT=124.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 150b1b18d..4661ae85b touches only reckon/crew/review.py and tests/test_a_wrapped_health_record_parses.py, both in the manifest's declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: removing the condition at reckon/crew/review.py:1013 leaves a bare TREATMENT line unopened so tests/test_a_wrapped_health_record_parses.py:118 and :134 redden, and every added assertion compares parsed output against fixture-independent literals rather than a value the test passed in.\nSCORE fit: 19\nJUSTIFICATION fit: the added constant _TREATMENT_BARE_CHARS at reckon/crew/review.py:987 and its comment describe the mechanism with no plan, ticket or plan-label name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the increment adds no function or module and extends the owner -- the \"what may open a record\" decision stays in _opens_health_record at reckon/crew/review.py:990, reusing _TREATMENT_NONE_RE and _TREATMENT_LABEL_RE; a search over reckon/ for another record-opening classifier found none.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261012T214608773124-a-wrapped-health-record-parses/manifest.md:9 follow-on: the done-when's importer-population clause (tests importing reckon/crew/review.py show no added failure against base) is unmeasured -- both arms end EXIT=124 and classification.json carries baseline_suite=null/after_suite=null -- so status complete is carried with an unmet, unmeasured clause.\n",
+  "review_run_id": "r-20261012T230650662312-review-of-a-wrapped-health-record-parses",
+  "reviewed_base_sha": "150b1b18d754123c1644e4d5acb49cf36bbb0117",
+  "reviewed_head_sha": "4661ae85b5f498cf77a648dd1aa424da558c456d",
+  "reviewed_run_id": "r-20261012T214608773124-a-wrapped-health-record-parses",
+  "reviewer": {
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-12T23:15:28.555932+00:00",
+  "total": 112
+}
