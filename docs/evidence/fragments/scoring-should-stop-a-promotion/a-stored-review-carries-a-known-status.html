@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="scoring-should-stop-a-promotion">
+  <meta name="plan-title" content="A stored review carries a status its readers know">
+  <meta name="plan-summary" content="The run-review store refused nothing about a record's status, so a hand-composed record reading 'status: complete' was stored but read by promotion as no review at all; store_review now validates the status against RECOGNISED_REVIEW_STATUSES, the values parse_review writes, and refuses an absent or unrecognised status naming what it found and the accepted set.">
+  <meta name="plan-evidence-for" content="scoring-should-stop-a-promotion">
+  <meta name="plan-recorded-at" content="2026-10-12">
+  <meta name="plan-verdict" content="passed">
+  <title>A stored review carries a known status | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A stored review carries a status its readers know</h1>
+
+    <section id="a-stored-review-carries-a-known-status-defect">
+      <h2>The defect and the repair</h2>
+      <p>A run-review record reached the store reading <code>"status":
+        "complete"</code>, a word copied from an older record's shape rather than
+        from the parser's vocabulary. Every reader acts on <code>"parsed"</code>
+        alone, so promotion refused the run as though no review existed while the
+        record sat on disk. <code>store_review</code> validated the subject, the
+        material and the revisions, but never the status.</p>
+      <p>The repair adds the public <code>RECOGNISED_REVIEW_STATUSES</code> set to
+        <code>reckon/crew/review.py</code> — the values <code>parse_review</code>
+        writes: <code>parsed</code>, <code>unparsed</code>,
+        <code>incomplete</code> — and refuses any record whose status is absent or
+        outside it, naming the status found and the accepted set. The readers
+        (<code>promotion_checks.py</code>, <code>recovery_review_subject.py</code>)
+        are unchanged.</p>
+    </section>
+
+    <section id="a-stored-review-carries-a-known-status-measure">
+      <h2>The measure</h2>
+      <p>New file <code>tests/test_a_stored_review_carries_a_known_status.py</code>:
+        a <code>complete</code>-status record and a record with no status are each
+        refused with the status found and the accepted set named and no file
+        written; a <code>parsed</code> record stores as before. Head arm 4 passed /
+        0 failed; the declared negative control removes the status check and both
+        refusal cases fail, 2 failed / 2 passed, <code>EXIT=1</code>.</p>
+    </section>
+  </main>
+</body>
+</html>
