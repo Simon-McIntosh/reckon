@@ -13,12 +13,13 @@ Three tiers partition every run:
            that has always existed:  a full read of the diff against the brief.
 ``light``  The run changes runtime source by fewer than the configured
            changed-line ceiling, at a specification level that fixes the
-           done-when, with no elevated risk. A light review answers whether the
-           diff does what the brief says, and nothing else.
-``none``   The run changes no runtime source — tests, plans, evidence, research
-           data or figures, alone or together. The merged-head gate re-run
-           checks it instead, and the ledger row records this tier as the
-           reason no review exists.
+           done-when, with no elevated risk, or it changes test source and no
+           runtime source. A light review answers whether the diff does what
+           the brief says, and nothing else.
+``none``   The run changes neither runtime source nor test source — plans,
+           evidence, research data, figures or state, alone or together. The
+           merged-head gate re-run checks it instead, and the ledger row
+           records this tier as the reason no review exists.
 
 Runtime source is the classification :func:`reckon.path_classes.path_class`
 already makes for the velocity view, imported here rather than re-implemented:
@@ -53,15 +54,30 @@ ELEVATED_RISKS = frozenset({"elevated", "critical"})
 # ``docs/``; ``path_class`` carries that override, ``file_class`` does not.
 RUNTIME_SOURCE_CLASS = "source"
 
+# A changed test file is read for meaning by a reviewer rather than by the gate:
+# a weakened, skipped or deleted assertion changes what the suite protects, and
+# only a reader sees it.
+TEST_SOURCE_CLASS = "tests"
+
 
 def changes_runtime_source(changed_paths: Iterable[str]) -> bool:
     """Whether any changed path is runtime source rather than a document or test.
 
     Every path is classified, and one runtime-source path is enough: a node
     that fixes one source file and edits its own test still owes a review of
-    the source.
+    the diff against the brief.
     """
     return any(path_class(str(path)) == RUNTIME_SOURCE_CLASS for path in changed_paths)
+
+
+def changes_test_source(changed_paths: Iterable[str]) -> bool:
+    """Whether any changed path is a test file.
+
+    A test-only run changes no behaviour a machine can observe and every claim
+    the suite makes, so it earns a light read even though no runtime source
+    moved. One test path is enough, whatever else the run also changed.
+    """
+    return any(path_class(str(path)) == TEST_SOURCE_CLASS for path in changed_paths)
 
 
 def elevated_risk(capability_risk: str | None) -> bool:
@@ -86,16 +102,17 @@ def review_tier(
     ceiling, read from the resolved flight config rather than fixed here.
 
     Precedence, highest first: a declared elevated or critical risk is always
-    ``full``; a run changing no runtime source is ``none``; a runtime-source run
-    earns ``light`` only below the ceiling at a fixing specification level and
-    is otherwise ``full``. An unreadable ``changed_lines`` is treated as over
-    the ceiling, so a caller that could not measure the diff gets the fuller
-    review rather than the lighter one.
+    ``full``; a run changing runtime source earns ``light`` only below the
+    ceiling at a fixing specification level and is otherwise ``full``; a run
+    changing no runtime source but changing test source is ``light``; a run
+    changing neither is ``none``. An unreadable ``changed_lines`` is treated as
+    over the ceiling, so a caller that could not measure the diff gets the
+    fuller review rather than the lighter one.
     """
     if elevated_risk(capability_risk):
         return FULL
     if not changes_runtime_source(changed_paths):
-        return NONE
+        return LIGHT if changes_test_source(changed_paths) else NONE
     try:
         lines = int(changed_lines)
     except (TypeError, ValueError):

@@ -229,8 +229,11 @@ def test_a_later_passing_run_lifts_the_hold(repository: Path, tmp_path: Path) ->
 
     _record_suite_run(repository, _PASSING, name="passing")
 
+    # A test-only change now resolves to the light tier, so the run owes a
+    # review as well as the lifted suite hold.
+    _store_review(run_id, head=commit)
     crew.complete(run_id, gate="passed", commits=[commit], root=repository)
-    assert _row(repository, run_id)["review_tier"] == review_tiers.NONE
+    assert _row(repository, run_id)["review_tier"] == review_tiers.LIGHT
 
 
 def test_a_recorded_waiver_lifts_the_hold(repository: Path, tmp_path: Path) -> None:
@@ -251,8 +254,11 @@ def test_a_recorded_waiver_lifts_the_hold(repository: Path, tmp_path: Path) -> N
 
     standing_suite.record_waiver(repository, PROJECT, who="lead", why="known red")
 
+    # A test-only change now resolves to the light tier, so the run owes a
+    # review as well as the lifted suite hold.
+    _store_review(run_id, head=commit)
     crew.complete(run_id, gate="passed", commits=[commit], root=repository)
-    assert _row(repository, run_id)["review_tier"] == review_tiers.NONE
+    assert _row(repository, run_id)["review_tier"] == review_tiers.LIGHT
 
 
 def test_a_full_tier_promotion_is_not_held(repository: Path, tmp_path: Path) -> None:

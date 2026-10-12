@@ -1,11 +1,12 @@
 """Promotion sizes each run's review from the tier the run changed its way into.
 
-A run that changes no runtime source — tests, plans, evidence, research data,
-figures — promotes with the review gate standing down and its tier recorded on
-the ledger row as the reason no review exists. A run that changes runtime source
-owes a review unless one is already stored at the promoted head, and the tier it
-resolves to (light for a small diff at a fixing spec level, full otherwise or
-under a declared elevated risk) is what the row records once it lands.
+A run that changes no runtime source and no test source — plans, evidence,
+research data, figures, state — promotes with the review gate standing down and
+its tier recorded on the ledger row as the reason no review exists. A run that
+changes runtime source or test source owes a review unless one is already stored
+at the promoted head, and the tier it resolves to (light for a small diff at a
+fixing spec level or for a test-only change, full otherwise or under a declared
+elevated risk) is what the row records once it lands.
 """
 
 from __future__ import annotations
@@ -202,7 +203,7 @@ def _row(repository: Path, run_id: str) -> dict:
     )
 
 
-def test_tests_only_run_promotes_unreviewed_with_tier_none(
+def test_tests_only_run_is_light_and_refused_without_review(
     repository: Path, tmp_path: Path
 ) -> None:
     run_id = "r-20260928T140000000000-tests-only"
@@ -218,11 +219,14 @@ def test_tests_only_run_promotes_unreviewed_with_tier_none(
         role="implement",
     )
 
+    with pytest.raises(crew.CrewError):
+        crew.complete(run_id, gate="passed", commits=[commit], root=repository)
+
+    _store_review(run_id, head=commit)
     crew.complete(run_id, gate="passed", commits=[commit], root=repository)
 
     row = _row(repository, run_id)
-    assert row["review_tier"] == "none"
-    assert not row.get("review")
+    assert row["review_tier"] == "light"
 
 
 def test_small_runtime_source_run_is_light_and_refused_without_review(
