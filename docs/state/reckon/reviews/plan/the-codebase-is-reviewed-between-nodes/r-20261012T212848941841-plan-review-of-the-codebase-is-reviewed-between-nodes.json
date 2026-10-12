@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-12T21:39:45.422Z",
+  "dispatched_at": "2026-10-12T21:29:18Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-codebase-is-reviewed-between-nodes.html:280",
+      "id": "anchors_resolve-1",
+      "reason": "the anchor names a run that does not exist, so the builder cannot open the run the done-when requires as its fixture's source, and the citation should read `r-20261012T210316296049-review-code-46f5fd5115fb`.",
+      "text": "\u00a712 cites health review run `r-20261012T210306162650-review-code-46f5fd5115fb`, but no run directory with that id exists; the run that produced the cited report and the `treatment names no write path` refusal is `r-20261012T210316296049-review-code-46f5fd5115fb` (its manifest `run_id` and directory name), and only the reaching `code-review.json` carries the shorter id",
+      "type": "anchors_resolve",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "7839abe75f615037bd615dead9785087afcd4787d4c27186218b035033afa5bf",
+  "plan_slug": "the-codebase-is-reviewed-between-nodes",
+  "plan_version": 57,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261012T212848941841-plan-review-of-the-codebase-is-reviewed-between-nodes",
+  "reviewed_blob_sha": "f62c3100ec0f4fa9ad5cf7f939c2af0686c84e5e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the run id \u00a712 cites resolves to no run (see FINDING below); every other anchor resolves: `parse_health_review` is at reckon/crew/review.py:1036, the refusal text matches `code-review.json`'s `store_error`, the named write paths `reckon/crew/obligation_snapshot.py` and `reckon/crew/obligations.py` exist, and the plan slug `the-review-loop-runs-without-hand-steps` resolves under docs/plans/.",
+    "done_when": "pass \u2014 \u00a712's done-when names three concrete cases (the delivered report parses with write paths `reckon/crew/obligation_snapshot.py` and `reckon/crew/obligations.py` and delta -18; a wrapped FINDING keeps class and whole text; a one-line report is unchanged) and a negative control (\"reads lines alone again, and the wrapped-treatment case must then fail\").",
+    "evidence_paths": "pass \u2014 the negative control \"is logged under the run directory\" (~/.config/reckon/crew/runs/<run>/), a durable path that survives the run, not a node-local temporary.",
+    "naming": "pass \u2014 \u00a712 introduces no code symbol, comment or filename carrying a plan label, stage name, ticket number or version tag; its test and fixture paths (`test_a_wrapped_health_record_parses.py`, a fixture under tests/fixtures/) are named by what they exercise.",
+    "reasoning": "pass \u2014 the stated root cause matches the evidence (the delivered report wraps its TREATMENT so `WRITE_PATHS:` moves past the first line, `_review_text_lines` yields one stripped line at a time, and the store recorded exactly `HealthReviewError: treatment names no write path`), the mechanism (join non-blank, non-record, non-heading lines to the record they continue) reproduces the done-when on the cited report, and the mechanism runs on the real code path \u2014 `parse_health_review` is called by the store at reckon/crew/plan_review.py:2129, not only by tests.",
+    "single_goal": "pass \u2014 \u00a712 carries one deliverable (join continuation lines in one parser) and one measure (\"a wrapped health review record still stores\").",
+    "wiring": "pass \u2014 \u00a712 declares no dependency it needs: its only code change is to `parse_health_review` (reckon/crew/review.py:1036), installed by the done \u00a75 and reached through the store at reckon/crew/plan_review.py:2129, so no depends-on is required and none of its declared relationships points at the wrong node."
+  },
+  "section_digests": {
+    "_document": "a2b113a3603de3308d4867d2fa78fe82c8fb5ab541216f790f69f717ca6260b4",
+    "s1": "9b90bb5d52612fe5176b665cf841e1e32b7f38a28ba1b61073a75cc3d069801a",
+    "s10": "fd23d07301f3cad0c97fef7db3a37873185ea49a190df387e6b4c9c4842520cc",
+    "s11": "9e366a36d7c955b9e20809f7f939f7e5341dea805985ebb4bbd30a8a826983f7",
+    "s12": "ceae738c9cd84555ecc8e1e187474a1aeffa16c7791162d918cca35f9955d889",
+    "s2": "449650cf3f83a3d58ac9fd8300f391af35ba5aa8ae747d9364d73ed77c82aa7e",
+    "s3": "2c449e0173e76fffe6ccc80b5373b095fe1d7916e7948747fa0976dfb315f33e",
+    "s4": "d90c4e0ae9e513908951452540ead3c635b9c43faa46f9400dd8449543cce1d6",
+    "s5": "6ffcc77242984ec10be759d78f7a93debe73b3743dc9186527661e58ccfe8316",
+    "s6": "cff9b0b879d09b64cc4138b82c72e4814e531c6cf053920f3c05931bbf43abc4",
+    "s7": "d4bab6166d5c436fc12815244f86a04121deb2ca67fc71c1fd66d0498d89fbcf",
+    "s8": "1b50194c1f0c6912b871f624cbfcfc01fc0e693a036d87844203a29ba311f17b",
+    "s9": "f03878914cabdb64631b914dba06b3963c765228e774c1419ab91b13e71b1e9d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-12T21:45:10.188161+00:00"
+}
