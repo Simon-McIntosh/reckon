@@ -25,7 +25,7 @@
   <title>A Run Has One Live Writer | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="4">
 <meta name="plan-modified" content="2026-10-13">
 </head>
 <body>
@@ -47,20 +47,20 @@
     <p><strong>What already exists.</strong> Most of the machinery this section needs is already in the code:</p>
     <ul>
       <li>The supervisor already escalates its direct worker to SIGKILL after <code>STOP_GRACE</code> (<code>reckon/crew/dispatch_launch.py</code>), and <code>tests/test_a_stopped_run_ends_its_supervisor.py</code> locks that in.</li>
-      <li><code>signal_worker</code> in <code>reckon/crew/routing.py</code> is the only function in the crew that sends a signal. Four production modules import it, besides <code>routing.py</code> itself.</li>
+      <li><code>signal_worker</code> in <code>reckon/crew/routing.py</code> is the crew's signalling owner for runs; the session host signals only its own follower children, through its own <code>_signal</code>. Four production modules import <code>signal_worker</code>, besides <code>routing.py</code> itself.</li>
       <li>Descendants are enumerated by <code>_process_children</code> and <code>_live_descendant</code> in <code>reckon/crew/recovery_liveness.py</code>. Processes holding a path as their working directory are found by <code>_processes_holding</code> in <code>routing.py</code>.</li>
-      <li><code>tests/test_live_process_outranks_classification.py</code> already asserts that a live process outranks a manifest-derived classification, through <code>local_liveness</code> in <code>reckon/crew/recovery_classification.py</code>.</li>
+      <li><code>local_liveness</code> in <code>reckon/crew/recovery_liveness.py</code> already asks the run directory's worker record when the supervisor's pointer pid is gone. <code>recovery_classification.py</code> calls it, and <code>tests/test_live_process_outranks_classification.py</code> asserts that a live process outranks a manifest-derived classification.</li>
     </ul>
     <p><strong>Deliverable.</strong> First reproduce the polygon-moment-owner shape: a supervisor that receives SIGTERM while its worker is working, and a worker that has started children of its own. Against the machinery above, establish two things, and record both in the manifest:</p>
     <ul>
       <li>whether the direct worker or only its children survived;</li>
-      <li>which state let that run classify complete and then scoring while its worker lived, despite the existing precedence test.</li>
+      <li>why that run classified complete and then scoring while its worker lived, although <code>local_liveness</code> already reads the worker record. For example: the worker record was absent, it named a pid that the reparenting changed, or the classifier read a path that bypasses <code>local_liveness</code>.</li>
     </ul>
     <p>Then repair by extending those owners rather than adding a kill path beside them:</p>
     <ul>
       <li><code>signal_worker</code> gains the reach to end a run's own processes through the existing enumerators, and returns the pids it ended. Every one of its callers inherits this, not <code>terminate</code> alone. A process qualifies only if it descends from the run's recorded supervisor or worker, identity-checked by its start time, or if its environment carries <code>RECKON_RUN_ID</code> naming this run. A process that merely holds the worktree as its working directory is listed and never signalled. That covers a coordinator or a peer that changed into it, so the extension cannot widen into the kill-everything hazard <code>signal_worker</code> exists to prevent.</li>
       <li>The supervisor's exit path and <code>crew stop</code> (<code>terminate</code> in <code>reckon/crew/dispatch_sessions.py</code>) end the run's tree through it, and record the pids ended. <code>crew stop</code> reports any process still alive afterwards, rather than returning ok.</li>
-      <li><code>local_liveness</code> is extended for the state the reproduction named, so a run whose worker lives is never classified complete or scoring.</li>
+      <li>The gap the reproduction named is closed where it lives (in <code>local_liveness</code>, in the worker record's writer, or in the classifier's call), so a run whose worker lives is never classified complete or scoring.</li>
     </ul>
     <p>No new public definition or refusal family is added; <code>signal_worker</code>'s reach is the only interface that grows.</p>
     <p><strong>Done when</strong> <code>tests/test_a_worker_never_outlives_its_supervisor.py</code> passes, using real child processes in a temporary tree:</p>
