@@ -1,0 +1,127 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-12T21:08:01.385Z",
+  "dispatched_at": "2026-10-12T21:01:42Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/dispatch_sessions.py:1021",
+      "id": "reuse_search-1",
+      "reason": "the plan must name the existing guard and state the reproduction of its failure (the incident launched attempt 7, so the guard did not fire) before proposing a replacement.",
+      "text": "\u00a73 bullet 1 (\"a coordinator's crew resume does not launch [beside a live attempt]; it refuses, naming the live attempt and its pids\") is already implemented: `resume_plan` refuses with \"still has a live process; observe or stop it before resuming\" and `_launcher_refusal` at `reckon/crew/resumption.py:643` holds the same guard for the dry-run; the plan does not cite either, so it would build a second refusal rather than explain why this one failed on 2026-10-12",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/resumption.py:667",
+      "id": "reuse_search-2",
+      "reason": "the honest change is to extend this gate, not to add a parallel one.",
+      "text": "\u00a73 bullet 2 (\"the sweep never resumes a run whose attempt is alive\") is already implemented as `_observed_end_refusal`, which refuses a lift unless `local_liveness` + `live_worker_pid` observe the end; the plan's sweep guard duplicates it",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/recovery_classification.py:149",
+      "id": "reuse_search-3",
+      "reason": "\u00a72 must establish why the existing liveness read let the run classify complete, rather than re-specifying the invariant it already asserts.",
+      "text": "\u00a72 bullet 3 (\"a run whose recorded worker pid is still alive is never classified complete or scoring\") already has its machinery here: `local_liveness` (line 149), the worker-record read (line 154) and the descendant read `_live_descendant` (line 170), with the classifier comment \"the live process outranks every worker-reported outcome\"; the plan cites none of it",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch_sessions.py:1752",
+      "id": "duplicate_owner-1",
+      "reason": "the plan should name `routing.py::signal_worker` as the owner to extend (add descendant/group reach there) so every caller of the primitive gains it, instead of forking a kill path in the dispatch module that only `terminate` reaches.",
+      "text": "\u00a72 bullet 2 (\"crew stop ends every live descendant of the run's recorded supervisor and worker pids, plus any process whose working directory lies in the run's worktree\") puts a second kill-and-enumerate path in `terminate`, while the signalling owner is `reckon/crew/routing.py:2837 signal_worker` (its docstring: \"the only function in the crew that calls os.kill or os.killpg\") and the cwd-holder enumerator is `reckon/crew/routing.py:2512 _processes_holding` (\"Name the processes holding path as their cwd or as an open file\"); the descendant enumerator is `reckon/crew/recovery_liveness.py:258 _process_children` / `:289 _live_descendant`",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch_sessions.py:1752",
+      "id": "duplicate_owner-2",
+      "reason": "the fix belongs at the shared owner so all nine callers inherit it; naming only `terminate` bounds the repair to one door.",
+      "text": "census of the same defect: `signal_worker` is imported by nine modules (`reckon/crew/recovery.py:49`, `promotion_release.py:35`, `promotion_checks.py:44`, `recovery_watch.py:29`, `recovery_stream.py:21`, `recovery_review_delivery.py:18`, `dispatch.py:137`, `promotion.py:117`, `dispatch_sessions.py:36`); a descendant-killing added only inside `terminate` leaves every other release path (promotion, recovery, review delivery) still signalling one pid and leaving children",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch_launch.py:2830",
+      "id": "reuse_search-4",
+      "reason": "the plan must say the existing grace/SIGKILL ends the worker but not the worker's tree, so the node's scope is the descendants under the worker, not the worker-kill path itself.",
+      "text": "\u00a72 bullet 1 (\"the supervisor's exit path ends the worker's whole process tree before it records the exit\") already escalates the direct worker to SIGKILL after `STOP_GRACE` (`dispatch_launch.py:2830`, `:2897`, `STOP_GRACE_ENV` at `:2556`), and `tests/test_a_stopped_run_ends_its_supervisor.py` locks it in; the genuinely new part is only the worker's *children* (the orphan's pytest), which the plan does not distinguish from the already-covered direct worker",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "tests/test_resume_refuses_a_live_worker.py:1",
+      "id": "reuse_search-5",
+      "reason": "a fourth test file asserting the same guards adds surface and re-green-scopes existing tests; the plan should extend the existing files with the pointer-lock/other-host case instead.",
+      "text": "\u00a73's done-when file `tests/test_a_resume_never_launches_beside_a_live_attempt.py` restates cases already covered: `tests/test_resume_refuses_a_live_worker.py` (resume refused over a live worker, naming the pid), `tests/test_resume_sweep_needs_an_observed_death.py` (sweep refuses without an observed end) and `tests/test_direct_resume_needs_an_observed_death.py` (direct resume needs an observed death); all landed 2026-10-03",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "tests/test_live_process_outranks_classification.py:1",
+      "id": "reuse_search-6",
+      "reason": "\u00a72 must state which manifest state still classifies complete under a live worker, since this test already asserts the precedence holds.",
+      "text": "\u00a72 bullet 3's invariant is already locked by this test (\"a live process outranks every manifest-derived unreadable classification\"); \u00a72 proposes it as new",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch_sessions.py:1001",
+      "id": "thin_wrapper-1",
+      "reason": "if the defect is the lock window (a TOCTOU between the read and the check), the extension of the existing guard is the smaller, non-forking change and the plan should say so.",
+      "text": "\u00a73 says resume \"checks, under the run's pointer lock, whether a supervisor or worker for the run is alive\", adding a lock-scoped layer over the reading `record_process_alive` already performs, without saying why `resume_plan`'s existing guard (read pointer at `:1018`, check at `:1021`) cannot simply be moved inside the pointer lock",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch_sessions.py:52(\u00a72 Write paths)",
+      "id": "deep_module-1",
+      "reason": "a single query returning the run's live process set (supervisor, worker, descendants, cwd-holders) behind one interface would let terminate, the supervisor exit and the classifier all consume it; the plan's three-way spread leaves each caller to recompose the set and drift.",
+      "text": "\u00a72 spreads one behaviour, \"end the run's live process set and report what was ended\", across `dispatch_launch.py` (supervisor exit), `dispatch_sessions.py` (terminate) and `recovery_classification.py` (classification), while the reads and signals it needs live in `reckon/crew/process_liveness.py`, `reckon/crew/recovery_liveness.py` and `reckon/crew/routing.py` \u2014 three write paths, no owner",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-run-has-one-live-writer.html#s3",
+      "id": "interface_budget-1",
+      "reason": "\u00a73's text must account for the added refusal wording and the new advice state \u2014 either naming the existing refusal it supersedes or stating why the state cannot fold into the existing attempt/advice fields.",
+      "text": "the section adds a new refusal (resume refusing a live attempt) and a new retained state (\"pending advice\" in the run directory, no such machinery exists in `reckon/crew/`) without naming what it retires or merges, or why nothing can be; public_definitions 1682, cli_options 349, mcp_views 34, refusal_families 23",
+      "type": "interface_budget",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-run-has-one-live-writer.html#s2",
+      "id": "interface_budget-2",
+      "reason": "the section must state what new public definition (or none) the census adds, since the readers it needs already exist and only their consumers change.",
+      "text": "\u00a72 adds descendant/child enumeration and a \"reports any process still alive afterwards\" outcome to `crew stop`, extending the refusal/report surface of the CLI, without naming what it retires or merging it into the existing `_processes_holding`/`_live_descendant` readers; public_definitions 1682, cli_options 349, mcp_views 34, refusal_families 23",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "1aed44d3b2128a0f6382cf0a20669d3fe4441c1c00c35932fb2736b6946d40cc",
+  "plan_slug": "a-run-has-one-live-writer",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261012T210108896802-plan-review-of-a-run-has-one-live-writer",
+  "reviewed_blob_sha": "0b83b14076273028dffe0a005ef1866f78ec3d1e",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 \u00a72's single behaviour (end a run's live process set) is spread across three write-path modules while the machinery it needs lives in two others, so no module hides the behaviour behind a smaller interface.",
+    "duplicate_owner": "a finding \u2014 \u00a72's `dispatch_sessions.py::terminate` change re-implements process signalling and process enumeration that `reckon/crew/routing.py` and `reckon/crew/recovery_liveness.py` already own.",
+    "interface_budget": "a finding \u2014 public_definitions 1682, cli_options 349, mcp_views 34, refusal_families 23; \u00a73 adds a refusal and a new retained \"pending advice\" state without naming what it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 \u00a72 and \u00a73 each propose guards and process-tree machinery that already exist in `reckon/crew/dispatch_sessions.py`, `reckon/crew/resumption.py`, `reckon/crew/recovery_classification.py` and `reckon/crew/routing.py`, and neither section cites any of them.",
+    "thin_wrapper": "a finding \u2014 \u00a73 adds a new refusal path beside the existing `resume_plan`/`_observed_end_refusal` guards without saying why the existing guard cannot be extended under the pointer lock."
+  },
+  "section_digests": {
+    "_document": "d351894ab11386013a5ef12b57d90b93700e6bae008682778835a45971d02f53",
+    "s1": "4be3aec3ea6b964559fb976fc71b0e9fed16762c724c109c88a97413ad274f1d",
+    "s2": "ae900ac3718ff61edd464401c2ad73260a2df3034ad06895cc60417a19031c76",
+    "s3": "1a0d68dbe7a66a9eab115adeea0d4241fb9c7a0196c50fe02d21b2c241611c3b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-12T21:14:42.500203+00:00"
+}
