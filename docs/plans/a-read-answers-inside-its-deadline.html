@@ -25,7 +25,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="29">
+<meta name="plan-version" content="31">
 <meta name="plan-modified" content="2026-10-13">
 </head>
 <body>
@@ -140,7 +140,7 @@
 
     <h2 id="s8">§8 — One read scans the resource tree once, and warm reads reuse it</h2>
 <section data-reckon="section" data-id="s8" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-<p><strong>Why.</strong> §7 found the warm reads' residual time in <code>_scan_resources</code> and <code>iter_resources</code> in <code>reckon/resources.py</code>. Each call walks the tree with <code>rglob("*.html")</code> and identifies every file, hashing its content. The scan's cache (<code>_SCAN_SCOPE</code>) lasts for one read only, and within a read the scan is entered again: four times for roadmap and ten for audit. Warm audit therefore reads 4.91 s against a 3 s target.</p><p><strong>Deliverable.</strong> The resource scan is computed once per tree state and reused across reads. Its key is the tree signature the metadata index already uses for its walk-skip (§3), so an unchanged tree returns the stored scan and a changed file invalidates it. Within one read, every caller of <code>resource_map</code> and <code>resolve_resource</code> uses the same scan. A memo hit returns its value without the defensive deep copy, wherever the caller does not mutate it. No new public function or option is added.</p><p><strong>Done when</strong> a test counts scans: two warm reads of an unchanged tree run the scan once, and a changed file makes the next read scan again. The test files importing <code>reckon/resources.py</code> show no added failure against base. The negative control restores the per-read scope, and the scan-count case must then fail. It is logged under the run directory. The figures are re-measured by §6, not by this node. Write paths: <code>reckon/resources.py</code>, <code>reckon/metadata_index.py</code> (only if the tree signature needs a public name), and <code>tests/test_a_warm_read_scans_the_tree_once.py</code>.</p>
+<p><strong>Why.</strong> §7 found the warm reads' residual time in <code>_scan_resources</code> and <code>iter_resources</code> in <code>reckon/resources.py</code>. Each call walks the tree with <code>rglob("*.html")</code> and identifies every file, hashing its content. The scan's cache (<code>_SCAN_SCOPE</code>) lasts for one read only, and within a read the scan is entered again: four times for roadmap and ten for audit. Warm audit therefore reads 4.91 s against a 3 s target.</p><p><strong>Deliverable.</strong> The resource scan is computed once per tree state and reused across reads. Its key is each resource file's own stat signature (path, <code>mtime_ns</code>, size), read in one walk without hashing. The walk-skip's directory identity (§3) is not enough, because a content edit leaves its directory unchanged. An unchanged file keeps its stored identification. Only a file whose signature moved is identified again, which is the only work that hashes content. Within one read, every caller of <code>resource_map</code> and <code>resolve_resource</code> uses the same scan. A memo hit returns its value without the defensive deep copy, wherever the caller does not mutate it. No new public function or option is added.</p><p><strong>Done when</strong> a test counts scans: two warm reads of an unchanged tree run the scan once, and a changed file makes the next read scan again. The test files importing <code>reckon/resources.py</code> show no added failure against base. The negative control restores the per-read scope, and the scan-count case must then fail. It is logged under the run directory. The figures are re-measured by §6, not by this node. Write paths: <code>reckon/resources.py</code>, <code>reckon/metadata_index.py</code> (only if the tree signature needs a public name), and <code>tests/test_a_warm_read_scans_the_tree_once.py</code>.</p>
 
     <h2 id="s9">§9 — The cold read time is attributed from the kept profiles</h2>
 <section data-reckon="section" data-id="s9" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
@@ -172,10 +172,16 @@
     <pre class="r-fu-prompt">/reckon-build a-read-answers-inside-its-deadline §6</pre>
     <p class="r-fu-outcome">superseded by f-araiid-005: the first §6 measurement ran on 2026-10-12 and missed the deadline at head, so §7 attributes the residual time before §6 is measured again</p>
     </article>
-<article class="r-fu" data-id="f-araiid-005" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-12" data-recommends-skill="/reckon-build a-read-answers-inside-its-deadline §7" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-araiid-005" data-status="resolved" data-written-by="reckon-build" data-written-at="2026-10-12" data-recommends-skill="/reckon-build a-read-answers-inside-its-deadline §7" data-resolved-at="2026-10-12T23:51:05+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Attribute the residual read time (§7), then fix and re-measure</h4>
     <div class="r-fu-body"><p>§7 measures base and head on one quiet node against a frozen corpus copy, and keeps the profile dumps. Its attribution decides the next fix. §6 is re-measured after that fix lands.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-read-answers-inside-its-deadline §7</pre>
+    <p class="r-fu-outcome">§7 landed: the warm residual is the resource scan and the cold time is unattributed; superseded by f-araiid-006, which names §8 and §9</p>
+    </article>
+<article class="r-fu" data-id="f-araiid-006" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-13" data-recommends-skill="/reckon-build a-read-answers-inside-its-deadline §8" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Carry the resource scan across reads (§8) and attribute the cold time (§9)</h4>
+    <div class="r-fu-body"><p>§8 and §9 are independent: §8 changes <code>reckon/resources.py</code>, and §9 reads §7's kept cold profiles. §6 is re-measured after §8 and any cold fix §9 aims.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-read-answers-inside-its-deadline §8</pre>
     </article>
 </section>
   
