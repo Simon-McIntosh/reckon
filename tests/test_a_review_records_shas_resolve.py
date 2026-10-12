@@ -86,6 +86,7 @@ def _record(*, base: str, head: str) -> dict:
     return {
         "project": PROJECT,
         "reviewed_run_id": REVIEWED_RUN_ID,
+        "status": "parsed",
         "reviewed_base_sha": base,
         "reviewed_head_sha": head,
     }
