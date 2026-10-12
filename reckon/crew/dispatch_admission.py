@@ -1875,8 +1875,19 @@ def _brief_digest(source: str | Path) -> str:
     authority text, and its spelling is part of what the worker was told. A
     brief that cannot be read is refused here, where the caller still has the
     path it named, rather than inside the worker.
+
+    A run review's brief is a composition, not a document the caller wrote: the
+    readers that print the review command name the reviewed run's own
+    ``review-brief.md`` without writing it, so when ``source`` is that path the
+    text is composed from the run's record here — naming the head its tree
+    carries now — before the digest is taken. A command retyped without a prior
+    composition is then one this dispatch accepts, and its brief never names the
+    head a previous dispatch wrote. Every other brief is read as handed in.
     """
+    from reckon.crew.recovery_review_subject import materialize_run_review_brief
+
     path = Path(source).expanduser()
+    materialize_run_review_brief(path)
     try:
         data = path.read_bytes()
     except OSError as exc:

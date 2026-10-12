@@ -410,6 +410,52 @@ def _review_brief_path(record: Mapping[str, Any]) -> Path:
     return runs.run_dir(str(record.get("run_id") or "")) / _RUN_REVIEW_BRIEF_NAME
 
 
+def materialize_run_review_brief(source: str | Path) -> bool:
+    """Compose a run review's brief when a dispatch names its composed path.
+
+    A run review's brief is derived from the reviewed run's record rather than
+    authored by the caller: it carries the rubric the review's done-when assumes
+    plus the run's identity and the head its tree carries now. The readers that
+    print the command — the ``review-missing`` obligation, the classifier's
+    ``next_action``, dispatch's own unreconciled-runs refusal — compose that
+    path and text without writing them, so a command retyped verbatim would
+    refuse a brief no reflex ever composed, or digest one a previous dispatch
+    left naming a head the run has since moved past.
+
+    Dispatch names exactly the reviewed run's own ``review-brief.md``, so it
+    composes the text here from the record, before it digests or stores it, and
+    the head it records is the one the run's tree carries now. Any other path —
+    a brief a coordinator authored, a plan review's own brief, a review run's
+    stored copy of a brief — is left untouched, so a coordinator's brief stays
+    the authority it was and a resume that reads a stored copy re-digests the
+    bytes the worker read.
+
+    Returns True when the path is a run review's composed brief and was written.
+    A path that is not one, or one naming a run whose record cannot be read,
+    returns False so the caller's own refusal for an unreadable brief still
+    speaks.
+    """
+    path = Path(source).expanduser()
+    if path.name != _RUN_REVIEW_BRIEF_NAME:
+        return False
+    run_id = path.parent.name
+    if not run_id:
+        return False
+    try:
+        if runs.run_dir(run_id).resolve() != path.parent.resolve():
+            return False
+    except OSError:
+        return False
+    try:
+        record = runs.read_pointer(run_id)
+    except CrewError:
+        return False
+    if not str(record.get("run_id") or ""):
+        return False
+    _review_dispatch_fields(record, delta=None)
+    return True
+
+
 def _review_dispatch_fields(
     record: Mapping[str, Any],
     *,
