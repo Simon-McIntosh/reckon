@@ -199,6 +199,35 @@ def test_an_added_production_docstring_citing_a_section_is_a_finding(
     assert "reckon/crew/mod.py:2" in findings[0]
 
 
+def test_the_label_check_reads_the_worktree_not_the_repository(
+    repo: Path,
+) -> None:
+    """The run's added lines live in its worktree, not the main checkout.
+
+    A dispatch records the repository as the main checkout and the worktree as
+    the detached tree the run worked in. The main checkout does not hold the
+    run's unmerged commit, so a check that diffed the repository would report
+    the checkout's own later changes and never the lines the run added, leaving
+    this half of the audit blind to every real run.
+    """
+    base = _base(repo)
+    worktree = repo.parent / "run-worktree"
+    _git(repo, "worktree", "add", "--detach", str(worktree), base)
+    (worktree / "reckon" / "crew" / "mod.py").write_text(
+        "x = 1\n# §9 added in the worktree\n", encoding="utf-8"
+    )
+    assert "§9" not in (repo / "reckon" / "crew" / "mod.py").read_text(encoding="utf-8")
+
+    findings = _findings(
+        _manifest(base=base, commits=base),
+        worktree=worktree,
+        repository=repo,
+    )
+
+    assert len(findings) == 1
+    assert "reckon/crew/mod.py:2" in findings[0]
+
+
 def test_an_added_test_fixture_string_citing_a_section_is_not_a_finding(
     repo: Path,
 ) -> None:

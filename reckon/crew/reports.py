@@ -1419,6 +1419,29 @@ def _read_source_or_none(path: Path) -> str | None:
         return None
 
 
+def _run_diff_store(
+    stores: tuple[Path, ...], *, worktree: Path | None, repository: Path | None
+) -> Path:
+    """The store a run's own added lines live in.
+
+    The change this run made sits in the worktree it worked in, not in the
+    repository that worktree belongs to. The repository is commonly the main
+    checkout, which does not yet hold the run's unmerged commit, so diffing it
+    against the orientation base reports the checkout's own later changes and
+    never the lines this run added — the plan-label half of the check then never
+    fires on the run it audits. The worktree is therefore chosen whenever git
+    reported it as a repository; the repository is the fall-back for a run that
+    recorded no separate worktree.
+    """
+    for candidate in (worktree, repository):
+        if candidate is None:
+            continue
+        root = Path(candidate)
+        if root in stores:
+            return root
+    return stores[0]
+
+
 def _plan_label_findings(
     manifest: dict[str, Any],
     *,
@@ -1446,7 +1469,7 @@ def _plan_label_findings(
     stores = _citation_stores(worktree=worktree, repository=repository)
     if not stores:
         return []
-    store = stores[0]
+    store = _run_diff_store(stores, worktree=worktree, repository=repository)
     added = _added_lines_since(store, base)
     findings: list[str] = []
     for path in sorted(added):
