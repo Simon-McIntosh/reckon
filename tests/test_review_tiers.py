@@ -3,8 +3,9 @@
 The resolver assigns each finished run one of three tiers from what it actually
 changed. These tests hold it to the declared rule with a fixture per tier, one
 ``none`` fixture for each path class a node can land without touching runtime
-source, and one mixed fixture, and they hold the thresholds to the flight key
-that carries them rather than to a literal in the resolver.
+source or test source, and fixtures for the classes that earn a lighter review
+than the gate would have given them, and they hold the thresholds to the flight
+key that carries them rather than to a literal in the resolver.
 """
 
 from __future__ import annotations
@@ -69,8 +70,8 @@ FIXTURES = [
         40,
         "guided",
         None,
-        NONE,
-        id="none-tests",
+        LIGHT,
+        id="light-tests",
     ),
     pytest.param(
         ["docs/plans/a-review-is-sized-to-its-risk.html"],
@@ -109,8 +110,8 @@ FIXTURES = [
         60,
         "guided",
         None,
-        NONE,
-        id="none-mixed-tests-and-plan",
+        LIGHT,
+        id="light-mixed-tests-and-plan",
     ),
 ]
 
