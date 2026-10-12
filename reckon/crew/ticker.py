@@ -1140,6 +1140,19 @@ ARRIVAL_KIND: tuple[Any, Any] = (None, "dispatched")
 ARRIVAL_STATE = "dispatched"
 ARRIVAL_WINDOW = 90.0
 
+# ── The start row ─────────────────────────────────────────────────────────────
+#
+# The transition that opens a run's work: the row saying it left ``dispatched``
+# and began. The audit classes it observer context — it asks the coordinator for
+# nothing — so the pane held it back entirely, and a session with work in flight
+# showed nothing at all between a run's launch and its end. The pane has two
+# readers, and the person watching wants to see the work while it runs, so this
+# one observer kind is delivered for the pane's own runs. It is delivered for the
+# own session only: a peer session's start, a bare re-announcement of an
+# already-running run, an echo and a replay are still held, so nothing arrives
+# for work that is not this pane's.
+START_KIND: tuple[Any, Any] = ("dispatched", "working")
+
 # ── The settle hold ───────────────────────────────────────────────────────────
 #
 # A run reaches a settled state through a chain of rows written seconds apart —
@@ -1215,8 +1228,14 @@ class RowPolicy:
     did before the hold existed, and applies no settle hold.
     """
 
-    def __init__(self, *, show_observer: bool = False) -> None:
+    def __init__(
+        self, *, show_observer: bool = False, own_session: str | None = None
+    ) -> None:
         self._show_observer = bool(show_observer)
+        # The session this pane follows. A start row is delivered for this
+        # session's own runs alone; a pane with no named session — a fleet-wide
+        # reader — holds every start as it held every observer row.
+        self._own_session = str(own_session) if own_session else None
         self._reported: dict[str, str] = {}
         # run_id -> the withheld row and its hold. A run carries one hold at
         # most: a second hold for the same run supersedes the first where the
@@ -1257,6 +1276,20 @@ class RowPolicy:
         ):
             return ROW_COORDINATOR
         return cls
+
+    def _is_own_start(self, event: Mapping[str, Any], kind: tuple[Any, Any]) -> bool:
+        """Whether this row is the start of a run the pane's own session sent.
+
+        The pane's own session is the only fleet whose starts it delivers: a
+        peer session's start is work this reader does not own, and the pane's
+        silence about it is what keeps another session's history off this one's
+        line. A pane with no named session owns no run, so no start qualifies.
+        """
+        if self._own_session is None:
+            return False
+        if str(event.get("session") or "") != self._own_session:
+            return False
+        return kind == START_KIND
 
     @staticmethod
     def _lands_in_an_action_state(event: Mapping[str, Any]) -> bool:
@@ -1387,6 +1420,14 @@ class RowPolicy:
             out.append(resolved)
             self._note_printed(run_id, resolved)
             return out
+        if self._is_own_start(event, kind):
+            # The pane's own run left dispatched into working: the launch's hold
+            # collapses into this one row, worn with the arrival's left side, so
+            # the reader sees the work begin rather than the run's end alone.
+            resolved = _arrival_resolution(event)
+            out.append(resolved)
+            self._note_printed(run_id, resolved)
+            return out
         if self._show_observer:
             out.append(event)
             self._note_printed(run_id, event)
@@ -1488,7 +1529,21 @@ class RowPolicy:
         ):
             return out
 
+        if self._is_own_start(event, kind):
+            # A start whose arrival hold has already gone: the pane's own run
+            # left dispatched into working with no arrival left standing, so the
+            # row prints directly rather than being held as observer context.
+            out.append(event)
+            self._note_printed(run_id, event)
+            return out
+
         if run_id and kind == ARRIVAL_KIND:
+            if self._reported.get(run_id) not in (None, ARRIVAL_STATE):
+                # A re-announced arrival for a run the pane already shows past
+                # dispatched is inventory about a move already drawn; holding it
+                # would print a stale arrival when its window closed, so a
+                # re-announcement or replay of a start delivers nothing.
+                return out
             # The run's first sighting in dispatched: held so its own row and
             # the transition out of dispatched print as one.
             self._held[run_id] = _Hold(
@@ -1556,13 +1611,17 @@ class PaneRowPath:
         selects: Callable[[Mapping[str, Any]], bool] | None = None,
         reported: Mapping[str, str] | None = None,
         show_observer: bool = False,
+        own_session: str | None = None,
     ) -> None:
         self._selects = selects
         self._show_observer = bool(show_observer)
+        self._own_session = str(own_session) if own_session else None
         self.reported: dict[str, str] = {
             str(run_id): str(state) for run_id, state in dict(reported or {}).items()
         }
-        self._policy = RowPolicy(show_observer=self._show_observer)
+        self._policy = RowPolicy(
+            show_observer=self._show_observer, own_session=self._own_session
+        )
         for run_id, state in self.reported.items():
             self._policy.seed(run_id, state)
 
@@ -1584,7 +1643,9 @@ class PaneRowPath:
         self.reported = {
             str(run_id): str(state) for run_id, state in dict(reported or {}).items()
         }
-        self._policy = RowPolicy(show_observer=self._show_observer)
+        self._policy = RowPolicy(
+            show_observer=self._show_observer, own_session=self._own_session
+        )
         for run_id, state in self.reported.items():
             self._policy.seed(run_id, state)
 
@@ -1643,6 +1704,7 @@ def replay_row_policy(
     clock=row_moment,
     selects: Callable[[Mapping[str, Any]], bool] | None = None,
     show_observer: bool = False,
+    own_session: str | None = None,
 ) -> list[Mapping[str, Any]]:
     """Print an ordered stream the way one follower's own row path would.
 
@@ -1651,9 +1713,13 @@ def replay_row_policy(
     rather than through the policy alone: a row the follower would never have
     offered the policy is not a row this can count. ``selects`` is that
     follower's own selection, and a caller measuring a real follower passes the
-    same selection function the follower was built with.
+    same selection function the follower was built with. ``own_session`` names
+    the session the pane follows, so its own runs' starts are delivered here the
+    same way the live follower delivers them.
     """
-    path = PaneRowPath(selects=selects, show_observer=show_observer)
+    path = PaneRowPath(
+        selects=selects, show_observer=show_observer, own_session=own_session
+    )
     printed: list[Mapping[str, Any]] = []
     for event in events:
         printed.extend(path.feed(event, now=clock(event)))
