@@ -24,7 +24,7 @@
   <title>A Held Dispatch Waits Its Fair Turn | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="19">
+<meta name="plan-version" content="20">
 <meta name="plan-modified" content="2026-10-12">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="3c837fc1">
@@ -64,7 +64,7 @@
 
     <h2 id="s4">&sect;4 &mdash; One drainer launches queued work</h2>
 <section data-reckon="section" data-id="s4" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
-    <p>The drainer is the one new loop. It is declared in the fleet services configuration and run by the fleet supervisor. The supervisor already starts each declared service exactly once behind its host lease and restarts it with backoff, so the drainer takes no lease of its own. On a cadence it reads the lane document and the queued pointers. Whenever the router grants room to a session with queued work, it admits the highest-ranked entry by launching that run through the same dispatch path a coordinator uses, so the queued pointer becomes the dispatched run. A launch that fails leaves the pointer queued with the failure recorded.</p>
+    <p>The drainer is the one new loop. It is declared in the fleet services configuration and run by the fleet supervisor. The supervisor already starts each declared service exactly once behind its host lease and restarts it with backoff, so the drainer takes no lease of its own. On a cadence it reads the lane document and the queued pointers. Whenever the router grants room to a session with queued work, it admits the highest-ranked entry by launching that run through the same dispatch path a coordinator uses, so the queued pointer becomes the dispatched run. A launch that fails leaves the pointer queued with the failure recorded. That shared path does not do this by itself. On a refused or failed spawn it rolls back through <code>_release_launch_claim</code> (<code>reckon/crew/dispatch_claims.py</code>), which unlinks the pointer and removes the run directory. A post-spawn failure with no manifest is marked <code>launch-failed</code> (<code>reckon/crew/dispatch_launch.py</code>). The drainer therefore keeps the queued pointer's content before it launches. On either outcome it writes the pointer back as <code>queued</code>, with the failure and its time recorded on it, so a failed attempt never destroys the request.</p>
     <p><strong>Done when:</strong></p>
     <ul>
       <li>A test with a lane document that opens one slot finds the highest-ranked queued run launched and no other.</li>
