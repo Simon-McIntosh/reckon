@@ -2559,5 +2559,14 @@ def crew_admit(lane, once, pretty):
         result = queue_admission.admit_until_stopped(lane=lane, once=once)
     except CrewError as exc:
         raise click.ClickException(str(exc)) from exc
-    _emit({"ok": True, **result}, pretty)
+    # A pass that could not launch a queued request, or could not read the
+    # fleet gate at all, is a negative verdict. A gate that is paused on
+    # purpose admits nothing and remains a successful pass.
+    _emit_crew_result(
+        {
+            **result,
+            "ok": not result.get("failed") and result.get("gate") != "unreadable",
+        },
+        pretty,
+    )
 
