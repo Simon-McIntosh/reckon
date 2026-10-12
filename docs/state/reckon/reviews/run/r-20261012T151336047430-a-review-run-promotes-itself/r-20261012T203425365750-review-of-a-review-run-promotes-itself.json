@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured through the manifest: the reviewed manifest.md declares no baseline_suite and no after_suite, so the sanctioned read-time derivation reports no count; the run's on-disk arms head.log (rev 65f1b1d) and head-full.log (revision 294d3e6a4) yield zero added failures by set difference.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery_review_acceptance.py:416",
+    "reckon/crew/resumption.py:1398",
+    "reckon/crew/recovery.py:193"
+  ],
+  "completed_at": "2026-10-12T20:49:44.946Z",
+  "dispatched_at": "2026-10-12T20:34:49Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "11",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest declares no baseline_suite and no after_suite, so reckon/crew/review.py:2095 annotate_review_of_run reports the added-failure count unmeasured and no reader can reduce the run's two arms; the count was taken from the run's on-disk arms head.log (rev 65f1b1d) and head-full.log (revision 294d3e6a4)."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read the gained commit 294d3e6a4 against f60c9416f commit-by-commit; it changes one argument (gate passed to not-run) at reckon/crew/recovery_review_acceptance.py:333 and adds one assertion at tests/test_a_review_run_promotes_itself.py:195, and nothing else.",
+    "done_when": "the source done_when names tests/test_a_review_run_promotes_itself.py's four cases, a logged negative control, and a no-added-failure check for the importing batch; the reviewed manifest records 121 passed at revision 294d3e6a4 (head-full.log:1) and negative-control.log EXIT=1, and the gained commit adds one assertion inside that file.",
+    "goal": "the source node's goal is that a review-role run promotes itself with promoted_by review-self once its manifest is complete, its worker and supervisor have exited, and its stored record parses; the gained commit reckon/crew/recovery_review_acceptance.py:333 corrects the gate verdict that promotion records to not-run, the ledger's value for a run that executes no gate, so the self-promoted row no longer asserts a gate the review never ran.",
+    "manifest": "read the reviewed manifest.md; it reads complete with commits f60c9416f 294d3e6a4 and records 121 passed and negative control EXIT=1, but it declares no baseline_suite and no after_suite, so the read-time added-failure derivation reports the count unmeasured.",
+    "write_paths": "the source node declared five write paths in its manifest.md:3; the gained commit touches reckon/crew/recovery_review_acceptance.py and tests/test_a_review_run_promotes_itself.py, both inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_review_run_promotes_itself.py:195 asserts the ledger row's gate equals not-run against a literal the test never passed in, so reverting reckon/crew/recovery_review_acceptance.py:333 to gate=\"passed\" reddens it.",
+    "evidence": "head-full.log:1 records 121 passed at revision 294d3e6a4 and negative-control.log ends EXIT=1, but the reviewed manifest.md names no baseline_suite or after_suite, so the added-failure count is unmeasured through the sanctioned path.",
+    "fit": "reckon/crew/recovery_review_acceptance.py:333 now spells the verdict not-run exactly as reckon/crew/promotion.py:175 validates it against ledger.GATE_VERDICTS, matching the vocabulary of the surrounding calls.",
+    "goal_fidelity": "reckon/crew/recovery_review_acceptance.py:333 passes gate=\"not-run\", the value reckon/ledger.py:70 GATE_VERDICTS carries for a run that produced no gate, so the self-promoted row records the truth the goal's own deliverable implies.",
+    "reuse": "the gained commit adds no definition; it reuses promotion.complete's gate parameter and the ledger's GATE_VERDICTS vocabulary rather than forking any promotion mechanism.",
+    "scope_discipline": "the two paths the gained commit touches are both inside the source node's declared write paths (manifest.md:3), and the change carries nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that a review-role run promotes itself with promoted_by review-self once its manifest is complete, its worker and supervisor have exited, and its stored record parses; the gained commit reckon/crew/recovery_review_acceptance.py:333 corrects the gate verdict that promotion records to not-run, the ledger's value for a run that executes no gate, so the self-promoted row no longer asserts a gate the review never ran.\nVERDICT done_when: the source done_when names tests/test_a_review_run_promotes_itself.py's four cases, a logged negative control, and a no-added-failure check for the importing batch; the reviewed manifest records 121 passed at revision 294d3e6a4 (head-full.log:1) and negative-control.log EXIT=1, and the gained commit adds one assertion inside that file.\nVERDICT write_paths: the source node declared five write paths in its manifest.md:3; the gained commit touches reckon/crew/recovery_review_acceptance.py and tests/test_a_review_run_promotes_itself.py, both inside them.\nVERDICT manifest: read the reviewed manifest.md; it reads complete with commits f60c9416f 294d3e6a4 and records 121 passed and negative control EXIT=1, but it declares no baseline_suite and no after_suite, so the read-time added-failure derivation reports the count unmeasured.\nVERDICT diff: read the gained commit 294d3e6a4 against f60c9416f commit-by-commit; it changes one argument (gate passed to not-run) at reckon/crew/recovery_review_acceptance.py:333 and adds one assertion at tests/test_a_review_run_promotes_itself.py:195, and nothing else.\nCALL_SITES: reckon/crew/recovery_review_acceptance.py:416, reckon/crew/resumption.py:1398, reckon/crew/recovery.py:193\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_acceptance.py:333 passes gate=\"not-run\", the value reckon/ledger.py:70 GATE_VERDICTS carries for a run that produced no gate, so the self-promoted row records the truth the goal's own deliverable implies.\nSCORE evidence: 16\nJUSTIFICATION evidence: head-full.log:1 records 121 passed at revision 294d3e6a4 and negative-control.log ends EXIT=1, but the reviewed manifest.md names no baseline_suite or after_suite, so the added-failure count is unmeasured through the sanctioned path.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two paths the gained commit touches are both inside the source node's declared write paths (manifest.md:3), and the change carries nothing the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_review_run_promotes_itself.py:195 asserts the ledger row's gate equals not-run against a literal the test never passed in, so reverting reckon/crew/recovery_review_acceptance.py:333 to gate=\"passed\" reddens it.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/recovery_review_acceptance.py:333 now spells the verdict not-run exactly as reckon/crew/promotion.py:175 validates it against ledger.GATE_VERDICTS, matching the vocabulary of the surrounding calls.\nSCORE reuse: 20\nJUSTIFICATION reuse: the gained commit adds no definition; it reuses promotion.complete's gate parameter and the ledger's GATE_VERDICTS vocabulary rather than forking any promotion mechanism.\nFINDING manifest.md:11 follow-on: the reviewed manifest declares no baseline_suite and no after_suite, so reckon/crew/review.py:2095 annotate_review_of_run reports the added-failure count unmeasured and no reader can reduce the run's two arms; the count was taken from the run's on-disk arms head.log (rev 65f1b1d) and head-full.log (revision 294d3e6a4).\n",
+  "review_run_id": "r-20261012T203425365750-review-of-a-review-run-promotes-itself",
+  "reviewed_base_sha": "f60c9416f8633407b70ed3bb0d084c7cae8dcb08",
+  "reviewed_head_sha": "294d3e6a4b9fe85692b40966f906288aa2c0cbbe",
+  "reviewed_run_id": "r-20261012T151336047430-a-review-run-promotes-itself",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-12T20:54:39.476652+00:00",
+  "total": 113
+}
