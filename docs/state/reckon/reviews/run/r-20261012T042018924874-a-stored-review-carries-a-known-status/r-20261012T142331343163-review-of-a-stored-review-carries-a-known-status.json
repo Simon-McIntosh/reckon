@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-12T14:32:29.764Z",
+  "dispatched_at": "2026-10-12T14:23:55Z",
+  "findings": [
+    {
+      "file": "tests/test_a_review_records_shas_resolve.py",
+      "line": "89",
+      "severity": "follow-on",
+      "text": "follow-on: the fixture edit lies outside the node's declared write paths (the FENCE-SCOPE names only reckon/crew/review.py, tests/test_a_stored_review_carries_a_known_status.py, the evidence fragment and the figures dir), so the increment exceeds its fence, and this is the third such file after the two the first review recorded."
+    },
+    {
+      "file": "docs/evidence/fragments/scoring-should-stop-a-promotion/a-stored-review-carries-a-known-status.html",
+      "line": "64",
+      "severity": "follow-on",
+      "text": "follow-on: \"reproduces the population's four failures\" names no population, and the only population the fragment defines is the named selection it says measured 1 failed/365 passed, so the sentence reads as a contradiction unless the reader knows it means the coordinator's wider set."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit (c437728cb, 6cd5749a1) against 585f5936c; two files, 12 insertions, the fixture status line and the evidence text recording the third repair and the call-site audit.",
+    "done_when": "the source done_when names tests/test_a_stored_review_carries_a_known_status.py and the existing review tests, none of which the increment changes; its own gate is tests/test_a_review_records_shas_resolve.py, recorded 7 passed in gate-test_a_review_records_shas_resolve.log.",
+    "goal": "the source node's goal is to make store_review refuse a run-review record whose status its readers do not act on; the increment reviewed here adds no refusal, and instead supplies the status the new rule demands at tests/test_a_review_records_shas_resolve.py:89.",
+    "manifest": "read; it declares status complete and records the increment's third fixture repair, the shas-resolve negative control (4 failed/3 passed, EXIT=1) and the two-arm 1 failed/365 passed, 0-added derivation.",
+    "write_paths": "the source FENCE-SCOPE names reckon/crew/review.py, tests/test_a_stored_review_carries_a_known_status.py, docs/evidence/fragments/scoring-should-stop-a-promotion/a-stored-review-carries-a-known-status.html and the figures dir; the increment's docs edit is inside it and its tests/test_a_review_records_shas_resolve.py:89 edit is outside it."
+  },
+  "justifications": {
+    "durability": "removing the status line at tests/test_a_review_records_shas_resolve.py:89 reddens four cases in that file, recorded in negative-control-shas-resolve-fixture.log as 4 failed/3 passed EXIT=1.",
+    "evidence": "gate-test_a_review_records_shas_resolve.log records 7 passed and negative-control-shas-resolve-fixture.log records 4 failed/3 passed EXIT=1, both at revision 585f5936c with the fixture edit uncommitted, the same code the reviewed head 6cd5749a1 carries.",
+    "fit": "the added \"status\": \"parsed\" line at tests/test_a_review_records_shas_resolve.py:89 matches the fixture repairs already made in tests/test_review_lifecycle.py and tests/test_review_gate_reads_the_hot_set.py.",
+    "goal_fidelity": "tests/test_a_review_records_shas_resolve.py:89 supplies the status the rule at reckon/crew/review.py now requires, serving the goal's consequence without adding the refusal itself.",
+    "reuse": "the increment adds no definition and forks nothing; it supplies a value the store's writer already owns at reckon/crew/review.py.",
+    "scope_discipline": "the diff edits tests/test_a_review_records_shas_resolve.py:89, a path the source FENCE-SCOPE does not name, so the increment exceeds its fence by a third file."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is to make store_review refuse a run-review record whose status its readers do not act on; the increment reviewed here adds no refusal, and instead supplies the status the new rule demands at tests/test_a_review_records_shas_resolve.py:89.\nVERDICT done_when: the source done_when names tests/test_a_stored_review_carries_a_known_status.py and the existing review tests, none of which the increment changes; its own gate is tests/test_a_review_records_shas_resolve.py, recorded 7 passed in gate-test_a_review_records_shas_resolve.log.\nVERDICT write_paths: the source FENCE-SCOPE names reckon/crew/review.py, tests/test_a_stored_review_carries_a_known_status.py, docs/evidence/fragments/scoring-should-stop-a-promotion/a-stored-review-carries-a-known-status.html and the figures dir; the increment's docs edit is inside it and its tests/test_a_review_records_shas_resolve.py:89 edit is outside it.\nVERDICT manifest: read; it declares status complete and records the increment's third fixture repair, the shas-resolve negative control (4 failed/3 passed, EXIT=1) and the two-arm 1 failed/365 passed, 0-added derivation.\nVERDICT diff: read commit by commit (c437728cb, 6cd5749a1) against 585f5936c; two files, 12 insertions, the fixture status line and the evidence text recording the third repair and the call-site audit.\nCALL_SITES: none\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: tests/test_a_review_records_shas_resolve.py:89 supplies the status the rule at reckon/crew/review.py now requires, serving the goal's consequence without adding the refusal itself.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-test_a_review_records_shas_resolve.log records 7 passed and negative-control-shas-resolve-fixture.log records 4 failed/3 passed EXIT=1, both at revision 585f5936c with the fixture edit uncommitted, the same code the reviewed head 6cd5749a1 carries.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: the diff edits tests/test_a_review_records_shas_resolve.py:89, a path the source FENCE-SCOPE does not name, so the increment exceeds its fence by a third file.\nSCORE durability: 18\nJUSTIFICATION durability: removing the status line at tests/test_a_review_records_shas_resolve.py:89 reddens four cases in that file, recorded in negative-control-shas-resolve-fixture.log as 4 failed/3 passed EXIT=1.\nSCORE fit: 19\nJUSTIFICATION fit: the added \"status\": \"parsed\" line at tests/test_a_review_records_shas_resolve.py:89 matches the fixture repairs already made in tests/test_review_lifecycle.py and tests/test_review_gate_reads_the_hot_set.py.\nSCORE reuse: 20\nJUSTIFICATION reuse: the increment adds no definition and forks nothing; it supplies a value the store's writer already owns at reckon/crew/review.py.\nFINDING tests/test_a_review_records_shas_resolve.py:89 follow-on: the fixture edit lies outside the node's declared write paths (the FENCE-SCOPE names only reckon/crew/review.py, tests/test_a_stored_review_carries_a_known_status.py, the evidence fragment and the figures dir), so the increment exceeds its fence, and this is the third such file after the two the first review recorded.\nFINDING docs/evidence/fragments/scoring-should-stop-a-promotion/a-stored-review-carries-a-known-status.html:64 follow-on: \"reproduces the population's four failures\" names no population, and the only population the fragment defines is the named selection it says measured 1 failed/365 passed, so the sentence reads as a contradiction unless the reader knows it means the coordinator's wider set.\n",
+  "review_run_id": "r-20261012T142331343163-review-of-a-stored-review-carries-a-known-status",
+  "reviewed_base_sha": "585f5936c708dd89d70963cc73d3db2d2945a005",
+  "reviewed_head_sha": "6cd5749a1b8491b31a8aca6c1b1692a0df10e9ab",
+  "reviewed_run_id": "r-20261012T042018924874-a-stored-review-carries-a-known-status",
+  "reviewer_run_id": "r-20261012T142331343163-review-of-a-stored-review-carries-a-known-status",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-12T14:32:02.696336+00:00",
+  "total": 106
+}
