@@ -567,6 +567,15 @@ def _review_dispatch_fields(
         )
     plan = str(node.get("plan") or "")
     section = str(node.get("section") or "")
+    # A composed review brief cannot ride beside a plan that names no section:
+    # dispatch reads a brief beside a plan as the coordinator's instructions for
+    # a section and refuses the pair when the section is missing, so naming the
+    # plan alone would compose a review command dispatch rejects for a reviewed
+    # run that carried a plan with no section. The brief carries the rubric and
+    # the reviewed run's identity, so it stays and the plan/section pair is
+    # emitted only when a section names where the brief belongs.
+    if plan and not section:
+        plan = ""
     # A run review's brief is composed, not given: the rubric text followed by
     # the identity of the run under review. The reviewed run's stored brief,
     # when it carried one, is named inside that text rather than handed to the

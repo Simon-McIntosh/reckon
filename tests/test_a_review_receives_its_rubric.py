@@ -22,13 +22,16 @@ red this node's log records.
 from __future__ import annotations
 
 import hashlib
+import json
 import shlex
 import subprocess
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from click.testing import CliRunner
 
+from reckon import cli as cli_module
 from reckon import flight
 from reckon.crew import recovery, runs
 from reckon.crew import review as review_module
@@ -58,7 +61,7 @@ def crew_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(home))
     monkeypatch.setattr(
-        flight, "resolve", lambda **kwargs: SimpleNamespace(config=CONFIG)
+        flight, "resolve", lambda *args, **kwargs: SimpleNamespace(config=CONFIG)
     )
     return home
 
@@ -239,3 +242,129 @@ def test_a_plan_naming_implement_run_names_plan_and_section_beside_its_brief(
     assert argv[argv.index("--brief") + 1]
     assert argv[argv.index("--plan") + 1] == "fixture"
     assert argv[argv.index("--section") + 1] == "s2"
+
+
+# ── The emitted review command is one dispatch accepts, for every run shape ──
+
+
+@pytest.fixture
+def authority_plan(crew_home: Path, repository: Path) -> Path:
+    """A mounted project whose plan carries the section a review names.
+
+    A review of a run that names a plan section keeps the plan as its authority,
+    so its command carries ``--plan``/``--section`` beside ``--brief`` and
+    dispatch joins the node to its committed section. The plan, its mount and
+    the run's repository must agree on the project, so the plan lands in the run
+    repository's own docs tree, which the mount registers for the project.
+    """
+    plan = repository / "docs" / "plans" / "fixture.html"
+    plan.parent.mkdir(parents=True, exist_ok=True)
+    plan.write_text(
+        "<!doctype html>\n<html><head>\n"
+        '<meta name="docs-project" content="sample">\n'
+        '<meta name="reckon-type" content="plan">\n'
+        '<meta name="plan-slug" content="fixture">\n'
+        '</head><body><h2 id="s2">§2 — Review</h2></body></html>\n',
+        encoding="utf-8",
+    )
+    subprocess.run(
+        ["git", "add", "docs/plans/fixture.html"], cwd=repository, check=True
+    )
+    subprocess.run(
+        ["git", "commit", "-q", "-m", "chore: mount a plan"],
+        cwd=repository,
+        check=True,
+        capture_output=True,
+    )
+    (crew_home / "mounts.json").write_text(
+        json.dumps({"sample": str(repository / "docs")}), encoding="utf-8"
+    )
+    return plan
+
+
+def _dry_run(argv: list[str], repo: Path):
+    """Run an emitted review command through ``crew dispatch --dry-run``."""
+    return CliRunner().invoke(
+        cli_module.main, [*argv[1:], "--repo", str(repo), "--dry-run"]
+    )
+
+
+def _run_record(repository: Path, run_id: str, node: dict) -> dict:
+    """A run whose node names one of the three authority shapes."""
+    return {
+        "run_id": run_id,
+        "project": "sample",
+        "repo": str(repository),
+        "worktree": str(repository),
+        "role": "implement",
+        "session": "sess",
+        "node": {"id": "landed-node", **node},
+    }
+
+
+def _materialized_argv(record: dict) -> list[str]:
+    """Materialize the review brief as the reflex does, then build the command.
+
+    The classifier's read composes the same path and text but creates nothing,
+    so the brief a printed command names is written by the dispatch that passes
+    ``delta``. Writing it here reproduces that dispatch, so the dry-run proves
+    the emitted command is accepted rather than the file's absence.
+    """
+    _compose(record)
+    return recovery._review_dispatch_argv(record, config=CONFIG)
+
+
+def test_a_plan_section_review_command_is_dispatchable(
+    crew_home: Path, repository: Path, authority_plan: Path
+) -> None:
+    """Plan-and-section: the brief rides beside the plan section, so both name."""
+    record = _run_record(
+        repository, "r-plan-section", {"plan": "fixture", "section": "s2"}
+    )
+    argv = _materialized_argv(record)
+
+    assert argv[argv.index("--brief") + 1]
+    assert argv[argv.index("--plan") + 1] == "fixture"
+    assert argv[argv.index("--section") + 1] == "s2"
+
+    result = _dry_run(argv, repository)
+
+    assert result.exit_code == 0, result.output
+    assert json.loads(result.output)["ok"] is True
+
+
+def test_a_plan_without_a_section_review_command_is_dispatchable(
+    crew_home: Path, repository: Path
+) -> None:
+    """Plan-and-no-section: the brief is the authority, so no sectionless plan."""
+    record = _run_record(repository, "r-plan-no-section", {"plan": "fixture"})
+    argv = _materialized_argv(record)
+
+    # The dry-run is what proves dispatch accepts the command: emitting
+    # ``--brief`` beside the sectionless plan makes dispatch refuse the pair,
+    # which is the red this node's negative control records.
+    result = _dry_run(argv, repository)
+
+    assert result.exit_code == 0, result.output
+    assert json.loads(result.output)["ok"] is True
+    assert argv[argv.index("--brief") + 1]
+    assert "--plan" not in argv and "--section" not in argv
+
+
+def test_a_brief_carried_review_command_is_dispatchable(
+    crew_home: Path, repository: Path
+) -> None:
+    """Brief-and-no-plan: the brief stands alone as the review's authority."""
+    brief = _stored_brief(crew_home, "r-brief-run")
+    record = _run_record(
+        repository, "r-brief-run", {"brief": str(brief), "brief_path": str(brief)}
+    )
+    argv = _materialized_argv(record)
+
+    assert argv[argv.index("--brief") + 1]
+    assert "--plan" not in argv and "--section" not in argv
+
+    result = _dry_run(argv, repository)
+
+    assert result.exit_code == 0, result.output
+    assert json.loads(result.output)["ok"] is True
