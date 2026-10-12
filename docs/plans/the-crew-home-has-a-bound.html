@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-standalone" content="Storage bounds for the crew home and caches; no live plan waits on them and they wait on none. The pick-input index belongs to one-typesafe-model-picker&#x27;s code and is fixed here because its growth is independent of the picker&#x27;s open sections.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;deferred&quot;}">
   <title>The Crew Home Has A Bound | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="30">
+<meta name="plan-version" content="31">
 <meta name="plan-modified" content="2026-10-12">
 </head>
 <body>
@@ -122,7 +122,7 @@
       <code>tests/test_gc_bounds_a_run_file.py</code>; <code>tests/test_flight.py</code> passes; the fleet supervisor's own log tests pass. This section runs after §3, which writes the same module.</p>
 
     <h2 id="s5">§5 — The existing backlog is reclaimed</h2>
-<section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="deferred" data-links=""></section>
     <p><strong>Deliverable.</strong> An operational node, run after §2 to §4 are promoted and installed: run <code>reckon crew gc</code> for
       the reckon repository and capture its report, then <code>reckon crew gc --apply</code>, capturing every printed removal to a log under
       the run directory; remove the six redirection-named directories in the crew home and the seven stray files at the checkout root after
@@ -223,6 +223,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-s5-reclaim-applied-1012" data-who="reckon-build (health-review-1010)" data-when="2026-10-12T04:35:00Z">
     <div class="r-comment-body"><p>The reclaim was applied on 2026-10-12, after the cross-project fix (<code>0e5a8323c</code>) and the bound repair (<code>259e0904a</code>) merged. Logs are in <code>~/.cache/reckon-health-review/reclaim-20261011/</code>: <code>gc-report-bounded.json</code>, <code>gc-apply-2.json</code>, <code>sizes-before.log</code>, <code>sizes-after.log</code>.</p><p>Removed:</p><ul><li>399 ledger indexes, 35.0 GB apparent: 347 unrecorded and at least 7 days old, and 50 whose recorded checkout is gone.</li><li>179 run directories in no mounted project's ledger, all at least 33 days old (5.5 GB).</li><li>753 stale run locks.</li><li>Four clean merged worktrees.</li></ul><p>The earlier pass of 2026-10-11 also removed 374 past-retention ledgered run directories (about 1.1 GB). Nothing with a live pointer was touched.</p><p>Sizes by <code>du -s</code> in KB, before (2026-10-11 20:48Z) and after (2026-10-12 04:18Z):</p><ul><li><code>~/.cache/reckon</code>: 118,525,801 to 86,297,289.</li><li><code>runs</code>: 203,911,635 to 199,347,534, net of runs added in between.</li><li><code>reports</code>: 37,787,156 to 37,787,901.</li><li><code>locks</code>: 2,048 to 2,048.</li></ul><p>Combined, that is about 37.7 GB lower, so the 100 GB measure is <strong>not yet met</strong>.</p><p>The remainder is understood. <code>~/.cache/reckon</code> still holds 1,373 ledger indexes that record no path (86.7 GB). All are under 7 days old, below <code>LEDGER_INDEX_UNRECORDED_MAX_AGE_DAYS</code>: 1,132 are 3 to 7 days old, 242 are 1 to 3 days old, and only 10 are from the last day. So the minting rate has already fallen, and these become eligible by 2026-10-16. A second report-then-apply pass on or after that date is projected to bring the total to about 125 GB.</p><p><code>reports</code> is untouched: no gc sweep owns its contents, which are named by node rather than by run.</p><p>Still owed by this section: the six redirection-named directories and the seven checkout-root files, now with the lead (the removal was classifier-blocked for the coordinator), and the second pass. f-tchhab-003 stays open for that pass.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-s5-deferred-to-1016" data-who="reckon-build (health-review-1010)" data-when="2026-10-12T05:35:00Z">
+    <div class="r-comment-body"><p>Deferred until <strong>2026-10-16</strong>. The rest of the 100 GB measure is 1,373 unrecorded ledger indexes (86.7 GB) that become eligible as they pass <code>LEDGER_INDEX_UNRECORDED_MAX_AGE_DAYS</code> (7). A pass before that date reclaims nearly nothing. On or after 2026-10-16, set this section back to implementable and run a report, then <code>gc --apply</code>, with before and after sizes, per f-tchhab-003. The redirection-named directories and checkout strays are with the lead.</p></div>
 </div>
 </section>
 </main>
