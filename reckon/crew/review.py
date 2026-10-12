@@ -980,6 +980,12 @@ class HealthReviewError(ValueError):
 # a heading, so the records are reassembled before they are parsed.
 _HEALTH_HEADING_RE = re.compile(r"^#{1,6}\s")
 
+# What may follow ``TREATMENT`` on a line that opens a wrapped record and carries
+# nothing else yet: only separators and whitespace, as in ``TREATMENT`` or
+# ``TREATMENT —`` with the labelled fields on the lines below. A line carrying
+# any other text is prose, so a wrapped record's own words cannot open another.
+_TREATMENT_BARE_CHARS = "—- "
+
 
 def _opens_health_record(line: str) -> bool:
     """Whether ``line`` begins a record the parser acts on.
@@ -987,8 +993,10 @@ def _opens_health_record(line: str) -> bool:
     The record patterns are case-insensitive, so a wrapped record's prose can
     begin with an ordinary word like ``finding`` and match the FINDING shape
     without being a finding. A line opens a record only when it carries a rubric
-    item the parser would keep, or a treatment in its none or labelled form —
-    the same relevance test the parse loop applies to what it reads.
+    item the parser would keep, or a treatment in its none, labelled or bare
+    form — the bare form being the keyword and its separator alone, its fields
+    wrapped onto the lines below — the same relevance test the parse loop
+    applies to what it reads.
     """
     match = _PLAN_RUBRIC_LINE_RE.match(line)
     if match and match.group(1).lower() in HEALTH_REVIEW_ITEMS:
@@ -999,7 +1007,11 @@ def _opens_health_record(line: str) -> bool:
     match = _TREATMENT_LINE_RE.match(line)
     if match:
         remainder = match.group(1).strip()
-        if _TREATMENT_NONE_RE.match(remainder) or _TREATMENT_LABEL_RE.search(remainder):
+        if (
+            _TREATMENT_NONE_RE.match(remainder)
+            or _TREATMENT_LABEL_RE.search(remainder)
+            or not remainder.strip(_TREATMENT_BARE_CHARS)
+        ):
             return True
     return False
 

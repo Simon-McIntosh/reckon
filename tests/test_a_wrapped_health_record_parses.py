@@ -113,3 +113,34 @@ TREATMENT: none — nothing owed.
 """
     finding = parse_health_review(text)["findings"][0]
     assert finding["text"] == "the text"
+
+
+def test_a_bare_treatment_keyword_opens_a_record_its_lines_complete() -> None:
+    """A record may wrap immediately after ``TREATMENT``, before any label."""
+    text = """\
+RUBRIC known_findings: pass — nothing open for the neighbourhood.
+TREATMENT
+— GOAL: delete the second implementation — WRITE_PATHS: reckon/c.py
+— DONE_WHEN: the duplicate is gone and the suite passes
+— EXPECTED_DELTA: -12
+"""
+    treatment = parse_health_review(text)["treatment"]
+    assert treatment["write_paths"] == ["reckon/c.py"]
+    assert treatment["goal"] == "delete the second implementation"
+    assert treatment["done_when"] == "the duplicate is gone and the suite passes"
+    assert treatment["expected_delta"] == "-12"
+
+
+def test_a_treatment_keyword_and_separator_alone_opens_a_record() -> None:
+    """``TREATMENT —`` with the labelled fields on the lines below opens one."""
+    text = """\
+RUBRIC known_findings: pass — nothing open for the neighbourhood.
+TREATMENT —
+GOAL: delete the second implementation
+WRITE_PATHS: reckon/c.py, reckon/d.py
+DONE_WHEN: the duplicate is gone and the suite passes
+EXPECTED_DELTA: -12
+"""
+    treatment = parse_health_review(text)["treatment"]
+    assert treatment["write_paths"] == ["reckon/c.py", "reckon/d.py"]
+    assert treatment["expected_delta"] == "-12"
