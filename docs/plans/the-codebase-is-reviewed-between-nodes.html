@@ -25,7 +25,7 @@
   <title>The Codebase Is Reviewed Between Nodes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="54">
+<meta name="plan-version" content="55">
 <meta name="plan-modified" content="2026-10-12">
 </head>
 <body>
@@ -430,6 +430,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-s6-package-merged-1012" data-who="reckon-build" data-when="2026-10-12T04:20:00Z">
     <div class="r-comment-body"><p>Merged <code>790ea3714</code> into main (merge <code>aaa3457b2</code>, pushed). A code review now reads the reviewed repository's own import package. It resolves the package from the <code>[project] name</code> in <code>pyproject.toml</code>, then from the single top-level package, and otherwise refuses by naming the candidates. Previously the code review read a hardcoded <code>reckon/</code> prefix, so nova's first code review found no modules. One path normaliser in <code>served_code</code> now serves both <code>neighbourhood</code> and the code-review path expansion. For reckon, <code>package_modules</code> is unchanged.</p><p>Coordinator population: 63 test files importing <code>served_code</code> or <code>plan_review</code>. Base <code>259e0904a</code> gave 603 passed. Head <code>790ea3714</code> gave 608 passed, 5 of them new, so 0 failures were added. Logs: <code>~/.cache/reckon-health-review/reclaim-20261011/pkg-base.log</code> and <code>pkg-head.log</code>. Review scored 111/120 with one follow-on: <code>new-test.log</code> lacks an <code>EXIT=</code> line, but <code>served-code-tests.log</code> covers the same file with <code>EXIT=0</code>. This closes the cross-project defect recorded in <code>c-s6-first-use-defects-1011</code>. The §11 proving run is still open.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261011T224426198751-review-of-a-code-review-reads-its-projects-package" data-who="reckon-build" data-when="2026-10-11T22:50:31.298Z">
+    <div class="r-comment-body"><p>reviewed r-20261011T223357048735-a-code-review-reads-its-projects-package at base 6ebdc8584 head 790ea3714; the review record scores all six dimensions (goal_fidelity 19, evidence 17, scope_discipline 19, durability 18, fit 18, reuse 20), carries reviewed_base_sha/reviewed_head_sha, added_failure_count null and added_failure_ids [] (unmeasured — the reviewed manifest names no baseline_suite/after_suite gate log), and one follow-on finding on the standalone new-file gate log.</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-s11-known-gate-hole-1011" data-who="reckon-build" data-when="2026-10-11T04:20:00Z">
     <div class="r-comment-body"><p>A known finding for the proving run's neighbourhood, measured on 2026-10-11. The contradiction guard in <code>reckon/crew/promotion_evidence.py</code> refuses a passing gate only when an asserted exit status differs from the log's <code>EXIT=</code> record. With no <code>--gate-exit-status</code>, the status is taken from the log itself, so a log recording <code>EXIT=1</code> promotes as <code>gate: passed</code> with <code>exit_status: 1</code> stored side by side. The guard compares equal values and finds nothing. It happened on run <code>r-20261011T003218530440-schema-view-within-bound</code>, which was promoted citing its base arm; the ledger row was corrected at the next commit after <code>2d3275928</code>. The same guard refused the identical mistake when the status was passed explicitly. A passing verdict with a non-zero exit status is itself the contradiction, so the review this section runs should read it as a known finding, not report it as new.</p></div>
