@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/dispatch_plan.py:536"
+  ],
+  "completed_at": "2026-10-12T05:46:10.205Z",
+  "dispatched_at": "2026-10-12T05:36:34Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261012T044641243868-a-printed-review-command-dispatches-as-printed/logs/rubric-head.log",
+      "line": "2",
+      "severity": "follow-on",
+      "text": "follow-on: every gate log names the base revision c58b9a97 in its `# rev` header (the gates ran with the fix uncommitted at HEAD=c58b9a97), so a reader cannot tie the passing result to the landed commit 234fda36."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit 234fda36 against base c58b9a97; the production change is dispatch_admission.py +11 (one compose call in `_brief_digest`) and recovery_review_subject.py +46 (`materialize_run_review_brief`), the remainder tests and one evidence fragment.",
+    "done_when": "the done-when asks a per-run-shape dry-run acceptance with no prior composition, a no-write-on-read check, a moved-head case naming the new head, and removal of the composing workaround; the manifest records tests/test_a_review_receives_its_rubric.py 11 passed EXIT=0 and tests/test_crew.py 206 passed EXIT=0, with negative-control.log 4 failed EXIT=1.",
+    "goal": "the source node's goal is that every run-review command a reader prints is accepted by `crew dispatch` verbatim and names the reviewed run's current head; reckon/crew/recovery_review_subject.py:413 composes the brief from the run's record inside dispatch's `_brief_digest` (reckon/crew/dispatch_admission.py:1890), which is what the goal asks for.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261012T044641243868-a-printed-review-command-dispatches-as-printed/manifest.md; status complete, commit 234fda36, the gate run recorded as five invocations each EXIT=0, a bare negative_control_log path, no blockers.",
+    "write_paths": "the manifest declares reckon/crew/recovery_review_subject.py, reckon/crew/dispatch_admission.py, tests/test_a_review_receives_its_rubric.py and tests/test_crew.py plus the evidence fragment; `git diff --stat` against base lists exactly those five paths."
+  },
+  "justifications": {
+    "durability": "negative-control.log reddens tests/test_a_review_receives_its_rubric.py::test_a_moved_head_recomposes_the_printed_review_brief on its assertion at line 435, which compares the composed brief against a head the test derived independently from the repository.",
+    "evidence": "the test files' results are recorded in the manifest, but the gate logs' `# rev` header (logs/rubric-head.log:2) names the base c58b9a97 rather than the landed head 234fda36.",
+    "fit": "reckon/crew/recovery_review_subject.py:413 is mechanism-named with no plan or ticket identifier and matches the docstring idiom of `_review_brief_path` beside it.",
+    "goal_fidelity": "reckon/crew/recovery_review_subject.py:455 composes the brief from the run's record with delta=None, so a command retyped with no prior composition is accepted and names the head the tree carries now.",
+    "reuse": "materialize_run_review_brief (reckon/crew/recovery_review_subject.py:413) delegates to the existing owner of brief composition, `_review_dispatch_fields`, rather than forking it; a search over reckon/crew for a brief-materialisation mechanism found only `_store_brief` (a copy, a different capability).",
+    "scope_discipline": "`git diff --stat c58b9a97 234fda36` lists only the four declared code/test paths and the declared evidence fragment, nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that every run-review command a reader prints is accepted by `crew dispatch` verbatim and names the reviewed run's current head; reckon/crew/recovery_review_subject.py:413 composes the brief from the run's record inside dispatch's `_brief_digest` (reckon/crew/dispatch_admission.py:1890), which is what the goal asks for.\nVERDICT done_when: the done-when asks a per-run-shape dry-run acceptance with no prior composition, a no-write-on-read check, a moved-head case naming the new head, and removal of the composing workaround; the manifest records tests/test_a_review_receives_its_rubric.py 11 passed EXIT=0 and tests/test_crew.py 206 passed EXIT=0, with negative-control.log 4 failed EXIT=1.\nVERDICT write_paths: the manifest declares reckon/crew/recovery_review_subject.py, reckon/crew/dispatch_admission.py, tests/test_a_review_receives_its_rubric.py and tests/test_crew.py plus the evidence fragment; `git diff --stat` against base lists exactly those five paths.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261012T044641243868-a-printed-review-command-dispatches-as-printed/manifest.md; status complete, commit 234fda36, the gate run recorded as five invocations each EXIT=0, a bare negative_control_log path, no blockers.\nVERDICT diff: read commit 234fda36 against base c58b9a97; the production change is dispatch_admission.py +11 (one compose call in `_brief_digest`) and recovery_review_subject.py +46 (`materialize_run_review_brief`), the remainder tests and one evidence fragment.\nCALL_SITES: reckon/crew/dispatch_plan.py:536\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_subject.py:455 composes the brief from the run's record with delta=None, so a command retyped with no prior composition is accepted and names the head the tree carries now.\nSCORE evidence: 17\nJUSTIFICATION evidence: the test files' results are recorded in the manifest, but the gate logs' `# rev` header (logs/rubric-head.log:2) names the base c58b9a97 rather than the landed head 234fda36.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: `git diff --stat c58b9a97 234fda36` lists only the four declared code/test paths and the declared evidence fragment, nothing the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: negative-control.log reddens tests/test_a_review_receives_its_rubric.py::test_a_moved_head_recomposes_the_printed_review_brief on its assertion at line 435, which compares the composed brief against a head the test derived independently from the repository.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/recovery_review_subject.py:413 is mechanism-named with no plan or ticket identifier and matches the docstring idiom of `_review_brief_path` beside it.\nSCORE reuse: 20\nJUSTIFICATION reuse: materialize_run_review_brief (reckon/crew/recovery_review_subject.py:413) delegates to the existing owner of brief composition, `_review_dispatch_fields`, rather than forking it; a search over reckon/crew for a brief-materialisation mechanism found only `_store_brief` (a copy, a different capability).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261012T044641243868-a-printed-review-command-dispatches-as-printed/logs/rubric-head.log:2 follow-on: every gate log names the base revision c58b9a97 in its `# rev` header (the gates ran with the fix uncommitted at HEAD=c58b9a97), so a reader cannot tie the passing result to the landed commit 234fda36.\nreviewed_base_sha: c58b9a97360a344b8428cd8443aaf28a62ef086a\nreviewed_head_sha: 234fda360118ffb1ba0dd9e9324499c87db7aef6",
+  "review_run_id": "r-20261012T053610089308-review-of-a-printed-review-command-dispatches-as-printed",
+  "reviewed_base_sha": "c58b9a97360a344b8428cd8443aaf28a62ef086a",
+  "reviewed_head_sha": "234fda360118ffb1ba0dd9e9324499c87db7aef6",
+  "reviewed_run_id": "r-20261012T044641243868-a-printed-review-command-dispatches-as-printed",
+  "reviewer_run_id": "r-20261012T053610089308-review-of-a-printed-review-command-dispatches-as-printed",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-12T05:45:25.709341+00:00",
+  "total": 112
+}
