@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en-locale">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-portfolio-reads-true">
+  <meta name="plan-evidence-for" content="the-portfolio-reads-true">
+  <meta name="plan-verdict" content="qualified">
+  <title>The impl-move guard reads the served figure | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>The impl-move promotion guard reads the served impl figure</h1>
+  <p id="the-impl-guard-reads-the-served-figure-landing">Three cases in
+    <code>tests/test_promotion_requires_impl_move.py</code> failed on main with <code>DID NOT RAISE</code> because
+    their fixtures authored a <code>plan-impl</code> meta, which a plan carrying section records no longer serves:
+    the parser derives <code>impl</code> from the records or, when they fall short, from the declarations, so the
+    recorded dispatch figure disagreed with a served figure and every landing read as moved. The guard already
+    routes both ends through one reader — <code>plan_impl_at</code> at dispatch and <code>_require_impl_moved</code>
+    at completion both resolve <code>_plan_impl_from_state</code>; no source change was needed. The three fixtures
+    now author section records and record the served figure at dispatch, and two cases are added: a derived plan is
+    refused while no section moved and passes once one is ticked, and a stale authored meta is ignored in favour of
+    the figure the records derive. Gate: <code>tests/test_promotion_requires_impl_move.py</code> 24 passed, EXIT=0.
+    Negative control: reading the authored <code>plan-impl</code> meta at both ends reddens five cases, the
+    derived-plan refusal among them, EXIT=1.</p>
+ </main>
+</body>
+</html>
