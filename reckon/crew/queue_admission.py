@@ -24,16 +24,18 @@ from pathlib import Path
 from typing import Any
 
 from reckon.crew import queue_order, runs
-from reckon.crew.dispatch_admission import LaneHeld, LanePaused, _dispatch_fleet_gate
+from reckon.crew.dispatch_admission import (
+    _LANE_GATE_WAITING_STATES,
+    LaneHeld,
+    LanePaused,
+    _dispatch_fleet_gate,
+)
 from reckon.crew.dispatch_plan import _dispatch_lane_allowance
 from reckon.crew.node import CrewError, TaskNode
 
 ADMIT_LOCK_NAME = "admit.lock"
 DEFAULT_ADMIT_INTERVAL_SECONDS = 5.0
 LAUNCH_FAILED_PHASE = "launch-failed"
-# The gate states in which no dispatch may start, shared with the dispatch path
-# the coordinator uses so the drainer launches nothing a coordinator could not.
-_GATE_WAITING_STATES = frozenset({"paused", "unreadable"})
 
 
 def _now() -> datetime:
@@ -254,7 +256,7 @@ def admit_once(
         "failed": [],
         "requeued": [],
     }
-    if gate.get("state") in _GATE_WAITING_STATES:
+    if gate.get("state") in _LANE_GATE_WAITING_STATES:
         result["action"] = "gated"
         return result
     with _admit_lock() if lock else nullcontext():
@@ -272,9 +274,7 @@ def admit_once(
         for pointer in order:
             session = str(pointer["session"])
             if session not in remaining:
-                remaining[session] = _session_allowance(
-                    pointer, config_for=config_for
-                )
+                remaining[session] = _session_allowance(pointer, config_for=config_for)
             allowance = remaining[session]
             if allowance is not None and allowance <= 0:
                 result["held"].append(str(pointer["run_id"]))
@@ -297,9 +297,7 @@ def admit_once(
                     exc
                 )
                 continue
-            _stamp_admission(
-                str(record["run_id"]), snapshot, admitted_at=_utc_now()
-            )
+            _stamp_admission(str(record["run_id"]), snapshot, admitted_at=_utc_now())
             result["launched"].append(str(record["run_id"]))
             if allowance is not None:
                 remaining[session] = allowance - 1

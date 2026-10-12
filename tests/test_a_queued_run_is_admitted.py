@@ -11,14 +11,14 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
-import subprocess
 
-from reckon.crew import queue_admission, runs
+from reckon.crew import dispatch_sessions, queue_admission, runs
 from reckon.crew.fleet_supervisor import declared_services, services_config_path
 
 PROJECT = "proj"
@@ -232,14 +232,12 @@ def test_two_admission_passes_launch_each_run_once(
     assert len(recorded) == 2
 
 
-def test_a_paused_fleet_gate_launches_nothing(
-    admit_repo: Path, tmp_path: Path
-) -> None:
+def test_a_paused_fleet_gate_launches_nothing(admit_repo: Path, tmp_path: Path) -> None:
     from click.testing import CliRunner
 
     from reckon import cli
 
-    config, resolve = _config_for()
+    _, resolve = _config_for()
     runs.queue_dispatch(_queue(admit_repo, node_id="held", run_id="r-held"))
     paused = CliRunner().invoke(cli.main, ["crew", "gate", "--pause", "moving"])
     assert paused.exit_code == 0
@@ -258,12 +256,10 @@ def test_a_paused_fleet_gate_launches_nothing(
 def test_a_failed_spawn_leaves_the_request_queued(
     admit_repo: Path, tmp_path: Path
 ) -> None:
-    config, resolve = _config_for()
+    _, resolve = _config_for()
     runs.queue_dispatch(_queue(admit_repo, node_id="failed", run_id="r-failed"))
 
-    result = queue_admission.admit_once(
-        config_for=resolve, launcher=_failing_launcher
-    )
+    result = queue_admission.admit_once(config_for=resolve, launcher=_failing_launcher)
 
     assert result["failed"] == ["r-failed"]
     pointer = runs.read_pointer("r-failed")
@@ -281,9 +277,7 @@ def test_a_run_marked_launch_failed_is_requeued(
     )
     pointer = _queue(admit_repo, node_id="reaped", run_id="r-reaped")
     pointer["phase"] = "launch-failed"
-    pointer["admit_request"] = _queue(
-        admit_repo, node_id="reaped", run_id="r-reaped"
-    )
+    pointer["admit_request"] = _queue(admit_repo, node_id="reaped", run_id="r-reaped")
     pointer["launch_failures"] = [
         {"kind": "launch-failed", "recorded_at": "2026-10-12T05:00:00+00:00"}
     ]
@@ -317,21 +311,28 @@ def test_the_services_configuration_declares_the_admit_verb(
     assert declared["admit"][:3] == ["reckon", "crew", "admit"]
 
 
-def test_a_launched_run_leaves_the_queued_phase(
+def _working_launcher(plan, *, log_path, stderr_path, prompt_path):
+    """Stand in for the worker: write the stream a working fold reads."""
+    Path(log_path).write_text('{"type":"turn.started"}\n', encoding="utf-8")
+    return os.getpid()
+
+
+def test_a_launched_run_leaves_queued_for_starting_then_working(
     admit_repo: Path, tmp_path: Path
 ) -> None:
     config, resolve = _config_for()
     runs.queue_dispatch(_queue(admit_repo, node_id="phased", run_id="r-phased"))
-    recorded: list = []
+    observed = ["queued"]
 
-    queue_admission.admit_once(
-        config_for=resolve, launcher=_launcher(recorded), lane="clive"
+    result = queue_admission.admit_once(
+        config_for=resolve, launcher=_working_launcher, lane="clive"
     )
+    run_id = result["launched"][0]
+    observed.append(runs.read_pointer(run_id)["phase"])
 
+    # The follower folds the worker's own stream back into the pointer.
+    folded = dispatch_sessions.observe(run_id, config=config)
+    observed.append(folded["phase"])
+
+    assert observed == ["queued", "starting", "working"]
     assert not runs.pointer_path("r-phased").exists()
-    phases = {
-        pointer["phase"]
-        for pointer in runs.list_live(project=PROJECT)
-        if pointer["phase"] != "queued"
-    }
-    assert phases == {"starting"}
