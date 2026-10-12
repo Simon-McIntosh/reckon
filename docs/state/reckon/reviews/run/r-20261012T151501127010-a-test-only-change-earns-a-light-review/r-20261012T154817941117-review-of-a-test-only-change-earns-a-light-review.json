@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 2,
+  "added_failure_ids": [
+    "tests/test_standing_suite_holds_promotion.py::test_a_later_passing_run_lifts_the_hold",
+    "tests/test_standing_suite_holds_promotion.py::test_a_recorded_waiver_lifts_the_hold"
+  ],
+  "added_failures_note": "added failures retired by name in the reviewed node's done-when or manifest; total not capped",
+  "base_log_revision": "65f1b1d94ee98dd298c7fdbc5f0c4ed0efb407dc",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion.py:279",
+    "reckon/crew/promotion_checks.py:626",
+    "reckon/crew/recovery_repair_dispatch.py:1151",
+    "reckon/crew/recovery_review_acceptance.py:334"
+  ],
+  "completed_at": "2026-10-12T15:59:02.485Z",
+  "dispatched_at": "2026-10-12T15:48:41Z",
+  "findings": [
+    {
+      "file": "tests/test_standing_suite_holds_promotion.py",
+      "line": "234",
+      "severity": "follow-on",
+      "text": "follow-on: the file is edited although it is not among the six write paths the dispatch enumerated, so the tier change touched a path the node was not fenced to write; the plan clause covers test files whose test-only assertion changes but requires them to be named at dispatch, and the manifest discloses the gap rather than the coordinator having confirmed it."
+    },
+    {
+      "file": "tests/test_standing_suite_holds_promotion.py",
+      "line": "259",
+      "severity": "follow-on",
+      "text": "follow-on: the first mutation of this file's two cases is the only one the reviewed head's after-arm covers, and the reviewed run's after_suite records the pre-repair revision d66a908, so a reader comparing added_failure_ids against the reviewed head must read gate-standing-suite.log too."
+    }
+  ],
+  "head_log_revision": "d66a90839f9604aba815a61f6e2c30d0c19fd41a",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against base 65f1b1d94; d66a908 adds the resolver branch and its test, 5578ce98 updates the reddened test file's two assertions, all six changed paths reviewed.",
+    "done_when": "the done_when names tests/test_a_test_only_change_earns_a_light_review.py passing and the gate ran it (gate-node.log: 40 passed EXIT=0), plus a base/head arm pair and a negative control.",
+    "goal": "the goal is that review_tier gives the light tier to a run whose changed paths include test source but no runtime source, and reckon/review_tiers.py:115 returns LIGHT for exactly that case.",
+    "manifest": "read; it records the gate result, the base and head arms, the negative control, and it discloses the out-of-scope test file under evidence_inputs and blockers.",
+    "write_paths": "the six declared write paths are read against the diff; five changed paths are inside them and tests/test_standing_suite_holds_promotion.py is not."
+  },
+  "justifications": {
+    "durability": "negative-control-tests-none.log restores `return NONE` at reckon/review_tiers.py:115 and the first case fails with EXIT=1 (4 failed), so the new branch, not the surrounding code, produces the light tier.",
+    "evidence": "gate-node.log records 40 passed EXIT=0 for the done_when's test file, but the recorded after_suite head arm head-arm.log ran at d66a908, one commit behind the reviewed head 5578ce98, whose repaired state appears only in a separate log.",
+    "fit": "changes_test_source at reckon/review_tiers.py:73 mirrors changes_runtime_source and reuses path_class, matching the module's existing idiom and carrying no plan label.",
+    "goal_fidelity": "reckon/review_tiers.py:115 returns LIGHT when changes_test_source is true and no runtime source changed, which is the goal verbatim.",
+    "reuse": "changes_test_source at reckon/review_tiers.py:73 wraps path_class in reckon/path_classes.py, the repository's owner of path classification; a search of reckon/ for a test-source predicate found none to extend.",
+    "scope_discipline": "tests/test_standing_suite_holds_promotion.py:234 is edited although the dispatch's enumerated write paths do not name it, so the landed change touched a file outside its fence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that review_tier gives the light tier to a run whose changed paths include test source but no runtime source, and reckon/review_tiers.py:115 returns LIGHT for exactly that case.\nVERDICT done_when: the done_when names tests/test_a_test_only_change_earns_a_light_review.py passing and the gate ran it (gate-node.log: 40 passed EXIT=0), plus a base/head arm pair and a negative control.\nVERDICT write_paths: the six declared write paths are read against the diff; five changed paths are inside them and tests/test_standing_suite_holds_promotion.py is not.\nVERDICT manifest: read; it records the gate result, the base and head arms, the negative control, and it discloses the out-of-scope test file under evidence_inputs and blockers.\nVERDICT diff: read commit by commit against base 65f1b1d94; d66a908 adds the resolver branch and its test, 5578ce98 updates the reddened test file's two assertions, all six changed paths reviewed.\nCALL_SITES: reckon/crew/promotion.py:279, reckon/crew/promotion_checks.py:626, reckon/crew/recovery_repair_dispatch.py:1151, reckon/crew/recovery_review_acceptance.py:334\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/review_tiers.py:115 returns LIGHT when changes_test_source is true and no runtime source changed, which is the goal verbatim.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-node.log records 40 passed EXIT=0 for the done_when's test file, but the recorded after_suite head arm head-arm.log ran at d66a908, one commit behind the reviewed head 5578ce98, whose repaired state appears only in a separate log.\nSCORE scope_discipline: 12\nJUSTIFICATION scope_discipline: tests/test_standing_suite_holds_promotion.py:234 is edited although the dispatch's enumerated write paths do not name it, so the landed change touched a file outside its fence.\nSCORE durability: 19\nJUSTIFICATION durability: negative-control-tests-none.log restores `return NONE` at reckon/review_tiers.py:115 and the first case fails with EXIT=1 (4 failed), so the new branch, not the surrounding code, produces the light tier.\nSCORE fit: 19\nJUSTIFICATION fit: changes_test_source at reckon/review_tiers.py:73 mirrors changes_runtime_source and reuses path_class, matching the module's existing idiom and carrying no plan label.\nSCORE reuse: 20\nJUSTIFICATION reuse: changes_test_source at reckon/review_tiers.py:73 wraps path_class in reckon/path_classes.py, the repository's owner of path classification; a search of reckon/ for a test-source predicate found none to extend.\nFINDING tests/test_standing_suite_holds_promotion.py:234 follow-on: the file is edited although it is not among the six write paths the dispatch enumerated, so the tier change touched a path the node was not fenced to write; the plan clause covers test files whose test-only assertion changes but requires them to be named at dispatch, and the manifest discloses the gap rather than the coordinator having confirmed it.\nFINDING tests/test_standing_suite_holds_promotion.py:259 follow-on: the first mutation of this file's two cases is the only one the reviewed head's after-arm covers, and the reviewed run's after_suite records the pre-repair revision d66a908, so a reader comparing added_failure_ids against the reviewed head must read gate-standing-suite.log too.\n",
+  "review_run_id": "r-20261012T154817941117-review-of-a-test-only-change-earns-a-light-review",
+  "reviewed_base_sha": "65f1b1d94ee98dd298c7fdbc5f0c4ed0efb407dc",
+  "reviewed_head_sha": "5578ce98babfd4709af6271de63bc8d474a08ac7",
+  "reviewed_run_id": "r-20261012T151501127010-a-test-only-change-earns-a-light-review",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 12
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-12T15:57:01.185799+00:00",
+  "total": 105
+}
