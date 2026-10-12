@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-run-has-one-live-writer">
+  <meta name="plan-title" content="A Run Has One Live Writer">
+  <meta name="plan-summary" content="Two nova incidents put a second writer in a run's tree: a worker outlived its supervisor, and a resume launched beside a live one. Each run gets one writer.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="3.25">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-sprint" content="S26">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-north-star" content="unattended-execution">
+  <meta name="plan-standalone" content="Process-lifetime and resume-launch repairs reported by the nova session on 2026-10-12; no live plan waits on them and they wait on none.">
+  <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;a-run-has-one-live-writer#s2&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
+  <title>A Run Has One Live Writer | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: a run's tree had two writers twice in one morning</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-status="done" data-links=""></section>
+    <p>The nova session <code>s21-nova</code> reported both incidents on 2026-10-12.</p>
+    <p><strong>A worker outlived its supervisor.</strong> Run <code>r-20261012T041906125895-polygon-moment-owner</code> (clive, attempt 2) recorded an exit of signal 15 at 05:45:02Z for supervisor pid 2222592, ending while it was working. Its claude worker, pid 2225621, kept running for about ten more minutes, now with parent pid 1. In that time it:</p>
+    <ul>
+      <li>spawned pytest;</li>
+      <li>committed <code>4523dc2f3</code>;</li>
+      <li>rewrote <code>manifest.md</code>.</li>
+    </ul>
+    <p>Meanwhile reckon classified the run as complete, then scoring, and the review reflex dispatched a review against <code>775370a7c</code> while the tree was still moving. <code>reckon crew stop --run</code> returned ok, but the orphan and its children were alive five seconds later, because it targets only the recorded pid. The worker is launched in the supervisor's process group (<code>start_new_session=False</code> in <code>reckon/crew/dispatch_launch.py</code>), so a stop aimed at the group should end it. Why it survived here is the first thing §2 establishes.</p>
+    <p><strong>A resume launched beside a live attempt.</strong> Run <code>r-20261012T042612803730-proto-read-route</code> (codex) was auto-resumed by the wait sweep at about 10:07:30Z (attempt 6: supervisor 3206965, codex 3207785, still alive). At 10:08:49Z a coordinator's <code>crew resume --advice</code> launched attempt 7. Codex refused it with "thread … already has an active writer", and it exited in 4 s. The pointer then recorded attempt 7's exit and classified the run <code>exited-unfinished</code>, and its next action suggested <code>repair-status --status complete</code> while attempt 6 was still working. The coordinator's advice text was lost without any notice. The previous minute's <code>resume-3.stderr.log</code> shows the same conflict.</p>
+
+    <h2 id="s2">§2 — A worker never outlives its supervisor</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> First reproduce the polygon-moment-owner shape: a supervisor that receives SIGTERM while its worker is working, and a worker that has started children of its own. Establish from that reproduction why the worker survived, whether because it changed its process group, or the signal reached the supervisor alone, or the handler did not forward it. Then repair three things:</p>
+    <ul>
+      <li>The supervisor's exit path ends the worker's whole process tree before it records the exit, and records which pids it ended.</li>
+      <li><code>crew stop</code> (<code>terminate</code>) ends every live descendant of the run's recorded supervisor and worker pids, plus any process whose working directory lies in the run's worktree. It lists each pid it signals, and reports any process still alive afterwards rather than returning ok.</li>
+      <li>A run whose recorded worker pid is still alive is never classified complete or scoring, so the review reflex cannot dispatch against a tree that is still moving.</li>
+    </ul>
+    <p><strong>Done when</strong> <code>tests/test_a_worker_never_outlives_its_supervisor.py</code> passes, using real child processes in a temporary tree:</p>
+    <ul>
+      <li>SIGTERM to the supervisor leaves no worker and no worker child alive, and the exit record names the pids ended.</li>
+      <li><code>crew stop</code> on a run whose worker was reparented to init ends that worker and its children, and names them.</li>
+      <li>A run whose supervisor has exited while its worker pid lives is not classified complete or scoring.</li>
+    </ul>
+    <p>The negative control, which signals the supervisor pid alone, fails the first case. It is logged under the run directory. The reproduction's finding (why the worker survived) is recorded in the manifest. The test files that import <code>dispatch_launch</code> or exercise <code>terminate</code> pass. Every process the tests start is ended by the tests themselves, and is checked by pid afterwards.</p>
+    <p>Write paths: <code>reckon/crew/dispatch_launch.py</code>, <code>reckon/crew/dispatch_sessions.py</code> (<code>terminate</code>), <code>reckon/crew/recovery_classification.py</code>, <code>tests/test_a_worker_never_outlives_its_supervisor.py</code>.</p>
+
+    <h2 id="s3">§3 — A resume never launches beside a live attempt</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> <code>crew resume</code> and the wait sweep's auto-resume both check, under the run's pointer lock, whether a supervisor or worker for the run is alive.</p>
+    <ul>
+      <li>If one is, a coordinator's <code>crew resume</code> does not launch. It refuses, naming the live attempt and its pids. Its advice is kept in the run directory as pending advice, and the live attempt's next resume delivers it, so the text is never lost.</li>
+      <li>The sweep never resumes a run whose attempt is alive.</li>
+      <li>A launch that ends before it holds the session (as with the "active writer" refusal) records its own attempt's failure, and never overwrites the live attempt's pointer fields or its classification.</li>
+    </ul>
+    <p><strong>Done when</strong> <code>tests/test_a_resume_never_launches_beside_a_live_attempt.py</code> passes:</p>
+    <ul>
+      <li>A <code>crew resume</code> while the run's supervisor pid is alive launches nothing, exits non-zero naming the live attempt, and leaves its advice stored.</li>
+      <li>The next resume of that run carries the stored advice.</li>
+      <li>A sweep pass over a run whose attempt is alive resumes nothing.</li>
+      <li>A launch failing on an active-writer refusal leaves the live attempt's pointer phase and pids unchanged.</li>
+    </ul>
+    <p>The negative control, which drops the liveness check from <code>crew resume</code>, fails the first case. It is logged under the run directory. The test files that import <code>resumption</code> or <code>dispatch_sessions</code> pass.</p>
+    <p>Write paths: <code>reckon/crew/resumption.py</code>, <code>reckon/crew/dispatch_sessions.py</code>, <code>tests/test_a_resume_never_launches_beside_a_live_attempt.py</code>. It runs after §2, which also writes <code>dispatch_sessions.py</code>.</p>
+    <section data-reckon="followups"></section>
+  </main>
+</body>
+</html>
