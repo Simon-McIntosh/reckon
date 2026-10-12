@@ -44,8 +44,10 @@
         written; a <code>parsed</code> record stores as before. Head arm 4 passed /
         0 failed; the declared negative control removes the status check and both
         refusal cases fail, 2 failed / 2 passed, <code>EXIT=1</code>.</p>
-      <p>Two run-review fixtures that built records with no status —
-        <code>_loader_run_record</code> and <code>_run_record</code> — now carry
+      <p>Three run-review fixtures that built records with no status —
+        <code>_loader_run_record</code> and <code>_run_record</code>, then
+        <code>_record</code> in
+        <code>tests/test_a_review_records_shas_resolve.py</code> — now carry
         <code>"status": "parsed"</code>, as a stored run review does. The named
         selection (tests/test_review<code>*</code>.py plus the
         <code>promotion_checks</code> importers) then measures <strong>1 failed /
@@ -54,6 +56,13 @@
         failure is <code>test_a_runtime_source_commit_dispatches_a_light_scoped_review</code>,
         which also fails at this base (a node-contract dispatch refusal unrelated
         to the status change).</p>
+      <p>Every call to <code>store_review</code> under <code>tests/</code> was then
+        resolved to its record producer: all but three carry a status, whether from
+        <code>parse_review</code> or a literal. The three exceptions pass
+        subject-deficient records on purpose to prove the subject refusal, which is
+        checked before the status rule. Dropping the <code>status</code> line back
+        out of <code>_record</code> reproduces the population's four failures, so
+        the fixture edit is load-bearing rather than incidental.</p>
     </section>
   </main>
 </body>
