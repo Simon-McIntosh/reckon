@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest records no baseline_suite or after_suite arm (classification.json carries manifest.data.baseline_suite=null and after_suite=null, and both named arm logs end EXIT=124 with no summary line), so the added-failure count was not taken",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/plan_review.py:2129",
+    "reckon/crew/plan_review.py:2162"
+  ],
+  "completed_at": "2026-10-12T23:02:46.343Z",
+  "dispatched_at": "2026-10-12T22:51:51Z",
+  "findings": [
+    {
+      "file": "reckon/crew/review.py",
+      "line": "1002",
+      "severity": "follow-on",
+      "text": "_opens_health_record requires a TREATMENT line to carry the none form or a label before it opens a record, so a treatment wrapped immediately after the TREATMENT keyword is neither started nor joined and parse_health_review refuses it as HEALTH_NO_TREATMENT -- verified, at base the same text refused treatment_without_write_paths and at 150b1b18d it refuses no_treatment, so that wrap case of the goal is unmet and the refusal names the wrong rule."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261012T214608773124-a-wrapped-health-record-parses/manifest.md",
+      "line": "18",
+      "severity": "follow-on",
+      "text": "the done-when's second clause -- the tests importing reckon/crew/review.py show no added failure against base -- is unmeasured, both arms (base-arm.log, head-arm.log) ending EXIT=124 near 91-93% with no summary line and manifest.md:6 recording baseline_suite/after_suite null, so status complete is carried with an unmet, unmeasured clause."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit (single commit 150b1b18d) against c5ae9e9 -- review.py adds _HEALTH_HEADING_RE, _opens_health_record and _health_records and swaps the parse loop's iterator at :1130, plus the new test, the wrapped fixture and the evidence fragment.",
+    "done_when": "the done-when has three clauses; clause one (tests/test_a_wrapped_health_record_parses.py passes the three cases with the delivered report as fixture) and clause three (negative control logged) are met and I re-verified clause one (5 passed at 150b1b18d), but clause two -- the importing-reckon/crew/review.py population shows no added failure against base -- is unmeasured (base-arm.log and head-arm.log both end EXIT=124 near 91-93% with no summary line, and manifest.md:6 records baseline_suite/after_suite null).",
+    "goal": "read the node goal (\"parse_health_review joins a record's continuation lines to the record they continue, so a wrapped TREATMENT or FINDING keeps its labelled fields\") against the diff; reckon/crew/review.py:1007 _health_records reassembles the records and the parse loop at :1130 iterates them, so the delivered report's wrapped WRITE_PATHS and CLASS parse -- but a treatment wrapped immediately after the TREATMENT keyword is dropped at :1002, so one wrapped-TREATMENT case of the goal is unmet.",
+    "manifest": "read; it records status complete at 150b1b18d, the gate command with 14 passed EXIT=0, the negative-control path and note, the base/head arm logs, and the unmet population clause under follow_ons/blockers.",
+    "write_paths": "the manifest declares reckon/crew/review.py, tests/test_a_wrapped_health_record_parses.py, tests/fixtures/wrapped-health-review.md and docs/evidence/fragments/the-codebase-is-reviewed-between-nodes/a-wrapped-health-record-parses.html; git diff c5ae9e9..150b1b18d touches exactly those four paths with nothing outside the fence."
+  },
+  "justifications": {
+    "durability": "reverting the join reddens tests/test_a_wrapped_health_record_parses.py::test_delivered_report_treatment_names_its_write_paths_and_delta and ::test_wrapped_finding_keeps_its_class_and_whole_text (negative-control.log, EXIT=1), and every added assertion compares parsed output against fixture-independent literals rather than a value the test passed in.",
+    "evidence": "clauses one and three of the done-when are recorded and re-verified (5 passed at 150b1b18d; negative-control.log 2 failed EXIT=1) while clause two is unmeasured -- base-arm.log and head-arm.log exit 124 before any summary and manifest.md:6 records baseline_suite/after_suite null.",
+    "fit": "the added names (_health_records at review.py:1007, _opens_health_record at :984, _HEALTH_HEADING_RE at :981) are mechanism-descriptive with no plan or ticket label, and the block comment states the mechanism rather than the incident.",
+    "goal_fidelity": "reckon/crew/review.py:1007's _health_records joins continuation lines and the parse loop at :1130 reads them so the delivered report's wrapped WRITE_PATHS and CLASS parse (tests/test_a_wrapped_health_record_parses.py:44,57), but a record wrapped right after the TREATMENT keyword is dropped at :1002.",
+    "reuse": "no owner for joining a review record's continuation lines exists -- a search over reckon/ for continuation or line-joining found only unrelated plan-landing continuation (reckon/_store.py:3301) -- and _health_records reuses the shared _review_text_lines at review.py:547 and the existing record regexes rather than forking them.",
+    "scope_discipline": "every path in git diff c5ae9e9..150b1b18d (reckon/crew/review.py, tests/test_a_wrapped_health_record_parses.py, tests/fixtures/wrapped-health-review.md, the evidence fragment) is inside the manifest's declared fence, with no plan meta line touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal (\"parse_health_review joins a record's continuation lines to the record they continue, so a wrapped TREATMENT or FINDING keeps its labelled fields\") against the diff; reckon/crew/review.py:1007 _health_records reassembles the records and the parse loop at :1130 iterates them, so the delivered report's wrapped WRITE_PATHS and CLASS parse -- but a treatment wrapped immediately after the TREATMENT keyword is dropped at :1002, so one wrapped-TREATMENT case of the goal is unmet.\nVERDICT done_when: the done-when has three clauses; clause one (tests/test_a_wrapped_health_record_parses.py passes the three cases with the delivered report as fixture) and clause three (negative control logged) are met and I re-verified clause one (5 passed at 150b1b18d), but clause two -- the importing-reckon/crew/review.py population shows no added failure against base -- is unmeasured (base-arm.log and head-arm.log both end EXIT=124 near 91-93% with no summary line, and manifest.md:6 records baseline_suite/after_suite null).\nVERDICT write_paths: the manifest declares reckon/crew/review.py, tests/test_a_wrapped_health_record_parses.py, tests/fixtures/wrapped-health-review.md and docs/evidence/fragments/the-codebase-is-reviewed-between-nodes/a-wrapped-health-record-parses.html; git diff c5ae9e9..150b1b18d touches exactly those four paths with nothing outside the fence.\nVERDICT manifest: read; it records status complete at 150b1b18d, the gate command with 14 passed EXIT=0, the negative-control path and note, the base/head arm logs, and the unmet population clause under follow_ons/blockers.\nVERDICT diff: read commit by commit (single commit 150b1b18d) against c5ae9e9; review.py adds _HEALTH_HEADING_RE, _opens_health_record and _health_records and swaps the parse loop's iterator at :1130, plus the new test, the wrapped fixture and the evidence fragment.\nCALL_SITES: reckon/crew/plan_review.py:2129, reckon/crew/plan_review.py:2162\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:1007's _health_records joins continuation lines and the parse loop at :1130 reads them so the delivered report's wrapped WRITE_PATHS and CLASS parse (tests/test_a_wrapped_health_record_parses.py:44,57), but a record wrapped right after the TREATMENT keyword is dropped at :1002.\nSCORE evidence: 13\nJUSTIFICATION evidence: clauses one and three of the done-when are recorded and re-verified (5 passed at 150b1b18d; negative-control.log 2 failed EXIT=1) while clause two is unmeasured -- base-arm.log and head-arm.log exit 124 before any summary and manifest.md:6 records baseline_suite/after_suite null.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff c5ae9e9..150b1b18d (reckon/crew/review.py, tests/test_a_wrapped_health_record_parses.py, tests/fixtures/wrapped-health-review.md, the evidence fragment) is inside the manifest's declared fence, with no plan meta line touched.\nSCORE durability: 19\nJUSTIFICATION durability: reverting the join reddens test_delivered_report_treatment_names_its_write_paths_and_delta and test_wrapped_finding_keeps_its_class_and_whole_text (negative-control.log, EXIT=1), and every added assertion compares parsed output against fixture-independent literals rather than a value the test passed in.\nSCORE fit: 19\nJUSTIFICATION fit: the added names (_health_records at review.py:1007, _opens_health_record at :984, _HEALTH_HEADING_RE at :981) are mechanism-descriptive with no plan or ticket label, and the block comment states the mechanism rather than the incident.\nSCORE reuse: 20\nJUSTIFICATION reuse: no owner for joining a review record's continuation lines exists -- a search over reckon/ for continuation or line-joining found only unrelated plan-landing continuation (reckon/_store.py:3301) -- and _health_records reuses the shared _review_text_lines at review.py:547 and the existing record regexes rather than forking them.\nFINDING reckon/crew/review.py:1002 follow-on: _opens_health_record requires a TREATMENT line to carry the none form or a label before it opens a record, so a treatment wrapped immediately after the TREATMENT keyword is neither started nor joined and parse_health_review refuses it as HEALTH_NO_TREATMENT -- verified, at base the same text refused treatment_without_write_paths and at 150b1b18d it refuses no_treatment, so that wrap case of the goal is unmet and the refusal names the wrong rule.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261012T214608773124-a-wrapped-health-record-parses/manifest.md:18 follow-on: the done-when's second clause -- the tests importing reckon/crew/review.py show no added failure against base -- is unmeasured, both arms (base-arm.log, head-arm.log) ending EXIT=124 near 91-93% with no summary line and manifest.md:6 recording baseline_suite/after_suite null, so status complete is carried with an unmet, unmeasured clause.\n",
+  "review_run_id": "r-20261012T225119799180-review-of-a-wrapped-health-record-parses",
+  "reviewed_base_sha": "c5ae9e9ad329f19c16abe2b6fc46d16093fbb9e2",
+  "reviewed_head_sha": "150b1b18d754123c1644e4d5acb49cf36bbb0117",
+  "reviewed_run_id": "r-20261012T214608773124-a-wrapped-health-record-parses",
+  "reviewer": {
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 13,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-12T23:00:17.094272+00:00",
+  "total": 108
+}
