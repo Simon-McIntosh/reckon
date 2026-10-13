@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-seat-held-elsewhere-is-not-restarted">
+  <meta name="plan-title" content="A Seat Held Elsewhere Is Not Restarted">
+  <meta name="plan-summary" content="A login-node producer unit finds the seat held on a compute node, exits 0 and is restarted every 6.7 s, while the hook there still reports no producer.">
+  <meta name="plan-status" content="draft">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="3">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S26">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-north-star" content="unattended-execution">
+  <meta name="plan-after" content="the-review-loop-runs-without-hand-steps">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+  <title>A Seat Held Elsewhere Is Not Restarted | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: a producer unit cycles nine times a minute beside a live producer on another node</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-status="done" data-links=""></section>
+    <p>
+      On 2026-10-13 a <code>power_convertor</code> coordinator on the login node <code>98dci4-srv-1006</code> saw the obligations
+      hook print, on every prompt from about 07:00Z to 08:30Z, "reckon obligations for session 2e812190 (project power_convertor)
+      are not current: no producer; run <code>reckon crew watch --ensure --project power_convertor</code>". The fleet was working
+      throughout, and its follower delivered every transition. What the coordinator found:
+    </p>
+    <table>
+      <thead><tr><th>Measured</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td>The project's seat (<code>~/.config/reckon/crew/watch/power_convertor-2f320d946ced.lock</code>)</td><td>held by pid 4134058 on the compute node <code>98dci4-clu-2002</code>, started 03:47:50Z; its event stream was still being written at 08:26</td></tr>
+        <tr><td>The login node's unit <code>reckon-watch-power_convertor.service</code></td><td><code>ExecStart=reckon crew watch --project power_convertor</code>, <code>Restart=always</code>, <code>RestartSec=5</code></td></tr>
+        <tr><td>Its restart count</td><td>2,376 by 08:29Z, rising by 6 in 40 s, one restart about every 6.7 s; <code>ExecMainStatus=0</code></td></tr>
+        <tr><td>Its log (<code>~/.config/reckon/logs/watch-reckon-watch-power_convertor.service.log</code>)</td><td>2.8 MB of one pair of lines repeated: a <code>watcher-live</code> event naming the seat on <code>clu-2002</code>, then "reckon crew watch stopped: watch stream ended"</td></tr>
+        <tr><td><code>reckon crew watch --ensure --project power_convertor</code> at about 07:37Z</td><td>"already active on an unchanged unit; started nothing", <code>service_active: true</code>, <code>watcher_live: true</code>; the cycling unit read as healthy</td></tr>
+        <tr><td>Snapshots under <code>~/.config/reckon/crew/obligations/power_convertor/</code></td><td>one file, for session <code>f5b6708b</code>; none for the four coordinator sessions working the project then (<code>2e812190</code>, <code>b8e6ba21</code>, <code>080e9ea5</code>, <code>c952ceac</code>)</td></tr>
+      </tbody>
+    </table>
+    <p>
+      The unit starts, finds a live producer on another host, prints that it is live, and exits cleanly, so systemd restarts it
+      forever. Each restart starts a Python process that imports reckon on the login node, about nine a minute, and the log grows
+      without bound. This is the kind of background process the user-wide rules hold to be a defect. The-review-loop-runs-without-hand-steps
+      §5, "A producer seated on another node reads as live", is marked done, but the hook on this host still reports no producer.
+      Either the hook takes a branch §5 did not cover, or the snapshot it reads is missing for these sessions, which matches the
+      directory above.
+    </p>
+
+    <h2 id="s2">§2 — A producer finding a foreign seat waits instead of exiting</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="1" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p>
+      <strong>Deliverable.</strong> When <code>reckon crew watch</code> finds the project's seat held by a live producer on another
+      host, it stays up and re-reads the seat at a bounded interval, taking the seat when that producer's stream goes stale, instead
+      of exiting into the unit's restart. The foreign-seat judgement reuses <code>_seat_names_a_foreign_host</code> and
+      <code>_seat_stream_fresh</code> in <code>reckon/crew/watch_unit.py</code>. <code>--ensure</code> reports a unit whose restart
+      count rises between two readings as cycling, not healthy, with both readings. The unit's restart policy stays as it is, because
+      a crash should still restart it.
+    </p>
+    <p>
+      <strong>Done when</strong> a test gives the watch a seat naming another host with a fresh stream and finds the process still
+      running after three re-read intervals, having written no restart; with the stream made stale it takes the seat. An
+      <code>--ensure</code> test with a unit whose restart count rose between readings reports it cycling. The watch and unit test files
+      show no added failure against base. Negative control: with the wait removed, the first test must see the process exit 0.
+    </p>
+
+    <h2 id="s3">§3 — Follow-on study: why the hook still reads no producer</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p>
+      Reproduce the 2026-10-13 state: a seat on another host with a fresh stream, a session with a follower attached on this host, and
+      no snapshot for that session. Record which branch of <code>reckon/hooks/coordinator_obligations.py</code> prints "no producer", and
+      whether the seated producer publishes snapshots for sessions whose followers attach from another host. Report the branch, the
+      missing step, and whether §5 of the review-loop plan covers it. The positive control is a session on the producer's own host, whose
+      hook must read the snapshot as fresh. This study decides what §4 changes.
+    </p>
+
+    <h2 id="s4">§4 — Every attached session's snapshot is published, whichever host it attaches from</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="1" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p>
+      <strong>Deliverable.</strong> The seated producer publishes an obligations snapshot for every coordinator session with a registered
+      follower in the project, whichever host the follower runs on, and the hook on any host reads it through the same foreign-seat
+      judgement as §2. If §3 finds a different cause, this section is rewritten to that cause before it is dispatched.
+    </p>
+    <p>
+      <strong>Done when</strong> a test registers followers for two sessions on two hosts against one producer and finds a fresh snapshot for
+      each, and the hook on the second host prints the checklist rather than "no producer". Negative control: with publication restricted
+      to the producer's host, the second session's hook must print "no producer".
+    </p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-sheinr-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-13" data-recommends-skill="/reckon-build a-seat-held-elsewhere-is-not-restarted §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Stop the producer unit cycling on the login node</h4>
+    <div class="r-fu-body"><p>§2 stops a restart roughly every 6.7 s on the login node and can be built now. §3 is read-only and decides §4.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-seat-held-elsewhere-is-not-restarted §2</pre>
+    </article>
+</section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-held-session-routes-to-a-serving-lane">
+  <meta name="plan-title" content="A Held Session Routes To A Serving Lane">
+  <meta name="plan-summary" content="Jev routed well-defined work to a local lane that then held the session at zero slots while codex had room; read the session's admission before routing.">
+  <meta name="plan-status" content="draft">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="4.5">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S25">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-north-star" content="unattended-execution">
+  <meta name="plan-after" content="a-held-dispatch-waits-its-fair-turn">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <title>A Held Session Routes To A Serving Lane | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: well-defined work queued behind a full lane while another lane had room</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-status="done" data-links=""></section>
+    <p>
+      The lead's rule for routing, given on 2026-10-13, is that Jev chooses the lane for every role from
+      availability, that reviews prefer the local lane through Jev's guidance rather than a pin, and that
+      "if the lane is congested then well defined work should automatically route to codex (there is high
+      capacity here)". Three measurements from the <code>power_convertor</code> S2 wave that day show where
+      the routing does not do that yet.
+    </p>
+    <table>
+      <thead><tr><th>Measured</th><th>What happened</th><th>Where it lives</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Jev routed to a lane the router then refused for this session</td>
+          <td>At 08:16:20Z Jev routed <code>jccm-lines</code>, a guided implementation node with nine declared write
+          paths and a negative control, to <code>clive</code> (<code>pick-timings.jsonl</code>: decision source
+          <code>jev</code>, outcome <code>route</code>). The router then granted the session no worker:
+          "the lane's router grants 0 extra workers to session 2e812190 (the session's own worker slots); the
+          router's own verdict is open, admission headroom is 2". The node queued. Codex stood at 8 % weekly
+          utilisation. It moved only after the lead said "redispatch to codex, we need this work to move quickly";
+          the codex launch was at 08:24:42Z.</td>
+          <td>The picker's rendered state and the router allowance in <code>reckon/crew/dispatch.py</code></td>
+        </tr>
+        <tr>
+          <td>A thin probe reads as Jev's view</td>
+          <td><code>reckon crew pick</code> given only a goal and a done-when for an S2-shaped node returned hold 0.55,
+          <code>clive</code> 0.19, <code>codex-astra</code> 0.13 (confidence 0.47) at about 07:10Z. Dry-run dispatches of
+          the five real nodes, with write paths, negative controls and estimates, routed all five to codex at 0.59 to
+          0.97 at about 07:56Z. The coordinator took the first reading as the picker's opinion and named lanes by hand,
+          which the lead then questioned. The two readings were 46 minutes apart, so lane state differs between them as
+          well as the inputs.</td>
+          <td><code>reckon crew pick</code></td>
+        </tr>
+        <tr>
+          <td>A lane change drops the run's own waivers</td>
+          <td><code>reckon crew redispatch --run r-20261013T081621924063-jccm-lines --backend codex</code> was refused by
+          the plan-review gate. The run's recorded <code>dispatch_options</code> carried
+          <code>allow_unreviewed_plan: true</code> and <code>accept_directory_claim: true</code>, with the reason in
+          <code>comment</code>. The coordinator discarded the queued pointer and dispatched again, risking the
+          discard race recorded in <code>a-held-dispatch-waits-its-fair-turn</code> §11.</td>
+          <td><code>reckon crew redispatch</code></td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      This plan stays out of the queue's own behaviour, which <code>a-held-dispatch-waits-its-fair-turn</code> owns,
+      including its §13, which queues a Jev hold for the local lane. That section and this one meet at one point:
+      §13 decides what a hold does, and §2 here decides when a route should not become a hold at all.
+    </p>
+
+    <h2 id="s2">§2 — Jev reads the session's own admission before it routes</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="2" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p>
+      <strong>Deliverable.</strong> The state rendered for Jev carries, for each lane with a router, the worker slots
+      the router would grant this coordinator session, taken from the lane document's
+      <code>admission.sessions[session].worker_slots</code> or, when the session is not listed,
+      <code>admission.new_session_worker_slots</code>, in the order the global routing rules already define. The
+      route question's guidance says that a lane granting the session no slot is not available to it now. When a
+      route nonetheless lands on such a lane for an implement or test node at the exact or guided specification
+      level, Jev is asked once more with that lane excluded. The second answer stands, and the record names both
+      asks, so the decision is visible. Routine or open work keeps today's behaviour and is queued under §13 of the
+      queue plan.
+    </p>
+    <p>
+      <strong>Done when</strong> a test renders a state in which the local lane is open lane-wide but grants the session
+      no slot, with codex serving, and finds that a guided implement node is not left queued on the local lane; the same
+      state with the session granted one slot routes as before; an open-specification node in the zero-slot state is
+      still allowed to hold. The picker's and dispatch's test files show no added failure against base. Negative control:
+      without the session figure in the rendered state, the zero-slot case must reproduce the 2026-10-13 queueing.
+    </p>
+
+    <h2 id="s3">§3 — A pick probe uses the inputs a dispatch would</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p>
+      <strong>Deliverable.</strong> <code>reckon crew pick</code> accepts the node fields that dispatch hands to the picker
+      (write paths, negative control, estimated hours and section), and its answer lists any of them the probe left out,
+      so a coordinator can see that a hold may come from what the probe lacked. With every field supplied, a pick and a dry-run
+      dispatch render the same node state for Jev.
+    </p>
+    <p>
+      <strong>Done when</strong> a test renders the node state from a pick and from a dry-run dispatch with the same fields
+      and finds them equal; a pick that omits write paths names them in its answer. Negative control: a pick given fewer
+      fields than the dry-run must render a different state and the equality test must fail.
+    </p>
+
+    <h2 id="s4">§4 — A lane change keeps the run's recorded waivers</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p>
+      <strong>Deliverable.</strong> <code>reckon crew redispatch</code> carries the waivers recorded in the original run's
+      <code>dispatch_options</code> (<code>allow_unreviewed_plan</code>, <code>accept_directory_claim</code> and the reason in
+      <code>comment</code>) into the new launch and records them as carried, so moving a run to another lane is not refused
+      by a gate the original dispatch had already answered. A waiver is never added by a redispatch, only carried. A queued
+      run is moved by redispatch without being discarded, so the move does not race the admission pass.
+    </p>
+    <p>
+      <strong>Done when</strong> a test dispatches a node with <code>--allow-unreviewed-plan</code> against an uncovered plan,
+      redispatches it to another backend, and finds it launched with the waiver recorded as carried; a node dispatched
+      without the waiver is still refused on redispatch. Negative control: with the carry removed, the first case must be
+      refused as on 2026-10-13.
+    </p>
+
+    <h2 id="s5">§5 — Follow-on study: how long held sessions waited while another lane served</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="1" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p>
+      Measure, over the fourteen days to the study, every dispatch that Jev routed to a lane whose router then held the
+      session, by role and specification level, with the time from that hold to launch and the state of every other serving
+      lane at the hold. Separate the two causes of §1's second row by re-asking Jev at a fixed instant with a thin and a full
+      node. Report the share of held well-defined work for which another lane had room, and the total wait it accrued. The
+      positive control is the <code>jccm-lines</code> hold of 08:16:20Z, which the count must include. The result sets whether
+      §2's single re-ask is enough or whether the router allowance belongs in the first ask only.
+    </p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-hsrs-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-13" data-recommends-skill="/reckon-build a-held-session-routes-to-a-serving-lane §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Route well-defined work away from a lane that grants the session nothing</h4>
+    <div class="r-fu-body"><p>§2 is the lead's routing rule made mechanical. §3 and §4 are small and independent of it. §5 can run first, read-only, to size §2.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-held-session-routes-to-a-serving-lane §2</pre>
+    </article>
+</section>
+  </main>
+</body>
+</html>
