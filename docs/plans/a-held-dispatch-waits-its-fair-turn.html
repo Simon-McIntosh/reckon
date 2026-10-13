@@ -24,7 +24,7 @@
   <title>A Held Dispatch Waits Its Fair Turn | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="69">
+<meta name="plan-version" content="70">
 <meta name="plan-modified" content="2026-10-13">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="3c837fc1">
@@ -327,7 +327,10 @@
     <div class="r-comment-body"><p>The section's dead dispatch path is removed and a repair now resumes the reviewed run or is refused; the gone-pointer refusal is read on the real path (CrewError handled, not raised), the dead block, TaskNode and importlib/dispatch launch are deleted with their now-unused imports, and the second refusal read's refused return is kept and recorded only while the pointer is live.</p></div>
 </div>
 <div class="r-comment" data-section="s17" data-id="c-run-r-20261013T152147021988-review-of-a-queued-repair-keeps-its-waiver-5bfa45d03b9f" data-who="reckon-build" data-when="2026-10-13T15:40:46.153Z">
-    <div class="r-comment-body"><p>Independent review of r-20261013T132942072175-a-queued-repair-keeps-its-waiver at head 5bfa45d03 scores six dimensions and finds no blocking defect; three follow-on findings only (gate log labels the pre-commit revision 5f8d320fa rather than the tested tree, the run&#x27;s node write_paths still name the pre-replan test file, and `_config_carrying_suite` survives the removed block as dead code).</p></div>
+    <div class="r-comment-body"><p>Independent review of r-20261013T132942072175-a-queued-repair-keeps-its-waiver at head 5bfa45d03 scores six dimensions and finds no blocking defect; three follow-on findings only (gate log labels the pre-commit revision 5f8d320fa rather than the tested tree, the run's node write_paths still name the pre-replan test file, and `_config_carrying_suite` survives the removed block as dead code).</p></div>
+</div>
+<div class="r-comment" data-section="s17" data-id="c-close-s17" data-who="reckon-build" data-when="2026-10-13T15:50:00Z">
+    <div class="r-comment-body"><p>§17 landed as re-planned. A repair resumes the reviewed run or is refused. A gone pointer is refused instead of raising <code>CrewError</code>. The unreachable composed dispatch is removed, along with the latent waiver defect the section first described. Merged <code>5bfa45d03</code> as <code>ea52f3d15</code>, and the gate replayed green there. Importers: 121 to 123 passed. Review: 102. Follow-on: <code>_config_carrying_suite</code> is now dead, re-exported only from <code>recovery.py</code>. <a href="/reckon/evidence/archive/a-held-dispatch-waits-its-fair-turn-landed.html#s17-repair-one-path">evidence</a></p></div>
 </div>
 </section>
 </main>
