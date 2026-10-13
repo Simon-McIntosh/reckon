@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S26">
-<meta name="plan-version" content="4">
+<meta name="plan-version" content="5">
 <meta name="plan-modified" content="2026-10-13">
 </head>
 <body>
@@ -52,7 +52,7 @@
       <li>delivered sidecars from <code>delivered_reports</code> over <code>_delivered_report_sidecars</code>, in the same module;</li>
       <li>the three digests from <code>_fingerprint_forms</code>, tested for membership the way the stored-review reader does.</li>
     </ul>
-    <p>The census also names two things. First, every caller of <code>collapse_section</code> and of <code>landed_section_ids</code> outside tests. Second, any live run whose write paths claim <code>reckon/crew/plan_review.py</code> or <code>reckon/_store.py</code>, enumerated with <code>list_live()</code> in <code>reckon/crew/routing.py</code> and read per run with <code>declared_claim_paths</code> in <code>reckon/crew/claims.py</code>.</p>
+    <p>The census also names two things. First, every caller of <code>collapse_section</code> and of <code>landed_section_ids</code> outside tests. Second, any live run whose write paths claim <code>reckon/crew/plan_review.py</code> or <code>reckon/_store.py</code>, enumerated with <code>list_live()</code> in <code>reckon/crew/runs.py</code> and read per run with <code>declared_claim_paths</code> in <code>reckon/crew/claims.py</code>.</p>
     <p><strong>Done when</strong> the report under the run directory lists, per project, the count of reviews matching each form, the slugs that match only through the pre-collapse form, and the plans whose covered units shrink when that form is withheld, with the script that produced it. Two fixtures are the controls. A review of a collapsed plan, whose sections are not covered per unit, must be counted as pre-collapse-only and must lose coverage. A review stored under the current section-set form must be counted as neither. Collapse history does not decide the form a review matches: the pre-collapse form is the older definition that kept section declarations in the digest, so a review stored under that definition matches only it, whether or not its plan was ever collapsed. Write paths: the run's own report directory.</p>
 
     <h2 id="s3">§3 — Retire the pre-collapse form and the collapse op</h2>

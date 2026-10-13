@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S26">
-<meta name="plan-version" content="12">
+<meta name="plan-version" content="14">
 <meta name="plan-modified" content="2026-10-13">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;deferred&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="f2ea9301,5b1759ab,428477c7">
@@ -212,7 +212,7 @@
 
     <h2 id="s6">§6 — The dispatch carries a node&#x27;s figures</h2>
 <section data-reckon="section" data-id="s6" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-<p><strong>Why.</strong> §2 made <code>launch_plan</code> emit one <code>-i</code> per image and refuse a dialect that cannot carry one. Nothing yet hands a node's figures to it: the dispatch in <code>reckon/crew/dispatch.py</code> calls <code>launch_plan</code> with no images.</p><p><strong>Deliverable.</strong> <code>TaskNode</code> in <code>reckon/crew/node.py</code> carries the node's figures as an <code>images</code> list, empty by default, and the dispatch passes it to <code>launch_plan</code>. No CLI option is added: §4's figure review is the only caller that sets it.</p><p><strong>Done when</strong> a test dispatches a node carrying two images to a codex backend in a temporary configuration, stops the launch at the process boundary, and finds both <code>-i</code> flags in the argv the launcher would run. The same node on a clive backend is refused with the lane named. The test files importing <code>reckon/crew/node.py</code> show no added failure against base. The negative control drops the images at the dispatch call, and the two-flag case must then fail. It is logged under the run directory. Write paths: <code>reckon/crew/node.py</code>, <code>reckon/crew/dispatch.py</code> and <code>tests/test_dispatch_attaches_the_figures.py</code>.</p>
+<p><strong>Why.</strong> §2 made <code>launch_plan</code> emit one <code>-i</code> per image and refuse a dialect that cannot carry one. Nothing yet hands a node's figures to it: the dispatch in <code>reckon/crew/dispatch.py</code> calls <code>launch_plan</code> with no images.</p><p><strong>Deliverable.</strong> <code>TaskNode</code> in <code>reckon/crew/node.py</code> carries the node's figures as an <code>images</code> list, empty by default, and the dispatch passes it to <code>launch_plan</code>. <code>crew dispatch</code> in <code>reckon/crew_dispatch_commands.py</code> gains a repeatable <code>--image PATH</code> option that sets it, which §7's delivery probe and §8's evaluation use; §4's figure review will set it directly.</p><p><strong>Done when</strong> a test dispatches a node carrying two images to a codex backend in a temporary configuration, stops the launch at the process boundary, and finds both <code>-i</code> flags in the argv the launcher would run. The same node on a clive backend is refused with the lane named. The test files importing <code>reckon/crew/node.py</code> show no added failure against base. The negative control drops the images at the dispatch call, and the two-flag case must then fail. It is logged under the run directory. A second case does the same through <code>crew dispatch --image</code>. Write paths: <code>reckon/crew/node.py</code>, <code>reckon/crew/dispatch.py</code>, <code>reckon/crew_dispatch_commands.py</code> and <code>tests/test_dispatch_attaches_the_figures.py</code>.</p>
 
     <h2 id="s7">§7 — A codex lane declares image input once delivery is shown</h2>
 <section data-reckon="section" data-id="s7" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
@@ -270,6 +270,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-s3-executable-as-s8" data-who="reckon-build" data-when="2026-10-13T02:30:00Z">
     <div class="r-comment-body"><p>§3 states the evaluation but carries no done-when, control or write paths, so it is not dispatched as written. Its executable node is §8, which keeps §3's pairs and its format question and adds the gate. §3 is deferred in its favour.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-s5-current-order" data-who="reckon-build" data-when="2026-10-13T02:40:00Z">
+    <div class="r-comment-body"><p><strong>The order now.</strong> §1 and §2 landed. §6 carries a node's figures through dispatch, §7 measures delivery on one codex lane and only then declares image input, and §8 runs §3's five pairs with a gate. §3 is deferred into §8. §4 is deferred until the lead decides whether a figure review may run on a metered lane. The sequence above, §1 to §4, is the plan as first written.</p></div>
 </div>
 </section>
 </main>
