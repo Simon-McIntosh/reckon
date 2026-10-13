@@ -48,6 +48,10 @@ def test_every_staged_write_reaches_the_owner(trees):
         # that local temporary over the destination, so the rename reaches the
         # owner this census checks.
         ("reckon/crew/fleet_supervisor.py", "_bound_run_file"),
+        # _release_worktree_whole stages its replacement: it os.rename-s the
+        # tree onto a same-filesystem trash directory before git is told to
+        # forget it, so the registered path is vacated by one rename.
+        ("reckon/crew/routing.py", "_release_worktree_whole"),
     }, sorted(observed)
 
 

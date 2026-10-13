@@ -47,6 +47,7 @@ SESSION = "wide-claim-fixture-session"
 
 WIDE_CLAIM = "_live_pointer_worktrees"
 PHASE_GATED_CLAIM = "_live_worktree_claims"
+RELEASE_HELPER = "_release_worktree_whole"
 
 REPOSITORY_ROOT = Path(__file__).resolve().parent.parent
 
@@ -108,15 +109,19 @@ def _literal_argv(call: ast.Call) -> list[str]:
 
 
 def _is_removal_call(node: ast.AST) -> bool:
-    """Whether a call invokes a worktree-removal command.
+    """Whether a call removes a run worktree.
 
-    Both shapes in the package — ``_git(..., "worktree", "remove", ...)`` and a
-    subprocess argv ``["git", "worktree", "remove", ...]`` — carry the literal
-    pair in their argument list, so the command is recognised from the call
-    itself rather than from the name of the helper that issues it.
+    Removal goes through one helper, ``_release_worktree_whole``, which vacates
+    the registered path in a single rename before deleting the copy; a caller of
+    that helper is a removal path. A bare ``git worktree remove`` invocation is
+    recognised too, so a site that reintroduces the non-atomic deletion step is
+    still judged by this rule rather than slipping past the scan.
     """
     if not isinstance(node, ast.Call):
         return False
+    func = node.func
+    if isinstance(func, ast.Name) and func.id == RELEASE_HELPER:
+        return True
     argv = _literal_argv(node)
     return any(
         first == "worktree" and second == "remove"
