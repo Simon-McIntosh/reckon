@@ -396,7 +396,6 @@ section carries the result and a link to the evidence. Never a hand edit.
 | `resolve` | `target`, `id`, `by`, `outcome` or `resolution` | `followups` uses `outcome`; `questions` uses `resolution` |
 | `lock` | `key`, `choice`, `rationale`, `by` | Locks a decision (`data-choice` + by/when). |
 | `move` | `target="sprint_item"`, `slug`, `from`, `to` | Index only. Moves item between sprints. |
-| `collapse_section` | `section`, `summary`, `evidence_anchor` | Retained but no longer used by any skill: replaces the authored body under the section's `h2` with the landed card, keeps the heading and its id, and sets its declaration to `done`, in one versioned write. A bare `evidence_anchor` is the `append_evidence` anchor and links as `/<project>/evidence/archive/<plan>-landed.html#<anchor>`; one the record does not hold is refused. |
 | `append_evidence` | `plan`, `anchor`, `title`, `body` | Landing beat: appends one anchored `<section id=anchor>` to that plan's cumulative landing record, creating the record when absent and refusing a duplicate anchor. |
 | `insert_section` | `id`, `title`, `body`, `effort_hours`, `capability`, `links` | Writes a new `h2` with its typed section record. `capability` is the versioned request object; `effort_hours`, `capability` and `links` are required, not defaulted. |
 
