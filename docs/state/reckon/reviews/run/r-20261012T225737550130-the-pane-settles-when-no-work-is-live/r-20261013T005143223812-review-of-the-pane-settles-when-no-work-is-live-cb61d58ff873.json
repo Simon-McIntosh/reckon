@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs (session-host-follower-base.log and session-host-follower-head.log, named in its manifest test_logs): both arms ran to their summary line at 14 failed / 280 passed / 1 skipped, and the failure id sets are identical, so 0 failures were added against base. The manifest carries no baseline_suite/after_suite JSON keys; the arm logs are the reviewed run's own evidence.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:1370",
+    "reckon/crew_follow_commands.py:2521",
+    "reckon/crew_follow_commands.py:2695",
+    "reckon/crew/session_host.py:472",
+    "reckon/crew/session_host.py:716"
+  ],
+  "completed_at": "2026-10-13T01:11:33.664Z",
+  "dispatched_at": "2026-10-13T00:52:07Z",
+  "findings": [
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": "61",
+      "severity": "follow-on",
+      "text": "follow-on: the gained feature commit adds 15 blank lines against the base revision (60 blank-line changes within the gained diff) and collapses two wrapped expressions, so the manifest's follow_ons claim that it carries no reformatting of untouched lines is contradicted."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "Read both gained commits against the previously reviewed head f14e7d8e; three files changed - one evidence-fragment line, the settle population in reckon/crew_follow_commands.py, and two changed/added cases in the test file.",
+    "done_when": "The section's \"Done when\" list at docs/plans/the-monitor-shows-the-work-it-watches.html:67-73 names tests/test_a_pane_settles_when_no_work_is_live.py, and the manifest records 11 passed EXIT=0 plus a base/head group arm pair. The gate log confirms 11 passed EXIT=0.",
+    "goal": "The source node's goal is the settle of a session's follower pane when _population_has_live_work finds no live run; the gained change at reckon/crew_follow_commands.py:1175 narrows the settle population to the pane's own session plus its observed sessions, which is what section 4's case 2 requires.",
+    "manifest": "Read; it records the focused gate at 11 passed, group arms of 14 failed and 280 passed at both base and head with an identical id set, and a red negative control.",
+    "write_paths": "The manifest declares reckon/crew_follow_commands.py, tests/test_a_pane_settles_when_no_work_is_live.py and the evidence fragment; every path in the gained diff lies inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_pane_settles_when_no_work_is_live.py:219 fails if the settle population reverts to the whole project, and :193 fails if the observed session is dropped from it.",
+    "evidence": "the manifest's test_logs carry the focused gate at 11 passed EXIT=0 and two 14-failed/280-passed group arms, and the added-failure ids derived from those two logs are zero added, matching the manifest.",
+    "fit": "the added names settle_populations and _is_live at reckon/crew_follow_commands.py:1175-1178 are mechanism descriptions carrying no plan, ticket or plan-label.",
+    "goal_fidelity": "reckon/crew_follow_commands.py:1175 sets settle_populations to the pane's own session plus observed_sessions, matching section 4's \"its own session plus the sessions it observes, not the whole project\".",
+    "reuse": "reckon/crew_follow_commands.py:577 _population_has_live_work remains the single owner of the judgement and is called per session rather than re-derived.",
+    "scope_discipline": "every diff path is fenced, but reckon/crew_follow_commands.py:61 carries blank-line additions against the base that the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source node's goal is the settle of a session's follower pane when _population_has_live_work finds no live run; the gained change at reckon/crew_follow_commands.py:1175 narrows the settle population to the pane's own session plus its observed sessions, which is what section 4's case 2 requires.\nVERDICT done_when: The section's \"Done when\" list at docs/plans/the-monitor-shows-the-work-it-watches.html:67-73 names tests/test_a_pane_settles_when_no_work_is_live.py, and the manifest records 11 passed EXIT=0 plus a base/head group arm pair. The gate log confirms 11 passed EXIT=0.\nVERDICT write_paths: The manifest declares reckon/crew_follow_commands.py, tests/test_a_pane_settles_when_no_work_is_live.py and the evidence fragment; every path in the gained diff lies inside them.\nVERDICT manifest: Read; it records the focused gate at 11 passed, group arms of 14 failed and 280 passed at both base and head with an identical id set, and a red negative control.\nVERDICT diff: Read both gained commits against the previously reviewed head f14e7d8e; three files changed - one evidence-fragment line, the settle population in reckon/crew_follow_commands.py, and two changed/added cases in the test file.\nCALL_SITES: reckon/crew_follow_commands.py:1370, reckon/crew_follow_commands.py:2521, reckon/crew_follow_commands.py:2695, reckon/crew/session_host.py:472, reckon/crew/session_host.py:716\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_follow_commands.py:1175 sets settle_populations to the pane's own session plus observed_sessions, matching section 4's \"its own session plus the sessions it observes, not the whole project\".\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest's test_logs carry the focused gate at 11 passed EXIT=0 and two 14-failed/280-passed group arms, and the added-failure ids derived from those two logs are zero added, matching the manifest.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: every diff path is fenced, but reckon/crew_follow_commands.py:61 carries blank-line additions against the base that the goal does not imply.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_pane_settles_when_no_work_is_live.py:219 fails if the settle population reverts to the whole project, and :193 fails if the observed session is dropped from it.\nSCORE fit: 18\nJUSTIFICATION fit: the added names settle_populations and _is_live at reckon/crew_follow_commands.py:1175-1178 are mechanism descriptions carrying no plan, ticket or plan-label.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew_follow_commands.py:577 _population_has_live_work remains the single owner of the judgement and is called per session rather than re-derived.\nFINDING reckon/crew_follow_commands.py:61 follow-on: the gained feature commit adds 15 blank lines against the base revision (60 blank-line changes within the gained diff) and collapses two wrapped expressions, so the manifest's follow_ons claim that it carries no reformatting of untouched lines is contradicted.\n",
+  "review_run_id": "r-20261013T005143223812-review-of-the-pane-settles-when-no-work-is-live-cb61d58ff873",
+  "reviewed_base_sha": "f14e7d8e4bbb990a6c42f0161b1e31d44a5139a5",
+  "reviewed_head_sha": "cb61d58ff873a0d367fa9288fa0249785415f825",
+  "reviewed_run_id": "r-20261012T225737550130-the-pane-settles-when-no-work-is-live",
+  "reviewer": {
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T01:09:20.665513+00:00",
+  "total": 108
+}
