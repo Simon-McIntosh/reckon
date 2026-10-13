@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:_launch_queued",
+    "reckon/crew/queue_admission.py:admit_once",
+    "reckon/crew_dispatch_commands.py:1661-1684"
+  ],
+  "commits_read": [
+    "591428de76bdc33687d58801cd59e12f76b57141"
+  ],
+  "completed_at": "2026-10-13T15:07:09.608Z",
+  "dispatched_at": "2026-10-13T14:30:15Z",
+  "findings": [
+    {
+      "file": "reckon/crew_dispatch_commands.py",
+      "line": "1672",
+      "severity": "blocking",
+      "text": "blocking: the LaneHeld branch hardcodes \"queued\": True and omits the phase, so a dispatch answered by an already-working run reports queued:true with detail \"the local lane queued run ... at position None\", contradicting plan section s14's requirement that the answer carry the run's id and phase; the landed change makes this branch reachable for a working run for the first time, and the coordinator's status-repair.json already records the defect with a repair widening to this file in flight."
+    },
+    {
+      "file": "tests/test_a_node_is_queued_once.py",
+      "line": "198",
+      "severity": "follow-on",
+      "text": "follow-on: the working-run case asserts the CLI payload only for run_id and position and never for queued or phase, so the misreport above is unguarded; the dispatch-layer phase check at line 214 does not reach the CLI payload."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T133003538509-a-node-is-queued-once/manifest.md",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest records no baseline_suite or after_suite, so annotate_review_of_run derives no added-failure count and the negative control cannot be admitted against a readable comparison arm."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read the single commit 591428de7 against base 63a7f6d8 \u2014 it adds existing_node_run, write_handover, clear_handover, sweep_handovers and the dispatch existing-node check, all inside the declared write paths.",
+    "done_when": "plan section s14 lists five behaviours, each present and green in gate.log \u2014 tests/test_a_node_is_queued_once.py:164 (handover writes no second pointer at :176), :198 (working run reported, engine phase checked at :214), :221 and :241 (queued request updated in place), :265 and :283 (only the same node deduplicated).",
+    "goal": "the node goal (prompt.txt:30, \"a node is queued at most once per session while any run of it is queued, being admitted or in flight\") is delivered at the dispatch layer \u2014 reckon/crew/dispatch.py:1071-1104 answers an existing run with LaneHeld and writes no second pointer \u2014 but the CLI answer at reckon/crew_dispatch_commands.py:1672 hardcodes queued:true and drops the phase the plan requires.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T133003538509-a-node-is-queued-once/manifest.md \u2014 its status was repaired complete to blocked by status-repair.json (\"the CLI reports an already-working run as queued true with no phase\"); it records 24 passed plus a 14-file 106-passed sweep and names gate.log and negative-control.log, but carries no baseline_suite or after_suite.",
+    "write_paths": "the manifest declares reckon/crew/runs.py, reckon/crew/queue_admission.py, reckon/crew/dispatch.py, tests/test_a_node_is_queued_once.py and docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/a-node-is-queued-once.html; git diff 63a7f6d8..591428de touches exactly those five paths and nothing else."
+  },
+  "justifications": {
+    "durability": "the five done-when cases are pinned by tests/test_a_node_is_queued_once.py:164-299 and the negative control reddens :176 and :192, but tests/test_a_node_is_queued_once.py:198-210 asserts the working-run CLI output only for run_id and position, so nothing fails if the CLI misreports a working run as queued.",
+    "evidence": "gate.log records 24 passed at 591428de7 and negative-control.log records EXIT=1 with two failing ids, but the reviewed manifest names no baseline_suite or after_suite, so the control has no readable comparison arm and the done-when's \"no added failure against base\" has no recorded base arm.",
+    "fit": "the additions follow the surrounding idiom of reckon/crew/runs.py and reckon/crew/dispatch.py and introduce no name the naming rules forbid.",
+    "goal_fidelity": "the dedup behaviour holds at reckon/crew/dispatch.py:1071-1104 and reckon/crew/queue_admission.py:606-635, but the answer the plan requires, the run's id and phase, is dropped by the CLI at reckon/crew_dispatch_commands.py:1672, which reports a working run as queued:true.",
+    "reuse": "the change extracts the request identity into one _node_identity (reckon/crew/runs.py:376) reused by queue_dispatch and existing_node_run, and no existing owner provides a record naming a run for a node during its pointer gap (searched acknowledgements_dir at reckon/crew/runs.py:1328 and the discards spool).",
+    "scope_discipline": "git diff 63a7f6d8..591428de shows exactly the five declared paths with nothing the goal does not imply."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal (prompt.txt:30, \"a node is queued at most once per session while any run of it is queued, being admitted or in flight\") is delivered at the dispatch layer \u2014 reckon/crew/dispatch.py:1071-1104 answers an existing run with LaneHeld and writes no second pointer \u2014 but the CLI answer at reckon/crew_dispatch_commands.py:1672 hardcodes queued:true and drops the phase the plan requires.\nVERDICT done_when: plan section s14 lists five behaviours, each present and green in gate.log \u2014 tests/test_a_node_is_queued_once.py:164 (handover writes no second pointer at :176), :198 (working run reported, engine phase checked at :214), :221 and :241 (queued request updated in place), :265 and :283 (only the same node deduplicated).\nVERDICT write_paths: the manifest declares reckon/crew/runs.py, reckon/crew/queue_admission.py, reckon/crew/dispatch.py, tests/test_a_node_is_queued_once.py and docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/a-node-is-queued-once.html; git diff 63a7f6d8..591428de touches exactly those five paths and nothing else.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T133003538509-a-node-is-queued-once/manifest.md \u2014 its status was repaired complete to blocked by status-repair.json (\"the CLI reports an already-working run as queued true with no phase\"); it records 24 passed plus a 14-file 106-passed sweep and names gate.log and negative-control.log, but carries no baseline_suite or after_suite.\nVERDICT diff: read the single commit 591428de7 against base 63a7f6d8 \u2014 it adds existing_node_run, write_handover, clear_handover, sweep_handovers and the dispatch existing-node check, all inside the declared write paths.\nCALL_SITES: reckon/crew/queue_admission.py:_launch_queued, reckon/crew/queue_admission.py:admit_once, reckon/crew_dispatch_commands.py:1661-1684\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: the dedup behaviour holds at reckon/crew/dispatch.py:1071-1104 and reckon/crew/queue_admission.py:606-635, but the answer the plan requires, the run's id and phase, is dropped by the CLI at reckon/crew_dispatch_commands.py:1672, which reports a working run as queued:true.\nSCORE evidence: 14\nJUSTIFICATION evidence: gate.log records 24 passed at 591428de7 and negative-control.log records EXIT=1 with two failing ids, but the reviewed manifest names no baseline_suite or after_suite, so the control has no readable comparison arm and the done-when's \"no added failure against base\" has no recorded base arm.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 63a7f6d8..591428de shows exactly the five declared paths with nothing the goal does not imply.\nSCORE durability: 15\nJUSTIFICATION durability: the five done-when cases are pinned by tests/test_a_node_is_queued_once.py:164-299 and the negative control reddens :176 and :192, but tests/test_a_node_is_queued_once.py:198-210 asserts the working-run CLI output only for run_id and position, so nothing fails if the CLI misreports a working run as queued.\nSCORE fit: 18\nJUSTIFICATION fit: the additions follow the surrounding idiom of reckon/crew/runs.py and reckon/crew/dispatch.py and introduce no name the naming rules forbid.\nSCORE reuse: 18\nJUSTIFICATION reuse: the change extracts the request identity into one _node_identity (reckon/crew/runs.py:376) reused by queue_dispatch and existing_node_run, and no existing owner provides a record naming a run for a node during its pointer gap (searched acknowledgements_dir at reckon/crew/runs.py:1328 and the discards spool).\nFINDING reckon/crew_dispatch_commands.py:1672 blocking: the LaneHeld branch hardcodes \"queued\": True and omits the phase, so a dispatch answered by an already-working run reports queued:true with detail \"the local lane queued run ... at position None\", contradicting plan section s14's requirement that the answer carry the run's id and phase; the landed change makes this branch reachable for a working run for the first time, and the coordinator's status-repair.json already records the defect with a repair widening to this file in flight.\nFINDING tests/test_a_node_is_queued_once.py:198 follow-on: the working-run case asserts the CLI payload only for run_id and position and never for queued or phase, so the misreport above is unguarded; the dispatch-layer phase check at line 214 does not reach the CLI payload.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T133003538509-a-node-is-queued-once/manifest.md:1 follow-on: the manifest records no baseline_suite or after_suite, so annotate_review_of_run derives no added-failure count and the negative control cannot be admitted against a readable comparison arm.",
+  "review_run_id": "r-20261013T142945275709-review-of-a-node-is-queued-once-591428de76bd",
+  "reviewed_base_sha": "63a7f6d8d2f2901083cb54370b317b2963a04cb5",
+  "reviewed_head_sha": "591428de76bdc33687d58801cd59e12f76b57141",
+  "reviewed_run_id": "r-20261013T133003538509-a-node-is-queued-once",
+  "scores": {
+    "durability": 15,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 15,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "subject": "node",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T15:05:31.788922+00:00",
+  "total": 99
+}

@@ -24,7 +24,7 @@
   <title>A Held Dispatch Waits Its Fair Turn | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="65">
+<meta name="plan-version" content="66">
 <meta name="plan-modified" content="2026-10-13">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="3c837fc1">
@@ -301,6 +301,9 @@
 </div>
 <div class="r-comment" data-section="s14" data-id="c-same-node-redispatch-scope-conflict" data-who="health-review-1010" data-when="2026-10-13T11:10:00Z">
     <div class="r-comment-body"><p><strong>Evidence for §14, 2026-10-13.</strong> A re-dispatch of an already-queued node, with the same session, node id, plan and section, is meant to update that pointer in place. <code>queue_dispatch</code> does so, and keeps the pointer's run id, position and <code>queued_at</code>. On reckon, though, reckon-cd's re-dispatch of a queued review with <code>--allow-unreconciled-runs</code> was refused before it got there. It exited 7 with <code>scope-conflict</code> on the review record path, and the conflicting live claim was the queued pointer's own: the scope check runs before the same-node match. The same move succeeded on three imas-codex pointers, so the conflict depends on how a node's write paths are claimed. When §14 is built, a dispatch matching a queued pointer on session, node, plan and section must not conflict with that pointer's own claim. The fix sits in <code>dispatch.py</code>, which §14 is already owed.</p></div>
+</div>
+<div class="r-comment" data-section="s14" data-id="c-run-r-20261013T142945275709-review-of-a-node-is-queued-once-591428de76bd" data-who="reckon-build" data-when="2026-10-13T15:07:09.608Z">
+    <div class="r-comment-body"><p>stored a parsed review of run r-20261013T133003538509-a-node-is-queued-once at reviewed head 591428de76bdc33687d58801cd59e12f76b57141 (base 63a7f6d8d2f2901083cb54370b317b2963a04cb5): six dimension scores (goal_fidelity 15, evidence 14, scope_discipline 19, durability 15, fit 18, reuse 18; total 99), five item verdicts and a CALL_SITES line, and three findings — one blocking (crew_dispatch_commands.py:1672 reports an already-working run as queued:true with no phase) beside two follow-ons.</p></div>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261013T123509795714-review-of-a-review-is-not-refused-for-its-run-024aaac43cb9" data-who="reckon-build" data-when="2026-10-13T12:53:04.182Z">
     <div class="r-comment-body"><p>review of r-20261013T114403986234-a-review-is-not-refused-for-its-run at head 024aaac43 (base 737c9d7ef): stored a parsed review scoring all 6 dimensions (goal_fidelity 18, evidence 16, scope_discipline 19, durability 16, fit 18, reuse 19; total 106), reviewed_base_sha 737c9d7ef55ef537e51, reviewed_head_sha 024aaac43cb9549893a5dce4664defd3c3bd374b; no blocking finding, two follow-on findings; the relaunch carries the waiver and the gate test re-runs green at head (4 passed).</p></div>
