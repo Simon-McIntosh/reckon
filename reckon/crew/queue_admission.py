@@ -23,6 +23,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from reckon._timestamps import parse_utc
 from reckon.crew import queue_order, runs
 from reckon.crew.dispatch_admission import (
     _LANE_GATE_WAITING_STATES,
@@ -358,12 +359,9 @@ def _retry_backoff_hold(
     retry_at = pointer.get("retry_at")
     if not retry_at:
         return None
-    try:
-        when = datetime.fromisoformat(str(retry_at))
-    except ValueError:
+    when = parse_utc(retry_at)
+    if when is None:
         return None
-    if when.tzinfo is None:
-        when = when.replace(tzinfo=UTC)
     if moment < when:
         return (
             f"last attempt failed: {_failure_text(failure)}; "
