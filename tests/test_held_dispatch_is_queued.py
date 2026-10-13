@@ -76,10 +76,11 @@ def test_held_local_dispatch_is_one_queued_pointer_and_can_be_discarded(
 
     first = _dispatch(dispatch_repo)
     first_payload = backend_tests._payload(first)
-    assert first.exit_code == 75
+    assert first.exit_code == 0
+    assert first_payload["ok"] is True
+    assert first_payload["queued"] is True
     assert first_payload["run_id"]
     assert first_payload["position"] == 1
-    assert first_payload["error"] == "lane-paused"
     pointers = runs.list_live(project="proj")
     assert len(pointers) == 1
     queued = pointers[0]
@@ -105,7 +106,8 @@ def test_held_local_dispatch_is_one_queued_pointer_and_can_be_discarded(
 
     second = _dispatch(dispatch_repo, "held-node", "--comment", "updated request")
     second_payload = backend_tests._payload(second)
-    assert second.exit_code == 75
+    assert second.exit_code == 0
+    assert second_payload["queued"] is True
     assert second_payload["run_id"] == queued["run_id"]
     assert second_payload["position"] == 1
     assert len(runs.list_live(project="proj")) == 1
@@ -169,7 +171,8 @@ def test_named_local_backend_queues_without_a_local_flag(
             "--no-watch",
         ],
     )
-    assert result.exit_code == 75
+    assert result.exit_code == 0
+    assert backend_tests._payload(result)["queued"] is True
     assert backend_tests._payload(result)["position"] == 1
     assert runs.list_live(project="proj", phase="queued")[0]["local"] is True
 
