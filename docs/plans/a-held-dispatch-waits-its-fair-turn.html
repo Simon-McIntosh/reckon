@@ -24,7 +24,7 @@
   <title>A Held Dispatch Waits Its Fair Turn | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="59">
+<meta name="plan-version" content="60">
 <meta name="plan-modified" content="2026-10-13">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="3c837fc1">
@@ -307,6 +307,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261013T114403986234-a-review-is-not-refused-for-its-run" data-who="reckon-build" data-when="2026-10-13T12:34:22.668Z">
     <div class="r-comment-body"><p>§10 — Two composed-review callers (the reflex in reckon/crew/recovery_review_dispatch.py and the composed plan-review dispatches in reckon/crew/plan_review.py) now record allow_unreconciled_runs in the dispatch_options they pass, so a lane hold queues the review with its waiver and the admission pass relaunches it with the same exemption instead of failing UnreconciledRuns; the stranded-review reader now reads its discard marker from the run directory or the shared discards spool, keeping the strand reason for a never-launched review. Measure: focused gate reports 4 passed at head (tests/test_a_review_is_not_refused_for_its_run.py) and 71 passed across the reflex, stranded-review, plan-review and queue-admission files.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-close-s10" data-who="reckon-build" data-when="2026-10-13T13:10:00Z">
+    <div class="r-comment-body"><p>§10 landed. Every review-queueing path records the unreconciled waiver in its dispatch options, so an admitted relaunch keeps it and the review deadlock ends. The stranded-review reader also finds the spool marker. Merged <code>024aaac43</code> as <code>43a27bedd</code>, with the gate replayed green there. Population: 453 to 453. Review: 106. The repair-dispatch twin of this defect is §17. <a href="/reckon/evidence/archive/a-held-dispatch-waits-its-fair-turn-landed.html#s10-review-not-refused">evidence</a></p></div>
 </div>
 </section>
 </main>
