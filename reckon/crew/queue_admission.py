@@ -29,6 +29,7 @@ from reckon.crew.dispatch_admission import (
     LaneHeld,
     LanePaused,
     _dispatch_fleet_gate,
+    _dispatch_lane_gate,
 )
 from reckon.crew.dispatch_plan import _dispatch_lane_allowance
 from reckon.crew.node import CrewError, TaskNode
@@ -179,6 +180,35 @@ def _session_allowance(
     return float(allowance)
 
 
+def _lane_gate_hold(
+    pointer: Mapping[str, Any],
+    *,
+    config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None,
+) -> str | None:
+    """The reason the lane's gate would refuse this request, or ``None``.
+
+    The shared dispatch path reads the lane's gate document before it creates a
+    worktree, and a paused or unreadable gate holds the launch there. Asking the
+    same question here, before the queued pointer is released, lets a request the
+    gate holds stay exactly as it is: no release, no failed launch,
+    no re-queue for a request whose state never moved. The companion question —
+    the session's lane allowance — is asked by :func:`_session_allowance`, whose
+    ``0`` holds the session; together they are the two the dispatch path asks.
+    """
+    config = (
+        config_for(pointer) if config_for is not None else _resolve_lane_config(pointer)
+    )
+    backend = (config.get("backends") or {}).get(str(pointer.get("backend") or ""))
+    if not isinstance(backend, Mapping) or not backend:
+        return None
+    gate = _dispatch_lane_gate(backend)
+    if gate.get("state") in _LANE_GATE_WAITING_STATES:
+        return str(
+            gate.get("detail") or gate.get("reason") or gate.get("state") or "held"
+        )
+    return None
+
+
 def _requeue_admitted_failures(live: list[dict[str, Any]]) -> list[str]:
     """Re-queue runs this drainer launched that the reaper marked launch-failed.
 
@@ -314,6 +344,15 @@ def admit_once(
             allowance = remaining[session]
             if allowance is not None and allowance <= 0:
                 result["held"].append(str(pointer["run_id"]))
+                continue
+            gate_hold = _lane_gate_hold(pointer, config_for=config_for)
+            if gate_hold is not None:
+                # The gate would refuse the launch the release below feeds into,
+                # so the request is left where it is: releasing it would emit a
+                # withdrawal and a re-queue for a state that never moved. The
+                # session-allowance hold above is the same question's other half.
+                result["held"].append(str(pointer["run_id"]))
+                result.setdefault("hold_detail", {})[str(pointer["run_id"])] = gate_hold
                 continue
             snapshot = copy.deepcopy(dict(pointer))
             record = None
