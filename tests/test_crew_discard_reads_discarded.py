@@ -3,7 +3,7 @@
 A run leaves the fleet in three shapes a live pointer cannot tell apart by
 itself: a promotion that wrote its ledger row, a discard a coordinator asked
 for, and a pointer reaped or removed by hand. The first two are deliberate and
-leave a trail — a ledger row and a run-directory marker respectively — so a
+leave a trail — a ledger row and a discard marker respectively — so a
 reader can act on the word instead of guessing. Reading a discard as the same
 ``withdrawn`` a vanished pointer produces hides the coordinator's own act, and
 reading it as ``promoted`` promises work that never landed.
@@ -150,12 +150,15 @@ def test_a_pointer_that_vanishes_with_neither_reads_withdrawn(home: Path) -> Non
     assert folded[0][2] == "withdrawn"
 
 
-def test_a_discard_leaves_no_record_when_its_run_directory_is_gone(home: Path) -> None:
-    """A discard whose run directory has gone is not resurrected by its marker.
+def test_a_discarded_run_reports_discarded_when_its_run_directory_is_gone(
+    home: Path,
+) -> None:
+    """A discard whose run directory has gone is still recorded and reads discarded.
 
     The run directory is the run's own durable home; a discard that recreated it
-    would bring a discarded run back into existence. A run whose home is already
-    gone departs withdrawn, which is the safe word, and no directory is made.
+    would bring a discarded run back into existence. So a run whose home is
+    already gone records its departure in the shared spool instead, and departs
+    discarded rather than the bare withdrawal a hand-removed pointer earns.
     """
     pointer = _blocked_run(home, "r-homeless")
     snapshot = _snapshot(pointer)
@@ -163,10 +166,10 @@ def test_a_discard_leaves_no_record_when_its_run_directory_is_gone(home: Path) -
 
     result = crew.discard("r-homeless")
 
-    assert result["discard_record"] is None
+    assert result["discard_record"] == str(promotion.discard_spool_path("r-homeless"))
     assert not crew.run_dir("r-homeless").exists()
     folded, _ = recovery.fleet_transitions({"r-homeless": snapshot}, {})
-    assert folded[0][2] == "withdrawn"
+    assert folded[0][2] == "discarded"
 
 
 def test_the_real_crew_directories_are_untouched(home: Path) -> None:

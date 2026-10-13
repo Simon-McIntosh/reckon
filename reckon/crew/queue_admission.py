@@ -23,6 +23,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from reckon._timestamps import parse_utc
 from reckon.crew import queue_order, runs
 from reckon.crew.dispatch_admission import (
     _LANE_GATE_WAITING_STATES,
@@ -358,12 +359,9 @@ def _retry_backoff_hold(
     retry_at = pointer.get("retry_at")
     if not retry_at:
         return None
-    try:
-        when = datetime.fromisoformat(str(retry_at))
-    except ValueError:
+    when = parse_utc(retry_at)
+    if when is None:
         return None
-    if when.tzinfo is None:
-        when = when.replace(tzinfo=UTC)
     if moment < when:
         return (
             f"last attempt failed: {_failure_text(failure)}; "
@@ -433,6 +431,22 @@ def _write_pointer(run_id: str, record: dict[str, Any]) -> None:
     runs._write_json(runs.pointer_path(run_id), record)
 
 
+def _discarded_since(snapshot: Mapping[str, Any]) -> bool:
+    """Whether a deliberate discard has been recorded for this request.
+
+    The pass holds the queued pointer in memory while it attempts a launch and
+    writes it back when the launch does not survive. A ``crew discard`` issued in
+    that window removes the pointer and records the departure — in the run
+    directory, or in the shared discards spool for a request that never launched
+    and so has no run directory. Without this reading the restore would write the
+    request back and undo the discard. The record's presence is the fact the
+    restore reads.
+    """
+    from reckon.crew.promotion import discard_recorded
+
+    return discard_recorded(str(snapshot["run_id"]))
+
+
 def _restore_queued(
     snapshot: Mapping[str, Any],
     failure: str,
@@ -444,8 +458,12 @@ def _restore_queued(
 
     The restored pointer carries the same bounded back-off a failure annotated
     in place would: a request whose release already withdrew it is retried once
-    per back-off, not on every pass.
+    per back-off, not on every pass. A request discarded during the pass is not
+    written back at all: the discard stood, so the restore reads its record and
+    leaves the absence the operator asked for.
     """
+    if _discarded_since(snapshot):
+        return
     restored = copy.deepcopy(dict(snapshot))
     restored["phase"] = "queued"
     _stamp_failure(restored, failure, moment=moment or _now(), guard=guard)
