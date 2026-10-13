@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-read-answers-inside-its-deadline">
+  <meta name="plan-evidence-for" content="reckon:a-read-answers-inside-its-deadline">
+  <meta name="plan-verifies" content="reckon:a-read-answers-inside-its-deadline#s8">
+  <meta name="plan-recorded-at" content="2026-10-13">
+  <meta name="plan-verdict" content="passed">
+  <title>One read walks the tree once | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="one-read-walks-the-tree-once-landing" data-node="one-read-walks-the-tree-once" data-reckon="landed" data-when="2026-10-13">
+  <h2>One read walks the resource tree once, whatever flags its callers ask for</h2>
+  <p>Inside <code>resource_scan_scope</code> the scan was keyed on <code>include_archived</code>, <code>include_legacy</code> and <code>ignore_invalid</code>, so a read whose callers asked for different flag combinations walked the docs tree once per combination — four walks for <code>roadmap</code>. The scope now walks once per docs tree with the widest archived and legacy flags and each caller filters that result to the resources its own flags select; callers inside a scope all pass <code>ignore_invalid=True</code>, so that flag needs no filtering and a strict caller outside a scope keeps its own scan and its raise. In <code>tests/test_a_warm_read_scans_the_tree_once.py</code> a wrapped <code>_scan_resources</code> is called once across four distinct flag combinations and each caller receives exactly its selection; under the declared mutation — re-keying the scope on each flag combination — the same test counts four walks and fails (EXIT=1). The gate over every test file importing <code>reckon/resources.py</code> reads 3 failed, 2873 passed at <code>99e38e7ac</code> against 3 failed, 2 errors, 2867 passed at base <code>f43062fc8</code>: zero added failures, the shared ids failing on both arms.</p>
+</article>
+</body>
+</html>
