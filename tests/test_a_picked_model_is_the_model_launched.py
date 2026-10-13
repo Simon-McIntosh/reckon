@@ -60,6 +60,9 @@ fences:
 
 # The model catalogue resolves a recorded model id back to its lane and key, so
 # the run record's ``model_key`` carries ``astra`` beside the id the argv holds.
+# ``astra-legacy`` is a catalogue-only historical alias: the flight config names
+# no such alias on any backend, so only a resolver that consults the catalogue
+# reaches the entry it points at.
 CATALOGUE = {
     "version": 1,
     "lanes": {
@@ -71,6 +74,7 @@ CATALOGUE = {
             },
         }
     },
+    "aliases": {"astra-legacy": {"lane": "codex", "model_key": "astra"}},
 }
 
 
@@ -190,9 +194,13 @@ def test_a_picked_model_reaches_the_launch_argv(
     assert payload["picker_selection"]["model"] == "astra"
 
     config = flight_module.resolve("sample", checkout_path=repo).config
+    # The launch plan is built from the backend dispatch actually resolved, not
+    # the literal the pick named: a regression that resolved the lane default
+    # would compose the default's argv, and this assertion would catch it.
+    resolved = payload["backend"]
     plan = _backends.launch_plan(
-        backend_name="codex-astra",
-        backend=config["backends"]["codex-astra"],
+        backend_name=resolved,
+        backend=config["backends"][resolved],
         prompt="p",
         worktree=str(repo),
         fence=False,
@@ -235,3 +243,104 @@ def test_a_model_the_lane_does_not_declare_is_refused(
     assert payload["ok"] is False
     assert "codex" in payload["detail"]
     assert "ghost" in payload["detail"]
+
+
+def _deterministic_arguments(repo: Path, backend: str, model: str) -> list[str]:
+    """A dispatch that resolves the named pair through ``--model``.
+
+    ``--route deterministic`` keeps the picker off the path so the ``--model``
+    narrowing is the path under test, exactly as a caller naming a lane and a
+    model on the command line reaches it.
+    """
+    return [
+        *_arguments(repo),
+        "--route",
+        "deterministic",
+        "--backend",
+        backend,
+        "--model",
+        model,
+    ]
+
+
+def test_a_catalogue_alias_reaches_the_same_backend_on_both_routes(
+    home: Path, repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A catalogue-only alias resolves to the same backend and model on both the
+    ``--model`` route and the picker route.
+
+    The alias is declared only in the catalogue, never on a flight backend, so
+    the two routes agree only when each narrows through the one catalogue
+    resolver rather than matching flight fields by hand.
+    """
+    (home / "flight.yaml").write_text(FLIGHT, encoding="utf-8")
+
+    named = CliRunner().invoke(
+        cli.main, _deterministic_arguments(repo, "codex", "astra-legacy")
+    )
+    assert named.exit_code == 0, named.output
+    named_payload = json.loads(named.output.splitlines()[0])
+
+    _install_picker(monkeypatch, _selection("route", "codex", "astra-legacy"))
+    picked = CliRunner().invoke(cli.main, _arguments(repo))
+    assert picked.exit_code == 0, picked.output
+    picked_payload = json.loads(picked.output.splitlines()[0])
+
+    assert named_payload["backend"] == "codex-astra"
+    assert picked_payload["backend"] == named_payload["backend"]
+    assert picked_payload["agent"]["model"] == named_payload["agent"]["model"]
+    assert named_payload["agent"]["model"] == "gpt-6-astra"
+
+
+def test_an_undeclared_pair_is_refused_identically_on_both_routes(
+    home: Path, repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Both routes refuse an undeclared pair with the same message."""
+    (home / "flight.yaml").write_text(FLIGHT, encoding="utf-8")
+
+    named = CliRunner().invoke(
+        cli.main, _deterministic_arguments(repo, "codex", "ghost")
+    )
+    assert named.exit_code != 0, named.output
+    named_refusal = json.loads(named.output.splitlines()[0])
+
+    _install_picker(monkeypatch, _selection("route", "codex", "ghost"))
+    picked = CliRunner().invoke(cli.main, _arguments(repo))
+    assert picked.exit_code != 0, picked.output
+    picked_refusal = json.loads(picked.output.splitlines()[0])
+
+    assert named_refusal["detail"] == picked_refusal["detail"]
+    assert "codex" in named_refusal["detail"]
+    assert "ghost" in named_refusal["detail"]
+
+
+def test_both_callers_narrow_through_the_shared_resolver(
+    home: Path, repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Neither ``--model`` nor the picker route keeps its own narrowing code.
+
+    The shared resolver is patched with a spy that records each call and
+    delegates, so a caller that re-implemented the narrowing would resolve the
+    pair without reaching the spy and the recorded calls would not appear.
+    """
+    (home / "flight.yaml").write_text(FLIGHT, encoding="utf-8")
+    calls: list[tuple[str | None, str]] = []
+    real = ledger.backend_serving_model
+
+    def spy(config, *, lane, model):
+        calls.append((lane, model))
+        return real(config, lane=lane, model=model)
+
+    monkeypatch.setattr(ledger, "backend_serving_model", spy)
+
+    _install_picker(monkeypatch, _selection("route", "codex", "astra"))
+    picked = CliRunner().invoke(cli.main, _arguments(repo))
+    assert picked.exit_code == 0, picked.output
+    assert ("codex", "astra") in calls
+
+    calls.clear()
+    named = CliRunner().invoke(
+        cli.main, _deterministic_arguments(repo, "codex", "astra")
+    )
+    assert named.exit_code == 0, named.output
+    assert ("codex", "astra") in calls
