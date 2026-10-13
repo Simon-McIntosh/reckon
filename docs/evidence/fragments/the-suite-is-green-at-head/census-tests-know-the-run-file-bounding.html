@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s7">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-recorded-at" content="2026-10-13">
+  <meta name="plan-tags" content="census,fleet-supervisor,run-file,staged-write">
+  <title>The census tests know the run-file bounding code | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main>
+<article class="r-note" data-node="census-tests-know-the-run-file-bounding" data-reckon="landed" data-when="2026-10-13">
+  <h2 id="census-tests-know-the-run-file-bounding">The census tests know the run-file bounding code</h2>
+  <p>Both census ids pass (81 passed, EXIT=0). <code>_run_file_is_binary</code>
+  is named as the raw-reader census's exemption: it probes a file's head for a
+  NUL byte and never reads an authored plan section, so the <code>.h5</code>
+  suffix literal in <code>RUN_FILE_BINARY_SUFFIXES</code> that the rule mistakes
+  for an h5 heading is the operator, not a document-recognition site.
+  <code>_bound_run_file</code> is named in the staged-write inventory: it writes
+  its replacement to a <code>mkstemp</code> temporary beside the run file and
+  <code>os.replace</code>-s that local temporary over the destination. The
+  declared mutation, a raw-text plan-section reader added to a scratch copy of
+  <code>fleet_supervisor.py</code>, is caught: the mutation run fails the
+  raw-reader census id (EXIT=1) and the census reports the added function.</p>
+</article>
+</main>
+</body>
+</html>
