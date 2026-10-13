@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.98">
-<meta name="plan-version" content="296">
+<meta name="plan-version" content="297">
 <meta name="plan-modified" content="2026-10-13">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
@@ -1643,6 +1643,9 @@ reviewed worktree is untouched (git status --porcelain empty).</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261013T034811621237-review-of-test-crew-shadow-moves-out-dd9567b18082" data-who="reckon-build" data-when="2026-10-13T04:03:41.497Z">
     <div class="r-comment-body"><p>Independently reviewed run r-20261013T030612958004-test-crew-shadow-moves-out at base a99e008e..head dd9567b18; the move of the fourteen test_shadow_* tests and two candidate-config helpers into tests/test_crew_shadow.py is faithful (moved bodies match the removed bodies line for line), the window test names neither target file, and the pre-move 206-test collection is preserved (base test_crew.py 206 = head 192+14); two follow-on findings recorded.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261013T030612958004-test-crew-shadow-moves-out" data-who="reckon-build" data-when="2026-10-13T03:47:00.822Z">
+    <div class="r-comment-body"><p>Moved the fourteen test_shadow_* tests and the two candidate-config helpers only they use from tests/test_crew.py to tests/test_crew_shadow.py, bringing test_crew.py from 50332 to 45087 estimated tokens and test_crew_shadow.py to 5517, both under the 50000 worker-window bound and neither named by the window test; the two files collect 206 tests together, the same count test_crew.py held before the move.</p></div>
 </div>
 </section>
 </main>
