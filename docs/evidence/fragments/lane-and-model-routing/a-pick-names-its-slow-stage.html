@@ -1,0 +1,55 @@
+<article class="landed-report" data-run-id="r-20261013T092400508839-a-pick-names-its-slow-stage" data-node="a-pick-names-its-slow-stage">
+  <h3 id="a-pick-names-its-slow-stage-summary">a-pick-names-its-slow-stage — a pick records each stage's time and names the stage a deadline ran out in</h3>
+  <p id="a-pick-names-its-slow-stage-change">
+    A dispatch-path pick runs a known sequence of stages — the ledger records,
+    the verdict inputs, the budget snapshot, the context estimate, and the Jev
+    call — all under one wait,
+    <code>PICKER_DISPATCH_TIMEOUT_SECONDS</code> (5 s) in
+    <code>reckon/crew/dispatch_picker.py</code>. When that wait expired the
+    recorded selection read <code>fallback_reason: "timeout"</code> whatever had
+    actually spent the budget, so every expiry read as a Jev timeout though most
+    of the pick is spent before Jev: over 2026-10-12/13, 91 picks fell back as
+    <code>timeout</code> while Jev itself answered in 0.3–0.6 s.
+    <code>dispatch_picker_selection</code> now times every stage and carries the
+    elapsed milliseconds of all five on the returned selection under
+    <code>stage_ms</code>. When the deadline expires it names the stage still
+    running — <code>fallback_reason: "timeout in budget-snapshot"</code> — and
+    records the same <code>stage_ms</code> map with <code>None</code> for the
+    stage that did finish and the finished stages' times beside it. The three
+    dispatcher-scope inputs are marked while they run (through
+    <code>build_picker_inputs</code>), so a slow input is attributed to itself;
+    the context estimate and the Jev call are timed but not marked, because
+    neither is a single dispatch stage a reader can act on and an expiry inside
+    the opaque picker call is the one reading that legitimately stays bare.
+    <code>reckon/crew/picker/outcomes.py</code> classifies a staged timeout by
+    its stage (a staged reason summarises under the key
+    <code>timeout:&lt;stage&gt;</code>) while a bare <code>timeout</code> remains
+    its own count, so a report shows which stages spend the pick's budget rather
+    than collapsing them into one.
+  </p>
+  <p id="a-pick-names-its-slow-stage-measure">
+    <strong>Measure.</strong> Gate: <code>tests/test_a_pick_names_its_slow_stage.py</code>
+    and every test file importing <code>reckon/crew/dispatch_picker.py</code> or
+    <code>reckon/crew/picker/outcomes.py</code> (22 files), run in place on the
+    fleet allocation with the shared environment's
+    <code>.venv/bin/python -m pytest -p no:cacheprovider -n 8</code>. Base arm at
+    <code>3f0b9158ad3ef1ca6a28bf744f09fdbf8e58f245</code>: 188 passed,
+    <code>EXIT=0</code> — no failures in the importer files. Head arm with the
+    change: 195 passed, <code>EXIT=0</code>. Logs <code>logs/base.pytest.log</code>
+    and <code>logs/head.pytest.log</code> under the run directory, each ending in
+    an <code>EXIT=</code> line. Because the working copy's <code>.git</code> is
+    mounted read-only, the base arm could not be a worktree; it is a
+    <code>git archive</code> of the base revision into a scratch tree whose
+    <code>conftest.py</code> strips the shared environment's editable-install
+    finder so the run resolves to base source (verified: the header line
+    <code># module __file__ /tmp/base-tree-a-pick-names/reckon/crew/dispatch_picker.py</code>).
+  </p>
+  <p id="a-pick-names-its-slow-stage-negative-control">
+    <strong>Negative control.</strong> At the base revision the new test file
+    fails — <code>3 failed</code>, <code>EXIT=1</code>: at base
+    <code>dispatch_picker_selection</code> takes no <code>stage_ms</code> and
+    <code>outcomes._fallback_kind("timeout in budget-snapshot")</code> returns the
+    bare <code>"timeout"</code>, so the staged-timeout arms cannot hold. Log
+    <code>logs/negative-control.pytest.log</code> under the run directory.
+  </p>
+</article>

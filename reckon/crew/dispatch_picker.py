@@ -40,12 +40,30 @@ from reckon.crew.runs import (
 
 PICKER_DISPATCH_TIMEOUT_SECONDS = 5.0
 
+# The stages a dispatch-path pick records elapsed milliseconds for, in the order
+# they run: the three inputs the dispatcher reads once (records, the verdict
+# inputs, the budget snapshot), the context estimate, and the picker call. A
+# pick that misses its deadline names the stage still running in its fallback
+# reason, so an expiry is attributed to the work that spent the budget rather
+# than to the pick's own bound. The estimate and the picker call run inside the
+# bound; the three inputs are read before it, so they are timed where they run
+# and merged onto the selection rather than charged to the picker call.
+PICK_STAGES = (
+    "records",
+    "verdict-inputs",
+    "budget-snapshot",
+    "context-estimate",
+    "jev",
+)
+
 # A picker answer carries per-call measurements: how long the ask itself took.
 # They differ between two asks of the same node by construction, so a report
 # that keeps them cannot be compared with a second run of the same call — which
 # is the whole point of a dry run. The live run record keeps them, where the
-# figures are the point; the resolved plan a preview reports drops them.
-_PICKER_PER_CALL_FIELDS = ("latency_ms", "jev_latency_ms")
+# figures are the point; the resolved plan a preview reports drops them. The
+# per-stage times are advisory measurements of the same kind and are dropped
+# with them, so two previews of one node still compare on the decision.
+_PICKER_PER_CALL_FIELDS = ("latency_ms", "jev_latency_ms", "stage_ms")
 
 
 def _reportable_picker_selection(
@@ -75,12 +93,16 @@ def _picker_fallback(
     input_errors: Mapping[str, str] | None = None,
     latency_ms: float | None = None,
     authority_error: str | None = None,
+    stage_ms: Mapping[str, float | None] | None = None,
 ) -> dict[str, Any]:
     """The selection dispatch records when the picker did not decide one.
 
     One shape serves every fallback — a picker that raised, one that ran past
     its bound, and one whose inputs could not be built — so a reader settles
     each case by the ``fallback_reason`` rather than by which keys are present.
+    The stages that finished before the pick gave up carry their elapsed
+    milliseconds here, so a reader reaches the work that spent the budget even
+    when the reason names only the stage still running.
     """
     client = sys.modules.get("reckon.crew.picker.client")
     return {
@@ -94,6 +116,7 @@ def _picker_fallback(
         "jev_model": getattr(client, "JEV_MODEL", None),
         "fallback_reason": reason,
         "latency_ms": latency_ms,
+        "stage_ms": dict(stage_ms) if stage_ms else {},
         "offered": [],
         "excluded": [],
         "comment": comment,
@@ -164,6 +187,8 @@ def build_picker_inputs(
     repo: str | Path,
     *,
     ledger_root: Path | None = None,
+    stage_ms: dict[str, float | None] | None = None,
+    running: dict[str, str | None] | None = None,
 ) -> tuple[
     list[dict[str, Any]] | None,
     Mapping[str, Any] | None,
@@ -180,35 +205,63 @@ def build_picker_inputs(
     against the input that failed and returned in the error map rather than
     raised, so the picker falls back with the failure named instead of the
     dispatch aborting before it is consulted.
+
+    ``stage_ms``, when given, receives each input's elapsed milliseconds under
+    its stage name, so a caller assembling a selection's per-stage times reads
+    the three inputs' cost where it was actually paid rather than charging it
+    to the picker call that consumed the figures. ``running``, when given,
+    records the input currently being read so a caller that times out mid-build
+    knows which input still had the budget when the deadline expired.
     """
     input_errors: dict[str, str] = {}
     repo_root = Path(repo)
-    if ledger_root is None:
-        ledger_root = _picker_input(
+
+    def timed(stage: str, build: Callable[[], Any]) -> Any:
+        if running is not None:
+            running["stage"] = stage
+        started = time.perf_counter()
+        try:
+            return build()
+        finally:
+            if stage_ms is not None:
+                stage_ms[stage] = round((time.perf_counter() - started) * 1000, 3)
+            if running is not None:
+                running["stage"] = None
+
+    def build_records() -> list[dict[str, Any]] | None:
+        nonlocal_ledger_root = ledger_root
+        if nonlocal_ledger_root is None:
+            nonlocal_ledger_root = _picker_input(
+                "records",
+                lambda: resolve_dispatch_ledger_root(
+                    resolve_dispatch_authority(project, repo_root)
+                ),
+                input_errors,
+            )
+        if nonlocal_ledger_root is None:
+            return None
+        return _picker_input(
             "records",
-            lambda: resolve_dispatch_ledger_root(
-                resolve_dispatch_authority(project, repo_root)
-            ),
+            lambda: _picker_ledger_rows(project, nonlocal_ledger_root),
             input_errors,
         )
-    records = (
-        _picker_input(
-            "records",
-            lambda: _picker_ledger_rows(project, ledger_root),
+
+    records = timed("records", build_records)
+    verdict_inputs = timed(
+        "verdict-inputs",
+        lambda: _picker_input(
+            "verdict_inputs",
+            lambda: _picker_verdict_inputs(project, repo_root),
             input_errors,
-        )
-        if ledger_root is not None
-        else None
+        ),
     )
-    verdict_inputs = _picker_input(
-        "verdict_inputs",
-        lambda: _picker_verdict_inputs(project, repo_root),
-        input_errors,
-    )
-    budget_snapshot = _picker_input(
-        "budget_snapshot",
-        lambda: _picker_budget_snapshot(project, config, repo_root, records),
-        input_errors,
+    budget_snapshot = timed(
+        "budget-snapshot",
+        lambda: _picker_input(
+            "budget_snapshot",
+            lambda: _picker_budget_snapshot(project, config, repo_root, records),
+            input_errors,
+        ),
     )
     return records, verdict_inputs, budget_snapshot, input_errors
 
@@ -227,8 +280,18 @@ def dispatch_picker_selection(
     input_errors: Mapping[str, str] | None = None,
     authority: Mapping[str, Any] | None = None,
     authority_error: str | None = None,
+    stage_ms: dict[str, float | None] | None = None,
 ) -> dict[str, Any]:
-    """Ask the picker without letting its latency or failure stop dispatch."""
+    """Ask the picker without letting its latency or failure stop dispatch.
+
+    Every stage of the ask is timed and carried on the returned selection, and a
+    pick that misses the deadline names the stage still running in its fallback
+    reason (``timeout in budget-snapshot``) with the finished stages'
+    milliseconds beside it. A caller that hands ``stage_ms`` and no inputs asks
+    for that accounting and has the dispatcher-scope inputs read here, inside
+    the bound, so a slow input is attributed to itself; a caller that has
+    already built the inputs keeps them and their cost stays with that build.
+    """
     if input_errors:
         # An input the dispatcher could not build is not re-read here: the same
         # source that failed once would only fail again, so the picker's own
@@ -243,6 +306,16 @@ def dispatch_picker_selection(
     finished = threading.Event()
     result: dict[str, Any] = {}
     started = time.monotonic()
+    stages: dict[str, float | None] = {name: None for name in PICK_STAGES}
+    if stage_ms:
+        stages.update(stage_ms)
+    # The stage the ask is inside when the deadline expires, so a fallback names
+    # the work that spent the budget rather than the call it overlapped. The
+    # dispatcher-scope inputs set it through ``build_picker_inputs``; the context
+    # estimate and the picker call do not, since neither is a single dispatch
+    # stage a reader can act on — a pick that expires during either keeps the
+    # bare ``timeout`` and records both durations beside it for the reader.
+    running: dict[str, str | None] = {"stage": None}
 
     def ask() -> None:
         try:
@@ -265,6 +338,30 @@ def dispatch_picker_selection(
             if pick_authority_error is not None:
                 result["authority_error"] = pick_authority_error
 
+            # The dispatcher-scope inputs are read inside the bound only when the
+            # caller asked for per-stage accounting and handed none: a build a
+            # caller already made carries its own timings and must not be paid
+            # twice, so it is used as given and its stage times arrive in
+            # ``stage_ms``.
+            pick_records, pick_verdicts, pick_budget = (
+                records,
+                verdict_inputs,
+                budget_snapshot,
+            )
+            if (
+                pick_records is None
+                and pick_verdicts is None
+                and pick_budget is None
+                and stage_ms is not None
+            ):
+                pick_records, pick_verdicts, pick_budget, _ = build_picker_inputs(
+                    project,
+                    config,
+                    repo,
+                    stage_ms=stages,
+                    running=running,
+                )
+
             # The estimate is the same deterministic measurement the context-fit
             # verdict charges a node against, measured with the same authority
             # and the same harness-independent standing chain, so the request's
@@ -274,21 +371,25 @@ def dispatch_picker_selection(
             # both the figure and its duration travel into the pick. It is
             # advisory: a failure to measure leaves the figure at zero and never
             # aborts the pick.
+            def measure_estimate() -> int:
+                try:
+                    return picker_snapshot.estimated_context_tokens(
+                        node, repo, authority=pick_authority
+                    )
+                except Exception:  # noqa: BLE001 - the estimate is advisory to the pick
+                    return 0
+
             estimate_started = time.perf_counter()
-            try:
-                estimated_context = picker_snapshot.estimated_context_tokens(
-                    node, repo, authority=pick_authority
-                )
-            except Exception:  # noqa: BLE001 - the estimate is advisory to the pick
-                estimated_context = 0
+            estimated_context = measure_estimate()
             estimated_context_ms = round(
                 (time.perf_counter() - estimate_started) * 1000, 3
             )
+            stages["context-estimate"] = estimated_context_ms
 
             inputs = {
-                "records": records,
-                "verdict_inputs": verdict_inputs,
-                "budget_snapshot": budget_snapshot,
+                "records": pick_records,
+                "verdict_inputs": pick_verdicts,
+                "budget_snapshot": pick_budget,
                 "authority": pick_authority,
                 "estimated_context_ms": estimated_context_ms,
             }
@@ -298,19 +399,27 @@ def dispatch_picker_selection(
                 inputs = {
                     key: value for key, value in inputs.items() if key in accepted
                 }
-            selection = pick(
-                PickRequest(
-                    project,
-                    node,
-                    comment=comment,
-                    session=session,
-                    estimated_context=estimated_context,
-                ),
-                dict(config),
-                repo=repo,
-                cached_only=True,
-                **inputs,
-            )
+            # The picker call is timed but not marked: its own snapshot, render
+            # and Jev stages are inside it, so an expiry during the call is
+            # attributed to no single dispatch stage and keeps the bare
+            # ``timeout`` rather than naming a stage the dispatcher cannot see.
+            moment = time.perf_counter()
+            try:
+                selection = pick(
+                    PickRequest(
+                        project,
+                        node,
+                        comment=comment,
+                        session=session,
+                        estimated_context=estimated_context,
+                    ),
+                    dict(config),
+                    repo=repo,
+                    cached_only=True,
+                    **inputs,
+                )
+            finally:
+                stages["jev"] = round((time.perf_counter() - moment) * 1000, 3)
             result["selection"] = selection.as_dict()
         except Exception as exc:  # noqa: BLE001 - shadow routing cannot block dispatch
             result["error"] = f"{type(exc).__name__}: {exc}"
@@ -322,15 +431,20 @@ def dispatch_picker_selection(
         result["error"] = "timeout"
     authority_error = result.get("authority_error")
     if "selection" in result and "error" not in result:
-        selection = result["selection"]
+        selection = {**result["selection"], "stage_ms": dict(stages)}
         if authority_error:
-            selection = {**selection, "authority_error": authority_error}
+            selection["authority_error"] = authority_error
         return selection
+    error = result.get("error") or "picker returned no selection"
+    reason = error
+    if error == "timeout" and running["stage"]:
+        reason = f"timeout in {running['stage']}"
     return _picker_fallback(
-        result.get("error") or "picker returned no selection",
+        reason,
         comment,
         latency_ms=round((time.monotonic() - started) * 1000, 3),
         authority_error=authority_error,
+        stage_ms=stages,
     )
 
 
