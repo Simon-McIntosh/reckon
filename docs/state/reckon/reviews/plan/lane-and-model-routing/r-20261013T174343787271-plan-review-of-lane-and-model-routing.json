@@ -1,0 +1,100 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-13T18:00:39.952Z",
+  "dispatched_at": "2026-10-13T17:44:17Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/lane-and-model-routing/r-20261013T174343787271-plan-review-of-lane-and-model-routing/plan.html:148",
+      "id": "reasoning-1",
+      "reason": "the deliverable already names `reckon/ledger.py` as the home and the mechanism is unaffected, so correcting the rationale would not move any node's work.",
+      "text": "\u00a723's Why claims \"The \u00a721 worker kept the copy because `dispatch_plan.py` importing the command module would be circular\", but `reckon/crew_dispatch_commands.py` does not import `reckon/crew/dispatch_plan.py` at module scope (its module-level imports are stdlib plus `click`, `reckon._store`, `reckon.cli_entry`; `import reckon.crew_dispatch_commands` leaves `reckon.crew.dispatch_plan` absent from `sys.modules`), so the reverse import would not be circular",
+      "type": "reasoning",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/lane-and-model-routing/r-20261013T174343787271-plan-review-of-lane-and-model-routing/plan.html:22",
+      "id": "wiring-1",
+      "reason": "\u00a719 is a flight-configuration change with no code coupling to \u00a723, so the followup's extra `\u00a723` only over-constrains the order; the section still lands correctly under its declared depends-on.",
+      "text": "\u00a719's prerequisites are stated three ways: its `plan-section-depends-on` entry is `[s17, s18, s21]`, \u00a719's own text (line 132) says \"This section runs after \u00a717 and \u00a718\", and the new open followup `f-lmr-012` (line 255) says \"\u00a719 retires the combined names once \u00a717 and \u00a723 have landed\"",
+      "type": "wiring",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "a2aeffb6be1131020d39363239e57ce95fc5a3f0610bfcdcca7a70d80321a2ba",
+  "plan_slug": "lane-and-model-routing",
+  "plan_version": 111,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "valid; deferred to \u00a723's revision before its dispatch, recorded as comment c-s23-not-circular; the deliverable is unchanged",
+      "when": "2026-10-13T18:00:53.708890+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-13T18:01:08.720804+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "valid; deferred to \u00a723's revision before its dispatch, recorded as comment c-s23-not-circular; the deliverable is unchanged",
+      "when": "2026-10-13T18:00:53.708890+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-13T18:01:08.720804+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-lane-and-model-routing.v111.json",
+  "review_run_id": "r-20261013T174343787271-plan-review-of-lane-and-model-routing",
+  "reviewed_blob_sha": "3ceabf13f84598d00dbd064ed611929547dcf063",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 \u00a723's anchors all resolve: `_backend_serving_picked_model` (`reckon/crew/dispatch_plan.py:207`), `_model_narrowed_backend` (`reckon/crew_dispatch_commands.py:455`), `ledger.resolve_name` (`reckon/ledger.py:228`), the test file `tests/test_a_picked_model_is_the_model_launched.py`; the cited review `r-20261013T122249417538` exists with `total 95` and `reuse 4`, and the \"floor of 10\" is real (`reuse: 10` under `gates.dimension_floors`, shipped by the reuse-dimension plan). The `_document` intro's \u00a723 attribution (\"\u00a723 from \u00a721's review\") matches \u00a723's own Why; cited merge shas `3483a1c20`, `c76d61014`, `0c1154e51` all resolve as commits.",
+    "done_when": "pass \u2014 \u00a723's done-when is measurable and declares a negative control (\"the base revision, where the alias resolves through `--model` and is refused on the picker route\"); each clause names a test and an observable, and the \"no added failure against the base revision\" clause is a delta.",
+    "evidence_paths": "pass \u2014 \u00a723 writes source and test paths only; no gate log or evidence path is directed to a session scratchpad or node-local temporary.",
+    "naming": "pass \u2014 \u00a723's prose introduces no plan label, stage name, ticket number or version tag into a symbol, filename or comment; `\u00a723` appears only as the section's own identity in plan data.",
+    "reasoning": "a finding \u2014 \u00a723's stated rationale for the helper's placement does not hold against the module graph (see FINDING below); its mechanism, callers and policy faithfully mirror the review it cites, and its stated root cause matches that review.",
+    "single_goal": "pass \u2014 \u00a723 carries one deliverable (one shared narrowing function called by `--model` and the picker route); the second half of the done-when (rebuilding \u00a721's argv assertion from the resolved payload) is the assertion of that same deliverable, matching the plan's established pattern of a section absorbing its predecessor's review follow-ons.",
+    "wiring": "pass \u2014 the new `s23` entry in `plan-section-depends-on` (line 22) points at `lane-and-model-routing#s17` and `#s21`, both of which exist; \u00a723's two file-collision prerequisites (`crew_dispatch_commands.py` via \u00a717, `dispatch_plan.py` via \u00a721) are named, and \u00a714/\u00a716 arrive transitively through \u00a717, which depends on both."
+  },
+  "section_digests": {
+    "_document": "f76aef84729657c29eb2a5018e356e019c0b81e610d444a74685eba5e6421192",
+    "s0": "4fab47d023ca674c643a31ccb589bbf3bd2d29bd67995c367e6983fe7ec0fb64",
+    "s1": "6760f63ebdb0d0db10c3c004f30d4f4253bfb7582bc7a0e4054fed73e017a02d",
+    "s10": "9f3b98da9be42bc1d1dad77d11079186c59e62315308454b2f442bdfffa7755c",
+    "s11": "2e566713b8ee8cbfcf94503cba2640bac78329b96f748ff0334a858e08287755",
+    "s12": "8a7841af15c5beacc75bf716eab0a317f722daab3a302ec190299ce0c3315350",
+    "s13": "6cc9f5f5d1d9a0d7a981363b2961d554bc1670d016cf5da011e18fd20d24b604",
+    "s14": "f4192a6b66ca1a9df3c0c8b84d6a76f9b7e2708145600fc43403217b7a52c540",
+    "s15": "f771307d6c5f071d884953878a527fd166185d3d25c88171a3028f27f2a174b8",
+    "s16": "f223e6b5a96e8c6195a47af2261f3ffdb2da6592ac65ab36dc87669411b7f75d",
+    "s17": "c25e53b94999e6070d4f523ca3bd14da195812a44489dfe8f0ad7d9e3b3167ff",
+    "s18": "a8fdaccbcc00dea2d881e6f33dbca396f55ac9a48a784860531f01f14666d645",
+    "s19": "7f43424c2bd387e0debb46796f353c7ce6dec61ec65dc6dac335a75ce54e13ce",
+    "s2": "0c6488cdae0f23d0600410d02191390e773858e9bc75008234f71cc66f01889b",
+    "s20": "9dca86a7ea316e5b22b94c70024ba182f82622bb73f8243655562dc2cb4fc8d3",
+    "s21": "8dc7453f756c4d2310baaa5a97b36e69467be72d1cb4221107161ac2abe26293",
+    "s22": "05517556ce6192e16abdf35d71011afa333914c9f9e8bb7e1e495f02cfa9f80f",
+    "s23": "0fd76b51ea16c1fa47e5b4d19780b8c182b611b43bcd3d4ab053d3e6ec938b5c",
+    "s3": "6cb602347e0232fe459028eff2010884381d987053d550c4565f581c23032095",
+    "s4": "aa5a29a8662005607992ae17fc914d47e8e48c68b7e65395b4865f6d33ea37f4",
+    "s5": "2ffa1a3b1d2b09433f25a83f8a7a59b1774249bac29b945f2c2273ace57cb1ba",
+    "s6": "6c8117bcfdc7d4b0bafdc4fb2185779998c71b1730b07a0d900b543f02c08ec1",
+    "s7": "07952e2e354db24e76860530568500cc2066b69b4255c020db83677e46cb18e2",
+    "s8": "7ca129403c95fcbc111273a2b419b29279191bc54c157bb6f7d8de0d5b160d34",
+    "s9": "0c546f1c0ce99eb4f03333edf6955f597fcb37c49baa31305dfd52c6b03364d8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T18:00:45.881296+00:00"
+}
