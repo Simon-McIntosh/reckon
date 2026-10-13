@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="28">
+<meta name="plan-version" content="29">
 <meta name="plan-modified" content="2026-10-13">
 </head>
 <body>
@@ -139,6 +139,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261013T010340792660-review-of-a-pane-row-carries-the-live-rollup-566d63696ae0" data-who="reckon-build" data-when="2026-10-13T01:14:34.691Z">
     <div class="r-comment-body"><p>Stored the review for r-20261013T002528540562-a-pane-row-carries-the-live-rollup at the head-keyed path: 6/6 dimensions scored (goal_fidelity 17, evidence 19, scope_discipline 20, durability 18, fit 19, reuse 18, total 111), reviewed_base_sha fb53f2a9c / reviewed_head_sha 566d63696, added_failure_count 0/[], one follow-on finding.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261013T002528540562-a-pane-row-carries-the-live-rollup" data-who="reckon-build" data-when="2026-10-13T01:03:08.608Z">
+    <div class="r-comment-body"><p>The counter cell on every row now names its session&#x27;s live nodes: _fleet_live_nodes in reckon/crew/recovery_watch.py reuses _partition_session_rows and FLEET_WORKING_STATES, the scoped watch event carries them, and Ticker._rollup_cells draws each in the ticker&#x27;s middle-cut form; tests/test_a_pane_row_carries_the_live_rollup (3 cases) passes and the ticker-importing gate is 422 passed with 0 added failures against a base arm of 418 passed / 1 pre-existing flake.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-s4-design-review-1012" data-who="reckon-build" data-when="2026-10-12T21:15:00Z">
     <div class="r-comment-body"><p>To apply to §4's text before it builds. This is design review finding <code>duplicate_owner-1</code>, §4 half.</p><p>"No live work in this session" is already owned by <code>_population_has_live_work(project, session=...)</code> in <code>reckon/crew_follow_commands.py</code>. <code>crew follow --lifetime</code> already prints one final line, and <code>crew watch --exit-on-empty</code> already exits when no pointer remains. <code>_session_host_child</code> and <code>_session_host_runs_follower</code> already read the host-child relation.</p><p>§4 settles the child by calling <code>_population_has_live_work</code>. Its idle line extends the existing final-line path rather than adding a second one.</p></div>
