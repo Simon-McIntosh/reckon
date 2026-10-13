@@ -684,10 +684,11 @@ def _fingerprint_forms(plan: Mapping[str, Any] | str | Path) -> tuple[str, str]:
     so a review stored before unit digests existed still matches while the
     document is unchanged.
 
-    The pre-collapse form this function used to return is retired. It was the
-    older definition that kept each section's lifecycle declaration and the
-    section's landed card in the digest, both of which moved on a collapse that
-    a landing beat no longer performs, so nothing writes a fresh one.
+    Both drop what a landing beat writes on its own: the section's lifecycle
+    declaration, and the interior of a landed card, whose body is the section's
+    own landed form. Keeping either would make a landing demand a fresh review
+    of content nobody authored, which is the one change the beat must not
+    force on a reader.
     """
     document = _as_document(plan)
     content = document if document is not None else plan

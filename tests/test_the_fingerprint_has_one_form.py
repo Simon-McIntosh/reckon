@@ -1,19 +1,50 @@
-"""The fingerprint accepts its surviving forms, and the collapse op is gone.
+"""The two forms a plan's fingerprint offers, and the refusal of the collapse op.
 
-A review stays valid while the plan's fingerprint still matches it. The
-fingerprint used to accept a third, pre-collapse digest — the older definition
-that kept each section's lifecycle declaration and its landed card — because a
-landing beat used to collapse a section's body into a card. The beat now ticks
-a section instead, so the pre-collapse form and the ``collapse_section`` op it
-existed for are retired. These cases pin the surviving forms and the refusal.
+A stored plan review stays valid while the plan's fingerprint still matches it.
+``_fingerprint_forms`` offers two digests of one snapshot: the section-set
+digest, which names each authored unit, and the whole-document digest, which
+reads the remaining document as one unit. A landing beat writes a card into a
+section's body, so a review of the carded plan must keep covering it; the
+``collapse_section`` op that once rewrote the body is refused as an unknown
+verb. These cases pin the two forms, the coverage each carries, and the
+refusal.
 """
 
 import json
 from pathlib import Path
 
+import pytest
+
 from reckon import _plan_html, _store, mcp
 from reckon.crew import plan_review, recovery
 from tests.test_review_plan_command import project as project  # noqa: PLC0414
+
+
+def _section_set_digest(path) -> str:
+    """The section-set form, restated from the units it digests."""
+    return plan_review._digest(plan_review._section_digests(path))
+
+
+def _whole_document_digest(path) -> str:
+    """The whole-document form, restated from state and the remaining prose.
+
+    A landed card's interior is dropped, so the section's landed form counts
+    neither as its own unit nor as document prose.
+    """
+    document = path.read_text(encoding="utf-8")
+    return plan_review._digest(
+        {
+            "state": plan_review._digest_state(document),
+            "prose": " ".join(
+                prose
+                for _, prose in _plan_html.section_prose(
+                    document,
+                    keep_landed_cards=bool(not _plan_html.landed_section_ids(document)),
+                )
+                if prose
+            ),
+        }
+    )
 
 
 def _landed(project):
@@ -50,8 +81,23 @@ def _subject(path, *, run_id):
     }
 
 
-def _store_review(path, fingerprint, *, run_id):
-    """Store a digest-only review under one fingerprint, with no snapshot."""
+def _review(path, *, run_id):
+    """Store the review the dispatcher would compose for this plan.
+
+    The sidecar the dispatch fields write carries the plan's own fingerprint and
+    the snapshot the reviewer read, which is the shape production judges.
+    """
+    fields = recovery._review_dispatch_fields(_subject(path, run_id=run_id))
+    sidecar = json.loads(Path(fields["sidecar"]).read_text())
+    Path(sidecar["report_path"]).write_text("RUBRIC design: pass\n")
+    plan_review.store_plan_review(
+        {**sidecar, "findings": [], "responses": {}, "review_run_id": run_id}
+    )
+    return sidecar
+
+
+def _store_fingerprint_only_review(path, fingerprint, *, run_id):
+    """Store a record whose only evidence is one fingerprint: no snapshot, no units."""
     fields = recovery._review_dispatch_fields(_subject(path, run_id=run_id))
     sidecar = json.loads(Path(fields["sidecar"]).read_text())
     sidecar["plan_fingerprint"] = fingerprint
@@ -79,30 +125,63 @@ def _retired_pre_collapse_digest(path):
     return plan_review._digest(payload)
 
 
+def _coverage(path):
+    records, uncovered, _changes = plan_review.review_coverage(
+        "sample", "fixture", plan=path
+    )
+    return records, uncovered
+
+
 def test_only_the_section_set_and_whole_document_forms_remain(project):
     path = _landed(project)
     forms = plan_review._fingerprint_forms(path)
+    # The two definitions disagree, or one form would stand in for both.
     assert len(forms) == 2
-    assert forms[0] == plan_review.plan_fingerprint(path)
+    assert forms == (_section_set_digest(path), _whole_document_digest(path))
+    assert forms[0] != forms[1]
     # The retired pre-collapse definition is no longer among the accepted
     # digests, so a review stored under it no longer matches the plan.
     assert _retired_pre_collapse_digest(path) not in forms
 
 
-def test_a_plan_whose_collapsed_card_is_unchanged_keeps_its_review(project):
+def test_a_review_of_a_carded_plan_keeps_covering_it(project):
+    """The landing card is not authored design, so it owes no fresh review."""
     path = _landed(project)
-    whole = plan_review._fingerprint_forms(path)[1]
-    _store_review(path, whole, run_id="review-whole-document")
-    records, uncovered, _ = plan_review.review_coverage("sample", "fixture", plan=path)
-    assert [record["plan_fingerprint"] for record in records] == [whole]
+    sidecar = _review(path, run_id="review-of-the-carded-plan")
+    assert sidecar["plan_fingerprint"] == _section_set_digest(path)
+    records, uncovered = _coverage(path)
+    assert records, "a review of the carded plan must still cover it"
+    assert uncovered == set()
+    assert {record["plan_fingerprint"] for record in records} == {
+        sidecar["plan_fingerprint"]
+    }
+
+
+@pytest.mark.parametrize(
+    "form",
+    [
+        pytest.param(_section_set_digest, id="section-set"),
+        pytest.param(_whole_document_digest, id="whole-document"),
+    ],
+)
+def test_a_carded_plan_is_covered_under_each_surviving_form(project, form):
+    """Each form is the whole-plan match a fingerprint-only review gets."""
+    path = _landed(project)
+    fingerprint = form(path)
+    _store_fingerprint_only_review(
+        path, fingerprint, run_id=f"review-{form.__name__.removeprefix('_')}"
+    )
+    records, uncovered = _coverage(path)
+    assert [record["plan_fingerprint"] for record in records] == [fingerprint]
     assert uncovered == set()
 
 
 def test_a_review_under_the_retired_form_no_longer_matches(project):
     path = _landed(project)
-    retired = _retired_pre_collapse_digest(path)
-    _store_review(path, retired, run_id="review-pre-collapse")
-    records, uncovered, _ = plan_review.review_coverage("sample", "fixture", plan=path)
+    _store_fingerprint_only_review(
+        path, _retired_pre_collapse_digest(path), run_id="review-pre-collapse"
+    )
+    records, uncovered = _coverage(path)
     assert records == []
     assert uncovered
 
