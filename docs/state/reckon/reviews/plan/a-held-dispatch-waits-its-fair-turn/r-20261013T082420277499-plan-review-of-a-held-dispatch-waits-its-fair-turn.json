@@ -1,0 +1,53 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-13T08:39:55.035Z",
+  "dispatched_at": "2026-10-13T08:24:55Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-held-dispatch-waits-its-fair-turn.html:119",
+      "id": "reasoning-1",
+      "reason": "adding `reckon/crew/dispatch.py` to \u00a714's write paths (and its ordering note beside \u00a712/\u00a713, which already write it) is what lets the node satisfy a done-when it currently cannot reach.",
+      "text": "\u00a714 says a dispatch of a node already being admitted or working is \"answered with the existing run's id and phase, and nothing new is written\", but the answer payload is built at the `queue_dispatch` call-site in `reckon/crew/dispatch.py` (line 913), which hardcodes the reply as `{\"run_id\": queued[\"run_id\"], \"position\": position}` and drops any phase; and `queue_dispatch` derives `position` by index into `admission_order(queued, live)`, which raises StopIteration for a run that is not in `queued`. \u00a714's write paths are `runs.py`, `queue_admission.py` only, so a worker building \u00a714 is fenced out of the dispatch.py call-site its done-when bullet 2 (\"reports the working run\") requires it to change",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "83e54ec557c76c7b3b00efae15fb6e7ff582e3ff131082a7a8e3cb4169b58f7e",
+  "plan_slug": "a-held-dispatch-waits-its-fair-turn",
+  "plan_version": 35,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261013T082420277499-plan-review-of-a-held-dispatch-waits-its-fair-turn",
+  "reviewed_blob_sha": "affac7224a64ad44a7b2cc387657d754e46c3fdd",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited symbols exist (`_plan_review_crew_run_id` reckon/crew/review.py:2347 read by `_plan_review_record_for_promoting_run` reckon/crew/promotion_checks.py:1830; `_launch_queued`/`admit_once` reckon/crew/queue_admission.py:111,505; `record_picker_hold` reckon/crew/picker/outcomes.py:191; `queue_dispatch` reckon/crew/runs.py:318) and the extensionless hrefs (/reckon/plans/the-monitor-shows-the-work-it-watches, /reckon/plans/a-window-paces-the-lane) and evidence fragments (#s2, #s3, #s8-recover-reads-a-queued-run) all resolve.",
+    "done_when": "pass \u2014 s13, s14 and s15 each name a negative control that makes the new case fail (re-raise the hold before the local continuation; ignore the handover record; leave dispatch.json as the queued compose wrote it), so each gate can show its guard fires.",
+    "evidence_paths": "pass \u2014 each of s13, s14 and s15 logs its negative control \"under the run directory\", a durable path a later reader can open, and none writes to a session scratchpad or node-local temporary directory.",
+    "naming": "pass \u2014 the changed units introduce no plan labels, stage names, ticket numbers or version tags, and no changelog prose; the new test filenames name the mechanism (test_a_jev_hold_queues_for_the_local_lane.py, test_a_node_is_queued_once.py, test_a_queued_plan_review_is_stored.py).",
+    "reasoning": "a finding \u2014 \u00a714's mechanism (answer a duplicate dispatch \"with the existing run's id and phase\") requires editing the dispatch.py call-site that builds that answer payload, which \u00a714 neither names nor includes in its write paths.",
+    "single_goal": "pass \u2014 s13 (a Jev hold queues for the local lane), s14 (a node is queued once) and s15 (a queued plan review is stored on delivery) each carry one deliverable and one verdict.",
+    "wiring": "pass \u2014 the changed units each declare their ordering against the files they share (\u00a713 after \u00a712; \u00a714 after \u00a711, \u00a712 and the-monitor-shows-the-work-it-watches \u00a715; \u00a715 after \u00a79, \u00a710, \u00a711 and \u00a714), and every referenced plan and evidence anchor resolves."
+  },
+  "section_digests": {
+    "_document": "4983d0e4411d55c9c00430b8a5c2baa57c83d3ddbd7ee0b7299d537e04a82252",
+    "s1": "e09f72c38fa12dd06b1fede9137b6a8731c7f42dad95ea4d7873e48b6bcebc93",
+    "s10": "769f35c4ff338677b1083340b990086682e629701a25af49a8b6e2d3b8a175a4",
+    "s11": "3aafc106945bdc346a0f808fc26c7fc8e028b922103641455da38536ae24c036",
+    "s12": "f72ab709e3a40644be43c6e558b558089f939e3368a20a2b34321a9043c80c88",
+    "s13": "1f1792d925edd6b7c0b33bd02bebc3db1f499f9d5e1505b3ba04b305d9ed7f64",
+    "s14": "3883f3041b4df26f0d2d95180d8627fb733218976526ddf1ac5888b8b8575fb5",
+    "s15": "694218fb467e061648aac13eed1a446529dbff08aca86ecfdb24792eb5b2820e",
+    "s2": "c37ed4ecb2dad1331b0b031fb8351608243790308312236d375bede3594285b7",
+    "s3": "ef687123318fac196bded366330cf2e92b586c4991b5c1cc8670f228182f916c",
+    "s4": "e6a41eadc72e4752cc0ebe35a14a9bce3f28bc1061ec677e8f779fa09d8c037c",
+    "s5": "4b674f96924c3dbfde217945d16c606df376d034dc060f02360a4336412e74f8",
+    "s6": "9e35fc2341a06de64fed9ff7f176a0e83b22c1482c1b5a04a5539b6e4c07aab4",
+    "s7": "764a72dad2d59bddd4d3b1209f07c0c210ff6c46cd14147d4bcc7ffe9fa9426d",
+    "s8": "1b92313fdf672f4b813b45aa8e26f1304ca363cdc5a4d1752238f794a2019e27",
+    "s9": "ef8f75976cf8d243089cb5955b0e084cf6e2c6bcd478f9e56b8e8654080c6ad6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T08:40:17.059551+00:00"
+}
