@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's two gate logs (logs/base.pytest.log, logs/head.pytest.log), each EXIT=0 with no FAILED ids: 0 added failures",
+  "base_log_revision": null,
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch.py:644",
+    "reckon/crew_dispatch_commands.py:1309",
+    "reckon/crew/dispatch_picker.py:501",
+    "reckon/crew/picker/outcomes.py:298"
+  ],
+  "completed_at": "2026-10-13T10:41:32.217Z",
+  "dispatched_at": "2026-10-13T10:23:57Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_picker.py",
+      "line": "350",
+      "severity": "blocking",
+      "text": "blocking: the stage-naming path is reachable only when the caller passes stage_ms and no records/verdicts/budget, but all three production call sites (reckon/crew/dispatch.py:644, reckon/crew_dispatch_commands.py:1309, reckon/crew/dispatch_picker.py:501) pass pre-built inputs and omit stage_ms, so running[\"stage\"] is never set and the fallback reason is always the bare \"timeout\" at line 440 \u2014 the goal's headline deliverable and the plan \u00a720 defect (91 picks reading bare \"timeout\") are unaddressed in production."
+    },
+    {
+      "file": "reckon/crew/dispatch_picker.py",
+      "line": "387",
+      "severity": "blocking",
+      "text": "blocking: on a production pick stages[\"records\"], stages[\"verdict-inputs\"] and stages[\"budget-snapshot\"] stay None because the caller built them outside this function and discards their duration, so the plan's \"every pick records the elapsed milliseconds of each stage on its selection\" holds for only two of the five stages."
+    },
+    {
+      "file": "reckon/crew/dispatch_picker.py",
+      "line": "51",
+      "severity": "follow-on",
+      "text": "follow-on: PICK_STAGES and the stage_ms map duplicate the capability reckon/crew/picker/__init__.py:25-29 already owns rather than extending it, giving the repository two stage-time vocabularies to keep in step."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit at baf5f99; four files, 360 insertions, all inside the declared scope.",
+    "done_when": "the done_when names tests/test_a_pick_names_its_slow_stage.py; the manifest records that gate (head 195 passed EXIT=0, base 188 passed EXIT=0) and the test does assert the fallback names \"budget-snapshot\", but only along an opt-in path.",
+    "goal": "the goal is to record each pick stage's elapsed time and name the stage a deadline fallback ran out in; reckon/crew/dispatch_picker.py:350-361 reads the dispatcher-scope inputs and sets running[\"stage\"] only when the caller hands stage_ms and passes no records/verdicts/budget, which no production caller does.",
+    "manifest": "read; it records the two gate arms and the negative control honestly, but does not name that no production caller reaches the new stage-naming path.",
+    "write_paths": "the declared paths are reckon/crew/dispatch_picker.py, reckon/crew/picker/outcomes.py, tests/test_a_pick_names_its_slow_stage.py, docs/evidence/fragments/lane-and-model-routing/a-pick-names-its-slow-stage.html and the node's figures dir; the diff touches exactly the first four."
+  },
+  "justifications": {
+    "durability": "tests/test_a_pick_names_its_slow_stage.py asserts the fallback reason names the sleeping stage and the negative-control log shows those assertions fail at the base revision, so reverting the landed mechanism reddens them; but they never exercise a production caller.",
+    "evidence": "the manifest records the head arm (195 passed EXIT=0), the base arm (188 passed EXIT=0) and a negative control (3 failed EXIT=1), but tests/test_a_pick_names_its_slow_stage.py:55 exercises the naming only through an opt-in path (stage_ms with no inputs) that no production caller uses, so the recorded result does not evidence production behaviour.",
+    "fit": "the added names (PICK_STAGES, stage_ms, timed) and the comments at reckon/crew/dispatch_picker.py:41-57 are mechanism-worded with no plan or ticket identifiers, matching the surrounding module.",
+    "goal_fidelity": "reckon/crew/dispatch_picker.py:350-361 builds the inputs and marks the running stage only when the caller passes stage_ms and no records/verdicts/budget, while both production callers (reckon/crew/dispatch.py:644 and reckon/crew_dispatch_commands.py:1309) pass pre-built inputs and no stage_ms, so running[\"stage\"] stays None and reckon/crew/dispatch_picker.py:440 always returns the bare \"timeout\".",
+    "reuse": "reckon/crew/picker/__init__.py:25-29 already owns per-stage pick timing (PICK_TIMINGS_LOG, _milliseconds, and a named stages dict recorded per pick), and the diff adds a parallel PICK_STAGES/stage_ms vocabulary in reckon/crew/dispatch_picker.py:51 rather than extending that owner.",
+    "scope_discipline": "every path in the diff (reckon/crew/dispatch_picker.py, reckon/crew/picker/outcomes.py, tests/test_a_pick_names_its_slow_stage.py, the landing fragment) is inside the declared write paths and the node correctly wrote no figure."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to record each pick stage's elapsed time and name the stage a deadline fallback ran out in; reckon/crew/dispatch_picker.py:350-361 reads the dispatcher-scope inputs and sets running[\"stage\"] only when the caller hands stage_ms and passes no records/verdicts/budget, which no production caller does.\nVERDICT done_when: the done_when names tests/test_a_pick_names_its_slow_stage.py; the manifest records that gate (head 195 passed EXIT=0, base 188 passed EXIT=0) and the test does assert the fallback names \"budget-snapshot\", but only along an opt-in path.\nVERDICT write_paths: the declared paths are reckon/crew/dispatch_picker.py, reckon/crew/picker/outcomes.py, tests/test_a_pick_names_its_slow_stage.py, docs/evidence/fragments/lane-and-model-routing/a-pick-names-its-slow-stage.html and the node's figures dir; the diff touches exactly the first four.\nVERDICT manifest: read; it records the two gate arms and the negative control honestly, but does not name that no production caller reaches the new stage-naming path.\nVERDICT diff: read commit by commit at baf5f99; four files, 360 insertions, all inside the declared scope.\n\nReview base: 3f0b9158ad3ef1ca6a28bf744f09fdbf8e58f245\nReview head: baf5f99bf021a8211d61546c7c2e081ad3b7c28f\n\nCALL_SITES: reckon/crew/dispatch.py:644, reckon/crew_dispatch_commands.py:1309, reckon/crew/dispatch_picker.py:501, reckon/crew/picker/outcomes.py:298\n\nSCORE goal_fidelity: 4\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_picker.py:350-361 builds the inputs and marks the running stage only when the caller passes stage_ms and no records/verdicts/budget, while both production callers (reckon/crew/dispatch.py:644 and reckon/crew_dispatch_commands.py:1309) pass pre-built inputs and no stage_ms, so running[\"stage\"] stays None and reckon/crew/dispatch_picker.py:440 always returns the bare \"timeout\".\n\nSCORE evidence: 11\nJUSTIFICATION evidence: the manifest records the head arm (195 passed EXIT=0), the base arm (188 passed EXIT=0) and a negative control (3 failed EXIT=1), but tests/test_a_pick_names_its_slow_stage.py:55 exercises the naming only through an opt-in path (stage_ms with no inputs) that no production caller uses, so the recorded result does not evidence production behaviour.\n\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the diff (reckon/crew/dispatch_picker.py, reckon/crew/picker/outcomes.py, tests/test_a_pick_names_its_slow_stage.py, the landing fragment) is inside the declared write paths and the node correctly wrote no figure.\n\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_pick_names_its_slow_stage.py asserts the fallback reason names the sleeping stage and the negative-control log shows those assertions fail at the base revision, so reverting the landed mechanism reddens them; but they never exercise a production caller.\n\nSCORE fit: 16\nJUSTIFICATION fit: the added names (PICK_STAGES, stage_ms, timed) and the comments at reckon/crew/dispatch_picker.py:41-57 are mechanism-worded with no plan or ticket identifiers, matching the surrounding module.\n\nSCORE reuse: 4\nJUSTIFICATION reuse: reckon/crew/picker/__init__.py:25-29 already owns per-stage pick timing (PICK_TIMINGS_LOG, _milliseconds, and a named stages dict recorded per pick), and the diff adds a parallel PICK_STAGES/stage_ms vocabulary in reckon/crew/dispatch_picker.py:51 rather than extending that owner.\n\nFINDING reckon/crew/dispatch_picker.py:350 blocking: the stage-naming path is reachable only when the caller passes stage_ms and no records/verdicts/budget, but all three production call sites (reckon/crew/dispatch.py:644, reckon/crew_dispatch_commands.py:1309, reckon/crew/dispatch_picker.py:501) pass pre-built inputs and omit stage_ms, so running[\"stage\"] is never set and the fallback reason is always the bare \"timeout\" at line 440 \u2014 the goal's headline deliverable and the plan \u00a720 defect (91 picks reading bare \"timeout\") are unaddressed in production.\nFINDING reckon/crew/dispatch_picker.py:387 blocking: on a production pick stages[\"records\"], stages[\"verdict-inputs\"] and stages[\"budget-snapshot\"] stay None because the caller built them outside this function and discards their duration, so the plan's \"every pick records the elapsed milliseconds of each stage on its selection\" holds for only two of the five stages.\nFINDING reckon/crew/dispatch_picker.py:51 follow-on: PICK_STAGES and the stage_ms map duplicate the capability reckon/crew/picker/__init__.py:25-29 already owns rather than extending it, giving the repository two stage-time vocabularies to keep in step.",
+  "review_run_id": "r-20261013T102324095876-review-of-a-pick-names-its-slow-stage-baf5f99bf021",
+  "reviewed_base_sha": "3f0b9158ad3ef1ca6a28bf744f09fdbf8e58f245",
+  "reviewed_head_sha": "baf5f99bf021a8211d61546c7c2e081ad3b7c28f",
+  "reviewed_run_id": "r-20261013T092400508839-a-pick-names-its-slow-stage",
+  "reviewer": {
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261013T102324095876-review-of-a-pick-names-its-slow-stage-baf5f99bf021",
+  "scores": {
+    "durability": 15,
+    "evidence": 11,
+    "fit": 16,
+    "goal_fidelity": 4,
+    "reuse": 4,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T10:40:47.536996+00:00",
+  "total": 68
+}
