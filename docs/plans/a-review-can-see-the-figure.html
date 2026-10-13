@@ -23,9 +23,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S26">
-<meta name="plan-version" content="10">
+<meta name="plan-version" content="12">
 <meta name="plan-modified" content="2026-10-13">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;deferred&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="f2ea9301,5b1759ab,428477c7">
 <meta name="plan-impl" content="0.4">
 </head>
@@ -42,7 +42,7 @@
     cosmetic: a flux plot is the evidence, and a review that cannot open it is reviewing a filename.</p>
 
     <p><strong>The capability exists and has existed throughout.</strong> The codex dialect composes
-    <code>codex exec</code> at <code>reckon/_backends.py:957</code>, and that subcommand takes
+    <code>codex exec</code> at <code>reckon/_backends.py:1220</code>, and that subcommand takes
     <code>-i, --image &lt;FILE&gt;...</code> — optional images attached to the initial prompt. Nothing
     had to be built to make the lane see; what was missing was any way to say which lanes can.</p>
 
@@ -218,6 +218,10 @@
 <section data-reckon="section" data-id="s7" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
 <p><strong>Why.</strong> A lane's <code>input_modalities</code> is a claim about what its model receives, not about the flag it accepts. So the declaration follows a measured delivery, and §3's pairs run only on a lane that has one.</p><p><strong>Deliverable.</strong> One node dispatched through §6's path to one codex backend carries a figure whose content its prompt does not state, and asks for a description. If the description matches the figure, <code>input_modalities: [text, image]</code> is declared on that backend in <code>docs/state/reckon/flight.yaml</code>. If it does not, nothing is declared and the report says what the lane answered. This runs on a metered lane: one prompt.</p><p><strong>Done when</strong> the report under the run directory holds the figure, the prompt, the lane's answer verbatim and the verdict. When the verdict is delivered, <code>declared_input_modalities</code> in <code>reckon/flight.py</code> returns image for that backend, and the test files importing <code>reckon/flight.py</code> show no added failure against base. The negative control is a figure the prompt describes in words, which shows only that the lane can repeat a prompt. This section runs after §6. Write paths: <code>docs/state/reckon/flight.yaml</code> and the run's report directory.</p>
 
+    <h2 id="s8">§8 — The lane discriminates five known pairs</h2>
+<section data-reckon="section" data-id="s8" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> §3 states the evaluation and its pairs. This section is its executable node, with the gate §3 does not carry.</p><p><strong>Deliverable.</strong> The five pairs in §3's table are drawn as figures, each kept as the SVG it was drawn in and as a PNG rendered from it, under <code>docs/figures/figure-review-pairs/</code>. Each figure is presented on its own to the codex lane §7 declared, through §6's dispatch path, with one prompt naming the rule under test.</p><p><strong>Done when</strong> the report under the run directory records, for each pair and each format, the lane's verdict verbatim on the bad figure and on the good one. A pair discriminates when the bad figure fails and the good one passes on the rule named. The report states how many of the five pairs discriminate as PNG and how many as SVG. The negative control sends each bad figure's prompt with the image withheld: a verdict that still fails the rule shows the lane answering from the prompt, and that pair does not count. This section runs after §7, on a metered lane: twenty figure prompts and five controls. Write paths: <code>docs/figures/figure-review-pairs/</code> and the run's report directory.</p>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-arcstf-001" data-status="resolved" data-written-by="reckon-ee" data-written-at="2026-09-22" data-recommends-skill="/reckon-build a-review-can-see-the-figure §1" data-resolved-at="2026-09-23T01:43:53+00:00" data-resolved-by="">
@@ -243,6 +247,9 @@
 <div class="r-comment" data-section="s1" data-id="c-run-r-20260923T010909082010-review-of-a-lane-declares-its-input-modalities" data-who="reckon-ship" data-when="2026-09-23T01:34:37.778Z">
     <div class="r-comment-body"><p>review stored and parsed; the coordinator read its verdict and findings before acting on the reviewed run</p></div>
 </div>
+<div class="r-comment" data-section="s1" data-id="c-s1-guard-has-no-production-caller" data-who="reckon-build" data-when="2026-10-13T02:30:00Z">
+    <div class="r-comment-body"><p>§1's refusal is measured on <code>select_profile_backend</code>, which has no production caller. Its production caller arrives with §4: <code>_dispatch_composed_review</code> filters review lane candidates with <code>missing_input_modalities</code>, and §4's node moves §1's refusal tests onto that path when it retires <code>select_profile_backend</code>. Until then the guard protects no dispatch.</p></div>
+</div>
 <div class="r-comment" data-section="s2" data-id="c-20260923T0600-s2-split" data-who="reckon-ship" data-when="2026-09-23T06:00:00Z">
     <div class="r-comment-body"><p><strong>§2 is cut into three nodes along file ownership.</strong></p><ol><li><strong>Argv half, now.</strong> <code>reckon._backends.launch_plan</code> gains an <code>images</code> argument, which is the plan the launcher runs. Each dialect's <code>argv()</code> receives it: the codex dialect emits one <code>-i &lt;path&gt;</code> per image, and every dialect that cannot carry images raises <code>BackendError</code> naming the dialect when the tuple is non-empty. Files: <code>reckon/_backends.py</code> and one new test file. The test asserts on <code>launch_plan(...).argv</code>, never on a helper.</li><li><strong>Dispatch wiring, after <code>reckon/crew/dispatch.py</code> is released by worker-death step 4.</strong> A node's declared figures reach <code>launch_plan</code> through the real dispatch path, and a dispatch carrying two figures shows both <code>-i</code> flags in the composed argv.</li><li><strong>Declaration, after node 1 lands.</strong> <code>input_modalities: [text, image]</code> is declared on the codex backends in the project flight layer (<code>docs/state/reckon/flight.yaml</code>). This must follow the argv half, because the schema forbids declaring a modality the lane does not deliver.</li></ol></div>
 </div>
@@ -257,6 +264,12 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-s4-lane-design-and-hold" data-who="reckon-build" data-when="2026-10-13T02:20:00Z">
     <div class="r-comment-body"><p><strong>Design, from the design reviews.</strong> The figure review's lane is chosen where the text review's already is: <code>_dispatch_composed_review</code> in <code>reckon/crew/recovery_review_dispatch.py</code> takes its candidates from <code>_review_lane_candidates</code> and, for a figure review, drops every candidate <code>missing_input_modalities</code> reports short of image input. It dispatches with <code>role="review"</code>, so <code>resolve_role</code>'s overlays apply. <code>select_profile_backend</code> in <code>reckon/flight.py</code> has no caller and selects lanes beside <code>resolve_role</code>, so it is retired in this section's node, with its tests.</p><p><strong>Held for the lead.</strong> No local lane carries images, so every figure review runs on a metered lane, and <code>review_excluded_backends</code> keeps reviews off metered lanes. §4 is deferred until the lead decides whether a figure review is exempt from that exclusion.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-s4-scoring-plan-caller" data-who="reckon-build" data-when="2026-10-13T02:30:00Z">
+    <div class="r-comment-body"><p><a href="/reckon/plans/scoring-should-stop-a-promotion">scoring-should-stop-a-promotion</a> §6 names <code>select_profile_backend</code> as its first dispatch caller, and §4 applies that plan's §2g selection rule and §6 caption rule. When §4 is rewritten after the lead's lane decision, it names that plan's §6 as a dependency and moves its caller onto <code>_dispatch_composed_review</code> in the same change that retires <code>select_profile_backend</code>.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-s3-executable-as-s8" data-who="reckon-build" data-when="2026-10-13T02:30:00Z">
+    <div class="r-comment-body"><p>§3 states the evaluation but carries no done-when, control or write paths, so it is not dispatched as written. Its executable node is §8, which keeps §3's pairs and its format question and adds the gate. §3 is deferred in its favour.</p></div>
 </div>
 </section>
 </main>
