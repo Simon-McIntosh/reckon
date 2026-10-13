@@ -244,7 +244,7 @@ def test_no_dispatch_ever_names_a_review_of_a_review(
 ) -> None:
     """The chain this node closes: no live run is a review of a review run."""
     config_home, repo = isolated_project
-    _completed_pointer(config_home, repo, "r-work", role="implement")
+    work = _completed_pointer(config_home, repo, "r-work", role="implement")
     _completed_pointer(config_home, repo, "r-prior-review", role="review")
     try:
         with runs.follower_claim("sample", "session-orchestrating", delivery="stream"):
@@ -253,15 +253,21 @@ def test_no_dispatch_ever_names_a_review_of_a_review(
             )
         ids = [str((row.get("node") or {}).get("id") or "") for row in runs.list_live()]
         minted = [name for name in ids if name.startswith(recovery.REVIEW_NODE_PREFIX)]
-        assert minted == [recovery.REVIEW_NODE_PREFIX + "r-work"]
+        # A review of the review run would be minted from that run's node id, so
+        # its own id begins with the prefix and the review run's name. Checked
+        # before the id-shape assertion below, so dropping the review-role
+        # exemption fails here, on the review-of-a-review, and not on the count.
         assert not [
             name
             for name in ids
-            if name
-            == recovery.REVIEW_NODE_PREFIX
-            + recovery.REVIEW_NODE_PREFIX
-            + "r-prior-review"
+            if name.startswith(recovery.REVIEW_NODE_PREFIX + "r-prior-review")
         ]
+        # A review node's id carries the head the reviewed run reached, so the
+        # expected suffix comes from the same source production reads it from
+        # rather than a literal that would age out the moment the head moves.
+        head = recovery._run_head_for_review(work)
+        assert head, "the fixture repository supplies a head for the work run"
+        assert minted == [f"{recovery.REVIEW_NODE_PREFIX}r-work-{head[:12]}"]
     finally:
         if crew.watch_state("sample")["watcher_live"]:
             recovery.unwatch("sample")
