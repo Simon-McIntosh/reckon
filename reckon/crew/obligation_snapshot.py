@@ -753,7 +753,7 @@ def fleet_state(project: str, *, now: datetime | None = None) -> FleetState:
             pointers[run_id] = pointer
         if session and run_id and module._current_review_in_flight(pointer):
             reviews_in_flight.setdefault(session, set()).add(run_id)
-    floors = module.review_module.declared_dimension_floors(config)
+    floors = module.review_dispositions.declared_dimension_floors(config)
     # Every review read this sweep makes happens inside the region -- the
     # classified rows, the sub-floor lookup and the held-worktree scan all
     # reach the review store -- so what could not be read is collected here,

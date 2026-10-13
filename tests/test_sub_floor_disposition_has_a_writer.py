@@ -34,6 +34,7 @@ from reckon import flight
 from reckon import ledger as ledger_module
 from reckon.cli import main as cli_main
 from reckon.crew import review as review_module
+from reckon.crew import review_dispositions as dispositions_module
 from reckon.crew import runs
 
 obligations_module = importlib.import_module("reckon.crew.obligations")
@@ -268,11 +269,13 @@ def _undisposed_rows(reviewed_run_id: str, head: str) -> list[dict[str, Any]]:
     obligations list walks: a promoted run has no pointer, so the finding's
     retirement is asserted where the row's content comes from.
     """
-    floors = review_module.declared_dimension_floors(flight.resolve(PROJECT).config)
+    floors = dispositions_module.declared_dimension_floors(
+        flight.resolve(PROJECT).config
+    )
     _path, record = review_module.stored_record(
         PROJECT, reviewed_run_id, reviewed_head_sha=head
     )
-    return review_module.sub_floor_dimensions(record, floors)
+    return dispositions_module.sub_floor_dimensions(record, floors)
 
 
 def _stored_dispositions(reviewed_run_id: str) -> dict[str, Any]:
@@ -651,7 +654,7 @@ def test_the_shipped_floors_stand_behind_a_review(fixture: Fixture) -> None:
     the scale stops producing a row.
     """
     resolved = flight.resolve(PROJECT)
-    floors = review_module.declared_dimension_floors(resolved.config)
+    floors = dispositions_module.declared_dimension_floors(resolved.config)
     assert set(floors) == set(review_module.REVIEW_DIMENSIONS)
 
     rows = _sub_floor_rows()

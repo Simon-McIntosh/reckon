@@ -33,6 +33,7 @@ import pytest
 
 from reckon import flight
 from reckon.crew import review as review_module
+from reckon.crew import review_dispositions as dispositions_module
 from reckon.crew import runs
 
 obligations = importlib.import_module("reckon.crew.obligations")
@@ -224,7 +225,7 @@ def copies(isolated_reckon_home: Path, tmp_path: Path, monkeypatch) -> Copies:
 
 def _dispose_run() -> None:
     """Record the sub-floor disposition the way the command does."""
-    review_module.record_dimension_disposition(
+    dispositions_module.record_dimension_disposition(
         PROJECT, REVIEWED, "durability", kind="folded", node=FOLD_NODE
     )
 
@@ -325,8 +326,10 @@ def test_the_obligations_reader_retires_the_duty_through_the_sibling(
     selects that same sibling through ``stored_record``, must see the
     disposition the plain copy holds and raise no row.
     """
-    floors = review_module.declared_dimension_floors(flight.resolve(PROJECT).config)
-    standing = review_module.sub_floor_dimensions(
+    floors = dispositions_module.declared_dimension_floors(
+        flight.resolve(PROJECT).config
+    )
+    standing = dispositions_module.sub_floor_dimensions(
         json.loads(copies.sibling.read_text(encoding="utf-8")), floors
     )
     assert [row["dimension"] for row in standing] == ["durability"], (
