@@ -1,0 +1,89 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed run's baseline_suite and after_suite both record exit_status 0 with failure_count 0 (base-arm.log 432 passed EXIT=0 at f819399; head-arm.log 442 passed EXIT=0 at 2bb438fe0), so the after arm adds no failure and added_failure_ids is empty",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/plan_review.py:838 review_coverage -> _fingerprint_forms",
+    "reckon/crew/plan_review.py:2011 delivered_reports -> _fingerprint_forms",
+    "reckon/_store.py:3279 _OP_DISPATCH op table reached via reckon/mcp.py:_edit_plan_tool"
+  ],
+  "completed_at": "2026-10-13T07:36:19.513Z",
+  "dispatched_at": "2026-10-13T07:12:24Z",
+  "findings": [
+    {
+      "file": "tests/test_the_fingerprint_has_one_form.py",
+      "line": "97",
+      "severity": "follow-on",
+      "text": "follow-on: the done-when's keeps-its-stored-review assertion compares the record's plan_fingerprint against whole, the value the test handed to _store_review at line 96, so the two sides move together and the assertion stays true under a regression that changes which forms are accepted; it proves the store round-trips, not the collapse-stability the done-when names."
+    },
+    {
+      "file": "tests/test_the_fingerprint_has_one_form.py",
+      "line": "86",
+      "severity": "follow-on",
+      "text": "follow-on: forms[0] is compared to plan_review.plan_fingerprint(path), the call that produces forms[0] itself, so the assertion is a tautology that can fail only if _fingerprint_forms stops returning plan_fingerprint first."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T050356104997-the-fingerprint-has-one-form/manifest.md",
+      "line": "15",
+      "severity": "follow-on",
+      "text": "follow-on: baseline_suite and after_suite carry placeholders (the 42 test files importing reckon/crew/plan_review.py that existed at base, and all 44 test files importing reckon/crew/plan_review.py) in their command fields instead of the literal command the manifest schema requires, so the command is readable only from the arm logs' own header lines."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T050356104997-the-fingerprint-has-one-form/manifest.md",
+      "line": "11",
+      "severity": "follow-on",
+      "text": "follow-on: the base arm's file list omits tests/test_dispatch_names_the_health_review.py, an importer of reckon/crew/plan_review at f819399, so six of the ten extra head cases come from a file the base arm should have run and the head-minus-base delta is not over one importer set."
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": "687",
+      "severity": "follow-on",
+      "text": "follow-on: the new docstring states what the function used to return, which the repo naming rules ban as changelog prose in a comment; the retirement reason reads stronger stated as mechanism."
+    },
+    {
+      "file": "tests/test_plan_review_store.py",
+      "line": "449",
+      "severity": "follow-on",
+      "text": "follow-on: _land_section re-implements the section_declarations-and-status done flip that reckon/_store.py:3191 (_apply_collapse_section) already performs, and tests/test_a_section_reviewed_as_authored_stays_reviewed.py:126 duplicates the same flip."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base f819399073304214e2eff14139a047fba0686f51; four commits f242f28f7, e0c1b89ec, c5d9b5190, 2bb438fe0 change nine files (+243/-480), retiring the pre-collapse digest and the op, repairing the three stranded test files and adding the evidence fragment.",
+    "done_when": "the done-when names tests/test_the_fingerprint_has_one_form.py; the manifest and the run's arm logs record that gate green (head-arm.log 442 passed EXIT=0, base-arm.log 432 passed EXIT=0) and the negative control red (negative-control-mutation.log 2 failed EXIT=1), which is the measure the section states.",
+    "goal": "the node goal is to retire the pre-collapse fingerprint form and the collapse_section op so _fingerprint_forms returns the section-set and whole-document forms only; the diff narrows reckon/crew/plan_review.py:678 to a 2-tuple and drops the op from reckon/_store.py:3279, reckon/mcp.py:1269 and skills/reckon-edit/SKILL.md:399.",
+    "manifest": "read; it states status complete, lists the four commits and the gate result, and its baseline_suite and after_suite keys name the arm logs and a zero failure count, but both keys' command fields carry angle-bracket placeholders rather than the literal command.",
+    "write_paths": "the manifest declares seven paths; the diff touches those seven plus tests/test_edit_plan_collapse_section.py, tests/test_a_section_reviewed_as_authored_stays_reviewed.py and tests/test_plan_review_store.py, and the three are covered by the coordinator's explicit scope extension in the run's resume-1-advice.txt."
+  },
+  "justifications": {
+    "durability": "restoring the pre-collapse form reds tests/test_the_fingerprint_has_one_form.py:85 and :106 per negative-control-mutation.log, but the done-when's headline assertion at :97 compares the stored digest to the value the test itself handed to _store_review.",
+    "evidence": "the gate is recorded green (head-arm.log 442 passed EXIT=0) but the base arm at base-arm.log ran 42 files and omitted tests/test_dispatch_names_the_health_review.py, an importer of plan_review at f819399 (:23), so the two arms are not over one importer set.",
+    "fit": "the change follows the surrounding idiom, but reckon/crew/plan_review.py:687 writes changelog prose (The pre-collapse form this function used to return is retired), a phrasing that appears nowhere else in reckon/ and that the repo comment-hygiene rule bans.",
+    "goal_fidelity": "reckon/crew/plan_review.py:694 returns [plan_fingerprint(content), _digest(payload)] and nothing else, and the op is gone from reckon/_store.py:3279, reckon/mcp.py:1269 and skills/reckon-edit/SKILL.md:399.",
+    "reuse": "the production change only removes and forks nothing, but tests/test_plan_review_store.py:449 and tests/test_a_section_reviewed_as_authored_stays_reviewed.py:126 re-implement the declaration-and-status flip that reckon/_store.py:3191 (_apply_collapse_section) already owns.",
+    "scope_discipline": "every path in the diff is either one of the seven declared in the manifest or one of the three the coordinator added by hand in resume-1-advice.txt."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to retire the pre-collapse fingerprint form and the collapse_section op so _fingerprint_forms returns the section-set and whole-document forms only; the diff narrows reckon/crew/plan_review.py:678 to a 2-tuple and drops the op from reckon/_store.py:3279, reckon/mcp.py:1269 and skills/reckon-edit/SKILL.md:399.\nVERDICT done_when: the done-when names tests/test_the_fingerprint_has_one_form.py; the manifest and the run's arm logs record that gate green (head-arm.log 442 passed EXIT=0, base-arm.log 432 passed EXIT=0) and the negative control red (negative-control-mutation.log 2 failed EXIT=1), which is the measure the section states.\nVERDICT write_paths: the manifest declares seven paths; the diff touches those seven plus tests/test_edit_plan_collapse_section.py, tests/test_a_section_reviewed_as_authored_stays_reviewed.py and tests/test_plan_review_store.py, and the three are covered by the coordinator's explicit scope extension in the run's resume-1-advice.txt.\nVERDICT manifest: read; it states status complete, lists the four commits and the gate result, and its baseline_suite and after_suite keys name the arm logs and a zero failure count, but both keys' command fields carry angle-bracket placeholders rather than the literal command.\nVERDICT diff: read commit by commit against base f819399073304214e2eff14139a047fba0686f51; four commits f242f28f7, e0c1b89ec, c5d9b5190, 2bb438fe0 change nine files (+243/-480), retiring the pre-collapse digest and the op, repairing the three stranded test files and adding the evidence fragment.\nCALL_SITES: reckon/crew/plan_review.py:838 review_coverage -> _fingerprint_forms, reckon/crew/plan_review.py:2011 delivered_reports -> _fingerprint_forms, reckon/_store.py:3279 _OP_DISPATCH op table reached via reckon/mcp.py:_edit_plan_tool\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:694 returns [plan_fingerprint(content), _digest(payload)] and nothing else, and the op is gone from reckon/_store.py:3279, reckon/mcp.py:1269 and skills/reckon-edit/SKILL.md:399.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate is recorded green (head-arm.log 442 passed EXIT=0) but the base arm at base-arm.log ran 42 files and omitted tests/test_dispatch_names_the_health_review.py, an importer of plan_review at f819399 (:23), so the two arms are not over one importer set.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the diff is either one of the seven declared in the manifest or one of the three the coordinator added by hand in resume-1-advice.txt.\nSCORE durability: 15\nJUSTIFICATION durability: restoring the pre-collapse form reds tests/test_the_fingerprint_has_one_form.py:85 and :106 per negative-control-mutation.log, but the done-when's headline assertion at :97 compares the stored digest to the value the test itself handed to _store_review.\nSCORE fit: 16\nJUSTIFICATION fit: the change follows the surrounding idiom, but reckon/crew/plan_review.py:687 writes changelog prose (The pre-collapse form this function used to return is retired), a phrasing that appears nowhere else in reckon/ and that the repo comment-hygiene rule bans.\nSCORE reuse: 15\nJUSTIFICATION reuse: the production change only removes and forks nothing, but tests/test_plan_review_store.py:449 and tests/test_a_section_reviewed_as_authored_stays_reviewed.py:126 re-implement the declaration-and-status flip that reckon/_store.py:3191 (_apply_collapse_section) already owns.\nFINDING tests/test_the_fingerprint_has_one_form.py:97 follow-on: the done-when's keeps-its-stored-review assertion compares the record's plan_fingerprint against whole, the value the test handed to _store_review at line 96, so the two sides move together and the assertion stays true under a regression that changes which forms are accepted; it proves the store round-trips, not the collapse-stability the done-when names.\nFINDING tests/test_the_fingerprint_has_one_form.py:86 follow-on: forms[0] is compared to plan_review.plan_fingerprint(path), the call that produces forms[0] itself, so the assertion is a tautology that can fail only if _fingerprint_forms stops returning plan_fingerprint first.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T050356104997-the-fingerprint-has-one-form/manifest.md:15 follow-on: baseline_suite and after_suite carry placeholders (the 42 test files importing reckon/crew/plan_review.py that existed at base, and all 44 test files importing reckon/crew/plan_review.py) in their command fields instead of the literal command the manifest schema requires, so the command is readable only from the arm logs' own header lines.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T050356104997-the-fingerprint-has-one-form/manifest.md:11 follow-on: the base arm's file list omits tests/test_dispatch_names_the_health_review.py, an importer of reckon/crew/plan_review at f819399, so six of the ten extra head cases come from a file the base arm should have run and the head-minus-base delta is not over one importer set.\nFINDING reckon/crew/plan_review.py:687 follow-on: the new docstring states what the function used to return, which the repo naming rules ban as changelog prose in a comment; the retirement reason reads stronger stated as mechanism.\nFINDING tests/test_plan_review_store.py:449 follow-on: _land_section re-implements the section_declarations-and-status done flip that reckon/_store.py:3191 (_apply_collapse_section) already performs, and tests/test_a_section_reviewed_as_authored_stays_reviewed.py:126 duplicates the same flip.",
+  "review_run_id": "r-20261013T071157813393-review-of-the-fingerprint-has-one-form-2bb438fe0c2e",
+  "reviewed_base_sha": "f819399073304214e2eff14139a047fba0686f51",
+  "reviewed_head_sha": "2bb438fe0c2ec480d5e2425d65f9955b02a9ccd4",
+  "reviewed_run_id": "r-20261013T050356104997-the-fingerprint-has-one-form",
+  "reviewer_run_id": "r-20261013T071157813393-review-of-the-fingerprint-has-one-form-2bb438fe0c2e",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 15,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T07:34:50.844850+00:00",
+  "total": 98
+}
