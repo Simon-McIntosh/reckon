@@ -1,0 +1,54 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-13T02:34:59.561Z",
+  "dispatched_at": "2026-10-13T02:26:52Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html#s8",
+      "id": "reasoning-1",
+      "reason": "without a stated setter the evaluation cannot attach the figures it exists to measure, so \u00a78 as sequenced runs and measures nothing.",
+      "text": "\u00a78 presents each drawn figure \"through \u00a76's dispatch path\", but \u00a76 declares that `TaskNode.images` is set by \"\u00a74's figure review\" and that this is \"the only caller that sets it\", and \u00a74 is deferred pending a lead decision on the metered-lane exclusion (see \u00a74's data-status and the c-s4-lane-design-and-hold comment); \u00a78 therefore names no mechanism that attaches its figures, and a node dispatched to \u00a78 would carry an empty images list",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html#s5",
+      "id": "reasoning-2",
+      "reason": "the sequencing section is the plan's order of work and now describes \u00a71\u2192\u00a72\u2192\u00a73\u2192\u00a74, a path the plan no longer takes, so a reader dispatching by it orders the nodes wrongly and skips \u00a76, \u00a77 and \u00a78.",
+      "text": "\u00a75 (declared `done` in plan-section-declarations) still sequences the plan as \"\u00a73 gates \u00a74\" and speaks of \"the four\", while \u00a73 is now declared `deferred` and \u00a78 is introduced as its executable node, with \u00a76 and \u00a77 running before it",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "44f54c996f0c3aa1245e516142f2667b7dee92cb1ce91774109b02c32264aa17",
+  "plan_slug": "a-review-can-see-the-figure",
+  "plan_version": 12,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261013T022611835501-plan-review-of-a-review-can-see-the-figure",
+  "reviewed_blob_sha": "42445ee9a5d140ecedfc19fa55a6093e31ae30b1",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the _document intro's reckon/_backends.py:1220 resolves to the codex dialect's `exec` argv composition (verified), and \u00a78's internal references (\u00a73's table, \u00a76's dispatch path, \u00a77's declared lane) resolve to sections that exist.",
+    "done_when": "pass \u2014 \u00a78's done-when is measurable (a per-pair, per-format record of the lane's verbatim verdict on the bad and good figure) and declares an image-withheld negative control.",
+    "evidence_paths": "pass \u2014 \u00a78 writes its figures under docs/figures/figure-review-pairs/ and its verdicts under the run's report directory, both durable paths a later reader can open.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach \u00a78's prose, the figure directory name, or the new comments.",
+    "reasoning": "a finding \u2014 \u00a78's mechanism runs on \u00a76's dispatch path but names no caller that sets a node's images, while \u00a76 declares \u00a74 (now deferred) the only caller that sets it, so the dispatch \u00a78 relies on carries no figure.",
+    "single_goal": "pass \u2014 \u00a78 carries one goal, whether the lane discriminates five known pairs; the drawing of the figures is the instrument of that measure, not a second deliverable.",
+    "wiring": "pass \u2014 no depends-on/informs/gates edge among the changed units is missing or misdirected; the single plan-informs edge to scoring-should-stop-a-promotion is the one an earlier review reported, and \u00a74 is the only section that edge was raised about, which is unchanged."
+  },
+  "section_digests": {
+    "_document": "69f7775e01af2e54dd87245e6c262b9f88296c537664b5807e7dcf1a25fbe1e8",
+    "s1": "6f91847c26df4249f7e99f6d661c548de475be73869ba4799469bc0c04801047",
+    "s2": "48353069f5981e05b9d1248e19c4f56817113396a3555a2fe6e05b67a505d3f7",
+    "s3": "f8f9ad248d1ff3713092ca3da6a8795cbcecd4726a79d20dc2f63f64ceff2d87",
+    "s4": "994ed10fbb9803a9ae4914f05275f2373d788b16292a7fefaa8350883803056a",
+    "s5": "52bd0da92f26e42df8184445e6ab07cae636d7072675b3a1900951957b3a077d",
+    "s6": "f83361bce1509531e044c0d04dcb2741858ca6c3639b292d47acd6df3a7b511a",
+    "s7": "e4673147c5a3a66171bb0892dbe6927ce54eabc205870310627b08054076101a",
+    "s8": "2c200fdd964f328342811e9362e4cd14da60f3c8352368899ccf87797d9e7f5b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T02:41:17.829633+00:00"
+}
