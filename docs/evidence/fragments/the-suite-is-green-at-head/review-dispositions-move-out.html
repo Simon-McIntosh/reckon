@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="reckon-type" content="evidence">
+  <meta name="docs-project" content="reckon">
+  <meta name="plan-slug" content="the-suite-is-green-at-head">
+  <meta name="plan-evidence-for" content="the-suite-is-green-at-head">
+  <title>Landing: review.py fits a worker window | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; landing record</p>
+      <h1>Landing: the review disposition block moves out of review.py</h1>
+      <p class="lead">Brings <code>reckon/crew/review.py</code> under the estimated-token bound by moving the dimension and finding disposition block to a sibling module. This page is the node's landing anchor.</p>
+    </header>
+
+    <section id="review-dispositions-move-out-what-landed">
+      <h2>What landed</h2>
+      <ul>
+        <li><code>reckon/crew/review_dispositions.py</code> (new) &mdash; the block from <code>_floor_value</code> and <code>declared_dimension_floors</code> through <code>record_finding_disposition</code>: the declared dimension floors, the sub-floor derivation, and the dimension and finding disposition writers and readers.</li>
+        <li><code>reckon/crew/review.py</code> &mdash; the block removed (<code>_write_record</code> stays, its other writers use it). The disposition record keys and the comment describing them stay beside the store schema, and <code>_merge_record_answers</code> keeps reading <code>DIMENSION_DISPOSITIONS_KEY</code> from here.</li>
+        <li>Callers repointed to import the moved names from the new module: <code>reckon/crew/obligations.py</code>, <code>reckon/crew/obligation_snapshot.py</code>, <code>reckon/crew_run_commands.py</code>, and the four tests this node owns.</li>
+        <li>No moved name is re-exported from <code>review.py</code>, so the two modules are genuinely split.</li>
+      </ul>
+    </section>
+
+    <section id="review-dispositions-move-out-measure">
+      <h2>Measure</h2>
+      <p>Estimated tokens (the window test's own <code>_tokens_for_bytes</code> at 3.5 bytes per token) at <code>7b2011895</code>, base <code>a99e008e8</code>:</p>
+      <table>
+        <thead><tr><th>module</th><th>base</th><th>head</th><th>bound</th></tr></thead>
+        <tbody>
+          <tr><td><code>reckon/crew/review.py</code></td><td>50,598</td><td>45,544</td><td>50,000</td></tr>
+          <tr><td><code>reckon/crew/review_dispositions.py</code></td><td>&mdash;</td><td>5,646</td><td>50,000</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Window test.</strong> <code>tests/test_every_module_fits_a_worker_window.py</code> fails at head naming <code>reckon/crew/routing.py</code> (50,651) and <code>tests/test_crew.py</code> (50,332) only &mdash; neither file of this node. Those two belong to other sections of the plan that split them, and are reported under follow-ons.</p>
+      <p><strong>Importers green.</strong> Every test file importing <code>reckon.crew.review</code> or <code>reckon.crew.review_dispositions</code> (95 files, <code>-n 8</code>): <strong>881 passed, 0 failed, EXIT=0</strong>. With no failure at head there is no added failure against base.</p>
+      <p><strong>Negative control.</strong> Appending the moved block back to <code>review.py</code> in a scratch tree pushes it to <strong>50,760</strong> estimated tokens, and the window test then names <code>reckon/crew/review.py</code>. The check fires on the mutation it declares.</p>
+      <p><strong>Lint.</strong> Ruff check and format delta against base is zero: the only remaining finding and the only unformatted file among the touched paths (<code>reckon/crew_run_commands.py</code>) are present identically at base.</p>
+    </section>
+
+    <section id="review-dispositions-move-out-commits">
+      <h2>Commits and records</h2>
+      <p>Code: <code>7b20118952699cafd33dc16dae9399c9b815df7d</code>.</p>
+      <p>Logs in <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T030451228145-review-dispositions-move-out/</code>: <code>gate-window-head.log</code>, <code>gate-importers-head.log</code>, <code>negative-control.log</code>.</p>
+    </section>
+  </main>
+</body>
+</html>
