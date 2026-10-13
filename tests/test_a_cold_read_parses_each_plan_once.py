@@ -166,6 +166,28 @@ def test_a_cold_discovery_read_builds_each_plans_soup_once(mounted, soups) -> No
         )
 
 
+def test_composing_the_project_state_reuses_the_shared_parse(mounted, soups) -> None:
+    docs, _state_root, _mcp = mounted
+    texts = _corpus(docs)
+    soups.clear()
+
+    # The shared parse reads each plan once. Composing the project state then
+    # hydrates the sprint items through _plan_state_by_slug, which reaches
+    # _cached_plan_state for each plan the sprint names. A cold compose is the
+    # only reader in its own path, so it cannot show whether that state derives
+    # from the shared parse; reading each plan first and then composing does:
+    # the compose must land on the parse already built, not build a second soup.
+    for slug in texts:
+        _plan_html.read_state_and_text_file(docs / "plans" / f"{slug}.html")
+    project_state.compose_project_state(docs, PROJECT)
+
+    for slug, text in texts.items():
+        assert soups[text] == 1, (
+            f"composing the project state after a shared read built {slug}'s "
+            f"soup {soups[text]} times"
+        )
+
+
 def test_the_three_readers_agree_with_a_direct_parse(mounted) -> None:
     docs, _state_root, _mcp = mounted
     for index in range(PLANS):

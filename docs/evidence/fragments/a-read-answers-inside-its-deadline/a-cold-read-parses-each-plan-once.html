@@ -15,7 +15,7 @@
 <body>
 <article class="r-note" id="a-cold-read-parses-each-plan-once-landing" data-node="a-cold-read-parses-each-plan-once" data-reckon="landed" data-when="2026-10-13">
   <h2>A cold read builds each plan file's soup once</h2>
-  <p><code>read_state_file</code>, <code>parse_plan</code> (through <code>_parse_plan_uncached</code>) and project state's <code>_cached_plan_state</code> now derive from the <code>read_state_and_text_file</code> parse instead of each building their own BeautifulSoup. On a distributed ten-plan corpus a cold roadmap read builds each plan file's soup 3&nbsp;times at base and 1&nbsp;time here; a cold discovery read builds it 2&nbsp;times at base and 1&nbsp;time here. The negative control gives <code>_cached_plan_state</code> its own parse again, and both count cases fail at 2.</p>
+  <p><code>read_state_file</code>, <code>parse_plan</code> (through <code>_parse_plan_uncached</code>) and project state's <code>_cached_plan_state</code> now derive from the <code>read_state_and_text_file</code> parse instead of each building their own BeautifulSoup. On a distributed ten-plan corpus a cold roadmap read builds each plan file's soup 3&nbsp;times at base and 1&nbsp;time here; a cold discovery read builds it 2&nbsp;times at base and 1&nbsp;time here. A third case reads each plan through the shared parse and then composes the project state, whose sprint hydration reaches <code>_cached_plan_state</code>: 2&nbsp;builds at base, 1&nbsp;here. The negative control gives <code>_cached_plan_state</code> its own parse again, and all three count cases fail at 2.</p>
 </article>
 </body>
 </html>
