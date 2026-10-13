@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "base-arm.log and after-arm.log each record 289 passed EXIT=0 over the reports.py-importing files, so the after arm adds no failure; the reviewed manifest's baseline_suite/after_suite JSON keys are placeholders, so the count is taken from the arm logs the manifest names",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:663 crew_check_manifest -> audit_manifest",
+    "reckon/crew/reports.py:2380 audit_manifest -> _review_record_status_findings",
+    "reckon/crew/review.py:2264 store_review -> review_status_refusal"
+  ],
+  "completed_at": "2026-10-13T05:56:01.972Z",
+  "dispatched_at": "2026-10-13T05:38:57Z",
+  "findings": [
+    {
+      "file": "reckon/crew/reports.py",
+      "line": "1661",
+      "severity": "follow-on",
+      "text": "follow-on: _written_review_records re-implements _reviewer_store_records (reckon/crew/reports.py:1549) without extending it, repeating the same iteration over node.write_paths, the same candidate.parent.parent != store_root test and the same read-and-parse of each declared record that the two sibling checks (_unmarked_finding_severity_findings, _unresolved_revision_findings) consume from the owner; its stated justification that the store's selection would set the record aside is not demonstrated, since stored_record (reckon/crew/review.py:2932) returns a hand-written record at the legacy path and normalize_identity (reckon/ledger.py:270) preserves status, so the only real divergence is the review-material filter the placeholder case needs, which could have been applied over the owner's output rather than a re-walk."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T050009140417-a-hand-written-review-record-is-refused/manifest.md",
+      "line": "16",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest's baseline_suite and after_suite keys carry the placeholder {\"revision_typo_placeholder\": null} instead of the armed-only JSON the schema requires (revision, command, exit_status, log_path, completed, failure_count, failure_ids), so the base and after arms are readable only from the separate arm logs and not from the record the promotion reads."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base e4d962199; the single commit 02f67108d changes four files (+327/-12), adding the shared status check, the audit-side hook, a 214-line test and a 16-line evidence fragment.",
+    "done_when": "the done_when names tests/test_a_hand_written_review_record_is_refused.py; the manifest records the gate at 4 passed EXIT=0, the base and after arms at 289 passed each, and the negative control at 1 failed EXIT=1, which is the measure the done_when states.",
+    "goal": "the node goal is to have check-manifest re-validate a review run's written review records with the same status check store_review applies; the diff adds review_status_refusal (reckon/crew/review.py:571) and calls it from store_review (reckon/crew/review.py:2264) and from audit_manifest's hook (reckon/crew/reports.py:2380), so one function owns the accepted set.",
+    "manifest": "read; it states status complete, commits 02f67108d and the gate result, but its baseline_suite and after_suite keys carry the placeholder {\"revision_typo_placeholder\": null} rather than a revision, command, exit status or log path.",
+    "write_paths": "the manifest's declared paths are reckon/crew/reports.py, reckon/crew/review.py, tests/test_a_hand_written_review_record_is_refused.py and the evidence fragment; the diff touches exactly those four files and nothing else."
+  },
+  "justifications": {
+    "durability": "the negative control (negative-control.log) removes the audit-side call and test_a_hand_written_record_with_an_unrecognised_status_is_refused reddens at line 143 with exit_code 0, so the assertion fails on exactly the regression it guards.",
+    "evidence": "the gate tests/test_a_hand_written_review_record_is_refused.py asserts the refusal (line 143) and the stored-record pass, recorded at 4 passed EXIT=0, but the reviewed manifest's baseline_suite and after_suite keys (manifest.md:16-17) name no revision, command or exit, so the added-failure derivation rests on the arm logs alone.",
+    "fit": "the new helpers sit beside _unmarked_finding_severity_findings (reckon/crew/reports.py:1600) and follow the same findings-helper idiom, with no plan, sprint or ticket identifier in any added name or comment.",
+    "goal_fidelity": "review_status_refusal (reckon/crew/review.py:571) is shared by store_review and audit_manifest's _review_record_status_findings (reckon/crew/reports.py:1636), exactly the one-owner accepted set the plan section states.",
+    "reuse": "_written_review_records (reckon/crew/reports.py:1661) re-walks node.write_paths and re-reads each declared record that the existing owner _reviewer_store_records (reckon/crew/reports.py:1549) already enumerates and reads for the two sibling checks.",
+    "scope_discipline": "every path in the diff (reckon/crew/reports.py, reckon/crew/review.py, tests/test_a_hand_written_review_record_is_refused.py, the fragment) is inside the node's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to have check-manifest re-validate a review run's written review records with the same status check store_review applies; the diff adds review_status_refusal (reckon/crew/review.py:571) and calls it from store_review (reckon/crew/review.py:2264) and from audit_manifest's hook (reckon/crew/reports.py:2380), so one function owns the accepted set.\nVERDICT done_when: the done_when names tests/test_a_hand_written_review_record_is_refused.py; the manifest records the gate at 4 passed EXIT=0, the base and after arms at 289 passed each, and the negative control at 1 failed EXIT=1, which is the measure the done_when states.\nVERDICT write_paths: the manifest's declared paths are reckon/crew/reports.py, reckon/crew/review.py, tests/test_a_hand_written_review_record_is_refused.py and the evidence fragment; the diff touches exactly those four files and nothing else.\nVERDICT manifest: read; it states status complete, commits 02f67108d and the gate result, but its baseline_suite and after_suite keys carry the placeholder {\"revision_typo_placeholder\": null} rather than a revision, command, exit status or log path.\nVERDICT diff: read commit by commit against base e4d962199; the single commit 02f67108d changes four files (+327/-12), adding the shared status check, the audit-side hook, a 214-line test and a 16-line evidence fragment.\nCALL_SITES: reckon/crew_run_commands.py:663 crew_check_manifest -> audit_manifest, reckon/crew/reports.py:2380 audit_manifest -> _review_record_status_findings, reckon/crew/review.py:2264 store_review -> review_status_refusal\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: review_status_refusal (reckon/crew/review.py:571) is shared by store_review and audit_manifest's _review_record_status_findings (reckon/crew/reports.py:1636), exactly the one-owner accepted set the plan section states.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate tests/test_a_hand_written_review_record_is_refused.py asserts the refusal (line 143) and the stored-record pass, recorded at 4 passed EXIT=0, but the reviewed manifest's baseline_suite and after_suite keys (manifest.md:16-17) name no revision, command or exit, so the added-failure derivation rests on the arm logs alone.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff (reckon/crew/reports.py, reckon/crew/review.py, tests/test_a_hand_written_review_record_is_refused.py, the fragment) is inside the node's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: the negative control (negative-control.log) removes the audit-side call and test_a_hand_written_record_with_an_unrecognised_status_is_refused reddens at line 143 with exit_code 0, so the assertion fails on exactly the regression it guards.\nSCORE fit: 18\nJUSTIFICATION fit: the new helpers sit beside _unmarked_finding_severity_findings (reckon/crew/reports.py:1600) and follow the same findings-helper idiom, with no plan, sprint or ticket identifier in any added name or comment.\nSCORE reuse: 5\nJUSTIFICATION reuse: _written_review_records (reckon/crew/reports.py:1661) re-walks node.write_paths and re-reads each declared record that the existing owner _reviewer_store_records (reckon/crew/reports.py:1549) already enumerates and reads for the two sibling checks.\nFINDING reckon/crew/reports.py:1661 follow-on: _written_review_records re-implements _reviewer_store_records (reckon/crew/reports.py:1549) without extending it, repeating the same iteration over node.write_paths, the same candidate.parent.parent != store_root test and the same read-and-parse of each declared record that the two sibling checks (_unmarked_finding_severity_findings, _unresolved_revision_findings) consume from the owner; its stated justification that the store's selection would set the record aside is not demonstrated, since stored_record (reckon/crew/review.py:2932) returns a hand-written record at the legacy path and normalize_identity (reckon/ledger.py:270) preserves status, so the only real divergence is the review-material filter the placeholder case needs, which could have been applied over the owner's output rather than a re-walk.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T050009140417-a-hand-written-review-record-is-refused/manifest.md:16 follow-on: the reviewed manifest's baseline_suite and after_suite keys carry the placeholder {\"revision_typo_placeholder\": null} instead of the armed-only JSON the schema requires (revision, command, exit_status, log_path, completed, failure_count, failure_ids), so the base and after arms are readable only from the separate arm logs and not from the record the promotion reads.\n",
+  "review_run_id": "r-20261013T053826944048-review-of-a-hand-written-review-record-is-refused-02f67108d033",
+  "reviewed_base_sha": "e4d962199f3576e875f7a56e37c3b999b067a770",
+  "reviewed_head_sha": "02f67108d033f7435d9506fd37dc8bed6d427738",
+  "reviewed_run_id": "r-20261013T050508083815-a-hand-written-review-record-is-refused",
+  "reviewer_run_id": "r-20261013T053826944048-review-of-a-hand-written-review-record-is-refused-02f67108d033",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T05:59:14.288671+00:00",
+  "total": 94
+}
