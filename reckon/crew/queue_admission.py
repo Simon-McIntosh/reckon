@@ -231,6 +231,32 @@ def _restore_queued(snapshot: Mapping[str, Any], failure: str) -> None:
     _write_pointer(str(snapshot["run_id"]), restored)
 
 
+def _record_queued_failure(snapshot: Mapping[str, Any], failure: str) -> None:
+    """Keep a newer re-queue, or restore the request if dispatch removed it."""
+    run_id = str(snapshot["run_id"])
+
+    def annotate(current: dict[str, Any]) -> dict[str, Any]:
+        current["failure"] = failure
+        current["failure_at"] = _utc_now()
+        return current
+
+    try:
+        runs._mutate_pointer(run_id, annotate)
+    except CrewError:
+        _restore_queued(snapshot, failure)
+
+
+def _require_launched_record(candidate: Any) -> Mapping[str, Any]:
+    if (
+        not isinstance(candidate, Mapping)
+        or not candidate.get("run_id")
+        or not candidate.get("phase")
+        or candidate.get("phase") == "queued"
+    ):
+        raise CrewError("dispatch did not return a launched record")
+    return candidate
+
+
 def admit_once(
     *,
     launcher: Callable[..., int] | None = None,
@@ -280,22 +306,22 @@ def admit_once(
                 result["held"].append(str(pointer["run_id"]))
                 continue
             snapshot = copy.deepcopy(dict(pointer))
+            record = None
+            failure = "dispatch did not return a launched record"
             try:
-                record = _launch_queued(
-                    pointer, launcher=launcher, config_for=config_for
+                record = _require_launched_record(
+                    _launch_queued(pointer, launcher=launcher, config_for=config_for)
                 )
-            except (LaneHeld, LanePaused) as exc:
-                # The shared path already refreshed the queued pointer; the
-                # request stays waiting rather than being destroyed.
-                result["held"].append(str(pointer["run_id"]))
-                result.setdefault("hold_detail", {})[str(pointer["run_id"])] = str(exc)
-                continue
-            except (CrewError, OSError) as exc:
-                _restore_queued(snapshot, f"{type(exc).__name__}: {exc}")
-                result["failed"].append(str(pointer["run_id"]))
-                result.setdefault("failure_detail", {})[str(pointer["run_id"])] = str(
-                    exc
-                )
+            except Exception as exc:  # noqa: BLE001 - every dispatch failure keeps its request
+                failure = f"{type(exc).__name__}: {exc}"
+                key = "held" if isinstance(exc, (LaneHeld, LanePaused)) else "failed"
+                detail_key = "hold_detail" if key == "held" else "failure_detail"
+                result[key].append(str(pointer["run_id"]))
+                result.setdefault(detail_key, {})[str(pointer["run_id"])] = str(exc)
+            finally:
+                if record is None:
+                    _record_queued_failure(snapshot, failure)
+            if record is None:
                 continue
             _stamp_admission(str(record["run_id"]), snapshot, admitted_at=_utc_now())
             result["launched"].append(str(record["run_id"]))
