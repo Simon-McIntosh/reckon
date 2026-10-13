@@ -25,6 +25,8 @@
   <title>A Review Gate Judges What It Covers | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-10-13">
 </head>
 <body>
   <main class="plan-doc">
@@ -93,11 +95,12 @@
     </p>
 
     <h2 id="s3">§3 — An edit a finding asked for is covered by that finding's review</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="1" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
     <p>
       <strong>Deliverable.</strong> When a finding is answered <code>--acted</code> and the next edit to the
-      plan changes only the section the finding anchors, by no more than the review-need threshold
-      (<code>review.review_need_threshold</code>), the stored review covers that section at its new digest.
+      plan changes only the section the finding anchors, by less than the word-share threshold the coverage predicate
+      already applies (<code>review.plan_change_threshold</code>, 0.30; <code>review.review_need_threshold</code> is the
+      review-need judge's probability cutoff, not a word share), the stored review covers that section at its new digest.
       The answer records the edit's commit, so the coverage carries its evidence. Edits beyond the anchored
       section, or beyond the threshold, still owe a review as today. This is the burst rule the
       <code>reckon-create</code> skill already states ("a burst of fixes earns at most one more, scoped
@@ -111,7 +114,7 @@
     </p>
 
     <h2 id="s4">§4 — A review run is promoted on its record, not on a gate command</h2>
-<section data-reckon="section" data-id="s4" data-effort-hours="1" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
     <p>
       <strong>Deliverable.</strong> Promotion of a run in the review role reads the stored review record as its
       evidence: the record's status, its findings and the report path. It does not require the manifest's
