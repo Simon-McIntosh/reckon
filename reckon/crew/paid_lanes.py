@@ -765,15 +765,6 @@ def gather_sources(
             reading = budget._receipt_reading(receipt[1], moment=now)
             if reading.known:
                 by_account[name].append(Candidate(source="receipt", reading=reading))
-        session = sessions.get(name)
-        if session is not None:
-            reading = budget._rollout_reading(
-                budget._read_rollout(session[1], rollouts),
-                observed_at=session[2],
-                moment=now,
-            )
-            if reading.known:
-                by_account[name].append(Candidate(source="rollout", reading=reading))
         stream = budget._newest_stream_reading(
             runs_by_account.get(name, ()), moment=now
         )
@@ -788,24 +779,46 @@ def gather_sources(
         for row in [*rows, *live]
         if isinstance(row, Mapping) and row.get("session_id")
     }
-    if rollouts is None:
-        isolated_home = os.environ.get(RECKON_HOME_ENV)
-        sessions_root = (
-            Path(isolated_home) / "codex-home" / "sessions"
-            if isolated_home
-            else rollout_module.CLIENT_SESSIONS_DIR
-        )
-        rollout_candidates = _codex_rollout_candidates(
-            wanted,
-            root=rollout_root or sessions_root,
-            runs_root=crew_runs.runs_dir(),
-            moment=now,
-            session_backends=session_backends,
-            live_run_ids={str(row.get("run_id")) for row in live if row.get("run_id")},
-            wallets=_wallet_map(wanted, _resolved_config(project, root)),
-        )
-        for account, candidate in rollout_candidates.items():
-            by_account.setdefault(account, []).append(candidate)
+    isolated_home = os.environ.get(RECKON_HOME_ENV)
+    sessions_root = (
+        Path(isolated_home) / "codex-home" / "sessions"
+        if isolated_home
+        else rollout_module.CLIENT_SESSIONS_DIR
+    )
+    rollout_candidates = _codex_rollout_candidates(
+        wanted,
+        root=rollout_root or sessions_root,
+        runs_root=crew_runs.runs_dir(),
+        moment=now,
+        session_backends=session_backends,
+        live_run_ids={str(row.get("run_id")) for row in live if row.get("run_id")},
+        wallets=_wallet_map(wanted, _resolved_config(project, root)),
+    )
+    for account, candidate in rollout_candidates.items():
+        by_account.setdefault(account, []).append(candidate)
+
+    # A session's rollout receipt carries no stamp of its own, so a figure taken
+    # from one cannot be dated by the instant the provider reported it — only by
+    # the run record that named the session, a stamp that is always at least as
+    # late as the report.  Such a figure stands only where no rollout file
+    # reached the account, and only for a caller that supplied the reader: the
+    # production gather scans every rollout home above and dates each candidate
+    # by its own event, so a later stamp on the record can never make an older
+    # figure the newest.
+    if rollouts is not None:
+        for name in sorted(wanted):
+            if name in rollout_candidates:
+                continue
+            session = sessions.get(name)
+            if session is None:
+                continue
+            reading = budget._rollout_reading(
+                budget._read_rollout(session[1], rollouts),
+                observed_at=session[2],
+                moment=now,
+            )
+            if reading.known:
+                by_account[name].append(Candidate(source="rollout", reading=reading))
     return by_account
 
 
