@@ -2934,33 +2934,35 @@ def _launch_attempt_record(repo: Path, path: Path) -> Mapping[str, Any] | None:
     return _residue_run_record(resolved, _ledgered_records(repo, None))
 
 
+def _launch_tree_verdict(
+    repo: Path, path: Path, base: str
+) -> tuple[dict[str, Any], str]:
+    """Classify a tree left at a launch path, with the label for its attempt.
+
+    The classification comes from the one workspace inspector, called with the
+    launch's base as the integration revision and the live claims as the
+    references, so a launch and a promotion judge a tree by the same rules. The
+    label names the attempt that left the tree — a live run, or the ledger row
+    a finished one wrote — so a refusal can report which attempt owns it.
+    """
+    record = _launch_attempt_record(repo, path)
+    attempt = str(record.get("run_id") or "") if record else ""
+    label = f"run {attempt}" if attempt else "an earlier attempt"
+    claims = _live_pointer_worktrees().get(path.resolve(), [])
+    verdict = _inspect_workspace(repo, path, base, claims, raise_on_unavailable=False)
+    return verdict, label
+
+
 def _tree_is_disposable_for_launch(repo: Path, path: Path, base: str) -> bool:
     """Whether a tree left at a launch path may be released for a new launch.
 
-    Disposable means the tree is clean and carries no commit beyond the base
-    the launch is cut from: its head is an ancestor of that base. A commit a
-    prior attempt left would not be an ancestor, so it keeps the tree. When
-    the base cannot be resolved, the tree is kept — an unreadable base is not
-    evidence that the tree carries nothing.
+    Disposable is the inspector's ``integrated``: the tree is clean and its
+    head is an ancestor of the base the launch is cut from, so it carries no
+    commit beyond it. Any other classification keeps the tree, because the
+    content it holds may exist nowhere else.
     """
-    state = _tree_state(path)
-    if not state.get("available"):
-        return False
-    if state["status_entries"]:
-        return False
-    head = str(state.get("head") or "")
-    if not head:
-        return False
-    resolved = _git(repo, "rev-parse", "--verify", base, check=False)
-    base_sha = resolved.stdout.strip()
-    if resolved.returncode or not base_sha:
-        return False
-    return (
-        _git(
-            repo, "merge-base", "--is-ancestor", head, base_sha, check=False
-        ).returncode
-        == 0
-    )
+    verdict, _ = _launch_tree_verdict(repo, path, base)
+    return verdict["classification"] == "integrated"
 
 
 def _stale_launch_tree_refusal(repo: Path, path: Path, base: str) -> str:
@@ -2968,33 +2970,28 @@ def _stale_launch_tree_refusal(repo: Path, path: Path, base: str) -> str:
 
     A tree a live run still holds is never removed, and neither is one whose
     head carries a commit or whose working copy holds changes — that content
-    may exist nowhere else. Only a tree that fails every one of those tests is
-    disposable, and it is released through the whole-tree release so its
+    may exist nowhere else. Only a tree the inspector classifies as integrated
+    is disposable, and it is released through the whole-tree release so its
     registered path is vacated in one step.
     """
-    record = _launch_attempt_record(repo, path)
-    attempt = str(record.get("run_id") or "") if record else ""
-    label = f"run {attempt}" if attempt else "an earlier attempt"
+    verdict, label = _launch_tree_verdict(repo, path, base)
 
-    claims = _live_pointer_worktrees().get(path.resolve(), [])
+    claims = verdict["claimed_by_live_runs"]
     if claims:
         return (
-            f"{label} still holds live run(s) {', '.join(sorted(claims))}; the "
+            f"{label} still holds live run(s) {', '.join(claims)}; the "
             f"worktree at {path} is kept"
         )
 
-    state = _tree_state(path)
-    if not state.get("available"):
+    if verdict["classification"] == "unavailable":
         return (
             f"{label} left an unreadable tree at {path}: "
-            f"{state.get('detail') or 'unavailable'}; kept"
+            f"{verdict.get('detail') or 'unavailable'}; kept"
         )
-    if state["status_entries"]:
-        return (
-            f"{label} left uncommitted changes in the worktree at {path}; kept"
-        )
-    head = str(state.get("head") or "")
-    if not _tree_is_disposable_for_launch(repo, path, base):
+    if verdict["dirty"]:
+        return f"{label} left uncommitted changes in the worktree at {path}; kept"
+    if verdict["classification"] != "integrated":
+        head = str(verdict.get("head") or "")
         return (
             f"{label} left commit {head} on the worktree at {path}, beyond its "
             f"base {base}; kept"
