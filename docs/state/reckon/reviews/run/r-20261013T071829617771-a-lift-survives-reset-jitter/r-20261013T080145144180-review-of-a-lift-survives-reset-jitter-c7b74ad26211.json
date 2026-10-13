@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/lift_watch.py:127",
+    "reckon/crew/lift_watch.py:62",
+    "reckon/crew/budget_group.py:210",
+    "reckon/budget.py:2631",
+    "reckon/budget.py:2899"
+  ],
+  "completed_at": "2026-10-13T08:17:36.051Z",
+  "dispatched_at": "2026-10-13T08:02:17Z",
+  "findings": [
+    {
+      "file": "tests/test_a_lift_survives_reset_jitter.py",
+      "line": "186",
+      "severity": "follow-on",
+      "text": "follow-on: the arm asserts `_provider_jitter(recorded, []) == pytest.approx(bl.STAMP_RESOLUTION_SECONDS)`, comparing the function's output against the very constant the function uses as its floor, so the assertion holds for any value of that constant and cannot catch a wrongly-sized floor."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read c7b74ad26 against base 5d348ebd commit by commit; it rewrites the stamp signal in reckon/crew/budget_lift.py, adds six tests and a new evidence fragment, and touches nothing else.",
+    "done_when": "read tests/test_a_lift_survives_reset_jitter.py; it grants a lift and feeds a one-second wobble (stays in force), a full-window move (cause reset) and both utilisation signals, the manifest states the measured jitter (1.0 s from the two real recorded lifts), and the after_suite/baseline_suite logs record 159 passed / 153 passed with zero added failures.",
+    "goal": "the node goal is to stop a reset-anchored lift ending on a second of provider stamp jitter, and reckon/crew/budget_lift.py:780 `_stamp_moved_past_jitter` replaces the exact-equality test with a moved-past-jitter test grounded in the stored readings.",
+    "manifest": "read the source manifest; status complete, records the head gate 159 passed exit 0, the base arm 153 passed exit 0 and the negative control 2 failed 4 passed exit 1.",
+    "write_paths": "read the manifest's orientation_write_paths; every path in c7b74ad26 (reckon/crew/budget_lift.py, tests/test_a_lift_survives_reset_jitter.py, docs/evidence/fragments/a-window-paces-the-lane/a-lift-survives-reset-jitter.html) is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_lift_survives_reset_jitter.py:106 and :178 redden under the declared negative control (restoring exact equality), so the core guard fails if the change regresses.",
+    "evidence": "the measure_live_jitter-head.log/-base.log pair reads the real codex-sub readings and both recorded lifts, showing the flapping lift ends cause reset at base and stays in force at head.",
+    "fit": "reckon/crew/budget_lift.py:802 follows the module's private-helper idiom with a docstring and Sequence typing, and the new names carry no plan label or version.",
+    "goal_fidelity": "reckon/crew/budget_lift.py:799 returns `moved > _provider_jitter(...)` so a stamp that wobbles less than the measured jitter no longer ends the lift, which is the deliverable.",
+    "reuse": "a search over reckon/ and reckon/crew/ for a jitter, wobble or spread capability found no owner; _provider_jitter at reckon/crew/budget_lift.py:802 is the first.",
+    "scope_discipline": "all three changed paths in c7b74ad26 sit inside the manifest's orientation_write_paths and nothing else was touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to stop a reset-anchored lift ending on a second of provider stamp jitter, and reckon/crew/budget_lift.py:780 `_stamp_moved_past_jitter` replaces the exact-equality test with a moved-past-jitter test grounded in the stored readings.\nVERDICT done_when: read tests/test_a_lift_survives_reset_jitter.py; it grants a lift and feeds a one-second wobble (stays in force), a full-window move (cause reset) and both utilisation signals, the manifest states the measured jitter (1.0 s from the two real recorded lifts), and the after_suite/baseline_suite logs record 159 passed / 153 passed with zero added failures.\nVERDICT write_paths: read the manifest's orientation_write_paths; every path in c7b74ad26 (reckon/crew/budget_lift.py, tests/test_a_lift_survives_reset_jitter.py, docs/evidence/fragments/a-window-paces-the-lane/a-lift-survives-reset-jitter.html) is inside them.\nVERDICT manifest: read the source manifest; status complete, records the head gate 159 passed exit 0, the base arm 153 passed exit 0 and the negative control 2 failed 4 passed exit 1.\nVERDICT diff: read c7b74ad26 against base 5d348ebd commit by commit; it rewrites the stamp signal in reckon/crew/budget_lift.py, adds six tests and a new evidence fragment, and touches nothing else.\nCALL_SITES: reckon/crew/lift_watch.py:127, reckon/crew/lift_watch.py:62, reckon/crew/budget_group.py:210, reckon/budget.py:2631, reckon/budget.py:2899\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/budget_lift.py:799 returns `moved > _provider_jitter(...)` so a stamp that wobbles less than the measured jitter no longer ends the lift, which is the deliverable.\nSCORE evidence: 19\nJUSTIFICATION evidence: the measure_live_jitter-head.log/-base.log pair reads the real codex-sub readings and both recorded lifts, showing the flapping lift ends cause reset at base and stays in force at head.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: all three changed paths in c7b74ad26 sit inside the manifest's orientation_write_paths and nothing else was touched.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_lift_survives_reset_jitter.py:106 and :178 redden under the declared negative control (restoring exact equality), so the core guard fails if the change regresses.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/budget_lift.py:802 follows the module's private-helper idiom with a docstring and Sequence typing, and the new names carry no plan label or version.\nSCORE reuse: 20\nJUSTIFICATION reuse: a search over reckon/ and reckon/crew/ for a jitter, wobble or spread capability found no owner; _provider_jitter at reckon/crew/budget_lift.py:802 is the first.\nFINDING tests/test_a_lift_survives_reset_jitter.py:186 follow-on: the arm asserts `_provider_jitter(recorded, []) == pytest.approx(bl.STAMP_RESOLUTION_SECONDS)`, comparing the function's output against the very constant the function uses as its floor, so the assertion holds for any value of that constant and cannot catch a wrongly-sized floor.",
+  "review_run_id": "r-20261013T080145144180-review-of-a-lift-survives-reset-jitter-c7b74ad26211",
+  "reviewed_base_sha": "5d348ebdd236f4d832b6b71801363fd0d0bce163",
+  "reviewed_head_sha": "c7b74ad2621197e0cde2a1d89f24a8980285b510",
+  "reviewed_run_id": "r-20261013T071829617771-a-lift-survives-reset-jitter",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "subject": "run",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T08:13:23.239872+00:00",
+  "total": 113
+}

@@ -26,7 +26,7 @@
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s6-the-probe-reader-and-the-undeclared-dialect&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="e302ad39,04a479ef,4ef8356f,e219aa99,b2594d65,bacd8e17,6a915fd7,4d043fd0,fd4a158f,95ba8ea7,cb69a87f,768a9285,e5cf008e,6001f577,e6dd0dc4,c011b6f9,82095575,87c98418,8e70585c,b7ba4786,3f0e9621,798f87f8,e37ac897,d34eaf27">
 <meta name="plan-impl" content="0.97">
-<meta name="plan-version" content="199">
+<meta name="plan-version" content="200">
 <meta name="plan-modified" content="2026-10-13">
 </head>
 <body>
@@ -2480,7 +2480,10 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     <div class="r-comment-body"><p>A reachability census on 2026-10-10 found <code>reckon/crew/hold.py</code>, <code>reckon/crew/serving_origin.py</code> and <code>reckon/crew/pace_replay.py</code> reached by no production entry point, only by their tests; outside their own files they appear only in docstrings (<code>reckon/budget.py:2651</code>). <a href="/reckon/plans/nothing-lands-unreached.html">nothing-lands-unreached</a> moves <code>pace_replay.py</code> to <code>scripts/census/</code> and keeps <code>hold.py</code> and <code>serving_origin.py</code> on its reach allowlist with this plan named as their owner. If this plan no longer intends to wire them, say so there and they will be deleted.</p></div>
 </div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261013T071829617771-a-lift-survives-reset-jitter" data-who="reckon-build" data-when="2026-10-13T07:53:48.647Z">
-    <div class="r-comment-body"><p>a reset-anchored lift now ends on a moved reset stamp only when it has moved past the recorded stamp by more than the provider&#x27;s jitter, measured as the spread of the stored stamp history and floored at the stamps&#x27; second resolution; the one-second wobble leaves the lift in force (measured jitter 1.0 s), a full-window move ends it cause reset, and the two utilisation signals are unchanged.</p></div>
+    <div class="r-comment-body"><p>a reset-anchored lift now ends on a moved reset stamp only when it has moved past the recorded stamp by more than the provider's jitter, measured as the spread of the stored stamp history and floored at the stamps' second resolution; the one-second wobble leaves the lift in force (measured jitter 1.0 s), a full-window move ends it cause reset, and the two utilisation signals are unchanged.</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261013T080145144180-review-of-a-lift-survives-reset-jitter-c7b74ad26211" data-who="reckon-build" data-when="2026-10-13T08:17:36.051Z">
+    <div class="r-comment-body"><p>reviewed run r-20261013T071829617771-a-lift-survives-reset-jitter at base 5d348ebdd236f4d832b6b71801363fd0d0bce163 head c7b74ad2621197e0cde2a1d89f24a8980285b510; scores goal_fidelity 19, evidence 19, scope_discipline 19, durability 17, fit 19, reuse 20 (total 113); one follow-on finding on tests/test_a_lift_survives_reset_jitter.py:186.</p></div>
 </div>
 </section>
 </main>
