@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="lane-and-model-routing">
+  <meta name="plan-title" content="A lane-and-model backend name is refused at dispatch">
+  <meta name="plan-summary" content="crew dispatch refuses a --backend value that resolves to a lane and model pair, naming the lane and the --model key that replaces it; the existing out-of-lane model refusal now names every declaring lane.">
+  <meta name="plan-evidence-for" content="reckon:lane-and-model-routing">
+  <meta name="plan-verifies" content="reckon:lane-and-model-routing#s17">
+  <meta name="plan-recorded-at" content="2026-10-13">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,dispatch,model,lane,refusal">
+  <title>A lane-and-model backend name is refused at dispatch — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-lane-model-name-is-refused-landing" data-node="a-lane-model-name-is-refused" data-reckon="landed" data-when="2026-10-13">
+  <h2>A lane-and-model backend name is refused at dispatch</h2>
+  <p id="a-lane-model-name-is-refused-summary">A <code>--backend</code> value such as <code>codex-astra</code> or <code>claude-opus</code> that the name resolver maps to a lane and model pair is refused, naming the lane it resolves to and the <code>--model</code> key that replaces it, so a caller reaching for the retired combined spelling is told the two-dimension form. <code>--model astra</code> and <code>--backend codex --model astra</code> resolve to the same backend the combined name named, a resume of a record whose backend is the combined name still resolves, and a model declared by two lanes and asked for under a third is refused by naming both declaring lanes.</p>
+  <p id="a-lane-model-name-is-refused-measure">Gate: 6 passed in <code>tests/test_dispatch_refuses_a_lane_model_name.py</code>. Importer set at head: 3 failed, 748 passed, 1 skipped against a base arm of 2 failed, 749 passed, 1 skipped — the two shared failures are the base's own, and the one added failure is <code>tests/test_dispatch_names_a_model.py::test_model_narrowing_matches_the_legacy_backend</code>, a test outside this node's write scope that dispatches the retired <code>--backend claude-opus</code> spelling the change refuses (see follow_ons).</p>
+</article>
+</body>
+</html>
