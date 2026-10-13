@@ -26,7 +26,6 @@ would let the router weigh a lane it never heard from.
 from __future__ import annotations
 
 import contextvars
-import json
 import os
 import time
 from collections.abc import Mapping, Sequence
@@ -48,7 +47,7 @@ from reckon.crew.run_time_profile import (
     local_lane_load,
     run_time_profile,
 )
-from reckon.crew.runs import crew_home, list_live
+from reckon.crew.runs import list_live
 
 #: Sources a budget reading may carry that came from the ledger rather than a
 #: live account surface read, and so are subject to the shelf life.
@@ -79,45 +78,32 @@ def state_read_timings_enabled() -> bool:
 class _ReadTimings:
     """One state render's read times, appended to the counter's log on exit."""
 
-    def __init__(self, path: Path | None) -> None:
-        self._path = path
+    def __init__(self) -> None:
         self.entries: list[dict[str, Any]] = []
 
-    def record(self, read: str, milliseconds: float) -> None:
+    def record(self, read: str, started: float) -> None:
+        from reckon.crew.picker import _milliseconds
+
         self.entries.append(
             {
                 "read": read,
-                "ms": milliseconds,
+                "ms": _milliseconds(started),
                 "at": datetime.now(UTC).isoformat(timespec="milliseconds"),
             }
         )
 
     def flush(self) -> None:
-        """Append every collected entry, best effort and bounded.
+        """Append every collected entry to the counter's log, best effort.
 
-        A render must never fail or stall because its own record could not be
-        described, so every error is swallowed. One ``os.write`` on an
-        ``O_APPEND`` descriptor keeps a small batch from interleaving with a
-        concurrent render's.
+        The append is the shared crew-home log writer, so the counter's log and
+        ``pick-timings.jsonl`` are written through one path; a render never fails
+        or stalls on its own record.
         """
 
-        if not self.entries or self._path is None:
-            return
-        try:
-            self._path.parent.mkdir(parents=True, exist_ok=True)
-            data = "".join(
-                json.dumps(entry, separators=(",", ":"), default=str) + "\n"
-                for entry in self.entries
-            ).encode()
-            descriptor = os.open(
-                self._path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o644
-            )
-            try:
-                os.write(descriptor, data)
-            finally:
-                os.close(descriptor)
-        except Exception:  # noqa: BLE001 - a render never fails on its own record
-            return
+        from reckon.crew.picker import _append_crew_log_line
+
+        for entry in self.entries:
+            _append_crew_log_line(STATE_READ_TIMINGS_LOG, entry)
 
 
 _READ_TIMINGS: contextvars.ContextVar[_ReadTimings | None] = contextvars.ContextVar(
@@ -125,12 +111,8 @@ _READ_TIMINGS: contextvars.ContextVar[_ReadTimings | None] = contextvars.Context
 )
 
 
-def _state_read_timings_log() -> Path:
-    return crew_home() / STATE_READ_TIMINGS_LOG
-
-
 @contextmanager
-def timing_state_reads(log_path: Path | None = None):
+def timing_state_reads():
     """Time each read a state render makes, one entry per read.
 
     The recorder is installed for the duration of the block: every read the
@@ -139,9 +121,7 @@ def timing_state_reads(log_path: Path | None = None):
     writes nothing, and a render that raises still records the reads it reached.
     """
 
-    recorder = _ReadTimings(
-        log_path if log_path is not None else _state_read_timings_log()
-    )
+    recorder = _ReadTimings()
     token = _READ_TIMINGS.set(recorder)
     try:
         yield recorder
@@ -166,7 +146,7 @@ def timed_read(read: str):
     try:
         yield
     finally:
-        recorder.record(read, round((time.perf_counter() - started) * 1000, 3))
+        recorder.record(read, started)
 
 
 _NULL_RETURN_TIME: dict[str, Any] = {

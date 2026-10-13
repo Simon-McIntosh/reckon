@@ -16,6 +16,7 @@ import importlib
 import json
 
 from reckon.crew.node import TaskNode
+from reckon.crew.runs import crew_home
 
 picker = importlib.import_module("reckon.crew.picker")
 prompts = importlib.import_module("reckon.crew.picker.prompts")
@@ -108,12 +109,14 @@ def _render():
     )
 
 
-def _log_path(home):
-    return home / "crew" / lane_context.STATE_READ_TIMINGS_LOG
+def _written_log():
+    """The counter's log at the path production resolves, not a test-side guess."""
+
+    return crew_home() / lane_context.STATE_READ_TIMINGS_LOG
 
 
-def _entries(home):
-    path = _log_path(home)
+def _entries():
+    path = _written_log()
     if not path.exists():
         return []
     return [json.loads(line) for line in path.read_text().splitlines()]
@@ -132,8 +135,12 @@ def test_the_render_times_each_read_once_and_names_it(tmp_path, monkeypatch):
 
     _render()
 
-    assert _log_path(home).parent == (home / "crew")
-    entries = _entries(home)
+    # The counter resolves the crew home itself, so the log is found where
+    # production wrote it: the RECKON_HOME this test pointed at, never a path
+    # this test computed.
+    assert crew_home() == home / "crew"
+    assert _written_log().exists()
+    entries = _entries()
     names = [entry["read"] for entry in entries]
     # Every read the render made carries exactly one entry, and no entry names a
     # read the render did not make: the count matches call for call.
@@ -157,7 +164,7 @@ def test_the_prompt_is_byte_identical_with_the_counter_off(tmp_path, monkeypatch
     _stub_reads(monkeypatch)
 
     with_counter_on = _render()
-    on_entries = _entries(home)
+    on_entries = _entries()
     assert [entry["read"] for entry in on_entries]  # the counter wrote its reads
 
     monkeypatch.setenv(lane_context.STATE_READ_TIMINGS_ENV, "0")
@@ -165,4 +172,4 @@ def test_the_prompt_is_byte_identical_with_the_counter_off(tmp_path, monkeypatch
     with_counter_ok = _render()
 
     assert with_counter_ok == with_counter_on
-    assert _entries(home) == on_entries  # the off render appended nothing
+    assert _entries() == on_entries  # the off render appended nothing
