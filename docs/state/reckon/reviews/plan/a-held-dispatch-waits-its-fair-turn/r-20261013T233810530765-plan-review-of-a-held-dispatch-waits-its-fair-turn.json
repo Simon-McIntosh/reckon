@@ -1,0 +1,56 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-13T23:52:22.845Z",
+  "dispatched_at": "2026-10-13T23:38:43Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-held-dispatch-waits-its-fair-turn.html:135",
+      "id": "reasoning-1",
+      "reason": "it decides where the change lives, and implemented at the stated locus alone the pass records a spurious failure and backs the request off, the opposite of the deliverable's \"leaves that request queued ... and records no failure\"; naming the pass (or `admission_launch`) as the caller that leaves the request untouched is what makes the stated outcome reach a done-when that only asserts the pointer's survival.",
+      "text": "\u00a718 places the queue-behind decision in the scope check (\"the scope check neither refuses on it nor drops it, and instead turns an overlap with it into 'queue behind'\") and does not name the admission pass as detecting the overlap before it releases the pointer; if the pass only learns of the overlap when `dispatch` returns a queued record, `_require_launched_record` raises (reckon/crew/queue_admission.py:521, \"dispatch did not return a launched record\") and `_record_queued_failure` (reckon/crew/queue_admission.py:485) stamps the pointer with a failure and a bounded `retry_at`, which contradicts \"records no failure\" and starts a back-off for a request that is merely waiting its turn",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "cd1aec716d3569065ecb4bfed7f3fb9deeb67ddf494f9b17f3702a2b8512125b",
+  "plan_slug": "a-held-dispatch-waits-its-fair-turn",
+  "plan_version": 89,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261013T233810530765-plan-review-of-a-held-dispatch-waits-its-fair-turn",
+  "reviewed_blob_sha": "d9624bfb2da3edb2657d7d0b649440d2d7b50902",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_repository_scope_claims` (reckon/crew/dispatch_claims.py:222), `claim_disposition` (reckon/crew/node.py:1450), `_retry_backoff_hold` (reckon/crew/queue_admission.py:337) and `tests/test_a_node_is_queued_once.py::test_a_different_node_over_a_claimed_path_is_still_refused` (line 307) all resolve, and the \u00a712/\u00a714/\u00a715 cross-references name the node-and-section pairs they intend.",
+    "done_when": "pass \u2014 \u00a718's five cases are measurable, and its declared negative control (\"count queued pointers as claims again; the first two cases must then fail\") is one that can fail on the unfixed code.",
+    "evidence_paths": "pass \u2014 \u00a718's control and gate logs sit \"under the run directory\", the durable location the plan uses throughout, not a session scratchpad.",
+    "naming": "pass \u2014 no plan label, ticket number or version tag reaches \u00a718's symbols, write paths or comments.",
+    "reasoning": "a finding \u2014 the deliverable's \"leaves that request queued behind the earlier one and records no failure\" is not produced by the locus \u00a718 states for the decision (the scope check turning an overlap into \"queue behind\"), because on the admission path that verdict arrives as a queued record which `admit_once` stamps as a failure.",
+    "single_goal": "pass \u2014 \u00a718 carries one deliverable, the third (ordering) treatment of a queued pointer's path claim, with the single \u00a714 case it supersedes as part of the same change.",
+    "wiring": "pass \u2014 \u00a718 declares its ordering against both shared-file neighbours (\"runs after \u00a714, which has landed, and before \u00a715, which also writes `queue_admission.py`\") and its cited \u00a712 cap resolves."
+  },
+  "section_digests": {
+    "_document": "5e14043a491f99858173e3b893442375f85c205295e44c4f706b9faca823dba4",
+    "s1": "e09f72c38fa12dd06b1fede9137b6a8731c7f42dad95ea4d7873e48b6bcebc93",
+    "s10": "769f35c4ff338677b1083340b990086682e629701a25af49a8b6e2d3b8a175a4",
+    "s11": "3aafc106945bdc346a0f808fc26c7fc8e028b922103641455da38536ae24c036",
+    "s12": "f72ab709e3a40644be43c6e558b558089f939e3368a20a2b34321a9043c80c88",
+    "s13": "1f1792d925edd6b7c0b33bd02bebc3db1f499f9d5e1505b3ba04b305d9ed7f64",
+    "s14": "a86f35810a5d1446f8cf9294a46f7a7a393c1452cc3080ef8b9e51cf83670acf",
+    "s15": "694218fb467e061648aac13eed1a446529dbff08aca86ecfdb24792eb5b2820e",
+    "s16": "5d0a87ee69959477d707fb8d7b442b283f6ae0e7bc896382dd4c65c7e3efb9b8",
+    "s17": "d3bfb51ccfbe6c602a6a11cd9d7e433d1385fd2b90b604f2eb307029dc97f703",
+    "s18": "ee9aee60fef5f2dec93a92df54a1fcd20e7727dad80bb258c5d6453dca11d76e",
+    "s2": "c37ed4ecb2dad1331b0b031fb8351608243790308312236d375bede3594285b7",
+    "s3": "ef687123318fac196bded366330cf2e92b586c4991b5c1cc8670f228182f916c",
+    "s4": "e6a41eadc72e4752cc0ebe35a14a9bce3f28bc1061ec677e8f779fa09d8c037c",
+    "s5": "4b674f96924c3dbfde217945d16c606df376d034dc060f02360a4336412e74f8",
+    "s6": "9e35fc2341a06de64fed9ff7f176a0e83b22c1482c1b5a04a5539b6e4c07aab4",
+    "s7": "764a72dad2d59bddd4d3b1209f07c0c210ff6c46cd14147d4bcc7ffe9fa9426d",
+    "s8": "1b92313fdf672f4b813b45aa8e26f1304ca363cdc5a4d1752238f794a2019e27",
+    "s9": "ef8f75976cf8d243089cb5955b0e084cf6e2c6bcd478f9e56b8e8654080c6ad6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T23:53:39.497965+00:00"
+}
