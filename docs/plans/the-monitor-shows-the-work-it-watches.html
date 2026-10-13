@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="15">
+<meta name="plan-version" content="16">
 <meta name="plan-modified" content="2026-10-13">
 </head>
 <body>
@@ -67,7 +67,7 @@
     <p><strong>Done when</strong> <code>tests/test_a_pane_settles_when_no_work_is_live.py</code> passes over a temporary host state directory:</p>
     <ul>
       <li>When the last live run of session S settles, the idle line is delivered once and the follower child exits, while the host process stays alive.</li>
-      <li>A follower with a peer session's run still live does not settle.</li>
+      <li>A follower that observes a peer session (<code>--observe-session</code>) whose run is still live does not settle. A peer session the follower does not observe never holds it open: the population it settles on is its own session plus the sessions it observes, not the whole project.</li>
       <li>A later request for S starts one new child, which delivers the next run's start row and replays no row the settled child already printed.</li>
       <li>Two requests for S arriving together start one child.</li>
     </ul>
