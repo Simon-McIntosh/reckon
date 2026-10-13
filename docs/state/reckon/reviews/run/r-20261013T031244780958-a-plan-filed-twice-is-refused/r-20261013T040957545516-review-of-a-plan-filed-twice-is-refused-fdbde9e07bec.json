@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": null,
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/routing.py:3041",
+    "reckon/serve.py:2495",
+    "reckon/_store.py:297",
+    "reckon/crew/picker/__init__.py:124",
+    "reckon/roadmap.py:158",
+    "reckon/mcp_edit_plan.py:1148",
+    "reckon/crew/dispatch_sections.py:223",
+    "reckon/evidence.py:645"
+  ],
+  "completed_at": "2026-10-13T04:20:46.881Z",
+  "dispatched_at": "2026-10-13T04:10:31Z",
+  "findings": [
+    {
+      "file": "reckon/resources.py",
+      "line": "692",
+      "severity": "follow-on",
+      "text": "follow-on: the ValueError skip added by fdbde9e07 is exercised by no test, so a regression turning an unclassifiable sibling back into a raise would not redden any id."
+    },
+    {
+      "file": "reckon/resources.py",
+      "line": "685",
+      "severity": "follow-on",
+      "text": "follow-on: the except-OSError branch returns True (identity unique), so if the canonical root cannot be listed a genuine duplicate resolves to the canonical file silently instead of raising, diverging from the scan it defers to."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 8 production call site(s)",
+    "diff": "read both commits (05f3b87f5, fdbde9e07) against base 40186023d; they change only reckon/resources.py (+44/-2), adding the bounded duplicate check and its unclassifiable-sibling skip.",
+    "done_when": "the done_when names tests/test_dispatch_speed.py::test_plan_estimate_cache_tracks_edits_and_duplicate_identity; the manifest records logs/gate.log 23 passed EXIT=0, the two arm logs (base 1 failed / after 157 passed) and names 1500780fa as the commit that added the direct canonical read.",
+    "goal": "the node goal is to restore duplicate plan detection so the estimate cache test's twice-filed plan is refused; reckon/resources.py:663 makes _resolve_canonical defer to the scan (return None) whenever _canonical_identity_is_unique (reckon/resources.py:668) finds another claimant of the same type+slug+archived in the canonical file's own root.",
+    "manifest": "read; status complete at fdbde9e07, recording gate 23 passed EXIT=0, negative control EXIT=1, base arm 1 failed / after arm 157 passed, with the target id as the sole base failure.",
+    "write_paths": "read the manifest's declared paths (reckon/resources.py, tests/test_dispatch_speed.py, an evidence fragment, a figure directory); the two-commit diff changes only reckon/resources.py, inside them."
+  },
+  "justifications": {
+    "durability": "the pre-existing tests/test_dispatch_speed.py::test_plan_estimate_cache_tracks_edits_and_duplicate_identity fails DID NOT RAISE once _canonical_identity_is_unique is forced True (logs/negative_control.log), but the fdbde9e07 error branches at reckon/resources.py:685 and :692 have no test.",
+    "evidence": "the gate id passes at head (logs/gate.log 23 passed EXIT=0) and fails DID NOT RAISE at base (logs/baseline_suite.log 1 failed; logs/negative_control.log EXIT=1), with the negative control logged under the run directory as the done_when requires.",
+    "fit": "the helper at reckon/resources.py:668 is named and documented by mechanism, matching _canonical_resource_at (reckon/resources.py:576) and _preferred_resource (:565), with no plan label or attribution.",
+    "goal_fidelity": "reckon/resources.py:663 invokes _canonical_identity_is_unique before returning the canonical candidate, so a duplicated slug makes resolve_resource fall through to the scan that raises ResourceCollision at reckon/resources.py:710.",
+    "reuse": "it extends the classifier identify_resource (reckon/resources.py:276) and the preference rule _preferred_resource (:565) rather than reimplementing them, and no owner of a bounded same-root claimant list exists (reckon/capabilities.py:59 and reckon/project_state.py:905 glob a typed root for different purposes).",
+    "scope_discipline": "the only path in the two-commit diff is reckon/resources.py, inside the declared write paths, carrying nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to restore duplicate plan detection so the estimate cache test's twice-filed plan is refused; reckon/resources.py:663 makes _resolve_canonical defer to the scan (return None) whenever _canonical_identity_is_unique (reckon/resources.py:668) finds another claimant of the same type+slug+archived in the canonical file's own root.\nVERDICT done_when: the done_when names tests/test_dispatch_speed.py::test_plan_estimate_cache_tracks_edits_and_duplicate_identity; the manifest records logs/gate.log 23 passed EXIT=0, the two arm logs (base 1 failed / after 157 passed) and names 1500780fa as the commit that added the direct canonical read.\nVERDICT write_paths: read the manifest's declared paths (reckon/resources.py, tests/test_dispatch_speed.py, an evidence fragment, a figure directory); the two-commit diff changes only reckon/resources.py, inside them.\nVERDICT manifest: read; status complete at fdbde9e07, recording gate 23 passed EXIT=0, negative control EXIT=1, base arm 1 failed / after arm 157 passed, with the target id as the sole base failure.\nVERDICT diff: read both commits (05f3b87f5, fdbde9e07) against base 40186023d; they change only reckon/resources.py (+44/-2), adding the bounded duplicate check and its unclassifiable-sibling skip.\nCALL_SITES: reckon/crew/routing.py:3041, reckon/serve.py:2495, reckon/_store.py:297, reckon/crew/picker/__init__.py:124, reckon/roadmap.py:158, reckon/mcp_edit_plan.py:1148, reckon/crew/dispatch_sections.py:223, reckon/evidence.py:645\nREVIEWED_BASE_SHA: 40186023d58ce16ae64eba11dd385db74698980c\nREVIEWED_HEAD_SHA: fdbde9e07becbe662e0862a5c54bdf10d6e3398e\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/resources.py:663 invokes _canonical_identity_is_unique before returning the canonical candidate, so a duplicated slug makes resolve_resource fall through to the scan that raises ResourceCollision at reckon/resources.py:710.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate id passes at head (logs/gate.log 23 passed EXIT=0) and fails DID NOT RAISE at base (logs/baseline_suite.log 1 failed; logs/negative_control.log EXIT=1), with the negative control logged under the run directory as the done_when requires.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the only path in the two-commit diff is reckon/resources.py, inside the declared write paths, carrying nothing the goal does not imply.\nSCORE durability: 17\nJUSTIFICATION durability: the pre-existing tests/test_dispatch_speed.py::test_plan_estimate_cache_tracks_edits_and_duplicate_identity fails DID NOT RAISE once _canonical_identity_is_unique is forced True (logs/negative_control.log), but the fdbde9e07 error branches at reckon/resources.py:685 and :692 have no test.\nSCORE fit: 20\nJUSTIFICATION fit: the helper at reckon/resources.py:668 is named and documented by mechanism, matching _canonical_resource_at (reckon/resources.py:576) and _preferred_resource (:565), with no plan label or attribution.\nSCORE reuse: 20\nJUSTIFICATION reuse: it extends the classifier identify_resource (reckon/resources.py:276) and the preference rule _preferred_resource (:565) rather than reimplementing them, and no owner of a bounded same-root claimant list exists (reckon/capabilities.py:59 and reckon/project_state.py:905 glob a typed root for different purposes).\nFINDING reckon/resources.py:692 follow-on: the ValueError skip added by fdbde9e07 is exercised by no test, so a regression turning an unclassifiable sibling back into a raise would not redden any id.\nFINDING reckon/resources.py:685 follow-on: the except-OSError branch returns True (identity unique), so if the canonical root cannot be listed a genuine duplicate resolves to the canonical file silently instead of raising, diverging from the scan it defers to.\n",
+  "review_run_id": "r-20261013T040957545516-review-of-a-plan-filed-twice-is-refused-fdbde9e07bec",
+  "reviewed_base_sha": "40186023d58ce16ae64eba11dd385db74698980c",
+  "reviewed_head_sha": "fdbde9e07becbe662e0862a5c54bdf10d6e3398e",
+  "reviewed_run_id": "r-20261013T031244780958-a-plan-filed-twice-is-refused",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T04:24:08.391043+00:00",
+  "total": 116
+}
