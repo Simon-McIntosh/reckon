@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-north-star" content="unattended-execution">
 <meta name="plan-impl" content="0.8823529411764706">
-<meta name="plan-version" content="147">
+<meta name="plan-version" content="148">
 <meta name="plan-modified" content="2026-10-14">
 </head>
 <body>
@@ -507,6 +507,9 @@
 </div>
 <div class="r-comment" data-section="s24" data-id="c-close-s24" data-who="" data-when="2026-10-14">
     <div class="r-comment-body"><p>Landed at <code>61bb6c148</code> (re-review 111, 0 added failures). Each read of the state render is timed into <code>state-read-timings.jsonl</code> in the crew home. §25 can run after a working day of collection, on or after 2026-10-15. <a href="/reckon/evidence/archive/lane-and-model-routing-landed.html#s24">Landing record</a>.</p></div>
+</div>
+<div class="r-comment" data-section="s24" data-id="c-run-r-20261013T220745912794-the-state-render-times-its-reads" data-who="reckon-build" data-when="2026-10-13T23:04:00.614Z">
+    <div class="r-comment-body"><p>landing: a read-time counter in reckon/crew/picker/lane_context.py times each read the picker&#x27;s state render makes and appends one named entry per read to &lt;crew_home&gt;/state-read-timings.jsonl beside pick-timings.jsonl, through the single crew-home log writer _append_crew_log_line in reckon/crew/picker/__init__.py that _record_pick_timings now shares; the reads timed individually are local_lane_load, list_live, _cached_run_time_profile and the template_load in prompts.py, and prompts.render starts the recorder for the state template unless RECKON_STATE_READ_TIMINGS is falsey, changing no decision and no rendered prompt. Measure: new test 2 passed EXIT=0 at 0230ad4c3; importing-test gate (pytest -n 10 over 34 picker/lane/jev/hold files) 306 passed EXIT=0 at head 0230ad4c3 and 306 passed EXIT=0 at base f59c6695e, no added failure; negative control EXIT=1 failing test_the_render_times_each_read_once_and_names_it on the missing entry.</p></div>
 </div>
 </section>
 </main>
