@@ -34,13 +34,13 @@ from reckon import cli, crew, crew_follow_commands
 from reckon.crew import runs
 
 # The counter block the ticker prints at the end of each transition line:
-# ``<n>w <n>b <n>u <n>q``, each count followed by its bucket's letter with
+# ``<n>w <n>h <n>d <n>q``, each count followed by its bucket's letter with
 # whitespace between the cells, so a two-digit count is its own token rather
 # than running into the bucket beside it. The pattern requires that whitespace,
 # so a block that abutted two-digit counts would not match it at all. It is
 # matched whole rather than as a prefix, so a bucket added later cannot slip
 # past the prefix of an older count.
-_COUNTERS = re.compile(r"(\d+)w\s+(\d+)h\s+(\d+)d\s+(\d+)W")
+_COUNTERS = re.compile(r"(\d+)w\s+(\d+)h\s+(\d+)d\s+(\d+)q")
 
 _POINTER_RUN_IDS = ("r-own-work", "r-peer-work", "r-peer-block")
 
@@ -183,7 +183,7 @@ def test_two_digit_counts_reach_the_line_as_separate_tokens(
     """A two-digit count does not absorb the bucket beside it.
 
     The scoped figures are recomputed from the pointers, so ten working runs and
-    twelve blocked runs print ``10w 12h  0d  0W``: the reader sees four tokens, not
+    twelve blocked runs print ``10w 12h  0d  0q``: the reader sees four tokens, not
     the ``10w12b`` the abutting block rendered. The pattern requires whitespace
     between a count and the next bucket's letter, so the abutting form leaves the
     line with no counter block this reader can find at all.
@@ -191,7 +191,7 @@ def test_two_digit_counts_reach_the_line_as_separate_tokens(
     _stub_producer(monkeypatch)
     output = _follow("--session", "mine")
     assert _counters(output) == (10, 12, 0, 0)
-    assert "10w 12h  0d  0W" in output
+    assert "10w 12h  0d  0q" in output
     assert "10w12b" not in output
 
 

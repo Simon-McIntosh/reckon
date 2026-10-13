@@ -146,12 +146,9 @@ def test_transition_appends_once_and_reader_restart_from_end_is_quiet(home) -> N
     assert ticker_module.BASELINE_MARKER not in lines[0]
     assert "working" in lines[0]
     assert "new → working" in lines[0]
-    # The clause explaining a blocked state sits on the line, after the counts
-    # rather than before them — never on a row of its own, which would cost a
-    # quarter of a pane that shows about eight. The counters go first because
-    # the pane clips its own right edge, so what is lost is free text.
-    assert "dependency unavailable" in lines[-1]
-    assert lines[-1].index(" 0w  1h  0d") < lines[-1].index("dependency unavailable")
+    # The row carries no free text: the reason a run stopped is read from the
+    # run, never cut to fit the line.
+    assert "dependency unavailable" not in lines[-1]
     # The fixed reading order begins at the clock and keeps the node before the
     # transition even when model and effort are absent.
     assert re.match(r"^\d{2}:\d{2}:\d{2}", lines[-1])
