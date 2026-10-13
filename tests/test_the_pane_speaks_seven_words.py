@@ -88,4 +88,4 @@ def test_counter_labels_and_hues_share_the_pane_words() -> None:
             }
         )
     )
-    assert re.search(r"1w\s+2h\s+3d\s+4W", text)
+    assert re.search(r"1w\s+2h\s+3d\s+4q", text)
