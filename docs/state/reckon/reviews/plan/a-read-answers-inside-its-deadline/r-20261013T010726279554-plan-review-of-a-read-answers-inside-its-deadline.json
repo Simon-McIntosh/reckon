@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-13T01:16:59.315Z",
+  "dispatched_at": "2026-10-13T01:08:05Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-answers-inside-its-deadline.html:159",
+      "id": "done_when-1",
+      "reason": "without a control for the parse half (give `_audit_plan_state` its own soup again and require the soup-count case to fail) the node cannot show its own guard fires, which is the gate the done-when exists to provide.",
+      "text": "\u00a712's done-when asserts \"each plan file's soup is built once\" and \"the audit's findings \u2026 are equal to its findings before the change\", but its declared negative control (\"restores the audit's own rglob walk, and the walk-count case must then fail\") exercises only the walk-count half, so the parse-once assertion and the equal-findings assertion are never shown to be able to fail \u2014 a node could land the scan-sharing and leave `_audit_plan_state` building its own soup while the declared control stays green",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-answers-inside-its-deadline.html:159",
+      "id": "single_goal-1",
+      "reason": "this is the same defect the prior review raised for \u00a78 (\"Two changes in reckon/resources.py\") and that the author already resolved by splitting \u00a78 into \u00a78 and \u00a710; splitting \u00a712 into the scan-sharing node and the parse-sharing node gives each its own gate and its own negative control, which also closes the done_when finding above.",
+      "text": "\u00a712 bundles two independent changes: (1) `_audit` opens a `resource_scan_scope` and takes resources from `iter_resources`, targeting \u00a77's warm audit at 4.91 s, and (2) `_audit_plan_state` derives from \u00a711's shared parse, targeting \u00a711's cold parse-once goal; each lands on its own substrate and can be built and closed without the other, so one verdict cannot close the node",
+      "type": "single_goal",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "dd272e16a9b6ff776538645e147e1991d1d00ab68e0caa5e5c8e808fa28ed82f",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 41,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261013T010726279554-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "dc2279c540ce611c3e5501cb1bf5dc57b219efb7",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every symbol \u00a712 cites (`_audit`, `_audit_plan_state`, `_plan_html.from_html`, `identify_resource`, `iter_resources`, `resource_scan_scope`) resolves in the tree, and \u00a712 cites symbols rather than line numbers.",
+    "done_when": "a finding \u2014 \u00a712's done-when asserts two outcomes (\"the tree is walked once, and each plan file's soup is built once\") but its sole declared negative control falsifies only the walk-count half.",
+    "evidence_paths": "pass \u2014 the gate log is written under the run directory and the write paths are repository source plus the named test, none of which is a session scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach \u00a712's symbols or prose.",
+    "reasoning": "pass \u2014 the mechanism matches \u00a77's evidence (the warm audit's residual is the hand-rolled scan, re-entered ten times) and names the production caller `_audit`; routing `_audit_plan_state` through \u00a711's shared parse and reporting `invalid-resource-path` from the scan's own record of dropped files are each capable of producing the section's done-when.",
+    "single_goal": "a finding \u2014 \u00a712 carries two independent mechanisms: the audit taking its resources from \u00a78's shared scan, and `_audit_plan_state` taking its plan state from \u00a711's shared parse.",
+    "wiring": "pass \u2014 the open followup f-araiid-008 routes the remaining work (\u00a78, \u00a711, \u00a710, \u00a712), and \u00a712 declares it runs after \u00a78, \u00a710 and \u00a711, the three sections it consumes."
+  },
+  "section_digests": {
+    "_document": "770d8e6fab2fd7f5506a6f12d3d355945c5e8cf9236472348ae47d38b9b14128",
+    "s1": "71942607f4df4eca011a41734257645ef2adce9664dd45b628d96b066c34e813",
+    "s10": "5261ebecb0fa5c4351c00f324d2378797d384ba4246b22b52bc96e9dda5392d1",
+    "s11": "3a64769c6749a1d84d6c8b71f9c1b2c406198fcf56578a7dfa447465f1cd579e",
+    "s12": "a727dfd3390a6ebd8b1bcabd43a786adff6babcc9929c29ced93863c1d25ac32",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s3": "cbe34f619f869b3c3346239e8823a63a8de98dd92b7fb8ed5cfa2b8a4ab26a39",
+    "s4": "d2ec58f5ac4e72c5e8bcde1f156bdd4c85bde3848b4e3b6131e6112bb6395d49",
+    "s5": "b14c0e28c2c28544a08d4b3d7ab621f48464471360d202c7a4bd1a1ec776f557",
+    "s6": "00db597c53dfd6e3d857f89ee748a8c6ecfe51576b2b66e64772393805c59b52",
+    "s7": "503099f7e945f5038a64b142ffa49b88c02dbbd0f0a5ad5882f6da8b22d25883",
+    "s8": "d34e4559f87b4b8a8bc8b58e12dc26b2eeee527979f013e441d10648120e7b60",
+    "s9": "a356ecd44b8ee634f6b45b64ec3785e3af7ffb255d4d3adf46574d3a10afc7b3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T01:19:21.081479+00:00"
+}
