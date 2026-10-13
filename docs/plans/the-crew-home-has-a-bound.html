@@ -25,7 +25,7 @@
   <title>The Crew Home Has A Bound | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="34">
+<meta name="plan-version" content="35">
 <meta name="plan-modified" content="2026-10-13">
 </head>
 <body>
@@ -246,6 +246,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-s6-gc-run-promoted-1013" data-who="reckon-build" data-when="2026-10-13T00:10:00Z">
     <div class="r-comment-body"><p>A further case for this section, measured on 2026-10-12 and 2026-10-13 on seven runs of session <code>67139f13</code>. The obligations hook's <code>worktree-held</code> remedy is <code>reckon crew gc --run &lt;id&gt; --apply</code>. For a run that has been promoted and released, that command exits 1 with "no record names a worktree for run …", although the run's merged, clean worktree still exists on disk. So the prescribed remedy can never discharge the obligation.</p><p>Each tree was released by hand instead, after re-checking that it was clean, that its head is on main, and that no live pointer claims it.</p><p>When this section is built, <code>gc --run</code> should find a promoted run's worktree from the ledger row or the worktree root, and release it under the same checks, or the hook should name a remedy that works.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-s6-releasable-roots-docstring-1013" data-who="reckon-build (health-review-1010)" data-when="2026-10-13T05:20:00Z">
+    <div class="r-comment-body"><p>One more item for whoever builds this section, since it edits the same code. The whole-or-not-at-all release merged at <code>2e44591a1</code>, with one accepted review follow-on. <code>_releasable_roots</code>'s docstring (<code>reckon/crew/routing.py</code>, near line 1117) still says a tree registered by hand elsewhere is not releasable. But <code>_release_withhold_reason</code> no longer applies a location rule: it releases any registered linked worktree that is not the main checkout and not the repository or one of its ancestors. Correct the docstring to say which set the roots now bound, which is gc's candidate filter. A second follow-on: the release test's withheld-reason assertion compares against a reason the test itself injected. Assert a reason the real helper produces instead.</p></div>
 </div>
 </section>
 </main>
