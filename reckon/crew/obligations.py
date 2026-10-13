@@ -30,7 +30,7 @@ from reckon._timestamps import parse_utc
 from reckon.crew import recovery, review_dispositions, review_lifecycle, runs
 from reckon.crew import review as review_module
 from reckon.crew.node import INTERRUPTED_RUN_PHASE, parse_duration
-from reckon.crew.routing import _registered_worktrees
+from reckon.crew.routing import _registered_worktrees, record_names_worktree
 
 CLASSIFICATION_DUTY_KINDS = {
     "scoring": "review-missing",
@@ -434,20 +434,10 @@ def _run_file_record(source: Path) -> Mapping[str, Any] | None:
 def _names_worktree(record: Mapping[str, Any], worktree: Path) -> bool:
     """Whether a run's record names this retained tree.
 
-    Two fields name a tree, and both are read exactly as the whole-ledger scan
-    reads them: the path a promotion retained, and the node id the tree is
-    named for.
+    Delegates to the shared rule ``crew gc --run`` also resolves a run's tree
+    from, so a tree this view names is one that command can reach.
     """
-    retention = record.get("worktree_retention")
-    if isinstance(retention, Mapping):
-        value = str(retention.get("worktree") or "").strip()
-        if value and Path(value).expanduser().resolve() == worktree:
-            return True
-    node = record.get("node")
-    node_id = (
-        str(node.get("id") or "") if isinstance(node, Mapping) else str(node or "")
-    )
-    return bool(node_id) and worktree.name == node_id
+    return record_names_worktree(record, worktree)
 
 
 # The rows crew.json holds, keyed by the stat identity of the file they were

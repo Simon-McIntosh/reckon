@@ -1068,12 +1068,36 @@ def _live_pointer_worktrees() -> dict[Path, list[str]]:
     return claims
 
 
+def record_names_worktree(record: Mapping[str, Any], worktree: Path) -> bool:
+    """Whether a run's record names this retained tree.
+
+    Two fields name a tree: the path a promotion retained, and the node id the
+    tree's directory is named for. The obligations view and ``crew gc --run``
+    resolve a run's tree from this one rule, so every tree an obligation names
+    is one its remedy can reach.
+    """
+    retention = record.get("worktree_retention")
+    if isinstance(retention, Mapping):
+        value = str(retention.get("worktree") or "").strip()
+        if value and Path(value).expanduser().resolve() == worktree:
+            return True
+    node = record.get("node")
+    node_id = (
+        str(node.get("id") or "") if isinstance(node, Mapping) else str(node or "")
+    )
+    return bool(node_id) and worktree.name == node_id
+
+
 def _run_worktree_path(repo: Path, project: str | None, run_id: str) -> Path:
     """The worktree a run's own records name, preferring its live pointer.
 
     A retained tree is named by the run's ledger row once its live pointer has
-    been promoted away, so both sources are read; a run neither source names
-    has no tree to confine a sweep to and is refused.
+    been promoted away, so both sources are read. A withheld run's row carries
+    no retained path and no worktree field — only the node id its tree is named
+    for. A tree the record names by that node id is resolved from the
+    registered trees, exactly as the obligations view resolves it, so the
+    remedy reaches the tree the obligation reports. A run no record names has
+    no tree to confine a sweep to and is refused.
     """
     for record in list_live():
         if str(record.get("run_id") or "") != run_id:
@@ -1081,6 +1105,7 @@ def _run_worktree_path(repo: Path, project: str | None, run_id: str) -> Path:
         value = str(record.get("worktree") or "").strip()
         if value:
             return Path(value).expanduser().resolve()
+    registered = [path for path in _registered_worktrees(repo) if path != repo]
     for record in _ledgered_records(repo, project):
         if str(record.get("run_id") or "") != run_id:
             continue
@@ -1092,6 +1117,9 @@ def _run_worktree_path(repo: Path, project: str | None, run_id: str) -> Path:
         for value in values:
             if value.strip():
                 return Path(value.strip()).expanduser().resolve()
+        for tree in registered:
+            if record_names_worktree(record, tree):
+                return tree
     raise CrewError(f"no record names a worktree for run {run_id}")
 
 
