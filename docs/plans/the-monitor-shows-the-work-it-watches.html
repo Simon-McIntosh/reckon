@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="52">
+<meta name="plan-version" content="53">
 <meta name="plan-modified" content="2026-10-13">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -474,6 +474,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s17" data-id="c-run-r-20261013T093656235360-a-standing-lift-is-announced-once" data-who="reckon-build" data-when="2026-10-13T10:06:06.024Z">
     <div class="r-comment-body"><p>fix(crew): draw a standing lift once, not on every watcher restart. RowPolicy in reckon/crew/ticker.py holds a baseline lift row for a lift group the pane already drew (a grant records the group, an end forgets it, a baseline in-force row draws only for an undrawn group), so a restarted lift watcher adds no pane row for a standing lift the pane already shows while a first attach still shows it once. tests/test_a_standing_lift_is_announced_once.py 6 passed; ticker-importing set 468 passed vs base 462, zero added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s17" data-id="c-close-s17" data-who="reckon-build" data-when="2026-10-13T11:10:00Z">
+    <div class="r-comment-body"><p>§17 landed. The row policy keys lift rows on their group, so a reloaded lift watcher's baseline row for a lift the pane already drew adds nothing. A grant and an end still each draw one row. Merged <code>25fd455cb</code> as <code>2f7e185ec</code>, with the gate replayed green there. <code>ticker.py</code> importers went from 462 to 468 passed. Review: 110, 0 added. Remaining limit: a follower's own reload still shows a standing lift once. <a href="/reckon/evidence/archive/the-monitor-shows-the-work-it-watches-landed.html#s17-standing-lift-once">evidence</a></p></div>
 </div>
 </section>
 </main>
