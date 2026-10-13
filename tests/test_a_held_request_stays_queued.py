@@ -133,3 +133,72 @@ def test_the_same_request_launches_once_the_lane_opens(
     assert len(result["launched"]) == 1
     assert recorded
     assert runs.read_pointer(result["launched"][0])["phase"] != "queued"
+
+
+def test_a_request_that_cannot_launch_is_not_retried_every_pass(
+    admit_repo: Path, tmp_path: Path
+) -> None:
+    """A request whose brief is missing fails once, then waits out a back-off.
+
+    The request that cycled in the field was never waiting on the lane: its
+    dispatch failed every pass because its brief file no longer existed, and each
+    pass released it, failed and restored it. The first pass records that
+    failure; the next two leave the pointer and its recorded failure untouched
+    and append nothing to the stream.
+    """
+    _, resolve = _config_for()
+    missing = tmp_path / "no-such-brief.md"
+    request = _queue(admit_repo, node_id="no-brief", run_id="r-no-brief")
+    request["node"]["brief"] = str(missing)
+    request["node"]["brief_path"] = str(missing)
+    runs.queue_dispatch(request)
+
+    observed = []
+    for _ in range(3):
+        before = runs.pointer_path("r-no-brief").read_bytes()
+        fleet_before = _fleet(PROJECT)
+
+        result = queue_admission.admit_once(config_for=resolve, launcher=_launcher([]))
+
+        after = runs.pointer_path("r-no-brief").read_bytes()
+        rows = _stream_rows(fleet_before, _fleet(PROJECT))
+        observed.append((before, after, result, rows))
+
+    before_first, after_first, first, _ = observed[0]
+    assert after_first != before_first, "the first pass must record the failure"
+    assert "r-no-brief" in first["failed"]
+    assert "not readable" in runs.read_pointer("r-no-brief")["failure"]
+
+    for before, after, result, rows in observed[1:]:
+        assert after == before, "a backed-off request must be left unchanged"
+        assert "r-no-brief" in result["held"]
+        assert rows == [], "a backed-off request must append no transition"
+
+
+def test_a_launch_failed_requeue_is_not_retried_every_pass(
+    admit_repo: Path, tmp_path: Path
+) -> None:
+    """A run re-queued after a failed launch waits out a back-off, not a cycle.
+
+    The drainer re-queues a run the reaper marked ``launch-failed`` by writing
+    its stored request back as a queued pointer. That write carries the same
+    bounded back-off a failed attempt records, so a launch that keeps failing is
+    attempted once per back-off rather than re-queued on every pass.
+    """
+    _, resolve = _config_for()
+    request = _queue(admit_repo, node_id="relaunch", run_id="r-relaunch")
+    dead = dict(request)
+    dead["phase"] = "launch-failed"
+    dead["admit_request"] = request
+    dead["launch_failures"] = [{"kind": "launch-failed"}]
+    runs._write_json(runs.pointer_path("r-relaunch"), dead)
+
+    first = queue_admission.admit_once(config_for=resolve, launcher=_launcher([]))
+    assert "r-relaunch" in first["requeued"]
+    settled = runs.pointer_path("r-relaunch").read_bytes()
+    fleet_before = _fleet(PROJECT)
+
+    second = queue_admission.admit_once(config_for=resolve, launcher=_launcher([]))
+    assert "r-relaunch" in second["held"]
+    assert runs.pointer_path("r-relaunch").read_bytes() == settled
+    assert _stream_rows(fleet_before, _fleet(PROJECT)) == []

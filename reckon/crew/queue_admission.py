@@ -19,7 +19,7 @@ import fcntl
 import time
 from collections.abc import Callable, Mapping
 from contextlib import contextmanager, nullcontext
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -37,6 +37,12 @@ from reckon.crew.node import CrewError, TaskNode
 ADMIT_LOCK_NAME = "admit.lock"
 DEFAULT_ADMIT_INTERVAL_SECONDS = 5.0
 LAUNCH_FAILED_PHASE = "launch-failed"
+# A queued request whose last attempt failed for a reason other than a lane
+# hold waits this long before it is attempted again, doubling per consecutive
+# failure up to the cap. The back-off is bounded so a request that can never
+# launch is still retried eventually rather than parked forever.
+ADMISSION_RETRY_BACKOFF_SECONDS = 30.0
+ADMISSION_RETRY_BACKOFF_CAP_SECONDS = 600.0
 
 
 def _now() -> datetime:
@@ -209,6 +215,136 @@ def _lane_gate_hold(
     return None
 
 
+def _retry_delay(attempts: int) -> timedelta:
+    """The bounded wait before a request that just failed may be retried."""
+    seconds = ADMISSION_RETRY_BACKOFF_SECONDS * (2 ** max(attempts - 1, 0))
+    return timedelta(seconds=min(seconds, ADMISSION_RETRY_BACKOFF_CAP_SECONDS))
+
+
+def _failure_text(failure: Any) -> str:
+    """The reason text of a recorded failure, whether it is a string or a row."""
+    if isinstance(failure, Mapping):
+        return str(failure.get("kind") or failure.get("detail") or failure)
+    return str(failure or "")
+
+
+def _is_lane_hold(failure: Any) -> bool:
+    """Whether a recorded failure is the lane holding the request, not a fault.
+
+    A lane hold is retried as soon as the lane opens, so it is never backed off;
+    the two words are the exceptions ``_launch_queued`` raises for exactly this:
+    the lane's allowance is zero, or its gate is paused.
+    """
+    return _failure_text(failure).startswith(("LaneHeld", "LanePaused"))
+
+
+def _file_stamp(path: str) -> str:
+    """A change detector for one dependency: its stat, or that it is absent."""
+    if not path:
+        return "none"
+    try:
+        stat = Path(path).stat()
+    except OSError:
+        return "absent"
+    return f"{stat.st_mtime_ns}:{stat.st_size}"
+
+
+def _dependency_guard(
+    pointer: Mapping[str, Any],
+    config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None,
+) -> dict[str, str]:
+    """The things a queued request depends on, fingerprinted at failure time.
+
+    The request is retried without waiting out its back-off the moment any of
+    these changes: its brief file, its plan document, or the lane configuration
+    that resolved for it. Only their stamps are kept, so the guard is a
+    comparison rather than a copy of the request.
+    """
+    node = dict(pointer.get("node") or {})
+    repo = str(pointer.get("repo") or "")
+    plan = str(node.get("plan") or "")
+    brief = str(node.get("brief_path") or "")
+    plan_path = (
+        str(Path(repo) / "docs" / "plans" / f"{plan}.html") if repo and plan else ""
+    )
+    lane_doc = ""
+    try:
+        config = (
+            config_for(pointer)
+            if config_for is not None
+            else _resolve_lane_config(pointer)
+        )
+        backend = (config.get("backends") or {}).get(str(pointer.get("backend") or ""))
+        if isinstance(backend, Mapping):
+            lane_doc = str(backend.get("lane_document") or "")
+    except Exception:  # noqa: BLE001 - an unresolvable lane config is simply not a dependency the guard can watch
+        lane_doc = ""
+    return {
+        "brief": _file_stamp(brief),
+        "plan": _file_stamp(plan_path),
+        "lane": _file_stamp(lane_doc),
+    }
+
+
+def _retry_backoff_hold(
+    pointer: Mapping[str, Any],
+    *,
+    moment: datetime,
+    config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None,
+) -> str | None:
+    """Why a failed request is left where it is, or ``None`` to attempt it.
+
+    A request whose last attempt failed for a reason other than a lane hold is
+    not attempted on every pass: the pass leaves its pointer and its recorded
+    failure untouched until something it depends on changes or its bounded
+    back-off elapses. A lane hold has no recorded back-off and is retried at
+    once. This is what keeps a request that cannot launch — a missing brief, for
+    one — from cycling through a release, a failed dispatch and a restore on
+    every pass.
+    """
+    failure = pointer.get("failure")
+    if not failure:
+        return None
+    if _is_lane_hold(failure):
+        return None
+    guard = pointer.get("failure_guard")
+    if guard is not None and guard != _dependency_guard(pointer, config_for):
+        return None
+    retry_at = pointer.get("retry_at")
+    if not retry_at:
+        return None
+    try:
+        when = datetime.fromisoformat(str(retry_at))
+    except ValueError:
+        return None
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=UTC)
+    if moment < when:
+        return (
+            f"last attempt failed: {_failure_text(failure)}; "
+            f"not retried before {retry_at}"
+        )
+    return None
+
+
+def _stamp_failure(
+    record: dict[str, Any],
+    failure: Any,
+    *,
+    moment: datetime,
+    guard: Mapping[str, Any] | None,
+) -> dict[str, Any]:
+    """Record one attempt's failure and when the request may be retried."""
+    attempts = int(record.get("failure_attempts") or 0) + 1
+    record["failure"] = failure if isinstance(failure, str) else dict(failure)
+    record["failure_at"] = moment.isoformat()
+    record["failure_attempts"] = attempts
+    record["retry_at"] = (moment + _retry_delay(attempts)).isoformat()
+    if guard is not None:
+        record["failure_guard"] = dict(guard)
+    return record
+
+
 def _requeue_admitted_failures(live: list[dict[str, Any]]) -> list[str]:
     """Re-queue runs this drainer launched that the reaper marked launch-failed.
 
@@ -231,8 +367,15 @@ def _requeue_admitted_failures(live: list[dict[str, Any]]) -> list[str]:
         restored["phase"] = "queued"
         restored["queued_at"] = _utc_now()
         restored.setdefault("created_at", restored["queued_at"])
-        restored["failure"] = failure or {"kind": LAUNCH_FAILED_PHASE}
-        restored["failure_at"] = _utc_now()
+        # Stamp the re-queue with the same back-off a failed attempt records, so
+        # a request that keeps failing on launch is attempted once per back-off
+        # rather than released, failed and restored on every pass.
+        _stamp_failure(
+            restored,
+            failure or {"kind": LAUNCH_FAILED_PHASE},
+            moment=_now(),
+            guard=_dependency_guard(restored, None),
+        )
         _write_pointer(str(pointer["run_id"]), restored)
         requeued.append(str(pointer["run_id"]))
     return requeued
@@ -242,12 +385,22 @@ def _write_pointer(run_id: str, record: dict[str, Any]) -> None:
     runs._write_json(runs.pointer_path(run_id), record)
 
 
-def _restore_queued(snapshot: Mapping[str, Any], failure: str) -> None:
-    """Write a launched request back as one queued pointer carrying the failure."""
+def _restore_queued(
+    snapshot: Mapping[str, Any],
+    failure: str,
+    *,
+    moment: datetime | None = None,
+    guard: Mapping[str, Any] | None = None,
+) -> None:
+    """Write a launched request back as one queued pointer carrying the failure.
+
+    The restored pointer carries the same bounded back-off a failure annotated
+    in place would: a request whose release already withdrew it is retried once
+    per back-off, not on every pass.
+    """
     restored = copy.deepcopy(dict(snapshot))
     restored["phase"] = "queued"
-    restored["failure"] = failure
-    restored["failure_at"] = _utc_now()
+    _stamp_failure(restored, failure, moment=moment or _now(), guard=guard)
     for key in (
         "pid",
         "pid_start_time",
@@ -262,22 +415,26 @@ def _restore_queued(snapshot: Mapping[str, Any], failure: str) -> None:
 
 
 def _record_queued_failure(
-    snapshot: Mapping[str, Any], failure: str, requeued_run_id: str = ""
+    snapshot: Mapping[str, Any],
+    failure: str,
+    requeued_run_id: str = "",
+    *,
+    moment: datetime | None = None,
+    guard: Mapping[str, Any] | None = None,
 ) -> tuple[str, str | None]:
     """Return the retained request's id and any unrecoverable write error."""
     original_run_id = str(snapshot["run_id"])
     run_id = requeued_run_id or str(snapshot["run_id"])
+    failed_at = moment or _now()
 
     def annotate(current: dict[str, Any]) -> dict[str, Any]:
-        current["failure"] = failure
-        current["failure_at"] = _utc_now()
-        return current
+        return _stamp_failure(current, failure, moment=failed_at, guard=guard)
 
     try:
         runs._mutate_pointer(run_id, annotate)
     except Exception as annotate_error:  # noqa: BLE001 - a failed write needs restoration
         try:
-            _restore_queued(snapshot, failure)
+            _restore_queued(snapshot, failure, moment=failed_at, guard=guard)
         except Exception as restore_error:  # noqa: BLE001 - report storage failure to the pass
             annotation = f"annotation {type(annotate_error).__name__}: {annotate_error}"
             restoration = f"restore {type(restore_error).__name__}: {restore_error}"
@@ -354,6 +511,18 @@ def admit_once(
                 result["held"].append(str(pointer["run_id"]))
                 result.setdefault("hold_detail", {})[str(pointer["run_id"])] = gate_hold
                 continue
+            backoff_hold = _retry_backoff_hold(
+                pointer, moment=moment, config_for=config_for
+            )
+            if backoff_hold is not None:
+                # The request failed for a reason other than a lane hold and
+                # nothing it depends on has changed yet, so it is left exactly as
+                # it is rather than released, failed and restored again.
+                result["held"].append(str(pointer["run_id"]))
+                result.setdefault("hold_detail", {})[str(pointer["run_id"])] = (
+                    backoff_hold
+                )
+                continue
             snapshot = copy.deepcopy(dict(pointer))
             record = None
             failure = "dispatch did not return a launched record"
@@ -381,7 +550,11 @@ def admit_once(
             finally:
                 if record is None:
                     reported_id, restore_error = _record_queued_failure(
-                        snapshot, failure, requeued_run_id
+                        snapshot,
+                        failure,
+                        requeued_run_id,
+                        moment=moment,
+                        guard=_dependency_guard(pointer, config_for),
                     )
             if record is None:
                 key = "held" if isinstance(caught, (LaneHeld, LanePaused)) else "failed"
