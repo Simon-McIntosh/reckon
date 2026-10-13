@@ -153,11 +153,12 @@ class _RepositoryScopeClaim:
 def _scope_derivation_project(
     project: str,
     repository: Path,
-    repository_projects: Mapping[Path, tuple[str, ...]],
     preferred_projects: Iterable[str] = (),
 ) -> str:
     """Choose the project resource that owns derivations for a repository."""
-    mounted = repository_projects.get(repository, ())
+    from reckon.crew.routing import repository_projects
+
+    mounted = repository_projects(repository)
     if project in mounted:
         return project
     for preferred in preferred_projects:
@@ -172,7 +173,6 @@ def _resolved_scope_entries(
     base_repository: Path,
     repositories: Iterable[Path],
     project: str,
-    repository_projects: Mapping[Path, tuple[str, ...]],
     preferred_projects: Iterable[str] = (),
 ) -> list[tuple[Path | None, str, Path, str, str | None]]:
     """Expand paths within the repository and project resource that own them."""
@@ -201,7 +201,6 @@ def _resolved_scope_entries(
         derivation_project = _scope_derivation_project(
             project,
             repository,
-            repository_projects,
             preferred_projects,
         )
         derivations = _project_derivations(derivation_project, repository)
@@ -275,7 +274,6 @@ def _repository_scope_claims(
             base_repository=pointer_repo,
             repositories=roots,
             project=project,
-            repository_projects=repository_projects,
             preferred_projects=preferred_projects,
         ):
             claims.append(
@@ -901,7 +899,6 @@ def _resolved_node_scope_entries(
     authority: Mapping[str, Any],
 ) -> list[tuple[Path | None, str, Path, str, str | None]]:
     """Expand the node's whole scope, dispatcher grants included, unfiltered."""
-    repository_projects = mounted_repository_projects()
     repositories = tuple(
         repository_identity(root) or Path(str(root)).expanduser().resolve()
         for root in authority.get("repositories") or (repo,)
@@ -913,7 +910,6 @@ def _resolved_node_scope_entries(
         base_repository=repository_identity(repo) or Path(repo).resolve(),
         repositories=repositories,
         project=project,
-        repository_projects=repository_projects,
         preferred_projects=tuple(str(item) for item in write.get("projects") or ()),
     )
 
@@ -984,7 +980,6 @@ def _peer_scopes_without_shared_landing_paths(
             name: sorted(str(path) for path in paths)
             for name, paths in peer_scopes.items()
         }
-    repository_projects = mounted_repository_projects()
     repositories = tuple(
         repository_identity(root) or Path(str(root)).expanduser().resolve()
         for root in authority.get("repositories") or (repo,)
@@ -1001,7 +996,6 @@ def _peer_scopes_without_shared_landing_paths(
                 base_repository=repository_identity(repo) or Path(repo).resolve(),
                 repositories=repositories,
                 project=project,
-                repository_projects=repository_projects,
                 preferred_projects=tuple(
                     str(item) for item in write.get("projects") or ()
                 ),

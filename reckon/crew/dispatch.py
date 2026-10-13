@@ -349,8 +349,10 @@ def shadow_source(
     repo: str | Path,
 ) -> dict[str, Any]:
     """Resolve one committed primary and reconstruct its shadow node."""
+    from reckon.crew.routing import repository_projects
+
     repo_root = Path(repo).resolve()
-    projects = mounted_repository_projects().get(repo_root, ())
+    projects = repository_projects(repo_root)
     if not projects:
         state_root = repo_root / "docs" / "state"
         projects = (

@@ -27,7 +27,6 @@ from reckon.crew.routing import (
     _disposable_member_id,
     _inspect_workspace,
     _repository_tree_snapshot,
-    mounted_repository_projects,
 )
 from reckon.crew.runs import (
     _live_worktree_claims,
@@ -66,14 +65,13 @@ def _project_for_repository(repository: Path) -> str:
     same project as its main checkout.
     """
     target = repository.resolve()
+    from reckon.crew.routing import repository_projects
+
     try:
-        mounted = mounted_repository_projects()
+        projects = repository_projects(target)
     except (OSError, ValueError):
         return ""
-    for repository_root, projects in mounted.items():
-        if repository_root.resolve() == target and projects:
-            return str(projects[0])
-    return ""
+    return str(projects[0]) if projects else ""
 
 
 def _rebuild_record_from_run_directory(

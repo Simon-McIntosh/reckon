@@ -3664,9 +3664,7 @@ def resolve_dispatch_authority(project: str, repo: str | Path) -> dict[str, Any]
             f"project {project!r} mount {plan_docs} is not a readable directory"
         )
     plan_repo = plan_docs.parent.resolve()
-    work_projects = sorted(
-        name for name, docs in mounts.items() if docs.parent.resolve() == work_repo
-    )
+    work_projects = list(repository_projects(work_repo))
     if not work_projects:
         # Two remedies, because registering is the wrong one for a repository
         # that should not carry Reckon's UI at all — a data-only catalog that is
@@ -3720,6 +3718,19 @@ def mounted_repository_projects() -> dict[Path, tuple[str, ...]]:
     return {
         repository: tuple(sorted(projects)) for repository, projects in grouped.items()
     }
+
+
+def repository_projects(path: str | Path) -> tuple[str, ...]:
+    """Return the mounted projects that own the repository a path belongs to.
+
+    Resolution is by repository identity rather than by resolved path, so a
+    linked worktree names the same projects as the main checkout it shares an
+    object store with. A path outside every mounted repository has none.
+    """
+    identity = repository_identity(path)
+    if identity is None:
+        return ()
+    return mounted_repository_projects().get(identity, ())
 
 
 def resolve_scope_repository(
