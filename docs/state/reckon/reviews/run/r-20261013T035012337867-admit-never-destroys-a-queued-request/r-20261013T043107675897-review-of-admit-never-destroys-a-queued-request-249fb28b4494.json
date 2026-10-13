@@ -1,0 +1,95 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate arms for the change: the base arm is baseline-admission.log (revision 410aa0f, same tests/test_a_queued_run_is_admitted.py, EXIT=1, 6 failed), the log the reviewed run recorded as its negative control because it left the manifest's baseline_suite field empty; the head arm is gate-admission-review-repair.log (revision 249fb28b4, EXIT=0, 0 failed). Head adds no failing test the base arm did not carry, so the count is 0. A reader re-deriving from the manifest's baseline_suite/after_suite field names alone reads unmeasured, because that base field is empty.",
+  "after_suite": {
+    "command": "PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/health-review-1010/admit-never-destroys-a-queued-request /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/health-review-1010/admit-never-destroys-a-queued-request/tests/test_a_queued_run_is_admitted.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T035012337867-admit-never-destroys-a-queued-request/gate-admission-review-repair.log",
+    "revision": "249fb28b4494fc44975942b47e8186a8937b547e"
+  },
+  "baseline_suite": {
+    "command": "PYTHONPATH=\"$PWD\" /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_queued_run_is_admitted.py",
+    "completed": true,
+    "exit_status": 1,
+    "failure_count": 6,
+    "failure_ids": [
+      "tests/test_a_queued_run_is_admitted.py::test_a_refused_launch_keeps_its_queued_request[LanePaused-paused-True]",
+      "tests/test_a_queued_run_is_admitted.py::test_a_refused_launch_keeps_its_queued_request[LanePaused-unreadable-True]",
+      "tests/test_a_queued_run_is_admitted.py::test_a_refused_launch_keeps_its_queued_request[LaneHeld-full-False]",
+      "tests/test_a_queued_run_is_admitted.py::test_a_refused_launch_keeps_its_queued_request[ValueError-unexpected value-True]",
+      "tests/test_a_queued_run_is_admitted.py::test_a_refused_launch_keeps_its_queued_request[KeyError-missing key-True]",
+      "tests/test_a_queued_run_is_admitted.py::test_a_requeued_hold_keeps_the_newer_pointer"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T035012337867-admit-never-destroys-a-queued-request/baseline-admission.log",
+    "revision": "410aa0f789a3636a972d9746cd2abebb944d13ba"
+  },
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_run_commands.py:2559",
+    "reckon/crew/queue_admission.py:338"
+  ],
+  "completed_at": "2026-10-13T04:39:17.658Z",
+  "dispatched_at": "2026-10-13T04:31:58Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "250",
+      "severity": "follow-on",
+      "text": "follow-on: when runs._mutate_pointer fails while annotating a re-queued pointer (requeued_run_id set at :239), the except branch restores the ORIGINAL snapshot via _restore_queued, so both the restored original and the surviving re-queued pointer exist on disk \u2014 one queued request present twice, which a later pass could admit twice; the annotate-success path keeps only the surviving pointer, but this failure path does not."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit 249fb28b4 against 2a66ddf3; _record_queued_failure now returns (retained id, restore_error), catches Exception when annotating, falls back to _restore_queued, and admit_once reports the surviving requeued id with a superseded mapping and a restore_failure_detail on the pass.",
+    "done_when": "the done_when names tests/test_a_queued_run_is_admitted.py with LanePaused paused/unreadable, a non-local LaneHeld, a ValueError, a KeyError, a local requeue, plus the three-file gate; the run records after_suite gate-admission-review-repair.log 18 passed at 249fb28b4 and base arm baseline-admission.log 6 failed at 410aa0f.",
+    "goal": "the node goal is that an admit pass leaves every queued request on disk unless its launch succeeded, whatever dispatch raises; the delta at reckon/crew/queue_admission.py:246-255 makes the recovery total so an annotation write failure can no longer escape the finally and end the pass loop.",
+    "manifest": "read; status complete; after_suite names revision 249fb28b4 gate-admission-review-repair.log 18 passed EXIT=0; the baseline_suite field is empty so the base arm is read from the run's recorded negative-control log, as the prior review at 2a66ddf3 established.",
+    "write_paths": "the manifest declares reckon/crew/queue_admission.py, tests/test_a_queued_run_is_admitted.py and two docs paths; the delta touches only the two code paths, both inside the fence."
+  },
+  "justifications": {
+    "durability": "tests/test_a_queued_run_is_admitted.py:336 reads the persisted pointer and asserts phase==\"queued\" after an annotate write error, and :361 asserts restore_failure_detail; both redden if the fix is reverted to catching only CrewError.",
+    "evidence": "the run's after_suite records gate-admission-review-repair.log at revision 249fb28b4 with 18 passed EXIT=0, and its base arm baseline-admission.log records 6 failed EXIT=1 at 410aa0f, which is the done_when's measure.",
+    "fit": "the tuple return at reckon/crew/queue_admission.py:236 and the surviving-id bookkeeping at :350-359 follow the module's descriptive naming and carry no plan or ticket label.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:246-255 catches Exception from runs._mutate_pointer and falls back to _restore_queued, so the request stays queued on disk as the goal requires rather than the failure escaping the finally at :343.",
+    "reuse": "_record_queued_failure extends the existing _restore_queued (reckon/crew/queue_admission.py:213) and runs._mutate_pointer rather than adding a second restore mechanism, so no capability is forked.",
+    "scope_discipline": "git diff 2a66ddf3fe154c77588508675bda2c9c27cc5342 249fb28b4494fc44975942b47e8186a8937b547e touches only reckon/crew/queue_admission.py and tests/test_a_queued_run_is_admitted.py, both inside the declared write paths."
+  },
+  "node": "review-of-admit-never-destroys-a-queued-request-249fb28b4494",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that an admit pass leaves every queued request on disk unless its launch succeeded, whatever dispatch raises; the delta at reckon/crew/queue_admission.py:246-255 makes the recovery total so an annotation write failure can no longer escape the finally and end the pass loop.\nVERDICT done_when: the done_when names tests/test_a_queued_run_is_admitted.py with LanePaused paused/unreadable, a non-local LaneHeld, a ValueError, a KeyError, a local requeue, plus the three-file gate; the run records after_suite gate-admission-review-repair.log 18 passed at 249fb28b4 and base arm baseline-admission.log 6 failed at 410aa0f.\nVERDICT write_paths: the manifest declares reckon/crew/queue_admission.py, tests/test_a_queued_run_is_admitted.py and two docs paths; the delta touches only the two code paths, both inside the fence.\nVERDICT manifest: read; status complete; after_suite names revision 249fb28b4 gate-admission-review-repair.log 18 passed EXIT=0; the baseline_suite field is empty so the base arm is read from the run's recorded negative-control log, as the prior review at 2a66ddf3 established.\nVERDICT diff: read commit 249fb28b4 against 2a66ddf3; _record_queued_failure now returns (retained id, restore_error), catches Exception when annotating, falls back to _restore_queued, and admit_once reports the surviving requeued id with a superseded mapping and a restore_failure_detail on the pass.\nCALL_SITES: reckon/crew_run_commands.py:2559, reckon/crew/queue_admission.py:338\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:246-255 catches Exception from runs._mutate_pointer and falls back to _restore_queued, so the request stays queued on disk as the goal requires rather than the failure escaping the finally at :343.\nSCORE evidence: 18\nJUSTIFICATION evidence: the run's after_suite records gate-admission-review-repair.log at revision 249fb28b4 with 18 passed EXIT=0, and its base arm baseline-admission.log records 6 failed EXIT=1 at 410aa0f, which is the done_when's measure.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 2a66ddf3fe154c77588508675bda2c9c27cc5342 249fb28b4494fc44975942b47e8186a8937b547e touches only reckon/crew/queue_admission.py and tests/test_a_queued_run_is_admitted.py, both inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_queued_run_is_admitted.py:336 reads the persisted pointer and asserts phase==\"queued\" after an annotate write error, and :361 asserts restore_failure_detail; both redden if the fix is reverted to catching only CrewError.\nSCORE fit: 19\nJUSTIFICATION fit: the tuple return at reckon/crew/queue_admission.py:236 and the surviving-id bookkeeping at :350-359 follow the module's descriptive naming and carry no plan or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: _record_queued_failure extends the existing _restore_queued (reckon/crew/queue_admission.py:213) and runs._mutate_pointer rather than adding a second restore mechanism, so no capability is forked.\nFINDING reckon/crew/queue_admission.py:250 follow-on: follow-on: when runs._mutate_pointer fails while annotating a re-queued pointer (requeued_run_id set at :239), the except branch restores the ORIGINAL snapshot via _restore_queued, so both the restored original and the surviving re-queued pointer exist on disk \u2014 one queued request present twice, which a later pass could admit twice; the annotate-success path keeps only the surviving pointer, but this failure path does not.\n",
+  "review_run_id": "r-20261013T043107675897-review-of-admit-never-destroys-a-queued-request-249fb28b4494",
+  "reviewed_base_sha": "2a66ddf3fe154c77588508675bda2c9c27cc5342",
+  "reviewed_head_sha": "249fb28b4494fc44975942b47e8186a8937b547e",
+  "reviewed_run_id": "r-20261013T035012337867-admit-never-destroys-a-queued-request",
+  "reviewer_run_id": "r-20261013T043107675897-review-of-admit-never-destroys-a-queued-request-249fb28b4494",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "status_repair": {
+    "at": "2026-10-13T04:45:00Z",
+    "by": "reckon-build (health-review-1010)",
+    "from": "complete",
+    "reason": "The reviewer wrote this record with an inline json.dump that bypassed store_review, and invented the status complete. The record carries all six scores and a total of 115, which is what the parser marks parsed. The as-delivered file is kept beside it.",
+    "to": "parsed"
+  },
+  "test_logs": [
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T035012337867-admit-never-destroys-a-queued-request/gate-admission-review-repair.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T035012337867-admit-never-destroys-a-queued-request/baseline-admission.log"
+  ],
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T04:41:55.849590+00:00",
+  "total": 115
+}

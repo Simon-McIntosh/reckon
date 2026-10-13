@@ -24,7 +24,7 @@
   <title>A Held Dispatch Waits Its Fair Turn | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="28">
+<meta name="plan-version" content="29">
 <meta name="plan-modified" content="2026-10-13">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="3c837fc1">
@@ -190,6 +190,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261013T035012337867-admit-never-destroys-a-queued-request" data-who="reckon-build" data-when="2026-10-13T04:30:34Z">
     <div class="r-comment-body"><p>Admission recovers from annotation write errors, reports an unrecoverable restore on the pass, and names the surviving requeue ID with its superseded ID; review baseline 4 failed, final gates 47 passed.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261013T043107675897-review-of-admit-never-destroys-a-queued-request-249fb28b4494" data-who="reckon-build" data-when="2026-10-13T04:39:17.658Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261013T035012337867 covering only the commits gained since its prior review (2a66ddf3 -&gt; 249fb28b4): six dimensions scored 18/18/20/19/19/20 (total 115), one follow-on finding on the restore-on-annotate-failure double-fault path; no blocking findings.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261008T143648233011-review-of-recover-reads-a-queued-run" data-who="reckon-build" data-when="2026-10-08T14:49:32.593Z">
     <div class="r-comment-body"><p>landing: independent review of run r-20261008T130332012447-recover-reads-a-queued-run (reckon:a-held-dispatch-waits-its-fair-turn §8) stored at the head-keyed review-store path; scored goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 19, reuse 20 (total 116); one follow-on finding (recover's counts dict carries no "queued" key, recovery.py:11684, outside the node's scope); the fix is a one-line log_path guard at dispatch_sessions.py:164 that §8 specifies, verified against the node's head and negative-control logs.</p></div>
