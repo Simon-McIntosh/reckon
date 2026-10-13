@@ -1,0 +1,43 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-13T00:24:18.790Z",
+  "dispatched_at": "2026-10-13T00:17:52Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-shows-the-work-it-watches.html:66",
+      "id": "reasoning-1",
+      "reason": "the node must either extend `_population_has_live_work` to take the observed sessions (a change to a function the plan says needs none) or the plan must state that extension as part of \u00a74, otherwise the second done-when bullet is unimplementable as written.",
+      "text": "\u00a74 says \"'No live run' is the answer of `_population_has_live_work(project, session=...)` \u2026 which already owns that judgement; it is not derived a second time\", and says \"the population it settles on is its own session plus the sessions it observes, not the whole project\", but `_population_has_live_work` (reckon/crew_follow_commands.py:567) skips every pointer whose `owner` differs from the single `session` argument and never receives the follower's `observe_sessions`, so with `session=S` an observed peer session P whose run is still live is invisible; the mechanism as stated therefore cannot produce done-when bullet 2 (\"A follower that observes a peer session whose run is still live does not settle\") and a node trusting \"already owns that judgement\" would settle the follower while an observed run is live",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "54dad143be3a12d433d4679e38a768bb7b95c3fc7f6a0d49a2be8a55511590fd",
+  "plan_slug": "the-monitor-shows-the-work-it-watches",
+  "plan_version": 22,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261013T001723591199-plan-review-of-the-monitor-shows-the-work-it-watches",
+  "reviewed_blob_sha": "736f7330461555a9fa7b50c9918d7bcde43efe08",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/session_host.py` (`SessionHost.handle`:350, `tick`:431), `reckon/crew_follow_commands.py` (`_population_has_live_work`:567), the `crew follow --lifetime` final-line path (`_follower_end_line`:651), `--observe-session` (:2184) and decision `pane-end` (line 131) all resolve; the new test file is a deliverable, not an anchor.",
+    "done_when": "pass \u2014 \u00a74 names a negative control (\"restarts a settled child immediately as today's backoff does\") that fails the first case (a re-spawned idle child would print the idle line twice, breaking \"delivered once\"), and the four bullets are measurable against a temporary host-state fixture.",
+    "evidence_paths": "pass \u2014 the negative control is \"logged under the run directory\" (a durable path under `~/.config/reckon/crew/runs/<run>`), and the test's own \"temporary host state directory\" is a fixture, not the evidence store.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach \u00a74's symbols or prose; the only identifiers are real code names (`SessionHost.handle`, `_population_has_live_work`) and the plan's own decision key `pane-end`.",
+    "reasoning": "a finding \u2014 \u00a74 asserts that the settle population is \"its own session plus the sessions it observes\", but `_population_has_live_work(project, *, session)` filters live pointers to a single session and cannot see `--observe-session` peers.",
+    "single_goal": "pass \u2014 \u00a74 carries one deliverable (the pane ends when no work is live); the child-settle, host-census-removal and next-dispatch child are all parts of that one goal.",
+    "wiring": "pass \u2014 \u00a74 declares `depends-on` `the-monitor-shows-the-work-it-watches#s2`, which matches its reliance on the \u00a72 start row for the \"new child delivers the next run's start row\" bullet, and the declared deps chain (`s4\u2192s2`, `s3\u2192s5`, `s5\u2192s2`) resolves to nodes that exist."
+  },
+  "section_digests": {
+    "_document": "c31606cc455cd57732b1f14315954b644ca9b25b58806c22f1158e4d8402d2e5",
+    "s1": "52c4b79a6da0bc1e71b00748d6314e8a255bd5fa91b6acae30f6943e3c16cee5",
+    "s2": "eeca9b70e096de79d92846f4178d8f31832962cb9c7c73d122ac2a9e06546f32",
+    "s3": "a37e4f17cfa5318f2229db2eabe7a7b80adf7bb6fcb474e3d262981478abba8e",
+    "s4": "fb6bae83cab6ff2e0a33bf64f8a01d35db72cb3113a73e4659d22617724629c9",
+    "s5": "349ee19ab8c71fbc5e62c4cfa2fd4c32d34af2e2f3e9ced2db0580bfd0e74815"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T00:24:49.473096+00:00"
+}
