@@ -190,13 +190,46 @@ def _watch_executable() -> str:
 # a path only the arming process held would reach the watcher on the route that
 # does not need it and be missing on the fleet route that does. Both routes are
 # covered once the supervisor exports it, whichever process runs the argv.
-_WATCH_PRODUCER_SUPERVISOR = (
-    "import os, subprocess, sys; "
-    "os.environ[sys.argv[1]] = sys.argv[2]; "
-    "producer = subprocess.Popen(sys.argv[3:], stdin=subprocess.DEVNULL, "
-    "stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, close_fds=True); "
-    "raise SystemExit(producer.wait())"
-)
+_WATCH_PRODUCER_SUPERVISOR = """
+import os
+import signal
+import subprocess
+import sys
+import time
+
+os.environ[sys.argv[1]] = sys.argv[2]
+producer = None
+stopping = None
+
+def stop(signum, _frame):
+    global stopping
+    stopping = signum
+    if producer is not None and producer.poll() is None:
+        producer.send_signal(signum)
+
+for signum in (signal.SIGTERM, signal.SIGHUP, signal.SIGINT):
+    signal.signal(signum, stop)
+
+for attempt in range(5):
+    if stopping is not None:
+        raise SystemExit(128 + stopping)
+    producer = subprocess.Popen(sys.argv[3:], stdin=subprocess.DEVNULL,
+                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                                close_fds=True)
+    if stopping is not None and producer.poll() is None:
+        producer.send_signal(stopping)
+    status = producer.wait()
+    producer = None
+    if stopping is not None:
+        raise SystemExit(128 + stopping)
+    if not (1 <= status <= 127 or status < 0):
+        raise SystemExit(status)
+    if attempt == 4:
+        with open(sys.argv[2], 'a', encoding='utf-8') as log:
+            log.write('reckon crew watch stopped: producer crashed repeatedly; restart limit reached\\n')
+        raise SystemExit(status)
+    time.sleep(min(0.1 * 2 ** attempt, 0.8))
+"""
 
 
 def _watch_producer_argv(project: str) -> list[str]:
