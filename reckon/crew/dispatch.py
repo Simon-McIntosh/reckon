@@ -178,7 +178,9 @@ from reckon.crew.runs import (
     placement_job_alive as placement_job_alive,
     pointer_path as pointer_path,
     process_alive as process_alive,
+    QueueFull as QueueFull,
     queue_dispatch as queue_dispatch,
+    queued_dispatch_cap as queued_dispatch_cap,
     read_pointer as read_pointer,
     record_process_alive as record_process_alive,
     reports_dir as reports_dir,
@@ -193,6 +195,31 @@ from reckon.crew.runs import (
     watch_stream_path as watch_stream_path,
 )
 
+
+
+def _queued_share_cap(backend: Mapping[str, Any]) -> object:
+    """Read the lane document's published fair share, or ``None`` when absent.
+
+    The share is the router's own figure for how much of the lane one session
+    may hold; the caller clamps it to the queued-dispatch floor and ceiling. A
+    lane that declares no document, cannot be read, or is not a JSON object
+    returns ``None``, so the caller falls to the floor rather than inventing a
+    share the router never published.
+    """
+    declared = backend.get("lane_document")
+    if not declared:
+        return None
+    try:
+        raw = Path(str(declared)).expanduser().read_text(encoding="utf-8")
+    except OSError:
+        return None
+    try:
+        payload = json.loads(raw)
+    except ValueError:
+        return None
+    if not isinstance(payload, Mapping):
+        return None
+    return _lane_document.read_lane_admission(payload).get("fair_share")
 
 
 def shadow_source(
@@ -929,10 +956,15 @@ def dispatch(
                     "hold": dict(lane_allowance),
                     "reason": lane_allowance.get("reason"),
                     "dispatch_options": dict(dispatch_options or {}),
-                }
+                },
+                cap=queued_dispatch_cap(_queued_share_cap(backend)),
             )
             held = LaneHeld(lane_allowance)
-            held.queued = {"run_id": queued["run_id"], "position": position}
+            held.queued = {
+                "run_id": queued["run_id"],
+                "position": position,
+                "reason": lane_allowance.get("reason"),
+            }
             raise held
         raise LaneHeld(lane_allowance)
 
