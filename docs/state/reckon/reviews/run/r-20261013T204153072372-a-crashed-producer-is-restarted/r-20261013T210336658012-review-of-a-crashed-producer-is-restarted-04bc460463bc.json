@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/dispatch_watch.py:375 (_ensure_watch_producer calls _start_watch_producer)."
+  ],
+  "completed_at": "2026-10-13T21:18:17.453Z",
+  "dispatched_at": "2026-10-13T21:04:04Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_watch.py",
+      "line": "193",
+      "severity": "follow-on",
+      "text": "follow-on: the supervisor string re-implements a bounded exponential restart back-off that the repository already owns as fleet_supervisor.next_backoff (reckon/crew/fleet_supervisor.py:539, applied by session_host at session_host.py:494); the inline curve (0.1 s doubling to a 0.8 s cap) and its five-crash bound now sit beside that owner and can drift from it, and reuse was possible because the producer argv already resolves the reckon console script."
+    },
+    {
+      "file": "reckon/crew/dispatch_watch.py",
+      "line": "213",
+      "severity": "follow-on",
+      "text": "follow-on: the bound counts every crash over the supervisor's entire lifetime and never resets after a steady run, so \"a producer that keeps crashing\" is not what it measures \u2014 a producer that runs healthily for days and then crashes five times is abandoned, whereas the shared fleet_supervisor.next_backoff resets its delay after a steady run (fleet_supervisor.py:539)."
+    },
+    {
+      "file": "tests/test_a_crashed_producer_is_restarted.py",
+      "line": "37",
+      "severity": "follow-on",
+      "text": "follow-on: the no-restart-on-zero case is exercised by a plain `return` from the watch loop rather than an expiring lease, so the test bit that stands for \"a lease that expired exits zero\" is an ordinary clean exit; the exit-status behaviour under test is the same, but the case does not cover the lease-expiry path the plan names."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T204153072372-a-crashed-producer-is-restarted/manifest.md",
+      "line": "21",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest records baseline_suite as the prose \"none \u2014 the new focused test file does not exist at the base revision\" although a base-arm log does exist at first-gate.log (revision aaab0bca, 5 passed 1 failed), so the added-failure count derives as unmeasured and neither arm's delta can be checked against the other."
+    }
+  ],
+  "head_log_revision": "04bc460463bcc918dd88c2fa5f0376cda302686f",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against aaab0bca; 4152e8c57 replaces the one-shot supervisor string and adds the test file, and 04bc460463 adds the evidence fragment; 223 insertions across the three files.",
+    "done_when": "the plan's measure names tests/test_a_crashed_producer_is_restarted.py; its six cases cover crash and SIGKILL restart, exit-zero and exit-143 no-restart, supervisor-signalled no-restart, and retry exhaustion, and the manifest records 6 passed EXIT=0 in final-gate.log; the importer-population arm the done_when also names was deferred to the coordinator.",
+    "goal": "the node's goal is that a crashed fallback watch producer is replaced without a coordinator; reckon/crew/dispatch_watch.py:193 rewrites _WATCH_PRODUCER_SUPERVISOR so it relaunches the producer on a crash, and dispatch_watch.py:229 reports the give-up once the bound is reached.",
+    "manifest": "read at runs/r-20261013T204153072372-a-crashed-producer-is-restarted/manifest.md; it carries commits 4152e8c57 and 04bc460463, the gate command with 6 passed EXIT=0 in final-gate.log, a red negative control at EXIT=1, and status complete.",
+    "write_paths": "the manifest declares reckon/crew/dispatch_watch.py and tests/test_a_crashed_producer_is_restarted.py, and the diff touches those two paths plus the landed evidence fragment, all inside the plan's \u00a719 scope."
+  },
+  "justifications": {
+    "durability": "test_a_crashed_producer_is_restarted.py:122 reddens when the relaunch is removed (shown in negative-control.log at EXIT=1), and :149 and :163 guard the no-restart and bounded-restart cases.",
+    "evidence": "the manifest records final-gate.log at 6 passed EXIT=0 and negative-control.log red at EXIT=1, though the done_when's importer-population arm is deferred to the coordinator and the existing base-arm log is not recorded under baseline_suite.",
+    "fit": "the supervisor keeps the surrounding argv-string idiom and the comment block above it at dispatch_watch.py:185, and no added name carries a plan or ticket label.",
+    "goal_fidelity": "dispatch_watch.py:213 relaunches the producer on an error or negative exit status and dispatch_watch.py:229 writes the give-up line, so a crashed fallback producer is replaced without a coordinator.",
+    "reuse": "the inline back-off at dispatch_watch.py:231 duplicates the repository's bounded-restart owner fleet_supervisor.next_backoff at fleet_supervisor.py:539 without extending it.",
+    "scope_discipline": "every path in the diff (dispatch_watch.py, the new test file, the evidence fragment) is inside the manifest's declared write paths and the \u00a719 scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a crashed fallback watch producer is replaced without a coordinator; reckon/crew/dispatch_watch.py:193 rewrites _WATCH_PRODUCER_SUPERVISOR so it relaunches the producer on a crash, and dispatch_watch.py:229 reports the give-up once the bound is reached.\nVERDICT done_when: the plan's measure names tests/test_a_crashed_producer_is_restarted.py; its six cases cover crash and SIGKILL restart, exit-zero and exit-143 no-restart, supervisor-signalled no-restart, and retry exhaustion, and the manifest records 6 passed EXIT=0 in final-gate.log; the importer-population arm the done_when also names was deferred to the coordinator.\nVERDICT write_paths: the manifest declares reckon/crew/dispatch_watch.py and tests/test_a_crashed_producer_is_restarted.py, and the diff touches those two paths plus the landed evidence fragment, all inside the plan's \u00a719 scope.\nVERDICT manifest: read at runs/r-20261013T204153072372-a-crashed-producer-is-restarted/manifest.md; it carries commits 4152e8c57 and 04bc460463, the gate command with 6 passed EXIT=0 in final-gate.log, a red negative control at EXIT=1, and status complete.\nVERDICT diff: read commit by commit against aaab0bca; 4152e8c57 replaces the one-shot supervisor string and adds the test file, and 04bc460463 adds the evidence fragment; 223 insertions across the three files.\nCALL_SITES: reckon/crew/dispatch_watch.py:375 (_ensure_watch_producer calls _start_watch_producer).\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: dispatch_watch.py:213 relaunches the producer on an error or negative exit status and dispatch_watch.py:229 writes the give-up line, so a crashed fallback producer is replaced without a coordinator.\nSCORE evidence: 16\nJUSTIFICATION evidence: the manifest records final-gate.log at 6 passed EXIT=0 and negative-control.log red at EXIT=1, though the done_when's importer-population arm is deferred to the coordinator and the existing base-arm log is not recorded under baseline_suite.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the diff (dispatch_watch.py, the new test file, the evidence fragment) is inside the manifest's declared write paths and the \u00a719 scope.\nSCORE durability: 18\nJUSTIFICATION durability: test_a_crashed_producer_is_restarted.py:122 reddens when the relaunch is removed (shown in negative-control.log at EXIT=1), and :149 and :163 guard the no-restart and bounded-restart cases.\nSCORE fit: 17\nJUSTIFICATION fit: the supervisor keeps the surrounding argv-string idiom and the comment block above it at dispatch_watch.py:185, and no added name carries a plan or ticket label.\nSCORE reuse: 14\nJUSTIFICATION reuse: the inline back-off at dispatch_watch.py:231 duplicates the repository's bounded-restart owner fleet_supervisor.next_backoff at fleet_supervisor.py:539 without extending it.\nFINDING reckon/crew/dispatch_watch.py:193 follow-on: the supervisor string re-implements a bounded exponential restart back-off that the repository already owns as fleet_supervisor.next_backoff (reckon/crew/fleet_supervisor.py:539, applied by session_host at session_host.py:494); the inline curve (0.1 s doubling to a 0.8 s cap) and its five-crash bound now sit beside that owner and can drift from it, and reuse was possible because the producer argv already resolves the reckon console script.\nFINDING reckon/crew/dispatch_watch.py:213 follow-on: the bound counts every crash over the supervisor's entire lifetime and never resets after a steady run, so \"a producer that keeps crashing\" is not what it measures \u2014 a producer that runs healthily for days and then crashes five times is abandoned, whereas the shared fleet_supervisor.next_backoff resets its delay after a steady run (fleet_supervisor.py:539).\nFINDING tests/test_a_crashed_producer_is_restarted.py:37 follow-on: the no-restart-on-zero case is exercised by a plain `return` from the watch loop rather than an expiring lease, so the test bit that stands for \"a lease that expired exits zero\" is an ordinary clean exit; the exit-status behaviour under test is the same, but the case does not cover the lease-expiry path the plan names.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T204153072372-a-crashed-producer-is-restarted/manifest.md:21 follow-on: the manifest records baseline_suite as the prose \"none \u2014 the new focused test file does not exist at the base revision\" although a base-arm log does exist at first-gate.log (revision aaab0bca, 5 passed 1 failed), so the added-failure count derives as unmeasured and neither arm's delta can be checked against the other.\n",
+  "review_run_id": "r-20261013T210336658012-review-of-a-crashed-producer-is-restarted-04bc460463bc",
+  "reviewed_base_sha": "aaab0bca467abead50ecd3f3237d47c6c4d9c27b",
+  "reviewed_head_sha": "04bc460463bcc918dd88c2fa5f0376cda302686f",
+  "reviewed_run_id": "r-20261013T204153072372-a-crashed-producer-is-restarted",
+  "reviewer_run_id": "r-20261013T210336658012-review-of-a-crashed-producer-is-restarted-04bc460463bc",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 14,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T21:14:08.966061+00:00",
+  "total": 102
+}
