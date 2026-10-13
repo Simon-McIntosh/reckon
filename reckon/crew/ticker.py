@@ -47,6 +47,14 @@ CLOCK = 8
 # truncated name, so a name that fits the narrower cell keeps its whole text and
 # only the ones that already elided lose a little more of their middle.
 NODE = 28
+# The live roll-up names the session's working nodes after the counters. Each
+# name takes the node column's own middle cut so a long name keeps the end that
+# distinguishes it from its wave, but at a narrower width than the column: the
+# roll-up names several nodes in the room the reason clause is about to use, so
+# a cell the width of the node column would spend the reader's explanation on
+# the list. Ten columns show a node's tail and enough of its head to recognise
+# it, and a name that fits keeps its whole text.
+ROLLUP_NODE = 10
 # A node name wider than its cell is cut from the middle, so the end that
 # distinguishes it from the rest of its wave survives the cut. Two rows can
 # still land on one text — two names that differ only where the cut falls, and
@@ -2274,6 +2282,29 @@ class Ticker:
         # limits it. A record written before the reading existed carries none,
         # so the clause is absent rather than unknown.
         cells += bound_cells(event.get("bounds"))
+        cells += self._rollup_cells(event)
+        return cells
+
+    def _rollup_cells(self, event: Mapping[str, Any]) -> list[tuple[str, Any]]:
+        """The session's live nodes, named beside the counters that count them.
+
+        The counters say how many runs are in flight; the roll-up says which
+        nodes they are, so a reader sees all active work on the latest line
+        without the full stream. The population is chosen by the fleet
+        partition in ``reckon/crew/recovery_watch.py`` — the same session
+        narrowing and the same working-state membership the count beside it
+        uses — so the names and the working figure can never describe two
+        different fleets. Each name takes the ticker's existing middle cut, so
+        a long name keeps the end that tells it apart from its wave. A session
+        with no live node adds nothing: the working counter's zero already
+        reports that, and a token on every quiet row is the verbosity the pane
+        is avoiding.
+        """
+        nodes = [str(node) for node in (event.get("live_nodes") or []) if str(node)]
+        cells: list[tuple[str, Any]] = []
+        for node in nodes:
+            cells.append((" " * GAP, None))
+            cells.append((elide(node, ROLLUP_NODE, keep_end=True), self.hue(node)))
         return cells
 
     @staticmethod
