@@ -22,11 +22,11 @@
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-standalone" content="The lead&#x27;s 2026-10-12 requirements for the session-host pane, revising the start-row rule of the shipped a-follower-row-is-worth-a-wake; no live plan waits on it and it waits on none.">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;the-monitor-shows-the-work-it-watches#s5&quot;], &quot;s4&quot;: [&quot;the-monitor-shows-the-work-it-watches#s2&quot;], &quot;s5&quot;: [&quot;the-monitor-shows-the-work-it-watches#s2&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;}">
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="23">
+<meta name="plan-version" content="24">
 <meta name="plan-modified" content="2026-10-13">
 </head>
 <body>
@@ -62,7 +62,7 @@
     <p>Write paths: <code>reckon/crew/ticker.py</code>, <code>reckon/crew/recovery_watch.py</code> (only if <code>_fleet_counts</code> must carry the node names), <code>tests/test_a_pane_row_carries_the_live_rollup.py</code>. This section runs after §2, since both write <code>ticker.py</code>.</p>
 
     <h2 id="s4">§4 — The pane ends when no work is live</h2>
-<section data-reckon="section" data-id="s4" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> When the session has no live run, its follower child prints one idle line, <code>no live work in &lt;session&gt; since HH:MM</code>, and exits. "No live run" is the answer of <code>_population_has_live_work(project, session=...)</code> in <code>reckon/crew_follow_commands.py</code>, which already owns that judgement; it is not derived a second time. The idle line extends the final-line path <code>crew follow --lifetime</code> already prints. Today <code>SessionHost.handle</code> drops a request for a project and session already in its children, and <code>tick</code> restarts a keyed child on backoff without removing the key. So when a child settles, the host removes it from its census. The next request for that pair then starts a new child, and backoff never restarts a settled one.</p><p> The session host stays alive, and the pane's last line reads idle. When the session next dispatches, the request that dispatch already writes to the host's pipe starts a new follower child for that project and session. The new child replays nothing it has already printed and delivers the new run's start row. No turn is spent re-arming. The host itself still never exits on its own, because a plugin monitor that exits is never restarted in the session (decision <code>pane-end</code>). Claude Code therefore still lists the monitor as running, which this section accepts.</p>
     <p><strong>Done when</strong> <code>tests/test_a_pane_settles_when_no_work_is_live.py</code> passes over a temporary host state directory:</p>
     <ul>
