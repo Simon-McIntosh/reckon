@@ -1,0 +1,59 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-13T01:47:27.690Z",
+  "dispatched_at": "2026-10-13T01:38:42Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:143",
+      "id": "anchors_resolve-1",
+      "reason": "a reader following \u00a78 to the audit's parse route lands on \u00a712, which excludes it, so the plan's own routing sends them to the node that does not carry the fix.",
+      "text": "\u00a78 states \"The audit walks and parses by its own route, which is \u00a712\", but after the \u00a712/\u00a713 split \u00a712 carries only the walk and its deliverable explicitly defers the parse (\"Sharing \u00a711's parse in `_audit_plan_state` is \u00a713\"); the pointer therefore names the wrong node for half the route it describes",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:157",
+      "id": "single_goal-1",
+      "reason": "the deliverable's explicit deferral and the walk-only done-when leave the node's scope unambiguous, so only the heading and filename are stale, not the work.",
+      "text": "\u00a712's heading (\"The audit walks and parses through the shared scan and parse\") and its declared test filename (line 159, `tests/test_the_audit_shares_the_scan_and_parse.py`) both advertise a parse the section no longer delivers, so the unit reads as two deliverables while its body delivers one",
+      "type": "single_goal",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "805f4a5fb7af7c8be674431da8fcb782277d62d991bdd19271f99cae0451fb66",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 44,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261013T013803394876-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "bf715a77e1de4e6b1ae61b340705ab3a29d5b83d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a78's cross-reference names \u00a712 for the audit's parse, which after the split now lives in \u00a713.",
+    "done_when": "pass \u2014 \u00a712 declares a countable measure (walked once) plus an equal-findings measure, each with its own negative control (revert the rglob walk; drop invalid files without recording), so both halves of the deliverable can be shown to fail.",
+    "evidence_paths": "pass \u2014 both negative-control logs are declared \"under the run directory\", a durable path in the crew report tree, not a scratchpad or node-local temp.",
+    "naming": "pass \u2014 \u00a712 carries no plan labels, ticket numbers or version tags, and no changelog prose into code.",
+    "reasoning": "pass \u2014 the stated root cause (`sorted(docs_dir.rglob(\"*.html\"))` at reckon/mcp.py:2355 and `_audit_plan_state` \u2192 `_plan_html.from_html` at mcp.py:2265) matches \u00a77's finding, the mechanism (open one `resource_scan_scope`, take resources from `iter_resources`, have the scan record dropped files) can produce the one-walk and equal-findings measures, and the mechanism runs on the real `_audit` path whose production caller is named.",
+    "single_goal": "a finding \u2014 \u00a712's heading and its declared test filename both assert a parse that the section's own deliverable assigns to \u00a713.",
+    "wiring": "pass \u2014 \u00a712 is named in the sole open followup f-araiid-009 (whose body routes \u00a78, \u00a711, \u00a710, \u00a712, \u00a713 and \u00a76), and \u00a712's stated order (\"runs after \u00a78 and \u00a710\") matches the followup's ordering."
+  },
+  "section_digests": {
+    "_document": "a72b1124948d5798f5ef80e945fd318ffdc7a66a5e9dbf2d2eda32cb82fdfa6f",
+    "s1": "71942607f4df4eca011a41734257645ef2adce9664dd45b628d96b066c34e813",
+    "s10": "5261ebecb0fa5c4351c00f324d2378797d384ba4246b22b52bc96e9dda5392d1",
+    "s11": "3a64769c6749a1d84d6c8b71f9c1b2c406198fcf56578a7dfa447465f1cd579e",
+    "s12": "3920b951c9928e44c1cc6cea95b349db0133a40e087ede78eefa8f6427e9856a",
+    "s13": "b4b56e5d24dad69d71c1a6459abafd8804e50d908cacef72d681c0388ea22176",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s3": "cbe34f619f869b3c3346239e8823a63a8de98dd92b7fb8ed5cfa2b8a4ab26a39",
+    "s4": "d2ec58f5ac4e72c5e8bcde1f156bdd4c85bde3848b4e3b6131e6112bb6395d49",
+    "s5": "b14c0e28c2c28544a08d4b3d7ab621f48464471360d202c7a4bd1a1ec776f557",
+    "s6": "00db597c53dfd6e3d857f89ee748a8c6ecfe51576b2b66e64772393805c59b52",
+    "s7": "503099f7e945f5038a64b142ffa49b88c02dbbd0f0a5ad5882f6da8b22d25883",
+    "s8": "d34e4559f87b4b8a8bc8b58e12dc26b2eeee527979f013e441d10648120e7b60",
+    "s9": "a356ecd44b8ee634f6b45b64ec3785e3af7ffb255d4d3adf46574d3a10afc7b3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T01:48:52.144555+00:00"
+}
