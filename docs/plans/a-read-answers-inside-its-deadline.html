@@ -25,7 +25,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="32">
+<meta name="plan-version" content="33">
 <meta name="plan-modified" content="2026-10-13">
 </head>
 <body>
@@ -242,6 +242,9 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-close-s7" data-who="reckon-build" data-when="2026-10-13T00:00:00Z">
     <div class="r-comment-body"><p>§7 landed. On one quiet node and a frozen corpus, warm roadmap reads 1.68 s, inside its target. Warm audit (4.91 s) and cold roadmap (84.8 s) are not. The residual warm time is the resource scan, re-run up to ten times per read. §8 carries the scan across reads, and §9 attributes the cold time from the kept profiles. <a href="/reckon/evidence/archive/a-read-answers-inside-its-deadline-landed.html#s7-attribution">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261012T235245286442-cold-read-time-attributed" data-who="reckon-build" data-when="2026-10-13T00:17:18.873Z">
+    <div class="r-comment-body"><p>reckon §9 — cold attribution from §7&#x27;s kept head dumps: cold time is the plan HTML parse repeated (read_state 86.9%/70.5%/90.1% of roadmap 84.8 s / audit 133.4 s / discovery 64.1 s; 806/1087/630 calls over 176 files), cold roadmap is 76.5 s of discovery pipeline it calls, warm skips the parse entirely; tree walk, git subprocesses and imports all below the top ten; negative control strict-pass for roadmap and audit, one boundary hit for discovery (discover_plans rank 10 warm at 0.072 s vs 63.8 s cold)</p></div>
 </div>
 </section>
 </main>
