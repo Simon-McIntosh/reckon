@@ -2893,6 +2893,16 @@ reckon/crew/dispatch.py:4535: TypeError
     <p><code>_PLAN_SECTION_REFERENCE</code> in <code>reckon/crew/reports.py</code> now composes from <code>SECTION_NUMBER_PATTERN</code>, the shared section-number core in <code>reckon/_plan_html.py</code>, instead of the literal <code>§\s*\d</code> (commit <code>b1519b809</code>; merged at <code>153446876</code>). Both section-grammar census ids pass, and <code>tests/test_report_section_reference_uses_the_core.py</code> checks the composed pattern against the samples the literal matched. Restoring the literal fails both census ids. The review scored 114/120 with no added failure. Its one follow-on: the new continuation case (<code>§5.1</code>) also passes under the old literal, so the census ids are what pin the change. <code>crew verify-gate</code> passed at the integrated head.</p>
   </section>
 
+  <section id="s13-ledger-race">
+    <h2>§13 — the race winner reads its own ledger write</h2>
+    <p>The cause was in the product. A ledger reader whose index refresh is refused under a peer's lock fell back to the last published index without checking that the aggregate it was built from was still the one on disk. A race winner could therefore read the empty view a promotion publishes before its write, and fail with <code>IndexError</code>. <code>_last_good_index_data</code> in <code>reckon/ledger.py</code> now compares the snapshot's recorded stamp with the aggregate's current file identity, a stat rather than a parse, and returns nothing when they differ, so the caller reads the aggregate (commits <code>d36897d88</code>, <code>abab0b460</code>; merged at <code>9cdd787c0</code>). The race id passed five consecutive runs, and a new deterministic case publishes an index, moves the aggregate past it, and checks a refused refresh reads the aggregate. Removing the guard fails both. The ledger importers fail only the known duplicate-identity red, against three failures at base. Review 109/120, no added failure; <code>crew verify-gate</code> passed at the integrated head.</p>
+  </section>
+
+  <section id="s10-duplicate-plan">
+    <h2>§10 — a plan filed twice is refused</h2>
+    <p>Commit <code>1500780fa</code> made <code>resolve_resource</code> read a plan's canonical path without scanning, and its message states that every collision case keeps the full scan, so losing duplicate detection was unintended. <code>_resolve_canonical</code> in <code>reckon/resources.py</code> now lists the canonical file's own typed root and defers to the scan's collision rule when another file there claims the same type and slug, so a plan filed twice raises <code>ResourceCollision</code> again without the recursive walk the direct read avoids (commits <code>05f3b87f5</code>, <code>fdbde9e07</code>; merged at <code>cc0e732c4</code>). <code>test_plan_estimate_cache_tracks_edits_and_duplicate_identity</code> passes; reporting every identity unique fails it. The coordinator measured the thirteen test files importing <code>resources.py</code> at the integrated head: 2846 passed, 1 failed, the landing-sha red §12 repairs. Review 116/120, no added failure; its follow-ons note that an unlistable canonical root reads as unique, and that the skip of an unclassifiable sibling has no test.</p>
+  </section>
+
 </main>
 </body>
 </html>
