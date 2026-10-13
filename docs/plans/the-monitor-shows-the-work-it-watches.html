@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
   <meta name="plan-title" content="The Monitor Shows The Work It Watches">
   <meta name="plan-summary" content="The session-host pane is empty while work runs and never stops after. Show each own run&#x27;s start and a live roll-up, and end the pane when no work is live.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="done">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="4.0">
   <meta name="plan-capability-version" content="1.0">
@@ -22,11 +22,11 @@
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-standalone" content="The lead&#x27;s 2026-10-12 requirements for the session-host pane, revising the start-row rule of the shipped a-follower-row-is-worth-a-wake; no live plan waits on it and it waits on none.">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;the-monitor-shows-the-work-it-watches#s5&quot;], &quot;s4&quot;: [&quot;the-monitor-shows-the-work-it-watches#s2&quot;], &quot;s5&quot;: [&quot;the-monitor-shows-the-work-it-watches#s2&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;}">
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="29">
+<meta name="plan-version" content="30">
 <meta name="plan-modified" content="2026-10-13">
 </head>
 <body>
@@ -50,7 +50,7 @@
     <p>Write paths: <code>reckon/crew/ticker.py</code>, <code>tests/test_a_pane_shows_its_own_starts.py</code>, plus the existing test files whose start-row assertion changes, each named at dispatch.</p>
 
     <h2 id="s3">§3 — Every printed row carries the session's live roll-up</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> Every row the pane delivers already ends with a counter cell. <code>Ticker._stats</code> in <code>reckon/crew/ticker.py</code> renders it from <code>_fleet_counts</code> in <code>reckon/crew/recovery_watch.py</code>, which narrows to a session through <code>_partition_session_rows</code>. That cell gains the session's live nodes, in the ticker's existing abbreviated form, so "all work active" is visible on the latest line without the full stream. No second status block is added to the row, and nothing is computed outside <code>_fleet_counts</code>. It adds no row: a pane with no deliverable change stays quiet.</p>
     <p><strong>Done when</strong> <code>tests/test_a_pane_row_carries_the_live_rollup.py</code> passes:</p>
     <ul>
@@ -125,6 +125,12 @@
     <pre class="r-fu-prompt">/reckon-build the-monitor-shows-the-work-it-watches</pre>
     <p class="r-fu-outcome">The work lives in §2 and §3, which are implementable, with §3 wired after §2, and in §4, deferred on the pane-end decision. A seed followup naming no section hid the work from the roadmap.</p>
     </article>
+<article class="r-fu" data-id="f-tmstwiw-close" data-status="resolved" data-written-by="reckon-build" data-written-at="2026-10-13" data-recommends-skill="" data-resolved-at="2026-10-13" data-resolved-by="reckon-build">
+    <h4 class="r-fu-title">Plan closed</h4>
+    <div class="r-fu-body"><p>All five sections are done: own starts (§2), the live roll-up (§3), the pane settles (§4) and the seven words (§5).</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-monitor-shows-the-work-it-watches</pre>
+    <p class="r-fu-outcome">done — no followup: every section landed and verified at the integrated head.</p>
+    </article>
 </section>
   <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -141,7 +147,10 @@
     <div class="r-comment-body"><p>Stored the review for r-20261013T002528540562-a-pane-row-carries-the-live-rollup at the head-keyed path: 6/6 dimensions scored (goal_fidelity 17, evidence 19, scope_discipline 20, durability 18, fit 19, reuse 18, total 111), reviewed_base_sha fb53f2a9c / reviewed_head_sha 566d63696, added_failure_count 0/[], one follow-on finding.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261013T002528540562-a-pane-row-carries-the-live-rollup" data-who="reckon-build" data-when="2026-10-13T01:03:08.608Z">
-    <div class="r-comment-body"><p>The counter cell on every row now names its session&#x27;s live nodes: _fleet_live_nodes in reckon/crew/recovery_watch.py reuses _partition_session_rows and FLEET_WORKING_STATES, the scoped watch event carries them, and Ticker._rollup_cells draws each in the ticker&#x27;s middle-cut form; tests/test_a_pane_row_carries_the_live_rollup (3 cases) passes and the ticker-importing gate is 422 passed with 0 added failures against a base arm of 418 passed / 1 pre-existing flake.</p></div>
+    <div class="r-comment-body"><p>The counter cell on every row now names its session's live nodes: _fleet_live_nodes in reckon/crew/recovery_watch.py reuses _partition_session_rows and FLEET_WORKING_STATES, the scoped watch event carries them, and Ticker._rollup_cells draws each in the ticker's middle-cut form; tests/test_a_pane_row_carries_the_live_rollup (3 cases) passes and the ticker-importing gate is 422 passed with 0 added failures against a base arm of 418 passed / 1 pre-existing flake.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-13T01:30:00Z">
+    <div class="r-comment-body"><p>§3 landed: every pane row names the session's live nodes beside its counts, computed over the same session partition (commits <code>4a3d85198</code>, <code>566d63696</code>). Gate 422 passed at head, 0 added; the unscoped-partition control is red; verify-gate passed at <code>113da9461</code>. <a href="/reckon/evidence/archive/the-monitor-shows-the-work-it-watches-landed.html#s3-live-rollup">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-s4-design-review-1012" data-who="reckon-build" data-when="2026-10-12T21:15:00Z">
     <div class="r-comment-body"><p>To apply to §4's text before it builds. This is design review finding <code>duplicate_owner-1</code>, §4 half.</p><p>"No live work in this session" is already owned by <code>_population_has_live_work(project, session=...)</code> in <code>reckon/crew_follow_commands.py</code>. <code>crew follow --lifetime</code> already prints one final line, and <code>crew watch --exit-on-empty</code> already exits when no pointer remains. <code>_session_host_child</code> and <code>_session_host_runs_follower</code> already read the host-child relation.</p><p>§4 settles the child by calling <code>_population_has_live_work</code>. Its idle line extends the existing final-line path rather than adding a second one.</p></div>
