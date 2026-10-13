@@ -41,6 +41,12 @@ block with the lifted multiple, the drain-by hold or the uncapped release — or
 The record lives in one control document per workstation,
 ``<config-home>/budget-lifts.json``, written atomically under a monotonically
 increasing ``version``, in the same shape as the router's gate document.
+
+**A grant supersedes the lift already standing on its group and scope.** The
+standing record is cleared as :func:`clear` clears one, ``cleared_by`` naming
+the granting user and ``replaced_by`` naming the new lift, and the new lift's
+``replaces`` names the record it cleared. The two links are separate fields so
+``cleared_by`` always holds a name, and a lift on another scope is untouched.
 """
 
 from __future__ import annotations
@@ -334,6 +340,7 @@ def grant(
         }
 
     granted_at = moment
+    granting_user = str(granted_by or environment.get("USER") or "unknown")
     starts = _parse_stamp(starts_at) if starts_at is not None else None
     end_block = _end_block(
         ends=ends,
@@ -350,16 +357,30 @@ def grant(
         "ends": end_block,
         "scope": selected_scope,
         "starts_at": _iso(starts) if starts is not None else _iso(granted_at),
-        "granted_by": str(granted_by or environment.get("USER") or "unknown"),
+        "granted_by": granting_user,
         "granted_at": _iso(granted_at),
         "reason": str(reason).strip(),
         "projected_exhaustion": _projection(newest, selected_clock, resolved_multiple),
         "cleared_by": None,
         "cleared_at": None,
+        "replaced_by": None,
+        "replaces": None,
     }
     lift.update(drain_fields)
 
     document = read_document(path)
+    replaced = _replace_standing(
+        document["lifts"],
+        group=group_name,
+        scope=selected_scope,
+        new_id=lift["id"],
+        cleared_by=granting_user,
+        readings=readings,
+        now=granted_at,
+        bound=bound,
+    )
+    if replaced is not None:
+        lift["replaces"] = replaced
     document["lifts"].append(lift)
     _write_document(document, path=path)
     return lift
@@ -425,6 +446,47 @@ def clear(
     governing["cleared_at"] = _iso(moment)
     _write_document(document, path=path)
     return governing
+
+
+def _replace_standing(
+    lifts: Sequence[Mapping[str, Any]],
+    *,
+    group: str,
+    scope: str,
+    new_id: str,
+    cleared_by: str,
+    readings: Sequence[Mapping[str, Any]] | None,
+    now: datetime,
+    bound: LiftCeilings,
+) -> str | None:
+    """Clear the lift already in force on ``group`` and ``scope``, if any.
+
+    A grant on a group and scope supersedes the lift already standing there
+    rather than sitting beside it. The superseded record is cleared the way
+    :func:`clear` clears one — ``cleared_by`` naming the granting user, which
+    is what the caller passes, so a single name serves whichever lift was
+    standing — and gains ``replaced_by`` naming the new lift. The new lift's
+    ``replaces`` names the record it cleared. The two links are separate fields
+    so ``cleared_by`` always holds a name and the pair is readable from either
+    side. A lift on another scope, or on another group, is untouched. Returns
+    the replaced lift's id, or ``None`` when none on that group and scope was in
+    force.
+    """
+    moment = _aware(now)
+    candidates = [
+        lift
+        for lift in lifts
+        if lift.get("group") == group
+        and str(lift.get("scope") or GLOBAL) == scope
+        and _in_force(lift, readings=readings, now=moment, bound=bound)
+    ]
+    if not candidates:
+        return None
+    standing = max(candidates, key=lambda lift: str(lift.get("granted_at") or ""))
+    standing["cleared_by"] = cleared_by
+    standing["cleared_at"] = _iso(moment)
+    standing["replaced_by"] = new_id
+    return str(standing.get("id"))
 
 
 def list_lifts(
