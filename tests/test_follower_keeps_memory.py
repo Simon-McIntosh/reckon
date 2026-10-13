@@ -60,13 +60,14 @@ def follow_lines(monkeypatch):
 def test_a_reload_keeps_the_pane_memory_and_renders_the_transition(
     home, follow_lines, monkeypatch
 ) -> None:
-    """A reloaded pane shows ``blocked → working``, not the producer's record.
+    """A reloaded pane shows ``halted → working``, not the producer's record.
 
-    The reader watched the run sit at ``blocked``. The producer's own record
-    knows nothing of that, and the reloaded grid starts empty, so without the
-    memory the row falls back to the producer's ``from_state`` and prints
-    ``dispatched → working`` — the bare-state defect the pane measured on
-    2026-09-25. The follower's remembered map travels with the attach event, so
+    The reader watched the run sit at ``halted`` — the pane word for a run that
+    stopped short. The relevant producer's own record knows nothing of that, and
+    the reloaded grid starts empty, so without the memory the row falls back to
+    the producer's ``from_state`` and prints ``dispatched → working`` — the
+    bare-state defect the pane measured on 2026-09-25. The follower's remembered
+    map travels with the attach event, so
     the row keeps chaining from what the reader last saw.
     """
     _two_live_runs(home)
@@ -78,7 +79,7 @@ def test_a_reload_keeps_the_pane_memory_and_renders_the_transition(
         record = follow_checkpoint.read(PROJECT, SESSION)
         assert record, "the first arming leaves a place behind"
 
-        # The pane last drew RUN_A blocked. The checkpoint is rewritten to say
+        # The pane last drew RUN_A halted. The checkpoint is rewritten to say
         # so at the place the first arming left, and the producer's own record
         # says the run left ``dispatched`` for ``working``.
         follow_checkpoint.write(
@@ -86,10 +87,10 @@ def test_a_reload_keeps_the_pane_memory_and_renders_the_transition(
             SESSION,
             stream_path=stream_path,
             offset=int(record["offset"]),
-            reported={**dict(record["reported"]), RUN_A: "blocked"},
+            reported={**dict(record["reported"]), RUN_A: "halted"},
         )
         record = follow_checkpoint.read(PROJECT, SESSION)
-        assert record["reported"].get(RUN_A) == "blocked", record
+        assert record["reported"].get(RUN_A) == "halted", record
         with stream_path.open("a", encoding="utf-8") as handle:
             handle.write(
                 json.dumps(
@@ -117,8 +118,8 @@ def test_a_reload_keeps_the_pane_memory_and_renders_the_transition(
     chained = [line for line in rows if "→" in line and "working" in line]
     assert chained, f"the reload delivered no transition row; got {rows!r}"
     left, _, right = chained[0].partition("→")
-    assert "blocked" in left, (
-        f"the reloaded row must continue from the state the pane already showed; "
+    assert "halted" in left, (
+        f"the reloaded row must continue from the pane word the reader last saw; "
         f"got {chained[0]!r}"
     )
     assert "working" in right, chained[0]
