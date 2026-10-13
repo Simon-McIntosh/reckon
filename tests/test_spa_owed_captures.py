@@ -15,6 +15,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from collections.abc import Callable
 from pathlib import Path
 from typing import NamedTuple
 from unittest import SkipTest
@@ -587,13 +588,32 @@ def test_plan_capture_gate_reads_the_plan_own_index(spec: _CaptureSpec) -> None:
     )
 
 
+# The gate validates each capture from its index and the stat of the file it
+# names, so it opens no image bytes. The refusal below is scoped to image
+# files rather than to every byte read: the test runs while the per-test seat
+# record reap is installed, and that teardown reads ``/proc/<pid>/environ`` to
+# attribute a live watch producer. A refusal on every read would report that
+# attribution read as a capture defect it was not written to catch.
+_IMAGE_SUFFIXES = frozenset(
+    {".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".tif", ".tiff", ".svg"}
+)
+
+
+def _refuse_image_reads() -> Callable[[Path], bytes]:
+    real_read_bytes = Path.read_bytes
+
+    def guarded(self: Path) -> bytes:
+        if self.suffix.lower() in _IMAGE_SUFFIXES:
+            raise AssertionError("IMAGE_BYTES_OPENED")
+        return real_read_bytes(self)
+
+    return guarded
+
+
 def test_plan_capture_gate_opens_no_image_bytes(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    def image_read_forbidden(*_args: object, **_kwargs: object) -> bytes:
-        raise AssertionError("IMAGE_BYTES_OPENED")
-
-    monkeypatch.setattr(Path, "read_bytes", image_read_forbidden)
+    monkeypatch.setattr(Path, "read_bytes", _refuse_image_reads())
     receipts = [assert_plan_capture_index(spec) for spec in _PLAN_CAPTURE_SPECS]
     expected_captures = sum(
         json.loads(
@@ -605,6 +625,25 @@ def test_plan_capture_gate_opens_no_image_bytes(
     )
     assert sum(receipt.captures_read for receipt in receipts) == expected_captures
     assert sum(receipt.image_bytes_opened for receipt in receipts) == 0
+
+
+def test_image_guard_refuses_an_image_opened_under_it(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A passing gate shows no image was opened; this shows the guard catches one.
+
+    Opening a PNG under the same refusal the gate runs behind must raise, so an
+    image the gate did open would fail rather than pass unnoticed.
+    """
+    monkeypatch.setattr(Path, "read_bytes", _refuse_image_reads())
+    image = tmp_path / "capture.png"
+    image.write_bytes(b"\x89PNG\r\n\x1a\n")
+    with pytest.raises(AssertionError, match="IMAGE_BYTES_OPENED"):
+        image.read_bytes()
+
+    text = tmp_path / "notes.txt"
+    text.write_text("not an image", encoding="utf-8")
+    assert text.read_bytes() == b"not an image"
 
 
 def _write_synthetic_capture_index(
