@@ -1,0 +1,70 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-13T09:03:06.359Z",
+  "dispatched_at": "2026-10-13T08:46:00Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-window-paces-the-lane/r-20261013T084519920512-plan-review-of-a-window-paces-the-lane/plan.html:1978",
+      "id": "done_when-1",
+      "reason": "the node would either silently drop a declared deliverable or hit a read-only-fs refusal editing an undeclared file, so \u00a713 must add reckon/crew_run_commands.py (with an assertion on the reply) or drop the clause.",
+      "text": "\u00a713's deliverable states \"the grant's reply says which lift it replaced\", but no done-when bullet asserts it, and the reply is composed by crew_budget_lift in reckon/crew_run_commands.py:2433-2455, a file \u00a713's write paths (reckon/crew/budget_lift.py and tests/test_a_new_lift_replaces_the_standing_one.py) omit, so a fenced worker can neither implement the clause where the reply is printed nor be held to it by the gate",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "046b3efe5a23aa0dd39f9b6962992b2c29ff2f3b8078bbe418a20f9c1b663fbb",
+  "plan_slug": "a-window-paces-the-lane",
+  "plan_version": 202,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-13T09:03:54.571098+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-13T09:03:54.571098+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-window-paces-the-lane.v202.json",
+  "review_run_id": "r-20261013T084519920512-plan-review-of-a-window-paces-the-lane",
+  "reviewed_blob_sha": "6398086606b41c30879ede3801a7c4b1551e41da",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 grant resolves at reckon/crew/budget_lift.py:254 with its append at :363, and lift_watch resolves as reckon/crew/lift_watch.py with its sweep; the test file \u00a713 names is a declared deliverable, not a citation.",
+    "done_when": "a finding \u2014 \u00a713's deliverable requires that the grant's reply say which lift it replaced, but no done-when bullet asserts it and the reply is composed outside \u00a713's declared write paths.",
+    "evidence_paths": "pass \u2014 \u00a713 names repository paths only (reckon/crew/budget_lift.py and a tests/ file); no session scratchpad or node-local temporary path is named, and its gate runs in the repository test tree.",
+    "naming": "pass \u2014 the new test filename (test_a_new_lift_replaces_the_standing_one.py) and the cited symbols carry no plan label, stage name, ticket number or version tag, and no changelog prose is present.",
+    "reasoning": "pass \u2014 the cited root cause reproduces (grant at reckon/crew/budget_lift.py:363 appends without replacing an existing in-force lift on the same group and scope, so two grants leave both in force; \u00a713's premise that \u00a712 leaves both standing holds because the jitter rule at :740 excuses a one-second stamp wobble), the mechanism (replace-on-grant) produces the done-when's one-lift-in-force result, and the caller grant is named at reckon/crew/budget_lift.py:254, reached from crew budget-lift (reckon/crew_run_commands.py:2307).",
+    "single_goal": "pass \u2014 \u00a713 carries one deliverable (a grant on a group and scope replaces the standing lift, clearing it and naming the replacer) and its done-when asserts only that goal.",
+    "wiring": "pass \u2014 the plan carries its plan-level relationship (plan-informs) and the new \u00a713 h2 and followup anchors resolve to ids the composed snapshot itself carries; the plan declares no per-section depends-on/gates, so \u00a713's reliance on \u00a712 introduces no unresolvable edge."
+  },
+  "section_digests": {
+    "_document": "c9660e8a3a99bab4b00d0b3cf19b90301884962edcc079d6035ca20c053a0145",
+    "s1": "fd232b0e9e301983eea254fa355a00f9cfdad5e4ba397415c196946997e8b78a",
+    "s10": "cff30d466dd7580b4623ab4ba85a967692183d1c1fbf0a887b817140c3fe2bf9",
+    "s11": "4f344761a1c7f9eeda684c28b5399f6cc6c50a6961808244c50f4f385a8dfb83",
+    "s12": "d332f915a715e0ce7c1efdd5027285714154977800a9ec70d7b055bf5762609f",
+    "s13": "d8097f61acc74f22db41456c3e9042dc8aa442974d10b498f3f7e57cae6679bf",
+    "s2": "0c4f642bff7cb6b87908ea9e036cb3161c15e31cb3285273e06bb2ac1f5c368c",
+    "s3": "ae3d7625321a46e7fa6a9ee3bac0272ee77d236811612140ef03b79670883261",
+    "s4": "8f3ac850d09e4745435c5274237c26be090ce2db03ac422e941c3329841d8563",
+    "s5": "3bc104a16d90fb6279e9ab8c70555e1041253ad31f6376c64b455da33489c6b0",
+    "s5b": "1be686d2a1165f13c4f4e81a29ca56c362c3b069dfc80759cf370cca59440d41",
+    "s6": "8e4ab80a317b73fb60010fe92858cbe3b073511ce10c4547c6eb8952a89829f0",
+    "s6-the-probe-reader-and-the-undeclared-dialect": "c463be6993bc79b07591a01d9e1a1d92d699a48d4c322b2cc395a0e78a2d097d",
+    "s7": "39b7111a3bfa256531f953bd33de123967e24fa4ffc75e6d1cbeca26a45c565d",
+    "s8": "9d68431496117798ca30bbebd6828adc5853e02df969ac62de3bb2dcd41512a4",
+    "s9": "5f72c27f2288b837b6513304ec92d0bf2e8950d169b0389c4c3ffeba27c23b6b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T09:03:39.832834+00:00"
+}
