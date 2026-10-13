@@ -281,9 +281,9 @@ def _without_section_declarations(state: Mapping[str, Any]) -> Mapping[str, Any]
     """Return parsed state with each section's lifecycle declaration removed.
 
     A section carries a declaration (``deferred``, ``implementable``, ``done``)
-    that a landing work-beat both reads and writes: :func:`reckon._store.
-    _apply_collapse_section` sets it to ``done`` in the same write that replaces
-    the section's authored body with its landed card. That declaration is
+    that a landing work-beat both reads and writes: it sets the declaration to
+    ``done`` in the same write that replaces the section's authored body with
+    its landed card. That declaration is
     per-section lifecycle state, the analogue of the plan-level ``status`` scalar
     already normalised out, and it is not part of the design a review reads. Left
     in, it moves the fingerprint on a landing collapse even after the card is

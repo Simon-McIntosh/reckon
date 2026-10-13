@@ -768,20 +768,10 @@ _EVIDENCE_APPENDS: ContextVar[tuple[dict[str, Any], list[dict[str, str]]] | None
     ContextVar("reckon_evidence_appends", default=None)
 )
 
-#: Section collapses are the same kind of write effect as insertions: each
-#: replaces one authored h2's body with its landed card. Kept in its own
-#: collection so a collapse and an insertion in one batch apply in order and
-#: neither is confused for the other.
-_SECTION_COLLAPSES: ContextVar[tuple[dict[str, Any], list[dict[str, str]]] | None] = (
-    ContextVar("reckon_section_collapses", default=None)
-)
-
-
 def _begin_write_effects(working: dict[str, Any]) -> None:
     """Start empty out-of-band effect collections for one op batch."""
     _SECTION_INSERTIONS.set((working, []))
     _EVIDENCE_APPENDS.set((working, []))
-    _SECTION_COLLAPSES.set((working, []))
 
 
 def _queue_section_insertion(working: dict[str, Any], request: dict[str, str]) -> None:
@@ -815,23 +805,6 @@ def _consume_evidence_appends(data: dict[str, Any]) -> list[dict[str, str]]:
     if pending is None or pending[0] is not data:
         return []
     _EVIDENCE_APPENDS.set(None)
-    return list(pending[1])
-
-
-def _queue_section_collapse(working: dict[str, Any], request: dict[str, str]) -> None:
-    """Attach one collapse to the current batch without changing plan state."""
-    pending = _SECTION_COLLAPSES.get()
-    if pending is None or pending[0] is not working:
-        raise OpError("collapse_section has no active write-effect collection")
-    pending[1].append(request)
-
-
-def _consume_section_collapses(data: dict[str, Any]) -> list[dict[str, str]]:
-    """Return collapses produced by this exact state object, then clear."""
-    pending = _SECTION_COLLAPSES.get()
-    if pending is None or pending[0] is not data:
-        return []
-    _SECTION_COLLAPSES.set(None)
     return list(pending[1])
 
 
@@ -957,64 +930,6 @@ def _collapse_authored_section(html_text: str, request: dict[str, str]) -> str:
 def _evidence_record_path(docs_dir: Path, plan_slug: str) -> Path:
     """The cumulative landing record one plan's evidence appends land in."""
     return docs_dir / "evidence" / "archive" / f"{plan_slug}-landed.html"
-
-
-_EVIDENCE_FRAGMENT = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
-
-
-def _resolve_evidence_href(
-    anchor: str,
-    *,
-    project: str,
-    slug: str,
-    docs_dir: Path | None,
-    evidence_appends: list[dict[str, str]],
-) -> str:
-    """The href a landed card links its full record through.
-
-    An anchor carrying a path or a scheme is the caller's href and is kept as
-    written. A bare anchor names a section of this plan's landing record, which
-    the surface serves at ``/<project>/evidence/archive/<plan>-landed.html``, so
-    it is linked there with the anchor as its fragment. Left bare, the surface
-    would fetch ``/<project>/<anchor>.html`` and the link would lead nowhere.
-
-    A bare anchor must name a section the record holds once this batch lands:
-    one an ``append_evidence`` in the same batch writes, or one already in the
-    record. Anything else would be a dead link, so it is refused at write time
-    rather than discovered by a reader.
-    """
-    if "/" in anchor or ":" in anchor:
-        return anchor
-    fragment = anchor.removeprefix("#")
-    if not _EVIDENCE_FRAGMENT.fullmatch(fragment):
-        raise OpError(
-            f"collapse_section evidence_anchor {anchor!r} is neither an href nor "
-            "a landing-record anchor"
-        )
-    appended = any(
-        request.get("plan") == slug and request.get("anchor") == fragment
-        for request in evidence_appends
-    )
-    if not appended:
-        record = _evidence_record_path(docs_dir, slug) if docs_dir else None
-        held = (
-            record is not None
-            and record.is_file()
-            and bool(
-                re.search(
-                    rf"""\bid=["']{re.escape(fragment)}["']""",
-                    record.read_text(encoding="utf-8"),
-                )
-            )
-        )
-        if not held:
-            raise OpError(
-                f"collapse_section evidence_anchor {fragment!r} names no section "
-                f"of the landing record docs/evidence/archive/{slug}-landed.html; "
-                "append it with append_evidence in the same batch, or pass a "
-                "project-absolute href"
-            )
-    return f"/{project}/evidence/archive/{slug}-landed.html#{fragment}"
 
 
 def _evidence_plan_title(project: str, plan_slug: str, root: str | Path | None) -> str:
@@ -1329,7 +1244,6 @@ def _write_state_locked(
     # merge can replace ``data`` with a fresh mapping.
     section_insertions = _consume_section_insertions(data)
     evidence_appends = _consume_evidence_appends(data)
-    section_collapses = _consume_section_collapses(data)
 
     if expected_version != cur_version:
         merged_comments = _comment_append_onto_current(data, cur_state)
@@ -1393,18 +1307,6 @@ def _write_state_locked(
             )
         for request in section_insertions:
             source_text = _insert_authored_section(source_text, request)
-        for request in section_collapses:
-            linked = {
-                **request,
-                "evidence_anchor": _resolve_evidence_href(
-                    request["evidence_anchor"],
-                    project=project,
-                    slug=slug,
-                    docs_dir=docs_dir,
-                    evidence_appends=evidence_appends,
-                ),
-            }
-            source_text = _collapse_authored_section(source_text, linked)
     except ValueError as exc:
         raise OpError(str(exc)) from exc
     if evidence_appends:
@@ -3186,48 +3088,6 @@ def _apply_insert_section(
     working.setdefault("section_declarations", {})[record["id"]] = record["status"]
     if first_record:
         warnings.append(_FIRST_SECTION_RECORD_WARNING)
-
-
-def _apply_collapse_section(
-    working: dict, op: dict, is_index: bool, warnings: list[str]
-) -> None:
-    """Collapse one landed section to its card and declare it done.
-
-    The HTML replacement and the declaration change ride one versioned write:
-    the card is queued as a write effect and the section's declaration is set on
-    the same working object, so a caller cannot observe one without the other.
-    """
-    if is_index or str(working.get("type", "plan") or "plan") != "plan":
-        raise OpError("collapse_section op is plan-only")
-    section_id = op.get("section")
-    if not isinstance(section_id, str) or not is_section_identity(section_id):
-        raise OpError(
-            "collapse_section op requires a 'section' id matching "
-            "a safe section identity"
-        )
-    summary = op.get("summary")
-    if not isinstance(summary, str) or not summary.strip():
-        raise OpError("collapse_section op requires a non-empty string 'summary'")
-    anchor = op.get("evidence_anchor")
-    if not isinstance(anchor, str) or not anchor.strip():
-        raise OpError(
-            "collapse_section op requires a non-empty string 'evidence_anchor'"
-        )
-    _queue_section_collapse(
-        working,
-        {
-            "section": section_id,
-            "summary": summary.strip(),
-            "evidence_anchor": anchor.strip(),
-        },
-    )
-    working.setdefault("section_declarations", {})[section_id] = "done"
-    sections = working.get("sections")
-    if isinstance(sections, list):
-        for section in sections:
-            if isinstance(section, dict) and section.get("id") == section_id:
-                section["status"] = "done"
-                break
 
 
 def _apply_move(working: dict, op: dict, is_index: bool, warnings: list[str]) -> None:
