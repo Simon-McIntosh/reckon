@@ -187,19 +187,25 @@ def _launch_argv(backend_name: str, repo: Path) -> list[str]:
 
 def test_model_narrowing_matches_the_legacy_backend(repo, catalogue, config) -> None:
     """Naming the pair reaches the same backend, effort and launch as the
-    legacy ``<lane>-<key>`` name, so a caller can spell a model either way."""
-    narrowed = payload(dispatch(repo, backend="claude", model="opus"))
-    legacy = payload(dispatch(repo, backend="claude-opus"))
+    ``<lane>-<key>`` backend entry, so a caller can spell a model either way
+    through the two dimensions.
 
-    assert narrowed["backend"] == legacy["backend"] == "claude-opus"
-    assert narrowed["agent"]["effort"] == legacy["agent"]["effort"] == "high"
-    assert narrowed["agent"]["model"] == legacy["agent"]["model"]
-    # The equivalence is the full launch argv, not the launch mode: the pair and
-    # the legacy spelling must compose the same command line, carrying the model
-    # id the pair resolved to. A regression that resolved a different model would
-    # change the argv while leaving the launch mode ``cli`` unchanged.
+    The combined spelling is refused at dispatch now (lane and model are two
+    dimensions), so the legacy side is the entry's own launch argv, built from
+    the fixture's ``claude-opus`` backend rather than by dispatching the
+    retired spelling.
+    """
+    narrowed = payload(dispatch(repo, backend="claude", model="opus"))
+
+    assert narrowed["backend"] == "claude-opus"
+    assert narrowed["agent"]["effort"] == "high"
+    assert narrowed["agent"]["model"] == "claude-opus-5-5"
+    # The equivalence is the full launch argv, not the launch mode: the pair must
+    # compose the same command line the ``claude-opus`` entry composes, carrying
+    # the model id that entry names. A regression that resolved a different model
+    # would change the argv while leaving the launch mode ``cli`` unchanged.
     narrowed_argv = _launch_argv(narrowed["backend"], repo)
-    legacy_argv = _launch_argv(legacy["backend"], repo)
+    legacy_argv = _launch_argv("claude-opus", repo)
     assert narrowed_argv == legacy_argv
     assert "claude-opus-5-5" in narrowed_argv
     assert narrowed_argv != _launch_argv("claude", repo)
