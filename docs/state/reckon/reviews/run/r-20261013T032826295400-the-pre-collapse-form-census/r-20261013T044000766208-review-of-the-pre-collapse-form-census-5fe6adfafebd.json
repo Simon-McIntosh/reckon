@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "backend": "clive",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-13T05:02:29.992Z",
+  "dispatched_at": "2026-10-13T04:40:31Z",
+  "findings": [
+    {
+      "file": "fixture_controls.py",
+      "line": "142",
+      "severity": "follow-on",
+      "text": "follow-on: the label check compares census.labels_for(..) against expected_labels while the fingerprint argument is forms[1], the same value the test itself passed in, so labels_for returns ['pre-collapse'] by construction whenever forms[1] differs from forms[0] and forms[2]; a silent change to what the module's index-1 digest means would leave this assertion green, and the load-bearing guard is the independent shrink asymmetry at fixture_controls.py:156."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T032826295400-the-pre-collapse-form-census/manifest.md",
+      "line": "29",
+      "severity": "follow-on",
+      "text": "follow-on: the follow_ons line states \"9 more sidecars than stored records exist overall\", but the census's own counts are 1338 delivered against 1333 stored, a difference of 5, so a numeric claim in the node's findings contradicts the artifact it cites."
+    },
+    {
+      "file": "census.py",
+      "line": "113",
+      "severity": "follow-on",
+      "text": "follow-on: outstanding_units re-derives the set {section_record_id(implementable_sections(..))} | {DOCUMENT_UNIT} that review_coverage already computes at plan_review.py:825 and does not export, duplicating an unexposed internal rather than extending its owner; the shrink verdict is unaffected because it reads review_coverage's own uncovered set directly."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "there are no commits to diff \u2014 the node is read-only and made none \u2014 so the landed change is the artifact set under the report directory, which I read in full: census.py, census_reduced.py, fixture_controls.py, report.md and both logs.",
+    "done_when": "the done_when asks for per-project form counts, the slugs matching only through the pre-collapse form, the plans whose covered units shrink with it withheld, the census script beside the report, and both fixture controls giving expected verdicts in a log ending with EXIT=; report.md:44-56 gives the counts, report.md:62-77 reports no pre-collapse-only slug and no shrinking plan, census_reduced.py and census.py sit beside report.md, and census-reduced.log and fixture-controls.log each end EXIT=0.",
+    "goal": "the node goal is to count, across every mounted project, the stored plan reviews and delivered sidecars by the fingerprint form each matches and the plans whose review coverage shrinks when the pre-collapse form is withheld; report.md:44-56 carries the per-project table and it reconciles cell-for-cell with census-reduced.json's 2671 entries (1333 stored + 1338 delivered, 111 section-set, 0 pre-collapse, 2 plan-document-missing).",
+    "manifest": "read; it declares status complete, records no commits (read-only census), names census-reduced.log and fixture-controls.log as its gate logs, and its baseline_suite and after_suite are absent because this node ran no base/head suite arms.",
+    "write_paths": "the declared write path is the single report directory .../the-fingerprint-has-one-form/the-pre-collapse-form-census; every artifact the node wrote (report.md, census.py, census_reduced.py, fixture_controls.py, probe_populations.py, make_report.py, census-reduced.json and its two logs) lives under it, and the reviewed worktree is clean (tree-snapshot.json status_entries is empty, no commits)."
+  },
+  "justifications": {
+    "durability": "the shrink asymmetry at fixture_controls.py:156 is the assertion that would red if the withholding dropped the wrong form index, but the label check at fixture_controls.py:142 is circular and the live-population shrink is only sampled over ten plans rather than run for all 172.",
+    "evidence": "census-reduced.log and fixture-controls.log both end EXIT=0, and fixture control 1 (fixture-controls.log) shows the withholding drops s1 and _document for a legacy-stored review while its withholding-disabled mutation reports no loss, so the reported zero is carried by an instrument demonstrated to see the phenomenon it reports absent.",
+    "fit": "the scripts and report name mechanisms (pre-collapse is a fingerprint form, not a plan label; census, census_reduced, fixture_controls, probe_populations) and pin the canonical revision 5fe6adfafebd at report.md:5 with no phase or version label anywhere.",
+    "goal_fidelity": "report.md:44-56 counts every entry by matched form per project and reconciles exactly to census-reduced.json's population_counts, which is precisely what the goal asks for.",
+    "reuse": "every population and digest is read through its production owner (list_plan_reviews, delivered_reports, _fingerprint_forms, review_coverage, flight.mounted_project_docs, _collapse_authored_section), but census.py:113 re-derives the outstanding-unit set that review_coverage already computes at plan_review.py:825.",
+    "scope_discipline": "every changed path is under the declared report directory, and the reviewed worktree carries no diff (tree-snapshot.json status_entries empty)."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to count, across every mounted project, the stored plan reviews and delivered sidecars by the fingerprint form each matches and the plans whose review coverage shrinks when the pre-collapse form is withheld; report.md:44-56 carries the per-project table and it reconciles cell-for-cell with census-reduced.json's 2671 entries (1333 stored + 1338 delivered, 111 section-set, 0 pre-collapse, 2 plan-document-missing).\nVERDICT done_when: the done_when asks for per-project form counts, the slugs matching only through the pre-collapse form, the plans whose covered units shrink with it withheld, the census script beside the report, and both fixture controls giving expected verdicts in a log ending with EXIT=; report.md:44-56 gives the counts, report.md:62-77 reports no pre-collapse-only slug and no shrinking plan, census_reduced.py and census.py sit beside report.md, and census-reduced.log and fixture-controls.log each end EXIT=0.\nVERDICT write_paths: the declared write path is the single report directory .../the-fingerprint-has-one-form/the-pre-collapse-form-census; every artifact the node wrote (report.md, census.py, census_reduced.py, fixture_controls.py, probe_populations.py, make_report.py, census-reduced.json and its two logs) lives under it, and the reviewed worktree is clean (tree-snapshot.json status_entries is empty, no commits).\nVERDICT manifest: read; it declares status complete, records no commits (read-only census), names census-reduced.log and fixture-controls.log as its gate logs, and its baseline_suite and after_suite are absent because this node ran no base/head suite arms.\nVERDICT diff: there are no commits to diff \u2014 the node is read-only and made none \u2014 so the landed change is the artifact set under the report directory, which I read in full: census.py, census_reduced.py, fixture_controls.py, report.md and both logs.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: report.md:44-56 counts every entry by matched form per project and reconciles exactly to census-reduced.json's population_counts, which is precisely what the goal asks for.\nSCORE evidence: 18\nJUSTIFICATION evidence: census-reduced.log and fixture-controls.log both end EXIT=0, and fixture control 1 (fixture-controls.log) shows the withholding drops s1 and _document for a legacy-stored review while its withholding-disabled mutation reports no loss, so the reported zero is carried by an instrument demonstrated to see the phenomenon it reports absent.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every changed path is under the declared report directory, and the reviewed worktree carries no diff (tree-snapshot.json status_entries empty).\nSCORE durability: 15\nJUSTIFICATION durability: the shrink asymmetry at fixture_controls.py:156 is the assertion that would red if the withholding dropped the wrong form index, but the label check at fixture_controls.py:142 is circular and the live-population shrink is only sampled over ten plans rather than run for all 172.\nSCORE fit: 18\nJUSTIFICATION fit: the scripts and report name mechanisms (pre-collapse is a fingerprint form, not a plan label; census, census_reduced, fixture_controls, probe_populations) and pin the canonical revision 5fe6adfafebd at report.md:5 with no phase or version label anywhere.\nSCORE reuse: 14\nJUSTIFICATION reuse: every population and digest is read through its production owner (list_plan_reviews, delivered_reports, _fingerprint_forms, review_coverage, flight.mounted_project_docs, _collapse_authored_section), but census.py:113 re-derives the outstanding-unit set that review_coverage already computes at plan_review.py:825.\nFINDING fixture_controls.py:142 follow-on: the label check compares census.labels_for(..) against expected_labels while the fingerprint argument is forms[1], the same value the test itself passed in, so labels_for returns ['pre-collapse'] by construction whenever forms[1] differs from forms[0] and forms[2]; a silent change to what the module's index-1 digest means would leave this assertion green, and the load-bearing guard is the independent shrink asymmetry at fixture_controls.py:156.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T032826295400-the-pre-collapse-form-census/manifest.md:29 follow-on: the follow_ons line states \"9 more sidecars than stored records exist overall\", but the census's own counts are 1338 delivered against 1333 stored, a difference of 5, so a numeric claim in the node's findings contradicts the artifact it cites.\nFINDING census.py:113 follow-on: outstanding_units re-derives the set {section_record_id(implementable_sections(..))} | {DOCUMENT_UNIT} that review_coverage already computes at plan_review.py:825 and does not export, duplicating an unexposed internal rather than extending its owner; the shrink verdict is unaffected because it reads review_coverage's own uncovered set directly.\n",
+  "review_run_id": "r-20261013T044000766208-review-of-the-pre-collapse-form-census-5fe6adfafebd",
+  "reviewed_base_sha": "5fe6adfafebd7109876b3b6ed9a8a8e5e53619b8",
+  "reviewed_head_sha": "5fe6adfafebd7109876b3b6ed9a8a8e5e53619b8",
+  "reviewed_run_id": "r-20261013T032826295400-the-pre-collapse-form-census",
+  "reviewer_run_id": "r-20261013T044000766208-review-of-the-pre-collapse-form-census-5fe6adfafebd",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 14,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T05:01:54.997765+00:00",
+  "total": 103
+}
