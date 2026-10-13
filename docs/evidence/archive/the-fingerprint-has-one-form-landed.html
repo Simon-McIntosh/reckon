@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-fingerprint-has-one-form-landed">
+  <meta name="plan-title" content="The Fingerprint Has One Form — landed record">
+  <meta name="plan-summary" content="Closure synthesis for The Fingerprint Has One Form: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="the-fingerprint-has-one-form">
+  <meta name="plan-verdict" content="qualified">
+  <title>The Fingerprint Has One Form — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>The Fingerprint Has One Form — landed record</h1>
+  <p>Closure synthesis for The Fingerprint Has One Form: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s2-census">
+    <h2>§2 — no stored review leans on the pre-collapse form</h2>
+    <p>A read-only census at <code>5fe6adfaf</code> read every stored plan review through <code>list_plan_reviews(project=None)</code> and every delivered sidecar through <code>delivered_reports</code>, and matched each fingerprint against the three digests <code>_fingerprint_forms</code> returns for the plan's current document. Across nine projects there are 1,333 stored records and 1,338 sidecars: 2,558 match no form (their plans have moved since), 111 match the section-set form, two name a plan with no readable file, and <strong>none matches the pre-collapse form</strong>. No plan's covered units shrink when <code>review_coverage</code> runs with that form withheld. A review of a collapsed plan built as a fixture is counted pre-collapse-only and loses coverage; a review stored under the current form is counted as neither.</p><p>Outside tests, <code>collapse_section</code> is still published by the op table in <code>reckon/_store.py</code> and the MCP vocabulary in <code>reckon/mcp.py</code>, and documented in <code>skills/reckon-edit/SKILL.md</code>. <code>landed_section_ids</code> has one non-test caller, in <code>plan_review.py</code>. No live run claims <code>plan_review.py</code> or <code>_store.py</code>. Report, script and logs: <code>~/.config/reckon/crew/reports/reckon/the-fingerprint-has-one-form/the-pre-collapse-form-census/</code>. Review 103/120.</p>
+  </section>
+
+</main>
+</body>
+</html>
