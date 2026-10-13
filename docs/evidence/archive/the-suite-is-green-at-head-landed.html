@@ -2903,6 +2903,11 @@ reckon/crew/dispatch.py:4535: TypeError
     <p>Commit <code>1500780fa</code> made <code>resolve_resource</code> read a plan's canonical path without scanning, and its message states that every collision case keeps the full scan, so losing duplicate detection was unintended. <code>_resolve_canonical</code> in <code>reckon/resources.py</code> now lists the canonical file's own typed root and defers to the scan's collision rule when another file there claims the same type and slug, so a plan filed twice raises <code>ResourceCollision</code> again without the recursive walk the direct read avoids (commits <code>05f3b87f5</code>, <code>fdbde9e07</code>; merged at <code>cc0e732c4</code>). <code>test_plan_estimate_cache_tracks_edits_and_duplicate_identity</code> passes; reporting every identity unique fails it. The coordinator measured the thirteen test files importing <code>resources.py</code> at the integrated head: 2846 passed, 1 failed, the landing-sha red §12 repairs. Review 116/120, no added failure; its follow-ons note that an unlistable canonical root reads as unique, and that the skip of an unclassifiable sibling has no test.</p>
   </section>
 
+  <section id="s12-landing-sha">
+    <h2>§12 — a landing record cites a commit that exists</h2>
+    <p><code>docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html</code> cited <code>5b5c6c64</code>, which is not an object in this repository. Its row describes run <code>r-20260924T211233454588-manifest-names-the-tree-it-imported</code>. The commit on main that landed that work is <code>1ec9a2c7b</code>, "docs(plans): land the manifest template naming the tree it imported", which changes this record and its plan and sits between the row's other two citations. Both citations of the unresolved sha now name it (commit <code>97b6f90d1</code>; merged at <code>9a64d9ee9</code>). The conformance id fails at base and passes at head; an invented all-zero sha in a scratch copy fails it. Review 117/120, no added failure; <code>crew verify-gate</code> passed at the integrated head.</p>
+  </section>
+
 </main>
 </body>
 </html>
