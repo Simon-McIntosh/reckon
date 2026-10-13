@@ -25,8 +25,8 @@
   <title>Open Work Is Capped | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="21">
+<meta name="plan-version" content="22">
+<meta name="plan-modified" content="2026-10-13">
 <meta name="plan-impl" content="0.75">
 </head>
 <body>
@@ -110,9 +110,15 @@
     <pre class="r-fu-prompt">/reckon-build open-work-is-capped §3</pre>
     <p class="r-fu-outcome">The limit is enforced at creation in the relocked warn mode. edit_plan(create=True) always succeeds, and at or over reckon's declared pending_plan_limit of 25 its response carries a warning naming the limit, the pending count and the three pending plans nearest to closing by impl. The refusal branch and the override argument were removed at 73dd0732 after the first refuse-with-override landing at 46fd73e2. tests/test_pending_plan_limit.py covers the behaviour and gated at exit 0; the review is stored against d964c467.</p>
     </article>
-<article class="r-fu" data-id="f-owic-003" data-status="open" data-written-by="s25-coord" data-written-at="2026-09-29T10:25:00Z" data-recommends-skill="reckon-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-owic-003" data-status="resolved" data-written-by="s25-coord" data-written-at="2026-09-29T10:25:00Z" data-recommends-skill="reckon-build" data-resolved-at="2026-10-13T05:00:41+00:00" data-resolved-by="s25-picker">
     <h4 class="r-fu-title">Read two consecutive weeks of opened and closed counts</h4>
     <div class="r-fu-body"><p>The remaining half of section 3 is the time-based measure: the velocity view's plans.by_project_week must show reckon closing at least as many plans as it opens in two consecutive complete ISO weeks. The first week that can count begins 2026-09-28 (W40), so the earliest reading is on 2026-10-12, after W41 closes. Read <code>crew(view="velocity")</code> for reckon, record both weeks' figures on the gate, and ship the plan if both hold. If either week opens more than it closes, record the figures and name the pending plans nearest to closing, which is what the creation warning already surfaces.</p></div>
+    <pre class="r-fu-prompt">/reckon-build open-work-is-capped §3</pre>
+    <p class="r-fu-outcome"><p>Read on 2026-10-13 from <code>crew velocity --project reckon --fields plans</code> (<code>plans.by_project_week</code>): 2026-W40 opened 8, closed 27 (holds); 2026-W41 opened 19, closed 9 (fails). §3's two-consecutive-weeks clause is not met, so the plan stays active. Pending reckon plans: 57 against the limit of 25. Nearest to closing: <code>a-plan-is-reviewed-before-it-is-built</code> (impl 1.0), <code>the-codebase-is-reviewed-between-nodes</code> (impl 1.0), <code>derived-gate-state</code> (impl 0.99). A sprint portfolio review the same day proposed closing this plan; that proposal is declined on these figures.</p></p>
+    </article>
+<article class="r-fu" data-id="f-owic-004" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="s25-picker" data-written-at="2026-10-13" data-recommends-skill="/reckon-build open-work-is-capped §3" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Read 2026-W42 and 2026-W43 opened and closed counts</h4>
+    <div class="r-fu-body"><p>W41 failed (opened 19, closed 9), so the earliest pair that can satisfy §3 is W42 with W43, read on 2026-10-26. On 2026-10-19 read W42 alone: if it closes at least as many as it opens, the pair W42–W43 is live; record the figure on the gate either way. Ship the plan when two consecutive complete weeks both hold.</p></div>
     <pre class="r-fu-prompt">/reckon-build open-work-is-capped §3</pre>
     </article>
 </section>
