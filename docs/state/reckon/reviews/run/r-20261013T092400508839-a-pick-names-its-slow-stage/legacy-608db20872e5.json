@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's two gate logs named in its manifest (logs/base.pytest.log, logs/head.pytest.log): base arm 191 passed EXIT=0, head arm 194 passed EXIT=0; the three-test delta is exactly this node's added checks, so no added failure id is attributed to the change.",
+  "base_log_revision": "baf5f99bf021a8211d61546c7c2e081ad3b7c28f",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch.py:644",
+    "reckon/crew_dispatch_commands.py:1309",
+    "reckon/crew/dispatch_picker.py:534"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-13T09:25:02Z",
+  "findings": [
+    {
+      "file": "tests/test_picker_in_dispatch.py",
+      "line": "205",
+      "severity": "follow-on",
+      "text": "follow-on: the assertion pins the fallback to \"timeout in context-estimate\", which holds only while the real context estimate exceeds the test's 0.02 s deadline; on a host fast enough for the estimate to finish inside the bound the fallback would read the bare \"timeout\" and this test would redden."
+    },
+    {
+      "file": "tests/test_a_pick_names_its_slow_stage.py",
+      "line": "203",
+      "severity": "follow-on",
+      "text": "follow-on: the negative control runs this check against baf5f99, where _BUILD_STAGE_MS does not exist, so it fails with AttributeError (negative-control.pytest.log) rather than showing the stale-stash regression it guards; a control at ef8ce51a would redden it for the intended reason."
+    }
+  ],
+  "head_log_revision": "9e59ed0a3b1d7d9daae670108f8ad2d09478aa3c",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit 9e59ed0a3 against its parent ef8ce51a commit by commit; it changes five files (+71/-24) and each path is inside the declared/ review-target scope.",
+    "done_when": "the done_when names tests/test_a_pick_names_its_slow_stage.py plus no-added-failure on the importing test files; logs/base.pytest.log (191 passed EXIT=0) and logs/head.pytest.log (194 passed EXIT=0) show the three-test delta and no added failure, so the measure is now met.",
+    "goal": "the node goal is \"record each pick stage's elapsed time and name the stage a deadline fallback ran out in\"; reckon/crew/dispatch_picker.py:283 carries stage_ms and a named fallback, and the delta's clear at :318 keeps the input-error path from leaking a stale build map.",
+    "manifest": "read; it records the base arm (191 passed EXIT=0), the head arm (194 passed EXIT=0), the negative control (3 failed, 3 passed, EXIT=1), names logs/base.pytest.log and logs/head.pytest.log, and lists the three commits.",
+    "write_paths": "the review targets the fragment docs/evidence/fragments/lane-and-model-routing/a-pick-names-its-slow-stage.html, reckon/crew/dispatch_picker.py, tests/test_a_pick_names_its_slow_stage.py, tests/test_picker_in_dispatch.py and tests/test_picker_pick_within_bound.py; the delta's five changed paths are exactly those."
+  },
+  "justifications": {
+    "durability": "tests/test_a_pick_names_its_slow_stage.py:203 asserts _BUILD_STAGE_MS.times is None after a failed build, which reddens if the clear at reckon/crew/dispatch_picker.py:318 is reverted because build_picker_inputs leaves the sink dict on the thread.",
+    "evidence": "logs/base.pytest.log ends \"191 passed in 66.98s\" EXIT=0 and logs/head.pytest.log ends \"194 passed in 65.57s\" EXIT=0, with logs/negative-control.pytest.log at \"3 failed, 3 passed\" EXIT=1, matching the done_when.",
+    "fit": "the delta's added names (_BUILD_STAGE_MS clear, context-estimate) are mechanism-worded with no plan or ticket identifiers and follow the module's existing timed-stage idiom at reckon/crew/dispatch_picker.py:51.",
+    "goal_fidelity": "reckon/crew/dispatch_picker.py:318 drops the build-stage thread-local on the input-error path and the two bound tests at tests/test_picker_in_dispatch.py:205 and tests/test_picker_pick_within_bound.py:185 now pin the stage the production pick is actually inside, so the node's stage-naming goal holds at head.",
+    "reuse": "the delta extends reckon/crew/dispatch_picker.py in place and reuses its own PICK_STAGES/stage_ms vocabulary at reckon/crew/dispatch_picker.py:51 rather than forking a second stage-timing mechanism.",
+    "scope_discipline": "every one of the five paths in the diff is inside the node's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \"record each pick stage's elapsed time and name the stage a deadline fallback ran out in\"; reckon/crew/dispatch_picker.py:283 carries stage_ms and a named fallback, and the delta's clear at :318 keeps the input-error path from leaking a stale build map.\nVERDICT done_when: the done_when names tests/test_a_pick_names_its_slow_stage.py plus no-added-failure on the importing test files; logs/base.pytest.log (191 passed EXIT=0) and logs/head.pytest.log (194 passed EXIT=0) show the three-test delta and no added failure, so the measure is now met.\nVERDICT write_paths: the review targets the fragment docs/evidence/fragments/lane-and-model-routing/a-pick-names-its-slow-stage.html, reckon/crew/dispatch_picker.py, tests/test_a_pick_names_its_slow_stage.py, tests/test_picker_in_dispatch.py and tests/test_picker_pick_within_bound.py; the delta's five changed paths are exactly those.\nVERDICT manifest: read; it records the base arm (191 passed EXIT=0), the head arm (194 passed EXIT=0), the negative control (3 failed, 3 passed, EXIT=1), names logs/base.pytest.log and logs/head.pytest.log, and lists the three commits.\nVERDICT diff: read commit 9e59ed0a3 against its parent ef8ce51a commit by commit; it changes five files (+71/-24) and each path is inside the declared/ review-target scope.\nCALL_SITES: reckon/crew/dispatch.py:644, reckon/crew_dispatch_commands.py:1309, reckon/crew/dispatch_picker.py:534\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_picker.py:318 drops the build-stage thread-local on the input-error path and the two bound tests at tests/test_picker_in_dispatch.py:205 and tests/test_picker_pick_within_bound.py:185 now pin the stage the production pick is actually inside, so the node's stage-naming goal holds at head.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/base.pytest.log ends \"191 passed in 66.98s\" EXIT=0 and logs/head.pytest.log ends \"194 passed in 65.57s\" EXIT=0, with logs/negative-control.pytest.log at \"3 failed, 3 passed\" EXIT=1, matching the done_when.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every one of the five paths in the diff (the fragment and the three test files and reckon/crew/dispatch_picker.py) is inside the node's declared write paths and the review goal's target list.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_pick_names_its_slow_stage.py:203 asserts _BUILD_STAGE_MS.times is None after a failed build, which reddens if the clear at reckon/crew/dispatch_picker.py:318 is reverted because build_picker_inputs leaves the sink dict on the thread.\nSCORE fit: 18\nJUSTIFICATION fit: the delta's added names (_BUILD_STAGE_MS clear, context-estimate) are mechanism-worded with no plan or ticket identifiers and follow the module's existing timed-stage idiom at reckon/crew/dispatch_picker.py:51.\nSCORE reuse: 19\nJUSTIFICATION reuse: the delta extends reckon/crew/dispatch_picker.py in place and reuses its own PICK_STAGES/stage_ms vocabulary at reckon/crew/dispatch_picker.py:51 rather than forking a second stage-timing mechanism.\nFINDING tests/test_picker_in_dispatch.py:205 follow-on: the assertion pins the fallback to \"timeout in context-estimate\", which holds only while the real context estimate exceeds the test's 0.02 s deadline; on a host fast enough for the estimate to finish inside the bound the fallback would read the bare \"timeout\" and this test would redden.\nFINDING tests/test_a_pick_names_its_slow_stage.py:203 follow-on: the negative control runs this check against baf5f99, where _BUILD_STAGE_MS does not exist, so it fails with AttributeError (negative-control.pytest.log) rather than showing the stale-stash regression it guards; a control at ef8ce51a would red it for the intended reason.",
+  "review_run_id": "legacy-608db20872e5",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "ef8ce51a559c5fe45d74a39dcf24568ad8d3938c",
+  "reviewed_head_sha": "9e59ed0a3b1d7d9daae670108f8ad2d09478aa3c",
+  "reviewed_run_id": "r-20261013T092400508839-a-pick-names-its-slow-stage",
+  "reviewer": {
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261013T114030228092-review-of-a-pick-names-its-slow-stage-9e59ed0a3b1d",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T11:50:38.070668+00:00",
+  "total": 111
+}

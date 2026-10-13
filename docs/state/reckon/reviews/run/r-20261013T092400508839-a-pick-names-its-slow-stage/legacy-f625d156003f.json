@@ -1,0 +1,81 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 2,
+  "added_failure_ids": [
+    "tests/test_dispatch_returns_without_worker.py::test_a_discarded_run_is_not_recreated",
+    "tests/test_picker_in_dispatch.py::test_dispatch_survives_a_picker_past_the_bound"
+  ],
+  "added_failures_note": "derived from the reviewed run's two gate logs named in its manifest (logs/base.pytest.log, logs/head.pytest.log); the picker flip at tests/test_picker_in_dispatch.py:202 is attributable to this change, the discarded-run failure is a timing-sensitive test the manifest reports reproducing at base",
+  "base_log_revision": "3f0b9158ad3ef1ca6a28bf744f09fdbf8e58f245",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch.py:670",
+    "reckon/crew_dispatch_commands.py:1303",
+    "reckon/crew/dispatch_picker.py:387"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-13T09:25:02Z",
+  "findings": [
+    {
+      "file": "tests/test_picker_in_dispatch.py",
+      "line": "202",
+      "severity": "blocking",
+      "text": "blocking: the repair changes the invoke-path fallback reason to \"timeout in context-estimate\", so tests/test_picker_in_dispatch.py::test_dispatch_survives_a_picker_past_the_bound now fails at head (head.pytest.log) while passing at base \u2014 an added failure in a test file that imports reckon/crew/dispatch_picker.py, which the node's done-when forbids; the assertion must be updated to accept the named stage before the node can land."
+    },
+    {
+      "file": "tests/test_dispatch_returns_without_worker.py",
+      "line": "1295",
+      "severity": "follow-on",
+      "text": "follow-on: this test also appears as an added failure in the derived count, but its supervisor-finished assertion is timing-sensitive and the manifest reports it reproduced at the base revision too, so it is recorded as flakiness rather than an effect of the change."
+    },
+    {
+      "file": "reckon/crew/dispatch_picker.py",
+      "line": "311",
+      "severity": "follow-on",
+      "text": "follow-on: the early return on input_errors precedes the _BUILD_STAGE_MS.times clear at :333, so a failed build leaves the thread-local stash set; harmless while every production caller re-runs build_picker_inputs first, but a later pick on the same thread that hands inputs without rebuilding would carry a stale build's times."
+    }
+  ],
+  "head_log_revision": "baf5f99bf021a8211d61546c7c2e081ad3b7c28f",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit at ef8ce51a (parent baf5f99b, no later commit touches these files); three files changed, 189 insertions, all inside the declared scope.",
+    "done_when": "the done_when names tests/test_a_pick_names_its_slow_stage.py and its two new tests pass at head, but the same done_when requires the test files importing reckon/crew/dispatch_picker.py to show no added failure against base, and tests/test_picker_in_dispatch.py::test_dispatch_survives_a_picker_past_the_bound fails at head (head.pytest.log, line 202) while passing at base (188 passed EXIT=0), so the measure is not met.",
+    "goal": "the node goal is \"record each pick stage's elapsed time and name the stage a deadline fallback ran out in\"; the repair marks the context estimate at reckon/crew/dispatch_picker.py:415 so a production pick names its running stage, and carries the caller-built inputs' times onto the selection at reckon/crew/dispatch_picker.py:328-335, both reachable from the production callers.",
+    "manifest": "read; it records the head arm (191 passed, 2 failed, EXIT=1), the base arm (188 passed, EXIT=0), the negative control (2 failed, 3 passed, EXIT=1) and names the flipped test as a follow-on, but omits the baseline_suite/after_suite JSON the review contract names.",
+    "write_paths": "the manifest declares reckon/crew/dispatch_picker.py, reckon/crew/picker/outcomes.py, tests/test_a_pick_names_its_slow_stage.py, the landing fragment and the figures dir; the repair diff touches the first, third and the fragment, all inside them."
+  },
+  "justifications": {
+    "durability": "the negative control (negative-control.pytest.log) shows both new tests fail at the pre-repair revision baf5f99 ('timeout' vs 'timeout in context-estimate' at tests/test_a_pick_names_its_slow_stage.py:139, and stage_ms['records'] None at :177).",
+    "evidence": "the recorded head arm at head.pytest.log adds tests/test_picker_in_dispatch.py::test_dispatch_survives_a_picker_past_the_bound, which passes in base.pytest.log (188 passed EXIT=0), so the recorded gate contradicts the done_when's no-added-failure requirement.",
+    "fit": "the added names (_BUILD_STAGE_MS, marked, context-estimate) are mechanism-worded with no plan or ticket identifiers and follow the module's existing timed-stage idiom at reckon/crew/dispatch_picker.py:344-352.",
+    "goal_fidelity": "reckon/crew/dispatch_picker.py:415 marks the estimate and :328-335 carries the stashed input times, so a production pick from reckon/crew/dispatch.py:670 now records all five stage times and names \"timeout in context-estimate\".",
+    "reuse": "the repair's added helpers extend reckon/crew/dispatch_picker.py in place and fork no repository-owned capability; the pre-existing PICK_STAGES/stage_ms vocabulary beside reckon/crew/picker/__init__.py:25-29 remains the earlier commit's open follow-on.",
+    "scope_discipline": "the repair's three changed paths (reckon/crew/dispatch_picker.py, tests/test_a_pick_names_its_slow_stage.py, the landing fragment) are all inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \"record each pick stage's elapsed time and name the stage a deadline fallback ran out in\"; the repair marks the context estimate at reckon/crew/dispatch_picker.py:415 so a production pick names its running stage, and carries the caller-built inputs' times onto the selection at reckon/crew/dispatch_picker.py:328-335, both reachable from the production callers.\nVERDICT done_when: the done_when names tests/test_a_pick_names_its_slow_stage.py and its two new tests pass at head, but the same done_when requires the test files importing reckon/crew/dispatch_picker.py to show no added failure against base, and tests/test_picker_in_dispatch.py::test_dispatch_survives_a_picker_past_the_bound fails at head (head.pytest.log, line 202) while passing at base (188 passed EXIT=0), so the measure is not met.\nVERDICT write_paths: the manifest declares reckon/crew/dispatch_picker.py, reckon/crew/picker/outcomes.py, tests/test_a_pick_names_its_slow_stage.py, the landing fragment and the figures dir; the repair diff touches the first, third and the fragment, all inside them.\nVERDICT manifest: read; it records the head arm (191 passed, 2 failed, EXIT=1), the base arm (188 passed, EXIT=0), the negative control (2 failed, 3 passed, EXIT=1) and names the flipped test as a follow-on, but omits the baseline_suite/after_suite JSON the review contract names.\nVERDICT diff: read commit by commit at ef8ce51a (parent baf5f99b, no later commit touches these files); three files changed, 189 insertions, all inside the declared scope.\nCALL_SITES: reckon/crew/dispatch.py:670, reckon/crew_dispatch_commands.py:1303, reckon/crew/dispatch_picker.py:387\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_picker.py:415 marks the estimate and :328-335 carries the stashed input times, so a production pick from reckon/crew/dispatch.py:670 now records all five stage times and names \"timeout in context-estimate\".\nSCORE evidence: 10\nJUSTIFICATION evidence: the recorded head arm at head.pytest.log adds tests/test_picker_in_dispatch.py::test_dispatch_survives_a_picker_past_the_bound, which passes in base.pytest.log (188 passed EXIT=0), so the recorded gate contradicts the done_when's no-added-failure requirement.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the repair's three changed paths (reckon/crew/dispatch_picker.py, tests/test_a_pick_names_its_slow_stage.py, the landing fragment) are all inside the manifest's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: the negative control (negative-control.pytest.log) shows both new tests fail at the pre-repair revision baf5f99 ('timeout' vs 'timeout in context-estimate' at tests/test_a_pick_names_its_slow_stage.py:139, and stage_ms['records'] None at :177).\nSCORE fit: 17\nJUSTIFICATION fit: the added names (_BUILD_STAGE_MS, marked, context-estimate) are mechanism-worded with no plan or ticket identifiers and follow the module's existing timed-stage idiom at reckon/crew/dispatch_picker.py:344-352.\nSCORE reuse: 15\nJUSTIFICATION reuse: the repair's added helpers extend reckon/crew/dispatch_picker.py in place and fork no repository-owned capability; the pre-existing PICK_STAGES/stage_ms vocabulary beside reckon/crew/picker/__init__.py:25-29 remains the earlier commit's open follow-on.\nFINDING tests/test_picker_in_dispatch.py:202 blocking: the repair changes the invoke-path fallback reason to \"timeout in context-estimate\", so tests/test_picker_in_dispatch.py::test_dispatch_survives_a_picker_past_the_bound now fails at head (head.pytest.log) while passing at base \u2014 an added failure in a test file that imports reckon/crew/dispatch_picker.py, which the node's done-when forbids; the assertion must be updated to accept the named stage before the node can land.\nFINDING tests/test_dispatch_returns_without_worker.py:1295 follow-on: this test also appears as an added failure in the derived count, but its supervisor-finished assertion is timing-sensitive and the manifest reports it reproduced at the base revision too, so it is recorded as flakiness rather than an effect of the change.\nFINDING reckon/crew/dispatch_picker.py:311 follow-on: the early return on input_errors precedes the _BUILD_STAGE_MS.times clear at :333, so a failed build leaves the thread-local stash set; harmless while every production caller re-runs build_picker_inputs first, but a later pick on the same thread that hands inputs without rebuilding would carry a stale build's times.\n\nreviewed_base_sha: baf5f99bf021a8211d61546c7c2e081ad3b7c28f\nreviewed_head_sha: ef8ce51a559c5fe45d74a39dcf24568ad8d3938c",
+  "review_run_id": "legacy-f625d156003f",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "baf5f99bf021a8211d61546c7c2e081ad3b7c28f",
+  "reviewed_head_sha": "ef8ce51a559c5fe45d74a39dcf24568ad8d3938c",
+  "reviewed_run_id": "r-20261013T092400508839-a-pick-names-its-slow-stage",
+  "reviewer": {
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261013T110736653353-review-of-a-pick-names-its-slow-stage-ef8ce51a559c",
+  "scores": {
+    "durability": 18,
+    "evidence": 10,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 15,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T11:22:46.882959+00:00",
+  "total": 97
+}
