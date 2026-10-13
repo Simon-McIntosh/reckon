@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.98">
-<meta name="plan-version" content="275">
+<meta name="plan-version" content="276">
 <meta name="plan-modified" content="2026-10-13">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
@@ -67,7 +67,7 @@
         <code>test_promotion_reads_the_terminal_record::test_a_terminal_record_landing_after_exit_is_folded_into_the_row</code>
         (<code>assert 1 &gt;= 3</code>);</li>
       <li>real follower subprocesses with 2&ndash;8 s waits: <code>test_follower_checks_its_owner</code> and
-        <code>test_follower_freshness</code>;</li>
+        <code>test_follower_freshness</code>. The re-run at <code>95ff28824</code> found these and twelve more follower-family ids failing alone, with zero emissions. That is a shared deterministic cause, not contention, so it is found and repaired before any bound is relaxed;</li>
       <li>detached producers: <code>test_crew_dispatch_arming::test_concurrent_dispatches_arm_exactly_one_detached_producer</code>;</li>
       <li><code>test_crew::test_redispatch_does_not_inherit_a_terminal_delivery</code>;</li>
       <li><code>test_ledger::test_every_read_view_returns_and_large_defaults_are_compact</code>.</li>
@@ -91,7 +91,7 @@
         <tr><td>Fixed waits removed</td><td>Every fixed sleep or wall-clock wait the durations run names is replaced by a
         bounded wait on the observed condition.</td></tr>
         <tr><td>Load-sensitive ids robust</td><td>Each id listed above passes in three consecutive <code>-n 8</code> full-file
-        runs, or is recorded with the contention it measures and why its bound cannot be relaxed.</td></tr>
+        runs. An id that cannot is kept only with a measurement showing it passes alone and fails under a stated load, and the fourteen follower-family ids must first pass alone.</td></tr>
         <tr><td>No producer outlives the suite</td><td>A session-scoped check fails the run if any <code>crew watch</code>
         process started under a test's temporary config home is still alive when the suite ends.</td></tr>
         <tr><td>Bounded full run</td><td>The full suite finishes under <code>-n 8</code> on the fleet node in a stated wall
