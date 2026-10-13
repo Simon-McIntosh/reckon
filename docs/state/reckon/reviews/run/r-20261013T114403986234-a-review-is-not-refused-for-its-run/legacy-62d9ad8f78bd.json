@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite or after_suite field, so there is no base/head gate-log pair to reduce; the gate logs it does name (gate-head.log 4 passed EXIT=0, gate-focus.log 71 passed EXIT=0) both label rev=737c9d7ef, so no added failure can be attributed from them and none is stored as a measured zero.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:2158",
+    "reckon/crew_dispatch_commands.py:2178",
+    "reckon/crew/recovery_watch.py:2472",
+    "reckon/crew/recovery_review_acceptance.py:481",
+    "reckon/crew/queue_admission.py:147"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-13T11:45:00Z",
+  "findings": [
+    {
+      "file": "tests/test_a_review_is_not_refused_for_its_run.py",
+      "line": "174",
+      "severity": "follow-on",
+      "text": "follow-on: test_a_composed_review_dispatch_records_the_waiver drives only dispatch_portfolio_review, so the identical option added at reckon/crew/plan_review.py:2783 for dispatch_code_review is unguarded and a regression dropping just that line would pass the suite."
+    },
+    {
+      "file": "reckon/crew/recovery_repair_dispatch.py",
+      "line": "1020",
+      "severity": "follow-on",
+      "text": "follow-on: the repair dispatch passes unreconciled_override=True with no dispatch_options, so a repair queued on a held local lane relaunches without the waiver and is refused UnreconciledRuns \u2014 the same deadlock \u00a710 repairs for reviews \u2014 and this file is outside this node's fence."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit 024aaac43 against its parent 737c9d7ef commit by commit; it changes four files (+326/-6) \u2014 two production callers gain the dispatch option, the stranded-review reader searches the run directory and the discards spool, and a 264-line test file plus a 33-line evidence fragment are added \u2014 and each path is inside the declared scope.",
+    "done_when": "the done_when names tests/test_a_review_is_not_refused_for_its_run.py, which queues a review of a delivered run past the grace while the lane holds, admits it, and asserts the relaunch launches (tests/test_a_review_is_not_refused_for_its_run.py:120); a same-state implementation launch stays refused (:146); the manifest records 4 passed EXIT=0 at that file and 71 passed across the reflex/plan-review/queue-admission files, and the negative control reddens the reflex case.",
+    "goal": "the goal is to make every path that queues a review record the unreconciled-runs waiver in its dispatch options; reckon/crew/recovery_review_dispatch.py:1722 and reckon/crew/plan_review.py:2783,3386 now pass dispatch_options={\"allow_unreconciled_runs\": ...} at the reflex and both composed plan-review callers, so a held review is queued with the waiver the admission pass rebuilds on relaunch.",
+    "manifest": "read; it records status complete, commits 024aaac43cb9549893a5dce4664defd3c3bd374b, the two gate logs (gate-head.log 4 passed EXIT=0, gate-focus.log 71 passed EXIT=0) and the negative-control log, and it names the one declared write path it left untouched.",
+    "write_paths": "the declared scope is reckon/crew/recovery_review_dispatch.py, reckon/crew/dispatch_admission.py, reckon/crew/plan_review.py, tests/test_a_review_is_not_refused_for_its_run.py, the evidence fragment and the figures dir; every path the diff touches is inside it and dispatch_admission.py is declared but untouched, named in the manifest's follow_ons."
+  },
+  "justifications": {
+    "durability": "the reflex waiver is a real guard (negative-control.log reddens test_a_queued_reflex_review_carries_the_waiver_and_launches by the UnreconciledRuns refusal), but the symmetric option at reckon/crew/plan_review.py:2783 has no test and test_a_composed_review_dispatch_records_the_waiver covers only the portfolio site.",
+    "evidence": "the gate at gate-head.log (tests/test_a_review_is_not_refused_for_its_run.py:120) asserts the relaunch launches and the negative-control.log reddens it, but the reviewed manifest names no baseline_suite/after_suite, so \u00a710's \"no added failure against base\" clause is unevidenced and the two gate logs both carry rev=737c9d7ef rather than the reviewed head.",
+    "fit": "the added code follows the surrounding idiom of reckon/crew/recovery_review_dispatch.py:1714 and names nothing the naming rules forbid, though the inspect-and-read marker built at :252 with next() over two candidate paths is a slightly unusual shape for this module.",
+    "goal_fidelity": "reckon/crew/recovery_review_dispatch.py:1722 and reckon/crew/plan_review.py:2783,3386 record the option the admission pass rebuilds at reckon/crew/queue_admission.py:147, closing the reflex and composed-review queue paths \u00a710 names.",
+    "reuse": "the change reuses the existing dispatch_options contract read at reckon/crew/queue_admission.py:147 and promotion.discard_spool_path at reckon/crew/promotion.py:1368 rather than forking a capability, and no helper builds the option dict elsewhere to extend under.",
+    "scope_discipline": "every path in the diff \u2014 reckon/crew/plan_review.py, reckon/crew/recovery_review_dispatch.py, tests/test_a_review_is_not_refused_for_its_run.py and the evidence fragment \u2014 is inside the declared write paths, with reckon/crew/dispatch_admission.py declared and honestly reported as untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to make every path that queues a review record the unreconciled-runs waiver in its dispatch options; reckon/crew/recovery_review_dispatch.py:1722 and reckon/crew/plan_review.py:2783,3386 now pass dispatch_options={\"allow_unreconciled_runs\": ...} at the reflex and both composed plan-review callers, so a held review is queued with the waiver the admission pass rebuilds on relaunch.\nVERDICT done_when: the done_when names tests/test_a_review_is_not_refused_for_its_run.py, which queues a review of a delivered run past the grace while the lane holds, admits it, and asserts the relaunch launches (tests/test_a_review_is_not_refused_for_its_run.py:120); a same-state implementation launch stays refused (:146); the manifest records 4 passed EXIT=0 at that file and 71 passed across the reflex/plan-review/queue-admission files, and the negative control reddens the reflex case.\nVERDICT write_paths: the declared scope is reckon/crew/recovery_review_dispatch.py, reckon/crew/dispatch_admission.py, reckon/crew/plan_review.py, tests/test_a_review_is_not_refused_for_its_run.py, the evidence fragment and the figures dir; every path the diff touches is inside it and dispatch_admission.py is declared but untouched, named in the manifest's follow_ons.\nVERDICT manifest: read; it records status complete, commits 024aaac43cb9549893a5dce4664defd3c3bd374b, the two gate logs (gate-head.log 4 passed EXIT=0, gate-focus.log 71 passed EXIT=0) and the negative-control log, and it names the one declared write path it left untouched.\nVERDICT diff: read commit 024aaac43 against its parent 737c9d7ef commit by commit; it changes four files (+326/-6) \u2014 two production callers gain the dispatch option, the stranded-review reader searches the run directory and the discards spool, and a 264-line test file plus a 33-line evidence fragment are added \u2014 and each path is inside the declared scope.\nCALL_SITES: reckon/crew_dispatch_commands.py:2158, reckon/crew_dispatch_commands.py:2178, reckon/crew/recovery_watch.py:2472, reckon/crew/recovery_review_acceptance.py:481, reckon/crew/queue_admission.py:147\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_dispatch.py:1722 and reckon/crew/plan_review.py:2783,3386 record the option the admission pass rebuilds at reckon/crew/queue_admission.py:147, closing the reflex and composed-review queue paths \u00a710 names.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate at gate-head.log (tests/test_a_review_is_not_refused_for_its_run.py:120) asserts the relaunch launches and the negative-control.log reddens it, but the reviewed manifest names no baseline_suite/after_suite, so \u00a710's \"no added failure against base\" clause is unevidenced and the two gate logs both carry rev=737c9d7ef rather than the reviewed head.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff \u2014 reckon/crew/plan_review.py, reckon/crew/recovery_review_dispatch.py, tests/test_a_review_is_not_refused_for_its_run.py and the evidence fragment \u2014 is inside the declared write paths, with reckon/crew/dispatch_admission.py declared and honestly reported as untouched.\nSCORE durability: 16\nJUSTIFICATION durability: the reflex waiver is a real guard (negative-control.log reddens test_a_queued_reflex_review_carries_the_waiver_and_launches by the UnreconciledRuns refusal), but the symmetric option at reckon/crew/plan_review.py:2783 has no test and test_a_composed_review_dispatch_records_the_waiver covers only the portfolio site.\nSCORE fit: 18\nJUSTIFICATION fit: the added code follows the surrounding idiom of reckon/crew/recovery_review_dispatch.py:1714 and names nothing the naming rules forbid, though the inspect-and-read marker built at :252 with next() over two candidate paths is a slightly unusual shape for this module.\nSCORE reuse: 19\nJUSTIFICATION reuse: the change reuses the existing dispatch_options contract read at reckon/crew/queue_admission.py:147 and promotion.discard_spool_path at reckon/crew/promotion.py:1368 rather than forking a capability, and no helper builds the option dict elsewhere to extend under.\nFINDING tests/test_a_review_is_not_refused_for_its_run.py:174 follow-on: test_a_composed_review_dispatch_records_the_waiver drives only dispatch_portfolio_review, so the identical option added at reckon/crew/plan_review.py:2783 for dispatch_code_review is unguarded and a regression dropping just that line would pass the suite.\nFINDING reckon/crew/recovery_repair_dispatch.py:1020 follow-on: the repair dispatch passes unreconciled_override=True with no dispatch_options, so a repair queued on a held local lane relaunches without the waiver and is refused UnreconciledRuns \u2014 the same deadlock \u00a710 repairs for reviews \u2014 and this file is outside this node's fence.",
+  "review_run_id": "legacy-62d9ad8f78bd",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "737c9d7ef55ef537e0b9eeaa9057b7f885453f7d",
+  "reviewed_head_sha": "024aaac43cb9549893a5dce4664defd3c3bd374b",
+  "reviewed_run_id": "r-20261013T114403986234-a-review-is-not-refused-for-its-run",
+  "reviewer": {
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261013T123509795714-review-of-a-review-is-not-refused-for-its-run-024aaac43cb9",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T12:48:39.359818+00:00",
+  "total": 106
+}
