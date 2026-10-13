@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:832 follower_row_path builds the PaneRowPath the live follower feeds",
+    "reckon/crew_follow_commands.py:1004 and :1788 and :1873 are the follower feed loops",
+    "reckon/crew/ticker.py:1755 replay_row_policy drives the same RowPolicy on a replay"
+  ],
+  "completed_at": "2026-10-13T11:02:10.955Z",
+  "dispatched_at": "2026-10-13T10:46:54Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T093656235360-a-standing-lift-is-announced-once/gates/head-ticker-importers.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the head arm's log header records revision c97e4c6d (the base) while the arm ran in the head worktree at 25fd455, so the manifest's after_suite revision and the log's own header disagree and the head measurement cannot be tied to its commit from the log alone."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T093656235360-a-standing-lift-is-announced-once/gates/base-ticker-importers.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the base arm's log header records no revision (blank, with a leaked git discovery error above it), so the base measurement's commit is unreadable from the log the manifest cites."
+    }
+  ],
+  "head_log_revision": "c97e4c6d56632dd76b06b597e411fa2d2b5c7fab",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base c97e4c6d; one commit 25fd455cbc changes reckon/crew/ticker.py plus a new test file and evidence fragment, all inside the declared scope.",
+    "done_when": "the done_when names tests/test_a_standing_lift_is_announced_once.py, the ticker-importing set's added failures against base, and a logged negative control; the manifest records all three and I re-ran the named test at the reviewed head and got 6 passed.",
+    "goal": "the node's goal is to draw a standing lift once and hold the baseline a reloaded lift watcher re-announces; reckon/crew/ticker.py:1660 _feed_lift keys lift rows on the lift's group and returns no row for a baseline whose group the pane already drew.",
+    "manifest": "read; it states tests/test_a_standing_lift_is_announced_once.py 6 passed, the ticker-importing set 468 passed at head against 462 at base with zero added failures, and names its gate logs.",
+    "write_paths": "read the manifest's declared paths; they are reckon/crew/ticker.py, reckon/crew/lift_watch.py, tests/test_a_standing_lift_is_announced_once.py, the fragment html and the figures directory, and every path in the diff is inside them with lift_watch.py and the figures directory declared but unused."
+  },
+  "justifications": {
+    "durability": "the declared negative control removes the hold and turns test_a_restarted_watcher_adds_no_row_for_a_lift_the_pane_already_drew red (2 failed, EXIT=1), so the guarding assertion fails on the regression it was added for.",
+    "evidence": "the gate is recorded and the head test re-runs green, but the head arm's own log header names the base revision, so the log disagrees with the revision the manifest declares.",
+    "fit": "the LIFT_GRANTED/LIFT_IN_FORCE/LIFT_ENDED constants at reckon/crew/ticker.py:272 name a mechanism with no plan or ticket label and match the surrounding module-constant style.",
+    "goal_fidelity": "_feed_lift at reckon/crew/ticker.py:1660 suppresses a baseline in-force row whose group is already drawn by RowPolicy._lift_groups, which is exactly the re-announcement the goal names.",
+    "reuse": "the group-keyed memory at reckon/crew/ticker.py:1313 extends the RowPolicy memory idiom (the run-keyed _reported cannot hold a run-less lift row) and no pre-existing group-keyed lift memory exists in reckon/crew.",
+    "scope_discipline": "every path the diff touches is inside the declared write paths and no file outside them was modified."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to draw a standing lift once and hold the baseline a reloaded lift watcher re-announces; reckon/crew/ticker.py:1660 _feed_lift keys lift rows on the lift's group and returns no row for a baseline whose group the pane already drew.\nVERDICT done_when: the done_when names tests/test_a_standing_lift_is_announced_once.py, the ticker-importing set's added failures against base, and a logged negative control; the manifest records all three and I re-ran the named test at the reviewed head and got 6 passed.\nVERDICT write_paths: read the manifest's declared paths; they are reckon/crew/ticker.py, reckon/crew/lift_watch.py, tests/test_a_standing_lift_is_announced_once.py, the fragment html and the figures directory, and every path in the diff is inside them with lift_watch.py and the figures directory declared but unused.\nVERDICT manifest: read; it states tests/test_a_standing_lift_is_announced_once.py 6 passed, the ticker-importing set 468 passed at head against 462 at base with zero added failures, and names its gate logs.\nVERDICT diff: read commit by commit against base c97e4c6d; one commit 25fd455cbc changes reckon/crew/ticker.py plus a new test file and evidence fragment, all inside the declared scope.\nCALL_SITES: reckon/crew_follow_commands.py:832 follower_row_path builds the PaneRowPath the live follower feeds, reckon/crew_follow_commands.py:1004 and :1788 and :1873 are the follower feed loops, reckon/crew/ticker.py:1755 replay_row_policy drives the same RowPolicy on a replay\nREVIEWED_BASE_SHA: c97e4c6d56632dd76b06b597e411fa2d2b5c7fab\nREVIEWED_HEAD_SHA: 25fd455cbc4653df75eeb5cda17c4ebb1ccc7c5c\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: _feed_lift at reckon/crew/ticker.py:1660 suppresses a baseline in-force row whose group is already drawn by RowPolicy._lift_groups, which is exactly the re-announcement the goal names.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate is recorded and the head test re-runs green, but the head arm's own log header names the base revision, so the log disagrees with the revision the manifest declares.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path the diff touches is inside the declared write paths and no file outside them was modified.\nSCORE durability: 19\nJUSTIFICATION durability: the declared negative control removes the hold and turns test_a_restarted_watcher_adds_no_row_for_a_lift_the_pane_already_drew red (2 failed, EXIT=1), so the guarding assertion fails on the regression it was added for.\nSCORE fit: 18\nJUSTIFICATION fit: the LIFT_GRANTED/LIFT_IN_FORCE/LIFT_ENDED constants at reckon/crew/ticker.py:272 name a mechanism with no plan or ticket label and match the surrounding module-constant style.\nSCORE reuse: 18\nJUSTIFICATION reuse: the group-keyed memory at reckon/crew/ticker.py:1313 extends the RowPolicy memory idiom (the run-keyed _reported cannot hold a run-less lift row) and no pre-existing group-keyed lift memory exists in reckon/crew.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T093656235360-a-standing-lift-is-announced-once/gates/head-ticker-importers.log:1 follow-on: the head arm's log header records revision c97e4c6d (the base) while the arm ran in the head worktree at 25fd455, so the manifest's after_suite revision and the log's own header disagree and the head measurement cannot be tied to its commit from the log alone.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T093656235360-a-standing-lift-is-announced-once/gates/base-ticker-importers.log:1 follow-on: the base arm's log header records no revision (blank, with a leaked git discovery error above it), so the base measurement's commit is unreadable from the log the manifest cites.",
+  "review_run_id": "r-20261013T104622285924-review-of-a-standing-lift-is-announced-once-25fd455cbc46",
+  "reviewed_base_sha": "c97e4c6d56632dd76b06b597e411fa2d2b5c7fab",
+  "reviewed_head_sha": "25fd455cbc4653df75eeb5cda17c4ebb1ccc7c5c",
+  "reviewed_run_id": "r-20261013T093656235360-a-standing-lift-is-announced-once",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T10:59:07.051126+00:00",
+  "total": 110
+}
