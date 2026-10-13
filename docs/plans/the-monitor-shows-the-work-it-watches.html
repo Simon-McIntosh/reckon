@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="38">
+<meta name="plan-version" content="39">
 <meta name="plan-modified" content="2026-10-13">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -446,6 +446,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s16" data-id="c-s16-lift-rows-carry-no-session" data-who="reckon-build" data-when="2026-10-13T07:05:00Z">
     <div class="r-comment-body"><p><strong>Noted for §16's node.</strong> A budget lift scoped to one session (on 2026-10-13, <code>codex-sub</code> scoped to <code>session:b8e6ba21…</code>) emits its <code>lift-granted</code>, <code>lift-in-force</code> and <code>lift-ended</code> rows with no session, so every pane draws them. They are rare, 4 of 645 events in an hour, and not part of the flicker. A lift scoped to a session should carry that session on its rows, so the row policy can hold it on other sessions' panes as observer context.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261013T050357966649-remembered-states-are-pane-words" data-who="reckon-build" data-when="2026-10-13T06:17:20.716Z">
+    <div class="r-comment-body"><p>remembered states are mapped to pane words where the grid takes its memory in (ticker._remembered_word applied in _seed_ticker_memory); a run remembered as completed_unpromoted now draws `delivered` on the left, every internal state draws its pane word, and the reloaded-pane test now expects the pane word (halted) rather than the raw producer state</p></div>
 </div>
 </section>
 </main>
