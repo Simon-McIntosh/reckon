@@ -204,6 +204,48 @@ class DispatchPlan:
         return payload
 
 
+def _backend_serving_picked_model(
+    config: Mapping[str, Any], *, backend_name: str, model: str
+) -> str:
+    """Return the backend whose lane serves the model a picker route chose.
+
+    A picker route names a lane's own backend with the chosen model beside it,
+    so applying the pick means resolving that model to the entry that serves it.
+    The model is matched against the lane's model key, its model id and its
+    alias, so any spelling the lane declares reaches the entry — exactly as
+    ``--model`` resolves a named pair. A model the lane does not declare is
+    refused by name rather than launched as the lane default, which would run
+    one model while the run records another.
+    """
+    backends = config.get("backends") or {}
+    picked = backends.get(backend_name)
+    if not isinstance(picked, Mapping):
+        # No layer defines the picked backend: routing resolves a missing
+        # backend moments later with the routing context a caller needs.
+        return backend_name
+    lane = str(picked.get("lane") or "")
+    if not lane:
+        # A backend that declares no lane carries its own model directly, so
+        # there is no lane-and-model pair for the pick to narrow.
+        return backend_name
+    for name, entry in backends.items():
+        if not isinstance(entry, Mapping):
+            continue
+        if str(entry.get("lane") or "") != lane:
+            continue
+        if model in (
+            str(entry.get("model_key") or ""),
+            str(entry.get("model") or ""),
+            str(entry.get("alias") or ""),
+        ):
+            return str(name)
+    raise CrewError(
+        f"picker named lane {lane!r} model {model!r}, but no model of that "
+        "lane declares the name; refusing rather than launching the lane's "
+        "declared default under the picked name"
+    )
+
+
 def plan_dispatch(
     *,
     node: TaskNode,
@@ -299,6 +341,15 @@ def plan_dispatch(
         )
         if named_backend:
             requested_backend = named_backend
+            # A route may name a model beside its lane's own backend, so the
+            # pick is applied the same way ``--model`` narrows a named pair: the
+            # model resolves to the lane entry that serves it rather than the
+            # lane's default, which would launch sol while recording astra.
+            picked_model = str(picker_selection.get("model") or "").strip()
+            if picked_model:
+                requested_backend = _backend_serving_picked_model(
+                    config, backend_name=named_backend, model=picked_model
+                )
         elif action in ("route", "refuse", "fallback"):
             # The picker names no backend it can route to — it refused, its route
             # carries no backend, or it fell back — so the dispatch continues
