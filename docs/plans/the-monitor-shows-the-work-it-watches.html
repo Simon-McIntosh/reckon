@@ -22,11 +22,11 @@
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-standalone" content="The lead&#x27;s 2026-10-12 requirements for the session-host pane, revising the start-row rule of the shipped a-follower-row-is-worth-a-wake; no live plan waits on it and it waits on none.">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;the-monitor-shows-the-work-it-watches#s5&quot;], &quot;s4&quot;: [&quot;the-monitor-shows-the-work-it-watches#s2&quot;], &quot;s5&quot;: [&quot;the-monitor-shows-the-work-it-watches#s2&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;implementable&quot;}">
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="34">
+<meta name="plan-version" content="35">
 <meta name="plan-modified" content="2026-10-13">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -264,7 +264,7 @@
     the assertion passes on a renderer showing the wrong number.</p>
 
     <h2 id="s13">§13 — The session host removes its FIFO when it ends</h2>
-<section data-reckon="section" data-id="s13" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s13" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
 <p><em>Was §9 of <a href="/reckon/plans/a-follower-lives-as-long-as-its-session">a-follower-lives-as-long-as-its-session</a>, folded here on 2026-10-13.</em></p><p><strong>Deliverable.</strong> When <code>reckon crew host</code> stops, because its owner ended or
 it was signalled, it removes the FIFO it was handed. The entry point removes the FIFO only when its
 owner ends before the first request; once it has become <code>reckon crew host</code>, nothing does,
@@ -440,6 +440,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-fold-monitor-plans-1013" data-who="reckon-build" data-when="2026-10-13T05:50:00Z">
     <div class="r-comment-body"><p><strong>One monitor plan.</strong> At the lead's request this plan now holds every open monitor section. §7–§11 were §2–§6 of <a href="/reckon/plans/a-follower-keeps-your-work-in-view">a-follower-keeps-your-work-in-view</a> (S22), §12 was §10 of <a href="/reckon/plans/monitor-renders-what-it-is-given">monitor-renders-what-it-is-given</a> (S22), and §13–§14 were §9 and §16 of <a href="/reckon/plans/a-follower-lives-as-long-as-its-session">a-follower-lives-as-long-as-its-session</a> (S25). Their locked decisions are carried in the decisions block, and a reference inside a folded section to its old plan's numbering means the section it became here. That plan's §14 is landed though declared deferred, so it was not carried. §15–§16 are new: the pane's flicker, measured on 2026-10-13 as 61% of all transitions. <a href="/reckon/plans/crew-observability-truth">crew-observability-truth</a> stays separate, because its open sections are about fleet truth (gates, lanes, gc), not the pane.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-s13-already-landed" data-who="reckon-build" data-when="2026-10-13T06:05:00Z">
+    <div class="r-comment-body"><p>§13 was already built when it was folded here: commit <code>68361d4ee</code> (2026-10-07, "fix(crew): remove the session host FIFO when the host stops") added <code>_remove_fifo</code> to <code>reckon/crew/session_host.py</code>, called on the stop path, with <code>TERM</code> and <code>HUP</code> handlers at the entry point, and the section's tests pass on main. Its old plan's declaration was stale, so it is declared done here rather than rebuilt.</p></div>
 </div>
 </section>
 </main>
