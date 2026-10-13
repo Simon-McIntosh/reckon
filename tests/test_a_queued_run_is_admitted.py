@@ -312,6 +312,55 @@ def test_a_refused_launch_keeps_its_queued_request(
         assert gate_state in result["failure_detail"]["r-refused"]
 
 
+def test_an_annotation_write_error_restores_the_request(
+    admit_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _, resolve = _config_for()
+    runs.queue_dispatch(_queue(admit_repo, node_id="write-failed", run_id="r-write"))
+
+    def refuse(**kwargs):
+        raise ValueError("launch refused")
+
+    def fail_write(*args, **kwargs):
+        raise OSError("annotation storage unavailable")
+
+    monkeypatch.setattr(
+        importlib.import_module("reckon.crew.dispatch"), "dispatch", refuse
+    )
+    monkeypatch.setattr(runs, "_mutate_pointer", fail_write)
+
+    result = queue_admission.admit_once(config_for=resolve)
+
+    pointer = runs.read_pointer("r-write")
+    assert pointer["phase"] == "queued"
+    assert "launch refused" in pointer["failure"]
+    assert result["failed"] == ["r-write"]
+
+
+def test_a_restore_write_error_is_reported_without_ending_the_pass(
+    admit_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _, resolve = _config_for()
+    runs.queue_dispatch(_queue(admit_repo, node_id="write-failed", run_id="r-write"))
+
+    def refuse(**kwargs):
+        raise ValueError("launch refused")
+
+    def fail_write(*args, **kwargs):
+        raise OSError("storage unavailable")
+
+    monkeypatch.setattr(
+        importlib.import_module("reckon.crew.dispatch"), "dispatch", refuse
+    )
+    monkeypatch.setattr(runs, "_mutate_pointer", fail_write)
+    monkeypatch.setattr(queue_admission, "_restore_queued", fail_write)
+
+    result = queue_admission.admit_once(config_for=resolve)
+
+    assert result["failed"] == ["r-write"]
+    assert "storage unavailable" in result["restore_failure_detail"]["r-write"]
+
+
 @pytest.mark.parametrize("returns_queued", [False, True])
 def test_a_requeued_hold_keeps_the_newer_pointer(
     admit_repo: Path, monkeypatch: pytest.MonkeyPatch, returns_queued: bool
@@ -344,7 +393,9 @@ def test_a_requeued_hold_keeps_the_newer_pointer(
     assert failure in pointer["failure"]
     assert pointer["failure_at"]
     assert not runs.pointer_path("r-held").exists()
-    assert "r-held" in result["held"] + result["failed"]
+    assert "r-requeued" in result["held"] + result["failed"]
+    assert result["superseded"]["r-requeued"] == "r-held"
+    assert runs.pointer_path((result["held"] + result["failed"])[0]).exists()
 
 
 @pytest.mark.parametrize("returned", [None, {"run_id": "r-held", "phase": "queued"}])

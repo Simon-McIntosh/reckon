@@ -233,8 +233,9 @@ def _restore_queued(snapshot: Mapping[str, Any], failure: str) -> None:
 
 def _record_queued_failure(
     snapshot: Mapping[str, Any], failure: str, requeued_run_id: str = ""
-) -> None:
-    """Keep a newer re-queue, or restore the request if dispatch removed it."""
+) -> tuple[str, str | None]:
+    """Return the retained request's id and any unrecoverable write error."""
+    original_run_id = str(snapshot["run_id"])
     run_id = requeued_run_id or str(snapshot["run_id"])
 
     def annotate(current: dict[str, Any]) -> dict[str, Any]:
@@ -244,8 +245,15 @@ def _record_queued_failure(
 
     try:
         runs._mutate_pointer(run_id, annotate)
-    except CrewError:
-        _restore_queued(snapshot, failure)
+    except Exception as annotate_error:  # noqa: BLE001 - a failed write needs restoration
+        try:
+            _restore_queued(snapshot, failure)
+        except Exception as restore_error:  # noqa: BLE001 - report storage failure to the pass
+            annotation = f"annotation {type(annotate_error).__name__}: {annotate_error}"
+            restoration = f"restore {type(restore_error).__name__}: {restore_error}"
+            return original_run_id, f"{annotation}; {restoration}"
+        return original_run_id, None
+    return run_id, None
 
 
 def _require_launched_record(candidate: Any) -> Mapping[str, Any]:
@@ -311,6 +319,9 @@ def admit_once(
             record = None
             failure = "dispatch did not return a launched record"
             requeued_run_id = ""
+            caught: Exception | None = None
+            reported_id = str(pointer["run_id"])
+            restore_error = None
             try:
                 candidate = _launch_queued(
                     pointer, launcher=launcher, config_for=config_for
@@ -322,19 +333,32 @@ def admit_once(
                     requeued_run_id = str(candidate.get("run_id") or "")
                 record = _require_launched_record(candidate)
             except Exception as exc:  # noqa: BLE001 - every dispatch failure keeps its request
+                caught = exc
                 failure = f"{type(exc).__name__}: {exc}"
                 if isinstance(exc, LaneHeld):
                     queued = getattr(exc, "queued", None)
                     if isinstance(queued, Mapping):
                         requeued_run_id = str(queued.get("run_id") or "")
-                key = "held" if isinstance(exc, (LaneHeld, LanePaused)) else "failed"
-                detail_key = "hold_detail" if key == "held" else "failure_detail"
-                result[key].append(str(pointer["run_id"]))
-                result.setdefault(detail_key, {})[str(pointer["run_id"])] = str(exc)
             finally:
                 if record is None:
-                    _record_queued_failure(snapshot, failure, requeued_run_id)
+                    reported_id, restore_error = _record_queued_failure(
+                        snapshot, failure, requeued_run_id
+                    )
             if record is None:
+                key = "held" if isinstance(caught, (LaneHeld, LanePaused)) else "failed"
+                detail_key = "hold_detail" if key == "held" else "failure_detail"
+                result[key].append(reported_id)
+                result.setdefault(detail_key, {})[reported_id] = (
+                    str(caught) if caught is not None else failure
+                )
+                if reported_id != str(pointer["run_id"]):
+                    result.setdefault("superseded", {})[reported_id] = str(
+                        pointer["run_id"]
+                    )
+                if restore_error is not None:
+                    result.setdefault("restore_failure_detail", {})[reported_id] = (
+                        restore_error
+                    )
                 continue
             _stamp_admission(str(record["run_id"]), snapshot, admitted_at=_utc_now())
             result["launched"].append(str(record["run_id"]))
