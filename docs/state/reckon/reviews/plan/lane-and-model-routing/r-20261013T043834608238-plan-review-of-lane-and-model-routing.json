@@ -1,0 +1,72 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-13T04:50:02.119Z",
+  "dispatched_at": "2026-10-13T04:39:09Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/lane-and-model-routing.html:120",
+      "id": "reasoning-1",
+      "reason": "an implementer following the four-site census and the \"each of the four sites calls it\" test will consolidate four sites and leave a path-based sibling of the same resolution in `routing.py`, so \u00a716 ships claiming one owner while a fifth spelling survives and the second test cannot detect it.",
+      "text": "\u00a716 enumerates exactly four sites that resolve a repository path to its projects and says \"Keep one identity-based resolver ... and make all four sites call it\", but `resolve_dispatch_authority` in `reckon/crew/routing.py:3302-3333` performs the same resolution \u2014 `work_projects = sorted(name for name, docs in mounts.items() if docs.parent.resolve() == work_repo)` \u2014 by a resolved-path comparison (worktree-blind, the same defect class as the `shadow_source` and `_project_for_repository` rows) and reads `flight.mounted_project_docs()` directly rather than `mounted_repository_projects()`, so the census's instrument cannot see it; it sits in the very module \u00a716 names as the owner's home, and leaving it unconverted defeats the section's stated goal of one owner.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "c97abb0cc824cbbac4d9d9bc245f810fb9cc81c0b8f9f0923f2db5c4bb97f586",
+  "plan_slug": "lane-and-model-routing",
+  "plan_version": 79,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-13T04:51:33.826462+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-13T04:51:33.826462+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-lane-and-model-routing.v79.json",
+  "review_run_id": "r-20261013T043834608238-plan-review-of-lane-and-model-routing",
+  "reviewed_blob_sha": "c83428332613940cd4f1c6d7a06ec939fa44a19b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the \"score 112\" anchor resolves (the review of `r-20261010T223438073950` is recorded at line 343-344 as total 112), and every file it cites exists (`reckon/crew_dispatch_commands.py`, `reckon/crew/dispatch.py`, `reckon/crew/dispatch_claims.py`, `reckon/crew/promotion_records.py`, `reckon/crew/routing.py`, `reckon/crew/dispatch_sections.py`, `reckon/crew/query.py`, `reckon/crew/node.py`).",
+    "done_when": "pass \u2014 \u00a716's done-when names a negative control: \"On main, `_project_for_repository` finds no project and `shadow_source` never names the mounted project, so the test fails there\", which I reproduced against the current code (`_project_for_repository` compares `repository_root.resolve() == target`, promotion_records.py:73-74; `shadow_source` does `mounted_repository_projects().get(Path(repository).resolve())`, dispatch.py:204-205).",
+    "evidence_paths": "pass \u2014 \u00a716 names no session scratchpad or node-local temporary path, and its gate writes through the standard run record.",
+    "naming": "pass \u2014 \u00a716 introduces no new symbol and names only existing ones by what they do; no plan label, stage name or ticket number reaches a symbol or comment.",
+    "reasoning": "a finding \u2014 the census that grounds \u00a716 (\"a census of every `mounted_repository_projects()` caller ... four sites\") is methodically incomplete, because a fifth site resolves repository\u2192projects in the same direction and by the same worktree-blind path comparison, and it is not a caller of `mounted_repository_projects()`.",
+    "single_goal": "pass \u2014 \u00a716 carries one deliverable (a single identity-based repository\u2192projects resolver and its consolidation), so it closes on one verdict.",
+    "wiring": "pass \u2014 \u00a716's only dependency is \u00a714 (both edit `reckon/crew_dispatch_commands.py`) and it is carried by the open followup `f-lmr-009` (\"Build \u00a714, then \u00a716\", recommending `/reckon-build lane-and-model-routing \u00a714`), while its declared prerequisite \u00a710 landed (`0e4b8adba`, line 338): no relationship is missing or misdirected."
+  },
+  "section_digests": {
+    "_document": "8aee0b66d26dc5ce7edb18efdcbaf5fe43cf7a90b751f9320700da6c7c5ac8c1",
+    "s0": "19f29ce7f4d739b631468c119c6d758faff1d1bd15018de2a5e1e7c1957203ea",
+    "s1": "6760f63ebdb0d0db10c3c004f30d4f4253bfb7582bc7a0e4054fed73e017a02d",
+    "s10": "9f3b98da9be42bc1d1dad77d11079186c59e62315308454b2f442bdfffa7755c",
+    "s11": "2e566713b8ee8cbfcf94503cba2640bac78329b96f748ff0334a858e08287755",
+    "s12": "8a7841af15c5beacc75bf716eab0a317f722daab3a302ec190299ce0c3315350",
+    "s13": "6cc9f5f5d1d9a0d7a981363b2961d554bc1670d016cf5da011e18fd20d24b604",
+    "s14": "f4192a6b66ca1a9df3c0c8b84d6a76f9b7e2708145600fc43403217b7a52c540",
+    "s15": "f771307d6c5f071d884953878a527fd166185d3d25c88171a3028f27f2a174b8",
+    "s16": "0963a477597758da96ef956549ad7f9eaaba0de5d67b52e0ede9af9389776166",
+    "s2": "0c6488cdae0f23d0600410d02191390e773858e9bc75008234f71cc66f01889b",
+    "s3": "6cb602347e0232fe459028eff2010884381d987053d550c4565f581c23032095",
+    "s4": "aa5a29a8662005607992ae17fc914d47e8e48c68b7e65395b4865f6d33ea37f4",
+    "s5": "2ffa1a3b1d2b09433f25a83f8a7a59b1774249bac29b945f2c2273ace57cb1ba",
+    "s6": "6c8117bcfdc7d4b0bafdc4fb2185779998c71b1730b07a0d900b543f02c08ec1",
+    "s7": "07952e2e354db24e76860530568500cc2066b69b4255c020db83677e46cb18e2",
+    "s8": "7ca129403c95fcbc111273a2b419b29279191bc54c157bb6f7d8de0d5b160d34",
+    "s9": "0c546f1c0ce99eb4f03333edf6955f597fcb37c49baa31305dfd52c6b03364d8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T04:51:25.068735+00:00"
+}
