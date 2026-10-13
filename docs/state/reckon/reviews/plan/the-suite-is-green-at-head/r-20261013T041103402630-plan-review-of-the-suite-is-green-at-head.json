@@ -1,0 +1,62 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-13T04:21:27.831Z",
+  "dispatched_at": "2026-10-13T04:11:53Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-suite-is-green-at-head.html:687",
+      "id": "reasoning-1",
+      "reason": "a node following the deliverable literally either implements a no-op exemption (own_session is already exempt) or must plumb a new operand through a file it was not granted, so the section as written cannot be built as a single scoped node without the one decision it leaves unmade: whether observation is threaded in or read off the foreign marker on the event.",
+      "text": "\u00a715's deliverable is \"RowPolicy extends its own-session exemption to observed sessions\", but the exemption `_is_own_start` (reckon/crew/ticker.py:1313) is keyed on `self._own_session` alone and only ever returns true for a `START_KIND`; RowPolicy is constructed with `own_session=session` and no observed-session operand (reckon/crew/ticker.py:1265), while the observed set is consumed one layer up at the selection function, `follower_row_path(observed=\u2026)` \u2192 `_follow_selects` in reckon/crew_follow_commands.py:814. So the mechanism as written has nothing in RowPolicy to extend, and \u00a715's write paths omit reckon/crew_follow_commands.py, the file that would have to carry the observed set to the policy",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-suite-is-green-at-head.html:94",
+      "id": "done_when-1",
+      "reason": "a \u00a73 node asked to make \"fourteen failing-alone ids\" pass reads the green settle pin as a red it must repair, which \u00a715 forbids; the row must state the family's size (fourteen) separately from its red count (thirteen), as \u00a715 does.",
+      "text": "\u00a73's robustness row requires \"the fourteen follower-family ids must first pass alone\", and the Why at line 70 says the re-run found \"these and twelve more follower-family ids failing alone\", but \u00a715's own cited evidence (the follower-family report and its logs/family-ids.txt) shows the family is 14 ids of which only 13 fail alone: `test_follow_settled_rows.py::test_the_pane_receives_only_the_settled_changes` passes at base and is the hold's own pin, which \u00a715's done-when requires to keep passing",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "3baae0d9f79563bc3c353e16abdda0242123eca4624c74f4a5e3f030476f7b7a",
+  "plan_slug": "the-suite-is-green-at-head",
+  "plan_version": 294,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261013T041103402630-plan-review-of-the-suite-is-green-at-head",
+  "reviewed_blob_sha": "53264c52042132bd44973e818ea847bbacccd7bd",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 commit 089cd7741, the follower-family report, every cited test file, the \u00a73 figures, the \u00a73 attribution report, and each `#node-\u2026`/`#s3-\u2026` evidence anchor resolve (extensionless `s2-pinned-full-suite-at-76ed64992` resolves to the landed-evidence anchor it names).",
+    "done_when": "a finding \u2014 \u00a73's robustness row names the wrong population for the follower family.",
+    "evidence_paths": "pass \u2014 \u00a715's cited report sits at a durable `~/.config/reckon/...` path and \u00a73/\u00a716 gates log under the run directory, none on a session scratchpad or node-local temp.",
+    "naming": "pass \u2014 \u00a715/\u00a716 name mechanisms (RowPolicy, SETTLE_WINDOW, `_is_own_start`) and no plan label, stage name, ticket number or version tag reaches a symbol or comment.",
+    "reasoning": "a finding \u2014 \u00a715's mechanism names an exemption operand the code path does not carry.",
+    "single_goal": "pass \u2014 \u00a715 carries one deliverable (make the follower family pass) under one verdict; \u00a716 carries one; each node's done-when closes on a single measure.",
+    "wiring": "pass \u2014 the in-scope sections declare no depends-on/informs/gates (all data-links empty), and none is missing: \u00a715 consumes the \u00a73 follower-family investigation carried within this plan and \u00a716 is self-contained, so no relationship points at a wrong node."
+  },
+  "section_digests": {
+    "_document": "83bc4eebbeaf35e1f8769b1cefa72ecf8466fb0d23d3dd350bf2e642790b97e5",
+    "s1": "93d7e8eb3f04bb8d9aad0f5ac7d68a9d009b7fe7feaa6f4932738242154d8d4d",
+    "s10": "9633fb928a6c720c8fae74ed3da0a5f7ed555c4230f29ebf2ee89e5432566bb1",
+    "s11": "3e9c94371cc0b22adeb21c71a08fdd16433d8b4c1a22e73cd63d1171332089ba",
+    "s12": "dd8650523d29d87e6fa41408db7d0440cf17dfbd57f0ab6da0d5fcd223692d95",
+    "s13": "7b00f23667f49ba7de16f8823860c86ad35a562eebddf434fd1a6b9f1f5e9993",
+    "s14": "1469c86b5327d2429ce07b9ddd2fbca586d8831acb94119f8a187e315f48dcf7",
+    "s15": "cf13b086d38022dbd9755a72164442874f3940aa95e02ef37d706a2e0bece027",
+    "s16": "4ab9d42bd2e71d070a1cc5393ebea66e1ec71d06dad51f1a82505c91ce309234",
+    "s2": "d8e1d44eab3d041cfa8f08f045885bcf9a783d27f0cb613fe7de2c0476c13887",
+    "s3": "e6cbbca51b83a44a446cee3180c11c6d4e55b81fd1a352b38c9d34f1759166cf",
+    "s4": "e7003c1b5457d6229da28b7d90f825f0e3ef67be2a012291c12a2daf14bf2273",
+    "s5": "934ff53a2b41de523672b7760ab4bbe2e8be5d3da6b580c600383ac0217825a2",
+    "s6": "f303e134582668c776b576622bada8b11c616551d62518da4675a7ac233a379c",
+    "s7": "655ef45aae9c9f31c0c67cb28422cff4a16611cfce488326c298768a23f58efd",
+    "s8": "c78e67e053ac3d61a73df4b965e8209a12ca4d9b745535a102b0b0040cce3adc",
+    "s9": "f4ef4f0dc18779331d3654037d55a7dd1c27d3769bfbfe753867fccbb53f9a28"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T04:28:36.337416+00:00"
+}
