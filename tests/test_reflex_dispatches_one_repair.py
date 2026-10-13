@@ -38,8 +38,6 @@ import pytest
 from reckon import crew, ledger
 from reckon.crew import (
     recovery,
-    recovery_repair_dispatch,
-    recovery_review_dispatch,
     repair,
     resumption,
     runs,
@@ -664,14 +662,27 @@ def test_a_resumed_worker_dispatches_no_repair(
 def test_a_pointer_gone_at_launch_dispatches_nothing(
     isolated_project: tuple[Path, Path, str], monkeypatch
 ) -> None:
-    """A reviewed run whose pointer vanishes before the launch is not repaired."""
+    """A reviewed run whose live pointer has gone is refused, not repaired.
+
+    The pointer is removed through the real ``runs`` API rather than stubbing
+    ``read_pointer`` to ``None``, so the ``CrewError`` that ``runs.read_pointer``
+    raises on a missing pointer is exercised: the reflex must refuse the round
+    and report it, not raise out of the sweep. The reflex is driven directly
+    because a sweep enumerates the live pointers, and a removed one is no longer
+    in that population to be swept. ``_dispatch_direct`` stubs only the launch,
+    so ``calls == []`` confirms no node was dispatched.
+    """
     config_home, repo, head_sha = isolated_project
-    _completed_pointer(config_home, repo)
+    record = _completed_pointer(config_home, repo)
     _store_review(head_sha, FINDINGS)
-    (monkeypatch.setattr(recovery_review_dispatch, "read_pointer", lambda _run_id: None), monkeypatch.setattr(recovery_repair_dispatch, "read_pointer", lambda _run_id: None))
-    calls: list[dict] = []
-    report = _sweep(calls)
-    assert report["reviews"]["repaired"] == []
+    pointer = crew.pointer_path(RUN_ID)
+    assert pointer.exists()
+    pointer.unlink()
+    report, calls = _dispatch_direct(record, monkeypatch)
+
+    assert report["dispatched"] is False
+    assert report.get("refused") is True
+    assert report["reason"] == "the reviewed run's live pointer is gone"
     assert calls == []
 
 
