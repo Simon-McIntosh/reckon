@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon import _plan_html, mcp, roadmap
+from reckon import _plan_html, _store, roadmap
 from reckon.crew import plan_review, recovery, routing
 from reckon.crew.node import PlanReviewMissingError, TaskNode
 from tests.test_review_plan_command import project as project  # noqa: PLC0414
@@ -107,24 +107,28 @@ def _gate(repo):
     )
 
 
-def _collapse(repo, path):
-    result = mcp._edit_plan_tool(
-        "sample",
-        "fixture",
-        checkout_path=str(repo),
-        doc_type="plan",
-        mode="state",
-        expected_version=_plan_html.read_state(path.read_text())["version"],
-        ops=[
-            {
-                "op": "collapse_section",
-                "section": "a",
-                "summary": "Alpha built.",
-                "evidence_anchor": "/sample/evidence/archive/fixture#alpha",
-            }
-        ],
+def _collapse(path):
+    # Land section "a" the way the beat records it: the body becomes a card and
+    # the section's declaration flips to done, as one write carrying the state
+    # the authored text parsed to. Reading the state back from the rewritten
+    # markdown would drop the landed section's record, because a card carries
+    # no checklist row — and the document digest would move with it.
+    original = path.read_text()
+    text = _store._collapse_authored_section(
+        original,
+        {
+            "section": "a",
+            "summary": "Alpha built.",
+            "evidence_anchor": "/sample/evidence/archive/fixture#alpha",
+        },
     )
-    assert result.get("ok"), result
+    state = _plan_html.read_state(original)
+    state["section_declarations"]["a"] = "done"
+    for section in state.get("sections", []):
+        if section.get("id") == "a":
+            section["status"] = "done"
+            break
+    path.write_text(_plan_html.write_state(text, state))
     assert 'class="section-landed"' in path.read_text()
 
 
@@ -132,7 +136,7 @@ def test_collapse_keeps_coverage(section_plan):
     _, repo, path = section_plan
     _review(path)
     assert _gate(repo) is None
-    _collapse(repo, path)
+    _collapse(path)
     assert _gate(repo) is None
 
 
@@ -166,7 +170,7 @@ def test_decision_edit_uncovers_only_the_document(section_plan):
         _gate(repo)
 
 
-@pytest.mark.parametrize("form", [1, 2], ids=["pre-collapse", "whole-document"])
+@pytest.mark.parametrize("form", [0, 1], ids=["section-set", "whole-document"])
 def test_digestless_review_covers_only_an_unchanged_plan(section_plan, form):
     _, repo, path = section_plan
     record = _review(path)
@@ -180,8 +184,8 @@ def test_digestless_review_covers_only_an_unchanged_plan(section_plan, form):
     plan_review.store_plan_review(record)
     # A fingerprint-only record: its snapshot is removed too, so the coverage
     # predicate falls back to the stored digests the record does not carry
-    # rather than recomputing them from the snapshot. What remains is the
-    # whole-document fingerprint, which certifies only an unchanged plan.
+    # rather than recomputing them from the snapshot. What remains is a
+    # plan-level fingerprint, which certifies only an unchanged plan.
     plan_review.review_report_directory(
         "sample", "fixture", _subject(path)["run_id"]
     ).joinpath(plan_review._REVIEW_SNAPSHOT_NAME).unlink()
@@ -203,7 +207,7 @@ def test_unstored_sidecar_is_promoted_before_coverage(section_plan, collapse):
     sidecar = _review(path, store=False)
     assert plan_review.list_plan_reviews("sample") == []
     if collapse:
-        _collapse(repo, path)
+        _collapse(path)
     assert _gate(repo) is None
     records = plan_review.list_plan_reviews("sample")
     assert len(records) == 1
@@ -218,7 +222,7 @@ def test_newest_covering_review_owns_findings(section_plan, collapse):
         path.write_text(path.read_text().replace("Build alpha.", "Extend alpha."))
     _review(path, version=4)
     if collapse:
-        _collapse(repo, path)
+        _collapse(path)
     records, uncovered = _coverage(path)
     assert uncovered == set()
     assert max(record["plan_version"] for record in records) == 4
@@ -227,8 +231,8 @@ def test_newest_covering_review_owns_findings(section_plan, collapse):
 
 @pytest.mark.parametrize("dotted", [False, True])
 def test_outstanding_units_follow_roadmap_declarations(section_plan, dotted):
-    _, repo, path = section_plan
-    _collapse(repo, path)
+    _, _, path = section_plan
+    _collapse(path)
     text = path.read_text()
     if dotted:
         text = text.replace('"b"', '"s5.1"')

@@ -369,9 +369,8 @@ def test_a_metadata_edit_leaves_a_derived_impl_and_the_fingerprint_unchanged() -
 # A landing collapse replaces a section's authored body with a landed card and
 # sets its declaration to done. Neither is authored design, so neither may move
 # the fingerprint, or every landing beat would demand a fresh review of content
-# nobody changed. The collapse path is driven through the MCP plan-editing tool
-# the surface calls, against a synthesised checkout, so the case reads no live
-# plan.
+# nobody changed. The collapse is driven through the store's own card-rendering
+# helper, against a synthesised checkout, so the case reads no live plan.
 
 _COLLAPSE_PROJECT = "sample"
 _COLLAPSE_PLAN = "collapse-demo"
@@ -433,28 +432,26 @@ def _collapse_checkout(tmp_path: Path) -> tuple[Path, Path]:
     return checkout, path
 
 
-def _collapse_through_the_op(checkout: Path, section: str, summary: str) -> dict:
-    """Collapse a section through the plan-editing tool the surface calls."""
-    from reckon import mcp as mcp_module
+def _land_section(checkout: Path, section: str, summary: str) -> None:
+    """Collapse a landed section to its card and declare it done, in one write."""
+    from reckon import _store
 
     path = checkout / "docs" / "plans" / f"{_COLLAPSE_PLAN}.html"
     state = _plan_html.read_state(path.read_text(encoding="utf-8"))
-    return mcp_module._edit_plan_tool(
-        _COLLAPSE_PROJECT,
-        _COLLAPSE_PLAN,
-        expected_version=state["version"],
-        checkout_path=str(checkout),
-        doc_type="plan",
-        mode="state",
-        ops=[
-            {
-                "op": "collapse_section",
-                "section": section,
-                "summary": summary,
-                "evidence_anchor": f"/{_COLLAPSE_PROJECT}/evidence/archive/x#{section}",
-            }
-        ],
+    text = _store._collapse_authored_section(
+        path.read_text(encoding="utf-8"),
+        {
+            "section": section,
+            "summary": summary,
+            "evidence_anchor": f"/{_COLLAPSE_PROJECT}/evidence/archive/x#{section}",
+        },
     )
+    state["section_declarations"][section] = "done"
+    for record in state.get("sections", []):
+        if record.get("id") == section:
+            record["status"] = "done"
+            break
+    path.write_text(_plan_html.write_state(text, state), encoding="utf-8")
 
 
 def test_a_landing_collapse_leaves_the_fingerprint_while_prose_moves_it(
@@ -463,8 +460,7 @@ def test_a_landing_collapse_leaves_the_fingerprint_while_prose_moves_it(
     checkout, path = _collapse_checkout(tmp_path)
     before = module.plan_fingerprint(path)
 
-    result = _collapse_through_the_op(checkout, "s-landed", "Built the thing.")
-    assert result.get("ok") is True, result
+    _land_section(checkout, "s-landed", "Built the thing.")
     collapsed_text = path.read_text(encoding="utf-8")
     # The collapse really landed: a card is present and the declaration is done.
     assert 'class="section-landed"' in collapsed_text
@@ -489,7 +485,7 @@ def test_a_landing_collapse_leaves_the_fingerprint_while_prose_moves_it(
     )
 
 
-def test_a_review_stored_under_the_legacy_digest_still_reads_as_current(
+def test_a_review_stored_under_another_accepted_digest_still_reads_as_current(
     tmp_path: Path,
 ) -> None:
     """A definition change must not orphan a review of unchanged content."""
@@ -497,20 +493,20 @@ def test_a_review_stored_under_the_legacy_digest_still_reads_as_current(
     document = path.read_text(encoding="utf-8")
 
     current = module.plan_fingerprint(document)
-    legacy = module._fingerprint_forms(document)[1]
+    sibling = module._fingerprint_forms(document)[1]
     # The two definitions disagree, or the equality below would be vacuous.
-    assert current != legacy
+    assert current != sibling
 
     # ``_record`` writes under the fixture project, which is where the store
     # keys the file, so the read names the same project.
     module.store_plan_review(
-        _record(slug=_COLLAPSE_PLAN, fingerprint=legacy), base_dir=tmp_path
+        _record(slug=_COLLAPSE_PLAN, fingerprint=sibling), base_dir=tmp_path
     )
     found = module.read_plan_review(
         PROJECT,
         _COLLAPSE_PLAN,
         base_dir=tmp_path,
-        plan_fingerprint={current, legacy},
+        plan_fingerprint={current, sibling},
     )
-    assert found is not None, "a legacy-digest review must read as current"
-    assert found["plan_fingerprint"] == legacy
+    assert found is not None, "a sibling-digest review must read as current"
+    assert found["plan_fingerprint"] == sibling
