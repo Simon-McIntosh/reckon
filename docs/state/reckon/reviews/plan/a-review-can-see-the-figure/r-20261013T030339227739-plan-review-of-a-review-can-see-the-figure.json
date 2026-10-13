@@ -1,0 +1,46 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-13T03:13:16.006Z",
+  "dispatched_at": "2026-10-13T03:04:25Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:215",
+      "id": "reasoning-1",
+      "reason": "\u00a76 must either add the resume/lane-change call sites and a second measure to its mechanism and write paths, or declare resume out of scope, and its own thesis (\"refuses rather than degrades\") cannot hold while a resumed figure review degrades.",
+      "text": "\u00a76 names one dispatch call site (`reckon/crew/dispatch.py:1578`) as where images reach `launch_plan`, but `launch_plan` is also called by `resume_plan` (`reckon/crew/dispatch_sessions.py:1108`) and `change_lane` (`reckon/crew/dispatch_sessions.py:1538`), neither of which passes `images`; a figure-review run that stalls mid-turn and is resumed \u2014 the normal recovery path on this workstation \u2014 composes an argv with no `-i` and the lane answers from the filename and the diff, which is exactly the silent wrong verdict \u00a76 exists to prevent",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "4ac28c5174b8f104f307064dceb99e9522659cf4facea2207def82fac23bd3b7",
+  "plan_slug": "a-review-can-see-the-figure",
+  "plan_version": 14,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261013T030339227739-plan-review-of-a-review-can-see-the-figure",
+  "reviewed_blob_sha": "083d947df384b80d11d8db8a1b076bfeded45c35",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 reckon/crew/node.py (`TaskNode` at :699) and reckon/crew/dispatch.py (the `_backends.launch_plan(` call at :1578) and reckon/crew_dispatch_commands.py all resolve; tests/test_dispatch_attaches_the_figures.py is the section's own new deliverable.",
+    "done_when": "pass \u2014 \u00a76's done-when names a measurable outcome (both `-i` flags in the argv the launcher would run, the clive refusal naming the lane, an added-failure delta against base) and declares a negative control (\"drops the images at the dispatch call, and the two-flag case must then fail\").",
+    "evidence_paths": "pass \u2014 \u00a76's gate is \"logged under the run directory\", a durable per-run path a later reader can open, not a scratchpad.",
+    "naming": "pass \u2014 \u00a76 introduces no plan labels, ticket numbers or version tags into symbols; `images`, `--image PATH` and `declared_input_modalities` name mechanisms.",
+    "reasoning": "a finding \u2014 \u00a76 threads a node's figures through only one of the four production `launch_plan` call sites, leaving the resume and lane-change callers composing an argv with no `images`, so a resumed figure review silently drops its figure.",
+    "single_goal": "pass \u2014 \u00a76 carries one deliverable: a node's figures reach the composed command line (TaskNode.images, the dispatch pass-through, and the `--image` CLI seam that feeds it).",
+    "wiring": "pass \u2014 \u00a76 occupies its declared place between landed \u00a72 and \u00a77/\u00a78 in the sequencing prose (\u00a75 comment \"The order now\", \u00a76 \"\u00a77's delivery probe and \u00a78's evaluation use it\"), and it depends on nothing pending: the codex argv composition it drives landed in \u00a72."
+  },
+  "section_digests": {
+    "_document": "69f7775e01af2e54dd87245e6c262b9f88296c537664b5807e7dcf1a25fbe1e8",
+    "s1": "6f91847c26df4249f7e99f6d661c548de475be73869ba4799469bc0c04801047",
+    "s2": "48353069f5981e05b9d1248e19c4f56817113396a3555a2fe6e05b67a505d3f7",
+    "s3": "f8f9ad248d1ff3713092ca3da6a8795cbcecd4726a79d20dc2f63f64ceff2d87",
+    "s4": "994ed10fbb9803a9ae4914f05275f2373d788b16292a7fefaa8350883803056a",
+    "s5": "52bd0da92f26e42df8184445e6ab07cae636d7072675b3a1900951957b3a077d",
+    "s6": "b30a76e648f44e1a4dc21028e7a7d439727db20adbf380f6c55168199dcf9f33",
+    "s7": "e4673147c5a3a66171bb0892dbe6927ce54eabc205870310627b08054076101a",
+    "s8": "2c200fdd964f328342811e9362e4cd14da60f3c8352368899ccf87797d9e7f5b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T03:23:51.308628+00:00"
+}
