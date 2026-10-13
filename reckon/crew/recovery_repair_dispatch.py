@@ -1,7 +1,6 @@
 # ruff: noqa: I001, UP035
 from __future__ import annotations
 
-import importlib
 import os
 from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping, Sequence
@@ -396,6 +395,22 @@ def _promoted_run_ids(project: str) -> set[str]:
         return set()
 
 
+def _live_pointer_or_absent(run_id: str) -> Mapping[str, Any] | None:
+    """The run's live pointer, or ``None`` when it has gone or cannot be read.
+
+    ``runs.read_pointer`` raises ``CrewError`` for a pointer file that is
+    missing, holds invalid JSON or does not hold an object. Every caller here
+    reads a pointer only to *degrade* on its absence — a gone pointer means the
+    run is settled, not that the sweep should stop — so the raise is turned into
+    ``None`` at one place rather than guarding each read separately.
+    """
+    try:
+        fresh = read_pointer(run_id)
+    except CrewError:
+        return None
+    return fresh if isinstance(fresh, Mapping) else None
+
+
 def _opened_repair_rounds(record: Mapping[str, Any]) -> Mapping[str, Any]:
     """The run-wide record of repair rounds the reflex has opened, or empty.
 
@@ -405,7 +420,7 @@ def _opened_repair_rounds(record: Mapping[str, Any]) -> Mapping[str, Any]:
     that carries no record yet, answers empty, which leaves the round free to
     open — the same direction the other repair guards degrade in.
     """
-    durable = read_pointer(str(record.get("run_id") or "")) or record
+    durable = _live_pointer_or_absent(str(record.get("run_id") or "")) or record
     opened = durable.get(REPAIR_ROUNDS_FIELD)
     return opened if isinstance(opened, Mapping) else {}
 
@@ -448,7 +463,7 @@ def _repair_launch_refusal(run_id: str, project: str) -> str:
     is no live reviewed run to repair; a run the ledger already holds, or one
     whose re-read carries a promoted revision, is settled and skipped too.
     """
-    fresh = read_pointer(run_id)
+    fresh = _live_pointer_or_absent(run_id)
     if fresh is None:
         return "the reviewed run's live pointer is gone"
     if str(fresh.get("promoted_revision") or "").strip():
@@ -527,14 +542,15 @@ def dispatch_repair_for_run(
     resumed is left to its own worker; a round whose findings name only the
     reflex's own record — a manifest, a gate log, a review-store path — cites no
     repository path, so it composes no repair and is recorded decline-only; and
-    the reviewed run's pointer is re-read immediately before the launch so a run
-    promoted in that window is not repaired.
+    the reviewed run's pointer is re-read before the repair is offered, so a run
+    promoted in that window, or one whose pointer has gone, is refused.
 
     An unpromoted reviewed run whose worker has exited is repaired in place: the
     composed findings ride a resume of the reviewed run itself, which already
     holds the worktree and the commit claim a new node could only be refused
-    for. A promoted run, or one whose worker is live or whose live pointer has
-    gone, takes the dispatch path and is settled by its own guards there. The
+    for. A promoted run, or one whose live pointer has gone, is refused rather
+    than dispatched: the reviewed run is settled, so there is no tree left to
+    cut a repair against and the round is reported back with its reason. The
     resume is offered while the run's worker is not live, so a resumed turn that
     ends without answering is retried rather than leaving the round stuck, and
     the attempt count records each retry. The retry is bounded at
@@ -787,7 +803,6 @@ def dispatch_repair_for_run(
             "reason": reason,
         }
 
-    local_lane = str(resolved.get("local_backend") or "").strip()
     owning_lane = str(record.get("backend") or "").strip()
     candidates = _review_lane_candidates(resolved, owning_backend=owning_lane)
     if not candidates:
@@ -808,7 +823,6 @@ def dispatch_repair_for_run(
             "reason": reason,
         }
     backend = candidates[0]
-    on_local_lane = backend == local_lane
 
     # An unpromoted reviewed run whose worker has exited still holds its own
     # worktree and its commit claim, so a repair node over the reviewed run's own
@@ -819,8 +833,7 @@ def dispatch_repair_for_run(
     # and the claim, through the same entry point a hand-typed ``crew resume``
     # uses, and no second node is composed. A run whose worker is live or resumed
     # never reaches here (the busy guard above), and a promoted run or one whose
-    # pointer has gone keeps the dispatch path below, which its launch refusal
-    # settles.
+    # pointer has gone is refused below rather than dispatched.
     #
     # The round is in flight only while that worker is live: the busy guard above
     # returns for a live worker, so reaching this point means the resumed turn has
@@ -957,28 +970,17 @@ def dispatch_repair_for_run(
             "resumed_turn": resumed.get("turn"),
         }
 
-    dispatch_module = importlib.import_module("reckon.crew.dispatch")
-    from reckon.crew.dispatch import BudgetHold, LanePaused
-    from reckon.crew.node import TaskNode
-
-    node = TaskNode(
-        id=node_id,
-        goal=str(composed["goal"]),
-        plan=str(composed["plan"]),
-        section=str(composed["section"]),
-        role=str(composed["role"]),
-        spec_level=str(composed["spec_level"]),
-        done_when=str(composed["done_when"]),
-        write_paths=list(scope),
-        time_budget=str(composed["time_budget"]),
-        negative_control=str(composed.get("negative_control") or ""),
-    )
-    # The re-read is the last thing before the launch: the composition and the
-    # lane resolution above take time, and a coordinator may promote the
-    # reviewed run in that window. A run promoted here is settled, and a repair
-    # composed against it would rewrite a record its owner has landed.
+    # The split above offered the resume, so reaching here means the refusal was
+    # truthy: the reviewed run is promoted, or its live pointer has gone. Either
+    # way there is no unpromoted tree to cut a repair against, so the round is
+    # refused and reported rather than dispatched. The refusal is read once more
+    # because the lane resolution above takes time and a coordinator may promote
+    # the reviewed run in that window, and both reads yield the same reason.
     launch_refusal = _repair_launch_refusal(run_id, project)
-    if launch_refusal:
+    # A gone pointer has no run to record against, and the write path re-reads
+    # the pointer under its lock, so recording only when one is still live keeps
+    # the gone-pointer case from raising out of the reflex.
+    if _live_pointer_or_absent(run_id) is not None:
         _record_repair_dispatch(
             run_id,
             status="refused",
@@ -987,123 +989,11 @@ def dispatch_repair_for_run(
             node_id=node_id,
             backend=backend,
         )
-        return {
-            "run_id": run_id,
-            "dispatched": False,
-            "refused": True,
-            "reason": launch_refusal,
-        }
-    # The repair carries the reviewed run's suite command so its own review,
-    # reading the pair of suite observations the repair's manifest records,
-    # measures added failures against the same suite the reviewed run was
-    # measured with. dispatch stamps the command it records on a run's pointer
-    # from ``config.gates.suite_command``, so the inherited command rides the
-    # config handed to the launch rather than editing the resolved config the
-    # lane above already read.
-    repair_config = _config_carrying_suite(resolved, inherited_suite)
-    try:
-        launched = dispatch_module.dispatch(
-            node=node,
-            project=project,
-            repo=repo,
-            config=repair_config,
-            session=str(composed["session"]),
-            # Cut the repair's worktree at the head the review read, so the
-            # reviewed head is an ancestor of the repair's tree. The reviewed
-            # run is unpromoted here — the launch refusal above settles any
-            # promoted one — so the base is always the reviewed head.
-            base=reviewed_head or "HEAD",
-            launcher=launcher,
-            watch_required=True,
-            local=on_local_lane,
-            backend_override=None if on_local_lane else backend,
-            unreconciled_override=True,
-        )
-    except BudgetHold as exc:
-        reason = f"the {backend} lane is unavailable: {exc}"
-        _record_repair_dispatch(
-            run_id,
-            status="awaiting-lane",
-            reason=reason,
-            round_id=round_id,
-            node_id=node_id,
-            backend=backend,
-        )
-        return {
-            "run_id": run_id,
-            "dispatched": False,
-            "awaiting_lane": True,
-            "backend": backend,
-            "lane": getattr(exc, "verdict", None),
-            "reason": reason,
-        }
-    except LanePaused as exc:
-        # The lane gate holds the repair exactly as it holds any other dispatch.
-        # The round has not opened, so a later sweep composes the same repair
-        # once the gate opens rather than reading this as a refusal of it.
-        gate = dict(exc.gate)
-        reason = (
-            str(gate.get("detail") or "").strip()
-            or str(gate.get("reason") or "").strip()
-            or f"the {backend} lane gate is {gate.get('state')!r}"
-        )
-        _record_repair_dispatch(
-            run_id,
-            status="lane-paused",
-            reason=reason,
-            round_id=round_id,
-            node_id=node_id,
-            backend=backend,
-        )
-        return {
-            "run_id": run_id,
-            "dispatched": False,
-            "error": "lane-paused",
-            "backend": backend,
-            "lane_gate": gate,
-            "reason": reason,
-        }
-    except CrewError as exc:
-        # Scope, member, follower, context-fit, plan visibility and competence
-        # refusals all arrive here. The automatic path must not be the one place
-        # they are skipped, so the refusal is recorded and reported rather than
-        # caught and shrugged off.
-        _record_repair_dispatch(
-            run_id,
-            status="refused",
-            reason=str(exc),
-            round_id=round_id,
-            node_id=node_id,
-            backend=backend,
-        )
-        return {
-            "run_id": run_id,
-            "dispatched": False,
-            "refused": True,
-            "backend": backend,
-            "reason": str(exc),
-        }
-
-    repair_run_id = str(launched.get("run_id") or "")
-    _record_repair_dispatch(
-        run_id,
-        status="dispatched",
-        reason=f"the repair dispatched automatically as run {repair_run_id}",
-        round_id=round_id,
-        node_id=node_id,
-        repair_run_id=repair_run_id,
-        backend=backend,
-    )
     return {
         "run_id": run_id,
-        "dispatched": True,
-        "backend": backend,
-        "repair_run_id": repair_run_id,
-        "node_id": node_id,
-        "round_id": round_id,
-        "goal": str(composed["goal"]),
-        "write_paths": list(scope),
-        "reason": f"dispatched the composed repair as run {repair_run_id}",
+        "dispatched": False,
+        "refused": True,
+        "reason": launch_refusal,
     }
 
 
