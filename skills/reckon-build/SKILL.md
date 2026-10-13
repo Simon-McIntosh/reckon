@@ -462,9 +462,11 @@ frees.
   with `queue-full` at exit 75 and writes nothing; add more as your own runs
   launch.
 - **Timing.** Never poll `lane.json` to decide when to dispatch.
-- **The hold that does not queue yet.** A picker hold (exit 3) is not queued.
-  Re-dispatch it when one of your own runs completes. A composed review queues
-  with its brief kept.
+- **Picker holds.** When Jev holds a node and the local lane was among its
+  offered candidates, the node continues on local and launches or queues. A
+  composed review also queues, with its brief kept. Only a hold that offered no
+  local candidate still exits 3 (`budget-hold`). Re-dispatch it when one of
+  your own runs completes.
 
 #### The pace hold, its reserves and `releases_at`
 
