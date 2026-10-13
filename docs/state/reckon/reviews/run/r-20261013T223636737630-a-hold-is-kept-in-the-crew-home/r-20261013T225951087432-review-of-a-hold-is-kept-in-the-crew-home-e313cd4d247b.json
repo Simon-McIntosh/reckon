@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch.py:872",
+    "reckon/crew/dispatch.py:1173",
+    "reckon/crew_dispatch_commands.py:726",
+    "reckon/crew/picker/outcomes.py:650"
+  ],
+  "completed_at": "2026-10-13T23:12:45.313Z",
+  "dispatched_at": "2026-10-13T23:00:19Z",
+  "findings": [
+    {
+      "file": "reckon/crew/picker/outcomes.py",
+      "line": "230",
+      "severity": "follow-on",
+      "text": "follow-on: record_picker_hold still declares `docs: Path` but no longer reads it anywhere in its body \u2014 the write path is now _hold_path(project) and the payload _write_hold_payload(path.parent, ...) \u2014 so the parameter is dead and misleads a caller into thinking the hold location still depends on it. Both call sites (reckon/crew/dispatch.py:870 and :1171) still pass docs=. Removing the parameter is an API change the reviewed node did not own; it should be dropped or documented as unused, not left silent."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "git show --stat 6ab7c925..e313cd4d reads one commit e313cd4d2 over six files: reckon/crew/picker/outcomes.py moves the log to crew_home()/picker-holds/<project>/ and stamps each row with its source directory; tests/test_a_hold_is_kept_in_the_crew_home.py is the new gate; the three existing reader tests read the crew-home log; and a 38-line evidence fragment is added. No other production module is touched.",
+    "done_when": "the done_when names tests/test_a_hold_is_kept_in_the_crew_home.py, which records a small inline hold and one over HOLD_PAYLOAD_INLINE_LIMIT so _write_hold_payload writes a payload; it asserts both rows land under the crew-home log (tests/test_a_hold_is_kept_in_the_crew_home.py:125), nothing under docs (:130), the payload beside the log (:128), replay_hold rebuilding the large request (:131-134), a legacy docs-side hold replaying from its own directory (:143-147), and a merged reader returning both (:159-171). The manifest records the head arm 48 passed EXIT=0 (gate-head.log) and the base arm 3 failed 45 passed EXIT=1 (negative-control-base.log).",
+    "goal": "the node's goal is to write picker hold records under the crew home instead of each project's checkout while keeping legacy holds readable and replayable; reckon/crew/picker/outcomes.py:205 now returns crew_home()/picker-holds/<project>/picker-holds.jsonl, :321 reads that log and any legacy docs-side log, and :108 resolves a row's payload_ref against the log it was dispatched to.",
+    "manifest": "read; it records status complete, changed_paths matching the diff, the gate command with its head result 48 passed EXIT=0 and base arm 3 failed 45 passed EXIT=1, both log paths, and a negative_control_note quoting the [] == ['small','large'] failure; its baseline_suite and after_suite JSON carry the failure ids the record's added-failure pair is derived from.",
+    "write_paths": "the declared scope is reckon/crew/picker/outcomes.py, tests/test_a_hold_is_kept_in_the_crew_home.py, tests/test_hold_records_its_state.py, tests/test_picker_outcomes.py, tests/test_a_jev_hold_queues_for_the_local_lane.py, and the lane-and-model-routing evidence fragment and figures directory; git show --stat 6ab7c925..e313cd4d lists exactly the source file, the four tests and the fragment, every one inside the declaration and nothing outside it."
+  },
+  "justifications": {
+    "durability": "reverting the move reddens the gate: the recorded base arm fails tests/test_a_hold_is_kept_in_the_crew_home.py:125 with [] == ['small','large'] because the base writes under docs, and tests/test_a_hold_is_kept_in_the_crew_home.py:170 would resolve a legacy row's payload_ref against the crew home instead of the stamped legacy directory and error, so the stamping too is guarded.",
+    "evidence": "the done_when's gate is tests/test_a_hold_is_kept_in_the_crew_home.py plus all eight files importing picker.outcomes, run with pytest -n 10; gate-head.log records 48 passed EXIT=0 and negative-control-base.log records 3 failed 45 passed EXIT=1, and the base arm was run in a /tmp scratch tree at the base revision rather than in place, a recorded deviation from the done_when's wording.",
+    "fit": "the module follows its own existing idiom \u2014 crew_home() is imported from reckon.crew.runs and the log sits beside the picks' crew-home timing log (reckon/crew/picker/__init__.py:72) \u2014 but record_picker_hold's now-unused docs parameter (reckon/crew/picker/outcomes.py:230) is left in place.",
+    "goal_fidelity": "reckon/crew/picker/outcomes.py:246 routes record_picker_hold through _hold_path(project) under crew_home(), so no file is created under docs, and :321 reads both the crew-home and the legacy docs-side log with :108 resolving each row's payload against its stamped origin, so a legacy hold still replays.",
+    "reuse": "the diff adds no second owner: crew_home() is imported from reckon.crew.runs (the existing owner), _hold_path keeps ownership of the hold location it already had, and the added _read_hold_log/_legacy_hold_path/_row_log_dir are private helpers over the same store; a search of reckon/ for another project-keyed crew-home hold log found only this module.",
+    "scope_discipline": "git show --stat 6ab7c925..e313cd4d lists reckon/crew/picker/outcomes.py, the four tests and the evidence fragment, all inside the declared write_paths and nothing else, with the declared figures directory simply unused."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to write picker hold records under the crew home instead of each project's checkout while keeping legacy holds readable and replayable; reckon/crew/picker/outcomes.py:205 now returns crew_home()/picker-holds/<project>/picker-holds.jsonl, :321 reads that log and any legacy docs-side log, and :108 resolves a row's payload_ref against the log it was dispatched to.\nVERDICT done_when: the done_when names tests/test_a_hold_is_kept_in_the_crew_home.py, which records a small inline hold and one over HOLD_PAYLOAD_INLINE_LIMIT so _write_hold_payload writes a payload; it asserts both rows land under the crew-home log (tests/test_a_hold_is_kept_in_the_crew_home.py:125), nothing under docs (:130), the payload beside the log (:128), replay_hold rebuilding the large request (:131-134), a legacy docs-side hold replaying from its own directory (:143-147), and a merged reader returning both (:159-171). The manifest records the head arm 48 passed EXIT=0 (gate-head.log) and the base arm 3 failed 45 passed EXIT=1 (negative-control-base.log).\nVERDICT write_paths: the declared scope is reckon/crew/picker/outcomes.py, tests/test_a_hold_is_kept_in_the_crew_home.py, tests/test_hold_records_its_state.py, tests/test_picker_outcomes.py, tests/test_a_jev_hold_queues_for_the_local_lane.py, and the lane-and-model-routing evidence fragment and figures directory; git show --stat 6ab7c925..e313cd4d lists exactly the source file, the four tests and the fragment, every one inside the declaration and nothing outside it.\nVERDICT manifest: read; it records status complete, changed_paths matching the diff, the gate command with its head result 48 passed EXIT=0 and base arm 3 failed 45 passed EXIT=1, both log paths, and a negative_control_note quoting the [] == ['small','large'] failure; its baseline_suite and after_suite JSON carry the failure ids the record's added-failure pair is derived from.\nVERDICT diff: git show --stat 6ab7c925..e313cd4d reads one commit e313cd4d2 over six files: reckon/crew/picker/outcomes.py moves the log to crew_home()/picker-holds/<project>/ and stamps each row with its source directory; tests/test_a_hold_is_kept_in_the_crew_home.py is the new gate; the three existing reader tests read the crew-home log; and a 38-line evidence fragment is added. No other production module is touched.\nCALL_SITES: reckon/crew/dispatch.py:872, reckon/crew/dispatch.py:1173, reckon/crew_dispatch_commands.py:726, reckon/crew/picker/outcomes.py:650\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/picker/outcomes.py:246 routes record_picker_hold through _hold_path(project) under crew_home(), so no file is created under docs, and :321 reads both the crew-home and the legacy docs-side log with :108 resolving each row's payload against its stamped origin, so a legacy hold still replays.\nSCORE evidence: 19\nJUSTIFICATION evidence: the done_when's gate is tests/test_a_hold_is_kept_in_the_crew_home.py plus all eight files importing picker.outcomes, run with pytest -n 10; gate-head.log records 48 passed EXIT=0 and negative-control-base.log records 3 failed 45 passed EXIT=1, and the base arm was run in a /tmp scratch tree at the base revision rather than in place, a recorded deviation from the done_when's wording.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat 6ab7c925..e313cd4d lists reckon/crew/picker/outcomes.py, the four tests and the evidence fragment, all inside the declared write_paths and nothing else, with the declared figures directory simply unused.\nSCORE durability: 19\nJUSTIFICATION durability: reverting the move reddens the gate: the recorded base arm fails tests/test_a_hold_is_kept_in_the_crew_home.py:125 with [] == ['small','large'] because the base writes under docs, and tests/test_a_hold_is_kept_in_the_crew_home.py:170 would resolve a legacy row's payload_ref against the crew home instead of the stamped legacy directory and error, so the stamping too is guarded.\nSCORE fit: 17\nJUSTIFICATION fit: the module follows its own existing idiom \u2014 crew_home() is imported from reckon.crew.runs and the log sits beside the picks' crew-home timing log (reckon/crew/picker/__init__.py:72) \u2014 but record_picker_hold's now-unused docs parameter (reckon/crew/picker/outcomes.py:230) is left in place.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no second owner: crew_home() is imported from reckon.crew.runs (the existing owner), _hold_path keeps ownership of the hold location it already had, and the added _read_hold_log/_legacy_hold_path/_row_log_dir are private helpers over the same store; a search of reckon/ for another project-keyed crew-home hold log found only this module.\nFINDING reckon/crew/picker/outcomes.py:230 follow-on: record_picker_hold still declares `docs: Path` but no longer reads it anywhere in its body \u2014 the write path is now _hold_path(project) and the payload _write_hold_payload(path.parent, ...) \u2014 so the parameter is dead and misleads a caller into thinking the hold location still depends on it. Both call sites (reckon/crew/dispatch.py:870 and :1171) still pass docs=. Removing the parameter is an API change the reviewed node did not own; it should be dropped or documented as unused, not left silent.",
+  "review_run_id": "r-20261013T225951087432-review-of-a-hold-is-kept-in-the-crew-home-e313cd4d247b",
+  "reviewed_base_sha": "6ab7c925a2d5aa50100801f26136144992797964",
+  "reviewed_head_sha": "e313cd4d247b89fa3a7cc162bd586c737064ad63",
+  "reviewed_run_id": "r-20261013T223636737630-a-hold-is-kept-in-the-crew-home",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 17,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T23:05:00+00:00",
+  "total": 115
+}

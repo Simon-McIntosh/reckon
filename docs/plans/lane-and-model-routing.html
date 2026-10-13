@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-north-star" content="unattended-execution">
 <meta name="plan-impl" content="0.8823529411764706">
-<meta name="plan-version" content="141">
+<meta name="plan-version" content="142">
 <meta name="plan-modified" content="2026-10-14">
 </head>
 <body>
@@ -468,6 +468,9 @@
 </div>
 <div class="r-comment" data-section="s26" data-id="c-s26-pinned-tests" data-who="" data-when="2026-10-14">
     <div class="r-comment-body"><p>Owed before §26 dispatches (content review <code>r-20261013T215720049672</code>). Three existing tests write through <code>record_picker_hold</code> and then read <code>docs/state/&lt;project&gt;/picker-holds.jsonl</code> directly: <code>tests/test_hold_records_its_state.py</code> (<code>_hold_rows</code>), <code>tests/test_picker_outcomes.py</code> (<code>test_hold_record_is_durable_and_finds_later_run</code>) and <code>tests/test_a_jev_hold_queues_for_the_local_lane.py</code>. Add all three to the write paths, and have them read the hold where the code now writes it. Otherwise the node cannot keep its no-added-failure clause.</p></div>
+</div>
+<div class="r-comment" data-section="s26" data-id="c-run-r-20261013T225951087432-review-of-a-hold-is-kept-in-the-crew-home-e313cd4d247b" data-who="reckon-build" data-when="2026-10-13T23:12:45.313Z">
+    <div class="r-comment-body"><p>the review of r-20261013T223636737630-a-hold-is-kept-in-the-crew-home is stored at /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261013T223636737630-a-hold-is-kept-in-the-crew-home.json with its revision-keyed copy at .at-e313cd4d247b89fa3a7cc162bd586c737064ad63.json; parsed status parsed, total 115 over all 6 dimensions, one follow-on finding</p></div>
 </div>
 <div class="r-comment" data-section="s17" data-id="c-s17-ambiguous-model" data-who="" data-when="2026-10-13">
     <div class="r-comment-body"><p>Owed before §17 dispatches (from §14's review, run <code>r-20261013T180426574495</code>). <code>_lane_declaring_model</code> returns <code>None</code> when more than one lane declares the model, so a model declared by two lanes but asked for under a third still gets the unknown-name message §14 removed. §17 already refuses by naming lanes and models; have it name every lane that declares the model.</p></div>
