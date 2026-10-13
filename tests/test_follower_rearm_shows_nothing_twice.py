@@ -424,7 +424,7 @@ def test_a_pipe_rearm_with_nothing_new_draws_the_fleet(home, follow_lines) -> No
     rows = _fleet_rows(follow_lines)
     assert len(rows) == 1, f"a re-arm draws its one live run exactly once; got {rows!r}"
     assert "node-a" in rows[0], rows[0]
-    assert "unpromoted" in rows[0], rows[0]
+    assert "delivered" in rows[0], rows[0]
 
 
 # ── Case 2: a non-TTY re-arm delivers exactly the new transitions ───────────
@@ -673,7 +673,7 @@ def test_a_flapping_run_discarded_before_the_stop_is_not_re_emitted(
         _discard_pointer(RUN_C)
         crew.list_live(project=PROJECT)
         _run_follow(follow_lines)
-        assert [line for line in follow_lines if "withdrawn" in line], (
+        assert [line for line in follow_lines if "dropped" in line], (
             f"the withdrawal is drawn before the stop: {follow_lines!r}"
         )
         follow_lines.clear()

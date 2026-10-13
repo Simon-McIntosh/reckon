@@ -2128,7 +2128,14 @@ def _seed_ticker_memory(grid, states) -> None:
     """
     if not states:
         return
-    grid._reported.update({str(key): str(value) for key, value in dict(states).items()})
+    from reckon.crew import ticker as ticker_module
+
+    grid._reported.update(
+        {
+            str(key): ticker_module._remembered_word(value)
+            for key, value in dict(states).items()
+        }
+    )
 
 
 

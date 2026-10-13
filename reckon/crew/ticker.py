@@ -925,6 +925,27 @@ def _display_state(state: Any) -> str:
     )
 
 
+def _remembered_word(state: Any) -> str:
+    """The pane word for a state a grid's memory is seeded with.
+
+    A grid remembers the state it last put on a run's row and reads the next
+    row's left word straight from that memory, without mapping it. The follower
+    seeds that memory on attach and reload from a remembered map merged out of a
+    checkpoint and stored history, so the memory can hold a producer state
+    rather than a pane word. It is mapped here, where the memory is taken in, so
+    a run live across a re-arm shows its pane word on the left.
+
+    A state that is already one of the seven words maps to itself. Four of the
+    words — ``delivered``, ``halted``, ``landed`` and ``dropped`` — are not also
+    internal states, so ``_display_state`` blanks them; the identity is therefore
+    taken first rather than falling through to the blank.
+    """
+    spelled = str(state or "")
+    if spelled in PANE_STATES:
+        return spelled
+    return _display_state(spelled)
+
+
 def _state_hue(theme: str, word: str) -> Any:
     """The hue of the pane's state word, or dim for a non-state marker."""
     return DISPLAY_HUE[theme].get(word, "dim")
