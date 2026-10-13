@@ -1,0 +1,80 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite or after_suite, so there is no base arm to derive an added-failure count from",
+  "base_log_revision": null,
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1073",
+    "reckon/crew/queue_admission.py:557",
+    "reckon/crew/queue_admission.py:606",
+    "reckon/crew/queue_admission.py:635",
+    "reckon/crew_dispatch_commands.py:1661-1690"
+  ],
+  "commits_read": [
+    "591428de76bdc33687d58801cd59e12f76b57141",
+    "2bcd7b9f8af764435a4096f777feb85535dc9b2a"
+  ],
+  "completed_at": "2026-10-13T15:56:53.777Z",
+  "dispatched_at": "2026-10-13T15:23:42Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T133003538509-a-node-is-queued-once/gate.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: gate.log names revision 591428de7 in its header while the reviewed head is 2bcd7b9f8, and sweep.log and negative-control.log name the same earlier revision, so no recorded gate log names the head commit that carries the CLI repair and the rewritten assertions \u2014 a reader cannot tie the recorded result to the code being promoted, even though this review's own gate.log (in the review run directory) re-runs the file with EXIT=0."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T133003538509-a-node-is-queued-once/manifest.md",
+      "line": "11",
+      "severity": "follow-on",
+      "text": "follow-on: the tests: field carries the literal \"<worktree>\" placeholder in place of the directory the gate ran in, so the manifest's own gate command is not reproducible as written; gate.log holds the literal command."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T133003538509-a-node-is-queued-once/status-repair.json",
+      "line": "5",
+      "severity": "follow-on",
+      "text": "follow-on: the blocked reason cites test_explicit_member_still_refuses_a_live_second_dispatch regressing to a LaneHeld where MemberInFlight was expected, but that test passes at the reviewed head 2bcd7b9f8 when re-run (1 passed), so the recorded reason does not reproduce at this revision and reads as either a merged-head or stale observation."
+    }
+  ],
+  "head_log_revision": "591428de7",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read both commits against base 63a7f6d8 \u2014 591428de7 adds existing_node_run, write_handover/clear_handover/list_handovers/sweep_handovers (reckon/crew/runs.py:367-490) and the dispatch existing-node check (reckon/crew/dispatch.py:1073-1104); 2bcd7b9f8 repairs the CLI LaneHeld branch (reckon/crew_dispatch_commands.py:1661-1690) and the two handover/working assertions, all inside the declared scope.",
+    "done_when": "the reviewed node's FENCE \u2014 EVIDENCE names tests/test_a_node_is_queued_once.py covering the five cases with an EXIT=0 log; gate.log carries 24 passed EXIT=0 and this review re-ran the file with EXIT=0, but the log header names revision 591428de7 rather than the head 2bcd7b9f8.",
+    "goal": "the node goal (prompt.txt:30, \"a node is queued at most once per session while any run of it is queued, being admitted or in flight\") is delivered \u2014 reckon/crew/dispatch.py:1073 answers an existing run of the node before the scope check and writes no second pointer, and the CLI at reckon/crew_dispatch_commands.py:1672-1686 reports the run's phase so an admitted or working run is not reported as a fresh queueing.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T133003538509-a-node-is-queued-once/manifest.md as of 15:26:37Z \u2014 status blocked via status-repair.json, commits 591428de7 and 2bcd7b9f8, recording the three-file gate 24 passed and a 15-file sweep 109 passed, naming gate.log, sweep.log and negative-control.log, but carrying no baseline_suite or after_suite and a tests: line with an unsubstituted <worktree> placeholder.",
+    "write_paths": "the reviewed node's FENCE \u2014 SCOPE lists reckon/crew/runs.py, reckon/crew/queue_admission.py, reckon/crew/dispatch.py, tests/test_a_node_is_queued_once.py and docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/a-node-is-queued-once.html, widened by the resume advice to reckon/crew_dispatch_commands.py; git diff 63a7f6d8..2bcd7b9f8 touches exactly those six paths."
+  },
+  "justifications": {
+    "durability": "the five cases are pinned at tests/test_a_node_is_queued_once.py:164-299 and the head assertions :176-179 and :210-213 (queued False, phase, exact detail) redden if the CLI misreport is reinstated, as negative-control.log shows for the handover pair.",
+    "evidence": "gate.log records 24 passed EXIT=0; this review's own gate.log (in this run's directory) re-runs tests/test_a_node_is_queued_once.py and shows EXIT=0, its header noting the committed head carries 7 cases while the working tree carried the reviewed run's uncommitted in-flight changes for 8, but the reviewed gate.log, sweep.log and negative-control.log all header revision 591428de7 while the reviewed head is 2bcd7b9f8, and the manifest carries no baseline_suite or after_suite.",
+    "fit": "the additions follow the surrounding idiom of reckon/crew/runs.py:367-490 and reckon/crew/dispatch.py:226-300 and introduce no name the repository naming rules forbid.",
+    "goal_fidelity": "the goal is delivered at reckon/crew/dispatch.py:1073-1104 (an existing run is answered before the scope check, writing no second pointer) and the CLI reports the phase at reckon/crew_dispatch_commands.py:1672-1686, so a queued, admitted or working run is each named with its id and phase.",
+    "reuse": "reckon/crew/runs.py:375 extracts _node_identity, reused by queue_dispatch and existing_node_run, and no existing owner provides a record naming a run for a node during its pointer gap (handover references elsewhere are an unrelated launch-pipe handover at dispatch_launch.py:423 and a manifest handover at recovery_liveness.py:823).",
+    "scope_discipline": "git diff 63a7f6d8..2bcd7b9f8 touches exactly the six paths the node's FENCE \u2014 SCOPE plus the resume advice's widening to reckon/crew_dispatch_commands.py, and nothing else."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal (prompt.txt:30, \"a node is queued at most once per session while any run of it is queued, being admitted or in flight\") is delivered \u2014 reckon/crew/dispatch.py:1073 answers an existing run of the node before the scope check and writes no second pointer, and the CLI at reckon/crew_dispatch_commands.py:1672-1686 reports the run's phase so an admitted or working run is not reported as a fresh queueing.\nVERDICT done_when: the reviewed node's FENCE \u2014 EVIDENCE names tests/test_a_node_is_queued_once.py covering the five cases with an EXIT=0 log; gate.log carries 24 passed EXIT=0 and this review re-ran the file with EXIT=0, but the log header names revision 591428de7 rather than the head 2bcd7b9f8.\nVERDICT write_paths: the reviewed node's FENCE \u2014 SCOPE lists reckon/crew/runs.py, reckon/crew/queue_admission.py, reckon/crew/dispatch.py, tests/test_a_node_is_queued_once.py and docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/a-node-is-queued-once.html, widened by the resume advice to reckon/crew_dispatch_commands.py; git diff 63a7f6d8..2bcd7b9f8 touches exactly those six paths.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T133003538509-a-node-is-queued-once/manifest.md as of 15:26:37Z \u2014 status blocked via status-repair.json, commits 591428de7 and 2bcd7b9f8, recording the three-file gate 24 passed and a 15-file sweep 109 passed, naming gate.log, sweep.log and negative-control.log, but carrying no baseline_suite or after_suite and a tests: line with an unsubstituted <worktree> placeholder.\nVERDICT diff: read both commits against base 63a7f6d8 \u2014 591428de7 adds existing_node_run, write_handover/clear_handover/list_handovers/sweep_handovers (reckon/crew/runs.py:367-490) and the dispatch existing-node check (reckon/crew/dispatch.py:1073-1104); 2bcd7b9f8 repairs the CLI LaneHeld branch (reckon/crew_dispatch_commands.py:1661-1690) and the two handover/working assertions, all inside the declared scope.\nCALL_SITES: reckon/crew/dispatch.py:1073, reckon/crew/queue_admission.py:557, reckon/crew/queue_admission.py:606, reckon/crew/queue_admission.py:635, reckon/crew_dispatch_commands.py:1661-1690\nSCORE goal_fidelity: 18\nSCORE evidence: 13\nSCORE scope_discipline: 19\nSCORE durability: 18\nSCORE fit: 18\nSCORE reuse: 19\nJUSTIFICATION goal_fidelity: the goal is delivered at reckon/crew/dispatch.py:1073-1104 (an existing run is answered before the scope check, writing no second pointer) and the CLI reports the phase at reckon/crew_dispatch_commands.py:1672-1686, so a queued, admitted or working run is each named with its id and phase.\nJUSTIFICATION evidence: gate.log records 24 passed EXIT=0; this review's own gate.log (in this run's directory) re-runs tests/test_a_node_is_queued_once.py and shows EXIT=0, its header noting the committed head carries 7 cases while the working tree carried the reviewed run's uncommitted in-flight changes for 8, but the reviewed gate.log, sweep.log and negative-control.log all header revision 591428de7 while the reviewed head is 2bcd7b9f8, and the manifest carries no baseline_suite or after_suite.\nJUSTIFICATION scope_discipline: git diff 63a7f6d8..2bcd7b9f8 touches exactly the six paths the node's FENCE \u2014 SCOPE plus the resume advice's widening to reckon/crew_dispatch_commands.py, and nothing else.\nJUSTIFICATION durability: the five cases are pinned at tests/test_a_node_is_queued_once.py:164-299 and the head assertions :176-179 and :210-213 (queued False, phase, exact detail) redden if the CLI misreport is reinstated, as negative-control.log shows for the handover pair.\nJUSTIFICATION fit: the additions follow the surrounding idiom of reckon/crew/runs.py:367-490 and reckon/crew/dispatch.py:226-300 and introduce no name the repository naming rules forbid.\nJUSTIFICATION reuse: reckon/crew/runs.py:375 extracts _node_identity, reused by queue_dispatch and existing_node_run, and no existing owner provides a record naming a run for a node during its pointer gap (handover references elsewhere are an unrelated launch-pipe handover at dispatch_launch.py:423 and a manifest handover at recovery_liveness.py:823).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T133003538509-a-node-is-queued-once/gate.log:1 follow-on: gate.log names revision 591428de7 in its header while the reviewed head is 2bcd7b9f8, and sweep.log and negative-control.log name the same earlier revision, so no recorded gate log names the head commit that carries the CLI repair and the rewritten assertions \u2014 a reader cannot tie the recorded result to the code being promoted, even though this review's own gate.log (in the review run directory) re-runs the file with EXIT=0.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T133003538509-a-node-is-queued-once/manifest.md:11 follow-on: the tests: field carries the literal \"<worktree>\" placeholder in place of the directory the gate ran in, so the manifest's own gate command is not reproducible as written; gate.log holds the literal command.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T133003538509-a-node-is-queued-once/status-repair.json:5 follow-on: the blocked reason cites test_explicit_member_still_refuses_a_live_second_dispatch regressing to a LaneHeld where MemberInFlight was expected, but that test passes at the reviewed head 2bcd7b9f8 when re-run (1 passed), so the recorded reason does not reproduce at this revision and reads as either a merged-head or stale observation.\n",
+  "review_run_id": "r-20261013T152302907654-review-of-a-node-is-queued-once-2bcd7b9f8af7",
+  "reviewed_base_sha": "63a7f6d8d2f2901083cb54370b317b2963a04cb5",
+  "reviewed_head_sha": "2bcd7b9f8af764435a4096f777feb85535dc9b2a",
+  "reviewed_run_id": "r-20261013T133003538509-a-node-is-queued-once",
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "subject": "node",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T15:44:00.000000+00:00",
+  "total": 105
+}
