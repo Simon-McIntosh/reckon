@@ -256,34 +256,79 @@ def _dependency_guard(
     """The things a queued request depends on, fingerprinted at failure time.
 
     The request is retried without waiting out its back-off the moment any of
-    these changes: its brief file, its plan document, or the lane configuration
-    that resolved for it. Only their stamps are kept, so the guard is a
-    comparison rather than a copy of the request.
+    these changes: its brief file, its plan document, or the flight
+    configuration that resolved its backend. Only their stamps are kept, so the
+    guard is a comparison rather than a copy of the request.
+
+    The lane document the router publishes is deliberately not watched: it is
+    republished every few seconds, so its stamp moves constantly and would
+    retry a request that can never launch at the publication cadence. The
+    flight config layers change only when an operator changes the routing, so
+    they are the honest dependency.
     """
     node = dict(pointer.get("node") or {})
     repo = str(pointer.get("repo") or "")
+    project = str(pointer.get("project") or "")
     plan = str(node.get("plan") or "")
     brief = str(node.get("brief_path") or "")
     plan_path = (
         str(Path(repo) / "docs" / "plans" / f"{plan}.html") if repo and plan else ""
     )
-    lane_doc = ""
+    host_config = ""
+    project_config = ""
     try:
-        config = (
-            config_for(pointer)
-            if config_for is not None
-            else _resolve_lane_config(pointer)
-        )
-        backend = (config.get("backends") or {}).get(str(pointer.get("backend") or ""))
-        if isinstance(backend, Mapping):
-            lane_doc = str(backend.get("lane_document") or "")
-    except Exception:  # noqa: BLE001 - an unresolvable lane config is simply not a dependency the guard can watch
-        lane_doc = ""
+        from reckon import flight
+
+        host_config = str(flight.host_config_path())
+        if repo:
+            project_config = str(flight.project_config_path(project, repo))
+    except Exception:  # noqa: BLE001 - an unresolvable flight path is simply not a dependency the guard can watch
+        host_config = host_config or ""
+        project_config = project_config or ""
     return {
         "brief": _file_stamp(brief),
         "plan": _file_stamp(plan_path),
-        "lane": _file_stamp(lane_doc),
+        "host-config": _file_stamp(host_config),
+        "project-config": _file_stamp(project_config),
     }
+
+
+def _report_queued_failure(pointer: Mapping[str, Any]) -> None:
+    """Surface a request's first failure once through the session's pane stream.
+
+    The session reads the project's watch stream, so the report is one appended
+    transition for the queued run. It is written once: the pointer records
+    ``failure_reported_at`` on the first stamp, and every later pass sees it and
+    reports nothing. A stream that cannot be written is not fatal: the record on
+    the pointer is the fact, and a session attaching later still reads it there.
+    """
+    project = str(pointer.get("project") or "")
+    run_id = str(pointer.get("run_id") or "")
+    if not project or not run_id:
+        return
+    try:
+        from reckon.crew.recovery import _fleet_counts
+        from reckon.crew.recovery_watch import DEFAULT_WATCH_STALL_WINDOW
+
+        live = runs._list_live_records(project=project)
+        if all(str(record.get("run_id") or "") != run_id for record in live):
+            live = [*live, pointer]
+        snapshots = runs._watch_stream_snapshots(
+            live, stall_window=DEFAULT_WATCH_STALL_WINDOW
+        )
+        snapshot = snapshots.get(run_id)
+        if snapshot is None:
+            return
+        row = runs._stream_transition(
+            project,
+            snapshot=snapshot,
+            previous=None,
+            current=str(snapshot["state"]),
+            counts=_fleet_counts(snapshots),
+        )
+        runs._append_watch_lines(runs.watch_stream_path(project), [row])
+    except Exception:  # noqa: BLE001 - a report that cannot be written never stops admission
+        return
 
 
 def _retry_backoff_hold(
@@ -338,6 +383,9 @@ def _stamp_failure(
     attempts = int(record.get("failure_attempts") or 0) + 1
     record["failure"] = failure if isinstance(failure, str) else dict(failure)
     record["failure_at"] = moment.isoformat()
+    # The first stamp of a failure is the one the session is told about, so the
+    # report marker is set once and never moved by a later attempt.
+    record.setdefault("failure_reported_at", moment.isoformat())
     record["failure_attempts"] = attempts
     record["retry_at"] = (moment + _retry_delay(attempts)).isoformat()
     if guard is not None:
@@ -524,6 +572,7 @@ def admit_once(
                 )
                 continue
             snapshot = copy.deepcopy(dict(pointer))
+            first_report = not pointer.get("failure_reported_at")
             record = None
             failure = "dispatch did not return a launched record"
             requeued_run_id = ""
@@ -557,6 +606,8 @@ def admit_once(
                         guard=_dependency_guard(pointer, config_for),
                     )
             if record is None:
+                if first_report:
+                    _report_queued_failure(pointer)
                 key = "held" if isinstance(caught, (LaneHeld, LanePaused)) else "failed"
                 detail_key = "hold_detail" if key == "held" else "failure_detail"
                 result[key].append(reported_id)

@@ -71,6 +71,18 @@ def _stream_rows(before: dict, after: dict) -> list:
     return events
 
 
+def _stream_file_rows(project: str, run_id: str) -> list:
+    """The rows the project's watch stream carries for one run id."""
+    path = runs.watch_stream_path(project)
+    if not path.is_file():
+        return []
+    return [
+        json.loads(line)
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip() and str(json.loads(line).get("run_id") or "") == run_id
+    ]
+
+
 def test_a_request_the_lane_gate_holds_is_left_untouched(
     admit_repo: Path, tmp_path: Path
 ) -> None:
@@ -167,12 +179,48 @@ def test_a_request_that_cannot_launch_is_not_retried_every_pass(
     before_first, after_first, first, _ = observed[0]
     assert after_first != before_first, "the first pass must record the failure"
     assert "r-no-brief" in first["failed"]
-    assert "not readable" in runs.read_pointer("r-no-brief")["failure"]
+    recorded = runs.read_pointer("r-no-brief")
+    assert "not readable" in recorded["failure"]
+    assert recorded.get("failure_reported_at"), "the first failure is reported"
+
+    reports = _stream_file_rows(PROJECT, "r-no-brief")
+    assert len(reports) == 1, "the session is told about the failure once"
 
     for before, after, result, rows in observed[1:]:
         assert after == before, "a backed-off request must be left unchanged"
         assert "r-no-brief" in result["held"]
         assert rows == [], "a backed-off request must append no transition"
+    assert len(_stream_file_rows(PROJECT, "r-no-brief")) == 1, (
+        "a later pass must add no second report"
+    )
+
+
+def test_a_lane_document_change_does_not_retry_a_request_that_cannot_launch(
+    admit_repo: Path, tmp_path: Path
+) -> None:
+    """The router's lane document is not a dependency of a failed request.
+
+    The lane document is republished every few seconds, so watching it would
+    retry a request that can never launch at the publication cadence. The
+    back-off must hold across a lane-document change.
+    """
+    config, resolve = _config_for()
+    lane = _lane_document(tmp_path, worker_slots=1)
+    config["backends"]["clive"]["lane_document"] = str(lane)
+    missing = tmp_path / "no-such-brief.md"
+    request = _queue(admit_repo, node_id="no-brief", run_id="r-no-brief")
+    request["node"]["brief"] = str(missing)
+    request["node"]["brief_path"] = str(missing)
+    runs.queue_dispatch(request)
+
+    first = queue_admission.admit_once(config_for=resolve, launcher=_launcher([]))
+    assert "r-no-brief" in first["failed"]
+    settled = runs.pointer_path("r-no-brief").read_bytes()
+
+    lane.write_text(json.dumps({"worker_slots": 2, "rev": 2}), encoding="utf-8")
+    second = queue_admission.admit_once(config_for=resolve, launcher=_launcher([]))
+    assert "r-no-brief" in second["held"], "a lane-document change must not retry"
+    assert runs.pointer_path("r-no-brief").read_bytes() == settled
 
 
 def test_a_launch_failed_requeue_is_not_retried_every_pass(
