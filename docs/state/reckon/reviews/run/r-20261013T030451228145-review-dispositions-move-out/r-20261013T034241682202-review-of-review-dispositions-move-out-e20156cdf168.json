@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed run's manifest records neither baseline_suite nor after_suite (its arms are under tests:/test_logs:), and the base log it names is truncated with no summary, so the added-failure count was not taken; a zero would assert a comparison never made, though the head arm's 881 passed already implies it as a pass.",
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/obligation_snapshot.py:756",
+    "reckon/crew/obligations.py:802",
+    "reckon/crew/obligations.py:871",
+    "reckon/crew_run_commands.py:499",
+    "reckon/crew_run_commands.py:511",
+    "reckon/crew_run_commands.py:567",
+    "reckon/crew_run_commands.py:577",
+    "reckon/crew_run_commands.py:588"
+  ],
+  "completed_at": "2026-10-13T03:59:19.235Z",
+  "dispatched_at": "2026-10-13T03:43:19Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T030451228145-review-dispositions-move-out/manifest.md",
+      "line": "12",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest records its suite observations only under a combined tests:/test_logs: pair, with no baseline_suite and no after_suite, and the base arm log it names (gate-importers-base.log) is truncated at 12 lines with no summary and no EXIT=; the done-when's 'no added failure against base' is not a taken measurement \u2014 the head arm's 881 passed implies zero added failures, but the base comparison the measure names was never produced."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T030451228145-review-dispositions-move-out/negative-control.log",
+      "line": "18",
+      "severity": "follow-on",
+      "text": "follow-on: the negative control re-fails tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window, the same id the head window arm fails at gate-window-head.log:18, so it contributes no failing id the head arm does not already fail; the mutation's discriminating effect (review.py named, 50760 tokens) shows only in the assertion message, not as an isolated red."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 8 production call site(s) across reckon/crew/obligation_snapshot.py, reckon/crew/obligations.py and reckon/crew_run_commands.py",
+    "diff": "read commit by commit against base a99e008e; 7b2011895 relocates the block and repoints callers, e20156cdf adds only the evidence fragment; the four moved tests change imports, not assertions.",
+    "done_when": "the window test names only routing.py and test_crew.py (gate-window-head.log), the importers pass 881 passed EXIT=0 (gate-importers-head.log:23), and the negative control is under the run directory; the base arm is truncated so 'against base' is unrecorded.",
+    "goal": "the node's goal is to move review.py's dimension and finding disposition block into reckon/crew/review_dispositions.py, so both fit the window; at head review.py no longer defines the moved names and review_dispositions.py:67-460 defines them.",
+    "manifest": "read; status complete, results recorded, changed_paths match the diff, but there is no baseline_suite/after_suite and no base arm described.",
+    "write_paths": "the manifest declares eleven paths; the diff touches ten files, all inside the declared set."
+  },
+  "justifications": {
+    "durability": "the diff adds no assertion; coverage rests on the four repointed tests that import the new module (tests/test_sub_floor_disposition_has_a_writer.py:37) and the pre-existing window test, whose negative control at negative-control.log fires.",
+    "evidence": "the head arms are recorded (gate-importers-head.log 881 passed EXIT=0; gate-window-head.log names only routing.py and test_crew.py) but the base arm is truncated (gate-importers-base.log, no summary, no EXIT=), so the 'against base' half of the done-when is unmeasured.",
+    "fit": "reckon/crew/review_dispositions.py:36-46 imports the shared keys and _write_record from reckon/crew/review rather than redefining them, and no symbol carries a plan or ticket label.",
+    "goal_fidelity": "reckon/crew/review_dispositions.py:67-460 defines declared_dimension_floors, sub_floor_dimensions and the disposition writers that reckon/crew/review.py no longer defines at head, so the split the goal names is delivered.",
+    "reuse": "code_review_record_for_run delegates to plan_review.code_review_path (reckon/crew/review_dispositions.py:314) and the finding writer reads through reckon.crew.repair.review_findings, both owners of their capability.",
+    "scope_discipline": "git diff --stat a99e008e..e20156cdf lists ten files, all inside the manifest's declared write paths, with no change outside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to move review.py's dimension and finding disposition block into reckon/crew/review_dispositions.py so both files fit the worker window; at head reckon/crew/review.py no longer defines the moved names and reckon/crew/review_dispositions.py:67-460 defines them, so the block is genuinely relocated.\nVERDICT done_when: the done_when requires the window test to name neither target file, the importing test files to show no added failure against base, and the negative control logged under the run directory; gate-window-head.log names only reckon/crew/routing.py and tests/test_crew.py, gate-importers-head.log records 881 passed EXIT=0, and negative-control.log is under the run directory, but the base arm log is truncated so the 'against base' comparison is unrecorded.\nVERDICT write_paths: the manifest lists eleven declared paths; the diff touches ten files (obligation_snapshot.py, obligations.py, review.py, review_dispositions.py, crew_run_commands.py, four test files, the evidence fragment), every one inside the declared set with no path outside it.\nVERDICT manifest: read; it reports status complete, the window-test and importer-arm results and the negative control, and its changed_paths match the diff, but it records neither baseline_suite nor after_suite and describes the base arm nowhere.\nVERDICT diff: read commit by commit against base a99e008e; 7b2011895 relocates the block (review.py -422, review_dispositions.py +469) and repoints the callers, e20156cdf adds only the 54-line evidence fragment; the four moved tests change imports, not assertions.\nCALL_SITES: reckon/crew/obligation_snapshot.py:756, reckon/crew/obligations.py:802, reckon/crew/obligations.py:871, reckon/crew_run_commands.py:499, reckon/crew_run_commands.py:511, reckon/crew_run_commands.py:567, reckon/crew_run_commands.py:577, reckon/crew_run_commands.py:588\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/review_dispositions.py:67-460 defines declared_dimension_floors, sub_floor_dimensions and the disposition writers that reckon/crew/review.py no longer defines at head, so the split the goal names is delivered.\nSCORE evidence: 15\nJUSTIFICATION evidence: the head arms are recorded (gate-importers-head.log:23 881 passed EXIT=0; gate-window-head.log names only routing.py and test_crew.py) but the base arm it names is truncated (gate-importers-base.log, 12 lines, no summary, no EXIT=), so the 'against base' half of the done-when is unmeasured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat a99e008e..e20156cdf lists ten files, all inside the manifest's declared write paths, with no change outside them.\nSCORE durability: 16\nJUSTIFICATION durability: the diff adds no assertion, so coverage rests on the four repointed test files that import the new module (tests/test_sub_floor_disposition_has_a_writer.py:37) and the pre-existing window test, whose negative control at negative-control.log does fire.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/review_dispositions.py:36-46 imports the shared record keys and _write_record from reckon/crew/review rather than redefining them, and no symbol carries a plan or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the module moves rather than re-implements \u2014 code_review_record_for_run delegates to plan_review.code_review_path (reckon/crew/review_dispositions.py:314) and the finding writer reads through reckon.crew.repair.review_findings, both owners of their capability.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T030451228145-review-dispositions-move-out/manifest.md:12 follow-on: the manifest records its suite observations only under a combined tests:/test_logs: pair, with no baseline_suite and no after_suite, and the base arm log it names (gate-importers-base.log) is truncated at 12 lines with no summary and no EXIT=; the done-when's \"no added failure against base\" is therefore not a taken measurement \u2014 the head arm's 881 passed implies zero added failures, but the base comparison the measure names was never produced.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T030451228145-review-dispositions-move-out/negative-control.log:18 follow-on: the negative control re-fails tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window, the same id the head window arm fails at gate-window-head.log:18, so it contributes no failing id the head arm does not already fail; the mutation's discriminating effect (review.py named, 50760 tokens) appears only in the assertion message, not as an isolated red.",
+  "review_run_id": "r-20261013T034241682202-review-of-review-dispositions-move-out-e20156cdf168",
+  "reviewed_base_sha": "a99e008e833645efa448b3bac4287a8eccfe8c79",
+  "reviewed_head_sha": "e20156cdf168b550bcaec06f1b7424f32a7d4997",
+  "reviewed_run_id": "r-20261013T030451228145-review-dispositions-move-out",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T03:54:19.314765+00:00",
+  "total": 109
+}
