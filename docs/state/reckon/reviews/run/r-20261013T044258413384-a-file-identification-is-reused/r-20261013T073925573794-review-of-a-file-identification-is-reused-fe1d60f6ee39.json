@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": null,
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/resources.py:503 _scan_resources -> identify_resource:516",
+    "reckon/resources.py:668 _canonical_identity_is_unique -> identify_resource:691",
+    "reckon/resources.py:970 _migration_candidates -> identify_resource:979",
+    "reckon/metadata_index.py:605 _resource_row -> identify_resource:613",
+    "reckon/mcp.py:2269 _audit -> identify_resource:2357"
+  ],
+  "completed_at": "2026-10-13T07:55:21.871Z",
+  "dispatched_at": "2026-10-13T07:39:53Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T044258413384-a-file-identification-is-reused/logs/negative_control_drop_memo.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the log's header names revision 45672df1f, but the test file it collected and failed does not exist at that revision (it is added in 4c3ab7fc1), so the header misstates the tree the negative control measured and the record cannot be tied to the revision it actually ran at."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against base 45672df1f; 4c3ab7fc1 rewrites identify_resource into a file_memo wrapper plus _identify_resource and adds the test, fe1d60f6e adds the evidence fragment, three files all inside the declared scope.",
+    "done_when": "the done_when names tests/test_identification_is_reused_across_reads.py; its two cases (two reads identify each file once, only a changed file re-identified) and the importer gate base-vs-after are recorded in the manifest and the run's own arm logs.",
+    "goal": "the node goal is to memoise each resource file's identification on its own stat signature so a warm read re-identifies only the files whose signature moved; reckon/resources.py:289 wraps _identify_resource through file_memo.memoized and the deliverable is landed in full.",
+    "manifest": "read; it states status complete with commits 4c3ab7fc1 and fe1d60f6e, the after arm 2832 passed EXIT=0 at 4c3ab7fc1 against base 1 failed/2831 passed, and the negative control EXIT=1.",
+    "write_paths": "the manifest declares reckon/resources.py, tests/test_identification_is_reused_across_reads.py, the landing fragment and a figures directory; the diff touches only the first three."
+  },
+  "justifications": {
+    "durability": "tests/test_identification_is_reused_across_reads.py counts uncached identifications through a wrapped _identify_resource, and logs/negative_control_drop_memo.log shows both cases red (EXIT=1) when the memo is dropped, with over-caching caught by the changed-file case at line 89.",
+    "evidence": "the after arm log (logs/after_resources_importers.log, 2832 passed EXIT=0) and base arm log (logs/base_resources_importers.log, 1 failed/2831 passed) are recorded in the manifest's baseline_suite/after_suite keys, though the arms measured code at 4c3ab7fc1 rather than the docs-only head fe1d60f6e.",
+    "fit": "the wrapper follows the file_memo idiom already used across reckon/ and reckon/resources.py:277 states mechanism rather than changelog.",
+    "goal_fidelity": "reckon/resources.py:289 memoises each file's identification through file_memo.memoized keyed on (docs_dir, project) and the file's stat signature, satisfying the section deliverable with no new public function.",
+    "reuse": "identify_resource extends the existing file_memo owner (reckon/file_memo.py:43) rather than forking a memo, exactly as the section prescribes.",
+    "scope_discipline": "every path in the diff (reckon/resources.py, the new test, the landing fragment) is inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to memoise each resource file's identification on its own stat signature so a warm read re-identifies only the files whose signature moved; reckon/resources.py:289 wraps _identify_resource through file_memo.memoized and the deliverable is landed in full.\nVERDICT done_when: the done_when names tests/test_identification_is_reused_across_reads.py; its two cases (two reads identify each file once, only a changed file re-identified) and the importer gate base-vs-after are recorded in the manifest and the run's own arm logs.\nVERDICT write_paths: the manifest declares reckon/resources.py, tests/test_identification_is_reused_across_reads.py, the landing fragment and a figures directory; the diff touches only the first three.\nVERDICT manifest: read; it states status complete with commits 4c3ab7fc1 and fe1d60f6e, the after arm 2832 passed EXIT=0 at 4c3ab7fc1 against base 1 failed/2831 passed, and the negative control EXIT=1.\nVERDICT diff: read commit by commit against base 45672df1f; 4c3ab7fc1 rewrites identify_resource into a file_memo wrapper plus _identify_resource and adds the test, fe1d60f6e adds the evidence fragment, three files all inside the declared scope.\nCALL_SITES: reckon/resources.py:503 _scan_resources -> identify_resource:516, reckon/resources.py:668 _canonical_identity_is_unique -> identify_resource:691, reckon/resources.py:970 _migration_candidates -> identify_resource:979, reckon/metadata_index.py:605 _resource_row -> identify_resource:613, reckon/mcp.py:2269 _audit -> identify_resource:2357\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/resources.py:289 memoises each file's identification through file_memo.memoized keyed on (docs_dir, project) and the file's stat signature, satisfying the section deliverable with no new public function.\nSCORE evidence: 17\nJUSTIFICATION evidence: the after arm log (logs/after_resources_importers.log, 2832 passed EXIT=0) and base arm log (logs/base_resources_importers.log, 1 failed/2831 passed) are recorded in the manifest's baseline_suite/after_suite keys, though the arms measured code at 4c3ab7fc1 rather than the docs-only head fe1d60f6e.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff (reckon/resources.py, the new test, the landing fragment) is inside the manifest's declared write paths.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_identification_is_reused_across_reads.py counts uncached identifications through a wrapped _identify_resource, and logs/negative_control_drop_memo.log shows both cases red (EXIT=1) when the memo is dropped, with over-caching caught by the changed-file case at line 89.\nSCORE fit: 19\nJUSTIFICATION fit: the wrapper follows the file_memo idiom already used across reckon/ and reckon/resources.py:277 states mechanism rather than changelog.\nSCORE reuse: 20\nJUSTIFICATION reuse: identify_resource extends the existing file_memo owner (reckon/file_memo.py:43) rather than forking a memo, exactly as the section prescribes.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T044258413384-a-file-identification-is-reused/logs/negative_control_drop_memo.log:1 follow-on: the log's header names revision 45672df1f, but the test file it collected and failed does not exist at that revision (it is added in 4c3ab7fc1), so the header misstates the tree the negative control measured and the record cannot be tied to the revision it actually ran at.",
+  "review_run_id": "r-20261013T073925573794-review-of-a-file-identification-is-reused-fe1d60f6ee39",
+  "reviewed_base_sha": "45672df1f17838c9b0e5cc6d973079c0dbd13643",
+  "reviewed_head_sha": "fe1d60f6ee395b99c051032751becfbb9f3d1efb",
+  "reviewed_run_id": "r-20261013T044258413384-a-file-identification-is-reused",
+  "reviewer_run_id": "r-20261013T073925573794-review-of-a-file-identification-is-reused-fe1d60f6ee39",
+  "scores": {
+    "durability": 20,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T09:51:00+00:00",
+  "total": 115
+}
