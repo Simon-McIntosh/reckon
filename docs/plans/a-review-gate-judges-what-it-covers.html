@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-after" content="a-plan-is-reviewed-before-it-is-built,the-review-loop-runs-without-hand-steps">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
   <title>A Review Gate Judges What It Covers | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="3">
 <meta name="plan-modified" content="2026-10-13">
 </head>
 <body>
@@ -160,7 +160,7 @@
     </p>
 
     <h2 id="s7">§7 — Follow-on study: how often the gate refused a covered section</h2>
-<section data-reckon="section" data-id="s7" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s7" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
     <p>
       Before §2 and §3 land, measure the size of the problem across the fleet, not only in the one plan that
       surfaced it. From the dispatch refusals and the <code>allow_unreviewed_plan</code> flags recorded on runs over
@@ -181,7 +181,10 @@
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261013T090732844758-rgjc-covered-refusal-census" data-who="reckon-build" data-when="2026-10-13T10:19:24.033Z">
-    <div class="r-comment-body"><p>Measured the fleet-wide size of the covered-refusal problem §7 asked about: of 102 dispatch refusals of the plan-review gate in the fourteen days to 2026-10-13, 43 refused a node whose built section was covered and unchanged and 12 more refused a section changed only by an edit an answered finding asked for (55 of 68 classified refusals, 81 %), judged at the gate&#x27;s own word-share boundary — review.plan_change_threshold = 0.3, read from `reckon flight --project reckon` and cited as its source; the 0.05 reading from an earlier pass is kept as a sensitivity row and exactly five refusals move between uncovered and changed-answered-finding under it (all uncovered -&gt; answered, each named in the report with its record). The report classifies each refusal with the record it was read from, gives per-project counts, the 13 uncovered refusals, a re-picked negative control (imas-efit west-imas-read-facade s4, which reads uncovered at either boundary), the 756 s median refusal-to-dispatch delay over 50 episodes, and the 430 deduplicated --allow-unreviewed-plan waivers. The four power_convertor refusals of §1 hold at both boundaries: jccm-circuits and jccm-signs covered-unchanged, jccm-lines changed-answered; the modes refusal is absent from every record this census can see and the report names those records.</p></div>
+    <div class="r-comment-body"><p>Measured the fleet-wide size of the covered-refusal problem §7 asked about: of 102 dispatch refusals of the plan-review gate in the fourteen days to 2026-10-13, 43 refused a node whose built section was covered and unchanged and 12 more refused a section changed only by an edit an answered finding asked for (55 of 68 classified refusals, 81 %), judged at the gate's own word-share boundary — review.plan_change_threshold = 0.3, read from `reckon flight --project reckon` and cited as its source; the 0.05 reading from an earlier pass is kept as a sensitivity row and exactly five refusals move between uncovered and changed-answered-finding under it (all uncovered -&gt; answered, each named in the report with its record). The report classifies each refusal with the record it was read from, gives per-project counts, the 13 uncovered refusals, a re-picked negative control (imas-efit west-imas-read-facade s4, which reads uncovered at either boundary), the 756 s median refusal-to-dispatch delay over 50 episodes, and the 430 deduplicated --allow-unreviewed-plan waivers. The four power_convertor refusals of §1 hold at both boundaries: jccm-circuits and jccm-signs covered-unchanged, jccm-lines changed-answered; the modes refusal is absent from every record this census can see and the report names those records.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-close-s7" data-who="reckon-build" data-when="2026-10-13T21:50:00Z">
+    <div class="r-comment-body"><p>§7 landed. Of 102 plan-review gate refusals in the 14 days to 2026-10-13, 43 refused a covered, unchanged section and 12 a section changed only by an answered finding: 55 of 68 classified (81 %), at <code>review.plan_change_threshold</code> 0.30. 13 were uncovered and 34 unclassified. The median refusal-to-dispatch delay was 756 s, and the claims review reproduced the headline. That is the size of the problem §2 removes. <a href="/reckon/evidence/archive/a-review-gate-judges-what-it-covers-landed.html#s7">evidence</a></p></div>
 </div>
 </section>
 </main>
