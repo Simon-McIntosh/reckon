@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_run_commands.py:1210 (crew_gc)",
+    "reckon/crew.py:85 (garbage_collect in the crew command surface)"
+  ],
+  "completed_at": "2026-10-13T20:19:35.727Z",
+  "dispatched_at": "2026-10-13T20:00:26Z",
+  "findings": [
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "1791",
+      "severity": "follow-on",
+      "text": "follow-on: _clear_run_lock duplicates the entry-shape-and-unlink logic already implemented by _stale_run_locks at reckon/crew/routing.py:1764-1785 without extending it, so the two lock-removal paths can drift apart; the differing gate (already-removed run vs retention age) is the reason given, not a shared owner."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T192500614709-gc-clears-an-abandoned-clean-tree/gate-head.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the head arm's header names revision d80d81e7e (the base) rather than the landed head 3f4522ebd, so a reader tying its 51-pass count to the landed commit sees a mismatch; the tests ran against the modified working tree so the count is sound, but the recorded revision does not name the change it measured."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against d80d81e7e; 6803de51e measures a clean unreachable tree, admits an unintegrated row to the pin, adds the apply branch and the already-removed report, and 3f4522ebd updates the docstrings; 390 insertions across routing.py, the test file and the fragment, all inside the declared scope.",
+    "done_when": "the measure names tests/test_gc_clears_an_abandoned_clean_tree.py, whose six cases cover withheld-without-flag (:126), pin-and-release (:144), the dry-run prediction, the live-claim, already-removed with --apply (:200) and already-removed dry-run; the manifest records the command and 51 passed EXIT=0, and both negative controls are logged red.",
+    "goal": "the node's goal is that gc reach a clean abandoned tree under --pin-unique-commits and report an already-removed one; reckon/crew/routing.py:1590 admits an \"unintegrated\" row to the pin, the apply branch at routing.py:2268 pins and releases the clean tree, and routing.py:2147 reports a gone or unregistered recorded tree as already-removed.",
+    "manifest": "read at runs/r-20261013T192119611343-gc-clears-an-abandoned-clean-tree/manifest.md (the reviewed run's own report); it carries commits 6803de51e and 3f4522ebd, the gate command with 51 passed EXIT=0, both negative-control logs red, and status complete.",
+    "write_paths": "the manifest declares reckon/crew/routing.py, tests/test_gc_clears_an_abandoned_clean_tree.py, a fragment under docs/evidence/fragments/the-crew-home-has-a-bound/, and a figures directory; the diff touches routing.py, the test file and the fragment, all inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_gc_clears_an_abandoned_clean_tree.py:144 asserts the archive ref resolves to the tree's own head at git rev-parse, so it reddens if the pin stops archiving the commit, and negative-control-1.log shows the clean-tree case failing when the pin is confined to dirty trees.",
+    "evidence": "the manifest records the gate command over tests/test_gc_clears_an_abandoned_clean_tree.py plus seven existing gc suites at 51 passed EXIT=0 in gate-head.log, and both negative-control logs are red with a non-zero EXIT, though the head log's own header names the base revision.",
+    "fit": "the unintegrated apply branch at reckon/crew/routing.py:2268 mirrors the dirty branch above it with the same re-inspection and _pin_archived_commits/_release_worktree_whole helpers, and no added name carries a plan or ticket label.",
+    "goal_fidelity": "reckon/crew/routing.py:1590 admits an \"unintegrated\" row to the pin and the apply branch at routing.py:2268 pins and releases it, so a clean abandoned tree now has a route through gc, with routing.py:2147 reporting an already-removed tree.",
+    "reuse": "_clear_run_lock at reckon/crew/routing.py:1791 re-implements the lock-entry-and-unlink body of _stale_run_locks at routing.py:1764-1785 rather than extending it, though it gates on an already-removed run instead of age.",
+    "scope_discipline": "every path in the diff (reckon/crew/routing.py, tests/test_gc_clears_an_abandoned_clean_tree.py, the fragment) is inside the four declared write paths and nothing outside them was touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that gc reach a clean abandoned tree under --pin-unique-commits and report an already-removed one; reckon/crew/routing.py:1590 admits an \"unintegrated\" row to the pin, the apply branch at routing.py:2268 pins and releases the clean tree, and routing.py:2147 reports a gone or unregistered recorded tree as already-removed.\nVERDICT done_when: the measure names tests/test_gc_clears_an_abandoned_clean_tree.py, whose six cases cover withheld-without-flag (:126), pin-and-release (:144), the dry-run prediction, the live-claim, already-removed with --apply (:200) and already-removed dry-run; the manifest records the command and 51 passed EXIT=0, and both negative controls are logged red.\nVERDICT write_paths: the manifest declares reckon/crew/routing.py, tests/test_gc_clears_an_abandoned_clean_tree.py, a fragment under docs/evidence/fragments/the-crew-home-has-a-bound/, and a figures directory; the diff touches routing.py, the test file and the fragment, all inside them.\nVERDICT manifest: read at runs/r-20261013T192119611343-gc-clears-an-abandoned-clean-tree/manifest.md (the reviewed run's own report); it carries commits 6803de51e and 3f4522ebd, the gate command with 51 passed EXIT=0, both negative-control logs red, and status complete.\nVERDICT diff: read commit by commit against d80d81e7e; 6803de51e measures a clean unreachable tree, admits an unintegrated row to the pin, adds the apply branch and the already-removed report, and 3f4522ebd updates the docstrings; 390 insertions across routing.py, the test file and the fragment, all inside the declared scope.\nCALL_SITES: reckon/crew_run_commands.py:1210 (crew_gc), reckon/crew.py:85 (garbage_collect in the crew command surface)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/routing.py:1590 admits an \"unintegrated\" row to the pin and the apply branch at routing.py:2268 pins and releases it, so a clean abandoned tree now has a route through gc, with routing.py:2147 reporting an already-removed tree.\nSCORE evidence: 17\nJUSTIFICATION evidence: the manifest records the gate command over tests/test_gc_clears_an_abandoned_clean_tree.py plus seven existing gc suites at 51 passed EXIT=0 in gate-head.log, and both negative-control logs are red with a non-zero EXIT, though the head log's own header names the base revision.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff (reckon/crew/routing.py, tests/test_gc_clears_an_abandoned_clean_tree.py, the fragment) is inside the four declared write paths and nothing outside them was touched.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_gc_clears_an_abandoned_clean_tree.py:144 asserts the archive ref resolves to the tree's own head at git rev-parse, so it reddens if the pin stops archiving the commit, and negative-control-1.log shows the clean-tree case failing when the pin is confined to dirty trees.\nSCORE fit: 18\nJUSTIFICATION fit: the unintegrated apply branch at reckon/crew/routing.py:2268 mirrors the dirty branch above it with the same re-inspection and _pin_archived_commits/_release_worktree_whole helpers, and no added name carries a plan or ticket label.\nSCORE reuse: 16\nJUSTIFICATION reuse: _clear_run_lock at reckon/crew/routing.py:1791 re-implements the lock-entry-and-unlink body of _stale_run_locks at routing.py:1764-1785 rather than extending it, though it gates on an already-removed run instead of age.\nFINDING reckon/crew/routing.py:1791 follow-on: _clear_run_lock duplicates the entry-shape-and-unlink logic already implemented by _stale_run_locks at reckon/crew/routing.py:1764-1785 without extending it, so the two lock-removal paths can drift apart; the differing gate (already-removed run vs retention age) is the reason given, not a shared owner.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T192500614709-gc-clears-an-abandoned-clean-tree/gate-head.log:1 follow-on: the head arm's header names revision d80d81e7e (the base) rather than the landed head 3f4522ebd, so a reader tying its 51-pass count to the landed commit sees a mismatch; the tests ran against the modified working tree so the count is sound, but the recorded revision does not name the change it measured.",
+  "review_run_id": "r-20261013T195957039750-review-of-gc-clears-an-abandoned-clean-tree-3f4522ebd6b5",
+  "reviewed_base_sha": "d80d81e7e127885d13811f8c0a3a45604a98878c",
+  "reviewed_head_sha": "3f4522ebd6b528e1b7674b209e5fd024151968f3",
+  "reviewed_run_id": "r-20261013T192500614709-gc-clears-an-abandoned-clean-tree",
+  "reviewer_run_id": "r-20261013T195957039750-review-of-gc-clears-an-abandoned-clean-tree-3f4522ebd6b5",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T20:17:33.675145+00:00",
+  "total": 108
+}
