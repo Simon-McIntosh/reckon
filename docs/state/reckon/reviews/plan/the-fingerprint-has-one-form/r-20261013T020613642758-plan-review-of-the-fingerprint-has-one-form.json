@@ -1,0 +1,49 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-13T02:15:05.410Z",
+  "dispatched_at": "2026-10-13T02:06:52Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-fingerprint-has-one-form.html:56",
+      "id": "done_when-1",
+      "reason": "a node told \"never collapsed \u21d2 neither\" can build that fixture with a legacy fingerprint, see a correct census \"fail\" its control, and repair the census into a wrong one.",
+      "text": "the second control says a review of a never-collapsed plan \"must be counted as neither\", but the pre-collapse form is the legacy *definition-ration* digest (plan_review.py:663-668, 280-290: section declarations are dropped from the current fingerprint precisely because a collapse rewrites them), so it differs from the current form for any plan carrying declarations, collapsed or not; a never-collapsed plan whose review was stored under the legacy definition matches the pre-collapse form only, and a correct census would count it pre-collapse-only, failing this control",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-fingerprint-has-one-form.html:55",
+      "id": "reasoning-1",
+      "reason": "the census is a standalone script that can enumerate live pointers itself and then call the reader per run, so the cited function still returns the same pointer data production reads.",
+      "text": "\u00a72 has the census name \"any live run whose write paths claim plan_review.py or _store.py, read from the crew claim reader declared_claim_paths\", but `declared_claim_paths` (claims.py:85) takes one run id and its module docstring states nothing there \"is wired to a command\", so it cannot by itself enumerate live runs; the production claim enumeration is `list_live()` (routing.py:1043)",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "97187c0f2432897f4a88d470bb1cb78516e4a7a6109f95cebf1ce2de19e55e14",
+  "plan_slug": "the-fingerprint-has-one-form",
+  "plan_version": 3,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261013T020613642758-plan-review-of-the-fingerprint-has-one-form",
+  "reviewed_blob_sha": "97ff6af310076876b2cde4f74734f8d35dd19db5",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `list_plan_reviews` (plan_review.py:1074), `delivered_reports`/`_delivered_report_sidecars` (1973/1925), `review_coverage` (781), `_fingerprint_forms` (678), `declared_claim_paths` (claims.py:85), `landed_section_ids` (_plan_html.py:557), `_apply_collapse_section` (_store.py:3191) and the `collapse_section` op (mcp.py:1269) all resolve.",
+    "done_when": "a finding \u2014 \u00a72's second control asserts a never-collapsed plan \"must be counted as neither\", which encodes a false equivalence between collapse history and form match.",
+    "evidence_paths": "pass \u2014 \u00a72 writes to \"the run's own report directory\", a durable crew path, not a session scratchpad or node-local temp.",
+    "naming": "pass \u2014 \u00a72 introduces no code symbols; its prose names modules and functions by what they do and carries no plan labels, ticket numbers or version tags.",
+    "reasoning": "a finding \u2014 the census's live-run contention check names a reader that is wired to no command and takes a single run id, not a live-run enumeration.",
+    "single_goal": "pass \u2014 \u00a72 carries one deliverable (the read-only census and its report); the \"names two things\" sentence is part of that report, not a second deliverable.",
+    "wiring": "pass \u2014 s3 declares `depends-on` on `the-fingerprint-has-one-form#s2` (meta `plan-section-depends-on`), s2 has no unmet dependency, and `plan-informs` names the plan that delegated this work; every relationship resolves to a node in this plan."
+  },
+  "section_digests": {
+    "_document": "677897f224d4982e8e4ad098e4a8e02724e888de68334e6f312c9761b61d6af8",
+    "s1": "d20bf808be72a862d484c4115618ad75325bad73c4c33997e87ac25da272e077",
+    "s2": "f320b0cc2d169cc58c9c8e5315c3b57c4b955bde67adc2ab0d371644d5b518e9",
+    "s3": "a97f2dba7c0b826127cadbaf524405188cc954888913fe5f98f3c4948ed55de1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T02:17:52.942481+00:00"
+}
