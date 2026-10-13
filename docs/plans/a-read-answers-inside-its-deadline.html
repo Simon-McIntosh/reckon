@@ -25,7 +25,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="56">
+<meta name="plan-version" content="57">
 <meta name="plan-modified" content="2026-10-13">
 </head>
 <body>
@@ -308,7 +308,10 @@
     <div class="r-comment-body"><p>Memoised each resource file's identification in reckon/resources.py on its own stat signature (path, mtime_ns, size) through the shared file_memo helper, so a warm read re-identifies only the files whose signature moved; measure — two reads of an unchanged tree identify each file once in total and a changed file only itself on the next read (tests/test_identification_is_reused_across_reads.py, 2 passed), negative control dropping the memo fails EXIT=1, and the test files importing reckon/resources.py show zero added failures (2832 passed EXIT=0 at 4c3ab7fc1 vs 1 failed/2831 passed at base 45672df1f, the base failure a peer-owned archive citation that resolved before the after arm).</p></div>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261013T073925573794-review-of-a-file-identification-is-reused-fe1d60f6ee39" data-who="reckon-build" data-when="2026-10-13T07:55:21.871Z">
-    <div class="r-comment-body"><p>Independent review of r-20261013T044258413384-a-file-identification-is-reused landed at fe1d60f6e, scored 20/17/19/20/19/20 over goal_fidelity, evidence, scope_discipline, durability, fit, reuse (total 115); one follow-on finding on the reviewed run&#x27;s negative-control log header naming the wrong revision.</p></div>
+    <div class="r-comment-body"><p>Independent review of r-20261013T044258413384-a-file-identification-is-reused landed at fe1d60f6e, scored 20/17/19/20/19/20 over goal_fidelity, evidence, scope_discipline, durability, fit, reuse (total 115); one follow-on finding on the reviewed run's negative-control log header naming the wrong revision.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-close-s10" data-who="reckon-build" data-when="2026-10-13T08:00:00Z">
+    <div class="r-comment-body"><p>§10 landed: a warm read reuses each unchanged file's identification through the file memo (commits <code>4c3ab7fc1</code>, <code>fe1d60f6e</code>). Two reads identify each file once; an edit re-identifies only that file; dropping the memo fails both. 13 importer files 2861 passed at the integrated head; review 115, 0 added. <a href="/reckon/evidence/archive/a-read-answers-inside-its-deadline-landed.html#s10-identification-memo">evidence</a></p></div>
 </div>
 </section>
 </main>
