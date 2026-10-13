@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken; its head arm records 206 passed EXIT=0 at revision a99e008e, which implies zero added failures, but no base arm was run and a zero would assert a comparison never made.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-13T04:03:41.497Z",
+  "dispatched_at": "2026-10-13T03:48:49Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/67139f13-acc5-4116-8e4d-ecb63acaac2c/test-crew-shadow-moves-out/docs/evidence/fragments/the-suite-is-green-at-head/test-crew-shadow-moves-out.html",
+      "line": "27",
+      "severity": "follow-on",
+      "text": "follow-on: the landed evidence fragment records tests/test_crew_shadow.py at \"5511\" estimated tokens while the measured value is 5517 (the manifest's own landing line and reckon/crew/routing.py:_tokens_for_bytes), so the record a reader lands on carries a figure that disagrees with the run it summarizes."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T030612958004-test-crew-shadow-moves-out/negative-control-window-names-test-crew.log",
+      "line": "12",
+      "severity": "follow-on",
+      "text": "follow-on: the negative control re-fails tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window, the same id the head window arm already fails on peer files reckon/crew/review.py (50598) and reckon/crew/routing.py (50651); the mutation's discriminating fact (tests/test_crew.py: 50126) appears only in the assertion message, not as a failing id the head arm does not already fail."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read commit by commit against base a99e008e; dd9567b18 removes 560 lines from tests/test_crew.py into 589 lines of new tests/test_crew_shadow.py \u2014 a line-for-line comparison shows the moved test and helper bodies match the removed bodies exactly, the only added lines being the module docstring, the imports and the by-name fixture/helper bindings \u2014 plus the 30-line evidence fragment.",
+    "done_when": "the done_when requires the window test to name neither file, the moved tests to pass in tests/test_crew_shadow.py, collecting both files to equal the pre-move count, and the negative control logged under the run directory; I re-ran tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window at head and it names only reckon/crew/review.py (50598) and reckon/crew/routing.py (50651), the gate log records 206 passed EXIT=0, base test_crew.py collected 206 against head's 206 (192+14) collected, and negative-control-window-names-test-crew.log sits under the run directory.",
+    "goal": "the node's goal is to move the crew shadow tests from tests/test_crew.py into tests/test_crew_shadow.py so both files fit the worker window; at head tests/test_crew_shadow.py:53-589 defines the fourteen test_shadow_* tests and the two candidate-config helpers that tests/test_crew.py no longer defines.",
+    "manifest": "read; status complete, changed_paths match the diff, the gate (206 passed EXIT=0) and the negative control are recorded with log paths, but its suite observation sits in after_suite with baseline_suite null.",
+    "write_paths": "the manifest declares four paths; git diff --stat a99e008e..dd9567b18 touches three (tests/test_crew.py, tests/test_crew_shadow.py, docs/evidence/fragments/the-suite-is-green-at-head/test-crew-shadow-moves-out.html), every one inside the declared set."
+  },
+  "justifications": {
+    "durability": "the diff relocates existing tests and adds no assertion of its own, so regression coverage rests on the pre-existing window test at tests/test_crew_shadow.py, whose negative control at negative-control-window-names-test-crew.log:12 makes it name tests/test_crew.py at 50126 \u2014 a guard the head arm already fails on peer files.",
+    "evidence": "the gate log's 206 passed EXIT=0 and my re-run of the window test naming neither target file satisfy the done_when, but the source arm records its suite only in after_suite with baseline_suite null, so no added-failure comparison against a base arm is produced.",
+    "fit": "tests/test_crew_shadow.py:19-27 imports test_crew's shared fixtures and helpers by name rather than redefining them, ruff reports no finding in the new module, and no symbol carries a plan or ticket label.",
+    "goal_fidelity": "tests/test_crew_shadow.py:53-589 defines the fourteen test_shadow_* tests and tests/test_crew.py no longer defines them, while the two files measure 45087 and 5517 estimated tokens against the 50000 bound (reckon/crew/routing.py:_tokens_for_bytes).",
+    "reuse": "tests/test_crew_shadow.py:23-27 binds test_crew's home/repo fixtures and _node/_dispatched helpers from tests/test_crew.py instead of forking them, and the two candidate-config helpers are relocated rather than re-implemented, so the module extends the owner of its fixtures.",
+    "scope_discipline": "git diff --stat a99e008e..dd9567b18 lists three files, every one inside the manifest's declared write paths, with no change outside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to move the crew shadow tests from tests/test_crew.py into tests/test_crew_shadow.py so both files fit the worker window; at head tests/test_crew_shadow.py:53-589 defines the fourteen test_shadow_* tests and the two candidate-config helpers that tests/test_crew.py no longer defines.\nVERDICT done_when: the done_when requires the window test to name neither file, the moved tests to pass in tests/test_crew_shadow.py, collecting both files to equal the pre-move count, and the negative control logged under the run directory; I re-ran tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window at head and it names only reckon/crew/review.py (50598) and reckon/crew/routing.py (50651), the gate log records 206 passed EXIT=0, base test_crew.py collected 206 against head's 206 (192+14) collected, and negative-control-window-names-test-crew.log sits under the run directory.\nVERDICT write_paths: the manifest declares four paths; git diff --stat a99e008e..dd9567b18 touches three (tests/test_crew.py, tests/test_crew_shadow.py, docs/evidence/fragments/the-suite-is-green-at-head/test-crew-shadow-moves-out.html), every one inside the declared set.\nVERDICT manifest: read; status complete, changed_paths match the diff, the gate (206 passed EXIT=0) and the negative control are recorded with log paths, but its suite observation sits in after_suite with baseline_suite null.\nVERDICT diff: read commit by commit against base a99e008e; dd9567b18 removes 560 lines from tests/test_crew.py into 589 lines of new tests/test_crew_shadow.py \u2014 a line-for-line comparison shows the moved test and helper bodies match the removed bodies exactly, the only added lines being the module docstring, the imports and the by-name fixture/helper bindings \u2014 plus the 30-line evidence fragment.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_crew_shadow.py:53-589 defines the fourteen test_shadow_* tests and tests/test_crew.py no longer defines them, while the two files measure 45087 and 5517 estimated tokens against the 50000 bound (reckon/crew/routing.py:_tokens_for_bytes).\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate log's 206 passed EXIT=0 and my re-run of the window test naming neither target file satisfy the done_when, but the source arm records its suite only in after_suite with baseline_suite null, so no added-failure comparison against a base arm is produced.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat a99e008e..dd9567b18 lists three files, every one inside the manifest's declared write paths, with no change outside them.\nSCORE durability: 15\nJUSTIFICATION durability: the diff relocates existing tests and adds no assertion of its own, so regression coverage rests on the pre-existing window test at tests/test_crew_shadow.py, whose negative control at negative-control-window-names-test-crew.log:12 makes it name tests/test_crew.py at 50126 \u2014 a guard the head arm already fails on peer files.\nSCORE fit: 18\nJUSTIFICATION fit: tests/test_crew_shadow.py:19-27 imports test_crew's shared fixtures and helpers by name rather than redefining them, ruff reports no finding in the new module, and no symbol carries a plan or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: tests/test_crew_shadow.py:23-27 binds test_crew's home/repo fixtures and _node/_dispatched helpers from tests/test_crew.py instead of forking them, and the two candidate-config helpers are relocated rather than re-implemented, so the module extends the owner of its fixtures.\nFINDING /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/67139f13-acc5-4116-8e4d-ecb63acaac2c/test-crew-shadow-moves-out/docs/evidence/fragments/the-suite-is-green-at-head/test-crew-shadow-moves-out.html:27 follow-on: the landed evidence fragment records tests/test_crew_shadow.py at \"5511\" estimated tokens while the measured value is 5517 (the manifest's own landing line and reckon/crew/routing.py:_tokens_for_bytes), so the record a reader lands on carries a figure that disagrees with the run it summarizes.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T030612958004-test-crew-shadow-moves-out/negative-control-window-names-test-crew.log:12 follow-on: the negative control re-fails tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window, the same id the head window arm already fails on peer files reckon/crew/review.py (50598) and reckon/crew/routing.py (50651); the mutation's discriminating fact (tests/test_crew.py: 50126) appears only in the assertion message, not as a failing id the head arm does not already fail.",
+  "review_run_id": "r-20261013T034811621237-review-of-test-crew-shadow-moves-out-dd9567b18082",
+  "reviewed_base_sha": "a99e008e833645efa448b3bac4287a8eccfe8c79",
+  "reviewed_head_sha": "dd9567b18082c5917691093319f03af8eff714d8",
+  "reviewed_run_id": "r-20261013T030612958004-test-crew-shadow-moves-out",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T03:59:18.267915+00:00",
+  "total": 111
+}
