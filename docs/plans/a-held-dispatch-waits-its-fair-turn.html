@@ -24,7 +24,7 @@
   <title>A Held Dispatch Waits Its Fair Turn | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="78">
+<meta name="plan-version" content="79">
 <meta name="plan-modified" content="2026-10-13">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="3c837fc1">
@@ -355,6 +355,9 @@
 </div>
 <div class="r-comment" data-section="s16" data-id="c-close-s16" data-who="reckon-build" data-when="2026-10-13T18:55:00Z">
     <div class="r-comment-body"><p>§16 landed: a launch releases a disposable tree an earlier attempt left at its path, judged by the existing workspace inspector, and refuses by name for anything holding work (<code>16671ec60</code>, <code>5e6da158b</code>, <code>f7ba7ce4e</code>). Gate 4 passed at the merged tree; the control reddens the clean case; 0 added failures over 64 importer files; review 108. <a href="/reckon/evidence/archive/a-held-dispatch-waits-its-fair-turn-landed.html#s16-a-failed-launch-does-not-block-its-node">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s16" data-id="c-run-r-20261013T165124787131-a-failed-launch-does-not-block-its-node" data-who="reckon-build" data-when="2026-10-13T18:28:24.885Z">
+    <div class="r-comment-body"><p>A launch whose node worktree path holds a leftover tree now releases it when the tree is disposable and otherwise refuses by name naming the attempt and, for a kept commit, the commit; disposability and the refusal reasons come from the workspace inspector called with the launch&#x27;s base as the integration revision, so a launch judges a tree by the same rules a promotion does; the four cases are exercised by tests/test_a_failed_launch_does_not_block_its_node.py, passing 4/4.</p></div>
 </div>
 </section>
 </main>
