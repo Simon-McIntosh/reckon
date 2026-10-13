@@ -196,6 +196,53 @@
 </article>
   </section>
 
+  <section id="s21">
+    <h2>§21 — Dispatch launches the model the picker chose, not only its backend</h2>
+    <p><strong>Coordinator's landing record.</strong> Run <code>r-20261013T122249417538-a-picked-model-is-the-model-launched</code>, commits <code>e079e09d3</code> and <code>923c025ed</code>, merged as <code>3483a1c20</code>. Review 95, 0 added failures. Reuse scored 4 against a floor of 10, because the picker-route helper duplicates <code>--model</code>'s narrowing; the finding is exempted to §23. Population at the merge: the 11 test files importing <code>dispatch_plan</code> gave 313 passed and 1 collection error in both arms. The error is <code>tests/conftest.py</code> collected as a test, the same in base and head, so none was added. Logs are <code>~/.cache/reckon-suite-logs/population-{base,head}-lane-s21.log</code>, and the new test passed 3 of 3 at the merge (<code>population-head-lane-s21-newtest.log</code>). Focused gate at the merged head: 32 passed, EXIT=0, <code>~/.cache/reckon-suite-logs/merge-lane-s21-3483a1c20.log</code>. Main moved by two review-record commits between the tested merge and the fast-forward. The merge was recomputed, and its <code>reckon/</code> and <code>tests/</code> trees match the tested one.</p><article class="landed-report" data-run-id="r-20261013T122249417538-a-picked-model-is-the-model-launched" data-node="a-picked-model-is-the-model-launched">
+<p><strong>A picker route launches the model it chose, not only its lane</strong></p>
+<p>A picker answer names a lane's own backend with the chosen model beside it,
+so a pick of <code>codex</code> and <code>astra</code> must launch
+<code>gpt-6-astra</code> rather than the lane's declared default
+<code>gpt-6-sol</code>. Before this change the route applied the picked
+<em>backend</em> and dropped the picked <em>model</em>, so the lane default was
+launched under the picked name — the recorded run said
+<code>codex</code> while the argv carried the wrong model id.</p>
+<p id="a-picked-model-is-the-model-launched-mechanism">The picked model is
+applied exactly as <code>--model</code> narrows a named pair: the route resolves
+the model to the expanded backend entry of the picked lane that serves it,
+matching the model key, the model id and the alias. A model the picked lane
+does not declare is refused by name — the lane and the model both appear in the
+refusal — rather than launching the lane's declared default under the picked
+name. The narrowing lives beside the route in
+<code>reckon/crew/dispatch_plan.py</code>, so it needs no import of the
+<code>--model</code> path and the picked lane stays authoritative.</p>
+<p id="a-picked-model-is-the-model-launched-record">With the picked model
+applied, the launch argv carries <code>gpt-6-astra</code> and the run record's
+identity — derived from the agent block's model id through the catalogue
+resolver — reads back the pair <code>(lane=codex, model_key=astra)</code>, so
+the row names the model that actually ran.</p>
+<p id="a-picked-model-is-the-model-launched-commits">Commit:
+<code>e079e09d3af3e47f723725a27e6e6b6b05a8f247</code> (launch the model a picker
+route chose, not only its backend).</p>
+<table id="a-picked-model-is-the-model-launched-gate">
+<thead><tr><th>Arm</th><th>Revision</th><th>Log summary</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td>Head</td><td><code>e079e09d3</code></td><td>315 passed in 157.46s</td><td>EXIT=0</td></tr>
+<tr><td>Negative control (base)</td><td><code>43846824a</code></td><td>3 failed, 312 passed in 156.48s; the three new tests fail — no picked model reaches the argv, the record's <code>model_key</code> is the lane default and an undeclared model is launched rather than refused</td><td>EXIT=1</td></tr>
+</tbody></table>
+<p id="a-picked-model-is-the-model-launched-logs">Both arms run in the same
+population — the eleven test files that import
+<code>reckon/crew/dispatch_plan.py</code>, the new test included — under
+<code>pytest -n 8</code>, and are logged under the run directory as
+<code>logs/head-arm.log</code> and <code>logs/base-arm.log</code>. The base arm
+runs from a scratch tree at the base revision
+<code>43846824a223550605d0f9ed51e21c433fe10fdf</code>, whose
+<code>reckon/crew/dispatch_plan.py</code> carries no
+<code>_backend_serving_picked_model</code>; the failure is measured against the
+base revision rather than against the head with the change reverted.</p>
+</article>
+  </section>
+
 </main>
 </body>
 </html>
