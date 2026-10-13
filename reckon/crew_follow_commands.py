@@ -1452,8 +1452,55 @@ def _follow_watch_lines(
     producer_reload_failure_reported = False
     producer_stop_reported = False
 
+    def _producer_seat_host() -> tuple[str, bool]:
+        """The host a project's held seat names, and whether it is a foreign one.
+
+        A seat record that names no host -- erased, or written before the field
+        existed -- is read exactly as a seat on this host always was, so the
+        remedy is unchanged for it. The distinction the caller needs is only
+        the one that changes the remedy: a seat known to belong to another
+        host, whose producer this process cannot cycle.
+        """
+        try:
+            with runs.watch_lock_path(project).open("rb") as handle:
+                record = runs._read_watch_record(handle)
+        except OSError:
+            return "", False
+        return runs._seat_host(record), runs._seat_names_a_foreign_host(record)
+
     def _producer_stale_event(identity: Mapping[str, Any]) -> dict[str, Any]:
-        """Name a producer running old code and the command that cycles it."""
+        """Name a producer running old code and a remedy its reader can run.
+
+        The follower and the seat are judged from the same shared home, so a
+        reader routinely reads a seat armed on another node. There the cycle
+        pair is a command this reader cannot run: ``unwatch`` refuses a seat
+        whose record names a foreign host, so printing it sends the reader to a
+        refusal. A producer runs the follower's own image held as a seat, and
+        that image re-executes in place when the code stamp moves -- the reload
+        the note for it already names -- so a foreign seat is one that will
+        catch up on its own rather than one to cycle by hand. The line says so,
+        and carries no command the reader's ``unwatch`` would refuse.
+        """
+        host, foreign = _producer_seat_host()
+        stamps = (
+            f"{_short_code_stamp(identity.get('code_stamp'))} vs "
+            f"{_short_code_stamp(identity.get('current_stamp'))}"
+        )
+        if foreign:
+            return {
+                "event": FOLLOWER_STALE_PRODUCER_EVENT,
+                "project": project,
+                "session": session or "",
+                "run_id": None,
+                "code_stamp": identity.get("code_stamp"),
+                "current_stamp": identity.get("current_stamp"),
+                "host": host,
+                "line": (
+                    f"producer {project} runs older code than this follower "
+                    f"({stamps}); its seat runs on {host} and reloads itself "
+                    "when the code changes, so it will catch up on its own"
+                ),
+            }
         remedy = runs.watch_cycle_line(project)
         return {
             "event": FOLLOWER_STALE_PRODUCER_EVENT,
@@ -1465,9 +1512,7 @@ def _follow_watch_lines(
             "remedy": remedy,
             "line": (
                 f"producer {project} runs older code than this follower "
-                f"({_short_code_stamp(identity.get('code_stamp'))} vs "
-                f"{_short_code_stamp(identity.get('current_stamp'))}); "
-                f"cycle it with: {remedy}"
+                f"({stamps}); cycle it with: {remedy}"
             ),
         }
 
