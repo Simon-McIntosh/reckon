@@ -154,7 +154,13 @@ def _burn_level(value: float) -> str:
 def _fallback_kind(reason: object) -> str:
     value = str(reason or "").lower()
     if "timeout" in value:
-        return "timeout"
+        # A dispatcher-attributed timeout names the stage that was still running
+        # (``timeout in budget-snapshot``); a bare ``timeout`` is the reading
+        # with no stage named, kept separate so a summary shows which stages
+        # spend the pick's budget rather than collapsing them into one count.
+        _, separator, stage = value.partition(" in ")
+        stage = stage.strip() if separator else ""
+        return f"timeout:{stage}" if stage else "timeout"
     if "jev-error" in value:
         return "jev-error"
     if "input" in value:

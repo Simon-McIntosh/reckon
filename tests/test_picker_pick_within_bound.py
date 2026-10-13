@@ -177,4 +177,9 @@ def test_slow_client_still_times_out_as_a_recorded_fallback(monkeypatch):
     )
     assert time.monotonic() - started < 0.4
     assert result["action"] == "fallback"
+    # The estimate finishes well inside the bound here, so the stage the ask is
+    # inside when it expires is the picker call itself, which is recorded as a
+    # time but not named: the fallback keeps the bare reading, and the estimate's
+    # own time beside it shows the expiry was not taken by the estimate.
     assert result["fallback_reason"] == "timeout"
+    assert result["stage_ms"]["context-estimate"] is not None
