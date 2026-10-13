@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.98">
-<meta name="plan-version" content="287">
+<meta name="plan-version" content="288">
 <meta name="plan-modified" content="2026-10-13">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
@@ -1594,11 +1594,17 @@ reviewed worktree is untouched (git status --porcelain empty).</p></div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261013T031008408412-harness-reference-states-its-rules" data-who="reckon-build" data-when="2026-10-13T03:23:00.774Z">
     <div class="r-comment-body"><p>re-pointed the two harness doc guards at the sentences the Claude Code reference carries instead of rewording it — cap test reads "capped at 1,800,000 milliseconds — thirty minutes" from normalised whitespace (the reference hard-wraps and split the figure), follower-expiry anchor is now "the expiry takes the wrapper rather than the process it started — the `crew follow` inside it keeps running"; head arm 13 passed EXIT=0, declared mutation 2 failed/11 passed EXIT=1.</p></div>
 </div>
+<div class="r-comment" data-section="s9" data-id="c-close-s9" data-who="reckon-build" data-when="2026-10-13T04:00:00Z">
+    <div class="r-comment-body"><p>§9 landed: the two harness-reference doc tests look for the sentences that state each rule in the rewritten reference (commit <code>2fa63c253</code>). 13 passed; review 116, 0 added; verify-gate passed at <code>a28108bb8</code>. <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed.html#s9-harness-reference">evidence</a></p></div>
+</div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261013T033240685332-review-of-census-tests-know-the-run-file-bounding-7782f4b08ba0" data-who="reckon-build" data-when="2026-10-13T03:47:09.697Z">
     <div class="r-comment-body"><p>attached an independent review scoring all six dimensions (goal_fidelity 20, evidence 19, scope_discipline 20, durability 20, fit 20, reuse 20; total 118) to run r-20261013T030735322709-census-tests-know-the-run-file-bounding, read base a99e008e833645efa448b3bac4287a8eccfe8c79 -&gt; head 7782f4b08ba0544c2ed68e04c18c170d2607f503; both census additions judged to qualify, one follow-on finding (the reviewed manifest's changed-line arithmetic counts the fragment twice), added_failure_count unmeasured.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261013T030735322709-census-tests-know-the-run-file-bounding" data-who="reckon-build" data-when="2026-10-13T03:30:31.008Z">
     <div class="r-comment-body"><p>Brought both census ids current after showing each function has the property its census guards.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-close-s7" data-who="reckon-build" data-when="2026-10-13T04:00:00Z">
+    <div class="r-comment-body"><p>§7 landed: the raw-reader and staged-write census tests list <code>_run_file_is_binary</code> and <code>_bound_run_file</code> with the reason each qualifies (commit <code>7782f4b08</code>). 81 passed; the scratch raw reader is still reported; review 118, 0 added; verify-gate passed. <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed.html#s7-census-tests">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261013T033842807720-review-of-census-test-reads-its-own-fixture-fd7a0908c315" data-who="reckon-build" data-when="2026-10-13T03:50:57.240Z">
     <div class="r-comment-body"><p>Reviewed r-20261013T031408328042-census-test-reads-its-own-fixture at fd7a0908c (base 40186023d) and stored the parsed record at reviews/reckon/r-20261013T031408328042-census-test-reads-its-own-fixture.json and its .at-fd7a0908c twin: 6/6 dimensions scored (goal_fidelity 19, evidence 18, scope_discipline 20, durability 17, fit 18, reuse 16; total 108), added_failure_count 0 derived from the run's own baseline_suite [1 failure] and after_suite [0 failures], two follow-on findings.</p></div>
@@ -1606,8 +1612,11 @@ reviewed worktree is untouched (git status --porcelain empty).</p></div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261013T031408328042-census-test-reads-its-own-fixture" data-who="reckon-build" data-when="2026-10-13T03:38:26.899Z">
     <div class="r-comment-body"><p>The doctor now reads the MCP census log and transcript roots from the mcp_census module at call time rather than through import-time default arguments, so test_mcp_census.py::test_doctor_prints_the_census_figures points the census at its own temporary tree and derives every expected line from records it builds: 6 passed at head against 1 failed, 5 passed at base.</p></div>
 </div>
+<div class="r-comment" data-section="s11" data-id="c-close-s11" data-who="reckon-build" data-when="2026-10-13T04:00:00Z">
+    <div class="r-comment-body"><p>§11 landed: the doctor reads the census roots at call time and the census test points them at its own fixture (commit <code>fd7a0908c</code>). 6 passed; the off-by-one control fails; review 108, 0 added; verify-gate passed. <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed.html#s11-census-fixture">evidence</a></p></div>
+</div>
 <div class="r-comment" data-section="s14" data-id="c-run-r-20261013T033938540940-review-of-image-guard-catches-only-images-243702994de7" data-who="reckon-build" data-when="2026-10-13T03:54:30.477Z">
-    <div class="r-comment-body"><p>Reviewed r-20261013T031830337717-image-guard-catches-only-images at base 40186023d..head 243702994de7: the node narrowed tests/test_spa_owed_captures.py&#x27;s Path.read_bytes forgery to image suffixes so the per-test seat-record reap&#x27;s /proc/&lt;pid&gt;/environ read no longer trips IMAGE_BYTES_OPENED, and added a control test that opens a PNG under the guard. All six dimensions scored (goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 18, reuse 10). No blocking finding; one follow-on names the fifth image-suffix set.</p></div>
+    <div class="r-comment-body"><p>Reviewed r-20261013T031830337717-image-guard-catches-only-images at base 40186023d..head 243702994de7: the node narrowed tests/test_spa_owed_captures.py's Path.read_bytes forgery to image suffixes so the per-test seat-record reap's /proc/&lt;pid&gt;/environ read no longer trips IMAGE_BYTES_OPENED, and added a control test that opens a PNG under the guard. All six dimensions scored (goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 18, reuse 10). No blocking finding; one follow-on names the fifth image-suffix set.</p></div>
 </div>
 </section>
 </main>
