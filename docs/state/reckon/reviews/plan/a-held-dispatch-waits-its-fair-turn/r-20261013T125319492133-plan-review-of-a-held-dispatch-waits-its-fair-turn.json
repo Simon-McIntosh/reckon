@@ -1,0 +1,55 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-13T13:07:59.285Z",
+  "dispatched_at": "2026-10-13T12:53:53Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-held-dispatch-waits-its-fair-turn.html:131",
+      "id": "reasoning-1",
+      "reason": "the deliverable and the done-when must state that the queued repair records the reviewed head alongside the waiver (or the requeue must otherwise preserve it), or the section lands a repair that runs against the wrong revision while its own gate reads green.",
+      "text": "\u00a717's deliverable records only `allow_unreconciled_runs` in `dispatch_options`, but the queued pointer carries no other launch input: `dispatch()` stores only `dispatch_options` on the queued request (reckon/crew/dispatch.py:958), and `_launch_queued` rebuilds the launch from that dict alone, taking `base=str(options.get(\"base\") or \"HEAD\")` (reckon/crew/queue_admission.py:143) and reconstructs the node without any base (`_node_from_pointer`, queue_admission.py:74). The repair's base is load-bearing \u2014 `dispatch_repair_for_run` passes `base=reviewed_head or \"HEAD\"` precisely because \"the reviewed run is unpromoted here \u2026 so the base is always the reviewed head\" (recovery_repair_dispatch.py:1003-1013) \u2014 so a repair relaunched from the queue is cut at HEAD, not at the reviewed head, and the repair worker no longer has the reviewed run's commits under it. Following \u00a710's single-key options dict makes this permanent, and \u00a717's done-when (launches rather than raising UnreconciledRuns) passes anyway, so the node ships without seeing it.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "b15a03d2e91d14c51cca7bc4a4dc4cf6842f997da290343d5eae005cea9f8d19",
+  "plan_slug": "a-held-dispatch-waits-its-fair-turn",
+  "plan_version": 56,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261013T125319492133-plan-review-of-a-held-dispatch-waits-its-fair-turn",
+  "reviewed_blob_sha": "3193fac4f935c663ed97eef6fe1d7d1141ac9dd7",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `dispatch_repair_for_run` (reckon/crew/recovery_repair_dispatch.py:501) is the enclosing function of the `unreconciled_override=True` call at line 1005/1020, which carries no `dispatch_options`; `options.get(\"allow_unreconciled_runs\")` sits at reckon/crew/queue_admission.py:147; \u00a710 resolves; and every href in the doc (the landed-evidence archive anchors s2/s3/s8/s9/s11/s12, the-monitor-shows-the-work-it-watches, the-crew-home-has-a-bound, a-window-paces-the-lane, the-local-lane-is-the-default) resolves, the extensionless plan links resolving as `<path>.html`.",
+    "done_when": "pass \u2014 \u00a717's done-when is measurable and carries two controls: a delivered run past the grace queued on a held lane must launch rather than fail UnreconciledRuns, a non-repair node in the same state must still be refused, and the negative control (drop the waiver from dispatch_options) must land the queued repair back in the UnreconciledRuns refusal.",
+    "evidence_paths": "pass \u2014 \u00a717 logs its control under the run directory, the same durable crew run path \u00a79, \u00a710, \u00a711 and \u00a716 use, not a scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 \u00a717's symbols (`test_a_queued_repair_keeps_its_waiver.py`, `dispatch_options`, `allow_unreconciled_runs`, `UnreconciledRuns`) name mechanisms and code identifiers, with no plan label, stage name, ticket number or changelog prose.",
+    "reasoning": "a finding \u2014 the root cause \u00a717 states is confirmed in the code, and check 3 holds (the caller is `dispatch_repair_for_run`'s own `dispatch()` call, reached whenever a held local-lane repair is queued), but the section's mechanism stops at the waiver while the relaunch rebuilds everything a repair needs from that same dict, so a requeued repair is cut from the wrong base.",
+    "single_goal": "pass \u2014 \u00a717 carries one deliverable: a queued repair records its unreconciled waiver so the admission pass relaunches it with the same exemption.",
+    "wiring": "pass \u2014 \u00a717 declares no ordering and needs none; its write paths (reckon/crew/recovery_repair_dispatch.py and tests/test_a_queued_repair_keeps_its_waiver.py) are claimed by no other section, and the ordering notes on the shared-file pairs (\u00a712/\u00a713 on dispatch.py, \u00a711/\u00a714 on queue_admission.py) are unchanged by it."
+  },
+  "section_digests": {
+    "_document": "180528252bba0577d12c6500442acf5170ef65fab80c77b48a022b2b8787390e",
+    "s1": "e09f72c38fa12dd06b1fede9137b6a8731c7f42dad95ea4d7873e48b6bcebc93",
+    "s10": "769f35c4ff338677b1083340b990086682e629701a25af49a8b6e2d3b8a175a4",
+    "s11": "3aafc106945bdc346a0f808fc26c7fc8e028b922103641455da38536ae24c036",
+    "s12": "f72ab709e3a40644be43c6e558b558089f939e3368a20a2b34321a9043c80c88",
+    "s13": "1f1792d925edd6b7c0b33bd02bebc3db1f499f9d5e1505b3ba04b305d9ed7f64",
+    "s14": "a86f35810a5d1446f8cf9294a46f7a7a393c1452cc3080ef8b9e51cf83670acf",
+    "s15": "694218fb467e061648aac13eed1a446529dbff08aca86ecfdb24792eb5b2820e",
+    "s16": "5d0a87ee69959477d707fb8d7b442b283f6ae0e7bc896382dd4c65c7e3efb9b8",
+    "s17": "27484ae8cc3ae83ac38492996f67e490fe2421bd8a28ecece0d89bb1bbdc2a18",
+    "s2": "c37ed4ecb2dad1331b0b031fb8351608243790308312236d375bede3594285b7",
+    "s3": "ef687123318fac196bded366330cf2e92b586c4991b5c1cc8670f228182f916c",
+    "s4": "e6a41eadc72e4752cc0ebe35a14a9bce3f28bc1061ec677e8f779fa09d8c037c",
+    "s5": "4b674f96924c3dbfde217945d16c606df376d034dc060f02360a4336412e74f8",
+    "s6": "9e35fc2341a06de64fed9ff7f176a0e83b22c1482c1b5a04a5539b6e4c07aab4",
+    "s7": "764a72dad2d59bddd4d3b1209f07c0c210ff6c46cd14147d4bcc7ffe9fa9426d",
+    "s8": "1b92313fdf672f4b813b45aa8e26f1304ca363cdc5a4d1752238f794a2019e27",
+    "s9": "ef8f75976cf8d243089cb5955b0e084cf6e2c6bcd478f9e56b8e8654080c6ad6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T13:08:02.379563+00:00"
+}
