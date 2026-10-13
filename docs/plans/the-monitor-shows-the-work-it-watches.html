@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
   <meta name="plan-title" content="The Monitor Shows The Work It Watches">
   <meta name="plan-summary" content="The session-host pane is empty while work runs and never stops after. Show each own run&#x27;s start and a live roll-up, and end the pane when no work is live.">
-  <meta name="plan-status" content="done">
+  <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="4.0">
   <meta name="plan-capability-version" content="1.0">
@@ -22,11 +22,11 @@
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-standalone" content="The lead&#x27;s 2026-10-12 requirements for the session-host pane, revising the start-row rule of the shipped a-follower-row-is-worth-a-wake; no live plan waits on it and it waits on none.">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;the-monitor-shows-the-work-it-watches#s5&quot;], &quot;s4&quot;: [&quot;the-monitor-shows-the-work-it-watches#s2&quot;], &quot;s5&quot;: [&quot;the-monitor-shows-the-work-it-watches#s2&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="30">
+<meta name="plan-version" content="31">
 <meta name="plan-modified" content="2026-10-13">
 </head>
 <body>
@@ -117,6 +117,10 @@
 <p>The existing ticker and follower tests that assert today's words are updated to the new words, never deleted, and each is named in the manifest. The negative control adds an unmapped internal state, and the enumeration test must then fail. It is logged under the run directory.</p>
 <p>Write paths: <code>reckon/crew/ticker.py</code>, <code>tests/test_the_pane_speaks_seven_words.py</code>, plus the existing test files whose expected words change, each named at dispatch. It runs after §2 and before §3, which renders states in its roll-up.</p>
 
+    <h2 id="s6">§6 — A pane&#x27;s remembered states are pane words</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> §5 maps every state a row draws to one of seven pane words, yet two panes on 2026-10-13 drew <code>completed_unpromoted → delivered</code> after reloading onto that code. A streamed row takes its left word from the state the grid remembers for the run. <code>_seed_ticker_memory</code> in <code>reckon/crew_follow_commands.py</code> fills that memory on attach and reload from the follower's remembered map, which merges the checkpoint with stored history, and both can hold producer states. The memory is copied into the grid unmapped, so a run live across a re-arm or a reload shows its raw state on the left. It recurs at every vocabulary change and at every attach that seeds from stored history.</p><p><strong>Deliverable.</strong> The grid maps a remembered state to its pane word where it takes the memory in, keeping a state that is already one of the seven words. No other path writes the grid's memory, so every left word a row draws is one of the seven.</p><p><strong>Done when</strong> a test seeds a grid with a run remembered as <code>completed_unpromoted</code> and another remembered as <code>working</code>, renders a following transition for each, and finds the left words <code>delivered</code> and <code>working</code>. A second test seeds every internal state in <code>PANE_STATES</code> and finds no rendered left word outside the seven. The test files importing <code>reckon/crew/ticker.py</code> or <code>reckon/crew_follow_commands.py</code> show no added failure against base. The negative control seeds the memory unmapped again, and the first test must then fail. It is logged under the run directory. Write paths: <code>reckon/crew_follow_commands.py</code>, <code>reckon/crew/ticker.py</code> and <code>tests/test_a_remembered_state_renders_as_a_pane_word.py</code>.</p>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-tmstwiw-001" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-build (health-review-1010)" data-written-at="2026-10-12" data-recommends-skill="/reckon-build the-monitor-shows-the-work-it-watches" data-resolved-at="2026-10-12T05:27:02+00:00" data-resolved-by="reckon-build (health-review-1010)">
@@ -130,6 +134,11 @@
     <div class="r-fu-body"><p>All five sections are done: own starts (§2), the live roll-up (§3), the pane settles (§4) and the seven words (§5).</p></div>
     <pre class="r-fu-prompt">/reckon-build the-monitor-shows-the-work-it-watches</pre>
     <p class="r-fu-outcome">done — no followup: every section landed and verified at the integrated head.</p>
+    </article>
+<article class="r-fu" data-id="f-tmstwiw-remembered-words" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-13" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Map a pane&#x27;s remembered states to pane words (§6)</h4>
+    <div class="r-fu-body"><p>A peer session found raw states on the left of rows after its follower reloaded onto the seven-word code. The grid's memory is seeded unmapped from the follower's checkpoint and stored history.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-monitor-shows-the-work-it-watches §6</pre>
     </article>
 </section>
   <section data-reckon="decisions" id="decisions" class="r-decisions">
