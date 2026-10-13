@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "f43062fc8bbedba891a3522e2ffce306ee31b86c",
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/serve.py:1847",
+    "reckon/roadmap.py:2525",
+    "reckon/resources.py:691",
+    "reckon/crew/picker/__init__.py:311",
+    "reckon/crew/picker/replay.py:51",
+    "reckon/archive.py:75",
+    "reckon/ledger.py:3930",
+    "reckon/tags.py:213"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-13T01:31:39Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T013021469313-one-read-walks-the-tree-once/gate_head.log",
+      "line": "31",
+      "severity": "blocking",
+      "text": "blocking: the head gate log is truncated at 62% with no summary line and no EXIT= line, because the worker's re-run (stream record 7046, started 01:54:36Z) redirected to the same path and was cancelled by srun at 02:00:19Z (stderr.log); the manifest's after_suite.completed=true and its quoted \"3 failed, 2873 passed\" cannot be rechecked from the cited artefact, so the head arm is unreadable and promotion should not read a green head gate from a log that does not contain one."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T013021469313-one-read-walks-the-tree-once/manifest.md",
+      "line": "18",
+      "severity": "follow-on",
+      "text": "follow-on: after_suite records revision bfef50fdf and the fragment cites the head figure at 99e38e7ac, but the run that produced \"2873 passed\" started at 01:36:13Z before either commit existed (99e38e7ac committed 01:39:01Z), so the recorded head revision names neither the tree the figure was measured on; the two commits after it are test-import and docs only, so the figure is materially valid but its provenance is mislabelled."
+    }
+  ],
+  "head_log_revision": "bfef50fdf25bbc9c93105d59986a9d0bd01beef2",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 8 production call site(s)",
+    "diff": "read commit by commit against f43062fc8; 99e38e7ac changes iter_resources in reckon/resources.py and adds the test, e78d125e8 re-imports the module without an alias (no behaviour change), bfef50fdf adds the evidence fragment.",
+    "done_when": "the source done_when names tests/test_a_warm_read_scans_the_tree_once.py counting one walk across four flag combinations with each caller receiving its own selection, no added failure over the resources.py-importing files, and a negative control that re-keys on each combination; the manifest records that file 4 passed, the 11-file gate head 3 failed/2873 passed against base 3 failed+2 errors/2867 passed (zero added), and the negative-control log.",
+    "goal": "the node goal is that inside a resource_scan_scope the scan runs once with the widest include_archived/include_legacy flags and each caller's view is filtered from it; reckon/resources.py:463 iter_resources keys the scope cache on (docs_dir, project), scans with include_archived=True/include_legacy=True/include_invalid=True at :487 and filters at :497, which is exactly that deliverable.",
+    "manifest": "read; it declares status complete, records the new test 4 passed, the head/base gate figures, the failure_attribution for the base-arm scaffolding error, and names gate_head.log, gate_base.log and negative_control.log.",
+    "write_paths": "the source FENCE-SCOPE names reckon/resources.py, tests/test_a_warm_read_scans_the_tree_once.py, the evidence fragment under docs/evidence/fragments/a-read-answers-inside-its-deadline/one-read-walks-the-tree-once.html and the figures dir; every path in the diff is inside that set (3 files; no figure written, as the done-when names no artifact)."
+  },
+  "justifications": {
+    "durability": "tests/test_a_warm_read_scans_the_tree_once.py:92 fails (assert 4==1) when the scope is re-keyed on each flag combination, as negative_control.log records.",
+    "evidence": "the head figure is recorded in the manifest and fragment but its cited artefact gate_head.log is truncated at 62% with no summary or EXIT= line, so the head arm cannot be rechecked from the log it names.",
+    "fit": "reckon/resources.py:481-497 follows the module's mechanism-comment idiom and adds no forbidden label, though the archived/legacy predicate now lives both at :523-526 and :497.",
+    "goal_fidelity": "reckon/resources.py:487 scans once with the widest flags and :497 returns each caller's filtered view, matching the goal exactly.",
+    "reuse": "the change extends iter_resources, the owner of resource discovery in reckon/resources.py; no separate capability is forked, only the flag predicate is expressed twice.",
+    "scope_discipline": "the diff touches only reckon/resources.py, tests/test_a_warm_read_scans_the_tree_once.py and the fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that inside a resource_scan_scope the scan runs once with the widest include_archived/include_legacy flags and each caller's view is filtered from it; reckon/resources.py:463 iter_resources keys the scope cache on (docs_dir, project), scans with include_archived=True/include_legacy=True/include_invalid=True at :487 and filters at :497, which is exactly that deliverable.\nVERDICT done_when: the source done_when names tests/test_a_warm_read_scans_the_tree_once.py counting one walk across four flag combinations with each caller receiving its own selection, no added failure over the resources.py-importing files, and a negative control that re-keys on each combination; the manifest records that file 4 passed, the 11-file gate head 3 failed/2873 passed against base 3 failed+2 errors/2867 passed (zero added), and the negative-control log.\nVERDICT write_paths: the source FENCE-SCOPE names reckon/resources.py, tests/test_a_warm_read_scans_the_tree_once.py, the evidence fragment under docs/evidence/fragments/a-read-answers-inside-its-deadline/one-read-walks-the-tree-once.html and the figures dir; every path in the diff is inside that set (3 files; no figure written, as the done-when names no artifact).\nVERDICT manifest: read; it declares status complete, records the new test 4 passed, the head/base gate figures, the failure_attribution for the base-arm scaffolding error, and names gate_head.log, gate_base.log and negative_control.log.\nVERDICT diff: read commit by commit against f43062fc8; 99e38e7ac changes iter_resources in reckon/resources.py and adds the test, e78d125e8 re-imports the module without an alias (no behaviour change), bfef50fdf adds the evidence fragment.\nCALL_SITES: reckon/serve.py:1847, reckon/roadmap.py:2525, reckon/resources.py:691, reckon/crew/picker/__init__.py:311, reckon/crew/picker/replay.py:51, reckon/archive.py:75, reckon/ledger.py:3930, reckon/tags.py:213\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/resources.py:487 scans once with the widest flags and :497 returns each caller's filtered view, matching the goal exactly.\nSCORE evidence: 13\nJUSTIFICATION evidence: the head figure is recorded in the manifest and fragment but its cited artefact gate_head.log is truncated at 62% with no summary or EXIT= line, so the head arm cannot be rechecked from the log it names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only reckon/resources.py, tests/test_a_warm_read_scans_the_tree_once.py and the fragment, all inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_warm_read_scans_the_tree_once.py:92 fails (assert 4==1) when the scope is re-keyed on each flag combination, as negative_control.log records.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/resources.py:481-497 follows the module's mechanism-comment idiom and adds no forbidden label, though the archived/legacy predicate now lives both at :523-526 and :497.\nSCORE reuse: 19\nJUSTIFICATION reuse: the change extends iter_resources, the owner of resource discovery in reckon/resources.py; no separate capability is forked, only the flag predicate is expressed twice.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T013021469313-one-read-walks-the-tree-once/gate_head.log:31 blocking: the head gate log is truncated at 62% with no summary line and no EXIT= line, because the worker's re-run (stream record 7046, started 01:54:36Z) redirected to the same path and was cancelled by srun at 02:00:19Z (stderr.log); the manifest's after_suite.completed=true and its quoted \"3 failed, 2873 passed\" cannot be rechecked from the cited artefact, so the head arm is unreadable and promotion should not read a green head gate from a log that does not contain one.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T013021469313-one-read-walks-the-tree-once/manifest.md:18 follow-on: after_suite records revision bfef50fdf and the fragment cites the head figure at 99e38e7ac, but the run that produced \"2873 passed\" started at 01:36:13Z before either commit existed (99e38e7ac committed 01:39:01Z), so the recorded head revision names neither the tree the figure was measured on; the two commits after it are test-import and docs only, so the figure is materially valid but its provenance is mislabelled.",
+  "review_run_id": "legacy-e5b8feb26df6",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "f43062fc8bbedba891a3522e2ffce306ee31b86c",
+  "reviewed_head_sha": "bfef50fdf25bbc9c93105d59986a9d0bd01beef2",
+  "reviewed_run_id": "r-20261013T013021469313-one-read-walks-the-tree-once",
+  "reviewer_run_id": "r-20261013T020049137583-review-of-one-read-walks-the-tree-once-bfef50fdf25b",
+  "scores": {
+    "durability": 19,
+    "evidence": 13,
+    "fit": 16,
+    "goal_fidelity": 20,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T02:10:00+00:00",
+  "total": 107
+}
