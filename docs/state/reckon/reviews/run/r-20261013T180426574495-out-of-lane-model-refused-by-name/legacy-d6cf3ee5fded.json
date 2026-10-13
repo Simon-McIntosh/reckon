@@ -1,0 +1,53 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-10-13T18:05:38Z",
+  "findings": [
+    {
+      "file": "reckon/crew_dispatch_commands.py",
+      "line": "467",
+      "severity": "follow-on",
+      "text": "follow-on: _lane_declaring_model returns None when the model is declared by more than one lane, so an ambiguous model asked for under a third lane still falls to the unknown-name message the section removes, misstating a declared model as undeclared."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against c857d33c8 \u2014 4ee37f654 adds the refusal and 44931e2d0 the evidence fragment, 176 insertions and 7 deletions across three files, all inside the declared scope.",
+    "done_when": "the measure's four behaviours are all asserted \u2014 reckon/crew_dispatch_commands.py:505 names model and both lanes, tests/test_dispatch_names_a_model.py:204 anchors the full launch argv on \"claude-opus-5-5\", :285 covers --local with a model outside the local lane, and :296 asserts the live pointer's pair; the manifest records the run and its result.",
+    "goal": "the node's goal is to refuse a declared model named outside the lane it was asked for, naming the model and both lanes, and to exercise --model end to end; reckon/crew_dispatch_commands.py:501 raises that refusal and tests/test_dispatch_names_a_model.py:253 exercises it.",
+    "manifest": "read; it carries the orientation, commits 4ee37f654 and 44931e2d0, the gate command and its result, both arm logs and the negative-control log path.",
+    "write_paths": "the manifest declares four exclusive paths; the diff touches reckon/crew_dispatch_commands.py, tests/test_dispatch_names_a_model.py and docs/evidence/fragments/lane-and-model-routing/out-of-lane-model-refused-by-name.html, all inside them."
+  },
+  "justifications": {
+    "durability": "the negative control removes the out-of-lane branch and tests/test_dispatch_names_a_model.py:267 fails there, and :204 anchors the argv on an independent literal",
+    "evidence": "the manifest's head-arm log reads 2 failed, 746 passed, 1 skipped and the negative-control log shows tests/test_dispatch_names_a_model.py:267 reddening on the base message",
+    "fit": "reckon/crew_dispatch_commands.py:455 sits beside _model_narrowed_backend with the same lazy ledger import idiom and carries no banned name",
+    "goal_fidelity": "reckon/crew_dispatch_commands.py:505 refuses with the model and both lane names, exactly the deliverable the goal states both tasks of",
+    "reuse": "_lane_declaring_model at reckon/crew_dispatch_commands.py:455 wraps the owner reckon/ledger.py:228 resolve_name rather than re-implementing name resolution.",
+    "scope_discipline": "the three changed paths all sit inside the four declared write paths and nothing outside them was touched"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to refuse a declared model named outside the lane it was asked for, naming the model and both lanes, and to exercise --model end to end; reckon/crew_dispatch_commands.py:501 raises that refusal and tests/test_dispatch_names_a_model.py:253 exercises it.\nVERDICT done_when: the measure's four behaviours are all asserted \u2014 reckon/crew_dispatch_commands.py:505 names model and both lanes, tests/test_dispatch_names_a_model.py:204 anchors the full launch argv on \"claude-opus-5-5\", :285 covers --local with a model outside the local lane, and :296 asserts the live pointer's pair; the manifest records the run and its result.\nVERDICT write_paths: the manifest declares four exclusive paths; the diff touches reckon/crew_dispatch_commands.py, tests/test_dispatch_names_a_model.py and docs/evidence/fragments/lane-and-model-routing/out-of-lane-model-refused-by-name.html, all inside them.\nVERDICT manifest: read; it carries the orientation, commits 4ee37f654 and 44931e2d0, the gate command and its result, both arm logs and the negative-control log path.\nVERDICT diff: read commit by commit against c857d33c8 \u2014 4ee37f654 adds the refusal and 44931e2d0 the evidence fragment, 176 insertions and 7 deletions across three files, all inside the declared scope.\nCALL_SITES: reckon/crew_dispatch_commands.py:1166 (crew_dispatch), reckon/crew_dispatch_commands.py:1877 (crew_shadow)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_dispatch_commands.py:505 refuses with the model and both lane names, exactly the deliverable the goal states both tasks of;\nSCORE evidence: 19\nJUSTIFICATION evidence: the manifest's head-arm log reads 2 failed, 746 passed, 1 skipped and the negative-control log shows tests/test_dispatch_names_a_model.py:267 reddening on the base message;\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the three changed paths all sit inside the four declared write paths and nothing outside them was touched;\nSCORE durability: 18\nJUSTIFICATION durability: the negative control removes the out-of-lane branch and tests/test_dispatch_names_a_model.py:267 fails there, and :204 anchors the argv on an independent literal;\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew_dispatch_commands.py:455 sits beside _model_narrowed_backend with the same lazy ledger import idiom and carries no banned name;\nSCORE reuse: 20\nJUSTIFICATION reuse: _lane_declaring_model at reckon/crew_dispatch_commands.py:455 wraps the owner reckon/ledger.py:228 resolve_name rather than re-implementing name resolution.\nFINDING reckon/crew_dispatch_commands.py:467 follow-on: _lane_declaring_model returns None when the model is declared by more than one lane, so an ambiguous model asked for under a third lane still falls to the unknown-name message the section removes, misstating a declared model as undeclared.",
+  "review_run_id": "legacy-d6cf3ee5fded",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "c857d33c81dd766ccfa191d6ad35ffe5d803bc6c",
+  "reviewed_head_sha": "44931e2d05c5744d11aaa58bb99d860dcab0147d",
+  "reviewed_run_id": "r-20261013T180426574495-out-of-lane-model-refused-by-name",
+  "reviewer_run_id": "r-20261013T185222400195-review-of-out-of-lane-model-refused-by-name-44931e2d05c5",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T19:10:11.821694+00:00",
+  "total": 114
+}
