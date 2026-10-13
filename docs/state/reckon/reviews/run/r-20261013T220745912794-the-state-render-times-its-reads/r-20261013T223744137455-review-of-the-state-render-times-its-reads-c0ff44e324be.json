@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate arms: gate-head.log (revision c0ff44e32) and gate-base.log (revision f59c6695e) both record 306 passed with zero FAILED/ERROR ids, so the head adds no failing test and the delta is zero",
+  "backend": "clive",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/picker/__init__.py:337"
+  ],
+  "completed_at": "2026-10-13T22:48:39.842Z",
+  "dispatched_at": "2026-10-13T22:38:14Z",
+  "findings": [
+    {
+      "file": "reckon/crew/picker/lane_context.py",
+      "line": "91",
+      "severity": "follow-on",
+      "text": "follow-on: _ReadTimings.flush duplicates the crew-home timing-log append owned by _record_pick_timings at reckon/crew/picker/__init__.py:63 \u2014 identical os.open(O_WRONLY|O_CREAT|O_APPEND,0o644), json.dumps(separators=(\",\",\":\"), default=str) and bare except \u2014 and inlines the _milliseconds rounding from picker/__init__.py:28, so the append idiom now has two owners that can drift."
+    },
+    {
+      "file": "tests/test_the_state_render_times_its_reads.py",
+      "line": "135",
+      "severity": "follow-on",
+      "text": "follow-on: assert _log_path(home).parent == (home / \"crew\") compares the test's own helper output against the expression the helper is defined from, so it holds whatever the production code does and guards no regression."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read the two commits against base f59c6695e; 0862f1471 adds the counter to lane_context.py (+135) and rewrites prompts.render to time the template load (+68/-30), and c0ff44e32 adds the 3-line evidence fragment.",
+    "done_when": "the done_when names tests/test_the_state_render_times_its_reads.py; the reviewed manifest records 2 passed EXIT=0 at 0862f1471, head 306 passed EXIT=0 and base 306 passed EXIT=0 (no added failure), and a negative control EXIT=1 failing the named test.",
+    "goal": "the goal is to time each read the pick's state render makes, one log entry per read; reckon/crew/picker/lane_context.py:717 wraps local_lane_load, :650 wraps list_live and :693/:807 wrap _cached_run_time_profile, and reckon/crew/picker/prompts.py:349 times the template load, each appending one named entry.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T220745912794-the-state-render-times-its-reads/manifest.md; it carries status complete, names gate-new-test.log, gate-head.log, gate-base.log and negative-control.log, and states the counter changes no decision and no rendered prompt.",
+    "write_paths": "the manifest declares five paths (lane_context.py, prompts.py, the new test, the evidence fragment and an unused figures dir); git diff over f59c6695e..c0ff44e32 touches the first four and no file outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_the_state_render_times_its_reads.py:141 asserts the entry count against the stubs' own call tally and reddens on the declared mutation (negative-control.log, 1 failed EXIT=1), though line 135 is a tautology over the test's own helper.",
+    "evidence": "the reviewed manifest names runs/r-20261013T220745912794-the-state-render-times-its-reads/gate-base.log and gate-head.log, both recording 306 passed EXIT=0 with zero FAILED/ERROR lines, and gate-new-test.log recording 2 passed EXIT=0.",
+    "fit": "lane_context.py follows the module's contextmanager and contextvars idiom and prompts.py:354 splits _render_state cleanly, but the append mechanism restates _record_pick_timings verbatim.",
+    "goal_fidelity": "reckon/crew/picker/lane_context.py:650,717,693,807 and reckon/crew/picker/prompts.py:349 name exactly the four shared-storage reads the done_when enumerates, one entry per read.",
+    "reuse": "lane_context.py:91-119 re-implements the best-effort O_APPEND JSON-line append already owned by reckon/crew/picker/__init__.py:63 _record_pick_timings (same os.open flags, json.dumps separators and swallow-all except) without extending the owner.",
+    "scope_discipline": "git diff f59c6695e..c0ff44e32 touches only lane_context.py, prompts.py, tests/test_the_state_render_times_its_reads.py and the evidence fragment, every one inside the manifest's declared write paths."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to time each read the pick's state render makes, one log entry per read; reckon/crew/picker/lane_context.py:717 wraps local_lane_load, :650 wraps list_live and :693/:807 wrap _cached_run_time_profile, and reckon/crew/picker/prompts.py:349 times the template load, each appending one named entry.\nVERDICT done_when: the done_when names tests/test_the_state_render_times_its_reads.py; the reviewed manifest records 2 passed EXIT=0 at 0862f1471, head 306 passed EXIT=0 and base 306 passed EXIT=0 (no added failure), and a negative control EXIT=1 failing the named test.\nVERDICT write_paths: the manifest declares five paths (lane_context.py, prompts.py, the new test, the evidence fragment and an unused figures dir); git diff over f59c6695e..c0ff44e32 touches the first four and no file outside them.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T220745912794-the-state-render-times-its-reads/manifest.md; it carries status complete, names gate-new-test.log, gate-head.log, gate-base.log and negative-control.log, and states the counter changes no decision and no rendered prompt.\nVERDICT diff: read the two commits against base f59c6695e; 0862f1471 adds the counter to lane_context.py (+135) and rewrites prompts.render to time the template load (+68/-30), and c0ff44e32 adds the 3-line evidence fragment.\nCALL_SITES: reckon/crew/picker/__init__.py:337\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/picker/lane_context.py:650,717,693,807 and reckon/crew/picker/prompts.py:349 name exactly the four shared-storage reads the done_when enumerates, one entry per read.\nSCORE evidence: 18\nJUSTIFICATION evidence: the reviewed manifest names runs/r-20261013T220745912794-the-state-render-times-its-reads/gate-base.log and gate-head.log, both recording 306 passed EXIT=0 with zero FAILED/ERROR lines, and gate-new-test.log recording 2 passed EXIT=0.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff f59c6695e..c0ff44e32 touches only lane_context.py, prompts.py, tests/test_the_state_render_times_its_reads.py and the evidence fragment, every one inside the manifest's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_the_state_render_times_its_reads.py:141 asserts the entry count against the stubs' own call tally and reddens on the declared mutation (negative-control.log, 1 failed EXIT=1), though line 135 is a tautology over the test's own helper.\nSCORE fit: 17\nJUSTIFICATION fit: lane_context.py follows the module's contextmanager and contextvars idiom and prompts.py:354 splits _render_state cleanly, but the append mechanism restates _record_pick_timings verbatim.\nSCORE reuse: 5\nJUSTIFICATION reuse: lane_context.py:91-119 re-implements the best-effort O_APPEND JSON-line append already owned by reckon/crew/picker/__init__.py:63 _record_pick_timings (same os.open flags, json.dumps separators and swallow-all except) without extending the owner.\nFINDING reckon/crew/picker/lane_context.py:91 follow-on: _ReadTimings.flush duplicates the crew-home timing-log append owned by _record_pick_timings at reckon/crew/picker/__init__.py:63 \u2014 identical os.open(O_WRONLY|O_CREAT|O_APPEND,0o644), json.dumps(separators=(\",\",\":\"), default=str) and bare except \u2014 and inlines the _milliseconds rounding from picker/__init__.py:28, so the append idiom now has two owners that can drift.\nFINDING tests/test_the_state_render_times_its_reads.py:135 follow-on: assert _log_path(home).parent == (home / \"crew\") compares the test's own helper output against the expression the helper is defined from, so it holds whatever the production code does and guards no regression.",
+  "review_run_id": "r-20261013T223744137455-review-of-the-state-render-times-its-reads-c0ff44e324be",
+  "reviewed_base_sha": "f59c6695ef5a229058163ceca2bb65918619f016",
+  "reviewed_head_sha": "c0ff44e324befa042117d461ba045fefac7c3559",
+  "reviewed_run_id": "r-20261013T220745912794-the-state-render-times-its-reads",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T22:49:09.662928+00:00",
+  "total": 96
+}
