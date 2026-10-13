@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed run's manifest carries no baseline_suite or after_suite arm, so the added-failure count was not taken; the done-when delegates the importer population to the coordinator's merged-head run",
+  "artifacts": {
+    "gate_head_population_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T084550116355-a-discarded-request-stays-discarded/gate-head-population.log",
+    "headline": "done-when test file 2 passed; importer population 26 passed EXIT=0; negative control EXIT=1",
+    "negative_control_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T084550116355-a-discarded-request-stays-discarded/negative-control.log",
+    "reviewed_manifest": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T084550116355-a-discarded-request-stays-discarded/manifest.md"
+  },
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:_record_queued_failure",
+    "reckon/crew/queue_admission.py:admit_once",
+    "reckon/crew/queue_admission.py:admit_until_stopped",
+    "reckon/crew_run_commands.py:crew_admit"
+  ],
+  "completed_at": "2026-10-13T10:24:28.095Z",
+  "dispatched_at": "2026-10-13T10:07:54Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": "1494",
+      "severity": "follow-on",
+      "text": "follow-on: the new _discarded_since (reckon/crew/queue_admission.py:436) repeats the 'was this run discarded' predicate already implemented privately as _discard_recorded; both wrap promotion.discard_record_path with an OSError guard, so a public predicate on the promotion owner would retire the duplication, but the change does not hold on it"
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against base 4f4e5913: 444cc82f8 adds _discarded_since (reckon/crew/queue_admission.py:436-450) and its guard clause (reckon/crew/queue_admission.py:468-469), adds tests/test_a_discarded_request_stays_discarded.py (2 cases), and adds the evidence fragment; queue_admission.py is otherwise untouched.",
+    "done_when": "the done_when names tests/test_a_discarded_request_stays_discarded.py, whose test_a_request_discarded_during_the_pass_is_not_written_back discards mid-pass and asserts no pointer remains, and whose test_a_request_nobody_discarded_is_still_queued asserts the default; the manifest records the importer population (26 passed, EXIT=0) and negative_control.log (EXIT=1), but it carries no baseline_suite or after_suite, so the done_when's 'no added failure against base' half is named to the coordinator's merged-head population rather than measured here.",
+    "goal": "the node's goal is that the admission pass write a request back after a failed launch only when nobody discarded it during the pass; reckon/crew/queue_admission.py:468 returns from _restore_queued when _discarded_since (reckon/crew/queue_admission.py:436-450) finds the run's discard record, and _restore_queued is the pass's sole write-back of a failed launch, called only at reckon/crew/queue_admission.py:506.",
+    "manifest": "read; status complete, commit 444cc82f8, changed_paths matching the three diff paths; it records the population gate at revision 444cc82f8 and negative_control.log whose last line is EXIT=1, and it declares no baseline_suite or after_suite arm.",
+    "write_paths": "the dispatch fenced reckon/crew/queue_admission.py, tests/test_a_discarded_request_stays_discarded.py, docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/a-discarded-request-stays-discarded.html and the figures directory; the diff lists exactly the first three and nothing outside them."
+  },
+  "justifications": {
+    "durability": "removing the guard at reckon/crew/queue_admission.py:468 reddens tests/test_a_discarded_request_stays_discarded.py:63 with the discarded pointer reappearing, as the declared negative control's EXIT=1 shows; both cases read filesystem state rather than a value the test passed in.",
+    "evidence": "the done_when's central measure is asserted by tests/test_a_discarded_request_stays_discarded.py:62-66 and recorded in the manifest with a red negative control, but the manifest carries no base arm so the 'no added failure against base' half rests on the coordinator's merged-head population, not on a run recorded here.",
+    "fit": "_discarded_since (reckon/crew/queue_admission.py:436) and the deferred 'from reckon.crew.promotion import discard_record_path' at line 445 match the file's existing deferred-import idiom (lines 98, 118, 280, 310) and carry no version, plan or ticket identifier; ruff check on both changed files is clean.",
+    "goal_fidelity": "the guard at reckon/crew/queue_admission.py:468 makes _restore_queued leave the pointer absent when promotion.discard_record_path(run_id) exists, and that function is the only place a failed launch is written back (reckon/crew/queue_admission.py:506), so a discard issued during the pass now stands.",
+    "reuse": "_discarded_since wraps the owner promotion.discard_record_path rather than re-resolving the path, but its body duplicates the private predicate _discard_recorded (reckon/crew/recovery_watch.py:1494), the same try/except-over-discard_record_path shape already present.",
+    "scope_discipline": "the landed diff lists only reckon/crew/queue_admission.py, tests/test_a_discarded_request_stays_discarded.py and the evidence fragment, all inside the four declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 4f4e5913d5f20d4764d39a5820f60f4c26952faa\nreviewed_head_sha: 444cc82f8a3604c8137d4458c0e9a708dedc1180\nVERDICT goal: the node's goal is that the admission pass write a request back after a failed launch only when nobody discarded it during the pass; reckon/crew/queue_admission.py:468 returns from _restore_queued when _discarded_since (reckon/crew/queue_admission.py:436-450) finds the run's discard record, and _restore_queued is the pass's sole write-back of a failed launch, called only at reckon/crew/queue_admission.py:506.\nVERDICT done_when: the done_when names tests/test_a_discarded_request_stays_discarded.py, whose test_a_request_discarded_during_the_pass_is_not_written_back discards mid-pass and asserts no pointer remains, and whose test_a_request_nobody_discarded_is_still_queued asserts the default; the manifest records the importer population (26 passed, EXIT=0) and negative_control.log (EXIT=1), but it carries no baseline_suite or after_suite, so the done_when's 'no added failure against base' half is named to the coordinator's merged-head population rather than measured here.\nVERDICT write_paths: the dispatch fenced reckon/crew/queue_admission.py, tests/test_a_discarded_request_stays_discarded.py, docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/a-discarded-request-stays-discarded.html and the figures directory; the diff lists exactly the first three and nothing outside them.\nVERDICT manifest: read; status complete, commit 444cc82f8, changed_paths matching the three diff paths; it records the population gate at revision 444cc82f8 and negative_control.log whose last line is EXIT=1, and it declares no baseline_suite or after_suite arm.\nVERDICT diff: read commit by commit against base 4f4e5913: 444cc82f8 adds _discarded_since (reckon/crew/queue_admission.py:436-450) and its guard clause (reckon/crew/queue_admission.py:468-469), adds tests/test_a_discarded_request_stays_discarded.py (2 cases), and adds the evidence fragment; queue_admission.py is otherwise untouched.\nCALL_SITES: reckon/crew/queue_admission.py:_record_queued_failure, reckon/crew/queue_admission.py:admit_once, reckon/crew/queue_admission.py:admit_until_stopped, reckon/crew_run_commands.py:crew_admit\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the guard at reckon/crew/queue_admission.py:468 makes _restore_queued leave the pointer absent when promotion.discard_record_path(run_id) exists, and that function is the only place a failed launch is written back (reckon/crew/queue_admission.py:506), so a discard issued during the pass now stands.\nSCORE evidence: 16\nJUSTIFICATION evidence: the done_when's central measure is asserted by tests/test_a_discarded_request_stays_discarded.py:62-66 and recorded in the manifest with a red negative control, but the manifest carries no base arm so the 'no added failure against base' half rests on the coordinator's merged-head population, not on a run recorded here.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the landed diff lists only reckon/crew/queue_admission.py, tests/test_a_discarded_request_stays_discarded.py and the evidence fragment, all inside the four declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: removing the guard at reckon/crew/queue_admission.py:468 reddens tests/test_a_discarded_request_stays_discarded.py:63 with the discarded pointer reappearing, as the declared negative control's EXIT=1 shows; both cases read filesystem state rather than a value the test passed in.\nSCORE fit: 19\nJUSTIFICATION fit: _discarded_since (reckon/crew/queue_admission.py:436) and the deferred 'from reckon.crew.promotion import discard_record_path' at line 445 match the file's existing deferred-import idiom (lines 98, 118, 280, 310) and carry no version, plan or ticket identifier; ruff check on both changed files is clean.\nSCORE reuse: 16\nJUSTIFICATION reuse: _discarded_since wraps the owner promotion.discard_record_path rather than re-resolving the path, but its body duplicates the private predicate _discard_recorded (reckon/crew/recovery_watch.py:1494), the same try/except-over-discard_record_path shape already present.\nFINDING reckon/crew/recovery_watch.py:1494 follow-on: the new _discarded_since (reckon/crew/queue_admission.py:436) repeats the 'was this run discarded' predicate already implemented privately as _discard_recorded; both wrap promotion.discard_record_path with an OSError guard, so a public predicate on the promotion owner would retire the duplication, but the change does not hold on it.\n",
+  "review_run_id": "r-20261013T100726581918-review-of-a-discarded-request-stays-discarded-444cc82f8a36",
+  "reviewed_base_sha": "4f4e5913d5f20d4764d39a5820f60f4c26952faa",
+  "reviewed_head_sha": "444cc82f8a3604c8137d4458c0e9a708dedc1180",
+  "reviewed_run_id": "r-20261013T084550116355-a-discarded-request-stays-discarded",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T10:21:32+00:00",
+  "total": 109
+}
