@@ -24,7 +24,7 @@
   <title>A Held Dispatch Waits Its Fair Turn | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="54">
+<meta name="plan-version" content="55">
 <meta name="plan-modified" content="2026-10-13">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="3c837fc1">
@@ -234,6 +234,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-relaunched-run-names-no-worktree" data-who="health-review-1010" data-when="2026-10-13T10:20:00Z">
     <div class="r-comment-body"><p><strong>A second worktree gap on the admission path, same day.</strong> After promotion of the relaunched §12 run, <code>r-20261013T084227782997-a-queued-dispatch-is-accepted</code>, the obligations view reported its worktree as held. Its remedy, <code>reckon crew gc --run</code>, refused under both the launched id and the queued id (<code>r-20261013T084127139096</code>) with <code>no record names a worktree for run</code>. The ledger row for a run launched from the queue carries no worktree. The tree was clean and its head was on main, so it was removed with <code>git worktree remove</code>. This belongs in the same section as the orphaned launch worktree above: a run launched from the queue must stay reachable by the cleanup that names it.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-gc-gap-moved-to-crew-home" data-who="health-review-1010" data-when="2026-10-13T12:10:00Z">
+    <div class="r-comment-body"><p><strong>Correction to <code>c-relaunched-run-names-no-worktree</code>.</strong> That gap is not specific to the queue. A run promoted before its commits reach main has its tree withheld with no recorded path, however it was launched. <code>crew gc --run</code> then reads only recorded worktree fields, while the obligations view also matches a tree by its node-named directory. The gap therefore belongs to gc, and it is owned by <a href="/reckon/plans/the-crew-home-has-a-bound">the-crew-home-has-a-bound</a> §7, "gc reaches every tree its obligation names". §16 of this plan covers only the failed launch's leftover tree.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261008T143648233011-review-of-recover-reads-a-queued-run" data-who="reckon-build" data-when="2026-10-08T14:49:32.593Z">
     <div class="r-comment-body"><p>landing: independent review of run r-20261008T130332012447-recover-reads-a-queued-run (reckon:a-held-dispatch-waits-its-fair-turn §8) stored at the head-keyed review-store path; scored goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 19, reuse 20 (total 116); one follow-on finding (recover's counts dict carries no "queued" key, recovery.py:11684, outside the node's scope); the fix is a one-line log_path guard at dispatch_sessions.py:164 that §8 specifies, verified against the node's head and negative-control logs.</p></div>
