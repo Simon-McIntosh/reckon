@@ -1,0 +1,82 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-13T22:04:32.476Z",
+  "dispatched_at": "2026-10-13T21:57:54Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/lane-and-model-routing/r-20261013T215720049672-plan-review-of-lane-and-model-routing/plan.html:160",
+      "id": "done_when-1",
+      "reason": "the node is fenced out of the exact files it must edit to keep its own gate green, exactly as \u00a722 had to add `tests/test_picker_pick_within_bound.py` to its write paths when it re-pinned that test; \u00a726 must add these three test files (or state the deliverable's storage change is exercised only by the new test and the clause's file set is narrower) or it will block or land red.",
+      "text": "\u00a726's done-when requires \"The test files importing `reckon/crew/picker/outcomes.py` or `reckon/crew/picker/replay.py` show no added failure against the base revision\", but its declared write paths are only `reckon/crew/picker/outcomes.py` and `tests/test_a_hold_is_kept_in_the_crew_home.py`, while three existing test files write through `record_picker_hold` and then read `docs/state/<project>/picker-holds.jsonl`: `tests/test_hold_records_its_state.py:134` (`_hold_rows`) after `_record` at :140, `tests/test_picker_outcomes.py:216` (`test_hold_record_is_durable_and_finds_later_run`), and `tests/test_a_jev_hold_queues_for_the_local_lane.py:145`. Relocating the write to the crew home leaves those reads empty, so each raises on a missing file; the node cannot both satisfy the no-added-failure clause and stay inside its write scope",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "97bc952cd82bac1a96237446b8f04cf3097260b5d1eb0a0d4d9c4d3d30628ad7",
+  "plan_slug": "lane-and-model-routing",
+  "plan_version": 137,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "valid; deferred to \u00a726's revision before its dispatch, recorded as comment c-s26-pinned-tests on \u00a726; \u00a717 and \u00a724 dispatch first",
+      "when": "2026-10-13T22:05:03.893348+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "valid; deferred to \u00a726's revision before its dispatch, recorded as comment c-s26-pinned-tests on \u00a726; \u00a717 and \u00a724 dispatch first",
+      "when": "2026-10-13T22:05:03.893348+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-lane-and-model-routing.v137.json",
+  "review_run_id": "r-20261013T215720049672-plan-review-of-lane-and-model-routing",
+  "reviewed_blob_sha": "49f74709f44ff0f6dec3073ceed5c051deb1234a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `record_picker_hold`, `_hold_path`, `_read_holds`, `replay_hold`, `_write_hold_payload` and `HOLD_PAYLOAD_INLINE_LIMIT` all resolve in `reckon/crew/picker/outcomes.py`, `_hold_path` returns `docs/state/<project>/picker-holds.jsonl`, `_write_hold_payload` writes beside it under `picker-holds/`, `HOLD_PAYLOAD_INLINE_LIMIT` is 8192, and `reckon/crew/picker/replay.py` holds only `replay`/`_summary` (the pick replay), as \u00a726 states.",
+    "done_when": "a finding \u2014 \u00a726's done-when demands that the test files importing `reckon/crew/picker/outcomes.py` show no added failure, but the test files that pin the docs/state write location are not in its write paths and break when the write moves to the crew home.",
+    "evidence_paths": "pass \u2014 \u00a726 names no gate log at a session scratchpad or node-local path; its artefacts are repository tests.",
+    "naming": "pass \u2014 the new test file `tests/test_a_hold_is_kept_in_the_crew_home.py` is named by mechanism, and no plan label or ticket number reaches a symbol or comment.",
+    "reasoning": "pass \u2014 the stated cause (holds written into each project's own checkout, so every `git status` walks untracked logs) matches the cited evidence, and the writer `record_picker_hold` is reached from production callers in `reckon/crew/dispatch.py`.",
+    "single_goal": "pass \u2014 \u00a726 carries one deliverable: a hold is written under the crew home, with readers reading both locations.",
+    "wiring": "pass \u2014 \u00a726 is correctly a root node (its predecessor work landed in one-typesafe-model-picker \u00a732), and `plan-section-depends-on` now carries `\"s22\": [\"lane-and-model-routing#s26\"]`, which encodes the serial order on `reckon/crew/picker/outcomes.py` that \u00a726's text asserts."
+  },
+  "section_digests": {
+    "_document": "61dd5e25832a6f78b8feb8d7391ef888e535a8fe929721f5f1b94c129acfe9fe",
+    "s0": "6e04ec2c2da6b7aa6a120157e2ea4f499c385f6c8f599c9dd4e1fcb27ceb84d5",
+    "s1": "6760f63ebdb0d0db10c3c004f30d4f4253bfb7582bc7a0e4054fed73e017a02d",
+    "s10": "9f3b98da9be42bc1d1dad77d11079186c59e62315308454b2f442bdfffa7755c",
+    "s11": "2e566713b8ee8cbfcf94503cba2640bac78329b96f748ff0334a858e08287755",
+    "s12": "8a7841af15c5beacc75bf716eab0a317f722daab3a302ec190299ce0c3315350",
+    "s13": "6cc9f5f5d1d9a0d7a981363b2961d554bc1670d016cf5da011e18fd20d24b604",
+    "s14": "f4192a6b66ca1a9df3c0c8b84d6a76f9b7e2708145600fc43403217b7a52c540",
+    "s15": "f771307d6c5f071d884953878a527fd166185d3d25c88171a3028f27f2a174b8",
+    "s16": "f223e6b5a96e8c6195a47af2261f3ffdb2da6592ac65ab36dc87669411b7f75d",
+    "s17": "db5f3a60a7771988ff06ffcf6122eeedf774dd3127c63cb5d2553e30aff138df",
+    "s18": "a8fdaccbcc00dea2d881e6f33dbca396f55ac9a48a784860531f01f14666d645",
+    "s19": "e1a470831773831c7253aa2402eab63c6a03e418004a6c140215f11e2aff3722",
+    "s2": "0c6488cdae0f23d0600410d02191390e773858e9bc75008234f71cc66f01889b",
+    "s20": "9dca86a7ea316e5b22b94c70024ba182f82622bb73f8243655562dc2cb4fc8d3",
+    "s21": "8dc7453f756c4d2310baaa5a97b36e69467be72d1cb4221107161ac2abe26293",
+    "s22": "add386faf72355fcafb3bbbd6cbe5fd20a838df47fab9f6c3a9d116db8d4d29e",
+    "s23": "10a05db6298f320a13762d348e0d6fc166aad25921753c17b3936ee7f9e25239",
+    "s24": "d5f6d292f47236016559d0a135c6fbf9b38d6a20fc8fa81171485a3df0c421e8",
+    "s25": "8de857403f88ebb44d1c2c152b208a3da0a6765205ccd0f3c52e77bb1501698a",
+    "s26": "63b9737ef91cfa9b2277846ca80ddc189ee0cea7553fb223a6715f6ad965d879",
+    "s3": "6cb602347e0232fe459028eff2010884381d987053d550c4565f581c23032095",
+    "s4": "aa5a29a8662005607992ae17fc914d47e8e48c68b7e65395b4865f6d33ea37f4",
+    "s5": "2ffa1a3b1d2b09433f25a83f8a7a59b1774249bac29b945f2c2273ace57cb1ba",
+    "s6": "6c8117bcfdc7d4b0bafdc4fb2185779998c71b1730b07a0d900b543f02c08ec1",
+    "s7": "07952e2e354db24e76860530568500cc2066b69b4255c020db83677e46cb18e2",
+    "s8": "7ca129403c95fcbc111273a2b419b29279191bc54c157bb6f7d8de0d5b160d34",
+    "s9": "0c546f1c0ce99eb4f03333edf6955f597fcb37c49baa31305dfd52c6b03364d8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T22:04:57.400472+00:00"
+}
