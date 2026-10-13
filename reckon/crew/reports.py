@@ -1633,6 +1633,71 @@ def _unresolved_revision_findings(node: TaskNode | None) -> list[str]:
     return findings
 
 
+def _review_record_status_findings(node: TaskNode | None) -> list[str]:
+    """Report a review run's written records whose status no reader acts on.
+
+    A reviewer can bypass :func:`reckon.crew.review.store_review`'s status check
+    by writing its record straight into the record path its dispatch granted,
+    and the record then sits on disk carrying a status every reader reads as
+    absent — the reviewed run reads as unreviewed while a file beside it claims
+    a verdict. Every reviewer passes check-manifest before it finishes, so the
+    check the store applies is re-applied here, to each record the node's own
+    declarations grant, through the one shared
+    :func:`reckon.crew.review.review_status_refusal`. The refusal names the
+    record path, the status found and the accepted set, so the reviewer repairs
+    its own record while it still holds its turn rather than leaving a
+    coordinator to find it hours later.
+    """
+    if node is None or not _node_is_a_reviewer(node):
+        return []
+    findings: list[str] = []
+    for record_path, record in _written_review_records(node):
+        refusal = review_module.review_status_refusal(record)
+        if refusal:
+            findings.append(f"review record {str(record_path)!r} {refusal}")
+    return findings
+
+
+def _written_review_records(node: TaskNode) -> list[tuple[Path, dict[str, Any]]]:
+    """The review records written at a reviewer node's granted record paths.
+
+    The dispatch grants the review store's record paths on the node, so the
+    records to judge are read from those declarations rather than from the
+    store's own selection: a declared path is one of this run's records when it
+    sits under the store root's project directory, the same test the record
+    declarations the reviewer was handed satisfy, and the file's bytes are read
+    where they sit so a record the store would set aside — an incomplete one, a
+    copy filed apart from its run — is still judged. Only a body that is a
+    review is judged: a file that neither names a review subject nor carries
+    review material is a placeholder, not a record whose status a reader reads,
+    so it is left to the gates that require the record — this check reports
+    what a written record says, never a guess about a missing or unreadable
+    one.
+    """
+    store_root = review_module.review_store_root()
+    records: list[tuple[Path, dict[str, Any]]] = []
+    seen: set[Path] = set()
+    for declared in node.write_paths or ():
+        candidate = Path(str(declared)).expanduser()
+        if candidate.parent.parent != store_root or candidate in seen:
+            continue
+        seen.add(candidate)
+        try:
+            stored = json.loads(candidate.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(stored, Mapping):
+            continue
+        body = dict(stored)
+        if not (
+            review_module.names_a_review_subject(body)
+            or review_module.carries_review_material(body)
+        ):
+            continue
+        records.append((candidate, body))
+    return records
+
+
 def _unmarked_findings_in_record(
     record: dict[str, Any], record_path: Path
 ) -> list[str]:
@@ -2312,6 +2377,7 @@ def audit_manifest(
     )
     findings.extend(_unmarked_finding_severity_findings(node))
     findings.extend(_unresolved_revision_findings(node))
+    findings.extend(_review_record_status_findings(node))
     if node is not None and manifest["changed_paths"]:
         declared = tuple(node.write_paths or ())
         stray = sorted(
