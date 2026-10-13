@@ -1,0 +1,63 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-13T08:17:10.469Z",
+  "dispatched_at": "2026-10-13T08:09:16Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-shows-the-work-it-watches.html:24",
+      "id": "wiring-1",
+      "reason": "unlike the earlier declined s6\u2192s5 case (a dependency on an already-`done` section), \u00a716 is unbuilt and shares the same file, so the missing edge can mis-order two in-flight dispatches into a ticker.py conflict.",
+      "text": "\u00a717's prose requires it to run after \u00a716 (both edit `reckon/crew/ticker.py`, and \u00a716 is itself still `implementable`), but `plan-section-depends-on` carries only s3/s4/s5 and no s17\u2192s16 edge, so a coordinator can dispatch \u00a716 and \u00a717 concurrently into the same file with no declared ordering",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-shows-the-work-it-watches.html:300",
+      "id": "reasoning-1",
+      "reason": "the section presents an option its own done-when forbids, so a node that picks the watcher route is sent down a path it must then abandon, costing a repair cycle the plan could remove by naming the row policy as the mechanism.",
+      "text": "\u00a717 says it is \"the node's to decide from the code\" between carrying announced lifts across a restart in the watcher and holding a re-announced baseline in the row policy, but the watcher route persists `seen` (reckon/crew/recovery_watch.py:2223 \u2192 lift_watch.sweep) so no baseline is emitted at all, and a pane that attaches afterwards has no row to draw, failing the required \"a pane attached for the first time still shows the standing lift once\"; only the row-policy route \u2014 RowPolicy's per-pane `_reported` memory in reckon/crew/ticker.py:1270 \u2014 satisfies all three done-when cases together",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "c16c85cc1ab433fd59cd941052791988e9a229083419b963e988e5f5afa24752",
+  "plan_slug": "the-monitor-shows-the-work-it-watches",
+  "plan_version": 46,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261013T080838288976-plan-review-of-the-monitor-shows-the-work-it-watches",
+  "reviewed_blob_sha": "9fa822052e889a44e4df4f6c8af5bb6f024ec132",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 \u00a717 cites `reckon/crew/lift_watch.py` and `reckon/crew/ticker.py`, both of which exist; it carries no extensionless href to mis-resolve.",
+    "done_when": "pass \u2014 \u00a717's done-when is measurable (restart case finds no new row; a fresh pane shows the standing lift once) and names a declared negative control (\"re-announces the baseline on restart, and the restart case must then show a row\").",
+    "evidence_paths": "pass \u2014 \u00a717's negative control is \"logged under the run directory\", the durable crew runs directory, consistent with the plan's other sections.",
+    "naming": "pass \u2014 \u00a717 introduces no plan label, ticket number or version tag into code; `test_a_standing_lift_is_announced_once.py` and the module names read by mechanism.",
+    "reasoning": "a finding \u2014 \u00a717 offers the lift-watcher route (carrying announced lifts across a restart) and the row-policy route as interchangeable, but the watcher route cannot satisfy the section's own first-attach done-when.",
+    "single_goal": "pass \u2014 \u00a717 carries one deliverable: a standing lift is drawn once, and only a grant and an end draw a row after that.",
+    "wiring": "a finding \u2014 \u00a717 states \"This section runs after \u00a716, which also writes ticker.py\", yet `plan-section-depends-on` names no s17\u2192s16 edge while the meta declares exactly this kind of shared-file ordering for s3\u2192s5 and s5\u2192s2."
+  },
+  "section_digests": {
+    "_document": "9ee3fd569356b19a6bf22da41765ec12acdd1e4f71fda2701fadb307ddb1857e",
+    "s1": "52c4b79a6da0bc1e71b00748d6314e8a255bd5fa91b6acae30f6943e3c16cee5",
+    "s10": "ce58141a18e475a484415380e6ae181e597ad53c112e6cb22e1cfc60bb6b09fc",
+    "s11": "24bc7e718fa0dce82e99f82b1a80aa7f382204659e1a5fe08844c9bd4df9f21d",
+    "s12": "6b56be12afc45f4700363688128158c594eba3edb30de411ea7d4ca356b3335b",
+    "s13": "af506684f5bf69d74d9b3cdbdf5fa5888d1c3e2ec6b43d93fb08dc79c5821889",
+    "s14": "87e50c4f3edfdf578cc4501636727b40a183a8737e7f4673669428dbae23a0e5",
+    "s15": "09f7a8c8a774c6a9eebd4d5d69d79451363a282a7bf1bb77100479e9a7e98a02",
+    "s16": "867b2716d09b2503e28914fb9f8d9ef0902ca6517f1b150bda6a941a7b0be06b",
+    "s17": "73c1541e48d14dbb6d7624e2eb5e3dde6c26e7a08cf72abe2e8347309157e2cd",
+    "s2": "eeca9b70e096de79d92846f4178d8f31832962cb9c7c73d122ac2a9e06546f32",
+    "s3": "a37e4f17cfa5318f2229db2eabe7a7b80adf7bb6fcb474e3d262981478abba8e",
+    "s4": "fb6bae83cab6ff2e0a33bf64f8a01d35db72cb3113a73e4659d22617724629c9",
+    "s5": "349ee19ab8c71fbc5e62c4cfa2fd4c32d34af2e2f3e9ced2db0580bfd0e74815",
+    "s6": "301b59df6e0fdccf6650e206628516f0e967dbf4e1b58a616e3d6999015f18cc",
+    "s7": "aede0bed1a72c26f45a72032497a3a58f24022a1a5e8cd4f8f6e08aada09aab3",
+    "s8": "7b9b1e94e523da3024a014b4d3d8532114544257c92fcfe64893085d2166840f",
+    "s9": "b85d6764b003c3933d1609383c69602e5f4b2d502c8200fe4bab51f3e9085466"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T08:20:01.816651+00:00"
+}
