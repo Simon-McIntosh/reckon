@@ -198,6 +198,11 @@ import sys
 import time
 
 os.environ[sys.argv[1]] = sys.argv[2]
+first_delay = float(sys.argv[3])
+cap = float(sys.argv[4])
+steady_seconds = float(sys.argv[5])
+delay = first_delay
+crashes = 0
 producer = None
 stopping = None
 
@@ -210,36 +215,52 @@ def stop(signum, _frame):
 for signum in (signal.SIGTERM, signal.SIGHUP, signal.SIGINT):
     signal.signal(signum, stop)
 
-for attempt in range(5):
+while True:
     if stopping is not None:
         raise SystemExit(128 + stopping)
-    producer = subprocess.Popen(sys.argv[3:], stdin=subprocess.DEVNULL,
+    producer = subprocess.Popen(sys.argv[6:], stdin=subprocess.DEVNULL,
                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                                 close_fds=True)
+    started = time.monotonic()
     if stopping is not None and producer.poll() is None:
         producer.send_signal(stopping)
     status = producer.wait()
+    ran_seconds = time.monotonic() - started
     producer = None
     if stopping is not None:
         raise SystemExit(128 + stopping)
     if not (1 <= status <= 127 or status < 0):
         raise SystemExit(status)
-    if attempt == 4:
+    if ran_seconds >= steady_seconds:
+        delay = first_delay
+        crashes = 0
+    crashes += 1
+    if crashes == 5:
         with open(sys.argv[2], 'a', encoding='utf-8') as log:
             log.write('reckon crew watch stopped: producer crashed repeatedly; restart limit reached\\n')
         raise SystemExit(status)
-    time.sleep(min(0.1 * 2 ** attempt, 0.8))
+    time.sleep(delay)
+    delay = min(delay * 2, cap)
 """
 
 
 def _watch_producer_argv(project: str) -> list[str]:
     """Build the argv that starts one project's watcher as a background process."""
+    from reckon.crew.fleet_supervisor import (
+        BACKOFF_CAP_SECONDS,
+        FIRST_BACKOFF_SECONDS,
+        STEADY_RUN_SECONDS,
+    )
+
     return [
         sys.executable,
         "-c",
         _WATCH_PRODUCER_SUPERVISOR,
         WATCH_LOG_ENV,
         str(watch_log_path(project)),
+        str(FIRST_BACKOFF_SECONDS),
+        str(BACKOFF_CAP_SECONDS),
+        str(STEADY_RUN_SECONDS),
         _watch_executable(),
         "crew",
         "watch",
