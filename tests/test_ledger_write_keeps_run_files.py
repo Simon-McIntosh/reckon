@@ -400,3 +400,38 @@ def test_a_loser_of_the_write_race_cannot_overwrite_the_winner(
     lock_path = ledger.ledger_lock_path(PROJECT)
     assert repo not in lock_path.parents
     assert Path(os.environ["RECKON_HOME"]).resolve() in lock_path.parents
+
+
+def test_a_refused_refresh_opens_the_aggregate_rather_than_a_stale_index(
+    repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A refresh refused under a peer must not serve an index the aggregate left.
+
+    The index is only a cache of the aggregate, and a refresh the index refuses
+    — the lock the two writers above contend on, or any peer holding it — falls
+    back to the last published index. That snapshot is complete only while the
+    aggregate it was built from is unchanged: once a write has replaced the
+    aggregate, the snapshot holds the revision before that write. Here that
+    revision is the empty view a promotion's own read publishes before it
+    writes, so serving it hides the seeded run from its own reader. A reader
+    handed a snapshot its aggregate no longer agrees with must open the
+    aggregate instead of returning rows the ledger has contradicted.
+    """
+    _seed(repo)
+    # Publish an index over the seeded revision, then move the aggregate past it.
+    ledger.load(PROJECT, repo)
+    data, version = ledger.load(PROJECT, repo)
+    data["runs"][0]["outcome"] = "completed by a later writer"
+    ledger.write(PROJECT, data, version, repo)
+
+    # Every refresh is refused from here, as it is while a peer holds the lock.
+    def refused(project, root):
+        raise OSError("the index is locked by a peer")
+
+    monkeypatch.setattr(ledger, "_run_snapshot", refused)
+    reread, _version = ledger.load(PROJECT, repo)
+
+    assert reread["runs"][0]["outcome"] == "completed by a later writer"
+    # The aggregate was read, not a stale snapshot: the fallback carries the
+    # age of the index it served, and an aggregate read carries none.
+    assert "index_age_seconds" not in reread
