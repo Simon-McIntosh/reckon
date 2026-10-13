@@ -3028,6 +3028,12 @@ dispatch reaches 80% of the 100% window</code></pre>
     <p>A reset-anchored lift now ends on a moved reset stamp only when the stamp has moved past the recorded one by more than the provider's jitter. The jitter is measured as the spread of the stored stamp history, with a floor at the stamps' one-second resolution (<code>_stamp_moved_past_jitter</code> and <code>STAMP_RESOLUTION_SECONDS</code> in <code>reckon/crew/budget_lift.py</code>). A one-second wobble leaves the lift in force; the measured live jitter was 1.0 s. A full-window move still ends the lift with cause <code>reset</code>, and the two utilisation signals are unchanged. Before this change, exact stamp equality read the wobble as a reset, so the <code>codex-sub</code> lift cleared and was announced again, one source of the monitor's flicker.</p><p>Gate: <code>tests/test_a_lift_survives_reset_jitter.py</code> and <code>tests/test_budget_lift.py</code>, 44 passed, exit 0. The importing population went from 153 passed at base to 159 at head, so no failures were added. The gate was replayed green at the integrated head <code>55d7b3abf</code>. Negative control: restoring exact stamp equality turns the one-second-wobble and measured-tolerance tests red (2 failed, 4 passed). Review: 113/120, 0 added. Follow-on: one arm compares <code>_provider_jitter</code>'s floor case against the same constant the function uses, so it cannot catch a wrongly sized floor. Merged <code>c7b74ad26</code> as <code>55d7b3abf</code>.</p>
   </section>
 
+  <section id="s13">
+    <h2>§13 — A new lift on a group and scope replaces the one standing there</h2>
+    <p><strong>Coordinator's landing record.</strong> Run <code>r-20261013T175852299016-a-new-lift-replaces-the-standing-one</code>, commit <code>204bc397b</code>, merged as <code>349a93925</code>. Review: six dimensions summing to 110, 0 added failures, no findings. Population at the merge: the 12 test files importing <code>budget_lift</code> or <code>lift_watch</code> gave 178 passed against 171 at the base, with 0 added. Logs are <code>~/.cache/reckon-suite-logs/population-{base,head}-awpl-s13.log</code>. Focused gate at the merged head: 13 passed, EXIT=0, <code>merge-awpl-s13-349a93925.log</code>. The worker's head-arm log names the pre-commit HEAD as its revision; the tree held the change, and its 6 new tests passed there.</p>
+  <div id="a-new-lift-replaces-the-standing-one-anchor"></div>
+  </section>
+
 </main>
 
 </body>
