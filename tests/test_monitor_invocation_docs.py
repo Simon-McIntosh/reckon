@@ -140,7 +140,11 @@ def test_the_reference_never_arms_a_persistent_monitor() -> None:
 def test_the_reference_states_the_cap_the_example_passes() -> None:
     """The cap is a figure of the host, and the example spends the whole of it."""
     text = HARNESS.read_text()
-    assert "1,800,000 milliseconds" in text
+    # The reference hard-wraps its prose, so the sentence is read from
+    # normalised whitespace: a line break inside the figure must not read as
+    # the figure being absent.
+    words = " ".join(text.split())
+    assert "capped at 1,800,000 milliseconds — thirty minutes" in words
     assert "timeout_ms: 1800000" in text
 
 
