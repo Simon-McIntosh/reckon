@@ -20,13 +20,16 @@ still reports the reset the lift was granted against. Nothing runs at the
 moment it ends, so a restarted server, a dead producer or an ended session
 cannot leave a lift on.
 
-**A reset is detected two ways, and either ends a reset-anchored lift.** The
-provider may roll the window on schedule, or a limit reset may be applied early
-and leave ``resets_at`` where it was. So a lift records the clock's utilisation
-at grant and treats a current reading below that figure as a reset, which
-catches the common case without history; and it reads the readings taken since
-it was granted, treating a fall between two consecutive readings as a reset,
-which catches the early one a stale stamp would hide.
+**A reset is detected three ways, and any one ends a reset-anchored lift.** The
+provider may roll the window on schedule, so the newest reading's ``resets_at``
+moving past the stamp recorded at grant by more than the provider's own jitter
+ends the lift — a stamp that only wobbles by a second or so does not. A limit
+reset may instead be applied early and leave ``resets_at`` where it was, so a
+lift records the clock's utilisation at grant and treats a current reading below
+that figure as a reset, which catches the common case without history; and it
+reads the readings taken since it was granted, treating a fall between two
+consecutive readings as a reset, which catches the early one a stale stamp would
+hide.
 
 **Resolution happens one step before the pace policy.** A pace policy sees only
 a configuration and has no group, reading or clock, so it cannot itself tell
@@ -84,6 +87,13 @@ END_RESET = "reset"
 
 DEFAULT_MAX_MULTIPLE = 3.0
 DEFAULT_MAX_HOURS = 168.0
+
+# The provider publishes reset stamps to whole seconds, so two reports of one
+# window end can differ by a second before any genuine move. It is the floor a
+# lift tolerates for the stamp signal when no reading history is held to measure
+# the provider's wobble from, and it is a property of the stamps' own reporting
+# rather than a tuned constant.
+STAMP_RESOLUTION_SECONDS = 1.0
 
 RUN_ID_ENV = "RECKON_RUN_ID"
 
@@ -733,12 +743,13 @@ def _reset_observed(
 ) -> bool:
     """Whether the clock named by a reset-anchored lift has rolled over.
 
-    Three signals, any one decisive: the newest reading's ``resets_at`` no
-    longer matches the stamp the lift recorded; the newest reading's utilisation
-    stands below the figure recorded at grant, which catches an early reset that
-    left the stamp in place; and a fall between two consecutive readings that
-    both stand above the grant figure, which catches a reset the newest reading
-    alone would miss.
+    Three signals, any one decisive: the newest reading's ``resets_at`` has
+    moved past the stamp the lift recorded by more than the provider's jitter,
+    so a stamp that wobbles by a second or so is not read as a rollover; the
+    newest reading's utilisation stands below the figure recorded at grant,
+    which catches an early reset that left the stamp in place; and a fall
+    between two consecutive readings that both stand above the grant figure,
+    which catches a reset the newest reading alone would miss.
     """
     ends = lift.get("ends") or {}
     if str(ends.get("kind") or "") != "reset":
@@ -749,11 +760,7 @@ def _reset_observed(
         return False
     newest_utilisation, newest_reset = series[-1]
     recorded_reset = _parse_stamp(ends.get("resets_at"))
-    if (
-        recorded_reset is not None
-        and newest_reset is not None
-        and newest_reset != recorded_reset
-    ):
+    if _stamp_moved_past_jitter(recorded_reset, newest_reset, series[:-1], clock=clock):
         return True
     grant_figure = ends.get("utilisation")
     if not _is_number(grant_figure):
@@ -768,6 +775,57 @@ def _reset_observed(
         if before > floor and after > floor and after < before:
             return True
     return False
+
+
+def _stamp_moved_past_jitter(
+    recorded: datetime | None,
+    newest: datetime | None,
+    history: Sequence[tuple[float | None, datetime | None]],
+    *,
+    clock: str,
+) -> bool:
+    """Whether ``newest`` has moved past ``recorded`` by more than the jitter.
+
+    The stamp signal a reset-anchored lift reads: a window end the provider
+    reports now carries the stamp it had at grant, give or take the provider's
+    own wobble, until the window genuinely rolls. Only a move *ahead* of the
+    recorded stamp counts, since the next window's end is always later, so a
+    stamp that wobbles backwards leaves the lift in force just as one that
+    wobbles forwards does.
+    """
+    if recorded is None or newest is None:
+        return False
+    moved = (newest - recorded).total_seconds()
+    return moved > _provider_jitter(recorded, history, clock=clock)
+
+
+def _provider_jitter(
+    recorded: datetime,
+    history: Sequence[tuple[float | None, datetime | None]],
+    *,
+    clock: str,
+) -> float:
+    """The provider's resets_at wobble, measured from the readings already held.
+
+    How far one report of this window's end strays from another, read from the
+    readings the resolver was handed rather than assumed. The spread is taken
+    over the recorded stamp and every *earlier* reading that still sits in the
+    same window as it — the reading being judged is left out, because a jitter
+    cannot be measured from the very sample it is meant to excuse, and a
+    reading a window further on is a rollover rather than wobble and is left
+    out too. With no earlier reading to measure from, the figure is the
+    provider's stamp resolution, the second its whole-second stamps can differ
+    by without the window having moved.
+    """
+    window = timedelta(hours=CLOCK_HOURS.get(clock, 168.0))
+    stamps = [recorded]
+    for _utilisation, reset in history:
+        if reset is None:
+            continue
+        if abs(reset - recorded) < window / 2:
+            stamps.append(reset)
+    spread = (max(stamps) - min(stamps)).total_seconds()
+    return max(spread, STAMP_RESOLUTION_SECONDS)
 
 
 # ── Reading helpers ─────────────────────────────────────────────────────────
