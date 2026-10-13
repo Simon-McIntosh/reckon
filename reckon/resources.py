@@ -22,7 +22,7 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 from urllib.parse import urlsplit, urlunsplit
 
-from reckon import _plan_html
+from reckon import _plan_html, file_memo
 from reckon._schema import RESOURCE_TYPE_ENUM, ResourceIdentity
 from reckon._store import write_json_atomically
 
@@ -274,6 +274,28 @@ def _identify_meta(path: Path) -> dict:
 
 
 def identify_resource(docs_dir: Path, path: Path, project: str) -> Resource | None:
+    """Classify one HTML file, reusing an unchanged file's identification.
+
+    Identification hashes the file and parses its meta head, and a read walks
+    the whole tree, so every read re-identified every file although nothing had
+    changed. The result is memoised on the file's own stat signature — its
+    path, ``mtime_ns`` and size — so a warm read stats each file and reuses the
+    identification, and only the files whose signature moved are hashed and
+    parsed again. The identity is a pure function of the file's bytes and the
+    tree it lives in, so a memo hit is the same resource a fresh identification
+    produces; a file that cannot be stat'ed is identified uncached, so its
+    error path is unchanged.
+    """
+
+    return file_memo.memoized(
+        "resource-identify",
+        path,
+        lambda: _identify_resource(docs_dir, path, project),
+        variant=(str(docs_dir), project),
+    )
+
+
+def _identify_resource(docs_dir: Path, path: Path, project: str) -> Resource | None:
     """Classify one HTML file using typed location plus semantic metadata."""
     try:
         relative = PurePosixPath(path.relative_to(docs_dir).as_posix())
