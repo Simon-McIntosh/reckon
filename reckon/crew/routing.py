@@ -2907,10 +2907,116 @@ def _fleet_script() -> Path:
     )
 
 
+def _launch_worktree_path(repo: Path, session: str, worker: str) -> Path:
+    """The path a launch for ``session``/``worker`` creates its tree at.
+
+    A node's worktree path is named for its session and node, so every attempt
+    to launch that node in that session reaches for the same directory. The
+    path is the fleet script's own first managed root, so a tree found here is
+    exactly the one a fresh creation would collide with.
+    """
+    return _workspace_roots(repo)[0] / session / worker
+
+
+def _launch_attempt_record(repo: Path, path: Path) -> Mapping[str, Any] | None:
+    """The record naming the tree at ``path``, preferring a live pointer.
+
+    A leftover launch path may hold a tree left by an earlier attempt, which
+    names itself through the same sources a finished run does: its live pointer
+    while one survives, and a ledger row once one is written. Whichever names
+    the path lets the refusal name the attempt that left it.
+    """
+    resolved = path.resolve()
+    for record in list_live():
+        value = str(record.get("worktree") or "").strip()
+        if value and Path(value).expanduser().resolve() == resolved:
+            return record
+    return _residue_run_record(resolved, _ledgered_records(repo, None))
+
+
+def _tree_is_disposable_for_launch(repo: Path, path: Path, base: str) -> bool:
+    """Whether a tree left at a launch path may be released for a new launch.
+
+    Disposable means the tree is clean and carries no commit beyond the base
+    the launch is cut from: its head is an ancestor of that base. A commit a
+    prior attempt left would not be an ancestor, so it keeps the tree. When
+    the base cannot be resolved, the tree is kept — an unreadable base is not
+    evidence that the tree carries nothing.
+    """
+    state = _tree_state(path)
+    if not state.get("available"):
+        return False
+    if state["status_entries"]:
+        return False
+    head = str(state.get("head") or "")
+    if not head:
+        return False
+    resolved = _git(repo, "rev-parse", "--verify", base, check=False)
+    base_sha = resolved.stdout.strip()
+    if resolved.returncode or not base_sha:
+        return False
+    return (
+        _git(
+            repo, "merge-base", "--is-ancestor", head, base_sha, check=False
+        ).returncode
+        == 0
+    )
+
+
+def _stale_launch_tree_refusal(repo: Path, path: Path, base: str) -> str:
+    """Why the tree at a launch path must be kept, or ``""`` when it may go.
+
+    A tree a live run still holds is never removed, and neither is one whose
+    head carries a commit or whose working copy holds changes — that content
+    may exist nowhere else. Only a tree that fails every one of those tests is
+    disposable, and it is released through the whole-tree release so its
+    registered path is vacated in one step.
+    """
+    record = _launch_attempt_record(repo, path)
+    attempt = str(record.get("run_id") or "") if record else ""
+    label = f"run {attempt}" if attempt else "an earlier attempt"
+
+    claims = _live_pointer_worktrees().get(path.resolve(), [])
+    if claims:
+        return (
+            f"{label} still holds live run(s) {', '.join(sorted(claims))}; the "
+            f"worktree at {path} is kept"
+        )
+
+    state = _tree_state(path)
+    if not state.get("available"):
+        return (
+            f"{label} left an unreadable tree at {path}: "
+            f"{state.get('detail') or 'unavailable'}; kept"
+        )
+    if state["status_entries"]:
+        return (
+            f"{label} left uncommitted changes in the worktree at {path}; kept"
+        )
+    head = str(state.get("head") or "")
+    if not _tree_is_disposable_for_launch(repo, path, base):
+        return (
+            f"{label} left commit {head} on the worktree at {path}, beyond its "
+            f"base {base}; kept"
+        )
+    return ""
+
+
 def _create_worktree(
     repo: Path, session: str, worker: str, base: str
 ) -> dict[str, Any]:
-    """Create a detached worktree through the fleet script, or raise."""
+    """Create a detached worktree through the fleet script, or raise.
+
+    A path still holding a tree from an earlier attempt is released first when
+    that tree is disposable, so a launch that once failed at its streamless
+    start does not block every later retry of its node on the leftover path.
+    """
+    target = _launch_worktree_path(repo, session, worker)
+    if target.exists():
+        refusal = _stale_launch_tree_refusal(repo, target, base)
+        if refusal:
+            raise CrewError(f"worktree creation failed: {refusal}")
+        _remove_worktree(repo, str(target))
     script = _fleet_script()
     result = subprocess.run(
         [
