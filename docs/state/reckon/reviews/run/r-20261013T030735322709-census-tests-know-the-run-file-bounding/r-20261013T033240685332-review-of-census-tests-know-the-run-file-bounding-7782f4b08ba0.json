@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed run's manifest records baseline_suite and after_suite as null (an implement node with a targeted gate, not an armed suite pair), so the added-failure count was not taken \u2014 a zero would assert a measurement never made.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/routing.py:2118",
+    "reckon/crew/fleet_supervisor.py:762",
+    "reckon/crew/fleet_supervisor.py:878"
+  ],
+  "completed_at": "2026-10-13T03:47:09.697Z",
+  "dispatched_at": "2026-10-13T03:33:17Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T030735322709-census-tests-know-the-run-file-bounding/manifest.md",
+      "line": "21",
+      "severity": "follow-on",
+      "text": "follow-on: the evidence_inputs arithmetic counts the fragment twice \u2014 it reads \"54 changed lines (53 added, 1 deleted) plus the 36-line landing fragment\", but git diff --stat over the same range reports exactly three files changed, 53 insertions and 1 deletion, the 36-line fragment already inside that 53; the landed artifacts are unaffected, but the record overstates the diff by 36 lines."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base a99e008e; one commit 7782f4b08 over three files \u2014 the raw-reader census widens its module set to admit fleet_supervisor.py and pins its contents to the single name, the staged-write inventory adds the one tuple with a reason comment, and the evidence fragment is added; no production source is touched.",
+    "done_when": "the done_when names tests/test_one_raw_text_section_reader.py and tests/test_staged_write_inventory.py and requires each function's reason in a comment, the manifest quote the establishing lines, and the negative control logged under the run directory; the manifest carries the gate result \"81 passed, EXIT=0\" (head-census.log) and the negative control \"1 failed, EXIT=1\" (negative-control.log), both reason comments are present at tests/test_staged_write_inventory.py:43-46 and tests/test_one_raw_text_section_reader.py:226-230, and evidence_inputs:21 quotes fleet_supervisor.py:709-723 and :776-782.",
+    "goal": "the node's goal is to bring the raw-reader and staged-write census tests up to date with fleet_supervisor's two run-file bounding functions once each is shown to have the property its census guards; at head the raw-reader census allows reckon/crew/fleet_supervisor.py so long as its only flagged name is _run_file_is_binary (tests/test_one_raw_text_section_reader.py:226-235), and tests/test_staged_write_inventory.py:46 lists (\"reckon/crew/fleet_supervisor.py\",\"_bound_run_file\") in the expected inventory, so both functions are named and no other change is made.",
+    "manifest": "read; it records status complete, the head arm \"81 passed, EXIT=0\" and negative control \"1 failed, EXIT=1\", its changed_paths match the diff, and its evidence_inputs:21 quotes both establishing line ranges; its own line-count arithmetic is off (FINDING).",
+    "write_paths": "the declared scope is tests/test_one_raw_text_section_reader.py, tests/test_staged_write_inventory.py, the fragment docs/evidence/fragments/the-suite-is-green-at-head/census-tests-know-the-run-file-bounding.html and its figures directory; git diff --name-only a99e008e..7782f4b08 lists exactly the two test files and the fragment, every one inside the declaration and nothing outside it."
+  },
+  "justifications": {
+    "durability": "both added assertions read census output derived by parsing the source (interface_counts._heading_walks, interface_counts._staged_writes) against a literal, so neither moves with a value the test supplies; the raw-reader one is shown red by the recorded mutation, while the staged-write addition carries no negative control of its own.",
+    "evidence": "the head arm is recorded in head-census.log as \"81 passed in 30.93s / EXIT=0\" and the negative control in negative-control.log as \"1 failed in 4.51s / EXIT=1\", reproducing the done_when; reduced one for the manifest's own changed-line arithmetic (evidence_inputs:21).",
+    "fit": "the exemption is stated as an inline reason comment beside the expected set, the same idiom tests/test_one_raw_text_section_reader.py:227 already uses for the _plan_html parser sites, and no plan, stage or ticket token enters either file.",
+    "goal_fidelity": "tests/test_one_raw_text_section_reader.py:226-235 names _run_file_is_binary and tests/test_staged_write_inventory.py:46 names _bound_run_file, so both census tests now agree with reckon/crew/fleet_supervisor.py:709 and :738.",
+    "reuse": "the diff adds no function, class or module; it extends the two existing census expectation sets in place (searched reckon/ and tests/ for another owner of the heading-walk or staged-write inventory and found only reckon/interface_counts.py plus these two tests).",
+    "scope_discipline": "git diff --name-only a99e008e..7782f4b08 lists tests/test_one_raw_text_section_reader.py, tests/test_staged_write_inventory.py and the fragment, all inside the declared write paths, with reckon/interface_counts.py untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to bring the raw-reader and staged-write census tests up to date with fleet_supervisor's two run-file bounding functions once each is shown to have the property its census guards; at head the raw-reader census allows reckon/crew/fleet_supervisor.py so long as its only flagged name is _run_file_is_binary (tests/test_one_raw_text_section_reader.py:226-235), and tests/test_staged_write_inventory.py:46 lists (\"reckon/crew/fleet_supervisor.py\",\"_bound_run_file\") in the expected inventory, so both functions are named and no other change is made.\nVERDICT done_when: the done_when names tests/test_one_raw_text_section_reader.py and tests/test_staged_write_inventory.py and requires each function's reason in a comment, the manifest quote the establishing lines, and the negative control logged under the run directory; the manifest carries the gate result \"81 passed, EXIT=0\" (head-census.log) and the negative control \"1 failed, EXIT=1\" (negative-control.log), both reason comments are present at tests/test_staged_write_inventory.py:43-46 and tests/test_one_raw_text_section_reader.py:226-230, and evidence_inputs:21 quotes fleet_supervisor.py:709-723 and :776-782.\nVERDICT write_paths: the declared scope is tests/test_one_raw_text_section_reader.py, tests/test_staged_write_inventory.py, the fragment docs/evidence/fragments/the-suite-is-green-at-head/census-tests-know-the-run-file-bounding.html and its figures directory; git diff --name-only a99e008e..7782f4b08 lists exactly the two test files and the fragment, every one inside the declaration and nothing outside it.\nVERDICT manifest: read; it records status complete, the head arm \"81 passed, EXIT=0\" and negative control \"1 failed, EXIT=1\", its changed_paths match the diff, and its evidence_inputs:21 quotes both establishing line ranges; its own line-count arithmetic is off (FINDING).\nVERDICT diff: read commit by commit against base a99e008e; one commit 7782f4b08 over three files \u2014 the raw-reader census widens its module set to admit fleet_supervisor.py and pins its contents to the single name, the staged-write inventory adds the one tuple with a reason comment, and the evidence fragment is added; no production source is touched.\nCALL_SITES: reckon/crew/routing.py:2118, reckon/crew/fleet_supervisor.py:762, reckon/crew/fleet_supervisor.py:878\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_one_raw_text_section_reader.py:226-235 names _run_file_is_binary and tests/test_staged_write_inventory.py:46 names _bound_run_file, so both census tests now agree with reckon/crew/fleet_supervisor.py:709 and :738.\nSCORE evidence: 19\nJUSTIFICATION evidence: the head arm is recorded in head-census.log as \"81 passed in 30.93s / EXIT=0\" and the negative control in negative-control.log as \"1 failed in 4.51s / EXIT=1\", reproducing the done_when; reduced one for the manifest's own changed-line arithmetic (evidence_inputs:21).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only a99e008e..7782f4b08 lists tests/test_one_raw_text_section_reader.py, tests/test_staged_write_inventory.py and the fragment, all inside the declared write paths, with reckon/interface_counts.py untouched.\nSCORE durability: 19\nJUSTIFICATION durability: both added assertions read census output derived by parsing the source (interface_counts._heading_walks, interface_counts._staged_writes) against a literal, so neither moves with a value the test supplies; the raw-reader one is shown red by the recorded mutation, while the staged-write addition carries no negative control of its own.\nSCORE fit: 20\nJUSTIFICATION fit: the exemption is stated as an inline reason comment beside the expected set, the same idiom tests/test_one_raw_text_section_reader.py:227 already uses for the _plan_html parser sites, and no plan, stage or ticket token enters either file.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module; it extends the two existing census expectation sets in place (searched reckon/ and tests/ for another owner of the heading-walk or staged-write inventory and found only reckon/interface_counts.py plus these two tests).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T030735322709-census-tests-know-the-run-file-bounding/manifest.md:21 follow-on: the evidence_inputs arithmetic counts the fragment twice \u2014 it reads \"54 changed lines (53 added, 1 deleted) plus the 36-line landing fragment\", but git diff --stat over the same range reports exactly three files changed, 53 insertions and 1 deletion, the 36-line fragment already inside that 53; the landed artifacts are unaffected, but the record overstates the diff by 36 lines.",
+  "review_run_id": "r-20261013T033240685332-review-of-census-tests-know-the-run-file-bounding-7782f4b08ba0",
+  "reviewed_base_sha": "a99e008e833645efa448b3bac4287a8eccfe8c79",
+  "reviewed_head_sha": "7782f4b08ba0544c2ed68e04c18c170d2607f503",
+  "reviewed_run_id": "r-20261013T030735322709-census-tests-know-the-run-file-bounding",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T03:44:06.942726+00:00",
+  "total": 118
+}
