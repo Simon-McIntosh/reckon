@@ -1,0 +1,83 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed run's manifest records no baseline_suite or after_suite, so there is no base arm to derive an added-failure count from",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:1661-1686",
+    "reckon/crew/queue_admission.py:159",
+    "reckon/crew/dispatch.py:1095"
+  ],
+  "commits_read": [
+    "9a7ad9e1d9df14617cde2dd82f5c28aa00726324"
+  ],
+  "completed_at": "2026-10-13T16:50:27.016Z",
+  "dispatched_at": "2026-10-13T16:29:06Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T133003538509-a-node-is-queued-once/gate.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: gate.log (and node.log) header revision 2bcd7b9f8 over a dirty tree rather than the head 9a7ad9e1d that carries the reason-render fix, so no recorded gate log names the revision being promoted."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T133003538509-a-node-is-queued-once/manifest.md",
+      "line": "11",
+      "severity": "follow-on",
+      "text": "follow-on: the tests field carries the literal worktree placeholder, so the manifest's own gate command is not reproducible as written."
+    },
+    {
+      "file": "docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/a-node-is-queued-once.html",
+      "line": "17",
+      "severity": "follow-on",
+      "text": "follow-on: the landed evidence states tests/test_a_node_is_queued_once.py 7 passed, but the head file carries 8 cases and node.log records 8 passed, so the fragment understates the gate it reports even though this commit edited that same paragraph."
+    },
+    {
+      "file": "tests/test_a_node_is_queued_once.py",
+      "line": "197",
+      "severity": "follow-on",
+      "text": "follow-on: the commit body claims the node gate asserts both the rendered message and the member refusal, but this added case asserts only the rendered message; the member_refuses guard is exercised solely by tests/test_no_member_dispatch_runs_alone.py:190, outside this node's gate file."
+    }
+  ],
+  "head_log_revision": "2bcd7b9f8",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read the gained commit against base 2bcd7b9f8: dispatch.py sets LaneHeld with both detail and reason (reckon/crew/dispatch.py:291) and hoists existing_phase with a member_refuses guard (reckon/crew/dispatch.py:1078-1092), and the test file gains test_the_existing_run_answer_renders_its_own_reason (tests/test_a_node_is_queued_once.py:197-213).",
+    "done_when": "the reviewed done_when names tests/test_a_node_is_queued_once.py; node.log:1 records the file 8 passed EXIT=0 and gate.log:1 records the four-file gate 26 passed / 1 environmental failure EXIT=1, but both headers name revision 2bcd7b9f8 over a dirty tree rather than the head 9a7ad9e1d.",
+    "goal": "the reviewed node's goal (prompt.txt:30, \"a node is queued at most once per session while any run of it is queued, being admitted or in flight\") is delivered by the run as a whole; this gained commit repairs two defects in the existing-run answer: reckon/crew/dispatch.py:291-294 now passes the reason where LaneHeld reads its message, and reckon/crew/dispatch.py:1078-1092 lets a named member's refusal outrank that answer.",
+    "manifest": "read the reviewed run's manifest.md; status complete, commits 591428de7, 2bcd7b9f8, 9a7ad9e1d, the tests field names the four-file gate (26 passed with the environment-dependent case deselected), and it carries no baseline_suite or after_suite and a tests field with an unsubstituted worktree placeholder.",
+    "write_paths": "the range 2bcd7b9f8..9a7ad9e1d touches exactly docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/a-node-is-queued-once.html, reckon/crew/dispatch.py and tests/test_a_node_is_queued_once.py, all inside the declared paths."
+  },
+  "justifications": {
+    "durability": "tests/test_a_node_is_queued_once.py:203 asserts str(_answer(...)) equals a literal naming the run and phase, which reddens if reckon/crew/dispatch.py:294 drops the detail key; the member_refuses guard at reckon/crew/dispatch.py:1090 is reddened only by tests/test_no_member_dispatch_runs_alone.py:190, not by the node's own gate file.",
+    "evidence": "node.log:1 records tests/test_a_node_is_queued_once.py 8 passed EXIT=0 and gate.log:1 the four-file gate 26 passed EXIT=1, but both name revision 2bcd7b9f8 over a dirty tree and the reviewed manifest records no baseline_suite or after_suite for an added-failure count.",
+    "fit": "the two edits follow the surrounding idiom of reckon/crew/dispatch.py:250-300 and introduce no name the repository naming rules forbid.",
+    "goal_fidelity": "reckon/crew/dispatch.py:291 now passes the existing-run reason where LaneHeld reads it, so a working or admitted run is named as such rather than as the lane gate being None.",
+    "reuse": "the gained commit adds no definition; it edits the existing owner _answer_existing_node_run (reckon/crew/dispatch.py:260) and the existing member-in-flight machinery, forking no capability, and the search over reckon/crew found no separate owner for an existing-run hold message.",
+    "scope_discipline": "the range 2bcd7b9f8..9a7ad9e1d touches only the fragment, reckon/crew/dispatch.py and tests/test_a_node_is_queued_once.py, each inside the node's declared write paths and nothing beyond the goal."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal (prompt.txt:30, \"a node is queued at most once per session while any run of it is queued, being admitted or in flight\") is delivered by the run as a whole; this gained commit repairs two defects in the existing-run answer: reckon/crew/dispatch.py:291-294 now passes the reason where LaneHeld reads its message, and reckon/crew/dispatch.py:1078-1092 lets a named member's refusal outrank that answer.\nVERDICT done_when: the reviewed done_when names tests/test_a_node_is_queued_once.py; node.log:1 records the file 8 passed EXIT=0 and gate.log:1 records the four-file gate 26 passed / 1 environmental failure EXIT=1, but both headers name revision 2bcd7b9f8 over a dirty tree rather than the head 9a7ad9e1d.\nVERDICT write_paths: the range 2bcd7b9f8..9a7ad9e1d touches exactly docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/a-node-is-queued-once.html, reckon/crew/dispatch.py and tests/test_a_node_is_queued_once.py, all inside the declared paths.\nVERDICT manifest: read the reviewed run's manifest.md; status complete, commits 591428de7, 2bcd7b9f8, 9a7ad9e1d, the tests field names the four-file gate (26 passed with the environment-dependent case deselected), and it carries no baseline_suite or after_suite and a tests field with an unsubstituted worktree placeholder.\nVERDICT diff: read the gained commit against base 2bcd7b9f8: dispatch.py sets LaneHeld with both detail and reason (reckon/crew/dispatch.py:291) and hoists existing_phase with a member_refuses guard (reckon/crew/dispatch.py:1078-1092), and the test file gains test_the_existing_run_answer_renders_its_own_reason (tests/test_a_node_is_queued_once.py:197-213).\nCALL_SITES: reckon/crew_dispatch_commands.py:1661-1686, reckon/crew/queue_admission.py:159, reckon/crew/dispatch.py:1095\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:291 now passes the existing-run reason where LaneHeld reads it, so a working or admitted run is named as such rather than as the lane gate being None.\nSCORE evidence: 14\nJUSTIFICATION evidence: node.log:1 records tests/test_a_node_is_queued_once.py 8 passed EXIT=0 and gate.log:1 the four-file gate 26 passed EXIT=1, but both name revision 2bcd7b9f8 over a dirty tree and the reviewed manifest records no baseline_suite or after_suite for an added-failure count.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the range 2bcd7b9f8..9a7ad9e1d touches only the fragment, reckon/crew/dispatch.py and tests/test_a_node_is_queued_once.py, each inside the node's declared write paths and nothing beyond the goal.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_node_is_queued_once.py:203 asserts str(_answer(...)) equals a literal naming the run and phase, which reddens if reckon/crew/dispatch.py:294 drops the detail key; the member_refuses guard at reckon/crew/dispatch.py:1090 is reddened only by tests/test_no_member_dispatch_runs_alone.py:190, not by the node's own gate file.\nSCORE fit: 18\nJUSTIFICATION fit: the two edits follow the surrounding idiom of reckon/crew/dispatch.py:250-300 and introduce no name the repository naming rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: the gained commit adds no definition; it edits the existing owner _answer_existing_node_run (reckon/crew/dispatch.py:260) and the existing member-in-flight machinery, forking no capability, and the search over reckon/crew found no separate owner for an existing-run hold message.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T133003538509-a-node-is-queued-once/gate.log:1 follow-on: gate.log (and node.log) header revision 2bcd7b9f8 over a dirty tree rather than the head 9a7ad9e1d that carries the reason-render fix, so no recorded gate log names the revision being promoted.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T133003538509-a-node-is-queued-once/manifest.md:11 follow-on: the tests field carries the literal worktree placeholder, so the manifest's own gate command is not reproducible as written.\nFINDING docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/a-node-is-queued-once.html:17 follow-on: the landed evidence states tests/test_a_node_is_queued_once.py 7 passed, but the head file carries 8 cases and node.log records 8 passed, so the fragment understates the gate it reports even though this commit edited that same paragraph.\nFINDING tests/test_a_node_is_queued_once.py:197 follow-on: the commit body claims the node gate asserts both the rendered message and the member refusal, but this added case asserts only the rendered message; the member_refuses guard is exercised solely by tests/test_no_member_dispatch_runs_alone.py:190, outside this node's gate file.\n",
+  "review_run_id": "r-20261013T162842371140-review-of-a-node-is-queued-once-9a7ad9e1d9df",
+  "reviewed_base_sha": "2bcd7b9f8af764435a4096f777feb85535dc9b2a",
+  "reviewed_head_sha": "9a7ad9e1d9df14617cde2dd82f5c28aa00726324",
+  "reviewed_run_id": "r-20261013T133003538509-a-node-is-queued-once",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "subject": "node",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T16:49:31.953091+00:00",
+  "total": 108
+}
