@@ -1,0 +1,82 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed run's after_suite (manifest.md:16) cites head-arm.log, but that log holds only its three header lines (2523 bytes) with no pytest summary and no EXIT line, so the head arm adds no readable failure set; the base arm (base-arm.log) is readable at 438 passed EXIT=0, and with no readable head arm the added-failure count is not taken and is not stored as a measured zero",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/plan_review.py:839 review_coverage -> _fingerprint_forms",
+    "reckon/crew/plan_review.py:2012 delivered_reports -> _fingerprint_forms"
+  ],
+  "completed_at": "2026-10-13T08:45:05.514Z",
+  "dispatched_at": "2026-10-13T08:21:58Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T050356104997-the-fingerprint-has-one-form/manifest.md",
+      "line": "16",
+      "severity": "blocking",
+      "text": "blocking: after_suite cites head-arm.log as 444 passed, failure_count 0 and completed true at d71061622, but head-arm.log holds only its three header lines (revision, tree, command; 2523 bytes) with no pytest summary and no EXIT line, so the head arm's result is not recorded in the cited log and the node's added-failure evidence cannot be reproduced from the artefact."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T050356104997-the-fingerprint-has-one-form/head-arm.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the header names d71061622 as the revision measured, yet the log records no measurement; the head arm was re-run to repair the header revision and the process was terminated (resume-2.stderr.log) before it produced output, so a log that names a revision it never measured reads as evidence about that commit."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T050356104997-the-fingerprint-has-one-form/negative-control-mutation.log",
+      "line": "3",
+      "severity": "follow-on",
+      "text": "follow-on: the mutation logs name revision 2bb438fe and their tracebacks sit one line above the committed head (138/174 here against 139/175 at d7106162), so the control was taken against a working tree that differs by a line from the landed commit; the control direction holds but the log does not name the content it ran."
+    },
+    {
+      "file": "tests/test_the_fingerprint_has_one_form.py",
+      "line": "175",
+      "severity": "follow-on",
+      "text": "follow-on: the assertion compares the coverage result's plan_fingerprint against fingerprint, the value the test itself computed and handed to the store at :171, so the compared value is not independent of the input and its sensitivity rests on the record set being empty when a form is dropped, which coverage-mutation.log demonstrates rather than the comparison itself."
+    },
+    {
+      "file": "tests/test_the_fingerprint_has_one_form.py",
+      "line": "28",
+      "severity": "follow-on",
+      "text": "follow-on: _whole_document_digest reproduces the whole-document payload of _fingerprint_forms at reckon/crew/plan_review.py:700 nearly verbatim, so the production definition cannot move without a matching hand edit or a spurious red; the restatement is what makes the assertion independent, but the duplicated internals are a maintenance coupling."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against 2bb438fe; the single gained commit d7106162 changes two files (+103/-23) \u2014 the _fingerprint_forms docstring at reckon/crew/plan_review.py:684 and six cases in tests/test_the_fingerprint_has_one_form.py.",
+    "done_when": "the done_when names tests/test_the_fingerprint_has_one_form.py and no added failure over the plan_review importers; the base arm records it (base-arm.log 438 passed EXIT=0 at f819399) but the head arm's log carries only its header, so the after arm is unreadable.",
+    "goal": "the source node's goal is to retire the pre-collapse fingerprint form and the collapse_section op so _fingerprint_forms returns the section-set and whole-document forms only; the gained commit d7106162 alters no production behaviour, revising only the docstring at reckon/crew/plan_review.py:684 and the cases in tests/test_the_fingerprint_has_one_form.py.",
+    "manifest": "read at manifest.md; it states status complete and cites head-arm.log as 444 passed EXIT=0 for after_suite, but that log holds only its three header lines, so the stated head-arm result is not in the artefact it names.",
+    "write_paths": "the gained commit touches reckon/crew/plan_review.py and tests/test_the_fingerprint_has_one_form.py, both inside the node's declared write paths as recorded at manifest.md:3."
+  },
+  "justifications": {
+    "durability": "tests/test_the_fingerprint_has_one_form.py:140 and :151 now restate each form from its own definition and compare, so a body returning one digest under both names or a third digest reds, per coverage-mutation.log.",
+    "evidence": "head-arm.log, the after_suite log the manifest cites at manifest.md:16, contains only its three header lines and no pytest summary or EXIT, so the head-open gate the done_when names is claimed but not recorded.",
+    "fit": "the rewrite at reckon/crew/plan_review.py:687 states the mechanism each form drops and why, replacing the retired-form narration that read as changelog prose.",
+    "goal_fidelity": "the gained commit keeps reckon/crew/plan_review.py:678 returning the two surviving forms and merely restates why at :687, so the retirement the node goal names is unchanged and unharmed.",
+    "reuse": "tests/test_the_fingerprint_has_one_form.py:28 re-implements the whole-document payload reckoned at reckon/crew/plan_review.py:700 without extending its owner, so the two must be edited together.",
+    "scope_discipline": "the diff of d7106162 changes only reckon/crew/plan_review.py and tests/test_the_fingerprint_has_one_form.py, both declared write paths, with no stray file."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is to retire the pre-collapse fingerprint form and the collapse_section op so _fingerprint_forms returns the section-set and whole-document forms only; the gained commit d7106162 alters no production behaviour, revising only the docstring at reckon/crew/plan_review.py:684 and the cases in tests/test_the_fingerprint_has_one_form.py.\nVERDICT done_when: the done_when names tests/test_the_fingerprint_has_one_form.py and no added failure over the plan_review importers; the base arm records it (base-arm.log 438 passed EXIT=0 at f819399) but the head arm's log carries only its header, so the after arm is unreadable.\nVERDICT write_paths: the gained commit touches reckon/crew/plan_review.py and tests/test_the_fingerprint_has_one_form.py, both inside the node's declared write paths as recorded at manifest.md:3.\nVERDICT manifest: read at manifest.md; it states status complete and cites head-arm.log as 444 passed EXIT=0 for after_suite, but that log holds only its three header lines, so the stated head-arm result is not in the artefact it names.\nVERDICT diff: read commit by commit against 2bb438fe; the single gained commit d7106162 changes two files (+103/-23) \u2014 the _fingerprint_forms docstring at reckon/crew/plan_review.py:684 and six cases in tests/test_the_fingerprint_has_one_form.py.\nCALL_SITES: reckon/crew/plan_review.py:839 review_coverage -> _fingerprint_forms, reckon/crew/plan_review.py:2012 delivered_reports -> _fingerprint_forms\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the gained commit keeps reckon/crew/plan_review.py:678 returning the two surviving forms and merely restates why at :687, so the retirement the node goal names is unchanged and unharmed.\nSCORE evidence: 8\nJUSTIFICATION evidence: head-arm.log, the after_suite log the manifest cites at manifest.md:16, contains only its three header lines and no pytest summary or EXIT, so the head-open gate the done_when names is claimed but not recorded.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff of d7106162 changes only reckon/crew/plan_review.py and tests/test_the_fingerprint_has_one_form.py, both declared write paths, with no stray file.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_the_fingerprint_has_one_form.py:140 and :151 now restate each form from its own definition and compare, so a body returning one digest under both names or a third digest reds, per coverage-mutation.log.\nSCORE fit: 18\nJUSTIFICATION fit: the rewrite at reckon/crew/plan_review.py:687 states the mechanism each form drops and why, replacing the retired-form narration that read as changelog prose.\nSCORE reuse: 15\nJUSTIFICATION reuse: tests/test_the_fingerprint_has_one_form.py:28 re-implements the whole-document payload reckoned at reckon/crew/plan_review.py:700 without extending its owner, so the two must be edited together.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T050356104997-the-fingerprint-has-one-form/manifest.md:16 blocking: after_suite cites head-arm.log as 444 passed, failure_count 0 and completed true at d71061622, but head-arm.log holds only its three header lines (revision, tree, command; 2523 bytes) with no pytest summary and no EXIT line, so the head arm's result is not recorded in the cited log and the node's added-failure evidence cannot be reproduced from the artefact.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T050356104997-the-fingerprint-has-one-form/head-arm.log:1 follow-on: the header names d71061622 as the revision measured, yet the log records no measurement; the head arm was re-run to repair the header revision and the process was terminated (resume-2.stderr.log) before it produced output, so a log that names a revision it never measured reads as evidence about that commit.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T050356104997-the-fingerprint-has-one-form/negative-control-mutation.log:3 follow-on: the mutation logs name revision 2bb438fe and their tracebacks sit one line above the committed head (138/174 here against 139/175 at d7106162), so the control was taken against a working tree that differs by a line from the landed commit; the control direction holds but the log does not name the content it ran.\nFINDING tests/test_the_fingerprint_has_one_form.py:175 follow-on: the assertion compares the coverage result's plan_fingerprint against fingerprint, the value the test itself computed and handed to the store at :171, so the compared value is not independent of the input and its sensitivity rests on the record set being empty when a form is dropped, which coverage-mutation.log demonstrates rather than the comparison itself.\nFINDING tests/test_the_fingerprint_has_one_form.py:28 follow-on: _whole_document_digest reproduces the whole-document payload of _fingerprint_forms at reckon/crew/plan_review.py:700 nearly verbatim, so the production definition cannot move without a matching hand edit or a spurious red; the restatement is what makes the assertion independent, but the duplicated internals are a maintenance coupling.\n",
+  "review_run_id": "r-20261013T082126520314-review-of-the-fingerprint-has-one-form-d71061622f2d",
+  "reviewed_base_sha": "2bb438fe0c2ec480d5e2425d65f9955b02a9ccd4",
+  "reviewed_head_sha": "d71061622f2d16c81f7b959e085d068318688444",
+  "reviewed_run_id": "r-20261013T050356104997-the-fingerprint-has-one-form",
+  "reviewer_run_id": "r-20261013T082126520314-review-of-the-fingerprint-has-one-form-d71061622f2d",
+  "scores": {
+    "durability": 16,
+    "evidence": 8,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T08:44:11.495882+00:00",
+  "total": 95
+}
