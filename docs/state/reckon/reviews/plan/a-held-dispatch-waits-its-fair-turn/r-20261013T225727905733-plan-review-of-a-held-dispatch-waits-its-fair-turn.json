@@ -1,0 +1,56 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-13T23:13:43.505Z",
+  "dispatched_at": "2026-10-13T22:58:04Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-held-dispatch-waits-its-fair-turn.html:135",
+      "id": "reasoning-1",
+      "reason": "without one clause fixing precedence (queued-behind yields to \u00a712's cap, or the cap does not count a queued-behind dispatch) a builder cannot tell which refusal applies and the plan's two declared behaviours contradict.",
+      "text": "\u00a718 says a new dispatch overlapping a queued request is queued behind it and \"never refused\", but \u00a712 caps the queued runs one session may hold and refuses an over-cap dispatch with `queue-full` before anything is written; a session at its cap dispatching a different node over its own queued request's path is thus given two opposite outcomes by the plan, and \u00a718's own case for that rule runs below the cap so it cannot surface the conflict",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "2a6c4d6e2d476e23404573d48d2e0942bb78f934b6e9e89f625198342bf4883f",
+  "plan_slug": "a-held-dispatch-waits-its-fair-turn",
+  "plan_version": 86,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261013T225727905733-plan-review-of-a-held-dispatch-waits-its-fair-turn",
+  "reviewed_blob_sha": "8ce973f079b52e0cb8e9e1e58874c4dc2dbdc19b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_repository_scope_claims`, `claim_disposition`, and the named \u00a714 test case all resolve and assert what \u00a718 says they do; the \"working run's claim\" test \u00a718 says it keeps also exists (tests/test_granted_path_is_a_claim.py::test_a_caller_named_collision_is_reported_as_before, a different node dispatched over a working run's claim, exit 7).",
+    "done_when": "pass \u2014 each of \u00a718's five cases is measurable, and the section carries a negative control (count queued pointers as claims again) under which the first two cases must fail with the requests refusing each other.",
+    "evidence_paths": "pass \u2014 \u00a718's control logs live \"under the run directory\", i.e. the durable per-run store (~/.config/reckon/crew/runs/<run>/), not a scratchpad.",
+    "naming": "pass \u2014 \u00a718 introduces no plan labels, stage names, ticket numbers or version tags into code, and states mechanisms rather than tracker history; its own section references are plan prose.",
+    "reasoning": "a finding \u2014 \u00a718's deliverable states a new dispatch overlapping a queued request is \"never refused\", while \u00a712 refuses any dispatch that pushes a session past its queued-run cap with `queue-full`, and \u00a718 states no precedence.",
+    "single_goal": "pass \u2014 \u00a718 has one goal: a queued request's claim orders an overlapping peer behind it rather than refusing it.",
+    "wiring": "pass \u2014 \u00a718 declares it runs after \u00a714 (landed) and before \u00a715, and its write paths name every file it shares with auto-ordering (queue_admission.py with \u00a711/\u00a714/\u00a715, dispatch.py with \u00a712/\u00a713/\u00a714, and tests/test_a_node_is_queued_once.py with \u00a714); each named relationship resolves to a section that exists and whose declared status supports the order it claims."
+  },
+  "section_digests": {
+    "_document": "5e14043a491f99858173e3b893442375f85c205295e44c4f706b9faca823dba4",
+    "s1": "e09f72c38fa12dd06b1fede9137b6a8731c7f42dad95ea4d7873e48b6bcebc93",
+    "s10": "769f35c4ff338677b1083340b990086682e629701a25af49a8b6e2d3b8a175a4",
+    "s11": "3aafc106945bdc346a0f808fc26c7fc8e028b922103641455da38536ae24c036",
+    "s12": "f72ab709e3a40644be43c6e558b558089f939e3368a20a2b34321a9043c80c88",
+    "s13": "1f1792d925edd6b7c0b33bd02bebc3db1f499f9d5e1505b3ba04b305d9ed7f64",
+    "s14": "a86f35810a5d1446f8cf9294a46f7a7a393c1452cc3080ef8b9e51cf83670acf",
+    "s15": "694218fb467e061648aac13eed1a446529dbff08aca86ecfdb24792eb5b2820e",
+    "s16": "5d0a87ee69959477d707fb8d7b442b283f6ae0e7bc896382dd4c65c7e3efb9b8",
+    "s17": "d3bfb51ccfbe6c602a6a11cd9d7e433d1385fd2b90b604f2eb307029dc97f703",
+    "s18": "e80cd5bfa23fb473c1e5180d47c3e63e86fe05cc5d495394d911496cac3076a9",
+    "s2": "c37ed4ecb2dad1331b0b031fb8351608243790308312236d375bede3594285b7",
+    "s3": "ef687123318fac196bded366330cf2e92b586c4991b5c1cc8670f228182f916c",
+    "s4": "e6a41eadc72e4752cc0ebe35a14a9bce3f28bc1061ec677e8f779fa09d8c037c",
+    "s5": "4b674f96924c3dbfde217945d16c606df376d034dc060f02360a4336412e74f8",
+    "s6": "9e35fc2341a06de64fed9ff7f176a0e83b22c1482c1b5a04a5539b6e4c07aab4",
+    "s7": "764a72dad2d59bddd4d3b1209f07c0c210ff6c46cd14147d4bcc7ffe9fa9426d",
+    "s8": "1b92313fdf672f4b813b45aa8e26f1304ca363cdc5a4d1752238f794a2019e27",
+    "s9": "ef8f75976cf8d243089cb5955b0e084cf6e2c6bcd478f9e56b8e8654080c6ad6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T23:14:15.175468+00:00"
+}
