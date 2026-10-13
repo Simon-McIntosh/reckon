@@ -21,13 +21,13 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="a-follower-outlives-its-monitor">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;deferred&quot;,&quot;s15&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;deferred&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;implementable&quot;}">
   <title>A Follower Lives As Long As Its Session | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.92">
-<meta name="plan-version" content="80">
-<meta name="plan-modified" content="2026-10-08">
+<meta name="plan-version" content="81">
+<meta name="plan-modified" content="2026-10-13">
 <meta name="plan-commits" content="25c025d3">
 </head>
 <body>
@@ -184,6 +184,10 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
   <p class="landed-summary">The hand-off returns without a marker: the host census, read by _session_host_runs_follower, names a host's own follower. 13 of 13 live host followers read as children under the merged code before merge. <a href="/reckon/evidence/archive/a-follower-lives-as-long-as-its-session-landed.html#s15-host-follower-never-hands-off">full record</a></p>
 </section>
 
+    <h2 id="s16">§16 — A run that changes state across a producer reload still wakes its session</h2>
+<section data-reckon="section" data-id="s16" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p>A run that finishes while the producer reloads never wakes its session. Measured on 2026-10-11: the lane plan review <code>r-20261011T002225507072</code> was observed <code>working</code> by a <code>transition</code> row at 00:22:59Z. The producer reloaded at 00:28:22Z, after peers landed reckon code, and the run's completion was first published by the replacement as a <code>baseline</code> row with a null <code>from_state</code>. The session's follower and producer were live throughout (follower since 2026-10-10T18:03Z, producer pid since 23:41Z), but a baseline row is inventory, not news, so nothing woke the coordinator. It sat idle for 52 hours on a review that had finished in six minutes.</p><p>The replacement producer has its predecessor's last published state for every run in the event stream it appends to. A run whose state differs from that last published state is a transition, and the replacement publishes it as one, with the predecessor's state as <code>from_state</code>. Only a run the stream has never named is a baseline.</p><p>Write paths: <code>reckon/crew/recovery_watch.py</code> (<code>watch_follow</code>, which emits the baseline and transition rows) and a new test module.</p><p><strong>Done when</strong> a test writes an event stream whose last row for a run is <code>working</code>, marks the run complete, starts <code>watch_follow</code> as a replacement producer over that stream, and asserts the run's first new row is a <code>transition</code> from <code>working</code> to the completed state. A run absent from the stream still arrives as a <code>baseline</code>. On main the completed run arrives as a <code>baseline</code> with a null <code>from_state</code>, so the test fails there.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="arming-trigger" data-choice="always-silent" data-by="Simon McIntosh" data-when="2026-10-07">
@@ -276,6 +280,11 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
     <div class="r-fu-body"><p>§15 re-lands the reverted hand-off so a host's own follower never hands off, whatever code started the host. §9's live census stays open beside it.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-follower-lives-as-long-as-its-session §15</pre>
     <p class="r-fu-outcome">§15 landed at 25c025d38; the hand-off reads the host census.</p>
+    </article>
+<article class="r-fu" data-id="f-afl-010" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="s25-picker" data-written-at="2026-10-13" data-recommends-skill="/reckon-build a-follower-lives-as-long-as-its-session §16" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §16: a reload republishes a changed run as a transition</h4>
+    <div class="r-fu-body"><p>A completion that lands during a producer reload is published as a baseline and wakes no session. §16 makes the replacement compare against the stream's last published state.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-follower-lives-as-long-as-its-session §16</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
