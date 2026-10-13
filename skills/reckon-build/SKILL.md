@@ -175,6 +175,7 @@ worktree, a manifest, a gate and a ledger record.
 | Failure | Exit | Remedy |
 |---|---:|---|
 | `success` | 0 | Continue with the returned launch contract. |
+| `success`, `queued: true` | 0 | Leave it; the admit service launches it when a slot frees. |
 | `request-error` | 1 | Correct malformed options and retry. |
 | `not-dispatchable` | 2 | Repair the node contract named in `validation`. |
 | `budget-hold` | 3 | Keep the node ready; retry after the reported reset. |
@@ -184,6 +185,8 @@ worktree, a manifest, a gate and a ledger record.
 | `scope-conflict` | 7 | Wait for the owning run to release its path claim. |
 | `watcher-required` | 8 | Arm the `attach_line`; use `--no-watch` only deliberately. |
 | `member-in-flight` | 9 | Wait for the named run to reach a terminal phase. |
+| `queue-full` | 75 | Your session holds its share of queued runs; dispatch more as they launch. |
+| `lane-paused` | 75 | The lane's gate is paused; nothing was queued. |
 
 Read the JSON document rather than inferring a refusal from an empty stream.
 Remedies, the carrier rules and the `--brief` contract are in
@@ -450,13 +453,14 @@ every ready node through the picker. A dispatch the lane holds is stored as
 queued, and the `reckon-admit-local` fleet service launches it when a slot
 frees.
 
-- **Recognising queued work.** Until dispatch reports queueing as success, it
-  prints `"error": "lane-paused"` with exit 75 together with a `run_id` and
-  `position`. That pair means queued, not refused.
+- **Recognising queued work.** A queued dispatch exits 0 with `"ok": true,
+  "queued": true`, a `run_id` and a `position`. A `lane-paused` result at exit
+  75 is a paused gate and queues nothing.
 - **Leaving it alone.** Never discard a queued run to re-dispatch it.
-- **The limit.** Queue up to your session's share, the lane document's
-  `admission.fair_share`, at least 2 and at most 8 runs. `worker_slots` reads 0
-  whenever the lane is full, so it is not the share.
+- **The limit.** A session queues up to its share, the lane document's
+  `admission.fair_share`, kept between 2 and 8 runs. Past that, dispatch refuses
+  with `queue-full` at exit 75 and writes nothing; add more as your own runs
+  launch.
 - **Timing.** Never poll `lane.json` to decide when to dispatch.
 - **The hold that does not queue yet.** A picker hold (exit 3) is not queued.
   Re-dispatch it when one of your own runs completes. A composed review queues
