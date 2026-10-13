@@ -1,0 +1,71 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-13T01:50:14.926Z",
+  "dispatched_at": "2026-10-13T01:43:37Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-fingerprint-has-one-form.html#s2",
+      "id": "reuse_search-1",
+      "reason": "the census number gates \u00a73, so a script that re-globs `plan-*.v*.json` and misses the committed tree (which `list_plan_reviews` deliberately reads beside staging) or mixes code reviews into the plan population yields a wrong count that \u00a73 is then decided on, and the fix is one sentence naming the owners.",
+      "text": "\u00a72 says the census covers \"every stored plan review and every delivered plan-review sidecar\" across every mounted project, but cites no existing reader for either population and no existing classifier, so the plan proposes a fresh walk where all four mechanisms already exist",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/plan_review.py:1074",
+      "id": "duplicate_owner-1",
+      "reason": "extending/calling this owner keeps the \"committed copy wins, code reviews excluded\" contract that a re-implemented glob would silently drop.",
+      "text": "the census duplicates the stored-review reader `list_plan_reviews(project=None)`, which already enumerates every stored plan review across the committed tree and the staging root of every mounted project and returns each record's `plan_fingerprint` and `review_path`",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/plan_review.py:1973",
+      "id": "duplicate_owner-2",
+      "reason": "this reader already performs the census's sidecar half, so the plan should call it rather than re-discover the report-directory layout.",
+      "text": "the census duplicates the sidecar reader `delivered_reports` (and its code sibling `delivered_code_reviews`, `reckon/crew/plan_review.py:2009`) over `_delivered_report_sidecars` (`reckon/crew/plan_review.py:1925`), which already enumerates delivered sidecars and filters them by exactly `_fingerprint_forms`' three digests",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/plan_review.py:678",
+      "id": "duplicate_owner-3",
+      "reason": "re-deriving the three digests in a census script lets the census's notion of \"matches only the pre-collapse form\" drift from the production reader whose retirement \u00a73 performs.",
+      "text": "the census's core classification (which of the three forms a stored review matches against the current snapshot) is already expressed by `_fingerprint_forms` plus the membership test at `reckon/crew/plan_review.py:823-824` (`forms = _fingerprint_forms(content)`; `whole = [record for record in records if record.get(\"plan_fingerprint\") in forms]`), which the plan does not name",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/claims.py:85",
+      "id": "duplicate_owner-4",
+      "reason": "this is a runtime safety check whose result does not gate \u00a73's count, so although the owner should be named, getting it wrong does not change the plan's shape.",
+      "text": "\u00a72's third census item (\"any live run whose write paths claim `reckon/crew/plan_review.py` or `reckon/_store.py`\") duplicates the crew claim reader `declared_claim_paths` (`reckon/crew/claims.py:85`) and the repository-scope claims reader `_repository_scope_claims` (`reckon/crew/dispatch_claims.py:223`) already surfaced by the crew `scopes` view",
+      "type": "duplicate_owner",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "27a74dca1c02a6fbf7fbdda5fbe2fb1d2889b1921c0f9992a1bc39702682ae61",
+  "plan_slug": "the-fingerprint-has-one-form",
+  "plan_version": 1,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261013T014251951275-plan-review-of-the-fingerprint-has-one-form",
+  "reviewed_blob_sha": "2c51da877381d88644c63cb769aa3d41d671660e",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the plan adds no module and hides no behaviour behind a new interface; \u00a73 removes an op and a fingerprint form, which is depth-reducing rather than surface-spreading.",
+    "duplicate_owner": "a finding \u2014 the \u00a72 census re-walks the review store and re-reads live write-path claims instead of calling the modules that already own those reads, so the census duplicates `list_plan_reviews`/`delivered_reports`/`_fingerprint_forms` and the crew claim reader.",
+    "interface_budget": "pass \u2014 public_definitions 1685, cli_options 349, mcp_views 34, refusal_families 23; \u00a73 retires an MCP op (`collapse_section`, `reckon/mcp.py:1269`) and a fingerprint form and adds nothing to any family, so it names its retirement rather than adding surface.",
+    "reuse_search": "a finding \u2014 \u00a72 proposes a census script but names none of the review-store machinery it needs: the store reader `list_plan_reviews` (`reckon/crew/plan_review.py:1074`), the delivered-sidecar reader `delivered_reports` (`reckon/crew/plan_review.py:1973`) over `_delivered_report_sidecars` (`reckon/crew/plan_review.py:1925`), the classifier `_fingerprint_forms` (`reckon/crew/plan_review.py:678`), or the live-claim reader `declared_claim_paths` (`reckon/crew/claims.py:85`).",
+    "thin_wrapper": "pass \u2014 the plan adds no durable wrapper layer over existing machinery; \u00a72's census is a one-off read delivered as evidence, not a thin shim left in production code."
+  },
+  "section_digests": {
+    "_document": "677897f224d4982e8e4ad098e4a8e02724e888de68334e6f312c9761b61d6af8",
+    "s1": "d20bf808be72a862d484c4115618ad75325bad73c4c33997e87ac25da272e077",
+    "s2": "c04cde6b76a1d07542762939b00580daafaee71196aa35cd2ccec31e981963e5",
+    "s3": "a97f2dba7c0b826127cadbaf524405188cc954888913fe5f98f3c4948ed55de1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T01:53:26.999692+00:00"
+}
