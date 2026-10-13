@@ -2990,7 +2990,7 @@ def _stale_launch_tree_refusal(repo: Path, path: Path, base: str) -> str:
         )
     if verdict["dirty"]:
         return f"{label} left uncommitted changes in the worktree at {path}; kept"
-    if verdict["classification"] != "integrated":
+    if not _tree_is_disposable_for_launch(repo, path, base):
         head = str(verdict.get("head") or "")
         return (
             f"{label} left commit {head} on the worktree at {path}, beyond its "
