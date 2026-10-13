@@ -1,0 +1,79 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1506"
+  ],
+  "completed_at": "2026-10-13T18:17:16.979Z",
+  "dispatched_at": "2026-10-13T17:57:44Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T165124787131-a-failed-launch-does-not-block-its-node/manifest.md",
+      "line": "11",
+      "severity": "follow-on",
+      "text": "follow-on: the tests field carries the literal <worktree> placeholder in both the PYTHONPATH and the target path, so the manifest's own gate command is not reproducible as written even though the run-directory gate.log records a real substituted command."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T165124787131-a-failed-launch-does-not-block-its-node/manifest.md",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: this run's write paths include a test file, yet the manifest records no baseline_suite or after_suite, so the promotion suite-delta check reads an unmeasured added-failure count; its base arm (base-arm.log) is also truncated with no summary line, so no readable base arm records the suite it ran."
+    },
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "2937",
+      "severity": "follow-on",
+      "text": "follow-on: _tree_is_disposable_for_launch recomputes clean/claims/ancestor-of-base inline from _tree_state and merge-base rather than calling the existing worktree classifier _inspect_workspace (reckon/crew/routing.py:743), which already returns exactly those three facts and is used by promotion_records.py:544 and promotion_release.py:400."
+    },
+    {
+      "file": "tests/test_a_failed_launch_does_not_block_its_node.py",
+      "line": "212",
+      "severity": "follow-on",
+      "text": "follow-on: the new test file ends without a trailing newline (W292), a lint finding the commit adds that it did not have to."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read the single commit 16671ec60a against base 9b7d41adb: reckon/crew/routing.py:2910-3019 adds _launch_worktree_path, _launch_attempt_record, _tree_is_disposable_for_launch, _stale_launch_tree_refusal and the release branch in _create_worktree, and the new test file adds four cases over temporary repositories.",
+    "done_when": "the reviewed done_when names tests/test_a_failed_launch_does_not_block_its_node.py; the manifest records the run and the run directory's gate.log:5 records 4 passed with EXIT=0 under the literal command, and the four cases match the four done_when bullets.",
+    "goal": "the reviewed node's goal is taken from the dispatch record (node.goal, manifest orientation), \"a launch whose path holds a disposable tree from an earlier failed attempt releases that tree and launches\"; reckon/crew/routing.py:2910-3036 delivers it, and tests/test_a_failed_launch_does_not_block_its_node.py:117 proves the release case.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T165124787131-a-failed-launch-does-not-block-its-node/manifest.md; status complete, commit 16671ec60a, the tests field (line 11) carries the literal <worktree> placeholder rather than a reproducible command, and the manifest records no baseline_suite or after_suite.",
+    "write_paths": "the manifest declares four paths; the diff 9b7d41adb..16671ec60a8 touches only reckon/crew/routing.py and tests/test_a_failed_launch_does_not_block_its_node.py, both inside the declared set and nothing outside it."
+  },
+  "justifications": {
+    "durability": "tests/test_a_failed_launch_does_not_block_its_node.py:131 reddens when the release branch at routing.py:3014-3019 is dropped (the negative control shows it raising on the existing path), :158 reddens if the commit-beyond-base check at routing.py:2997-2999 is removed, :178 if the uncommitted-change check at routing.py:2986-2989 is removed, and :208 if the live-claim check at routing.py:2977-2981 is removed.",
+    "evidence": "run-directory gate.log:5 records 4 passed EXIT=0 for the named gate file, satisfying the done_when, but the reviewed manifest records no baseline_suite/after_suite and base-arm.log is truncated with no summary line, so the added-failure delta is unmeasurable and the manifest's tests command is not reproducible.",
+    "fit": "the four added helpers follow the surrounding private-helper idiom and docstring style of reckon/crew/routing.py:2910-3019 and introduce no name the repository naming rules forbid, though the new test file ends without a trailing newline.",
+    "goal_fidelity": "reckon/crew/routing.py:3014-3019 releases a disposable leftover tree through _remove_worktree before re-creating the launch path, and routing.py:2966-3002 refuses by name otherwise, exactly the deliverable of the section's code path.",
+    "reuse": "_launch_worktree_path and _launch_attempt_record extend existing owners (_workspace_roots, _residue_run_record, list_live, _live_pointer_worktrees), but _tree_is_disposable_for_launch (reckon/crew/routing.py:2937) re-derives the clean/claim/reachable classification that _inspect_workspace (reckon/crew/routing.py:743) already owns instead of reading it.",
+    "scope_discipline": "the range 9b7d41adb..16671ec60a8 touches only reckon/crew/routing.py and the new test file, both declared, and two declared write paths (the evidence fragment and figure) were left unused rather than exceeded."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is taken from the dispatch record (node.goal, manifest orientation), \"a launch whose path holds a disposable tree from an earlier failed attempt releases that tree and launches\"; reckon/crew/routing.py:2910-3036 delivers it, and tests/test_a_failed_launch_does_not_block_its_node.py:117 proves the release case.\nVERDICT done_when: the reviewed done_when names tests/test_a_failed_launch_does_not_block_its_node.py; the manifest records the run and the run directory's gate.log:5 records 4 passed with EXIT=0 under the literal command, and the four cases match the four done_when bullets.\nVERDICT write_paths: the manifest declares four paths; the diff 9b7d41adb..16671ec60a8 touches only reckon/crew/routing.py and tests/test_a_failed_launch_does_not_block_its_node.py, both inside the declared set and nothing outside it.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T165124787131-a-failed-launch-does-not-block-its-node/manifest.md; status complete, commit 16671ec60a, the tests field (line 11) carries the literal <worktree> placeholder rather than a reproducible command, and the manifest records no baseline_suite or after_suite.\nVERDICT diff: read the single commit 16671ec60a against base 9b7d41adb: reckon/crew/routing.py:2910-3019 adds _launch_worktree_path, _launch_attempt_record, _tree_is_disposable_for_launch, _stale_launch_tree_refusal and the release branch in _create_worktree, and the new test file adds four cases over temporary repositories.\nCALL_SITES: reckon/crew/dispatch.py:1506\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/routing.py:3014-3019 releases a disposable leftover tree through _remove_worktree before re-creating the launch path, and routing.py:2966-3002 refuses by name otherwise, exactly the deliverable of the section's code path.\nSCORE evidence: 12\nJUSTIFICATION evidence: run-directory gate.log:5 records 4 passed EXIT=0 for the named gate file, satisfying the done_when, but the reviewed manifest records no baseline_suite/after_suite and base-arm.log is truncated with no summary line, so the added-failure delta is unmeasurable and the manifest's tests command is not reproducible.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the range 9b7d41adb..16671ec60a8 touches only reckon/crew/routing.py and the new test file, both declared, and two declared write paths (the evidence fragment and figure) were left unused rather than exceeded.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_failed_launch_does_not_block_its_node.py:131 reddens when the release branch at routing.py:3014-3019 is dropped (the negative control shows it raising on the existing path), :158 reddens if the commit-beyond-base check at routing.py:2997-2999 is removed, :178 if the uncommitted-change check at routing.py:2986-2989 is removed, and :208 if the live-claim check at routing.py:2977-2981 is removed.\nSCORE fit: 17\nJUSTIFICATION fit: the four added helpers follow the surrounding private-helper idiom and docstring style of reckon/crew/routing.py:2910-3019 and introduce no name the repository naming rules forbid, though the new test file ends without a trailing newline.\nSCORE reuse: 12\nJUSTIFICATION reuse: _launch_worktree_path and _launch_attempt_record extend existing owners (_workspace_roots, _residue_run_record, list_live, _live_pointer_worktrees), but _tree_is_disposable_for_launch (reckon/crew/routing.py:2937) re-derives the clean/claim/reachable classification that _inspect_workspace (reckon/crew/routing.py:743) already owns instead of reading it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T165124787131-a-failed-launch-does-not-block-its-node/manifest.md:11 follow-on: the tests field carries the literal <worktree> placeholder in both the PYTHONPATH and the target path, so the manifest's own gate command is not reproducible as written even though the run-directory gate.log records a real substituted command.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T165124787131-a-failed-launch-does-not-block-its-node/manifest.md:1 follow-on: this run's write paths include a test file, yet the manifest records no baseline_suite or after_suite, so the promotion suite-delta check reads an unmeasured added-failure count; its base arm (base-arm.log) is also truncated with no summary line, so no readable base arm records the suite it ran.\nFINDING reckon/crew/routing.py:2937 follow-on: _tree_is_disposable_for_launch recomputes clean/claims/ancestor-of-base inline from _tree_state and merge-base rather than calling the existing worktree classifier _inspect_workspace (reckon/crew/routing.py:743), which already returns exactly those three facts and is used by promotion_records.py:544 and promotion_release.py:400.\nFINDING tests/test_a_failed_launch_does_not_block_its_node.py:212 follow-on: the new test file ends without a trailing newline (W292), a lint finding the commit adds that it did not have to.",
+  "review_id": "r-20261013T165124787131-a-failed-launch-does-not-block-its-node",
+  "review_run_id": "r-20261013T175719927030-review-of-a-failed-launch-does-not-block-its-node-16671ec60a8f",
+  "reviewed_base_sha": "9b7d41adbe4236c3c648a2a7d3d0b5bdd928801c",
+  "reviewed_head_sha": "16671ec60a8fe45164f3aad3abe97f540ee435b5",
+  "reviewed_run_id": "r-20261013T165124787131-a-failed-launch-does-not-block-its-node",
+  "scores": {
+    "durability": 16,
+    "evidence": 12,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 12,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "subject": "node",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T18:16:04.342531+00:00",
+  "total": 94
+}
