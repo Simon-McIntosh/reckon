@@ -13,7 +13,11 @@
   <code>LaneHeld</code> branch reads that phase: it reports <code>phase</code> in the payload and sets
   <code>queued</code> true only when the phase is <code>queued</code>, so an already-admitted or working run
   is named as such rather than reported as a fresh queueing (<code>run X is already working for this
-  node</code>), still exiting 0. Measured: <code>tests/test_a_node_is_queued_once.py</code> 7 passed, EXIT=0,
+  node</code>), still exiting 0. The answer renders that reason itself, passing it where
+  <code>LaneHeld</code> reads its message, because an existing-run answer has no lane gate to name. A
+  caller that names an explicit member keeps its own member-in-flight refusal for a run that is admitted
+  or working — that refusal outranks the existing-run answer, so the caller hears the member is busy
+  rather than the lane — while a queued copy is still updated in place. Measured: <code>tests/test_a_node_is_queued_once.py</code> 7 passed, EXIT=0,
   and the three-file gate (<code>test_a_node_is_queued_once.py test_held_dispatch_is_queued.py
   test_a_queued_dispatch_is_accepted.py</code>) 24 passed, EXIT=0; a wider dispatch/queue/admission sweep of
   every matching test file also exits 0. Negative control: ignoring the handover record fails the two

@@ -194,6 +194,25 @@ def test_the_handover_answer_reports_the_admitted_pointer_and_phase(
     assert held.queued["position"] is None
 
 
+def test_the_existing_run_answer_renders_its_own_reason(
+    dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The answer names the run and its phase rather than a lane gate it lacks."""
+    config = _configure(dispatch_repo, monkeypatch, session_slots=0)
+    _live("r-working", phase="working", pid=os.getpid())
+    assert str(_answer(dispatch_repo, config)) == (
+        "run r-working is already working for this node"
+    )
+
+    # An admitted run stands in the handover where no pointer survives, and
+    # reads the same way instead of "the lane gate is None at None".
+    runs.pointer_path("r-working").unlink()
+    runs.write_handover(_request("r-admitted"))
+    assert str(_answer(dispatch_repo, config)) == (
+        "run r-admitted is already admitted for this node"
+    )
+
+
 # --- Case 2: a working run is reported, never queued over --------------------
 
 

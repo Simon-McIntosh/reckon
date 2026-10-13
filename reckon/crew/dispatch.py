@@ -291,14 +291,12 @@ def _answer_existing_node_run(
             "reason": queued.get("reason"),
         }
         return held
-    held = LaneHeld(
-        {
-            "reason": (
-                f"run {existing.get('run_id')} is already "
-                f"{phase or 'live'} for this node"
-            )
-        }
-    )
+    reason = f"run {existing.get('run_id')} is already {phase or 'live'} for this node"
+    # LaneHeld renders its own message from the gate's ``detail`` (falling back to
+    # its state and path), so the reason is passed there: an existing-run answer
+    # has no lane gate, and a gate-shaped message would read "the lane gate is
+    # None at None".
+    held = LaneHeld({"detail": reason, "reason": reason})
     held.queued = {
         "run_id": str(existing.get("run_id") or ""),
         "position": None,
@@ -1080,8 +1078,19 @@ def dispatch(
             node_id=node.id,
             include_handovers=not admission_launch,
         )
-        if existing is not None and (
-            str(existing.get("phase") or "") == "queued" or is_local
+        existing_phase = (
+            str(existing.get("phase") or "") if existing is not None else ""
+        )
+        # A caller that names a member routes the node into that member's durable
+        # session, whose own in-flight run refuses a second dispatch there. That
+        # refusal outranks the existing-run answer for a run that is admitted or
+        # working, so the caller hears the member is busy rather than the lane.
+        # A queued copy is still updated in place, where no member refusal applies.
+        member_refuses = bool(member) and existing_phase != "queued"
+        if (
+            existing is not None
+            and not member_refuses
+            and (existing_phase == "queued" or is_local)
         ):
             raise _answer_existing_node_run(
                 existing,
