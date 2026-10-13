@@ -173,6 +173,7 @@ from reckon.crew.runs import (
     capture_run_session as capture_run_session,
     crew_home as crew_home,
     delivery_roots as delivery_roots,
+    existing_node_run as existing_node_run,
     list_live as list_live,
     new_run_id as new_run_id,
     placement_job_alive as placement_job_alive,
@@ -220,6 +221,89 @@ def _queued_share_cap(backend: Mapping[str, Any]) -> object:
     if not isinstance(payload, Mapping):
         return None
     return _lane_document.read_lane_admission(payload).get("fair_share")
+
+
+def _queued_request_record(
+    *,
+    run_id: str,
+    project: str,
+    node: TaskNode,
+    repo_root: Path,
+    session: str,
+    backend_name: str,
+    launch_kind: str,
+    lane_allowance: Mapping[str, Any],
+    dispatch_options: Mapping[str, Any] | None,
+    queued_at: str,
+) -> dict[str, Any]:
+    """The request record a held local dispatch stores as one queued pointer.
+
+    Kept in one place so the held path and a re-dispatch of an already-queued
+    node store the same shape, down to the request options the run launches from.
+    """
+    return {
+        "run_id": run_id,
+        "project": project,
+        "plan": node.plan,
+        "section": node.section,
+        "repo": str(repo_root),
+        "session": session,
+        "node": node.as_dict(),
+        "backend": backend_name,
+        "launch": launch_kind,
+        "local": True,
+        "launcher_host": None,
+        "phase": "queued",
+        "queued_at": queued_at,
+        "created_at": queued_at,
+        "hold": dict(lane_allowance),
+        "reason": lane_allowance.get("reason"),
+        "dispatch_options": dict(dispatch_options or {}),
+    }
+
+
+def _answer_existing_node_run(
+    existing: Mapping[str, Any],
+    *,
+    record: dict[str, Any],
+    backend: Mapping[str, Any],
+    lane_allowance: Mapping[str, Any],
+) -> LaneHeld:
+    """The hold that names the run a node already has, writing no second pointer.
+
+    A queued copy is updated in place — the re-dispatch is a change to that one
+    request — while a run being admitted or already working is named back with
+    its phase and no position, because it stands nowhere in the admission order.
+    A run that is not queued is answered from the record it already has rather
+    than by looking a position up for the new request.
+    """
+    phase = str(existing.get("phase") or "")
+    if phase == "queued":
+        queued, position = queue_dispatch(
+            record,
+            cap=queued_dispatch_cap(_queued_share_cap(backend)),
+        )
+        held = LaneHeld(dict(lane_allowance))
+        held.queued = {
+            "run_id": str(queued["run_id"]),
+            "position": position,
+            "phase": str(queued.get("phase") or "queued"),
+            "reason": queued.get("reason"),
+        }
+        return held
+    reason = f"run {existing.get('run_id')} is already {phase or 'live'} for this node"
+    # LaneHeld renders its own message from the gate's ``detail`` (falling back to
+    # its state and path), so the reason is passed there: an existing-run answer
+    # has no lane gate, and a gate-shaped message would read "the lane gate is
+    # None at None".
+    held = LaneHeld({"detail": reason, "reason": reason})
+    held.queued = {
+        "run_id": str(existing.get("run_id") or ""),
+        "position": None,
+        "phase": phase,
+        "reason": f"already {phase or 'live'}",
+    }
+    return held
 
 
 def _offered_local_backend(
@@ -613,6 +697,7 @@ def dispatch(
     comment: str = "",
     picker_selection: Mapping[str, Any] | None = None,
     dispatch_options: Mapping[str, Any] | None = None,
+    admission_launch: bool = False,
 ) -> dict[str, Any]:
     """Validate, prepare and launch one node; return its run record.
 
@@ -973,6 +1058,57 @@ def dispatch(
     backend = resolution.backend_settings
     launch_kind = resolution.launch
     run_id = resolution.run_id
+    lane_allowance = resolution.lane_allowance or {}
+    local_backend = str(config.get("local_backend") or "")
+    is_local = backend_name == local_backend and bool(local_backend)
+
+    # A node that already has a run — queued, being admitted, or in flight — is
+    # answered rather than dispatched a second time. This is read before the
+    # scope check and before any worktree, so a re-dispatch of a queued node
+    # updates that one request in place instead of being refused against the
+    # queued pointer's own write-path claim. A queued copy is a re-queue on any
+    # lane; a run already being admitted or working is answered only on the lane
+    # that queues, where the request would otherwise become a second pointer.
+    if not shadow_lineage:
+        existing = existing_node_run(
+            project,
+            session=session,
+            plan=node.plan,
+            section=node.section,
+            node_id=node.id,
+            include_handovers=not admission_launch,
+        )
+        existing_phase = (
+            str(existing.get("phase") or "") if existing is not None else ""
+        )
+        # A caller that names a member routes the node into that member's durable
+        # session, whose own in-flight run refuses a second dispatch there. That
+        # refusal outranks the existing-run answer for a run that is admitted or
+        # working, so the caller hears the member is busy rather than the lane.
+        # A queued copy is still updated in place, where no member refusal applies.
+        member_refuses = bool(member) and existing_phase != "queued"
+        if (
+            existing is not None
+            and not member_refuses
+            and (existing_phase == "queued" or is_local)
+        ):
+            raise _answer_existing_node_run(
+                existing,
+                record=_queued_request_record(
+                    run_id=run_id,
+                    project=project,
+                    node=node,
+                    repo_root=repo_root,
+                    session=session,
+                    backend_name=backend_name,
+                    launch_kind=launch_kind,
+                    lane_allowance=lane_allowance,
+                    dispatch_options=dispatch_options,
+                    queued_at=_utc_now(),
+                ),
+                backend=backend,
+                lane_allowance=lane_allowance,
+            )
 
     # The lane gate is read before anything is created: a paused gate, one that
     # cannot be answered, or a declared path that differs from the lane
@@ -988,39 +1124,28 @@ def dispatch(
     # The router's allowance is checked before creating a worktree. A local
     # hold records the request as queued; other holds remain transient. The
     # allowance rides the exception so the caller reports the router's reason.
-    lane_allowance = resolution.lane_allowance or {}
     if lane_allowance.get("held"):
-        if (
-            backend_name == str(config.get("local_backend") or "")
-            and not shadow_lineage
-        ):
-            queued_at = _utc_now()
+        if is_local and not shadow_lineage:
             queued, position = queue_dispatch(
-                {
-                    "run_id": run_id,
-                    "project": project,
-                    "plan": node.plan,
-                    "section": node.section,
-                    "repo": str(repo_root),
-                    "session": session,
-                    "node": node.as_dict(),
-                    "backend": backend_name,
-                    "launch": launch_kind,
-                    "local": True,
-                    "launcher_host": None,
-                    "phase": "queued",
-                    "queued_at": queued_at,
-                    "created_at": queued_at,
-                    "hold": dict(lane_allowance),
-                    "reason": lane_allowance.get("reason"),
-                    "dispatch_options": dict(dispatch_options or {}),
-                },
+                _queued_request_record(
+                    run_id=run_id,
+                    project=project,
+                    node=node,
+                    repo_root=repo_root,
+                    session=session,
+                    backend_name=backend_name,
+                    launch_kind=launch_kind,
+                    lane_allowance=lane_allowance,
+                    dispatch_options=dispatch_options,
+                    queued_at=_utc_now(),
+                ),
                 cap=queued_dispatch_cap(_queued_share_cap(backend)),
             )
             held = LaneHeld(lane_allowance)
             held.queued = {
                 "run_id": queued["run_id"],
                 "position": position,
+                "phase": str(queued.get("phase") or "queued"),
                 "reason": lane_allowance.get("reason"),
             }
             if held_selection is not None:

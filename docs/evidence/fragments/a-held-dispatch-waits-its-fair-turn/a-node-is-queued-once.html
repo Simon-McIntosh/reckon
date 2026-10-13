@@ -1,0 +1,25 @@
+<article class="landed-report" data-run-id="r-20261013T133003538509-a-node-is-queued-once">
+  <p id="a-node-is-queued-once-landing">landing: a node is now queued at most once while any run of it is
+  queued, being admitted or in flight. <code>runs.existing_node_run(project, session=, plan=, section=,
+  node_id=, include_handovers=)</code> answers the run of a node in that state, matching on the identity
+  <code>(session, plan, section, node id)</code>; the admission pass writes a <code>handover</code> record
+  — the released request, phase <code>admitted</code> — for the gap between unlinking the queued pointer and
+  the launch re-publishing one, which <code>runs.sweep_handovers</code> self-heals under the admit lock, and
+  <code>dispatch</code> reads that identity before the scope check, so a dispatch arriving mid-handover or
+  over a working node answers that run (<code>LaneHeld.queued</code> carrying its id and phase,
+  <code>position</code> None) and writes no second pointer, while a re-dispatch of a queued node updates the
+  one pointer in place instead of being refused against its own write-path claim. The admission pass's own
+  relaunch passes <code>admission_launch=True</code> so it is not answered by its own handover. The CLI's
+  <code>LaneHeld</code> branch reads that phase: it reports <code>phase</code> in the payload and sets
+  <code>queued</code> true only when the phase is <code>queued</code>, so an already-admitted or working run
+  is named as such rather than reported as a fresh queueing (<code>run X is already working for this
+  node</code>), still exiting 0. The answer renders that reason itself, passing it where
+  <code>LaneHeld</code> reads its message, because an existing-run answer has no lane gate to name. A
+  caller that names an explicit member keeps its own member-in-flight refusal for a run that is admitted
+  or working — that refusal outranks the existing-run answer, so the caller hears the member is busy
+  rather than the lane — while a queued copy is still updated in place. Measured: <code>tests/test_a_node_is_queued_once.py</code> 7 passed, EXIT=0,
+  and the three-file gate (<code>test_a_node_is_queued_once.py test_held_dispatch_is_queued.py
+  test_a_queued_dispatch_is_accepted.py</code>) 24 passed, EXIT=0; a wider dispatch/queue/admission sweep of
+  every matching test file also exits 0. Negative control: ignoring the handover record fails the two
+  handover cases, EXIT=1.</p>
+</article>
