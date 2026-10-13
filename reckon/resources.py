@@ -640,7 +640,8 @@ def _resolve_canonical(
     uniquely matching plan. The fast path decides only where the path is
     unambiguous: when more than one canonical candidate exists for the slug —
     a live and an archived document, which an include_archived lookup sees
-    together — it returns None and the full scan resolves the duplicate with
+    together — or when another file in the canonical root claims the same
+    identity, it returns None and the full scan resolves the duplicate with
     its own collision rule, so the answer for a duplicated slug is the one the
     scan gives, unchanged.
     """
@@ -658,7 +659,48 @@ def _resolve_canonical(
     ]
     if sum(resource is not None for resource in candidates) != 1:
         return None
-    return next(resource for resource in candidates if resource is not None)
+    candidate = next(resource for resource in candidates if resource is not None)
+    if not _canonical_identity_is_unique(docs_dir, project, candidate):
+        return None
+    return candidate
+
+
+def _canonical_identity_is_unique(
+    docs_dir: Path, project: str, resource: Resource
+) -> bool:
+    """Report whether the canonical file is the only claimant of its identity.
+
+    A named read takes its canonical path without walking the tree, so a slug
+    filed twice — a second file in the same typed root classifying to the same
+    type and slug, as when two documents declare the same slug under different
+    filenames — would otherwise resolve to the canonical file while the
+    duplicate went unnoticed. Every non-legacy claimant of a typed identity
+    lives in that type's own root directory, so one listing of that directory
+    settles the question without the recursive walk the direct read avoids.
+    A directory that cannot be listed leaves the scan to own the collision rule.
+    """
+    key = (resource.type, resource.slug, resource.archived)
+    try:
+        entries = sorted(resource.path.parent.glob("*.html"))
+    except OSError:
+        return True
+    for path in entries:
+        if path == resource.path:
+            continue
+        try:
+            other = identify_resource(docs_dir, path, project)
+        except ValueError:
+            # A sibling that does not classify is not a claimant here; the
+            # resolve this defers to reads with ignore_invalid=True, so a file
+            # it would skip must not turn a direct hit into a raise.
+            continue
+        if other is None:
+            continue
+        if (other.type, other.slug, other.archived) == key and (
+            _preferred_resource(resource, other) is None
+        ):
+            return False
+    return True
 
 
 def resolve_resource(
