@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="356">
+<meta name="plan-version" content="357">
 <meta name="plan-modified" content="2026-10-13">
 </head>
 <body>
@@ -2221,6 +2221,9 @@
 </div>
 <div class="r-comment" data-section="s47" data-id="c-run-r-20261013T034836113351-review-of-a-worktree-release-is-whole-9e22cdd06935" data-who="reckon-build" data-when="2026-10-13T04:06:24.389Z">
     <div class="r-comment-body"><p>Independent review of r-20261012T051827498181-a-worktree-release-is-whole stored at head 9e22cdd069350cfed451d63c25aee379d484f6b9 (base 39b5e71221a549b522d0143ebcf3a19562d15eb0); scores goal_fidelity 19, evidence 15, scope_discipline 19, durability 19, fit 19, reuse 5 (total 96); three follow-on findings — gc ignores the released flag at routing.py:2232/2246, `_main_worktree` duplicates node.py:1340 repository_identity, and the evidence fragment cites a stale gate head.</p></div>
+</div>
+<div class="r-comment" data-section="s47" data-id="c-run-r-20261013T044440732219-review-of-a-worktree-release-is-whole-443210f83f5a" data-who="reckon-build" data-when="2026-10-13T05:01:15.971Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261012T051827498181-a-worktree-release-is-whole covering the single commit it gained since its last review (base 9e22cdd06 -&gt; head 443210f83, &quot;honour a withheld release at every caller&quot;). Verdict: sound repair of the exact defect the prior review recorded — garbage_collect now captures and honours the released flag (routing.py:2256), reports a refused release in withheld_worktrees rather than removed_worktrees, and deletes the duplicated _main_worktree for repository_identity. Scores goal_fidelity 19, evidence 17, scope_discipline 20, durability 18, fit 19, reuse 20 (total 113). Two follow-on findings, neither blocking: the withheld-reason assertion is self-supplied (tests/test_a_worktree_release_is_whole.py:423) and gc rebuilds the releasable set inline instead of calling _releasable_roots (routing.py:2124).</p></div>
 </div>
 <div class="r-comment" data-section="s48" data-id="c-run-r-20261003T172012033747-review-of-a-suite-record-is-flat" data-who="reckon-build" data-when="2026-10-03T17:28:21.143Z">
     <div class="r-comment-body"><p>independent review of r-20261003T162829003496-a-suite-record-is-flat stored at reviews/reckon/r-20261003T162829003496-a-suite-record-is-flat.json (and its .at-e2a0db70e copy): all five dimensions scored in range, total 98 (goal_fidelity 20, evidence 18, scope_discipline 20, durability 20, fit 20), reviewed_base_sha 4d1feeed905d145a3130e71293f2cfdf1233f1d7 and reviewed_head_sha e2a0db70e4347d558e60a36e116dc0cf23b88de7, added_failure_count 0 with added_failure_ids [] derived from the run's own base-population.log and head-population-provisioned.log; one follow-on finding records that the two suite arms were run in different trees.</p></div>
