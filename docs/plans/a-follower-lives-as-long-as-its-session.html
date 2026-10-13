@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-follower-lives-as-long-as-its-session">
   <meta name="plan-title" content="A Follower Lives As Long As Its Session">
   <meta name="plan-summary" content="The Monitor tool ends every follower at 30 minutes; a plugin-declared monitor lives for the whole session, so dispatch arms the follower and nobody re-arms it.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="superseded">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="9.5">
   <meta name="plan-capability-version" content="1.0">
@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.92">
-<meta name="plan-version" content="81">
+<meta name="plan-version" content="83">
 <meta name="plan-modified" content="2026-10-13">
 <meta name="plan-commits" content="25c025d3">
 </head>
@@ -281,10 +281,11 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
     <pre class="r-fu-prompt">/reckon-build a-follower-lives-as-long-as-its-session §15</pre>
     <p class="r-fu-outcome">§15 landed at 25c025d38; the hand-off reads the host census.</p>
     </article>
-<article class="r-fu" data-id="f-afl-010" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="s25-picker" data-written-at="2026-10-13" data-recommends-skill="/reckon-build a-follower-lives-as-long-as-its-session §16" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-afl-010" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="s25-picker" data-written-at="2026-10-13" data-recommends-skill="/reckon-build a-follower-lives-as-long-as-its-session §16" data-resolved-at="2026-10-13T05:43:44+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Build §16: a reload republishes a changed run as a transition</h4>
     <div class="r-fu-body"><p>A completion that lands during a producer reload is published as a baseline and wakes no session. §16 makes the replacement compare against the stream's last published state.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-follower-lives-as-long-as-its-session §16</pre>
+    <p class="r-fu-outcome">done — no followup: moved, this plan was folded into the-monitor-shows-the-work-it-watches on 2026-10-13, which carries its open sections and their followup.</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -461,6 +462,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s15" data-id="c-s15-host-watch" data-who="reckon-build" data-when="2026-10-08T15:17:00Z">
     <div class="r-comment-body"><p>Host watch after the §15 merge (<code>947fe2cc4</code>, pushed 17:06 CEST). Every session host's follower children were listed with <code>ps --ppid</code> before the merge and every 20 s for ten minutes after it. All 13 hosts stayed up with the same follower pid throughout, and no <em>session host now delivers</em> hand-off row appeared. The listing script and its output are in the coordinator's scratchpad; the pre-merge replay of each live follower's environment through the merged census reader read 13 of 13 as host children.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-folded-into-monitor-1013" data-who="reckon-build" data-when="2026-10-13T05:55:00Z">
+    <div class="r-comment-body"><p><strong>Folded.</strong> At the lead's request on 2026-10-13 this plan's open work moved to <a href="/reckon/plans/the-monitor-shows-the-work-it-watches">the-monitor-shows-the-work-it-watches</a> (S26), the one monitor plan: §9 and §16 are now §13 and §14 there. Its locked decisions are carried there too. This plan is superseded and keeps its landed record.</p></div>
 </div>
 </section>
 </main>

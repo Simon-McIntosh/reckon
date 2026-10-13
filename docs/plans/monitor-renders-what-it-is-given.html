@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="monitor-renders-what-it-is-given">
   <meta name="plan-title" content="The Monitor Renders What It Is Given">
   <meta name="plan-summary" content="Carry the wait facts into the transition event, then render them: a row cannot distinguish an unrun probe from a pending one.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="superseded">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="4.0">
   <meta name="plan-capability-version" content="1.0">
@@ -21,8 +21,8 @@
   <title>The Monitor Renders What It Is Given | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-24">
-<meta name="plan-version" content="29">
+<meta name="plan-version" content="31">
+<meta name="plan-modified" content="2026-10-13">
 <meta name="plan-sprint" content="S22">
 <meta name="plan-impl" content="0.83">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;deferred&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;deferred&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
@@ -471,10 +471,11 @@ try:
     <pre class="r-fu-prompt">/reckon-build monitor-renders-what-it-is-given §5</pre>
     <p class="r-fu-outcome"><p>The decision <code>waiting-counter-letter</code> is locked, and §5 landed as recorded in its landed subsection and superseded at <code>fee111c4</code>. The bucket is now named <code>queued</code>, so <code>q</code> decodes. The third review finding, a base-comparison test compared against head, was repaired in the same §5 node by renaming the test. The first finding, a figure outside the fence, was accepted at promotion. The second, a nested <code>tests:</code> mapping that <code>parse_manifest</code> returns empty, belongs to the manifest reader and not to this renderer. The implementation figure is five of six executable sections: §3, §4, §5, §6 and §9 are done, and §10 waits on its gate.</p></p>
     </article>
-<article class="r-fu" data-id="f-mrwig-003" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-ship" data-written-at="2026-09-23 04:05" data-recommends-skill="/reckon-build monitor-renders-what-it-is-given §10" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-mrwig-003" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-ship" data-written-at="2026-09-23 04:05" data-recommends-skill="/reckon-build monitor-renders-what-it-is-given §10" data-resolved-at="2026-10-13T05:43:30+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Render the critical-path coverage cell once the roadmap derives the figure</h4>
     <div class="r-fu-body"><p>§10 is the only executable section left, and gate <code>g-coverage-figure-exists</code> holds it closed. The gate opens when <code>work-scheduling-surface</code> §3 lands its per-path coverage figure, callable outside the HTTP handler. That plan belongs to sprint S18 and has no owning coordinator active today.</p></div>
     <pre class="r-fu-prompt">/reckon-build monitor-renders-what-it-is-given §10</pre>
+    <p class="r-fu-outcome">done — no followup: moved, this plan was folded into the-monitor-shows-the-work-it-watches on 2026-10-13, which carries its open sections and their followup.</p>
     </article>
 </section>
 
@@ -544,6 +545,9 @@ try:
 </div>
 <div class="r-comment" data-section="_top" data-id="c-a-total-cannot-show-that-an-inbox-is-being-worked" data-who="reckon-ship" data-when="">
     <div class="r-comment-body"><p><strong>A stronger form of the finding above, caught by the lead while the drain was running.</strong> The coordinator reported that the blocked count had moved from two to one. It had — on exactly one row, for a few seconds. By the next row it read two again, and the lead's screen showed two throughout. Both statements were true of the same display.</p><p>What happened between those rows is the point: one blocked item was recorded and cleared, and a different run entered the same bucket moments later. <strong>The count was stable while its membership turned over completely.</strong> A total can express how many and never which, so it cannot distinguish a backlog being worked from a backlog standing still — and those are the only two states a reader of that cell is trying to tell apart.</p><p>The consequence misleads in both directions. A coordinator who clears an item sees no movement and concludes the work did not land. A reader watching a steady <code>2b</code> for an hour cannot tell whether it is the same two runs untouched or twenty runs passing through.</p><p><strong>And the two were not comparable in kind.</strong> Measured at that moment, one was a dead review correctly recorded, and its replacement was a <em>healthy worker</em> whose stream had been written 162 seconds earlier and whose manifest carried a placeholder <code>waiting</code> stanza from orientation — the defect recorded at <code>c-a-frozen-manifest-is-invisible-for-its-whole-working-life</code>. The cell counted a real item and a false one identically, and the false one arrived because of a defect this plan already owns.</p><p><strong>What this asks for, beyond the previous comment.</strong> The actionable cell needs identity or age, not only a total: the oldest item's age, or a count of items unchanged since the reader last saw them. A number that reads the same for “two items, untouched, fourteen hours” and “two items, both new since your last row” is not reporting the quantity a coordinator acts on.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-folded-into-monitor-1013" data-who="reckon-build" data-when="2026-10-13T05:55:00Z">
+    <div class="r-comment-body"><p><strong>Folded.</strong> At the lead's request on 2026-10-13 this plan's open work moved to <a href="/reckon/plans/the-monitor-shows-the-work-it-watches">the-monitor-shows-the-work-it-watches</a> (S26), the one monitor plan: §10 is now §12 there. Its locked decisions are carried there too. This plan is superseded and keeps its landed record.</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
