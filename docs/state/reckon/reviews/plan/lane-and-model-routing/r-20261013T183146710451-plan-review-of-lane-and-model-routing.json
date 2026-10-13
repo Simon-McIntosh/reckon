@@ -1,0 +1,81 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-13T18:50:57.241Z",
+  "dispatched_at": "2026-10-13T18:32:53Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/lane-and-model-routing.html:152",
+      "id": "reasoning-1",
+      "reason": "as written the node either exceeds its granted write scope to instrument `lane_context.py`, or lands a counter whose entries cannot answer \u00a725's question, wasting the working day of fleet picks the counter must run to produce any data at all.",
+      "text": "\u00a724's write paths name `reckon/crew/picker/prompts.py` as the counter's only product file, but every read its Why enumerates executes one level down: `prompts.render` reaches all of them through the single call `lane_context.build(...)` at `reckon/crew/picker/prompts.py:323`, and the reads live in `reckon/crew/picker/lane_context.py` \u2014 the published lane document at `lane_context.py:597` (`local_lane_load`), the live run pointers at `lane_context.py:533` (`list_live`), and a foreign owner's profile cache and ledger stamp at `lane_context.py:574` (`_cached_run_time_profile`). A counter confined to `prompts.py` can therefore record at most one entry for the whole composition (plus the template load at `prompts.py:343`) \u2014 the same aggregate-then-mislabel shape \u00a722 exists to fix \u2014 while \u00a725's done-when demands the finer breakdown (\"each read's median, 90th percentile and share of render time\", and the read that dominates the picks whose render exceeds 2 s).",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "fd7483fcb524a3dd97d22939576e09ad1fb67fca3b44c01eeafa7686f9c01563",
+  "plan_slug": "lane-and-model-routing",
+  "plan_version": 119,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-13T18:51:14.850614+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-13T18:51:14.850614+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-lane-and-model-routing.v119.json",
+  "review_run_id": "r-20261013T183146710451-plan-review-of-lane-and-model-routing",
+  "reviewed_blob_sha": "efd9f76da7a40f8f3c0aa2621354f78bc62ab2cb",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `prompts.render` is the module-level `render` at",
+    "done_when": "pass \u2014 \u00a724 names a declared negative control (a head mutation",
+    "evidence_paths": "pass \u2014 the counter appends beside `pick-timings.jsonl`",
+    "naming": "pass \u2014 the renamed headings name the mechanism (\"The pick's state",
+    "reasoning": "a finding \u2014 \u00a724's deliverable and its write paths disagree",
+    "single_goal": "pass \u2014 \u00a724 is now exactly one deliverable (the counter that",
+    "wiring": "pass \u2014 each edge the document now declares resolves: `s25` names"
+  },
+  "section_digests": {
+    "_document": "acc9df561a7a7eb627abd1483686304b259b660454495b49803e4b76b0acfeb9",
+    "s0": "81b96222a48b289997be5911636f60d30bc7137bcbe5050270416b64f3c34c10",
+    "s1": "6760f63ebdb0d0db10c3c004f30d4f4253bfb7582bc7a0e4054fed73e017a02d",
+    "s10": "9f3b98da9be42bc1d1dad77d11079186c59e62315308454b2f442bdfffa7755c",
+    "s11": "2e566713b8ee8cbfcf94503cba2640bac78329b96f748ff0334a858e08287755",
+    "s12": "8a7841af15c5beacc75bf716eab0a317f722daab3a302ec190299ce0c3315350",
+    "s13": "6cc9f5f5d1d9a0d7a981363b2961d554bc1670d016cf5da011e18fd20d24b604",
+    "s14": "f4192a6b66ca1a9df3c0c8b84d6a76f9b7e2708145600fc43403217b7a52c540",
+    "s15": "f771307d6c5f071d884953878a527fd166185d3d25c88171a3028f27f2a174b8",
+    "s16": "f223e6b5a96e8c6195a47af2261f3ffdb2da6592ac65ab36dc87669411b7f75d",
+    "s17": "c25e53b94999e6070d4f523ca3bd14da195812a44489dfe8f0ad7d9e3b3167ff",
+    "s18": "a8fdaccbcc00dea2d881e6f33dbca396f55ac9a48a784860531f01f14666d645",
+    "s19": "7f43424c2bd387e0debb46796f353c7ce6dec61ec65dc6dac335a75ce54e13ce",
+    "s2": "0c6488cdae0f23d0600410d02191390e773858e9bc75008234f71cc66f01889b",
+    "s20": "9dca86a7ea316e5b22b94c70024ba182f82622bb73f8243655562dc2cb4fc8d3",
+    "s21": "8dc7453f756c4d2310baaa5a97b36e69467be72d1cb4221107161ac2abe26293",
+    "s22": "add386faf72355fcafb3bbbd6cbe5fd20a838df47fab9f6c3a9d116db8d4d29e",
+    "s23": "0fd76b51ea16c1fa47e5b4d19780b8c182b611b43bcd3d4ab053d3e6ec938b5c",
+    "s24": "4f00f9f39ecfe1f866eb5fb5c9afbaceadc43991c0ba0e47658bd9c4aeb286eb",
+    "s25": "8de857403f88ebb44d1c2c152b208a3da0a6765205ccd0f3c52e77bb1501698a",
+    "s3": "6cb602347e0232fe459028eff2010884381d987053d550c4565f581c23032095",
+    "s4": "aa5a29a8662005607992ae17fc914d47e8e48c68b7e65395b4865f6d33ea37f4",
+    "s5": "2ffa1a3b1d2b09433f25a83f8a7a59b1774249bac29b945f2c2273ace57cb1ba",
+    "s6": "6c8117bcfdc7d4b0bafdc4fb2185779998c71b1730b07a0d900b543f02c08ec1",
+    "s7": "07952e2e354db24e76860530568500cc2066b69b4255c020db83677e46cb18e2",
+    "s8": "7ca129403c95fcbc111273a2b419b29279191bc54c157bb6f7d8de0d5b160d34",
+    "s9": "0c546f1c0ce99eb4f03333edf6955f597fcb37c49baa31305dfd52c6b03364d8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T18:51:01.581063+00:00"
+}
