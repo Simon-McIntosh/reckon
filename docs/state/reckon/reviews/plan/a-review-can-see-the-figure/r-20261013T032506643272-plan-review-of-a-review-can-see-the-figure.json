@@ -1,0 +1,46 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-13T03:36:00.485Z",
+  "dispatched_at": "2026-10-13T03:25:53Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-review-can-see-the-figure.html:215",
+      "id": "done_when-1",
+      "reason": "without a `change_lane` case the gate cannot show the section's own assertion holds, so a run moved to another lane could still drop its figures and close green.",
+      "text": "the done-when's third case resumes a run and checks the resumed argv, but names no case for `change_lane`, though the same sentence claims both `resume_plan` and `change_lane` pass the images, so a worker that implements only the resume path passes the stated gate while the lane-change claim stays unverified",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "d8dd8f869bb6fbca054d43d8e494dd41710a05e25056886bdcba67c2ff4c3760",
+  "plan_slug": "a-review-can-see-the-figure",
+  "plan_version": 15,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261013T032506643272-plan-review-of-a-review-can-see-the-figure",
+  "reviewed_blob_sha": "2f8eab1bf6ad81fcb1f790c7e44d501055c9d2a1",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/node.py` (TaskNode:699, as_dict:730), `reckon/crew/dispatch.py` (launch_plan call at :1578), `reckon/crew/dispatch_sessions.py` (resume_plan:1004, change_lane:1382, launch_plan calls at :1108/:1538), `crew dispatch` (:882 in `reckon/crew_dispatch_commands.py`), the \u00a72 figure SVG and the evidence archive all resolve; the named test file is a deliverable that does not yet exist, which is expected.",
+    "done_when": "a finding \u2014 the third case exercises `resume_plan` only, while the same sentence asserts `change_lane` also carries the images, so the section's gate cannot show the lane-change half of its own claim.",
+    "evidence_paths": "pass \u2014 the section's gate and its two probes all land under the run directory (`~/.config/reckon/crew/runs/<run>/`), a durable path, with no session scratchpad or node-local temporary directory named.",
+    "naming": "pass \u2014 the changed sentence carries no plan label, stage name, ticket number or version tag, and no changelog prose; \"a third case\" and \"a figure run\" name the mechanism.",
+    "reasoning": "pass \u2014 the stated cause (`dispatch`, `resume_plan` and `change_lane` all reach `launch_plan` with no images) matches the code (the only image-carrying `launch_plan` callers are `dispatch.py:1578`, `dispatch_sessions.py:1108` and `:1538`; the fourth caller, `resumption.py:252`, is the lane-availability probe and carries no node figures), and the mechanism (`TaskNode.images` \u2192 `as_dict()` \u2192 the pointer `node` block \u2192 `launch_plan(images=\u2026)`) does produce the done-when on the real path with every caller named.",
+    "single_goal": "pass \u2014 the section's one goal is \"the dispatch carries a node's figures\"; the record persistence and the resume/lane-change paths are the same deliverable reached by the same `TaskNode.images` field, not a second one.",
+    "wiring": "pass \u2014 \u00a76's upstream (\u00a72) and its downstream consumers (\u00a77 \"runs after \u00a76\", \u00a78 \"runs after \u00a77\") are named and resolve, and the plan-level `plan-informs scoring-should-stop-a-promotion` still points at a node that exists."
+  },
+  "section_digests": {
+    "_document": "69f7775e01af2e54dd87245e6c262b9f88296c537664b5807e7dcf1a25fbe1e8",
+    "s1": "6f91847c26df4249f7e99f6d661c548de475be73869ba4799469bc0c04801047",
+    "s2": "48353069f5981e05b9d1248e19c4f56817113396a3555a2fe6e05b67a505d3f7",
+    "s3": "f8f9ad248d1ff3713092ca3da6a8795cbcecd4726a79d20dc2f63f64ceff2d87",
+    "s4": "994ed10fbb9803a9ae4914f05275f2373d788b16292a7fefaa8350883803056a",
+    "s5": "52bd0da92f26e42df8184445e6ab07cae636d7072675b3a1900951957b3a077d",
+    "s6": "f03bc3ab1d6b4ed8814ace3ba005aa12ab36a4a390556eb2c76508dc35c76188",
+    "s7": "e4673147c5a3a66171bb0892dbe6927ce54eabc205870310627b08054076101a",
+    "s8": "2c200fdd964f328342811e9362e4cd14da60f3c8352368899ccf87797d9e7f5b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T03:37:41.938313+00:00"
+}
