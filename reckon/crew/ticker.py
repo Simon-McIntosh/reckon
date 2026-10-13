@@ -269,6 +269,17 @@ NEEDS_ACTION = frozenset(
     }
 )
 
+# The three states a lift row carries. A lift row is the one row this module
+# keys on the lift's group rather than a run id: the producer builds it with no
+# run id and the group in ``node``. The words are spelled here rather than read
+# from the lift module, which imports the recovery watch, which imports this
+# renderer — reading them back would close the cycle ``CLAUSE_STATES`` already
+# exists to avoid. The fixtures in ``lift_watch`` bind them.
+LIFT_GRANTED = "lift-granted"
+LIFT_IN_FORCE = "lift-in-force"
+LIFT_ENDED = "lift-ended"
+LIFT_STATES = frozenset({LIFT_GRANTED, LIFT_IN_FORCE, LIFT_ENDED})
+
 # Every destination or recovery classification whose clause may explain itself.
 # A state outside this set renders a bare transition with no reason, because
 # only a state a reader must act on has anything to explain. The recovery module
@@ -286,9 +297,9 @@ CLAUSE_STATES = NEEDS_ACTION | frozenset(
         "ended-without-manifest",
         "held",
         "interrupted",
-        "lift-ended",
-        "lift-granted",
-        "lift-in-force",
+        LIFT_ENDED,
+        LIFT_GRANTED,
+        LIFT_IN_FORCE,
         "needs-help",
         "promotable",
         "ready",
@@ -1299,6 +1310,12 @@ class RowPolicy:
         # run since its arrival. A recovery is news only once a duty was shown,
         # and an unexplained end is news only while none has been.
         self._told: dict[str, bool] = {}
+        # The lift groups this pane has drawn as in force. A lift row carries no
+        # run id, so the run-keyed memory cannot hold it; the group in ``node``
+        # is the key. A grant records a group, an end forgets it, and a baseline
+        # in-force row draws only for a group not yet drawn — so a reloaded lift
+        # watcher re-announcing a standing lift adds no row.
+        self._lift_groups: set[str] = set()
 
     def seed(self, run_id: str, state: str) -> None:
         """Remember a state the pane already shows, before this pane's first row.
@@ -1610,6 +1627,13 @@ class RowPolicy:
             self._held[run_id] = _Hold(now + window, event, False, "noise", 0.0)
             return out
 
+        if to_state in LIFT_STATES:
+            # A lift row is keyed on its group, not a run: the producer builds
+            # it with no run id and the group in ``node``. Holding a baseline
+            # in-force row for a group already drawn is what stops a reloaded
+            # lift watcher re-announcing a standing lift the pane already shows.
+            return self._feed_lift(out, event, to_state=to_state)
+
         cls = self._row_class(event, kind)
         if cls == ROW_COORDINATOR:
             if self._show_observer or not run_id:
@@ -1634,6 +1658,36 @@ class RowPolicy:
             self._note_printed(run_id, event, observed=True)
             return out
         self._note_printed(run_id, event)
+        return out
+
+    def _feed_lift(
+        self,
+        out: list[Mapping[str, Any]],
+        event: Mapping[str, Any],
+        *,
+        to_state: str,
+    ) -> list[Mapping[str, Any]]:
+        """Decide a lift row by its group, so a standing lift is drawn once.
+
+        The pane keeps one memory about lifts — the groups it has drawn as in
+        force. A grant records its group and prints; an end forgets it and
+        prints, so the next grant is drawn again. A baseline in-force row is
+        inventory of what already exists, so it draws only for a group the pane
+        has not drawn: a first attach shows the standing lift once, and the
+        baseline a reloaded watcher re-announces for a group already drawn adds
+        no row. A row with no group cannot be keyed, so it prints as before.
+        """
+        group = str(event.get("node") or "")
+        if group:
+            if to_state == LIFT_ENDED:
+                self._lift_groups.discard(group)
+            elif to_state == LIFT_GRANTED:
+                self._lift_groups.add(group)
+            elif group in self._lift_groups:
+                return out
+            else:
+                self._lift_groups.add(group)
+        out.append(event)
         return out
 
     def flush(self, *, now: float) -> list[Mapping[str, Any]]:

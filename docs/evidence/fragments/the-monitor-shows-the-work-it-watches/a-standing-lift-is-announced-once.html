@@ -1,0 +1,4 @@
+<section id="a-standing-lift-is-announced-once">
+  <h3 id="a-standing-lift-is-announced-once-title">A standing lift is drawn once</h3>
+  <p id="a-standing-lift-is-announced-once-landing">RowPolicy in <code>reckon/crew/ticker.py</code> now keeps one memory about lifts, keyed on the lift's group: a grant records the group, an end forgets it, and a baseline in-force row draws only for a group the pane has not drawn. A lift row carries no run id (the group is in <code>node</code>), so the run-keyed memory could not hold it, and a producer that restarts on every reload re-announced a standing lift as <code>new &rarr; working</code> each time. <code>tests/test_a_standing_lift_is_announced_once.py</code> passes 6/6 &mdash; a restarted watcher adds no row for a lift already drawn, a first attach still shows the standing lift once, a grant and an end each draw one row, and the memory is per group. Against base the ticker-importing set shows no added failure.</p>
+</section>
