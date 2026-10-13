@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="45">
+<meta name="plan-version" content="46">
 <meta name="plan-modified" content="2026-10-13">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -465,6 +465,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s15" data-id="c-run-r-20261013T073812461786-review-of-a-held-request-stays-queued-b000cdc725fe" data-who="reckon-build" data-when="2026-10-13T08:01:42.620Z">
     <div class="r-comment-body"><p>the independent review of r-20261013T054419434294-a-held-request-stays-queued is stored at reckon/crew/reviews staging paths (head b000cdc72); goal 18, evidence 16, scope 19, durability 18, fit 18, reuse 5 (total 94), one follow-on finding at reckon/crew/queue_admission.py:241.</p></div>
+</div>
+<div class="r-comment" data-section="s15" data-id="c-close-s15" data-who="reckon-build" data-when="2026-10-13T08:10:00Z">
+    <div class="r-comment-body"><p>§15 landed. The queue runner no longer withdraws and re-queues a request that the lane holds. It backs off a request that cannot launch until that request's brief, plan or flight configuration changes, and reports the failure once. Merged <code>b000cdc72</code> as <code>02f1c6274</code>. The gate passed with 6 tests, 18 in the importing selection, and was replayed green at the integrated head. Review: 94, with 0 added failures. Follow-on: <code>_file_stamp</code> duplicates <code>capabilities.file_stamp</code>. <a href="/reckon/evidence/archive/the-monitor-shows-the-work-it-watches-landed.html#s15-held-request">evidence</a></p></div>
 </div>
 </section>
 </main>
