@@ -408,9 +408,9 @@ def test_ticker_carries_the_recovery_verb_in_an_actionable_row() -> None:
     The recovery vocabulary still owns the specific remedy, and the row keeps it
     as a structured fact, but the renderer never prints it: an action word beside
     the transition reads as a third state, so the destination state's colour
-    says whether the coordinator must look while the clause says what happened.
-    This actionable row therefore names its verb on the record and renders the
-    clause alone.
+    says whether the coordinator must look. The row carries no free text, so
+    this actionable row names its verb on the record and renders the state word
+    alone.
     """
     line = Ticker(width=180).render(
         {
@@ -429,7 +429,8 @@ def test_ticker_carries_the_recovery_verb_in_an_actionable_row() -> None:
     )
 
     # The vocabulary still names a verb for the blocked classification; the row
-    # carries it as a fact and the printed clause is the explanation alone.
+    # carries it as a fact and prints neither the action word nor the clause.
     assert recovery.RECOVERY_VERBS["blocked"]  # the row's own remedy
     assert "decide:" not in line
-    assert "a storage policy is required" in line
+    assert "a storage policy is required" not in line
+    assert "halted" in line

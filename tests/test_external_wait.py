@@ -113,7 +113,7 @@ def test_four_waits_render_in_the_followers_own_bucket(
     assert {event["blocked"] for event in baselines} == {0}
     assert {event["working"] for event in baselines} == {0}
     rendered = [recovery.format_watch_transition(event) for event in baselines]
-    assert all("waiting" in line and " 4W" in line for line in rendered)
+    assert all("waiting" in line and " 4q" in line for line in rendered)
 
 
 def test_the_sweep_resumes_only_after_the_condition_terminates(
@@ -187,8 +187,10 @@ def test_an_old_wait_surfaces_its_age_without_becoming_blocked(
     assert counts == {"working": 0, "blocked": 0, "unpromoted": 0, "waiting": 1}
     assert event["blocked"] == 0 and event["waiting"] == 1
     assert "7200s" in snapshot["detail"]
-    # The pane keeps the wait word while its clause carries the overdue age.
-    assert "!" not in line and "waiting" in line and "7200s" in line
+    # The pane keeps the wait word and its bucket; the overdue age stays on the
+    # run's record, since the row carries no free text.
+    assert "!" not in line and "waiting" in line and " 1q" in line
+    assert "7200s" not in line
 
 
 def test_a_crash_without_a_wait_declaration_stays_abandoned(

@@ -1,12 +1,11 @@
-"""The fleet counter's halted bucket says when its number is an infrastructure fault.
+"""The fleet counter's halted bucket counts a launch failure with every stop.
 
 A run whose launcher exited before writing any stream record never reached a
-model, so it is an infrastructure fault rather than a worker turn wanting a
-decision. The counter block keeps four cells, so that run's number arrives under
-the halted bucket, which leaves the row's reason clause as the only place the
-line can say what kind of stop it is. These cases read the fleet the way a
-follower does, through the producer's own fleet partition and transition
-builder, so the counts on each row are the counts a pane receives.
+model, so it stops under the halted bucket like any other stop. The counter
+block keeps four cells, so that run's number arrives under the halted bucket
+without widening the block. These cases read the fleet the way a follower does,
+through the producer's own fleet partition and transition builder, so the counts
+on each row are the counts a pane receives.
 """
 
 from __future__ import annotations
@@ -26,29 +25,8 @@ WIDTH = 180
 # today: a fifth cell or a wider label fails on the literal. Each cell is two
 # right-aligned digits and its letter, one space between cells; a count above
 # two digits widens its own cell, which is why the counts here stay single.
-BLOCK = " 1w  2h  0d  1W"
+BLOCK = " 1w  2h  0d  1q"
 BLOCK_WIDTH = 15
-
-# The same block for a reading with no launch-failed run in it.
-CONTROL_BLOCK = " 1w  1h  0d  1W"
-
-# A verbatim classifier cause for a backend that was not on the path, and an
-# ordinary blocked worker's own reason: the launch cause names the launcher as
-# the thing that failed, the block reason names a decision.
-LAUNCH_DETAIL = (
-    "the launch for backend 'claude' exited with status 127 before writing any "
-    "stream record (/bin/bash: line 1: claude: command not found); "
-    "1 launch failure recorded; no model was reached"
-)
-BLOCK_DETAIL = (
-    "the worker manifest reports blocked: the gate needs a coordinator decision"
-)
-
-# What a launch-failed row renders when its record carries no cause of its own.
-# The clause names the fault itself rather than leaving a halted number
-# explained by nothing; the case asserts the leading words, which survive the
-# elision a pane's margin applies.
-FAULT_CLAUSE_PREFIX = "the launch failed before any turn"
 
 
 def _snapshot(
@@ -107,110 +85,28 @@ def _launch_failed_and_blocked() -> dict[str, str]:
     """A reading holding one launch-failed run and one ordinary blocked run."""
     return _rows(
         _reading(
-            _snapshot(
-                "r-launch",
-                "north",
-                "launch-failed",
-                detail=LAUNCH_DETAIL,
-                recovery="resume",
-            ),
-            _snapshot(
-                "r-blocked",
-                "south",
-                "blocked",
-                detail=BLOCK_DETAIL,
-                recovery="decide",
-            ),
+            _snapshot("r-launch", "north", "launch-failed", recovery="resume"),
+            _snapshot("r-blocked", "south", "blocked", recovery="decide"),
             _snapshot("r-work", "east", "working"),
             _snapshot("r-queued", "west", "waiting", recovery="wait"),
         )
     )
 
 
-def test_launch_failed_row_names_the_launch_failure_the_number_counts() -> None:
-    """The row a launch failure produces explains the halted number it raises."""
-    rows = _launch_failed_and_blocked()
-
-    # The number is right: both stops arrive under halted, and
-    # the four-cell block says so on every row of the reading.
-    assert BLOCK in rows["r-launch"]
-    assert BLOCK in rows["r-blocked"]
-
-    # The launch failure's own row names the launcher, so a reader who sees the
-    # halted number learn from the line what kind of stop part of that number
-    # is. The classifier's cause travels to the pane rather than being dropped.
-    launch_clause = rows["r-launch"][rows["r-launch"].index(BLOCK) + BLOCK_WIDTH :]
-    assert "launch" in launch_clause.lower()
-    assert "launch for backend 'claude'" in launch_clause
-    # The remedy is a structured fact on the record, not row text: the row says
-    # what happened, and the destination state's colour says whether the
-    # coordinator must act. So the clause never spends a column restating the
-    # action the record carries.
-    assert "resume" not in launch_clause.lower()
-
-    # An ordinary blocked run's row carries its own reason and no launch
-    # wording, so the two rows are distinguishable from the lines alone.
-    blocked_clause = rows["r-blocked"][rows["r-blocked"].index(BLOCK) + BLOCK_WIDTH :]
-    assert "the gate needs a coordinator decision" in blocked_clause
-    assert "launch" not in blocked_clause.lower()
-    assert launch_clause.strip() != blocked_clause.strip()
-
-
 def test_the_counter_block_keeps_four_cells_and_its_width() -> None:
-    """The repair is what the line says, not a wider block."""
+    """A launch failure's number does not widen the counter block."""
     rows = _launch_failed_and_blocked()
     launch = rows["r-launch"]
 
     # Four cells and three single-space gaps, at the width the module states
-    # for the block: the number's bucket layout did not move to carry the fault.
-    assert re.findall(r"\d[whdW]", launch) == ["1w", "2h", "0d", "1W"]
+    # for the block: the launch failure's number did not widen the block.
+    assert re.findall(r"\d[whdq]", launch) == ["1w", "2h", "0d", "1q"]
     assert BLOCK in launch
     assert launch.count("·") == 0
     assert len(BLOCK) == BLOCK_WIDTH == STATS
 
     # Every row stays within the pane's width, so nothing wrapped to make room.
     assert all(len(row) <= WIDTH for row in rows.values())
-
-
-def test_a_reading_without_a_launch_failure_names_no_launch_fault() -> None:
-    """The clause reports a fault rather than always mentioning one."""
-    rows = _rows(
-        _reading(
-            _snapshot(
-                "r-blocked",
-                "south",
-                "blocked",
-                detail=BLOCK_DETAIL,
-                recovery="decide",
-            ),
-            _snapshot("r-work", "east", "working"),
-            _snapshot("r-queued", "west", "waiting", recovery="wait"),
-        )
-    )
-
-    blocked = rows["r-blocked"]
-    assert CONTROL_BLOCK in blocked
-    assert "launch" not in blocked.lower()
-    # The producer's label — "worker manifest reports blocked:" — restates the
-    # state cell, so the row drops it and begins with the explanation itself.
-    assert "the gate needs a coordinator decision" in blocked
-
-
-def test_a_launch_failure_without_a_recorded_cause_still_names_the_fault() -> None:
-    """A record that carries the state and no cause still explains its number.
-
-    The state is reachable without a cause, and a halted number rendering no
-    reason is the defect this repair exists to close, so the row names the fault
-    itself rather than depending on the classifier's sentence being present.
-    """
-    rows = _rows(
-        _reading(_snapshot("r-launch", "north", "launch-failed", recovery="resume"))
-    )
-
-    row = rows["r-launch"]
-    assert " 0w  1h  0d" in row
-    assert "launch" in row.lower()
-    assert FAULT_CLAUSE_PREFIX in row
 
 
 def test_the_launch_failure_is_still_counted_under_the_halted_bucket() -> None:

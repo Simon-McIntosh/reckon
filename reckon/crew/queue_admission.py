@@ -157,6 +157,7 @@ def _launch_queued(
         comment=str(options.get("comment") or ""),
         dispatch_options=options,
         admission_launch=True,
+        admitted_from=str(pointer["run_id"]),
     )
 
 

@@ -176,8 +176,8 @@ def test_ticker_emits_only_changes_and_ends_after_the_last_promotion(home) -> No
         (1, 0, 0),
         (0, 0, 0),
     ]
-    # The log stores the full detail as a fact; the one clause a reader acts on
-    # is derived at render time, so nothing is truncated before it is stored.
+    # The log stores the full detail as a fact; the row carries no free text, so
+    # the stored detail never reaches the pane.
     assert (
         transitions[2]["detail"]
         == "dependency unavailable; retry after configuration changes"
@@ -186,12 +186,12 @@ def test_ticker_emits_only_changes_and_ends_after_the_last_promotion(home) -> No
     rendered = recovery.format_watch_transition(
         transitions[2], ticker=ticker_module.Ticker(width=208, color=False)
     )
-    assert "dependency unavailable" in rendered
-    assert "retry after configuration" not in rendered
+    assert "dependency unavailable" not in rendered
+    assert "new → halted" in rendered
     assert sleeps == 7
 
 
-def test_ticker_line_is_compact_and_bounds_free_text_to_one_clause() -> None:
+def test_ticker_line_is_compact_and_carries_no_free_text() -> None:
     line = recovery.format_watch_transition(
         _event(reason="first clause; second clause that must not reach the terminal")
     )
@@ -206,9 +206,9 @@ def test_ticker_line_is_compact_and_bounds_free_text_to_one_clause() -> None:
     # The counts are a fixed grid whose digits share a column, each number
     # followed by its state's single letter, one space between the cells.
     assert " 3w  1h  0d" in line
-    # Free text is bounded to one clause and stays on the line; a second row
-    # would cost a quarter of a pane that shows about eight.
-    assert "first clause" in line
+    # The row carries no free text: neither clause of the reason reaches it,
+    # and the fixed cells are the whole line.
+    assert "first clause" not in line
     assert "second clause" not in line
     assert "\n" not in line
 
@@ -222,16 +222,16 @@ def test_counter_cells_stay_apart_at_every_digit_width() -> None:
     one. The right alignment is what lets that hold together with the block's
     own width: a single-digit count pads inside its own cell rather than
     shifting the letters beside it, so every letter keeps its column and the
-    text after the block starts on one column whatever the counts. Both ends are
+    block's right edge holds one screen column whatever the counts. Both ends are
     read off the rendered row rather than from the module's width constant,
     because the property is the row's — a renderer that stops reserving the
     width inside its cells shortens the block and has to fail here.
     """
     escapes = re.compile(r"\x1b\[[0-9;]*m")
-    counters = re.compile(r"(\d+)w\s+(\d+)h\s+(\d+)d\s+(\d+)W")
+    counters = re.compile(r"(\d+)w\s+(\d+)h\s+(\d+)d\s+(\d+)q")
 
     block_ends: set[int] = set()
-    clause_starts: set[int] = set()
+    row_ends: set[int] = set()
     cases = (
         (10, 12, 0, 0),
         (99, 99, 0, 0),
@@ -268,39 +268,35 @@ def test_counter_cells_stay_apart_at_every_digit_width() -> None:
         assert len(match.group(0).split()) == 4, row
         for left, right, letter in (
             (working, blocked, "w"),
-            (blocked, unpromoted, "b"),
-            (unpromoted, queued, "u"),
+            (blocked, unpromoted, "h"),
+            (unpromoted, queued, "d"),
         ):
             assert f"{left}{letter}{right}" not in row, row
         # Both ends of the block come off the rendered row itself. The block's
-        # right edge is where the four counts stop and the row's own free text
-        # is where it appears, so a renderer that stops reserving the block's
-        # width moves one of them and fails here rather than agreeing with a
-        # constant both sides read.
+        # right edge is where the four counts stop, so a renderer that stops
+        # reserving the block's width moves it and fails here rather than
+        # agreeing with a constant both sides read.
         block_ends.add(match.end())
-        clause_starts.add(row.index(_event()["reason"]))
+        row_ends.add(len(row))
 
-    # The block's reserved right edge holds whatever the counts, so the free
-    # text after it begins at one column on every row: a smaller count's spare
-    # columns are the space inside its own cell, not a shift of everything after
-    # it.
+    # The block's reserved right edge holds whatever the counts: a smaller
+    # count's spare columns are the space inside its own cell, not a shift of
+    # everything after it.
     assert len(block_ends) == 1, sorted(block_ends)
-    assert len(clause_starts) == 1, sorted(clause_starts)
-    assert clause_starts.pop() > block_ends.pop()
+    assert block_ends == row_ends, (block_ends, row_ends)
 
 
 def test_a_count_above_the_fixed_width_widens_its_own_row() -> None:
     """A count three digits wide carries its digits rather than being cut.
 
     The block reserves two digits per count, so any fleet up to ninety-nine
-    keeps one block width and one clause column. A larger count is the case that
-    forces a choice, and the renderer widens that one row instead of eliding the
-    figure: a reader watching a queue pass a hundred needs the number, not a
-    marker. The extra column comes out of the clause, so the row still ends at
-    the pane's width and the counts stay four separate tokens.
+    keeps one block width. A larger count is the case that forces a choice, and
+    the renderer widens that one row instead of eliding the figure: a reader
+    watching a queue pass a hundred needs the number, not a marker. The extra
+    column lengthens the row by one, and the counts stay four separate tokens.
     """
     escapes = re.compile(r"\x1b\[[0-9;]*m")
-    counters = re.compile(r"(\d+)w\s+(\d+)h\s+(\d+)d\s+(\d+)W")
+    counters = re.compile(r"(\d+)w\s+(\d+)h\s+(\d+)d\s+(\d+)q")
 
     def render(index: int, **counts: int) -> str:
         grid = ticker_module.Ticker(width=180, color=False, model_aliases=())
@@ -316,10 +312,10 @@ def test_a_count_above_the_fixed_width_widens_its_own_row() -> None:
     assert match is not None, widened
     assert match.groups() == ("100", "9", "0", "0"), widened
 
-    # The widening is the wide row's alone: it costs the clause one column, and
-    # neither row wraps — each ends within the pane's width.
+    # The widening is the wide row's alone: it costs one column, and neither row
+    # wraps — each ends within the pane's width.
     assert len(kept) <= 180 and len(widened) <= 180, (len(kept), len(widened))
-    assert widened.index(_event()["reason"]) == kept.index(_event()["reason"]) + 1
+    assert len(widened) == len(kept) + 1, (len(kept), len(widened))
     # A wider fleet's block is one column further right than a fleet inside the
     # fixed width, which is the whole cost of carrying the figure.
     assert match.end() == counters.search(kept).end() + 1
@@ -384,8 +380,7 @@ def test_follow_renders_at_the_resolved_terminal_width(home, monkeypatch) -> Non
     assert result.exit_code == 0
     line = result.output.splitlines()[0]
     assert len(line) <= 207
-    # The counters hold their own column inside the resolved-width grid, ahead
-    # of the reason a clipping pane is allowed to cut.
+    # The counters hold their own column inside the resolved-width grid.
     assert " 3w  1h  0d" in line
 
 
@@ -421,8 +416,8 @@ def test_follow_explicit_width_beats_the_measurement(home, monkeypatch) -> None:
     )
 
     assert result.exit_code == 0
-    # Read without stripping: the clause is the trailing column, so a row whose
-    # clause is short ends at its own last glyph and never past the grid width.
+    # Read without stripping: the row ends at its own last glyph and never past
+    # the grid width.
     line = result.output.splitlines()[0]
     assert len(line) <= 180
 
@@ -664,8 +659,9 @@ def test_the_ticker_states_the_model_and_effort_that_ran_the_node(home) -> None:
     between = line[line.index(model_cell) : line.index("high")]
     assert "\u00b7" not in between
     assert "gpt-5.6-sol/high" not in line
-    # The reading order puts model and effort immediately after the time.
-    assert line.index(model_cell) < line.index("ticker-node")
+    # The reading order puts model and effort at the row's right end, after the
+    # counters, so a reader scans the effort down a column.
+    assert line.index(model_cell) > line.index("ticker-node")
     assert line.index(model_cell) > line.index(
         ticker_module.local_clock(_event()["observed_at"])
     )
@@ -966,46 +962,6 @@ def test_effort_rejoins_the_alias_and_a_legacy_line_renders_two_cells(
     assert legacy.index(cell) == facts.index("sonnet5")
 
 
-def test_a_row_wider_than_the_pane_loses_reason_characters_and_no_counter(
-    monkeypatch,
-) -> None:
-    """A width read one column too wide must cost free text, never a count.
-
-    The pane clips its own right edge, and the failure is asymmetric: a width
-    that is too small leaves dead space, while one that is too large drops
-    whatever sits last. So every fixed column, the counters included, is placed
-    before the reason, and the reason is what a clip takes.
-    """
-    pane = 190
-    rows = _follow_rows(
-        monkeypatch,
-        [
-            _fact_event(
-                detail=(
-                    "the canonical installed writer the plan names still does "
-                    "not satisfy the gate it was added for"
-                )
-            ),
-            _fact_event(node="wide-counts", working=12, blocked=9, unpromoted=7),
-        ],
-        "--width",
-        "207",
-    )
-
-    for row, counts in zip(rows, (" 3w  1h  0d", "12w  9h  7d"), strict=True):
-        assert len(row) <= 207
-        clipped = row[:pane]
-        # The whole counter block survives the clip, at every count width.
-        assert counts in clipped
-        # And what the clip took is reason: everything up to the end of the
-        # counters is still there, so only the trailing free text is missing.
-        assert row.index(counts) + len(counts) < pane
-        assert row[pane:].strip() in row[row.index(counts) + len(counts) :]
-        for field in ("facts-node" if "facts" in row else "wide-counts", "sonnet5"):
-            assert field in clipped
-    assert "the canonical installed writer" in rows[0]
-
-
 def test_every_field_holds_one_column_across_every_row_kind(monkeypatch) -> None:
     """Baseline, transition, shadow and foreign row all share one grid.
 
@@ -1061,7 +1017,7 @@ def test_every_field_holds_one_column_across_every_row_kind(monkeypatch) -> None
         # start one column early on a two-digit count by absorbing the space
         # that separates the cells from each other.
         found = re.search(
-            r"(?<=\s)([ \d]{2}w) ([ \d]{2}h) ([ \d]{2}d) ([ \d]{2}W)", row
+            r"(?<=\s)([ \d]{2}w) ([ \d]{2}h) ([ \d]{2}d) ([ \d]{2}q)", row
         )
         assert found, row
         # Both edges come off the row: the first cell's own pad is where the

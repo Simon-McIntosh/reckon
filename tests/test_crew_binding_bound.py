@@ -33,7 +33,6 @@ import pytest
 from reckon import crew
 from reckon.crew import placement as placement_module
 from reckon.crew import summary as summary_module
-from reckon.crew import ticker
 from reckon.crew.dispatch import _refuse_over_concurrency_ceiling
 
 GIB = 1024**3
@@ -382,7 +381,7 @@ def test_an_undeclared_reservation_leaves_the_core_bound_unknown(
 # ── The surface reports the binding bound with its measured value ───────────
 
 
-def test_the_surface_names_the_binding_bound_with_its_value(home):
+def test_the_report_names_the_binding_bound_with_its_value(home):
     """Each enforced bound in turn is reported as binding, with its figure."""
     _publish_reservation(cores=3)
     cases = [
@@ -412,14 +411,9 @@ def test_the_surface_names_the_binding_bound_with_its_value(home):
         assert report["binding"] == name
         assert report["value"] == value
         assert report["refused"] is True
-        # The rendered clause carries the label and the measured value, so a
-        # reader gets the figure rather than a name they must look up.
-        clause = ticker.bound_clause(report)
-        assert clause.startswith(f"bind {name} ")
-        assert value[:18] in clause
 
 
-def test_the_surface_says_unknown_rather_than_naming_a_bound_it_could_not_read():
+def test_the_report_says_unknown_rather_than_naming_a_bound_it_could_not_read():
     """No readable bound is reported as unknown, not as the first candidate."""
     report = summary_module.fleet_bound_report(
         {}, occupancy=0, login_slice=summary_module.LoginSlice(readable=False)
@@ -427,13 +421,6 @@ def test_the_surface_says_unknown_rather_than_naming_a_bound_it_could_not_read()
     assert report["binding"] is None
     assert report["value"] == "unknown"
     assert report["refused"] is False
-    assert ticker.bound_clause(report) == "bind unknown"
-
-
-def test_a_transition_without_a_bound_reading_carries_no_bound_cell():
-    """An older record adds no clause rather than an unknown one."""
-    assert ticker.bound_cells(None) == []
-    assert ticker.bound_cells({}) == []
 
 
 # ── The reader against a synthesised tree and the live host ─────────────────

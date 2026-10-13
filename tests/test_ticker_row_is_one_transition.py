@@ -60,27 +60,36 @@ def _event(**overrides):
 
 
 def _columns(model_width: int) -> dict[str, int]:
-    model = ticker_module.CLOCK + ticker_module.GAP
-    effort = model + model_width + ticker_module.GAP
-    role = effort + ticker_module.EFFORT + ticker_module.GAP
-    node = role + ticker_module.ROLE + ticker_module.GAP
-    transition = node + ticker_module.NODE + ticker_module.GAP
+    """Where each cell of the row begins, from the renderer's own constants.
+
+    The head is the fixed frame — clock, stage, job, transition, elapsed and the
+    counters — and the lane's rate, the model and the effort follow it at the
+    row's right end, each added only where the pane has room. All widths come
+    from the constants the renderer sizes its cells by, so a cell added or
+    widened without the cells after it moving fails here rather than agreeing
+    with the arithmetic that placed them.
+    """
+    stage = ticker_module.CLOCK + ticker_module.GAP
+    job = stage + ticker_module.ROLE + ticker_module.GAP
+    transition = job + ticker_module.NODE + ticker_module.GAP
     arrow = transition + ticker_module.STATE_WORD + ticker_module.ARROW_GAP
     elapsed = (
         transition + ticker_module.STATE + ticker_module.GAP + ticker_module.SPEND_GAP
     )
     counters = elapsed + ticker_module.WALL + ticker_module.GAP
-    reason = counters + ticker_module.STATS + ticker_module.GAP
+    rate = counters + ticker_module.STATS + ticker_module.GAP
+    model = rate + ticker_module.RATE + ticker_module.GAP
+    effort = model + model_width + ticker_module.GAP
     return {
-        "model": model,
-        "effort": effort,
-        "role": role,
-        "node": node,
+        "stage": stage,
+        "job": job,
         "transition": transition,
         "arrow": arrow,
         "elapsed": elapsed,
         "counters": counters,
-        "reason": reason,
+        "rate": rate,
+        "model": model,
+        "effort": effort,
     }
 
 
@@ -102,16 +111,17 @@ def test_every_classifier_transition_keeps_one_grid() -> None:
     # Every column this test relies on is located on a rendered row, never read
     # back from the expression that built the same number: a renderer that moved
     # a cell must fail here rather than agree with the arithmetic that placed
-    # it. The model column is the whole attention question — the mark was
-    # dropped, so the cell starts at the first column after the time's two-space
-    # gutter with no reserved blank column between them.
+    # it. The model cell is the row's rightmost measured column of the frame's
+    # neighbours: it is added after the counters and the lane's rate, so it lands
+    # on a column the cells ahead of it fix rather than one a reserved blank
+    # would hold open.
     probe = plain(
         ticker_module.Ticker(width=width, color=False, model_aliases=()).render(
             _event()
         )
     )
-    assert probe.index(model_text) == ticker_module.CLOCK + ticker_module.GAP
-    observed = {name: set() for name in ("model", "node", "arrow", "counters")}
+    assert probe.index(model_text) == columns["model"]
+    observed = {name: set() for name in ("stage", "job", "model", "arrow", "counters")}
 
     cases = itertools.product(
         (None, *CLASSIFIER_STATES),
@@ -145,8 +155,9 @@ def test_every_classifier_transition_keeps_one_grid() -> None:
         assert len(row) <= width, row
 
         measured = {
+            "stage": row.index("review"),
+            "job": row.index("n"),
             "model": row.index(model_text),
-            "node": row.index("n"),
             "counters": row.index(" 1w  0h"),
         }
         measured["arrow"] = row.index(ticker_module.ARROW)
@@ -157,28 +168,21 @@ def test_every_classifier_transition_keeps_one_grid() -> None:
         # mark was dropped, so no `!` appears anywhere on the row and the node
         # cell follows the role's gutter directly.
         assert "!" not in row, row
-        assert row[columns["node"] : columns["node"] + ticker_module.NODE].strip()
+        assert row[columns["job"] : columns["job"] + ticker_module.NODE].strip()
 
         gutters = (
-            (ticker_module.CLOCK, columns["model"]),
-            (columns["model"] + ticker_module.MODEL, columns["effort"]),
-            (columns["effort"] + ticker_module.EFFORT, columns["role"]),
-            (columns["role"] + ticker_module.ROLE, columns["node"]),
-            (columns["node"] + ticker_module.NODE, columns["transition"]),
+            (ticker_module.CLOCK, columns["stage"]),
+            (columns["stage"] + ticker_module.ROLE, columns["job"]),
+            (columns["job"] + ticker_module.NODE, columns["transition"]),
             (columns["transition"] + ticker_module.STATE, columns["elapsed"]),
             (columns["elapsed"] + ticker_module.WALL, columns["counters"]),
+            (columns["counters"] + ticker_module.STATS, columns["rate"]),
+            (columns["rate"] + ticker_module.RATE, columns["model"]),
+            (columns["model"] + ticker_module.MODEL, columns["effort"]),
         )
         for start, stop in gutters:
             assert stop - start >= 2
             assert row[start:stop] == " " * (stop - start)
-        # The two-space separator ahead of the clause exists only when the row
-        # carries one: a row with nothing to explain drops the separator with the
-        # clause rather than ending on a blank.
-        if len(row) > columns["counters"] + ticker_module.STATS:
-            assert (
-                row[columns["counters"] + ticker_module.STATS : columns["reason"]]
-                == " " * ticker_module.GAP
-            )
 
         between_transition_and_elapsed = row[columns["transition"] : columns["elapsed"]]
         assert not ACTION_WORDS & set(between_transition_and_elapsed.split())
@@ -326,12 +330,13 @@ def test_reported_examples_keep_name_gutters_and_no_mark() -> None:
                 )
             )
         )
-        # The attention mark the lead saw beside this row is gone, and the model
-        # cell holds the column the mark used to occupy.
+        # The attention mark was dropped, so no `!` appears on the row; the
+        # model cell holds its own column at the row's right end and the job
+        # cell keeps its gutter ahead of the transition.
         assert "!" not in row, row
         assert row[columns["model"] : columns["model"] + ticker_module.MODEL].strip()
         assert (
-            row[columns["node"] + ticker_module.NODE : columns["transition"]]
+            row[columns["job"] + ticker_module.NODE : columns["transition"]]
             == " " * ticker_module.GAP
         )
         assert action not in row[columns["transition"] : columns["elapsed"]]
@@ -389,86 +394,6 @@ def test_no_configured_model_alias_is_truncated(tmp_path, monkeypatch) -> None:
         )
         assert alias in row, (alias, row)
         assert "\N{HORIZONTAL ELLIPSIS}" not in row, (alias, row)
-
-
-def test_the_reason_starts_at_or_before_column_124_at_the_default_width() -> None:
-    """The clause's own column, measured off a rendered row, is at most 124.
-
-    The column is read from the row the renderer produced rather than from the
-    expression that built the grid: a renderer that moved a cell must fail here
-    rather than agree with the arithmetic that placed it. Columns are counted
-    from zero, the same base the row's index uses. A clause exactly fifty-seven
-    characters long is the budget's own statement — the fixed cells must leave
-    fifty-seven columns for the reason at the 180-column default, and eighty-five
-    on the 208-column pane — so it is asserted whole and unelided, and the room
-    beside it is measured rather than assumed. The block's three separator
-    columns are inside that budget: the counts keep one space between them at
-    every digit width, and the clause starts three columns later for it.
-    """
-    width = ticker_module.DEFAULT_WIDTH
-    assert width == 180
-    clause = "zeppelin the gate lifted and the pane keeps all its rooms"
-    assert len(clause) == 57
-    grid = ticker_module.Ticker(width=width, color=False, model_aliases=())
-
-    row = plain(grid.render(_event(run_id="r-room", to_state="blocked", detail=clause)))
-    assert len(row) == width, row
-    reason_start = row.index("zeppelin")
-    assert reason_start <= 124, (reason_start, row)
-    assert clause in row, row
-    assert width - reason_start >= 57, (reason_start, row)
-    assert "\N{HORIZONTAL ELLIPSIS}" not in row, row
-
-    # The pane this workstation measures is wider, and the clause's own column
-    # is fixed, so the extra columns land entirely on the reason's room.
-    wide = ticker_module.Ticker(width=208, color=False, model_aliases=())
-    wide_row = plain(
-        wide.render(_event(run_id="r-room-wide", to_state="blocked", detail=clause))
-    )
-    wide_start = wide_row.index("zeppelin")
-    assert wide_start == reason_start, (wide_start, reason_start, wide_row)
-    assert 208 - wide_start >= 85, (wide_start, wide_row)
-
-
-def test_a_reason_whose_first_word_does_not_fit_still_prints_characters() -> None:
-    """A clause longer than its field is cut inside the word, never emptied.
-
-    The regression this pins: a clause whose first word repeated the destination
-    state was cut to that word and then stripped of it, so the field carried the
-    ellipsis alone with the reason's whole content gone. Two shapes are checked
-    on a rendered row at the default width — a clause whose head is a long token,
-    and a clause the state label shares a word with — and each must leave
-    readable characters in the field rather than an empty ellipsis.
-    """
-    width = ticker_module.DEFAULT_WIDTH
-    grid = ticker_module.Ticker(width=width, color=False, model_aliases=())
-
-    claim = "hook-stop-mode-silent-without-follower"
-    labelled = plain(
-        grid.render(
-            _event(
-                run_id="r-labelled",
-                to_state="blocked",
-                detail=f"halted {claim}",
-            )
-        )
-    )
-    assert claim in labelled, labelled
-
-    long_token = "w" * 200
-    overlong = plain(
-        grid.render(
-            _event(
-                run_id="r-overlong",
-                to_state="blocked",
-                detail=f"halted {long_token}",
-            )
-        )
-    )
-    # The counters spell a single `w`; ten in a row can only come from the
-    # clause, so the field kept the word's head rather than collapsing.
-    assert overlong.count("w") >= 10, overlong
-    assert overlong.rstrip().endswith("\N{HORIZONTAL ELLIPSIS}"), overlong
 
 
 def test_every_pane_word_is_a_hued_table_key() -> None:

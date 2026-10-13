@@ -298,8 +298,10 @@ def test_a_foreign_run_with_a_recorded_exit_still_reads_process_gone(
     assert row["process_alive"] is False, row["detail"]
     assert row["exit_record"] is not None, row["exit_record"]
     assert row["interruption"] is None, row["interruption"]
-    assert "process gone" in line, line
-    assert "liveness unknown" not in line, line
+    # The row carries no free text: the process state is read from the record,
+    # not cut to fit the line.
+    assert "halted" in line, line
+    assert "process gone" not in line, line
     assert snapshot["recovery"] != "resume", snapshot["detail"]
 
 

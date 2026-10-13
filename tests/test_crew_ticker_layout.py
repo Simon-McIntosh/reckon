@@ -26,11 +26,9 @@ from reckon.crew import ticker as ticker_module
 ESCAPES = re.compile(r"\x1b\[[0-9;]*m")
 
 # The fleet counter block, wherever it sits on the row. Located by its own
-# shape rather than by searching from the right edge: the reason is the last
-# column now, so a letter at the end of a line belongs to free text. Each cell
-# is two right-aligned digits and one letter, and the cells abut with the
-# second digit's own leading space as the gap — the middle-dot separators the
-# block once carried were reclaimed to fund the reason clause.
+# shape rather than by searching from an edge. Each cell is two right-aligned
+# digits and one letter, and the cells abut with the second digit's own leading
+# space as the gap; the trailing rate, model and effort cells follow the block.
 COUNTERS = re.compile(r"(\s?\d{1,2})w( \s?\d{1,2})h( \s?\d{1,2})d")
 
 # The roles a fleet node carries as its ordinary work, and the longest of them.
@@ -215,20 +213,19 @@ def test_stat_letters_align_at_a_fixed_column_across_one_and_two_digits(grid):
 
 
 def test_the_queued_counter_carries_the_initial_of_its_own_bucket(grid):
-    """The waiting cell's letter is the initial of the bucket it counts.
+    """The waiting cell's letter is a distinct lower-case initial of its bucket.
 
     Three buckets take the initial of the state word the row's own state column
     prints, so a reader decodes them without a legend. The fourth counts runs
     the scheduler has admitted and not started, which that column prints as
-    `waiting` — whose initial w the working bucket already holds. Naming the
-    bucket `queued` restores the rule for it: q is that name's own initial, so
-    every counter in the block is decoded the same way and none of them spends
-    the width a spelled word would take from the reason clause.
+    `queued`; naming the bucket `queued` gives that counter the initial q, which
+    no other bucket holds, so every counter in the block is decoded the same way
+    and none of them needs a case to tell it apart.
     """
     line = plain(grid.render(_event(working=2, blocked=0, unpromoted=0, waiting=3)))
-    assert ticker_module.STAT_LETTER["waiting"] == "W"
+    assert ticker_module.STAT_LETTER["waiting"] == "q"
     assert ticker_module._COUNT_FIELD["waiting"] == "waiting"
-    assert " 3W" in line
+    assert " 3q" in line
     # The count still arrives in the event's own `waiting` field; only the
     # bucket the counter names has changed.
     assert "queued" not in line
@@ -237,10 +234,10 @@ def test_the_queued_counter_carries_the_initial_of_its_own_bucket(grid):
 def test_the_queued_counter_keeps_the_block_a_constant_width_across_counts():
     """A count from zero to two digits moves no letter and no right edge.
 
-    The spelled word is five columns wider than the letter it replaced, and the
-    two-digit alignment that keeps the block's right edge fixed still holds with
-    it: a reader scanning up the counter block finds every counter, and the
-    whole row, on the same screen column whatever the fleet is doing.
+    Each label is one character, so the block measures the same whatever the
+    counts, and the two-digit alignment that keeps the block's right edge fixed
+    still holds: a reader scanning up the counter block finds every counter, and
+    the whole row, on the same screen column whatever the fleet is doing.
     """
     for width in (180, 208):
         rows = {
@@ -256,11 +253,11 @@ def test_the_queued_counter_keeps_the_block_a_constant_width_across_counts():
             )
             for count in (0, 9, 10, 99)
         }
-        # No row overruns the requested width with the wider cell present.
+        # No row overruns the requested width with the four counters present.
         assert all(len(row) <= width for row in rows.values()), width
-        # The block's right edge — where the spelled word ends — holds its own
-        # column at every count, so the right edge never moves.
-        edges = {row.index("W", row.index("d")) + 1 for row in rows.values()}
+        # The block's right edge — where the last counter's letter ends — holds
+        # its own column at every count, so the right edge never moves.
+        edges = {row.index("q", row.index("d")) + 1 for row in rows.values()}
         assert len(edges) == 1, (width, edges)
         # And the digit columns still align too: the block begins at one column
         # whether the count beside it is one digit or two.
@@ -268,21 +265,21 @@ def test_the_queued_counter_keeps_the_block_a_constant_width_across_counts():
 
 
 def test_the_queued_counter_still_renders_a_zero_rather_than_dropping_it(monkeypatch):
-    """A zero is dimmed, never blanked — the property the wider cell must keep.
+    """A zero is dimmed, never blanked — the property the last counter must keep.
 
     The cell is dimmed rather than dropped so a reader watching a drain sees the
     count reach zero instead of seeing it disappear; a zero that vanished would
-    take the column with it and leave the right edge ragged. Spelling the word
-    must not change that, so the zero still occupies its cell and still carries
-    the dim style.
+    take the column with it and leave the right edge ragged. Naming the bucket
+    `queued` must not change that, so the zero still occupies its cell and still
+    carries the dim style.
     """
     monkeypatch.delenv("NO_COLOR", raising=False)
     painter = ticker_module.Ticker(width=180, color=True)
     line = painter.render(_event(working=0, blocked=0, unpromoted=0, waiting=0))
-    assert " 0W" in plain(line)
+    assert " 0q" in plain(line)
     assert ticker_module._DIM in line
-    # The dimmed zero is the waiting cell's, not some neighbour's.
-    assert ticker_module._DIM + " 0W" in line
+    # The dimmed zero is the queued cell's, not some neighbour's.
+    assert ticker_module._DIM + " 0q" in line
 
 
 def test_the_retired_baseline_marker_never_marks_a_row(grid):
@@ -342,67 +339,6 @@ def test_a_node_name_past_the_column_is_elided_not_wrapped(grid):
     assert "…" in line
     assert len(line) <= 180
 
-
-def test_only_the_state_being_entered_may_explain_itself(grid):
-    """A recovery must not inherit the clause from the state it left.
-
-    Keying the reason on the source is how a promotion ends up still reporting
-    the block it recovered from, describing a problem that is over.
-    """
-    entering = plain(grid.render(_event(to_state="blocked", reason="disk full")))
-    assert "disk full" in entering
-
-    leaving = plain(
-        grid.render(
-            _event(from_state="blocked", to_state="promoted", reason="disk full")
-        )
-    )
-    assert "disk full" not in leaving
-
-
-def test_a_reason_is_truncated_to_the_room_the_grid_leaves(grid):
-    """Free text is bounded by the margin, never by wrapping onto a second row.
-
-    The pane shows about eight lines, so a row that wraps costs a quarter of the
-    visible history.
-    """
-    reason = "the canonical installed writer named by the plan does not satisfy it"
-    line = plain(grid.render(_event(reason=reason)))
-    assert len(line) <= 180
-    assert "\n" not in line
-    assert "…" in line
-    assert line.count("…") == 1
-    # The compressed fixed cells leave fifty-four columns at the default width,
-    # so the clause reaches deep into the sentence before the cut.
-    assert "the canonical installed writer named by the plan does…" in line
-
-
-def test_a_reason_that_fits_is_printed_whole(grid):
-    line = plain(grid.render(_event(reason="pytest exited 1")))
-    assert "pytest exited 1" in line
-    assert "…" not in line
-
-
-def test_a_reason_clipped_at_the_margin_ends_on_a_word(grid):
-    """The fixed state vocabulary takes priority, and the reason cuts cleanly."""
-    long_reason = (
-        "the process is gone without a complete manifest for the archive "
-        "dry run which reported the marker moved before its files were read"
-    )
-    clipped = plain(grid.render(_event(to_state="blocked", reason=long_reason)))
-    assert len(clipped) <= 180
-    # The clause owns the margin the retired attention column used to spend, and
-    # the compressed fixed cells nearly triple the room it had, so it reaches
-    # well into the sentence before the cut.
-    assert "the process is gone without a complete manifest for the…" in clipped
-    assert "marker moved before its files" not in clipped
-    assert "…" in clipped
-    assert "\n" not in clipped
-
-    short = plain(grid.render(_event(to_state="blocked", reason="disk full")))
-    assert "disk full" in short
-    assert "…" not in short
-    assert len(short) <= 180
 
 
 def test_colour_is_off_by_default_so_callers_get_a_plain_string():
@@ -1272,21 +1208,17 @@ def test_a_crowded_line_stays_within_the_resolved_width(monkeypatch):
 # one glyph.
 
 
-def _measure_column(model_width: int) -> tuple[int, int]:
+def _measure_column() -> tuple[int, int]:
     """The (start, width) of the single measure cell on a plain rendered line.
 
-    ``model_width`` is the grid's own model cell width — read from the grid
-    under test — rather than the fixed default, so a config declaring a wider
-    alias moves this column with the row it renders. A second measure cell
-    would be placed by the renderer after this one, taking the columns its own
-    width and its separating space spend.
+    The elapsed figure is the fixed head's fifth cell — after the transition and
+    before the fleet counters — so its column is the fixed columns up to the
+    spend gap and does not move with the trailing rate, model and effort cells.
+    A grid's model-cell width therefore cannot shift the measure column: the
+    model is drawn at the row's right end, after the counters.
     """
     prefix = (
         ticker_module.CLOCK
-        + ticker_module.GAP
-        + model_width
-        + ticker_module.GAP
-        + ticker_module.EFFORT
         + ticker_module.GAP
         + ticker_module.ROLE
         + ticker_module.GAP
@@ -1343,7 +1275,7 @@ def test_the_measure_cell_renders_the_elapsed_figure_alone():
     )
     grid = ticker_module.Ticker(width=180)
     line = plain(grid.render(event))
-    start, width = _measure_column(grid.model_width)
+    start, width = _measure_column()
     assert line[start : start + width] == "1h47m".rjust(width)
     # Nothing between the cell and the clause: the rate the record holds is not
     # rendered anywhere on the row.
@@ -1352,23 +1284,6 @@ def test_the_measure_cell_renders_the_elapsed_figure_alone():
     assert "52:14" not in line
     assert "1.5M" not in line
     assert "0.12" not in line
-
-
-def test_the_clause_follows_the_row_s_one_measure_cell(grid):
-    """The measure block is one cell wide: the clause begins immediately after it.
-
-    The clause is the row's payload and takes the whole margin, so anything the
-    renderer placed between the elapsed cell and the clause spends columns the
-    clause needs. The clause's start is measured off the row against the cell's
-    own geometry, so a second measure cell restored beside the first moves the
-    clause and fails here.
-    """
-    line = plain(grid.render(_event(to_state="blocked", reason="x" * 400)))
-    start, width = _measure_column(grid.model_width)
-    assert line[start : start + width].strip() == ticker_module.DIM_MARKER
-    assert line.index("x") == (
-        start + width + ticker_module.GAP + ticker_module.STATS + ticker_module.GAP
-    )
 
 
 def test_the_measure_cell_occupies_one_column_on_every_row():
@@ -1397,7 +1312,7 @@ def test_the_measure_cell_occupies_one_column_on_every_row():
         ),
     ]
     grid = ticker_module.Ticker(width=180)
-    start, width = _measure_column(grid.model_width)
+    start, width = _measure_column()
     expected = [
         "1m".rjust(width),
         "1h00m".rjust(width),
@@ -1423,7 +1338,7 @@ def test_an_unmeasured_span_and_a_measured_zero_are_distinct_strings():
     grid = ticker_module.Ticker(width=180)
     zero_line = plain(grid.render(zero))
     marker_line = plain(grid.render(unmeasured))
-    start, width = _measure_column(grid.model_width)
+    start, width = _measure_column()
     zero_cell = zero_line[start : start + width]
     marker_cell = marker_line[start : start + width]
     assert zero_cell != marker_cell
@@ -1442,7 +1357,7 @@ def test_a_dispatched_row_renders_a_blank_measure_not_the_marker():
     have been meaningful, and a measured figure keeps its cell against both.
     """
     grid = ticker_module.Ticker(width=180)
-    start, width = _measure_column(grid.model_width)
+    start, width = _measure_column()
     span = slice(start, start + width)
 
     dispatched = plain(
@@ -1496,43 +1411,13 @@ def test_calibration_consumes_an_observed_cut_position():
     )
 
 
-def test_the_measured_pane_width_leaves_a_readable_reason_column(
-    monkeypatch,
-):
-    """The same pane that left 57 columns for the reason now spares at least 75.
-
-    The grid no longer spends eighteen columns on model seconds, tokens and the
-    dollar figure, so those columns move to the free text. Measured the way the
-    renderer measures it: the pty's column count is the observed cut, the
-    calibration path adopts it, and the reason then gets the whole trailing
-    margin with nothing left unspent.
-    """
-    path, master, slave = _open_terminal(208)
-    try:
-        monkeypatch.setattr(ticker_module, "_ancestor_terminal_paths", lambda: [path])
-        width = ticker_module.resolve_terminal_width()
-    finally:
-        os.close(master)
-        os.close(slave)
-
-    line = plain(
-        ticker_module.Ticker(width=width, color=False).render(
-            _event(to_state="blocked", reason="x" * 400)
-        )
-    )
-    assert len(line) <= width
-    # The reason cell begins where the fixed columns end; everything after it
-    # is free text, and the resolved pane must spare enough for a clause.
-    assert width - line.index("x") >= ticker_module.MIN_REASON
-
-
 def test_the_elapsed_measure_precedes_the_fleet_counters():
     """Elapsed follows the transition, then the fleet posture follows it."""
     grid = ticker_module.Ticker(width=180)
     line = plain(
         grid.render(_event(spend_wall_seconds=6_422.0, spend_generation_rate=38.0))
     )
-    start, width = _measure_column(grid.model_width)
+    start, width = _measure_column()
     assert start + width <= counters(line).start()
     assert "1h47m" in line[start : start + width]
 

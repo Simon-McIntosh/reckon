@@ -510,19 +510,23 @@ def _ticker_layout_signature() -> str:
     The comparison keys on what the grid fixes -- the ordered widths of the
     fixed cells, the gutters between them, and the minimum width they compose --
     which is what moves when a column is added, resized or reordered, and is
-    unchanged when only the rendering of a cell's contents changes.
+    unchanged when only the rendering of a cell's contents changes. The column
+    order is fingerprinted beside the widths, so a reorder that keeps every
+    width still marks the format change.
     """
     from reckon.crew import ticker as ticker_module
 
     layout = (
+        ticker_module.COLUMN_ORDER,
         ticker_module.CLOCK,
-        ticker_module.MODEL,
-        ticker_module.EFFORT,
         ticker_module.ROLE,
         ticker_module.NODE,
         ticker_module.STATE,
         ticker_module.SPEND,
         ticker_module.STATS,
+        ticker_module.RATE,
+        ticker_module.MODEL,
+        ticker_module.EFFORT,
         ticker_module.GAP,
         ticker_module.SPEND_GAP,
         ticker_module.MIN_WIDTH,

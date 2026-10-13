@@ -1,16 +1,15 @@
-"""A node name keeps both its ends, and two rows that read alike name their runs.
+"""A node name keeps both its ends, and two rows that read alike are numbered.
 
 The node column is read down a pane to answer *which worker is this?*, and the
 peers of one wave share a long head: a name cut at its right renders every peer
 of the wave as the same string, which is a row attributed to the wrong worker.
 So a name wider than its cell is cut from the middle, keeping its head and its
 end. Two rows can still land on one text — two names that differ only where the
-cut falls, and two runs of one node, which share a name outright — and then each
-row carries the tail of its own run's minted stamp, inside the cell, so the
-figure a reader checks is on the row itself. The stamp and never the id's own
-tail, because a run id the fleet mints ends in the node name the cell already
-shows, so two ids of one name end alike and their last four characters separate
-nothing.
+cut falls, and two runs of one node, which share a name outright. Once a wave
+numbers two runs under one stage and cell text, each row carries its own run's
+number, 1 for the first the pane drew and counting up, so the runs read apart
+and in order. A lone run carries no number, because it has no second row to be
+told apart from.
 """
 
 from __future__ import annotations
@@ -53,16 +52,12 @@ def _node_cell(grid: ticker_module.Ticker, line: str) -> str:
     """The node cell's text, read off the rendered row at the grid's columns.
 
     Taken from the row's own characters rather than from a format string, so
-    the assertion is about the cell a reader sees. The offset carries the
-    grid's own model-cell width: the module constant is the no-alias fallback,
-    and every column after that cell moves when a config declares an alias.
+    the assertion is about the cell a reader sees. The node is the fixed head's
+    third cell — after the clock and the stage — so its column does not move
+    with the trailing rate, model and effort cells at the row's right end.
     """
     start = (
         ticker_module.CLOCK
-        + ticker_module.GAP
-        + grid.model_width
-        + ticker_module.GAP
-        + ticker_module.EFFORT
         + ticker_module.GAP
         + ticker_module.ROLE
         + ticker_module.GAP
@@ -99,21 +94,18 @@ def test_a_name_that_fits_its_cell_is_unchanged() -> None:
     assert "…" not in cell
 
 
-def test_two_names_that_cut_alike_each_carry_their_own_mint() -> None:
+def test_two_names_that_cut_alike_are_numbered_in_draw_order() -> None:
     """A row is the only place two names cut to one text can be told apart.
 
-    The collision is observable only once the second run has been seen, and a
+    The collision is observable only once the second run has been drawn, and a
     row already written to the pane cannot be recalled: the first render stands
-    bare, and every later render of either run carries that run's own suffix.
-    The suffix never widens the cell, so the columns after the node cell stay
-    where they were.
+    bare, and every later render under that key carries its own run's number, 1
+    for the first the pane drew and counting up. The number never widens the
+    cell, so the columns after the node cell stay where they were.
     """
     assert ticker_module.elide(REPAIR, ticker_module.NODE, keep_end=True) == (
         ticker_module.elide(CENSUS, ticker_module.NODE, keep_end=True)
     )
-    # Both ids end in the name the cell already shows, so their own ends agree
-    # and the minted stamp is the only part left to separate the rows.
-    assert REPAIR_ID[-4:] == CENSUS_ID[-4:]
 
     grid = ticker_module.Ticker(color=False)
     first = _render(grid, REPAIR, REPAIR_ID)
@@ -124,19 +116,18 @@ def test_two_names_that_cut_alike_each_carry_their_own_mint() -> None:
     assert first.rstrip() == ticker_module.elide(
         REPAIR, ticker_module.NODE, keep_end=True
     )
-    assert again.rstrip().endswith("6862")
-    assert second.rstrip().endswith("0578")
+    assert again.rstrip().endswith(" 1")
+    assert second.rstrip().endswith(" 2")
     assert len(grid.render(_event(CENSUS, CENSUS_ID))) <= ticker_module.DEFAULT_WIDTH
 
 
 def test_two_runs_of_one_node_show_different_cells() -> None:
     """One node dispatched twice is two rows a reader has to tell apart.
 
-    Both runs render the same name, and both ids end in that name, so the cell
-    is identical until each carries the tail of its own mint.
+    Both runs render the same name, so the cell is identical until each carries
+    its own number.
     """
     second_run = new_run_id(REPAIR, now=SECOND_MINT)
-    assert REPAIR_ID[-4:] == second_run[-4:]
 
     grid = ticker_module.Ticker(color=False)
     first = _render(grid, REPAIR, REPAIR_ID)
@@ -144,12 +135,12 @@ def test_two_runs_of_one_node_show_different_cells() -> None:
     again = _render(grid, REPAIR, REPAIR_ID)
 
     assert first.rstrip() != second.rstrip()
-    assert again.rstrip().endswith("6862")
-    assert second.rstrip().endswith("0578")
+    assert again.rstrip().endswith(" 1")
+    assert second.rstrip().endswith(" 2")
     assert len(grid.render(_event(REPAIR, REPAIR_ID))) <= ticker_module.DEFAULT_WIDTH
 
 
-def test_a_lone_long_name_carries_no_suffix() -> None:
+def test_a_lone_long_name_carries_no_number() -> None:
     """One run's row has no second row to be told apart from."""
     grid = ticker_module.Ticker(color=False)
     cell = _render(grid, CENSUS, CENSUS_ID)
@@ -158,4 +149,3 @@ def test_a_lone_long_name_carries_no_suffix() -> None:
         CENSUS, ticker_module.NODE, keep_end=True
     )
     assert "…" in cell
-    assert len(grid.render(_event(CENSUS, CENSUS_ID))) <= ticker_module.DEFAULT_WIDTH
