@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S26">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
 <meta name="plan-modified" content="2026-10-13">
 </head>
 <body>
@@ -45,7 +45,13 @@
     <h2 id="s2">§2 — Count the stored reviews that match only through the pre-collapse form</h2>
 <section data-reckon="section" data-id="s2" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
     <p><strong>Deliverable.</strong> A read-only census, across every mounted project, of every stored plan review and every delivered plan-review sidecar. For each, record which of the three forms its fingerprint matches against the plan's current snapshot. The count that matters is the reviews that match <em>only</em> through the pre-collapse form: retiring it uncovers exactly those.</p>
-    <p>The census also names two things. First, every caller of <code>collapse_section</code> and of <code>landed_section_ids</code> outside tests. Second, any live run whose write paths claim <code>reckon/crew/plan_review.py</code> or <code>reckon/_store.py</code>.</p>
+    <p>The census reads through the modules that already own each population, so its count is the one production sees:</p>
+    <ul>
+      <li>stored reviews from <code>list_plan_reviews(project=None)</code> in <code>reckon/crew/plan_review.py</code>, which reads the committed tree beside staging and excludes code reviews;</li>
+      <li>delivered sidecars from <code>delivered_reports</code> over <code>_delivered_report_sidecars</code>, in the same module;</li>
+      <li>the three digests from <code>_fingerprint_forms</code>, tested for membership the way the stored-review reader does.</li>
+    </ul>
+    <p>The census also names two things. First, every caller of <code>collapse_section</code> and of <code>landed_section_ids</code> outside tests. Second, any live run whose write paths claim <code>reckon/crew/plan_review.py</code> or <code>reckon/_store.py</code>, read from the crew claim reader <code>declared_claim_paths</code> in <code>reckon/crew/claims.py</code>.</p>
     <p><strong>Done when</strong> the report under the run directory lists, per project, the count of reviews matching each form and the slugs that match only through the pre-collapse form, with the script that produced it. The negative control is a review fixture built from a collapsed plan, which the census must count as pre-collapse-only. Write paths: the run's own report directory.</p>
 
     <h2 id="s3">§3 — Retire the pre-collapse form and the collapse op</h2>
