@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "4a3d85198f512f5bff44eb49794f8674e9ee56d3",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:2556",
+    "reckon/crew_follow_commands.py:2729",
+    "reckon/crew/recovery_watch.py:2317"
+  ],
+  "completed_at": "2026-10-13T01:14:34.691Z",
+  "dispatched_at": "2026-10-13T01:04:12Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": "1315",
+      "severity": "follow-on",
+      "text": "follow-on: the node goal says the names come from _fleet_counts and plan section 3 says nothing is computed outside _fleet_counts, but the names are computed in the sibling _fleet_live_nodes; the shared single source is the _partition_session_rows partition, so the count and names stay consistent and the deviation is documented rather than a correctness defect."
+    }
+  ],
+  "head_log_revision": "4a3d85198f512f5bff44eb49794f8674e9ee56d3",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read change by change against base fb53f2a9c; 4a3d85198 adds _fleet_live_nodes and the live_nodes event field plus Ticker._rollup_cells, and 566d63696 states the base arm in the evidence fragment.",
+    "done_when": "the source done_when names tests/test_a_pane_row_carries_the_live_rollup.py and the ticker-importing files; the manifest records that file passing 3/3 and the gate at gate-head.log 422 passed.",
+    "goal": "the node goal is that the counter cell Ticker._stats renders on every row names the session's live nodes with no second status block; ticker.py:2285 appends Ticker._rollup_cells to the existing _stats cell, and the names come from _fleet_live_nodes at recovery_watch.py:1315 rather than from _fleet_counts itself.",
+    "manifest": "read; it declares status complete, records the three-case file passing 3/3, gate-head.log 422 passed/0 added against gate-base.log 418 passed/1 pre-existing flake, and the negative-control log.",
+    "write_paths": "the source FENCE-SCOPE names reckon/crew/ticker.py, reckon/crew/recovery_watch.py, tests/test_a_pane_row_carries_the_live_rollup.py, the evidence fragment under docs/evidence/fragments/the-monitor-shows-the-work-it-watches/ and the figures dir; every path in the diff is inside that set."
+  },
+  "justifications": {
+    "durability": "reverting _fleet_live_nodes to an unscoped partition lets the peer node reach the roll-up and reddens test_a_row_names_its_three_live_nodes_and_omits_the_peer, recorded in negative-control-live-rollup.log.",
+    "evidence": "gate-head.log records 422 passed EXIT=0 at 4a3d85198 against gate-base.log 418 passed/1 flake, and negative-control-live-rollup.log records the declared mutation reddening test 1.",
+    "fit": "ticker.py:2288 follows the surrounding cell idiom of elide/hue with a mechanism-named ROLLUP_NODE width, and no symbol carries a forbidden plan or ticket label.",
+    "goal_fidelity": "ticker.py:2285 renders the live nodes on the row with no second status block, but recovery_watch.py:1315 computes them in _fleet_live_nodes rather than in _fleet_counts as the goal states.",
+    "reuse": "recovery_watch.py:1315 extends the existing partition at recovery_watch.py:264/_partition_session_rows and FLEET_WORKING_STATES rather than forking a selector, keeping one population for the count and the names.",
+    "scope_discipline": "every path in the diff (ticker.py, recovery_watch.py, the new test file, the evidence fragment) is inside the four declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that the counter cell Ticker._stats renders on every row names the session's live nodes with no second status block; ticker.py:2285 appends Ticker._rollup_cells to the existing _stats cell, and the names come from _fleet_live_nodes at recovery_watch.py:1315 rather than from _fleet_counts itself.\nVERDICT done_when: the source done_when names tests/test_a_pane_row_carries_the_live_rollup.py and the ticker-importing files; the manifest records that file passing 3/3 and the gate at gate-head.log 422 passed.\nVERDICT write_paths: the source FENCE-SCOPE names reckon/crew/ticker.py, reckon/crew/recovery_watch.py, tests/test_a_pane_row_carries_the_live_rollup.py, the evidence fragment under docs/evidence/fragments/the-monitor-shows-the-work-it-watches/ and the figures dir; every path in the diff is inside that set.\nVERDICT manifest: read; it declares status complete, records the three-case file passing 3/3, gate-head.log 422 passed/0 added against gate-base.log 418 passed/1 pre-existing flake, and the negative-control log.\nVERDICT diff: read change by change against base fb53f2a9c; 4a3d85198 adds _fleet_live_nodes and the live_nodes event field plus Ticker._rollup_cells, and 566d63696 states the base arm in the evidence fragment.\nCALL_SITES: reckon/crew_follow_commands.py:2556, reckon/crew_follow_commands.py:2729, reckon/crew/recovery_watch.py:2317\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: ticker.py:2285 renders the live nodes on the row with no second status block, but recovery_watch.py:1315 computes them in _fleet_live_nodes rather than in _fleet_counts as the goal states.\nSCORE evidence: 19\nJUSTIFICATION evidence: gate-head.log records 422 passed EXIT=0 at 4a3d85198 against gate-base.log 418 passed/1 flake, and negative-control-live-rollup.log records the declared mutation reddening test 1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff (ticker.py, recovery_watch.py, the new test file, the evidence fragment) is inside the four declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: reverting _fleet_live_nodes to an unscoped partition lets the peer node reach the roll-up and reddens test_a_row_names_its_three_live_nodes_and_omits_the_peer, recorded in negative-control-live-rollup.log.\nSCORE fit: 19\nJUSTIFICATION fit: ticker.py:2288 follows the surrounding cell idiom of elide/hue with a mechanism-named ROLLUP_NODE width, and no symbol carries a forbidden plan or ticket label.\nSCORE reuse: 18\nJUSTIFICATION reuse: recovery_watch.py:1315 extends the existing partition at recovery_watch.py:264/_partition_session_rows and FLEET_WORKING_STATES rather than forking a selector, keeping one population for the count and the names.\nFINDING reckon/crew/recovery_watch.py:1315 follow-on: the node goal says the names come from _fleet_counts and plan section 3 says nothing is computed outside _fleet_counts, but the names are computed in the sibling _fleet_live_nodes; the shared single source is the _partition_session_rows partition, so the count and names stay consistent and the deviation is documented rather than a correctness defect.\n",
+  "review_run_id": "r-20261013T010340792660-review-of-a-pane-row-carries-the-live-rollup-566d63696ae0",
+  "reviewed_base_sha": "fb53f2a9ce8a2f2b91ea3899abf3fa3c03b6e146",
+  "reviewed_head_sha": "566d63696ae0ebac24bfa0142b2afda77afa6697",
+  "reviewed_run_id": "r-20261013T002528540562-a-pane-row-carries-the-live-rollup",
+  "reviewer_run_id": "r-20261013T010340792660-review-of-a-pane-row-carries-the-live-rollup-566d63696ae0",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T01:12:07.391046+00:00",
+  "total": 111
+}
