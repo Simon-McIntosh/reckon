@@ -1393,14 +1393,14 @@ def read_state(html_text: str) -> dict:
 
 
 def read_state_file(path: Path) -> dict:
-    """Return isolated semantic state, reparsing only when the file changes."""
+    """Return isolated semantic state, reparsing only when the file changes.
+
+    Derived from the shared ``read_state_and_text`` parse, so a file's soup is
+    built once however many readers ask for it.
+    """
     from reckon.file_memo import memoized
 
-    return memoized(
-        "read_state",
-        path,
-        lambda: read_state(_read_plan_text(path)),
-    )
+    return memoized("read_state", path, lambda: read_state_and_text_file(path)[0])
 
 
 def read_state_and_text_file(path: Path) -> tuple[dict, str]:
@@ -2338,8 +2338,8 @@ def parse_plan(path: Path, slug: str | None = None) -> dict:
 
 
 def _parse_plan_uncached(path: Path, slug: str | None) -> dict:
-    text = _read_plan_text(path)
-    st = read_state(text)
+    # Derived from the shared parse so this reader builds no soup of its own.
+    st, text = read_state_and_text_file(path)
     rec = dict(_DEFAULTS)
     rec.update({k: v for k, v in st.items() if v is not None})
     rec["slug"] = slug or st.get("slug") or path.stem
