@@ -25,7 +25,7 @@
   <title>The Crew Home Has A Bound | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="37">
+<meta name="plan-version" content="38">
 <meta name="plan-modified" content="2026-10-13">
 </head>
 <body>
@@ -139,7 +139,7 @@
     <h2 id="s6">§6 — gc clears an abandoned clean tree and an already-removed one</h2>
 <section data-reckon="section" data-id="s6" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
 <p><strong>Why.</strong> The nova session reported two gaps on 2026-10-12, around run <code>r-20261008T122151393511-cfs-point-jet-custom-rule</code>, which the lead closed unmerged. It left a clean worktree whose 5 commits are not on <code>main</code>. <code>crew gc --run &lt;id&gt;</code> withholds such a tree as unintegrated, which is correct. But <code>--pin-unique-commits</code> releases only dirty trees, so a clean, deliberately abandoned tree has no route through gc. After nova pinned its head to <code>refs/reckon/archive/&lt;run-id&gt;</code> and removed the tree by hand, <code>crew gc --run &lt;id&gt; --apply</code> exited 1: "names worktree … which is not a worktree this repository registers". It should have cleared the run's remaining leftovers.</p>
-<p><strong>Deliverable.</strong> <code>--pin-unique-commits</code> also releases a clean tree classified unintegrated. It pins the commits with no patch-equivalent on the integration head under <code>refs/reckon/archive/&lt;run-id&gt;</code>, as it does for a dirty tree, and reports the ref. That needs the commit measurement widened. Today <code>gc</code> compares a tree's commits with the integration head only when the tree is dirty and unreachable (the <code>release_residue and not reachable and dirty</code> branch in <code>reckon/crew/routing.py</code>). A clean tree's <code>non_equivalent_commits</code> is therefore never measured, and <code>_pinnable_unique_commits</code> refuses to release a tree whose commits were not measured. With <code>--pin-unique-commits</code>, a clean unintegrated tree is measured the same way. Without the flag, such a tree is still withheld. <code>crew gc --run &lt;id&gt;</code> on a run whose recorded worktree is gone or unregistered reports the tree as <code>already-removed</code>, clears the run's other leftovers, and exits 0 when nothing else fails. Every other path is unchanged, the live-claim checks included.</p>
+<p><strong>Deliverable.</strong> <code>--pin-unique-commits</code> also releases a clean tree classified unintegrated. It pins the commits with no patch-equivalent on the integration head under <code>refs/reckon/archive/&lt;run-id&gt;</code>, as it does for a dirty tree, and reports the ref. Two gates in <code>reckon/crew/routing.py</code> stop a clean tree today, and both must admit it under <code>--pin-unique-commits</code>. First, its commits are compared with the integration head only when the tree is dirty and unreachable, so a clean tree's <code>non_equivalent_commits</code> is never measured. Second, <code>_pinnable_unique_commits</code> and the apply branch's pin path both require the classification <code>dirty</code>, while a clean, unreachable tree is classified <code>unintegrated</code>. The section is met by the behaviour, whichever way the gates are opened. Without the flag, such a tree is still withheld. <code>crew gc --run &lt;id&gt;</code> on a run whose recorded worktree is gone or unregistered reports the tree as <code>already-removed</code>, clears the run's other leftovers, and exits 0 when nothing else fails. Every other path is unchanged, the live-claim checks included.</p>
 <p><strong>Done when</strong> <code>tests/test_gc_clears_an_abandoned_clean_tree.py</code> passes over temporary repositories:</p>
 <ul>
 <li>A clean tree with unique commits is withheld without the flag.</li>
@@ -147,7 +147,7 @@
 <li><code>gc --run</code> on a run whose tree was removed by hand exits 0, reports <code>already-removed</code>, and clears the run's lock.</li>
 <li>A live-claimed tree is never pinned or removed.</li>
 </ul>
-<p>The existing gc tests pass. The negative control keeps the dirty-only condition for pinning, and the clean-tree case must then fail. It is logged under the run directory.</p>
+<p>The existing gc tests pass. There are two negative controls, each logged under the run directory. The first keeps pinning to dirty trees only, so the clean-tree case must fail. The second restores the refusal for a recorded worktree that is gone or unregistered, so the already-removed case must exit 1.</p>
 <p>Write paths: <code>reckon/crew/routing.py</code>, <code>tests/test_gc_clears_an_abandoned_clean_tree.py</code>. It runs after the whole-or-nothing worktree release (<code>r-20261012T051827498181-a-worktree-release-is-whole</code>) merges, since both write <code>routing.py</code>.</p>
 
     <h2 id="s7">§7 — gc reaches every tree its obligation names</h2>
