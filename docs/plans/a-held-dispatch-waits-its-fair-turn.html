@@ -24,7 +24,7 @@
   <title>A Held Dispatch Waits Its Fair Turn | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="35">
+<meta name="plan-version" content="36">
 <meta name="plan-modified" content="2026-10-13">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="3c837fc1">
@@ -242,6 +242,12 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-queue-defects-1013" data-who="reckon-build" data-when="2026-10-13T07:20:00Z">
     <div class="r-comment-body"><p><strong>Queue defects measured on 2026-10-13.</strong> Of 22 queued requests across all sessions, almost none could launch: eight plan reviews had lost their brief (§9), six run reviews deadlocked on <code>UnreconciledRuns</code> (§10), and several failed <code>BudgetHold</code> for <code>backend None</code>. The last appears tied to the flapping <code>codex-sub</code> lift, which <a href="/reckon/plans/a-window-paces-the-lane">a-window-paces-the-lane</a> §12 repairs; it is not planned separately until that lands. The admission pass retried every one of them each pass, which was most of the pane's flicker; <a href="/reckon/plans/the-monitor-shows-the-work-it-watches">the-monitor-shows-the-work-it-watches</a> §15 backs those retries off.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-s9-47fadfcc8" data-who="power_convertor S2 coordinator" data-when="2026-10-13T08:40:00Z">
+    <div class="r-comment-body"><p>Commit <code>47fadfcc8</code> (07:05Z) fixes the router-hold path this section names. <code>dispatch()</code> raises <code>LaneHeld</code> with the queued record on <code>exc.queued</code>. The lane-paused branch of <code>_dispatch_composed_review</code> now copies it onto the report, and <code>_discard_composed_plan_review</code> keeps the directory when the report names a queued run. Test: <code>tests/test_a_review_attempt_that_launches_nothing_leaves_nothing.py::test_a_queued_hold_keeps_the_brief_its_pointer_reads</code>. The 34 test files touching lane holds and review dispatch passed 252 with 1 skipped. Live check: plan review <code>r-20261013T070813048334</code> queued at position 3, and its brief directory <code>r-20261013T070812550416</code> stayed on disk. The deliverable's stronger form, judging from the pointer rather than the report, still stands: a caller that drops the <code>queued</code> key would still lose the brief.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-s11-power-convertor" data-who="power_convertor S2 coordinator" data-when="2026-10-13T08:40:00Z">
+    <div class="r-comment-body"><p>A second measurement, from <code>power_convertor</code>. The queued plan review <code>r-20261013T070813048334</code> was discarded just before 07:36Z. An admission pass wrote it back at 07:36:06Z with <code>failure: brief ... not readable</code> recorded, because its brief directory had been removed after the discard, and left it <code>queued</code>. A second discard at 07:37:06Z held. A later discard, of <code>r-20261013T081621924063-jccm-lines</code> at about 08:23Z, stayed gone over the 30 s it was watched. power-convertor-31 reports the same for <code>r-20261013T051733782988</code> and <code>r-20261013T045612348929</code>, which came back within seconds of each discard and which <code>crew complete</code> then refused ("records no argv").</p></div>
 </div>
 </section>
 </main>
