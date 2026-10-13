@@ -1,0 +1,79 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:2139",
+    "reckon/crew/recovery_watch.py:2473",
+    "reckon/crew/recovery_review_acceptance.py:481",
+    "reckon/crew/recovery.py:258"
+  ],
+  "completed_at": "2026-10-13T10:29:32.200Z",
+  "dispatched_at": "2026-10-13T10:07:14Z",
+  "findings": [
+    {
+      "file": "tests/test_a_queued_plan_review_keeps_its_brief.py",
+      "line": "146",
+      "severity": "follow-on",
+      "text": "follow-on: the file ends without a trailing newline (W292), so the commit adds a lint finding the repository policy forbids adding."
+    },
+    {
+      "file": "tests/test_a_queued_plan_review_keeps_its_brief.py",
+      "line": "130",
+      "severity": "follow-on",
+      "text": "follow-on: assert brief_path == directory / \"brief.md\" compares the pointer's brief to the test's own directory derivation, so both sides move together and it cannot redden on the landed change."
+    },
+    {
+      "file": "tests/test_a_queued_plan_review_keeps_its_brief.py",
+      "line": "145",
+      "severity": "follow-on",
+      "text": "follow-on: assert read[\"brief\"] == (directory / \"brief.md\").read_text() compares the launcher-read bytes to the same file on disk, a same-source assertion that guards nothing beyond the file's presence."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit a5ce1377 against base 4f4e5913; three files changed, all pure additions, all inside the declared scope.",
+    "done_when": "the done_when names tests/test_a_queued_plan_review_keeps_its_brief.py, and the reviewed run directory holds gate.log (1 passed EXIT=0) and negative-control-report-shape.log (1 failed EXIT=1).",
+    "goal": "the goal is that a held plan-review compose keeps its run directory when a queued pointer names its brief, and reckon/crew/recovery_review_dispatch.py:1517 keeps the directory when _queued_pointer_names_directory names it, judged from the pointer as the goal states.",
+    "manifest": "read; it states tests/test_a_queued_plan_review_keeps_its_brief.py 1 passed and the head population 120 passed, and names gate.log and head-population.log.",
+    "write_paths": "the manifest declares reckon/crew/recovery_review_dispatch.py, tests/test_a_queued_plan_review_keeps_its_brief.py, the evidence fragment and a figures directory; every path in the diff is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_queued_plan_review_keeps_its_brief.py:124 reddens on the reverted report-shape check, as negative-control-report-shape.log records with EXIT=1.",
+    "evidence": "tests/test_a_queued_plan_review_keeps_its_brief.py drives the real dispatch_review_for_run path and the run directory holds gate.log (1 passed EXIT=0) and head-population.log (120 passed EXIT=0).",
+    "fit": "the helper at reckon/crew/recovery_review_dispatch.py:1474 matches the file's private-import idiom, but the new test file adds a lint finding (W292, no newline at end of file).",
+    "goal_fidelity": "reckon/crew/recovery_review_dispatch.py:1517 keeps the composed directory when _queued_pointer_names_directory names it, and the queued pointer's node.brief is the composed brief because dispatch.py:921 queues before dispatch.py:993 stores it.",
+    "reuse": "no owner for a directory-keyed queued-pointer lookup exists; reckon/crew/dispatch_admission.py:1188 states the keep rule in prose but no helper implements it, so the addition is the first.",
+    "scope_discipline": "the diff touches only reckon/crew/recovery_review_dispatch.py, tests/test_a_queued_plan_review_keeps_its_brief.py and the evidence fragment, all inside the granted write paths."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 4f4e5913d5f20d4764d39a5820f60f4c26952faa\nreviewed_head_sha: a5ce1377581b089fbb43098c738656dcdd9b67c9\nVERDICT goal: the goal is that a held plan-review compose keeps its run directory when a queued pointer names its brief, and reckon/crew/recovery_review_dispatch.py:1517 keeps the directory when _queued_pointer_names_directory names it, judged from the pointer as the goal states.\nVERDICT done_when: the done_when names tests/test_a_queued_plan_review_keeps_its_brief.py, and the reviewed run directory holds gate.log (1 passed EXIT=0) and negative-control-report-shape.log (1 failed EXIT=1).\nVERDICT write_paths: the manifest declares reckon/crew/recovery_review_dispatch.py, tests/test_a_queued_plan_review_keeps_its_brief.py, the evidence fragment and a figures directory; every path in the diff is inside them.\nVERDICT manifest: read; it states tests/test_a_queued_plan_review_keeps_its_brief.py 1 passed and the head population 120 passed, and names gate.log and head-population.log.\nVERDICT diff: read commit a5ce1377 against base 4f4e5913; three files changed, all pure additions, all inside the declared scope.\nCALL_SITES: reckon/crew_dispatch_commands.py:2139, reckon/crew/recovery_watch.py:2473, reckon/crew/recovery_review_acceptance.py:481, reckon/crew/recovery.py:258\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_dispatch.py:1517 keeps the composed directory when _queued_pointer_names_directory names it, and the queued pointer's node.brief is the composed brief because dispatch.py:921 queues before dispatch.py:993 stores it.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_a_queued_plan_review_keeps_its_brief.py drives the real dispatch_review_for_run path and the run directory holds gate.log (1 passed EXIT=0) and head-population.log (120 passed EXIT=0).\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the diff touches only reckon/crew/recovery_review_dispatch.py, tests/test_a_queued_plan_review_keeps_its_brief.py and the evidence fragment, all inside the granted write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_queued_plan_review_keeps_its_brief.py:124 reddens on the reverted report-shape check, as negative-control-report-shape.log records with EXIT=1.\nSCORE fit: 15\nJUSTIFICATION fit: the helper at reckon/crew/recovery_review_dispatch.py:1474 matches the file's private-import idiom, but the new test file adds a lint finding (W292, no newline at end of file).\nSCORE reuse: 18\nJUSTIFICATION reuse: no owner for a directory-keyed queued-pointer lookup exists; reckon/crew/dispatch_admission.py:1188 states the keep rule in prose but no helper implements it, so the addition is the first.\nFINDING tests/test_a_queued_plan_review_keeps_its_brief.py:146 follow-on: the file ends without a trailing newline (W292), so the commit adds a lint finding the repository policy forbids adding.\nFINDING tests/test_a_queued_plan_review_keeps_its_brief.py:130 follow-on: assert brief_path == directory / \"brief.md\" compares the pointer's brief to the test's own directory derivation, so both sides move together and it cannot redden on the landed change.\nFINDING tests/test_a_queued_plan_review_keeps_its_brief.py:145 follow-on: assert read[\"brief\"] == (directory / \"brief.md\").read_text() compares the launcher-read bytes to the same file on disk, a same-source assertion that guards nothing beyond the file's presence.",
+  "review_run_id": "r-20261013T100644458180-review-of-a-queued-plan-review-keeps-its-brief-a5ce1377581b",
+  "reviewed_base_sha": "4f4e5913d5f20d4764d39a5820f60f4c26952faa",
+  "reviewed_head_sha": "a5ce1377581b089fbb43098c738656dcdd9b67c9",
+  "reviewed_run_id": "r-20261013T084447296841-a-queued-plan-review-keeps-its-brief",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T10:24:49.183520+00:00",
+  "total": 104
+}
