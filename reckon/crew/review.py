@@ -568,6 +568,34 @@ RECOGNISED_REVIEW_STATUSES: frozenset[str] = frozenset(
 )
 
 
+def review_status_refusal(record: Mapping[str, Any]) -> str | None:
+    """The refusal a record earns when its ``status`` is one no reader acts on.
+
+    The one check on a record's status, so the store that writes a record and
+    every reader that judges one already written cannot disagree about which
+    statuses are recognised. A record whose ``status`` is absent, or carries no
+    usable value, is refused naming the accepted set: a reader that selects
+    ``parsed`` alone reads such a record as absent, so a record carrying any
+    other status sits on disk claiming a verdict that no consumer ever reads.
+    The accepted set is :data:`RECOGNISED_REVIEW_STATUSES`, and formatting
+    belongs to the caller, so the store's write and the manifest check report
+    from one definition.
+    """
+    accepted = ", ".join(sorted(RECOGNISED_REVIEW_STATUSES))
+    status = record.get("status")
+    if not status:
+        return (
+            "review record carries no status, so no reader can act on it; the "
+            f"accepted statuses are {accepted}"
+        )
+    if status not in RECOGNISED_REVIEW_STATUSES:
+        return (
+            f"review record carries status {status!r}, which no reader acts on; "
+            f"the accepted statuses are {accepted}"
+        )
+    return None
+
+
 def parse_review(
     text: str, *, record: Mapping[str, Any] | None = None
 ) -> dict[str, Any]:
@@ -2233,18 +2261,9 @@ def store_review(
             "review record carries no review material — findings, scores, a "
             "rubric or a reviewed revision — so it is not a review"
         )
-    accepted = ", ".join(sorted(RECOGNISED_REVIEW_STATUSES))
-    status = record.get("status")
-    if not status:
-        raise ValueError(
-            "review record carries no status, so no reader can act on it; the "
-            f"accepted statuses are {accepted}"
-        )
-    if status not in RECOGNISED_REVIEW_STATUSES:
-        raise ValueError(
-            f"review record carries status {status!r}, which no reader acts on; "
-            f"the accepted statuses are {accepted}"
-        )
+    status_refusal = review_status_refusal(record)
+    if status_refusal:
+        raise ValueError(status_refusal)
     base_carried, base_sha, head_carried, head_sha = carried_revision_pair(record)
     if base_carried or head_carried:
         record = dict(record)

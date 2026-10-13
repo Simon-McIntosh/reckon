@@ -232,7 +232,7 @@ def test_report_review_record_uses_shared_identity(monkeypatch, tmp_path):
 
     store = tmp_path / "reviews"
     path = store / "sample" / "fixture.json"
-    row = {"backend": "claude-opus"}
+    row = {"reviewed_run_id": "fixture", "backend": "claude-opus"}
     node = SimpleNamespace(role="review", id="review-fixture", write_paths=[str(path)])
     monkeypatch.setattr(reports, "_node_is_a_reviewer", lambda node: True)
     monkeypatch.setattr(reports.review_module, "review_store_root", lambda: store)
@@ -240,7 +240,7 @@ def test_report_review_record_uses_shared_identity(monkeypatch, tmp_path):
     records = reports._reviewer_store_records(node)
     assert len(records) == 1
     assert pair(records[0][2]) == ("claude", "opus")
-    assert row == {"backend": "claude-opus"}
+    assert row == {"reviewed_run_id": "fixture", "backend": "claude-opus"}
 
 
 def test_lane_receipts_join_equivalent_names_but_keep_models_separate():

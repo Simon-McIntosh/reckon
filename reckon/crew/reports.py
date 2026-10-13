@@ -1560,7 +1560,10 @@ def _reviewer_store_records(
     that is not a record this store would read, or that cannot be read yet, is
     not a finding of its own — a review that has not stored its record is
     judged by the gates that require one, and the checks built on this only
-    report what a readable record says.
+    report what a readable record says. A body that is not a review — it names
+    no subject and carries no review material — is a placeholder rather than a
+    record whose fields a reader reads, so it is left to the gates that require
+    the record as well.
 
     A node that is not a review is not judged: its deliverable is repository
     work, and a path that happens to sit under the store root belongs to
@@ -1590,6 +1593,11 @@ def _reviewer_store_records(
             # record says, never a guess about an unreadable one.
             continue
         if record is None:
+            continue
+        if not (
+            review_module.names_a_review_subject(record)
+            or review_module.carries_review_material(record)
+        ):
             continue
         records.append(
             (stored_at or candidate, reviewed_run_id, ledger.normalize_identity(record))
@@ -1628,6 +1636,33 @@ def _unresolved_revision_findings(node: TaskNode | None) -> list[str]:
     findings: list[str] = []
     for record_path, _run_id, record in _reviewer_store_records(node):
         refusal = review_module.unresolved_reviewed_revision(record)
+        if refusal:
+            findings.append(f"review record {str(record_path)!r} {refusal}")
+    return findings
+
+
+def _review_record_status_findings(node: TaskNode | None) -> list[str]:
+    """Report a review run's stored records whose status no reader acts on.
+
+    A reviewer can bypass :func:`reckon.crew.review.store_review`'s status check
+    by writing its record straight into the record path its dispatch granted,
+    and the record then sits on disk carrying a status every reader reads as
+    absent — the reviewed run reads as unreviewed while a file beside it claims
+    a verdict. Every reviewer passes check-manifest before it finishes, so the
+    check the store applies is re-applied here, to each record the node's own
+    declarations grant, through the one shared
+    :func:`reckon.crew.review.review_status_refusal`. The refusal names the
+    record path, the status found and the accepted set, so the reviewer repairs
+    its own record while it still holds its turn rather than leaving a
+    coordinator to find it hours later.
+
+    The records read are :func:`_reviewer_store_records`' own, so this audit
+    and the severity and revision audits beside it judge one list of records
+    rather than three readings that could disagree.
+    """
+    findings: list[str] = []
+    for record_path, _run_id, record in _reviewer_store_records(node):
+        refusal = review_module.review_status_refusal(record)
         if refusal:
             findings.append(f"review record {str(record_path)!r} {refusal}")
     return findings
@@ -2312,6 +2347,7 @@ def audit_manifest(
     )
     findings.extend(_unmarked_finding_severity_findings(node))
     findings.extend(_unresolved_revision_findings(node))
+    findings.extend(_review_record_status_findings(node))
     if node is not None and manifest["changed_paths"]:
         declared = tuple(node.write_paths or ())
         stray = sorted(
