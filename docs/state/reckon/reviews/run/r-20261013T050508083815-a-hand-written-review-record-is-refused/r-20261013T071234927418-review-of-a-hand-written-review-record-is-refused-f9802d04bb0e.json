@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline and after arm logs (base-arm.log 289 passed EXIT=0 at e4d962199; after-arm.log 289 passed EXIT=0 at 02f67108d); the manifest's own baseline_suite/after_suite fields are placeholder JSON and name no log.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_run_commands.py:663",
+    "reckon/crew/review.py:2264"
+  ],
+  "completed_at": "2026-10-13T07:30:46.361Z",
+  "dispatched_at": "2026-10-13T07:13:18Z",
+  "findings": [
+    {
+      "file": "reckon/crew/reports.py",
+      "line": "1597",
+      "severity": "follow-on",
+      "text": "follow-on: the shared reader _reviewer_store_records gained a placeholder filter, but the arm showing no added failure for the reports.py importers is recorded at 02f67108d (after-arm.log) rather than at the reviewed head f9802d04b, and the refactor arms base-arm-refactor.log and after-arm-refactor.log are truncated mid-run, so the done_when's importers clause is not demonstrated at the revision being reviewed."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T050009140417-a-hand-written-review-record-is-refused/manifest.md",
+      "line": "6",
+      "severity": "follow-on",
+      "text": "follow-on: commits names only 02f67108d while three commits landed at head f9802d04bb0ede07c0755de9c2079f7fde437566, so a reader cannot tie the record's account to the reviewed revision."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T050009140417-a-hand-written-review-record-is-refused/manifest.md",
+      "line": "12",
+      "severity": "follow-on",
+      "text": "follow-on: test_logs names /home/ITER/mcintos/.config-placeholder, which does not exist, so the after-arm log reference cannot be opened, and baseline_suite/after_suite carry the placeholder object {\"revision_typo_placeholder\": null} rather than the arm records."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base e4d962199f3576e875f7a56e37c3b999b067a770; three commits over four files \u2014 02f67108d extracts review_status_refusal and adds _review_record_status_findings to audit_manifest, d2449bb9c folds that finding function onto the shared _reviewer_store_records reader and deletes the sibling _written_review_records it first wrote, and f9802d04b adds the evidence fragment; the test file is new and no production source outside the two modules is touched.",
+    "done_when": "the done_when names tests/test_a_hand_written_review_record_is_refused.py and requires check-manifest to refuse a status-complete record naming the status, a store-written record to pass the same pass, the files importing reckon/crew/reports.py to show no added failure against base, and the negative control logged in the run directory; the manifest records the focused gate as \"4 passed, EXIT=0\" (gate-refactor.log), the base and after arms as \"289 passed, EXIT=0\" each (base-arm.log at e4d962199, after-arm.log at 02f67108d) and the negative control as \"1 failed, 3 passed, EXIT=1\" (negative-control.log), so the primary clause reproduces while the importers clause is recorded at 02f67108d rather than at the reviewed head.",
+    "goal": "the node's goal is to have check-manifest re-validate a review run's written review records with the same status check store_review applies, and the landed change extracts review_status_refusal (reckon/crew/review.py:571) as the single owner of the accepted set RECOGNISED_REVIEW_STATUSES (reckon/crew/review.py:565) and calls it both from store_review (reckon/crew/review.py:2264) and from audit_manifest through _review_record_status_findings (reckon/crew/reports.py:1658), so the write and the check share one definition.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T050009140417-a-hand-written-review-record-is-refused/manifest.md; it records status complete, the gate, base and after arm results and the negative control, and carries a refactor line, but its commits field names only 02f67108d while three commits landed, its test_logs names a non-existent placeholder path and its baseline_suite/after_suite are placeholder JSON (FINDINGs).",
+    "write_paths": "the declared scope is reckon/crew/reports.py, reckon/crew/review.py, tests/test_a_hand_written_review_record_is_refused.py and the evidence fragment docs/evidence/fragments/the-review-loop-runs-without-hand-steps/a-hand-written-review-record-is-refused.html; git diff --name-only e4d962199f3576e875f7a56e37c3b999b067a770..f9802d04bb0ede07c0755de9c2079f7fde437566 lists exactly those four paths, each inside the declaration and none outside it."
+  },
+  "justifications": {
+    "durability": "the refusal test's exit_code assertion reddens when the audit call is removed (proven by negative-control.log), the placeholder test reddens if the new filter at reckon/crew/reports.py:1597 is reverted, and the role test reddens if the reviewer gate is dropped, though the expected refusal string's accepted-set portion is built from the same RECOGNISED_REVIEW_STATUSES constant on both sides.",
+    "evidence": "the focused gate is recorded in gate-refactor.log as \"4 passed, EXIT=0\" and the negative control in negative-control.log as \"1 failed, 3 passed, EXIT=1\", but the importers arm the done_when's third clause names was taken at 02f67108d (after-arm.log) and not at the reviewed head f9802d04b.",
+    "fit": "review_status_refusal follows the refusal-returning helpers beside it in reckon/crew/review.py:571 and names no plan, stage or ticket token.",
+    "goal_fidelity": "reckon/crew/review.py:571 defines review_status_refusal and both reckon/crew/review.py:2264 and reckon/crew/reports.py:1665 call it, so store_review and check-manifest apply one status check.",
+    "reuse": "the change extracts one status check to a single owner and folds the new audit onto the existing reckon/crew/reports.py:1570 _reviewer_store_records reader, deleting the sibling _written_review_records it first wrote.",
+    "scope_discipline": "git diff --name-only e4d962199f3576e875f7a56e37c3b999b067a770..f9802d04bb0ede07c0755de9c2079f7fde437566 lists only the two modules, the new test and the fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to have check-manifest re-validate a review run's written review records with the same status check store_review applies, and the landed change extracts review_status_refusal (reckon/crew/review.py:571) as the single owner of the accepted set RECOGNISED_REVIEW_STATUSES (reckon/crew/review.py:565) and calls it both from store_review (reckon/crew/review.py:2264) and from audit_manifest through _review_record_status_findings (reckon/crew/reports.py:1658), so the write and the check share one definition.\nVERDICT done_when: the done_when names tests/test_a_hand_written_review_record_is_refused.py and requires check-manifest to refuse a status-complete record naming the status, a store-written record to pass the same pass, the files importing reckon/crew/reports.py to show no added failure against base, and the negative control logged in the run directory; the manifest records the focused gate as \"4 passed, EXIT=0\" (gate-refactor.log), the base and after arms as \"289 passed, EXIT=0\" each (base-arm.log at e4d962199, after-arm.log at 02f67108d) and the negative control as \"1 failed, 3 passed, EXIT=1\" (negative-control.log), so the primary clause reproduces while the importers clause is recorded at 02f67108d rather than at the reviewed head.\nVERDICT write_paths: the declared scope is reckon/crew/reports.py, reckon/crew/review.py, tests/test_a_hand_written_review_record_is_refused.py and the evidence fragment docs/evidence/fragments/the-review-loop-runs-without-hand-steps/a-hand-written-review-record-is-refused.html; git diff --name-only e4d962199f3576e875f7a56e37c3b999b067a770..f9802d04bb0ede07c0755de9c2079f7fde437566 lists exactly those four paths, each inside the declaration and none outside it.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T050009140417-a-hand-written-review-record-is-refused/manifest.md; it records status complete, the gate, base and after arm results and the negative control, and carries a refactor line, but its commits field names only 02f67108d while three commits landed, its test_logs names a non-existent placeholder path and its baseline_suite/after_suite are placeholder JSON (FINDINGs).\nVERDICT diff: read commit by commit against base e4d962199f3576e875f7a56e37c3b999b067a770; three commits over four files \u2014 02f67108d extracts review_status_refusal and adds _review_record_status_findings to audit_manifest, d2449bb9c folds that finding function onto the shared _reviewer_store_records reader and deletes the sibling _written_review_records it first wrote, and f9802d04b adds the evidence fragment; the test file is new and no production source outside the two modules is touched.\nCALL_SITES: reckon/crew_run_commands.py:663, reckon/crew/review.py:2264\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:571 defines review_status_refusal and both reckon/crew/review.py:2264 and reckon/crew/reports.py:1665 call it, so store_review and check-manifest apply one status check.\nSCORE evidence: 16\nJUSTIFICATION evidence: the focused gate is recorded in gate-refactor.log as \"4 passed, EXIT=0\" and the negative control in negative-control.log as \"1 failed, 3 passed, EXIT=1\", but the importers arm the done_when's third clause names was taken at 02f67108d (after-arm.log) and not at the reviewed head f9802d04b.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only e4d962199f3576e875f7a56e37c3b999b067a770..f9802d04bb0ede07c0755de9c2079f7fde437566 lists only the two modules, the new test and the fragment, all inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: the refusal test's exit_code assertion reddens when the audit call is removed (proven by negative-control.log), the placeholder test reddens if the new filter at reckon/crew/reports.py:1597 is reverted, and the role test reddens if the reviewer gate is dropped, though the expected refusal string's accepted-set portion is built from the same RECOGNISED_REVIEW_STATUSES constant on both sides.\nSCORE fit: 19\nJUSTIFICATION fit: review_status_refusal follows the refusal-returning helpers beside it in reckon/crew/review.py:571 and names no plan, stage or ticket token.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extracts one status check to a single owner and folds the new audit onto the existing reckon/crew/reports.py:1570 _reviewer_store_records reader, deleting the sibling _written_review_records it first wrote.\nFINDING reckon/crew/reports.py:1597 follow-on: the shared reader _reviewer_store_records gained a placeholder filter, but the arm showing no added failure for the reports.py importers is recorded at 02f67108d (after-arm.log) rather than at the reviewed head f9802d04b, and the refactor arms base-arm-refactor.log and after-arm-refactor.log are truncated mid-run, so the done_when's importers clause is not demonstrated at the revision being reviewed.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T050009140417-a-hand-written-review-record-is-refused/manifest.md:6 follow-on: commits names only 02f67108d while three commits landed at head f9802d04bb0ede07c0755de9c2079f7fde437566, so a reader cannot tie the record's account to the reviewed revision.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T050009140417-a-hand-written-review-record-is-refused/manifest.md:12 follow-on: test_logs names /home/ITER/mcintos/.config-placeholder, which does not exist, so the after-arm log reference cannot be opened, and baseline_suite/after_suite carry the placeholder object {\"revision_typo_placeholder\": null} rather than the arm records.",
+  "review_run_id": "r-20261013T071234927418-review-of-a-hand-written-review-record-is-refused-f9802d04bb0e",
+  "reviewed_base_sha": "e4d962199f3576e875f7a56e37c3b999b067a770",
+  "reviewed_head_sha": "f9802d04bb0ede07c0755de9c2079f7fde437566",
+  "reviewed_run_id": "r-20261013T050508083815-a-hand-written-review-record-is-refused",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T07:30:00.926150+00:00",
+  "total": 113
+}
