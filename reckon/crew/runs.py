@@ -360,9 +360,148 @@ def queued_dispatch_cap(fair_share: object) -> int:
     )
 
 
+# A queued request whose launch the admission pass is attempting is recorded
+# here while its pointer is briefly absent, so a dispatch arriving in that gap
+# reads the record and answers with the run being admitted rather than queueing
+# a second copy of it.
+ADMITTED_PHASE = "admitted"
+
+
+def handover_dir() -> Path:
+    """Directory of admission handovers, one JSON file per node being admitted."""
+    return crew_home() / "handover"
+
+
+def _node_identity(record: Mapping[str, Any]) -> tuple[str, str, str, str]:
+    """The (session, plan, section, node id) tuple that identifies one request."""
+    node = record.get("node") or {}
+    if not isinstance(node, Mapping):
+        node = {}
+    return (
+        str(record.get("session") or ""),
+        str(node.get("plan") or ""),
+        str(node.get("section") or ""),
+        str(node.get("id") or ""),
+    )
+
+
+def _handover_path(project: str, identity: tuple[str, str, str, str]) -> Path:
+    key = hashlib.sha256("\x00".join((project, *identity)).encode("utf-8")).hexdigest()
+    return handover_dir() / f"{key[:32]}.json"
+
+
+def write_handover(pointer: Mapping[str, Any]) -> Path:
+    """Record that the admission pass has taken this node's request.
+
+    Written before the pass releases the queued pointer and cleared once the
+    launched run's own pointer exists or the request has been put back, so the
+    run is named on disk for the whole of that gap rather than for none of it.
+    """
+    project = str(pointer.get("project") or "")
+    path = _handover_path(project, _node_identity(pointer))
+    record = dict(pointer)
+    record["phase"] = ADMITTED_PHASE
+    path.parent.mkdir(parents=True, exist_ok=True)
+    _write_json(path, record)
+    return path
+
+
+def clear_handover(pointer: Mapping[str, Any]) -> None:
+    """Remove the handover record the admission pass wrote for one request."""
+    path = _handover_path(str(pointer.get("project") or ""), _node_identity(pointer))
+    with suppress(FileNotFoundError):
+        path.unlink()
+
+
+def list_handovers(project: str) -> list[dict[str, Any]]:
+    """Read this project's admission handovers without changing any record."""
+    directory = handover_dir()
+    if not directory.is_dir():
+        return []
+    records: list[dict[str, Any]] = []
+    for path in sorted(directory.glob("*.json")):
+        try:
+            data = json.loads(path.read_text())
+        except (OSError, ValueError):
+            continue
+        if not isinstance(data, dict) or str(data.get("project") or "") != project:
+            continue
+        records.append(data)
+    return records
+
+
+def sweep_handovers(keep_run_ids: Iterable[str]) -> list[str]:
+    """Drop handover records whose run has no live pointer, returning their ids.
+
+    A pass clears its own handover on every path, so a record left with no live
+    pointer is one a process ended between writing it and clearing it. Called
+    under the admit lock, so no handover in flight can be swept: the pass that
+    owns the lock is the only one that could be mid-handover, and it does not
+    sweep while it is.
+    """
+    kept = {str(run_id) for run_id in keep_run_ids}
+    directory = handover_dir()
+    if not directory.is_dir():
+        return []
+    removed: list[str] = []
+    for path in sorted(directory.glob("*.json")):
+        try:
+            data = json.loads(path.read_text())
+        except (OSError, ValueError):
+            with suppress(OSError):
+                path.unlink()
+            continue
+        run_id = str(data.get("run_id") or "") if isinstance(data, dict) else ""
+        if run_id and run_id in kept:
+            continue
+        with suppress(OSError):
+            path.unlink()
+        if run_id:
+            removed.append(run_id)
+    return removed
+
+
+def existing_node_run(
+    project: str,
+    *,
+    session: str,
+    plan: str,
+    section: str,
+    node_id: str,
+    include_handovers: bool = True,
+) -> dict[str, Any] | None:
+    """The queued, being-admitted or in-flight run of one node, if any.
+
+    A node is queued at most once per session while any run of it is queued,
+    being admitted, or in flight. The live pointers answer first — a queued or
+    working run of the node — and the admission handovers answer for the gap in
+    which the pass has taken the request but has not yet launched it, so the
+    node is never named by neither an absent pointer nor a record. The admission
+    pass's own launch passes ``include_handovers=False``: it wrote that handover
+    itself and is the one dispatch it must not answer.
+    """
+    key = (
+        str(session or ""),
+        str(plan or ""),
+        str(section or ""),
+        str(node_id or ""),
+    )
+    for pointer in _list_live_records(project=project):
+        if str(pointer.get("phase") or "") in _TERMINAL_RUN_PHASES:
+            continue
+        if _node_identity(pointer) == key:
+            return pointer
+    if not include_handovers:
+        return None
+    for handover in list_handovers(project):
+        if _node_identity(handover) == key:
+            return handover
+    return None
+
+
 def queue_dispatch(
     record: dict[str, Any], *, cap: int | None = None
-) -> tuple[dict[str, Any], int]:
+) -> tuple[dict[str, Any], int | None]:
     """Store a held local request once per project, session, section and node.
 
     ``cap`` is the session's allowance of queued runs. A dispatch that would
@@ -371,27 +510,50 @@ def queue_dispatch(
     has queued only updates that pointer and is never refused by the cap. Both
     the count and the requeue decision are taken under the queue's own lock, so
     two concurrent dispatches from one session cannot both pass the check.
+
+    A dispatch of a node whose request is already being admitted, or whose run
+    is otherwise in flight, writes nothing: the existing run is returned with
+    its phase and ``None`` for the position, because a run that is not queued is
+    ordered nowhere in the admission queue.
     """
     lock = crew_home() / "locks" / "queued-dispatch.lock"
     lock.parent.mkdir(parents=True, exist_ok=True)
     with lock.open("a+b") as handle:
         fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
         try:
-            live = _list_live_records(project=str(record["project"]))
+            project = str(record["project"])
+            identity = _node_identity(record)
+            live = _list_live_records(project=project)
             existing = next(
                 (
                     pointer
                     for pointer in live
                     if pointer.get("phase") == "queued"
-                    and pointer.get("session") == record["session"]
-                    and (pointer.get("node") or {}).get("id") == record["node"]["id"]
-                    and (pointer.get("node") or {}).get("plan")
-                    == record["node"]["plan"]
-                    and (pointer.get("node") or {}).get("section")
-                    == record["node"]["section"]
+                    and _node_identity(pointer) == identity
                 ),
                 None,
             )
+            if existing is None:
+                # No queued copy of the request. A run of the same node still in
+                # flight is answered as it is, with no second pointer: the
+                # request is already somewhere between the queue and a worker.
+                # The gap where no live pointer names the node — an admission
+                # handing the request to a launch — is covered by the dispatch
+                # path's own check against the handover record, not here: this
+                # primitive is also how the admission pass itself re-queues, and
+                # that write must not be answered by its own handover.
+                current = next(
+                    (
+                        pointer
+                        for pointer in live
+                        if _node_identity(pointer) == identity
+                        and str(pointer.get("phase") or "")
+                        not in _TERMINAL_RUN_PHASES
+                    ),
+                    None,
+                )
+                if current is not None:
+                    return dict(current), None
             existing_run_id = str(existing["run_id"]) if existing is not None else None
             requeued = False
             if existing_run_id is not None:

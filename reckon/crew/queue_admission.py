@@ -156,6 +156,7 @@ def _launch_queued(
         route=options.get("route"),
         comment=str(options.get("comment") or ""),
         dispatch_options=options,
+        admission_launch=True,
     )
 
 
@@ -553,6 +554,7 @@ def admit_once(
             runs.list_live(phase=LAUNCH_FAILED_PHASE)
         )
         live = runs.list_live()
+        runs.sweep_handovers(str(pointer.get("run_id") or "") for pointer in live)
         queued = [pointer for pointer in live if pointer.get("phase") == "queued"]
         if lane:
             queued = [
@@ -597,6 +599,11 @@ def admit_once(
             caught: Exception | None = None
             reported_id = str(pointer["run_id"])
             restore_error = None
+            # The queued pointer is released inside the launch below, so the
+            # request is named by a handover record for the whole of that gap —
+            # and until it is put back — so a dispatch arriving meanwhile reads
+            # the run being admitted rather than queueing a second copy.
+            runs.write_handover(pointer)
             try:
                 candidate = _launch_queued(
                     pointer, launcher=launcher, config_for=config_for
@@ -623,6 +630,9 @@ def admit_once(
                         moment=moment,
                         guard=_dependency_guard(pointer, config_for),
                     )
+                # The launch outcome is settled here: either the run's own
+                # pointer names the node, or the request has been written back.
+                runs.clear_handover(pointer)
             if record is None:
                 if first_report:
                     _report_queued_failure(pointer)
