@@ -1,0 +1,75 @@
+{
+  "artifacts": [
+    "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/study/a-seat-held-elsewhere-is-not-restarted/sheinr-hook-no-producer-repro/report.html (reviewed deliverable, read-only)",
+    "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/study/a-seat-held-elsewhere-is-not-restarted/sheinr-hook-no-producer-repro/repro.py, /home/ITER/mcintos/.config/reckon/crew/reports/reckon/study/a-seat-held-elsewhere-is-not-restarted/sheinr-hook-no-producer-repro/repro.log (cited script and its log, read-only)",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T091541156783-review-of-sheinr-hook-no-producer-repro-81b1d6e7550e/review-rerun.log (this review's re-run: EXIT=0, same figures)"
+  ],
+  "claim_lines": [
+    "CLAIM 1: reproduced: re-ran the cited script repro.py from the report directory (cd /home/ITER/mcintos/.config/reckon/crew/reports/reckon/study/a-seat-held-elsewhere-is-not-restarted/sheinr-hook-no-producer-repro && PYTHONPATH=<worktree-81b1d6e> /home/ITER/mcintos/Code/reckon/.venv/bin/python3 repro.py); the producer published only the local session's snapshot (base_published=['producer-host-session.json'], count 1) with the remote row registered=True live=False ('the registered process 99999999 is gone'), and the follower-host hook printed 'reckon obligations for session follower-host-session (project seat-study-fixture) are not current: no producer; run `reckon crew watch --ensure --project seat-study-fixture`' - matching the report's figure (one snapshot for its own host's session; the cross-host follower omitted; 'no producer')",
+    "CLAIM 2: reproduced: the selector-control arm forced only the remote row's live predicate to True; the producer then published two snapshots (control_published=['follower-host-session.json','producer-host-session.json']) and the follower-host hook reported '1 outstanding, oldest 0s' with no 'no producer', matching the report's counterfactual (two snapshots; the no-producer line removed)",
+    "CLAIM 3: reproduced: the restored arm cleared the control's generated remote snapshot and restored the original selector; the producer again published only the local snapshot (restored_published=['producer-host-session.json'], count 1) and the follower-host hook again printed 'not current: no producer', matching the report's figure (the line brought back; remote snapshot absent)"
+  ],
+  "claim_summary": {
+    "detail": "The report's summary line - the numeric paragraph under its three-arm table - reads: 'The log records foreign_seat_live=True with a 0.003 s stream age, a remote row with registered=True live=False, publication counts of 1, 2, and 1 across those arms, and EXIT=0.' The three-arm table carries exactly those numbers: Reproduction publishes one snapshot (local only, remote row live=False); Selector control publishes two; Restored publishes only the table's local snapshot - i.e. 1, 2, 1 - and the remote row is registered=True live=False. The re-run reproduced all of them (base_published count 1, control_published count 2, restored_published count 1; remote_follower registered=True live=False). The only quoted figure not carried by the table is the stream age, and the re-run read 0.001 s against the report's 0.003 s - a jittery sub-second freshness reading (both well under the script's 10 s freshness assertion), not a table figure. The summary's counts and states therefore match its table.",
+    "verdict": "agrees"
+  },
+  "claim_summary_line": "CLAIM_SUMMARY: agrees: the report's summary line reads 'foreign_seat_live=True with a 0.003 s stream age, a remote row with registered=True live=False, publication counts of 1, 2, and 1 across those arms, and EXIT=0'; its three-arm table carries one snapshot published for Reproduction, two for Selector control and only the local snapshot for Restored (1, 2, 1) with the remote row live=False, so the numbers match; the re-run confirmed the same counts and states (only the quoted stream age differed, 0.003 s vs 0.001 s, a sub-second freshness reading the table does not carry)",
+  "claim_verdicts": {
+    "CLAIM 1": {
+      "cites": "repro.py (isolated reproduction); repro.log lines 19-24",
+      "detail": "Re-ran repro.py from the report directory. Producer published only the local session's snapshot (base_published=['producer-host-session.json'], count 1); the remote row is registered=True live=False with reason 'the registered process 99999999 is gone'; the follower-host hook line is 'reckon obligations for session follower-host-session (project seat-study-fixture) are not current: no producer; run `reckon crew watch --ensure --project seat-study-fixture`'. This is the report's stated figure (one snapshot for its own host's session; cross-host follower omitted; 'no producer'). The report's quoted stream age read 0.001 s here vs 0.003 s in the report - a sub-second clock reading well under the script's 10 s freshness assertion, not a discrepancy in the finding. Log: review-rerun.log.",
+      "finding": "rank 1 (the headline finding): a held cross-host follower registration is marked live=False by the producer's local PID check, so the producer omits its session from snapshot publication and the hook then reads no snapshot and prints 'no producer'",
+      "verdict": "reproduced"
+    },
+    "CLAIM 2": {
+      "cites": "repro.py selector control (publish(live_override=True)); repro.log lines 25-27",
+      "detail": "Re-ran the same script; the control arm published two snapshots (control_published=['follower-host-session.json','producer-host-session.json']) and the follower-host hook reported '1 outstanding, oldest 0s' with the 'no producer' line absent, matching the report's figure. The remote snapshot read fresh through the foreign-seat check (control_foreign_snapshot=fresh, foreign_seat_used=True). Log: review-rerun.log.",
+      "finding": "rank 2 (the causal counterfactual): forcing only the remote row's live predicate to True makes the producer publish the remote session's snapshot (two published) and removes the follower-host 'no producer' line",
+      "verdict": "reproduced"
+    },
+    "CLAIM 3": {
+      "cites": "repro.py restored arm (remote snapshot unlink then publish()) with the original selector; repro.log lines 28-29",
+      "detail": "Re-ran the same script; restored_published=['producer-host-session.json'] (count 1) and restored_remote_hook is again 'not current: no producer', matching the report's figure. Log: review-rerun.log.",
+      "finding": "rank 3 (the restoration control): clearing the control's generated remote snapshot and restoring the original selector brings the follower-host 'no producer' line back and again publishes only the local snapshot",
+      "verdict": "reproduced"
+    }
+  },
+  "claims": [
+    {
+      "cites": "repro.py (the report's isolated reproduction; report/log: repro.py, repro.log lines 21-24)",
+      "rank": 1,
+      "report_figure": "producer published one snapshot (own host's session); cross-host follower row registered=True live=False and omitted; follower-host hook printed 'not current: no producer'",
+      "rerun_figure": "identical: base_published=['producer-host-session.json'] (1); remote_follower registered=True live=False ('the registered process 99999999 is gone'); follower_host_hook='not current: no producer; run `reckon crew watch --ensure --project seat-study-fixture`'",
+      "verdict": "reproduced"
+    },
+    {
+      "cites": "repro.py selector control (live_override=True); repro.log lines 25-27",
+      "rank": 2,
+      "report_figure": "forcing only the remote row's live selector to True produced two snapshots and removed the no-producer line",
+      "rerun_figure": "identical: control_published=['follower-host-session.json','producer-host-session.json'] (2); control_remote_hook='1 outstanding, oldest 0s' (no-producer line absent)",
+      "verdict": "reproduced"
+    },
+    {
+      "cites": "repro.py restored arm (remote snapshot unlinked, original selector restored); repro.log lines 28-29",
+      "rank": 3,
+      "report_figure": "restoring the selector brought the no-producer line back (only the local snapshot published)",
+      "rerun_figure": "identical: restored_published=['producer-host-session.json'] (1); restored_remote_hook='not current: no producer'",
+      "verdict": "reproduced"
+    }
+  ],
+  "completed_at": "2026-10-13T09:28:08.060Z",
+  "dimensions": null,
+  "dispatched_at": "2026-10-13T09:16:38Z",
+  "method": "The reviewed run is read-only: its manifest records commits: [] and changed_paths limited to the report directory (report.html, repro.py, repro.log, fixture/), with no gate suite, so reviewed_base_sha == reviewed_head_sha == 81b1d6e7550e8d03db26269b6d352b4eb682633c and there is no diff to read. Its deliverable is report.html (with repro.py and repro.log) under the report directory. Its three highest-ranked findings are the three arms of the isolated reproduction, each cited to repro.py: (1) the producer publishes only its own host's session's snapshot, marks the cross-host follower registered=True live=False, and the follower-host hook prints 'no producer'; (2) forcing only the remote row's live predicate to True publishes two snapshots and removes the line; (3) restoring the selector brings the line back. Every arm cites the same script, repro.py, so it was re-run once from the report directory (its own inputs) with the interpreter at /home/ITER/mcintos/Code/reckon/.venv/bin/python3 and PYTHONPATH set to the cited worktree /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/f653840f-3ca8-4792-819c-9ee9708bdbac/sheinr-hook-no-producer-repro (HEAD verified at 81b1d6e7550e8d03db26269b6d352b4eb682633c); output captured to this review run's review-rerun.log. The report's summary line (the numeric paragraph under its three-arm table) was compared with the table.",
+  "project": "reckon",
+  "report_path": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/study/a-seat-held-elsewhere-is-not-restarted/sheinr-hook-no-producer-repro/report.html",
+  "review_run_id": "r-20261013T091541156783-review-of-sheinr-hook-no-producer-repro-81b1d6e7550e",
+  "reviewed_base_sha": "81b1d6e7550e8d03db26269b6d352b4eb682633c",
+  "reviewed_head_sha": "81b1d6e7550e8d03db26269b6d352b4eb682633c",
+  "reviewed_run_id": "r-20261013T085219616755-sheinr-hook-no-producer-repro",
+  "rubric": "claims",
+  "status": "parsed",
+  "suite_delta_fields_omitted": "added_failure_count and added_failure_ids are intentionally absent: the reviewed run ran no gate suite (this review adds none).",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T09:25:11+00:00"
+}
