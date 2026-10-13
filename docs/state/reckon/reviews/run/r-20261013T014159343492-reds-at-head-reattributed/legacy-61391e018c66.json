@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "read-only reviewed node (no commit past base); its baseline_suite records the 26 pre-existing non-passing ids and after_suite is null (no head arm), so the run adds no failure",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-10-13T01:42:36Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-suite-is-green-at-head/reds-at-head-reattributed/report.md",
+      "line": "21",
+      "severity": "blocking",
+      "text": "blocking: test_gc_sweeps_orphan_scratch.py::test_sweep_reports_and_removes_only_old_unclaimed_scratch is one of the thirty ids in failed-ids.txt and is red at base, but it receives no row, no status at base, no verbatim assertion and no attribution anywhere in the report, so the coordinator cannot write a repair section for it and the done_when's one-row-per-id requirement is unmet."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-suite-is-green-at-head/reds-at-head-reattributed/report.md",
+      "line": "20",
+      "severity": "follow-on",
+      "text": "follow-on: the summary counts (\"26 of the 30 ids still do not pass\", follower family 14, non-follower reds 12) do not reconcile with the thirty-id list -- the follower table's fourteen rows include the one id that now passes (test_follow_settled_rows) and there are thirteen non-follower reds -- so the counts read as full coverage while one id is absent."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "there is no commit diff to read -- the reviewed node is read-only (git log 95ff2882487169175199ed233bed3f74e63b7053..HEAD is empty and the worktree is clean); the landed artefact is report.md (15608 bytes) plus forty-one logs under logs/, each headed with revision, subject, tree, module.__file__, resolved cwd and the literal command, and each ending with an EXIT= line.",
+    "done_when": "the done_when requires one row per id from failed-ids.txt with its status at base and verbatim assertion, and every still-failing id outside the follower family to name its introducing commit, stale side and a one-line repair backed by a solo-run log ending EXIT=; logs/base-serial-rerun.log (revision 95ff28824, EXIT=1, \"25 failed, 5 passed, 1 error\") and the arm-*.log pairs exist and back every attribution the report names, but the one-row-per-id requirement is unmet for test_gc_sweeps_orphan_scratch.py::test_sweep_reports_and_removes_only_old_unclaimed_scratch.",
+    "goal": "the goal is to re-run the thirty failing ids from the bounded run at the worktree base and attribute every deterministic one to its introducing commit and stale side; report.md reports all thirty re-run (base-serial-rerun.log) and attributes the module-size ratchet by a clean green-to-red transition at 784d580de, bounds seven more to intervals by red/green arm pairs, and declares three not-repo-commits-attributable plus two instrument-first, but leaves one id with no row at all.",
+    "manifest": "read; status complete, commits none (read-only node), baseline_suite records the 30-id serial rerun as 26 non-passing ids with its literal command and log_path, after_suite null, and test_logs names the base log and the per-arm logs.",
+    "write_paths": "the node was fenced to /home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-suite-is-green-at-head/reds-at-head-reattributed; the reviewed worktree is clean at 95ff28824 with no commit past base, and every artefact read (report.md and the forty-one logs under logs/) sits inside that directory."
+  },
+  "justifications": {
+    "durability": "the deliverable is a report with no guarded behaviour and no assertion that fails if an id is dropped, which is exactly how the gc_sweeps id went unreported.",
+    "evidence": "logs/base-serial-rerun.log closes \"25 failed, 5 passed, 1 error in 185.73s\" EXIT=1 and arm-emf3.log/arm-emf3-base.log carry the red-at-784d580de green-at-8ce496de9 pair, but the report holds no evidence at all for the omitted id and its coverage counts overstate the set it covers.",
+    "fit": "report.md follows the brief's shape (grouped rows, verbatim assertions, per-arm logs headed by revision and ending EXIT=) and introduces no forbidden name.",
+    "goal_fidelity": "report.md:21 states the follower family is 14 ids and the non-follower reds are 12, but thirty ids were run and test_gc_sweeps_orphan_scratch.py::test_sweep_reports_and_removes_only_old_unclaimed_scratch is attributed nowhere in the report.",
+    "reuse": "a read-only attribution node adds no definition and forks no capability; the report reuses the existing per-arm extraction-and-log discipline.",
+    "scope_discipline": "the reviewed worktree at 95ff28824 is clean with no diff against base, and every path read (report.md, logs/*) is under the declared report directory."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to re-run the thirty failing ids from the bounded run at the worktree base and attribute every deterministic one to its introducing commit and stale side; report.md reports all thirty re-run (base-serial-rerun.log) and attributes the module-size ratchet by a clean green-to-red transition at 784d580de, bounds seven more to intervals by red/green arm pairs, and declares three not-repo-commits-attributable plus two instrument-first, but leaves one id with no row at all.\nVERDICT done_when: the done_when requires one row per id from failed-ids.txt with its status at base and verbatim assertion, and every still-failing id outside the follower family to name its introducing commit, stale side and a one-line repair backed by a solo-run log ending EXIT=; logs/base-serial-rerun.log (revision 95ff28824, EXIT=1, \"25 failed, 5 passed, 1 error\") and the arm-*.log pairs exist and back every attribution the report names, but the one-row-per-id requirement is unmet for test_gc_sweeps_orphan_scratch.py::test_sweep_reports_and_removes_only_old_unclaimed_scratch.\nVERDICT write_paths: the node was fenced to /home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-suite-is-green-at-head/reds-at-head-reattributed; the reviewed worktree is clean at 95ff28824 with no commit past base, and every artefact read (report.md and the forty-one logs under logs/) sits inside that directory.\nVERDICT manifest: read; status complete, commits none (read-only node), baseline_suite records the 30-id serial rerun as 26 non-passing ids with its literal command and log_path, after_suite null, and test_logs names the base log and the per-arm logs.\nVERDICT diff: there is no commit diff to read -- the reviewed node is read-only (git log 95ff2882487169175199ed233bed3f74e63b7053..HEAD is empty and the worktree is clean); the landed artefact is report.md (15608 bytes) plus forty-one logs under logs/, each headed with revision, subject, tree, module.__file__, resolved cwd and the literal command, and each ending with an EXIT= line.\nCALL_SITES: none\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: report.md:21 states the follower family is 14 ids and the non-follower reds are 12, but thirty ids were run and test_gc_sweeps_orphan_scratch.py::test_sweep_reports_and_removes_only_old_unclaimed_scratch is attributed nowhere in the report.\nSCORE evidence: 13\nJUSTIFICATION evidence: logs/base-serial-rerun.log closes \"25 failed, 5 passed, 1 error in 185.73s\" EXIT=1 and arm-emf3.log/arm-emf3-base.log carry the red-at-784d580de green-at-8ce496de9 pair, but the report holds no evidence at all for the omitted id and its coverage counts overstate the set it covers.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the reviewed worktree at 95ff28824 is clean with no diff against base, and every path read (report.md, logs/*) is under the declared report directory.\nSCORE durability: 9\nJUSTIFICATION durability: the deliverable is a report with no guarded behaviour and no assertion that fails if an id is dropped, which is exactly how the gc_sweeps id went unreported.\nSCORE fit: 18\nJUSTIFICATION fit: report.md follows the brief's shape (grouped rows, verbatim assertions, per-arm logs headed by revision and ending EXIT=) and introduces no forbidden name.\nSCORE reuse: 20\nJUSTIFICATION reuse: a read-only attribution node adds no definition and forks no capability; the report reuses the existing per-arm extraction-and-log discipline.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-suite-is-green-at-head/reds-at-head-reattributed/report.md:21 blocking: test_gc_sweeps_orphan_scratch.py::test_sweep_reports_and_removes_only_old_unclaimed_scratch is one of the thirty ids in failed-ids.txt and is red at base, but it receives no row, no status at base, no verbatim assertion and no attribution anywhere in the report, so the coordinator cannot write a repair section for it and the done_when's one-row-per-id requirement is unmet.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-suite-is-green-at-head/reds-at-head-reattributed/report.md:20 follow-on: the summary counts (\"26 of the 30 ids still do not pass\", follower family 14, non-follower reds 12) do not reconcile with the thirty-id list -- the follower table's fourteen rows include the one id that now passes (test_follow_settled_rows) and there are thirteen non-follower reds -- so the counts read as full coverage while one id is absent.\n",
+  "review_run_id": "legacy-61391e018c66",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "95ff2882487169175199ed233bed3f74e63b7053",
+  "reviewed_head_sha": "95ff2882487169175199ed233bed3f74e63b7053",
+  "reviewed_run_id": "r-20261013T014159343492-reds-at-head-reattributed",
+  "reviewer_run_id": "r-20261013T025124955450-review-of-reds-at-head-reattributed-95ff28824871",
+  "scores": {
+    "durability": 9,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 14,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T03:03:54.444011+00:00",
+  "total": 94
+}
