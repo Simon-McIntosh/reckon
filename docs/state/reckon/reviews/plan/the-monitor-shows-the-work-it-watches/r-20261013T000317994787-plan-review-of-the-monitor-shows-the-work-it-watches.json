@@ -1,0 +1,43 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-13T00:10:50.068Z",
+  "dispatched_at": "2026-10-13T00:03:46Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-shows-the-work-it-watches.html:66",
+      "id": "reasoning-1",
+      "reason": "a node implementing only the backoff change its negative control names would still fail the \"later request starts one new child\" bullet, so \u00a74 must name clearing the settled child from the host census (or making `handle` start a child for a settled key), which changes the plan's mechanism text.",
+      "text": "\u00a74 states \"the request that dispatch already writes to the host's pipe starts a new follower child for that project and session\", but `SessionHost.handle` returns early when the pair is already in `self._children` (reckon/crew/session_host.py:357) and `tick` re-spawns a keyed child on backoff without ever removing the key (:434), so the key persists for the host's life; a settled child keeps its key, the next dispatch's request is dropped, and the done-when's \"A later request for S starts one new child\" cannot hold from the change the paragraph describes",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "c86c1cfc7b56c99febbfa6bc930f09244e3003d6526aea5652220f62bb2d309e",
+  "plan_slug": "the-monitor-shows-the-work-it-watches",
+  "plan_version": 16,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261013T000317994787-plan-review-of-the-monitor-shows-the-work-it-watches",
+  "reviewed_blob_sha": "a13e5d64e7b54fbf3c3612fec836e584b6ac86ab",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_population_has_live_work` (reckon/crew_follow_commands.py:567), `--observe-session` (:2184), the `crew follow --lifetime` final line (:673), and decision `pane-end` all resolve; the cited hrefs `a-follower-row-is-worth-a-wake.html` and the `#s2-own-starts` anchor resolve.",
+    "done_when": "pass \u2014 \u00a74 names four measurable bullets over a temporary host state directory and declares a negative control (today's backoff restart fails case one).",
+    "evidence_paths": "pass \u2014 the done-when runs over a temporary host state directory and the negative control logs under the run directory, not a session scratchpad.",
+    "naming": "pass \u2014 \u00a74's words name mechanisms (`no live work in <session> since HH:MM`, \"follower child\", \"session host\"); no plan label, stage name or version tag reaches a symbol.",
+    "reasoning": "a finding \u2014 \u00a74's mechanism paragraph asserts the next dispatch's request starts a new follower child, but the host drops a child it has already keyed and never clears the key, so the request starts nothing.",
+    "single_goal": "pass \u2014 \u00a74 carries one deliverable, settling the follower child when the session has no live run.",
+    "wiring": "pass \u2014 \u00a74 declares `depends-on s2` in `plan-section-depends-on`, which matches its settled child delivering \u00a72's start row, and \u00a72 exists."
+  },
+  "section_digests": {
+    "_document": "c31606cc455cd57732b1f14315954b644ca9b25b58806c22f1158e4d8402d2e5",
+    "s1": "52c4b79a6da0bc1e71b00748d6314e8a255bd5fa91b6acae30f6943e3c16cee5",
+    "s2": "eeca9b70e096de79d92846f4178d8f31832962cb9c7c73d122ac2a9e06546f32",
+    "s3": "a37e4f17cfa5318f2229db2eabe7a7b80adf7bb6fcb474e3d262981478abba8e",
+    "s4": "6d613c4dd17c3b61b228631e62861cf6d981f3f05232f053cbc7c126a82c63e0",
+    "s5": "349ee19ab8c71fbc5e62c4cfa2fd4c32d34af2e2f3e9ced2db0580bfd0e74815"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T00:14:56.400049+00:00"
+}
