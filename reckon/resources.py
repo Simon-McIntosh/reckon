@@ -689,7 +689,10 @@ def _canonical_identity_is_unique(
             continue
         try:
             other = identify_resource(docs_dir, path, project)
-        except ResourceCollision:
+        except ValueError:
+            # A sibling that does not classify is not a claimant here; the
+            # resolve this defers to reads with ignore_invalid=True, so a file
+            # it would skip must not turn a direct hit into a raise.
             continue
         if other is None:
             continue
