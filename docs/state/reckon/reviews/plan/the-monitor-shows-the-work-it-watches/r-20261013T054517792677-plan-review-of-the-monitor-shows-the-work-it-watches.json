@@ -1,0 +1,62 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-13T06:00:15.027Z",
+  "dispatched_at": "2026-10-13T05:45:50Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-monitor-shows-the-work-it-watches/r-20261013T054517792677-plan-review-of-the-monitor-shows-the-work-it-watches/plan.html:282",
+      "id": "done_when-1",
+      "reason": "a node dispatched on \u00a713 would find the work done and its declared red log green, so the section either closes stale or produces a false evidence record.",
+      "text": "\u00a713 asserts \"Each test fails on the current code, which is its negative control\", but its two required tests (`tests/test_session_host.py::test_the_host_removes_its_fifo_when_its_owner_exits`, `tests/test_session_host_plugin.py::test_a_signal_removes_its_fifo` and `::test_removes-its-fifo-when-its-owner-exits` \u2014 run as three) all pass on base 5137df573 (\"3 passed in 3.63s\"); the section has no negative control that can fail",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-monitor-shows-the-work-it-watches/r-20261013T054517792677-plan-review-of-the-monitor-shows-the-work-it-watches/plan.html:268",
+      "id": "reasoning-1",
+      "reason": "\u00a713 is carried as `implementable` while its code and tests are landed, so a dispatched node re-implements committed work; the only genuine remainder is the live `stale_fifos=0` census the folded plan's \u00a79 stayed open for, which the section presents instead as a build.",
+      "text": "\u00a713's deliverable and root cause describe FIFO removal as unbuilt, but the mechanism is already on the base tree: `_remove_fifo` is defined at `reckon/crew/session_host.py:566`, called from the stop path at `:558`, and the entry point installs signal handlers for `TERM`/`HUP` at `:688`; the fix landed in commit `68361d4ee` (\"fix(crew): remove the session host FIFO when the host stops\", 2026-10-07), an ancestor of base `5137df573`, and the source module docstring already claims \"a session that ends leaves no stale FIFO\"",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "b7ec9ab889aaed3ae9fe7d461147a2db0a1055f43c889596721eb34f5f839e46",
+  "plan_slug": "the-monitor-shows-the-work-it-watches",
+  "plan_version": 34,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261013T054517792677-plan-review-of-the-monitor-shows-the-work-it-watches",
+  "reviewed_blob_sha": "258a2d21ac26b04c0144e5cbb0a1e27501e22c63",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited symbol resolves \u2014 `_seed_ticker_memory` (`reckon/crew_follow_commands.py`), `_population_has_live_work`, `_sweep_lapsed_holds`, `_follow_watch_lines` (`reckon/cli.py`), `_fleet_counts`/`_partition_session_rows` (`reckon/crew/recovery_watch.py`), `RowPolicy`/`DISPLAY_HUE`/`_WAIT_CELL`/`_COUNT_FIELD`/`PANE_STATES` (`reckon/crew/ticker.py`), `admit_once`/`_launch_queued` (`reckon/crew/queue_admission.py`), `_dispatch_lane_gate` (`reckon/crew/dispatch.py`), `watch_follow` (`reckon/crew/recovery_watch.py`) \u2014 and every cross-plan href (`a-follower-keeps-your-work-in-view`, `the-monitor-under-measurement#s4`/`#s7`, `monitor-renders-what-it-is-given`, `crew-observability-truth`, `a-follower-row-is-worth-a-wake`, `a-follower-lives-as-long-as-its-session`, `the-suite-is-green-at-head#s15`, `work-scheduling-surface`) resolves as `<path>.html`. \u00a711's \"\u00a72 and \u00a73\" is a folded-plan reference disambiguated by the fold comment at `plan.html:442` and is covered by the house convention, so no finding raised.",
+    "done_when": "a finding \u2014 \u00a713's negative control (\"each test fails on the current code\") is false; both named tests already exist and pass on the base tree.",
+    "evidence_paths": "pass \u2014 every negative control is logged \"under the run directory\" (`~/.config/reckon/crew/runs/<run>/`), a durable path, and \u00a713's census writes under the run/report paths; none names a session scratchpad or node-local temp.",
+    "naming": "pass \u2014 no symbol, filename or comment carries a plan label, stage name, ticket number or version tag; the sections name existing symbols and mechanisms (`RowPolicy`, `_population_has_live_work`, `SETTLE_WINDOW`), and the \u00a7N references are plan prose, not source.",
+    "reasoning": "a finding \u2014 \u00a713's stated root cause (\"nothing removes the FIFO once the entry point has become `reckon crew host`\", \"no trap removes it on `TERM`\") is contradicted by the cited files: `SessionHost._remove_fifo` and its stop-path call already exist, and the entry point already traps signals.",
+    "single_goal": "pass \u2014 each section names one deliverable (own starts, live roll-up, idle-settle, seven words, remembered words, needs-you line, drain line, session-scoped sweep, forgotten-run report, obligations push, coverage cell, FIFO removal, reload transition, queued retry, round-trip suppression).",
+    "wiring": "pass \u2014 `plan-section-depends-on` (s3\u2192s5, s4\u2192s2, s5\u2192s2) resolves to sections that exist, and the new sections' ordering is stated in their prose (s15/s16 write `ticker.py`; s16 names \u00a76 and the suite plan's \u00a715)."
+  },
+  "section_digests": {
+    "_document": "38b4daeac13986a93de4845572df596876e2a1ae1cdc652145366be3d4ae2dfd",
+    "s1": "52c4b79a6da0bc1e71b00748d6314e8a255bd5fa91b6acae30f6943e3c16cee5",
+    "s10": "ce58141a18e475a484415380e6ae181e597ad53c112e6cb22e1cfc60bb6b09fc",
+    "s11": "24bc7e718fa0dce82e99f82b1a80aa7f382204659e1a5fe08844c9bd4df9f21d",
+    "s12": "6b56be12afc45f4700363688128158c594eba3edb30de411ea7d4ca356b3335b",
+    "s13": "af506684f5bf69d74d9b3cdbdf5fa5888d1c3e2ec6b43d93fb08dc79c5821889",
+    "s14": "87e50c4f3edfdf578cc4501636727b40a183a8737e7f4673669428dbae23a0e5",
+    "s15": "4f1c12acb821b23a5f74af386794172e2d06099941dbf4555ea9aecdc3b7db09",
+    "s16": "867b2716d09b2503e28914fb9f8d9ef0902ca6517f1b150bda6a941a7b0be06b",
+    "s2": "eeca9b70e096de79d92846f4178d8f31832962cb9c7c73d122ac2a9e06546f32",
+    "s3": "a37e4f17cfa5318f2229db2eabe7a7b80adf7bb6fcb474e3d262981478abba8e",
+    "s4": "fb6bae83cab6ff2e0a33bf64f8a01d35db72cb3113a73e4659d22617724629c9",
+    "s5": "349ee19ab8c71fbc5e62c4cfa2fd4c32d34af2e2f3e9ced2db0580bfd0e74815",
+    "s6": "301b59df6e0fdccf6650e206628516f0e967dbf4e1b58a616e3d6999015f18cc",
+    "s7": "aede0bed1a72c26f45a72032497a3a58f24022a1a5e8cd4f8f6e08aada09aab3",
+    "s8": "7b9b1e94e523da3024a014b4d3d8532114544257c92fcfe64893085d2166840f",
+    "s9": "b85d6764b003c3933d1609383c69602e5f4b2d502c8200fe4bab51f3e9085466"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T06:02:32.001182+00:00"
+}
