@@ -1,0 +1,49 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-13T02:03:24.553Z",
+  "dispatched_at": "2026-10-13T01:55:43Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-fingerprint-has-one-form.html:55",
+      "id": "done_when-1",
+      "reason": "a control whose expected verdict is the same as a broken instrument's gives false assurance; the node needs a second fixture (a non-collapsed plan review) that the census must NOT report as pre-collapse-only.",
+      "text": "\u00a72 declares its negative control to be \"a review fixture built from a collapsed plan, which the census must count as pre-collapse-only\"; that fixture is the input the census is *supposed* to count, so a census that mislabels every review as pre-collapse-only passes this control, and it cannot show the census discriminates",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-fingerprint-has-one-form.html:47",
+      "id": "reasoning-1",
+      "reason": "if the census counts form-membership as the uncovered set it can over-count the plans that owe a new review, and \u00a73 would then gate the retirement on an inflated number the lead is asked to accept.",
+      "text": "\u00a72 asserts \"retiring it uncovers exactly those\" reviews that match only through the pre-collapse form, but the cited reader joins a review to content by `record.get(\"plan_fingerprint\") in _fingerprint_forms(...)` at `reckon/crew/plan_review.py:823-824` only for the whole-plan short-circuit; when that membership fails the code falls through to per-unit coverage, which recomputes each section's digest from the review's own snapshot (`record_digests` at `reckon/crew/plan_review.py:892-895`) and marks the review covered even though the retired form no longer matched",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "fb3d86bf8a3d7c73a0dcde3bd03fa1db7a8a9cbba512f735052950c2b3d4be89",
+  "plan_slug": "the-fingerprint-has-one-form",
+  "plan_version": 2,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261013T015504459465-plan-review-of-the-fingerprint-has-one-form",
+  "reviewed_blob_sha": "dc8515617af4695a30b247101cbb40c2618b161c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited symbol resolves (`_fingerprint_forms`, `list_plan_reviews`, `delivered_reports`, `_delivered_report_sidecars` in `reckon/crew/plan_review.py`; `_apply_collapse_section` and the `collapse_section` op-table entry in `reckon/_store.py`; `declared_claim_paths` in `reckon/crew/claims.py`; `landed_section_ids` in `reckon/_plan_html.py`; the MCP op vocabulary in `reckon/mcp.py`; the landed-card reader in `reckon/mcp_views.py`), the cited informs-plan \u00a77/\u00a78 and decision `fingerprint-retirement-timing` exist, and the extensionless href `/reckon/plans/a-plan-is-done-when-every-section-is-ticked` resolves as `<path>.html`.",
+    "done_when": "a finding \u2014 \u00a72's done-when names a control that cannot discriminate a census which reports every review as pre-collapse-only.",
+    "evidence_paths": "pass \u2014 \u00a72 writes its report under the run's own report directory (a durable path under `~/.config/reckon/crew/reports/`), not a scratchpad or node-local temp.",
+    "naming": "pass \u2014 no plan labels, ticket numbers or version tags reach any symbol or filename; `\u00a77`/`\u00a78` are cross-plan section references in prose, which plans may carry.",
+    "reasoning": "a finding \u2014 \u00a72's stated equivalence between \"matches only through the pre-collapse form\" and \"uncovered on retirement\" is not supported by the cited matching mechanism, which has a per-unit coverage path that survives the form's retirement.",
+    "single_goal": "pass \u2014 \u00a72 is one read-only census; \u00a73 is one retirement (the form and the dead op that produced collapsed sections are the same mechanism), gated by \u00a72.",
+    "wiring": "pass \u2014 the node table's `s3` depends-on `the-fingerprint-has-one-form#s2` resolves to a section that exists and gates the retirement, and `plan-informs a-plan-is-done-when-every-section-is-ticked` names the plan whose deferred \u00a78 this work completes."
+  },
+  "section_digests": {
+    "_document": "677897f224d4982e8e4ad098e4a8e02724e888de68334e6f312c9761b61d6af8",
+    "s1": "d20bf808be72a862d484c4115618ad75325bad73c4c33997e87ac25da272e077",
+    "s2": "bb2a0f444cde7771b35db61dec28191335ba010389da95e269c802720c392a33",
+    "s3": "a97f2dba7c0b826127cadbaf524405188cc954888913fe5f98f3c4948ed55de1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T02:04:56.138902+00:00"
+}
