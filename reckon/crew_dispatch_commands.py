@@ -452,20 +452,62 @@ def _model_availability_refusal(
     }
 
 
-def _lane_declaring_model(model: str) -> str | None:
-    """The lane the catalogue declares ``model`` under, ignoring any lane filter.
+def _lanes_declaring_model(model: str) -> list[str]:
+    """Every lane the catalogue declares ``model`` under, ignoring any filter.
 
-    Used to name the declaring lane when a model is refused for being outside
-    the lane it was asked for. An undeclared or ambiguous name returns ``None``,
-    leaving the caller's unknown-name refusal to stand.
+    Used to name the declaring lane(s) when a model is refused for being
+    outside the lane it was asked for. A bare name a single lane declares
+    resolves directly; a name two lanes declare makes ``ledger.resolve_name``
+    raise, so each lane the catalogue declares is then asked in turn, and a key
+    repeated across lanes is reported for every lane that carries it. A name no
+    lane declares returns an empty list, leaving the caller's unknown-name
+    refusal to stand.
     """
-    from reckon import ledger
+    from reckon import flight, ledger
 
     try:
         lane, _key = ledger.resolve_name(model)
     except ValueError:
-        return None
-    return lane
+        lane = None
+    if lane is not None:
+        return [lane]
+    catalogue = flight.read_layer_file(str(flight.model_catalogue_path()))
+    declaring: list[str] = []
+    for lane_name in catalogue.get("lanes") or {}:
+        try:
+            match_lane, _key = ledger.resolve_name(model, lane=str(lane_name))
+        except ValueError:
+            continue
+        if match_lane is not None:
+            declaring.append(str(lane_name))
+    return declaring
+
+
+def _refuse_a_combined_lane_model_backend(backend: str) -> None:
+    """Refuse a ``--backend`` spelling that names a lane and model pair.
+
+    A caller names a lane, or names a model (which carries its lane with it),
+    never a ``<lane>-<model>`` name: lane and model are two dimensions, and a
+    combined name is neither. The refusal names the lane the spelling resolves
+    to and the ``--model`` key that replaces it, so a caller reaching for the
+    retired form is told the two-dimension one. A lane's own name and a name no
+    catalogue entry declares are both left to the routing that resolves them.
+    """
+    from reckon import ledger
+
+    name = str(backend or "").strip()
+    if not name:
+        return
+    try:
+        lane, key = ledger.resolve_name(name)
+    except ValueError:
+        return
+    if lane is None or name == lane:
+        return
+    raise click.UsageError(
+        f"--backend {name!r} names a lane and model pair, not a lane; "
+        f"--model {key!r} (lane {lane!r}) names the same model"
+    )
 
 
 def _model_narrowed_backend(config, model, backend, *, local):
@@ -499,10 +541,14 @@ def _model_narrowed_backend(config, model, backend, *, local):
         # it, so a caller spelling a pair the wrong way is told which lane the
         # model belongs to rather than only that the name is unknown.
         if lane_filter is not None:
-            declaring_lane = _lane_declaring_model(model)
-            if declaring_lane is not None and declaring_lane != lane_filter:
+            declaring = [
+                lane for lane in _lanes_declaring_model(model) if lane != lane_filter
+            ]
+            if declaring:
+                label = "lane" if len(declaring) == 1 else "lanes"
+                names = ", ".join(repr(lane) for lane in sorted(declaring))
                 raise click.UsageError(
-                    f"--model {model!r} is declared by lane {declaring_lane!r}, "
+                    f"--model {model!r} is declared by {label} {names}, "
                     f"not by the {lane_filter!r} lane it was asked for"
                 )
         raise click.UsageError(
@@ -1177,6 +1223,11 @@ def crew_dispatch(
         config = _dispatch_resolved_flight(
             flight_module, project, checkout_path, overrides
         )
+        # A combined lane-and-model name is refused before any route is chosen,
+        # so a caller reaching for the retired ``<lane>-<model>`` spelling is
+        # told the lane and the --model key that replace it rather than having a
+        # lane of that name invented for the run.
+        _refuse_a_combined_lane_model_backend(backend)
         if model_name:
             # A model named on the command line narrows to the backend that
             # serves it, exactly as naming that backend would; the refusal for
