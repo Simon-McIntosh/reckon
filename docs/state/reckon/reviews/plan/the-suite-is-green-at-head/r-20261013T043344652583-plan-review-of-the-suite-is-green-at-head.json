@@ -1,0 +1,54 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-13T04:47:06.707Z",
+  "dispatched_at": "2026-10-13T04:34:34Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-suite-is-green-at-head.html:687",
+      "id": "reasoning-1",
+      "reason": "the plan must state the observed-session delivery is keyed on the session alone, not on the start kind, or a node replaying `_is_own_start` sends the fix at the wrong gate and the observed-session negative control never goes green.",
+      "text": "the deliverable says RowPolicy \"delivers an observed session's rows as it delivers the own session's starts\", but the own-session delivery it is modelled on, `_is_own_start` (reckon/crew/ticker.py:1313), gates on `kind == START_KIND` (ticker.py:1325); the observed-session rows the done-when names are observer-context transitions such as the `working` rows fed at tests/test_follow_observes_other_sessions.py:322 and :418 (phase=\"working\", kind `(None,\"working\")`), which the observer-context hold at ticker.py:1605-1616 withholds because they are neither coordinator nor start kinds, so an implementation that mirrors the own-start exemption (session check plus START_KIND) leaves those five ids red and the done-when (\"the thirteen ids pass alone\") unmet",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "ba8363b3eddd62201ad86a4c7044a868894eaee18f5efbd06b6fb895d32e2016",
+  "plan_slug": "the-suite-is-green-at-head",
+  "plan_version": 305,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261013T043344652583-plan-review-of-the-suite-is-green-at-head",
+  "reviewed_blob_sha": "bbde6cac7a700abd97d928ba401a8b037c928949",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 commit 089cd7741, the follower-family report path, RowPolicy.feed, follower_row_path, SETTLE_WINDOW and every named test file resolve; the extensionless href /reckon/plans/the-suite-is-green-at-head resolves as .html.",
+    "done_when": "pass \u2014 the done-when is measurable (thirteen ids pass alone; the two pins still pass; importers show no added failure) and it declares a negative control that can fail: dropping the observed-session delivery must red the observed-session cases.",
+    "evidence_paths": "pass \u2014 the gate is logged under the run directory (durable) and the cited investigation report sits on a durable reports path, not a scratchpad.",
+    "naming": "pass \u2014 the mechanism is named by what it does (deliver an observed session's rows, keep the hold); no plan labels, ticket numbers or changelog prose reach the deliverable.",
+    "reasoning": "a finding \u2014 the deliverable's mechanism, read as an extension of the own-start exemption, is start-kind-gated and so cannot deliver the observed session's non-start rows the done-when names.",
+    "single_goal": "pass \u2014 one deliverable: make the follower family green while keeping the observer-context and settle holds, split into a product change and test re-anchors of the same behaviour.",
+    "wiring": "pass \u2014 \u00a715 declares no depends-on/informs/gates and needs none: its only external input is the follower-family investigation it cites, which is already produced, and its write paths do not overlap a held or in-flight section (\u00a76's routier hold does not touch ticker.py or the follower tests)."
+  },
+  "section_digests": {
+    "_document": "83bc4eebbeaf35e1f8769b1cefa72ecf8466fb0d23d3dd350bf2e642790b97e5",
+    "s1": "93d7e8eb3f04bb8d9aad0f5ac7d68a9d009b7fe7feaa6f4932738242154d8d4d",
+    "s10": "9633fb928a6c720c8fae74ed3da0a5f7ed555c4230f29ebf2ee89e5432566bb1",
+    "s11": "3e9c94371cc0b22adeb21c71a08fdd16433d8b4c1a22e73cd63d1171332089ba",
+    "s12": "dd8650523d29d87e6fa41408db7d0440cf17dfbd57f0ab6da0d5fcd223692d95",
+    "s13": "7b00f23667f49ba7de16f8823860c86ad35a562eebddf434fd1a6b9f1f5e9993",
+    "s14": "1469c86b5327d2429ce07b9ddd2fbca586d8831acb94119f8a187e315f48dcf7",
+    "s15": "1ea6da80280e4b13584b4e2487e199ba95d0351063ed2b730939869a392807a4",
+    "s16": "4ab9d42bd2e71d070a1cc5393ebea66e1ec71d06dad51f1a82505c91ce309234",
+    "s2": "d8e1d44eab3d041cfa8f08f045885bcf9a783d27f0cb613fe7de2c0476c13887",
+    "s3": "d6efa514940aeb662c9b7fdee7f663c86e4da2526ec9a01c6977f967e30d886a",
+    "s4": "e7003c1b5457d6229da28b7d90f825f0e3ef67be2a012291c12a2daf14bf2273",
+    "s5": "934ff53a2b41de523672b7760ab4bbe2e8be5d3da6b580c600383ac0217825a2",
+    "s6": "f303e134582668c776b576622bada8b11c616551d62518da4675a7ac233a379c",
+    "s7": "655ef45aae9c9f31c0c67cb28422cff4a16611cfce488326c298768a23f58efd",
+    "s8": "c78e67e053ac3d61a73df4b965e8209a12ca4d9b745535a102b0b0040cce3adc",
+    "s9": "f4ef4f0dc18779331d3654037d55a7dd1c27d3769bfbfe753867fccbb53f9a28"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T04:47:23.910105+00:00"
+}
