@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "40186023d58ce16ae64eba11dd385db74698980c",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/evidence.py:425",
+    "reckon/doccheck.py:359",
+    "reckon/serve.py:451"
+  ],
+  "completed_at": "2026-10-13T04:54:18.707Z",
+  "dispatched_at": "2026-10-13T04:37:43Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T031535787917-landing-record-cites-a-real-commit/logs/baseline-conformance.log",
+      "line": "7",
+      "severity": "follow-on",
+      "text": "follow-on: the baseline arm resolved the evidence record from the main checkout (html_file = /home/ITER/mcintos/Code/reckon/docs/evidence/archive/...), not from the node's own base tree, because RECKON_MOUNTS_PATH was set only on the committed arm; the demonstrated defect is genuine (main still cites the missing object) but the pre-fix arm did not measure the node's base revision."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T031535787917-landing-record-cites-a-real-commit/manifest.md",
+      "line": "20",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest leaves baseline_suite (line 20) and after_suite (line 21) blank while naming the two arm logs only in test_logs, so the canonical read-time annotation (annotate_review_of_run) reports added_failure_count as unmeasured even though the run's own baseline and head arm logs exist and show zero added failures."
+    }
+  ],
+  "head_log_revision": "97b6f90d1c5fcdf9d7ae361127acb0723d3a2610",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit-by-commit against base 40186023d58ce16ae64eba11dd385db74698980c; one file changed, 2 insertions and 2 deletions, all inside the declared write path.",
+    "done_when": "the done_when names tests/test_schema.py::test_cross_project_conformance[reckon:work-does-not-fall-to-the-coordinator-landed]; logs/committed-conformance.log records 1 passed in 13.28s with EXIT=0.",
+    "goal": "the node goal is to replace the unresolved landing sha in the work-does-not-fall-to-the-coordinator landing record with the commit that landed that work; the diff swaps both structured citations of 5b5c6c6454d20a64a793120fdaf7889da1a2a898 for 1ec9a2c7b60a64ca86284eab257478a38442aaf8 in docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html:14 and :3604.",
+    "manifest": "read; it states the correction made, the gate command that ran and its result, the baseline and the invented-sha control, and the evidence linking 1ec9a2c7b60a64ca86284eab257478a38442aaf8 to the record.",
+    "write_paths": "declared paths are docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html, a fragment under docs/evidence/fragments/, and a figures dir; the diff touches only the archive record, a subset of scope."
+  },
+  "justifications": {
+    "durability": "the pre-existing test_schema.py::test_cross_project_conformance reddens on an unresolvable citation, as the baseline arm (5b5c6c6454d20a64a793120fdaf7889da1a2a898 missing) and the invented-sha negative control both show.",
+    "evidence": "tests/test_schema.py:952 asserts every structured citation resolves as a git object; the manifest records the committed run passing and a scratch invented-sha control failing (logs/negative-control.log EXIT=1), while the reviewed manifest's blank baseline_suite/after_suite fields (manifest.md:20-21) leave the canonical annotation reporting the added-failure count unmeasured.",
+    "fit": "the change edits the plan-commits meta (line 14) and a table <code> cell (line 3604) in the record's existing format, adding only a commit sha and no new name.",
+    "goal_fidelity": "docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html:14 now cites 1ec9a2c7b60a64ca86284eab257478a38442aaf8, whose subject and changed paths (the record and the driving plan) are the work the row describes.",
+    "reuse": "the change extends the existing citation-conformance owner at tests/test_schema.py:857-929 rather than adding any definition; a search over reckon/ for citation resolution found no other owner.",
+    "scope_discipline": "the diff's only two changed lines sit in the declared write path docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html and it adds nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to replace the unresolved landing sha in the work-does-not-fall-to-the-coordinator landing record with the commit that landed that work; the diff swaps both structured citations of 5b5c6c6454d20a64a793120fdaf7889da1a2a898 for 1ec9a2c7b60a64ca86284eab257478a38442aaf8 in docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html:14 and :3604.\nVERDICT done_when: the done_when names tests/test_schema.py::test_cross_project_conformance[reckon:work-does-not-fall-to-the-coordinator-landed]; logs/committed-conformance.log records 1 passed in 13.28s with EXIT=0.\nVERDICT write_paths: declared paths are docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html, a fragment under docs/evidence/fragments/, and a figures dir; the diff touches only the archive record, a subset of scope.\nVERDICT manifest: read; it states the correction made, the gate command that ran and its result, the baseline and the invented-sha control, and the evidence linking 1ec9a2c7b60a64ca86284eab257478a38442aaf8 to the record.\nVERDICT diff: read commit-by-commit against base 40186023d58ce16ae64eba11dd385db74698980c; one file changed, 2 insertions and 2 deletions, all inside the declared write path.\nCALL_SITES: reckon/evidence.py:425, reckon/doccheck.py:359, reckon/serve.py:451\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html:14 now cites 1ec9a2c7b60a64ca86284eab257478a38442aaf8, whose subject and changed paths (the record and the driving plan) are the work the row describes.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_schema.py:952 asserts every structured citation resolves as a git object; the manifest records the committed run passing and a scratch invented-sha control failing (logs/negative-control.log EXIT=1).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff's only two changed lines sit in the declared write path docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html and it adds nothing else.\nSCORE durability: 19\nJUSTIFICATION durability: the pre-existing test_schema.py::test_cross_project_conformance reddens on an unresolvable citation, as the baseline arm (5b5c6c6454d20a64a793120fdaf7889da1a2a898 missing) and the invented-sha negative control both show.\nSCORE fit: 20\nJUSTIFICATION fit: the change edits the plan-commits meta (line 14) and a table <code> cell (line 3604) in the record's existing format, adding only a commit sha and no new name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the existing citation-conformance owner at tests/test_schema.py:857-929 rather than adding any definition; a search over reckon/ for citation resolution found no other owner.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T031535787917-landing-record-cites-a-real-commit/logs/baseline-conformance.log:7 follow-on: the baseline arm resolved the evidence record from the main checkout rather than the node's own base tree, because RECKON_MOUNTS_PATH was set only on the committed arm.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T031535787917-landing-record-cites-a-real-commit/manifest.md:20 follow-on: the reviewed manifest leaves baseline_suite and after_suite blank, so the canonical annotation reports added_failure_count unmeasured although the run's own arm logs exist.\n",
+  "review_run_id": "r-20261013T043711314420-review-of-landing-record-cites-a-real-commit-97b6f90d1c5f",
+  "reviewed_base_sha": "40186023d58ce16ae64eba11dd385db74698980c",
+  "reviewed_head_sha": "97b6f90d1c5fcdf9d7ae361127acb0723d3a2610",
+  "reviewed_run_id": "r-20261013T031535787917-landing-record-cites-a-real-commit",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T04:52:30Z",
+  "total": 117
+}
