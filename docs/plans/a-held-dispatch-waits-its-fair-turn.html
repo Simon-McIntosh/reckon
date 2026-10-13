@@ -24,9 +24,9 @@
   <title>A Held Dispatch Waits Its Fair Turn | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="44">
+<meta name="plan-version" content="45">
 <meta name="plan-modified" content="2026-10-13">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="3c837fc1">
 </head>
 <body>
@@ -95,7 +95,7 @@
 </section>
 
     <h2 id="s9">§9 — A queued plan review keeps its brief</h2>
-<section data-reckon="section" data-id="s9" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s9" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> On 2026-10-13 every queued plan review in the fleet, eight across four sessions, failed each admission pass with <code>CrewError: the brief ... is not readable</code>. <code>_discard_composed_plan_review</code> in <code>reckon/crew/recovery_review_dispatch.py</code> removes the run directory a composed review created unless the dispatch report carries <code>queued</code>. A held compose returns the lane-paused refusal instead, which leaves a queued pointer naming the brief but does not set that key, so the directory and its brief are removed under a request that will later try to read them.</p><p><strong>Deliverable.</strong> The composed directory is kept whenever a queued pointer names it, judged from the pointer rather than from the shape of the report.</p><p><strong>Done when</strong> a test composes a plan review while the lane holds the session, finds the request queued with its brief still on disk, and then admits it and finds the launch reads that brief. The test files importing <code>reckon/crew/recovery_review_dispatch.py</code> show no added failure against base. The negative control restores the report-shape check, and the brief must then be gone. It is logged under the run directory. Write paths: <code>reckon/crew/recovery_review_dispatch.py</code> and <code>tests/test_a_queued_plan_review_keeps_its_brief.py</code>.</p>
 
     <h2 id="s10">§10 — A review is not refused for the run it reviews</h2>
