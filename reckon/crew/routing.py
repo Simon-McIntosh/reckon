@@ -2111,12 +2111,14 @@ def garbage_collect(
 ) -> dict[str, Any]:
     """Inspect or remove disposable workspaces and promoted transient state.
 
-    ``pin_unique_commits`` releases a dirty worktree whose commits have no
-    patch-equivalent on the integration head by first pinning those commits
-    into an archive ref under ``refs/reckon/archive/``; without it such a tree
-    is kept, as before. ``run_id`` confines the pass to that run's own tree and
-    to that run's pointer and run directory, so clearing one held tree can
-    never reach a peer's.
+    ``pin_unique_commits`` releases a worktree — dirty, or clean with an
+    unreachable head — whose commits have no patch-equivalent on the integration
+    head by first pinning those commits into an archive ref under
+    ``refs/reckon/archive/``; without it such a tree is kept, as before.
+    ``run_id`` confines the pass to that run's own tree and to that run's
+    pointer and run directory, so clearing one held tree can never reach a
+    peer's; a recorded tree that is gone or no longer registered is reported as
+    already removed rather than refused.
     """
     if retention_days < 0:
         raise CrewError("retention days cannot be negative")
