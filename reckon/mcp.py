@@ -247,13 +247,18 @@ _LOGGER = logging.getLogger("reckon.mcp")
 # config shape that changed after the server started — is invisible to the
 # loaded classes, so a call that reads the new config from disk validates it
 # against the old classes and fails with a schema error that names nothing
-# about the restart owed. Each registered tool therefore compares the
+# about the restart owed. The guard answers on failure rather than before the
+# call: a call that returns normally is returned untouched and computes no
+# stamp, because most commits move the code without breaking a running image
+# and refusing them all would stop every session's server many times an hour.
+# Only when a call raises or returns an error result does the tool compare the
 # checkout's code stamp, the one the producers and followers already compute,
-# against the stamp this image started with. When it has moved and the new
-# code imports, the call answers with one error naming the server's start
-# time, the change and the reconnect remedy. A tree that does not import is
-# deferred — the working image answers on, because a checkout mid-merge must
-# never take a running server down.
+# against the stamp this image started with. When it has moved and the new code
+# imports, the original failure is replaced by one refusal naming the server's
+# start time, the change and the reconnect remedy, carrying the original error
+# text. When the stamp has not moved, or the checkout does not import, the
+# original failure is returned unchanged — a tree mid-merge must never take a
+# running server down.
 _SERVER_STARTED_AT = datetime.now(UTC)
 _SERVER_CODE_STAMP = follower_code_stamp()
 
@@ -296,12 +301,20 @@ def _changed_checkout_imports() -> bool:
     return completed.returncode == 0
 
 
-def _stale_code_response() -> dict[str, Any] | None:
+def _error_text(result: Any) -> str | None:
+    """The original error text of a failed tool result, when it carries one."""
+    if not isinstance(result, Mapping) or result.get("ok") is not False:
+        return None
+    detail = result.get("detail") or result.get("error")
+    return str(detail)
+
+
+def _stale_code_response(original_error: str | None) -> dict[str, Any] | None:
     """The reconnect refusal when the imported code no longer matches the checkout.
 
-    ``None`` means answer normally: either the code is the image this process
-    started with, or the checkout does not import and the working image is
-    kept.
+    Called only once a call has failed. ``None`` means the failure is not the
+    stale image's: either the code is the image this process started with, or
+    the checkout does not import and the original failure stands.
     """
     current = follower_code_stamp()
     if current == _SERVER_CODE_STAMP:
@@ -309,31 +322,48 @@ def _stale_code_response() -> dict[str, Any] | None:
     if not _changed_checkout_imports():
         return None
     started = _SERVER_STARTED_AT.isoformat()
-    return {
+    response: dict[str, Any] = {
         "ok": False,
         "error": "stale_server_code",
         "detail": (
             f"this reckon MCP server started {started}; the code it imported has "
             f"changed on disk since then (code stamp {_SERVER_CODE_STAMP[:12]} → "
-            f"{current[:12]}), so it no longer matches the checkout. "
-            f"{_RECONNECT_REMEDY}."
+            f"{current[:12]}), so it no longer matches the checkout. This call "
+            f"failed against the stale image; {_RECONNECT_REMEDY}."
         ),
         "server_started_at": started,
         "code_stamp_at_start": _SERVER_CODE_STAMP,
         "code_stamp_now": current,
         "reconnect": _RECONNECT_REMEDY,
     }
+    if original_error is not None:
+        response["original_error"] = original_error
+    return response
 
 
 def _refuse_when_stale(tool: Callable[..., Any]) -> Callable[..., Any]:
-    """Wrap one registered tool so a moved checkout answers with the remedy."""
+    """Wrap one registered tool so a failed call on a moved checkout names the remedy.
+
+    A call that returns normally is returned untouched, so a commit that moves
+    the code without breaking the running image costs nothing. The stamp is
+    computed only on failure.
+    """
     signature = getattr(tool, "__signature__", None)
 
     async def guarded(**kwargs: Any) -> Any:
-        refusal = _stale_code_response()
-        if refusal is not None:
-            return refusal
-        return await tool(**kwargs)
+        try:
+            result = await tool(**kwargs)
+        except Exception as exc:
+            refusal = _stale_code_response(f"{type(exc).__name__}: {exc}")
+            if refusal is not None:
+                return refusal
+            raise
+        failure_text = _error_text(result)
+        if failure_text is not None:
+            refusal = _stale_code_response(failure_text)
+            if refusal is not None:
+                return refusal
+        return result
 
     guarded.__name__ = tool.__name__
     guarded.__qualname__ = tool.__qualname__

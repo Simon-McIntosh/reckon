@@ -1,14 +1,17 @@
-"""A reckon MCP server answers for the code it actually imported.
+"""A reckon MCP server answers for the code it actually imported, once a call fails.
 
 The server holds the classes it imported at start for the life of the process,
 while reading its configuration from disk on each call. A checkout that moves
 past those imports — a shipped default the running image's schema did not know
 when it started — is therefore validated against classes that no longer match
 it, and a call fails with a schema error that names nothing about the restart
-owed. These are the measurements of the remedy: a moved checkout answers with
-each call carrying the server's start time, the change and the reconnect
-remedy; a checkout that does not import is deferred, so a tree mid-merge never
-takes a running server down.
+owed. The guard answers on failure rather than before the call: most commits
+move the code without breaking a running image, so a call that returns normally
+must be returned untouched. When a call fails and the checkout has moved and
+still imports, the failure is replaced by one refusal naming the server's start
+time, the change and the reconnect remedy, carrying the original error text. A
+checkout that does not import defers, so a tree mid-merge never takes a running
+server down.
 
 Each test runs a server over its own copy of the package in a temp directory,
 in a fresh interpreter, so nothing here reads the checkout it lives in.
@@ -24,10 +27,6 @@ import sys
 from pathlib import Path
 
 SOURCE_PACKAGE = Path(__file__).resolve().parents[1] / "reckon"
-
-# A crew view that resolves the flight config, so a shipped default that moved
-# under a running image is the thing a call actually validates.
-_VIEW = "flight"
 
 _DRIVER = r'''
 import asyncio, json, pathlib, sys
@@ -53,6 +52,8 @@ def structured(result):
 
 
 async def crew_view():
+    """A crew view that resolves the flight config, so a shipped default that
+    moved under a running image is the thing a call actually validates."""
     blocks = await reckon_mcp.mcp.call_tool(
         "crew", {"project": "reckon", "view": "flight"}
     )
@@ -63,6 +64,15 @@ def move_the_stamp():
     """Change a module the code stamp digests, as a checkout ahead would."""
     target = root / "reckon" / "crew" / "runs.py"
     target.write_text(target.read_text() + "\n# a change the server did not import\n")
+
+
+def break_the_tree():
+    """Leave conflict markers, as a merge resolving mid-file would."""
+    target = root / "reckon" / "crew" / "runs.py"
+    target.write_text(
+        target.read_text()
+        + "\n<<<<<<< HEAD\n_broken = (1\n=======\n>>>>>>> other\n"
+    )
 
 
 def add_a_shipped_default():
@@ -78,15 +88,14 @@ def add_a_shipped_default():
 
 async def main():
     first = await crew_view()
-    if mode == "moved":
+    if mode == "moved_and_broken":
         move_the_stamp()
         add_a_shipped_default()
-    elif mode == "unimportable":
-        target = root / "reckon" / "crew" / "runs.py"
-        target.write_text(
-            target.read_text()
-            + "\n<<<<<<< HEAD\n_broken = (1\n=======\n>>>>>>> other\n"
-        )
+    elif mode == "moved_and_well":
+        move_the_stamp()
+    elif mode == "unimportable_and_broken":
+        break_the_tree()
+        add_a_shipped_default()
     second = await crew_view()
     print(json.dumps({
         "module": reckon_mcp.__file__,
@@ -135,20 +144,24 @@ def _run_server(tmp_path: Path, root: Path, mode: str) -> dict:
     return json.loads(completed.stdout.strip().splitlines()[-1])
 
 
-def test_a_moved_checkout_answers_with_the_reconnect_remedy(tmp_path: Path) -> None:
-    """A call after the checkout moves past the image names the restart owed."""
-    root = _build_checkout(tmp_path)
-    payload = _run_server(tmp_path, root, "moved")
-
-    # The server under test is the copy, not the checkout this test runs in.
+def _assert_served_from_the_copy(payload: dict, root: Path) -> None:
     assert Path(payload["module"]).resolve().is_relative_to(root.resolve())
+
+
+def test_a_failed_call_on_a_moved_checkout_answers_with_the_remedy(
+    tmp_path: Path,
+) -> None:
+    """A call that fails after the checkout moves names the restart owed."""
+    root = _build_checkout(tmp_path)
+    payload = _run_server(tmp_path, root, "moved_and_broken")
+    _assert_served_from_the_copy(payload, root)
 
     first, second = payload["first"], payload["second"]
     assert first.get("error") != "stale_server_code", (
         f"a fresh server must answer normally, not refuse: {first!r}"
     )
     assert second.get("error") == "stale_server_code", (
-        f"a moved checkout must answer with the remedy, got {second!r}"
+        f"a failed call on a moved checkout must answer with the remedy, got {second!r}"
     )
     detail = second["detail"]
     assert payload["started_at"] in detail, "the error must name the start time"
@@ -157,20 +170,40 @@ def test_a_moved_checkout_answers_with_the_reconnect_remedy(tmp_path: Path) -> N
     assert "changed" in detail.lower(), "the error must name the code change"
     assert "reconnect" in detail.lower(), "the error must name the remedy"
     assert "/mcp" in second["reconnect"]
+    # The original failure is carried, so the caller sees what actually failed.
+    assert "Extra inputs are not permitted" in second["original_error"]
 
 
-def test_a_checkout_that_does_not_import_is_deferred(tmp_path: Path) -> None:
-    """A tree that will not load never takes a working server down."""
+def test_a_successful_call_on_a_moved_checkout_is_returned_untouched(
+    tmp_path: Path,
+) -> None:
+    """Most commits move the code without breaking the image, so a good call stands."""
     root = _build_checkout(tmp_path)
-    payload = _run_server(tmp_path, root, "unimportable")
-
-    assert Path(payload["module"]).resolve().is_relative_to(root.resolve())
+    payload = _run_server(tmp_path, root, "moved_and_well")
+    _assert_served_from_the_copy(payload, root)
 
     first, second = payload["first"], payload["second"]
-    assert first.get("error") != "stale_server_code"
-    assert second.get("error") != "stale_server_code", (
-        f"a checkout that does not import must be deferred, got {second!r}"
-    )
+    assert first.get("ok") is True, f"a fresh server must answer normally: {first!r}"
     assert second.get("ok") is True, (
-        "the working image must answer on while the checkout is unimportable"
+        f"a call that succeeds must be returned untouched whatever the stamp reads: {second!r}"
     )
+    assert second.get("error") != "stale_server_code"
+    assert "stale_server_code" not in json.dumps(second)
+
+
+def test_a_checkout_that_does_not_import_returns_the_original_failure(
+    tmp_path: Path,
+) -> None:
+    """A tree that will not load never has its failure mistaken for staleness."""
+    root = _build_checkout(tmp_path)
+    payload = _run_server(tmp_path, root, "unimportable_and_broken")
+    _assert_served_from_the_copy(payload, root)
+
+    first, second = payload["first"], payload["second"]
+    assert first.get("ok") is True, f"a fresh server must answer normally: {first!r}"
+    assert second.get("error") != "stale_server_code", (
+        f"a checkout that does not import must not be called stale, got {second!r}"
+    )
+    # The original failure stands, unchanged.
+    assert second.get("error") == "crew_error"
+    assert "Extra inputs are not permitted" in second.get("detail", "")
