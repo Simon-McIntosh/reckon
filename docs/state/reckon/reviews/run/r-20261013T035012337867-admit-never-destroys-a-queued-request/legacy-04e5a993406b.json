@@ -1,0 +1,98 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate arms for the change: the base arm is baseline-admission.log (revision 410aa0f, the same tests/test_a_queued_run_is_admitted.py, EXIT=1, 6 failed), the log the reviewed run recorded as its negative control because it left the manifest's baseline_suite field empty, and the head arm is gate-admission-final.log (revision 2a66ddf3, EXIT=0, 0 failed); head adds no failing test the base arm did not carry, so the count is 0. A reader re-deriving from the manifest's baseline_suite/after_suite field names alone reads unmeasured, because that base field is empty.",
+  "after_suite": {
+    "command": "PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/health-review-1010/admit-never-destroys-a-queued-request /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/health-review-1010/admit-never-destroys-a-queued-request/tests/test_a_queued_run_is_admitted.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T035012337867-admit-never-destroys-a-queued-request/gate-admission-final.log",
+    "revision": "2a66ddf3fe154c77588508675bda2c9c27cc5342"
+  },
+  "baseline_suite": {
+    "command": "PYTHONPATH=\"$PWD\" /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_queued_run_is_admitted.py",
+    "completed": true,
+    "exit_status": 1,
+    "failure_count": 6,
+    "failure_ids": [
+      "tests/test_a_queued_run_is_admitted.py::test_a_refused_launch_keeps_its_queued_request[LanePaused-paused-True]",
+      "tests/test_a_queued_run_is_admitted.py::test_a_refused_launch_keeps_its_queued_request[LanePaused-unreadable-True]",
+      "tests/test_a_queued_run_is_admitted.py::test_a_refused_launch_keeps_its_queued_request[LaneHeld-full-False]",
+      "tests/test_a_queued_run_is_admitted.py::test_a_refused_launch_keeps_its_queued_request[ValueError-unexpected value-True]",
+      "tests/test_a_queued_run_is_admitted.py::test_a_refused_launch_keeps_its_queued_request[KeyError-missing key-True]",
+      "tests/test_a_queued_run_is_admitted.py::test_a_requeued_hold_keeps_the_newer_pointer"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T035012337867-admit-never-destroys-a-queued-request/baseline-admission.log",
+    "revision": "410aa0f789a3636a972d9746cd2abebb944d13ba"
+  },
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:2559",
+    "reckon/crew/queue_admission.py:338",
+    "reckon/crew/dispatch.py:934"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-13T03:51:56Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "247",
+      "severity": "follow-on",
+      "text": "follow-on: _record_queued_failure catches only CrewError from runs._mutate_pointer, so any other write failure (for example OSError) escapes the finally at :334 and propagates out of admit_once, ending the admit service loop instead of recording the failure and continuing."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "332",
+      "severity": "follow-on",
+      "text": "follow-on: on a local re-queue the result bookkeeping appends the superseded pointer[\"run_id\"] to held/failed while the surviving queued pointer is the re-queued run id (held.queued[\"run_id\"]), so crew admit reports a run id that no live pointer holds."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against 410aa0f789a3636a972d9746cd2abebb944d13ba; 5fc61462a replaces the (LaneHeld,LanePaused)/(CrewError,OSError) except arms with except Exception plus a finally that calls _record_queued_failure, and 2a66ddf3fe parametrizes test_a_requeued_hold_keeps_the_newer_pointer and adds the requeued-run-id retention; two files, both in scope.",
+    "done_when": "the done_when names tests/test_a_queued_run_is_admitted.py with LanePaused (paused and unreadable), a non-local LaneHeld, a ValueError, a KeyError, a local requeue, and the three-file gate; the manifest records gate-admission-final.log 16 passed, gate-verb-outcome-final.log 25 passed, gate-queue-order-final.log 4 passed all at 2a66ddf3, and baseline-admission.log 6 failed at the base revision.",
+    "goal": "the goal is to make an admit pass leave every queued request on disk unless its launch succeeded, whatever dispatch raises; reckon/crew/queue_admission.py:334-336 wraps the launch in a finally that restores or annotates the queued pointer whenever no launched record was produced, which is exactly the goal.",
+    "manifest": "read; status complete; it names the three final gate logs and the negative control and its changed_paths match the diff; its baseline_suite field is empty, so the added-failure derivation reads the run's recorded base arm from its negative-control log at the base revision.",
+    "write_paths": "the manifest declares reckon/crew/queue_admission.py, tests/test_a_queued_run_is_admitted.py and two docs paths; the diff touches only reckon/crew/queue_admission.py and tests/test_a_queued_run_is_admitted.py, both inside the fence."
+  },
+  "justifications": {
+    "durability": "tests/test_a_queued_run_is_admitted.py:304 reads the persisted pointer and asserts phase==\"queued\" with the failure recorded, and baseline-admission.log shows all six new cases reddening on the unfixed source.",
+    "evidence": "the manifest records gate-admission-final.log 16 passed at 2a66ddf3 and baseline-admission.log's six LanePaused/ValueError/KeyError failures at 410aa0f, which is the done_when's measure.",
+    "fit": "the new helpers at reckon/crew/queue_admission.py:234 and :251 sit beside _restore_queued with the surrounding module's docstring style and descriptive names carrying no plan label.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:334-336 calls _record_queued_failure from a finally whenever record is None, so a LanePaused raised before any re-queue (dispatch_admission.py:1358) no longer loses the request.",
+    "reuse": "_record_queued_failure reuses _restore_queued (queue_admission.py:215) and runs._mutate_pointer (runs.py:303) rather than re-implementing pointer restore, and _require_launched_record has no prior owner in reckon/crew.",
+    "scope_discipline": "git diff against 410aa0f789a3636a972d9746cd2abebb944d13ba touches only reckon/crew/queue_admission.py and tests/test_a_queued_run_is_admitted.py."
+  },
+  "node": "review-of-admit-never-destroys-a-queued-request-2a66ddf3fe15",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to make an admit pass leave every queued request on disk unless its launch succeeded, whatever dispatch raises; reckon/crew/queue_admission.py:334-336 wraps the launch in a finally that restores or annotates the queued pointer whenever no launched record was produced, which is exactly the goal.\nVERDICT done_when: the done_when names tests/test_a_queued_run_is_admitted.py with LanePaused (paused and unreadable), a non-local LaneHeld, a ValueError, a KeyError, a local requeue, and the three-file gate; the manifest records gate-admission-final.log 16 passed, gate-verb-outcome-final.log 25 passed, gate-queue-order-final.log 4 passed all at 2a66ddf3, and baseline-admission.log 6 failed at the base revision.\nVERDICT write_paths: the manifest declares reckon/crew/queue_admission.py, tests/test_a_queued_run_is_admitted.py and two docs paths; the diff touches only reckon/crew/queue_admission.py and tests/test_a_queued_run_is_admitted.py, both inside the fence.\nVERDICT manifest: read; status complete; it names the three final gate logs and the negative control and its changed_paths match the diff; its baseline_suite field is empty, so the added-failure derivation reads the run's recorded base arm from its negative-control log at the base revision.\nVERDICT diff: read commit by commit against 410aa0f789a3636a972d9746cd2abebb944d13ba; 5fc61462a replaces the (LaneHeld,LanePaused)/(CrewError,OSError) except arms with except Exception plus a finally that calls _record_queued_failure, and 2a66ddf3fe parametrizes test_a_requeued_hold_keeps_the_newer_pointer and adds the requeued-run-id retention; two files, both in scope.\nCALL_SITES: reckon/crew_run_commands.py:2559, reckon/crew/queue_admission.py:338, reckon/crew/dispatch.py:934\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:334-336 calls _record_queued_failure from a finally whenever record is None, so a LanePaused raised before any re-queue (dispatch_admission.py:1358) no longer loses the request.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest records gate-admission-final.log 16 passed at 2a66ddf3 and baseline-admission.log's six LanePaused/ValueError/KeyError failures at 410aa0f, which is the done_when's measure.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff against 410aa0f789a3636a972d9746cd2abebb944d13ba touches only reckon/crew/queue_admission.py and tests/test_a_queued_run_is_admitted.py.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_queued_run_is_admitted.py:304 reads the persisted pointer and asserts phase==\"queued\" with the failure recorded, and baseline-admission.log shows all six new cases reddening on the unfixed source.\nSCORE fit: 18\nJUSTIFICATION fit: the new helpers at reckon/crew/queue_admission.py:234 and :251 sit beside _restore_queued with the surrounding module's docstring style and descriptive names carrying no plan label.\nSCORE reuse: 19\nJUSTIFICATION reuse: _record_queued_failure reuses _restore_queued (queue_admission.py:215) and runs._mutate_pointer (runs.py:303) rather than re-implementing pointer restore, and _require_launched_record has no prior owner in reckon/crew.\nFINDING reckon/crew/queue_admission.py:247 follow-on: _record_queued_failure catches only CrewError from runs._mutate_pointer, so any other write failure (for example OSError) escapes the finally at :334 and propagates out of admit_once, ending the admit service loop instead of recording the failure and continuing.\nFINDING reckon/crew/queue_admission.py:332 follow-on: on a local re-queue the result bookkeeping appends the superseded pointer[\"run_id\"] to held/failed while the surviving queued pointer is the re-queued run id (held.queued[\"run_id\"]), so crew admit reports a run id that no live pointer holds.\n",
+  "review_run_id": "legacy-04e5a993406b",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "410aa0f789a3636a972d9746cd2abebb944d13ba",
+  "reviewed_head_sha": "2a66ddf3fe154c77588508675bda2c9c27cc5342",
+  "reviewed_run_id": "r-20261013T035012337867-admit-never-destroys-a-queued-request",
+  "reviewer_run_id": "r-20261013T041024138438-review-of-admit-never-destroys-a-queued-request-2a66ddf3fe15",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "test_logs": [
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T035012337867-admit-never-destroys-a-queued-request/gate-admission-final.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T035012337867-admit-never-destroys-a-queued-request/gate-verb-outcome-final.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T035012337867-admit-never-destroys-a-queued-request/gate-queue-order-final.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T035012337867-admit-never-destroys-a-queued-request/baseline-admission.log"
+  ],
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T04:27:44.277800+00:00",
+  "total": 111
+}
