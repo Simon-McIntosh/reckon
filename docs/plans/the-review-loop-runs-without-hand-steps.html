@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="the-review-loop-runs-without-hand-steps">
   <meta name="plan-title" content="The Review Loop Runs Without Hand Steps">
   <meta name="plan-summary" content="Four hand steps in the review loop, measured 2026-10-12, become mechanical: self-promoting reviews, test-only review, evidence checks, remote producers.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="done">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="4.25">
   <meta name="plan-capability-version" content="1.0">
@@ -25,7 +25,7 @@
   <title>The Review Loop Runs Without Hand Steps | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="24">
+<meta name="plan-version" content="25">
 <meta name="plan-modified" content="2026-10-13">
 </head>
 <body>
@@ -131,10 +131,17 @@
     <pre class="r-fu-prompt">/reckon-build a-moved-head-is-reviewed §3</pre>
     <p class="r-fu-outcome">done — no followup; §2 to §5 landed on 2026-10-12, and the remaining round-identity repair is carried by a-moved-head-is-reviewed §3</p>
     </article>
-<article class="r-fu" data-id="f-trlrwhs-hand-written-record" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-13" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-trlrwhs-hand-written-record" data-status="resolved" data-written-by="reckon-build" data-written-at="2026-10-13" data-recommends-skill="" data-resolved-at="2026-10-13T09:22:42+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Check a hand-written review record at check-manifest (§6)</h4>
     <div class="r-fu-body"><p>A reviewer wrote its record directly with an invented status, bypassing store_review's check. A peer session repaired that record and kept its as-delivered copy.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-review-loop-runs-without-hand-steps §6</pre>
+    <p class="r-fu-outcome">§6 landed at cdf874913: check-manifest re-applies the store's status check to a review run's own records; gate replayed green; review 113, 0 added after a one-fixture repair.</p>
+    </article>
+<article class="r-fu" data-id="f-trlrwhs-close" data-status="resolved" data-written-by="reckon-build" data-written-at="2026-10-13" data-recommends-skill="" data-resolved-at="2026-10-13" data-resolved-by="reckon-build">
+    <h4 class="r-fu-title">Plan closed</h4>
+    <div class="r-fu-body"><p>All six sections are done: self-promoting reviews (§2), light review for test-only changes (§3), evidence checks (§4), remote producers (§5) and the hand-written record check (§6).</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-review-loop-runs-without-hand-steps</pre>
+    <p class="r-fu-outcome">done — no followup: every section landed and verified at the integrated head.</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -190,7 +197,10 @@
     <div class="r-comment-body"><p>reviewed a-hand-written-review-record-is-refused at base e4d962199 head f9802d04b; goal met and scope clean, but the done_when's importers-arm clause is recorded at 02f67108d not at the reviewed head and the source manifest names one of three commits, a non-existent log path and placeholder suite fields — 3 follow-on findings, scores goal_fidelity 20 / evidence 16 / scope_discipline 20 / durability 18 / fit 19 / reuse 20 (total 113).</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261013T050508083815-a-hand-written-review-record-is-refused" data-who="reckon-build" data-when="2026-10-13T08:40:44.589Z">
-    <div class="r-comment-body"><p>review_status_refusal (reckon/crew/review.py) is now the one status check store_review and audit_manifest share, and check-manifest re-applies it to each review record a review run&#x27;s granted write paths hold, refusing the manifest naming the record, the status found and the accepted set; gate tests/test_a_hand_written_review_record_is_refused.py 4 passed EXIT=0, negative control removing the audit-side call 1 failed EXIT=1.</p></div>
+    <div class="r-comment-body"><p>review_status_refusal (reckon/crew/review.py) is now the one status check store_review and audit_manifest share, and check-manifest re-applies it to each review record a review run's granted write paths hold, refusing the manifest naming the record, the status found and the accepted set; gate tests/test_a_hand_written_review_record_is_refused.py 4 passed EXIT=0, negative control removing the audit-side call 1 failed EXIT=1.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-close-s6" data-who="reckon-build" data-when="2026-10-13T09:25:00Z">
+    <div class="r-comment-body"><p>§6 landed. <code>check-manifest</code> refuses a review run whose stored record carries a status no reader acts on, re-applying the store's own check over the records the run's write paths grant. Merged <code>8f1acfac2</code> as <code>cdf874913</code>, and the gate was replayed green there. The coordinator's 125-file importer population found one superseded fixture, which was repaired. Review: 113/120, 0 added. With this, every section of the plan is done. <a href="/reckon/evidence/archive/the-review-loop-runs-without-hand-steps-landed.html#s6-hand-written-record-refused">evidence</a></p></div>
 </div>
 </section>
 </main>
