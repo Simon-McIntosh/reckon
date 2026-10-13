@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite or after_suite field, so there is no base/head gate-log pair to reduce. Its single gate arm gate.log (7 passed, EXIT=0) and its mutation control negative_control.log (1 failed, EXIT=1) are not a base/head pair, so no added failure can be attributed and none is stored as a measured zero.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-13T13:45:05.033Z",
+  "dispatched_at": "2026-10-13T13:28:05Z",
+  "findings": [
+    {
+      "file": "tests/test_review_role_is_not_reviewed.py",
+      "line": "270",
+      "severity": "follow-on",
+      "text": "follow-on: the shape assertion at tests/test_review_role_is_not_reviewed.py:270 compares the minted id against a head read at :268 from recovery._run_head_for_review(work), the same function the reflex composes the id with at reckon/crew/recovery_review_subject.py:611, so a regression that changes the head source moves both sides together and survives the assertion; the id shape itself (a missing or renamed suffix, a wrong length, extra ids) stays guarded and the source brief mandated deriving the suffix from production's own source, so it does not hold the node."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found; the landed change is a test file, which production code cannot reach, so the change has no production blast radius",
+    "diff": "read ed10cd66547983b09ba180c0313824dc4909840b against its base 7863812403a7153087688685253d228673430693 commit by commit; one file changed, tests/test_review_role_is_not_reviewed.py, +12/-6, test-only, no production file.",
+    "done_when": "the done_when names tests/test_review_role_is_not_reviewed.py passing 7 passed with a negative control failing the test on the review-of-a-review assertion; the manifest records gate.log \"7 passed in 56.77s\" EXIT=0 and negative_control.log \"1 failed in 18.17s\" EXIT=1 at tests/test_review_role_is_not_reviewed.py:260.",
+    "goal": "the goal is that the review-of-a-review test asserts the head-suffixed review node id production mints; the diff makes tests/test_review_role_is_not_reviewed.py:268-270 derive the expected id from recovery._run_head_for_review(work) and assert minted == [f\"{recovery.REVIEW_NODE_PREFIX}r-work-{head[:12]}\"], matching what the reflex composes at reckon/crew/recovery_review_subject.py:653 via repair.round_node_id.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T131551983016-the-review-role-test-reads-the-minted-id/manifest.md; status complete, commits ed10cd665, names gate.log 7 passed EXIT=0 and negative_control.log 1 failed EXIT=1 (failing id test_no_dispatch_ever_names_a_review_of_a_review) and the REVIEW_ROLE mutation used for the control.",
+    "write_paths": "the manifest declares tests/test_review_role_is_not_reviewed.py as its only declared write path; the single file in the diff is inside it."
+  },
+  "justifications": {
+    "durability": "the review-of-a-review assertion at tests/test_review_role_is_not_reviewed.py:260 reddens as the negative control shows, and the shape assertion at :270 reddens if the suffix is dropped, but its expected head is read from recovery._run_head_for_review at :268, the same production source the reflex mints with, so a wrong-head regression moves both sides together.",
+    "evidence": "the measure is recorded in gate.log (\"7 passed in 56.77s\", EXIT=0) and negative_control.log (\"1 failed in 18.17s\", EXIT=1 at tests/test_review_role_is_not_reviewed.py:260); gate.log labels rev=7863812403a7153087688685253d228673430693, the base rather than the head ed10cd665, but the base test fails by the defect, so 7 passed can only hold with the fix in the tree.",
+    "fit": "the change follows the file's idiom (a fixture pointer, a production call, literal assertions) with mechanism comments and the local name head; it carries no plan, sprint or ticket label.",
+    "goal_fidelity": "tests/test_review_role_is_not_reviewed.py:270 asserts the id production composes at reckon/crew/recovery_review_subject.py:653 through repair.round_node_id, and the head the test reads at :268 is the reflex's own source (recovery_review_dispatch.py:465 _run_head_for_review, called at :611).",
+    "reuse": "no production definition is added; the test derives the suffix from the existing owner recovery_review_dispatch.py:465 _run_head_for_review rather than forking a head derivation, and a search over reckon/crew found no second id-composition the change duplicates.",
+    "scope_discipline": "git diff 7863812403a7153087688685253d228673430693..ed10cd66547983b09ba180c0313824dc4909840b changes only tests/test_review_role_is_not_reviewed.py, the one declared write path, with no production file touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that the review-of-a-review test asserts the head-suffixed review node id production mints; the diff makes tests/test_review_role_is_not_reviewed.py:268-270 derive the expected id from recovery._run_head_for_review(work) and assert minted == [f\"{recovery.REVIEW_NODE_PREFIX}r-work-{head[:12]}\"], matching what the reflex composes at reckon/crew/recovery_review_subject.py:653 via repair.round_node_id.\nVERDICT done_when: the done_when names tests/test_review_role_is_not_reviewed.py passing 7 passed with a negative control failing the test on the review-of-a-review assertion; the manifest records gate.log \"7 passed in 56.77s\" EXIT=0 and negative_control.log \"1 failed in 18.17s\" EXIT=1 at tests/test_review_role_is_not_reviewed.py:260.\nVERDICT write_paths: the manifest declares tests/test_review_role_is_not_reviewed.py as its only declared write path; the single file in the diff is inside it.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T131551983016-the-review-role-test-reads-the-minted-id/manifest.md; status complete, commits ed10cd665, names gate.log 7 passed EXIT=0 and negative_control.log 1 failed EXIT=1 (failing id test_no_dispatch_ever_names_a_review_of_a_review) and the REVIEW_ROLE mutation used for the control.\nVERDICT diff: read ed10cd66547983b09ba180c0313824dc4909840b against its base 7863812403a7153087688685253d228673430693 commit by commit; one file changed, tests/test_review_role_is_not_reviewed.py, +12/-6, test-only, no production file.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_review_role_is_not_reviewed.py:270 asserts the id production composes at reckon/crew/recovery_review_subject.py:653 through repair.round_node_id, and the head the test reads at :268 is the reflex's own source (recovery_review_dispatch.py:465 _run_head_for_review, called at :611).\nSCORE evidence: 18\nJUSTIFICATION evidence: the measure is recorded in gate.log (\"7 passed in 56.77s\", EXIT=0) and negative_control.log (\"1 failed in 18.17s\", EXIT=1 at tests/test_review_role_is_not_reviewed.py:260); gate.log labels rev=7863812403a7153087688685253d228673430693, the base rather than the head ed10cd665, but the base test fails by the defect, so 7 passed can only hold with the fix in the tree.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 7863812403a7153087688685253d228673430693..ed10cd66547983b09ba180c0313824dc4909840b changes only tests/test_review_role_is_not_reviewed.py, the one declared write path, with no production file touched.\nSCORE durability: 17\nJUSTIFICATION durability: the review-of-a-review assertion at tests/test_review_role_is_not_reviewed.py:260 reddens as the negative control shows, and the shape assertion at :270 reddens if the suffix is dropped, but its expected head is read from recovery._run_head_for_review at :268, the same production source the reflex mints with, so a wrong-head regression moves both sides together.\nSCORE fit: 19\nJUSTIFICATION fit: the change follows the file's idiom (a fixture pointer, a production call, literal assertions) with mechanism comments and the local name head; it carries no plan, sprint or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: no production definition is added; the test derives the suffix from the existing owner recovery_review_dispatch.py:465 _run_head_for_review rather than forking a head derivation, and a search over reckon/crew found no second id-composition the change duplicates.\nFINDING tests/test_review_role_is_not_reviewed.py:270 follow-on: the shape assertion at tests/test_review_role_is_not_reviewed.py:270 compares the minted id against a head read at :268 from recovery._run_head_for_review(work), the same function the reflex composes the id with at reckon/crew/recovery_review_subject.py:611, so a regression that changes the head source moves both sides together and survives the assertion; the id shape itself (a missing or renamed suffix, a wrong length, extra ids) stays guarded and the source brief mandated deriving the suffix from production's own source, so it does not hold the node.",
+  "review_run_id": "r-20261013T132737330160-review-of-the-review-role-test-reads-the-minted-id-ed10cd665479",
+  "reviewed_base_sha": "7863812403a7153087688685253d228673430693",
+  "reviewed_head_sha": "ed10cd66547983b09ba180c0313824dc4909840b",
+  "reviewed_run_id": "r-20261013T131551983016-the-review-role-test-reads-the-minted-id",
+  "reviewer": {
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261013T132737330160-review-of-the-review-role-test-reads-the-minted-id-ed10cd665479",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T13:38:00.000000+00:00",
+  "total": 113
+}
