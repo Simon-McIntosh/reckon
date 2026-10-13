@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate arms in the manifest: baseline_suite revision f59c6695e (gate-base.log, 306 passed EXIT=0, failure_count 0, failure_ids []) against after_suite revision 0230ad4c3 (gate-head.log, 306 passed EXIT=0, failure_count 0, failure_ids []), so the gained commit adds no failing test and the delta is zero for the three files it touches.",
+  "backend": "clive",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/picker/__init__.py:435",
+    "reckon/crew/picker/prompts.py:359"
+  ],
+  "completed_at": "2026-10-13T23:16:50.799Z",
+  "dispatched_at": "2026-10-13T23:06:54Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T220745912794-the-state-render-times-its-reads/manifest.md",
+      "line": "22",
+      "severity": "follow-on",
+      "text": "follow-on: the after_suite JSON records \"command\": \"invalid\" where the armed-suite contract requires the literal command that ran; the head arm's command is only recoverable from gate-head.log line 2, and baseline_suite on line 21 carries its command in full, so the two arms' commands are not recorded the same way."
+    },
+    {
+      "file": "reckon/crew/picker/__init__.py",
+      "line": "63",
+      "severity": "follow-on",
+      "text": "follow-on: the newly shared _append_crew_log_line keeps the pick-only wording \u2014 its docstring at :66 reads \"A pick must never fail or stall because its own record could not be written\" and its noqa comment at :79 \"a pick never fails on its own record\" \u2014 while the render's flush at lane_context.py:106 is now its second caller, so the stated contract names one of its two callers."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read the single gained commit 0230ad4c3 against base c0ff44e32; it replaces the duplicated append with one owner _append_crew_log_line at reckon/crew/picker/__init__.py:63 that both _record_pick_timings:89 and lane_context._ReadTimings.flush:106 call, reuses _milliseconds:28 instead of the inlined rounding, and rewrites the test's log-path helper to the production crew_home() at tests/test_the_state_render_times_its_reads.py:112.",
+    "done_when": "the done_when names tests/test_the_state_render_times_its_reads.py, a base and a head importing-test arm, and a negative control; the manifest records gate-new-test.log 2 passed EXIT=0 at 0230ad4c3, gate-base.log 306 passed EXIT=0 at f59c6695e, gate-head.log 306 passed EXIT=0 at 0230ad4c3, and negative-control.log EXIT=1 failing test_the_render_times_each_read_once_and_names_it.",
+    "goal": "the node goal is to time each read the pick's state render makes, one log entry per read; the gained refactor keeps that: reckon/crew/picker/lane_context.py:106 flush appends one entry per read through the shared writer and reckon/crew/picker/prompts.py:348 still times the template load, so the goal is unchanged and still met.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T220745912794-the-state-render-times-its-reads/manifest.md; it carries status complete and names the four gate logs, but its after_suite JSON at line 22 records \"command\": \"invalid\".",
+    "write_paths": "the node's write paths were extended at resume (resume-1-advice.txt grants reckon/crew/picker/__init__.py, and the manifest's orientation_write_paths lists it); the gained commit touches only reckon/crew/picker/__init__.py, reckon/crew/picker/lane_context.py and tests/test_the_state_render_times_its_reads.py, every one inside that set."
+  },
+  "justifications": {
+    "durability": "tests/test_the_state_render_times_its_reads.py:148 asserts len(entries) == sum(calls.values()) + 1 and reddens on the declared mutation (negative-control.log, \"assert 3 == 4\", 1 failed EXIT=1), and the previously tautological line is now an independent check of the production path (line 141 crew_home() == home / \"crew\", line 142 _written_log().exists()).",
+    "evidence": "the reviewed manifest names runs/r-20261013T220745912794-the-state-render-times-its-reads/gate-base.log and gate-head.log, both recording 306 passed EXIT=0 with revision headers f59c6695e and 0230ad4c3, and gate-new-test.log 2 passed EXIT=0, though after_suite.command at manifest.md:22 reads \"invalid\" rather than the command gate-head.log line 2 carries.",
+    "fit": "the refactor follows the module's existing lazy-import idiom (picker/__init__.py:47 _dispatch_bound_seconds imports inside the call) and its names are mechanism words, but the shared helper's pick-only wording at reckon/crew/picker/__init__.py:66 no longer covers its second caller.",
+    "goal_fidelity": "reckon/crew/picker/lane_context.py:106 appends one entry per read through the shared writer and reckon/crew/picker/prompts.py:348 names the template load, so the four reads the goal enumerates still carry exactly one named entry each.",
+    "reuse": "the gained commit removes the fork the prior review scored 5: reckon/crew/picker/__init__.py:63 _append_crew_log_line is now the one owner of the crew-home O_APPEND append, extended by _record_pick_timings:89 and lane_context._ReadTimings.flush:106, with _milliseconds:28 reused in place of the inlined rounding.",
+    "scope_discipline": "git diff c0ff44e32..0230ad4c3 touches only the three files named in the review goal, each inside the extended write paths granted on resume, and adds nothing the goal does not imply."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to time each read the pick's state render makes, one log entry per read; the gained refactor keeps that \u2014 reckon/crew/picker/lane_context.py:106 flush appends one entry per read through the shared writer and reckon/crew/picker/prompts.py:348 still times the template load, so the goal is unchanged and still met.\nVERDICT done_when: the done_when names tests/test_the_state_render_times_its_reads.py, a base and a head importing-test arm, and a negative control; the manifest records gate-new-test.log 2 passed EXIT=0 at 0230ad4c3, gate-base.log 306 passed EXIT=0 at f59c6695e, gate-head.log 306 passed EXIT=0 at 0230ad4c3, and negative-control.log EXIT=1 failing test_the_render_times_each_read_once_and_names_it.\nVERDICT write_paths: the node's write paths were extended at resume (resume-1-advice.txt grants reckon/crew/picker/__init__.py, and the manifest's orientation_write_paths lists it); the gained commit touches only reckon/crew/picker/__init__.py, reckon/crew/picker/lane_context.py and tests/test_the_state_render_times_its_reads.py, every one inside that set.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T220745912794-the-state-render-times-its-reads/manifest.md; it carries status complete and names the four gate logs, but its after_suite JSON at line 22 records \"command\": \"invalid\".\nVERDICT diff: read the single gained commit 0230ad4c3 against base c0ff44e32; it replaces the duplicated append with one owner _append_crew_log_line at reckon/crew/picker/__init__.py:63 that both _record_pick_timings:89 and lane_context._ReadTimings.flush:106 call, reuses _milliseconds:28, and rewrites the test's log-path helper to the production crew_home() at tests/test_the_state_render_times_its_reads.py:112.\nCALL_SITES: reckon/crew/picker/__init__.py:435, reckon/crew/picker/prompts.py:359\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/picker/lane_context.py:106 appends one entry per read through the shared writer and reckon/crew/picker/prompts.py:348 names the template load, so the four reads the goal enumerates still carry exactly one named entry each.\nSCORE evidence: 17\nJUSTIFICATION evidence: the reviewed manifest names runs/r-20261013T220745912794-the-state-render-times-its-reads/gate-base.log and gate-head.log, both recording 306 passed EXIT=0 with revision headers f59c6695e and 0230ad4c3, and gate-new-test.log 2 passed EXIT=0, though after_suite.command at manifest.md:22 reads \"invalid\" rather than the command gate-head.log line 2 carries.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff c0ff44e32..0230ad4c3 touches only the three files named in the review goal, each inside the extended write paths granted on resume, and adds nothing the goal does not imply.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_the_state_render_times_its_reads.py:148 asserts len(entries) == sum(calls.values()) + 1 and reddens on the declared mutation (negative-control.log, \"assert 3 == 4\", 1 failed EXIT=1), and the previously tautological line is now an independent check of the production path (line 141 crew_home() == home / \"crew\", line 142 _written_log().exists()).\nSCORE fit: 18\nJUSTIFICATION fit: the refactor follows the module's existing lazy-import idiom (picker/__init__.py:47 _dispatch_bound_seconds imports inside the call) and its names are mechanism words, but the shared helper's pick-only wording at reckon/crew/picker/__init__.py:66 no longer covers its second caller.\nSCORE reuse: 20\nJUSTIFICATION reuse: the gained commit removes the fork the prior review scored 5: reckon/crew/picker/__init__.py:63 _append_crew_log_line is now the one owner of the crew-home O_APPEND append, extended by _record_pick_timings:89 and lane_context._ReadTimings.flush:106, with _milliseconds:28 reused in place of the inlined rounding.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T220745912794-the-state-render-times-its-reads/manifest.md:22 follow-on: the after_suite JSON records \"command\": \"invalid\" where the armed-suite contract requires the literal command that ran; the head arm's command is only recoverable from gate-head.log line 2, and baseline_suite on line 21 carries its command in full, so the two arms' commands are not recorded the same way.\nFINDING reckon/crew/picker/__init__.py:63 follow-on: the newly shared _append_crew_log_line keeps the pick-only wording \u2014 its docstring at :66 reads \"A pick must never fail or stall because its own record could not be written\" and its noqa comment at :79 \"a pick never fails on its own record\" \u2014 while the render's flush at lane_context.py:106 is now its second caller, so the stated contract names one of its two callers.\n",
+  "review_run_id": "r-20261013T230625931925-review-of-the-state-render-times-its-reads-0230ad4c3006",
+  "reviewed_base_sha": "c0ff44e324befa042117d461ba045fefac7c3559",
+  "reviewed_head_sha": "0230ad4c300673055131aeafbeb80aadf67da136",
+  "reviewed_run_id": "r-20261013T220745912794-the-state-render-times-its-reads",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T23:13:35.063598+00:00",
+  "total": 111
+}
