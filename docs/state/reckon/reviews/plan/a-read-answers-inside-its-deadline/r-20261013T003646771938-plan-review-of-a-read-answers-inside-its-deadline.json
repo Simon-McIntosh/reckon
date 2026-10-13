@@ -1,0 +1,65 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-13T00:49:11.204Z",
+  "dispatched_at": "2026-10-13T00:37:24Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:143",
+      "id": "reasoning-1",
+      "reason": "a node implementing \u00a78 exactly leaves the audit's direct walk unscoped, so \u00a78's stated one-walk-per-read for the audit is not achieved and the audit arm of its intent is not met while the scope's unit test still passes.",
+      "text": "\u00a78 states \"the audit's ten entries are ten unscoped walks\" and fixes them by opening one `resource_scan_scope`, but `_audit` in `reckon/mcp.py` walks the tree itself with `sorted(docs_dir.rglob(\"*.html\"))` and calls `identify_resource` directly (mcp.py:2355-2357), a path that consults neither `_SCAN_SCOPE` nor `_scan_resources`; the proposed scope folds only the entries that go through `iter_resources`, so the audit read still walks the tree at least once outside the scope",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:155",
+      "id": "reasoning-2",
+      "reason": "the audit arm of \u00a711's measure cannot pass without either naming `_audit_plan_state`/`from_html` as a reader to unify or dropping the audit arm, so the section as written sends a node at an unachievable measure.",
+      "text": "\u00a711 names three soup-building readers and unifies them, but the cold audit read it measures parses every plan through `_audit_plan_state` (`reckon/mcp.py:2249-2262`), whose compute path is `_plan_html.from_html` \u2192 `read_state` (`reckon/_plan_html.py:2106-2116`); `from_html` is a fourth soup builder \u00a711 never lists and never routes, so per plan file the audit builds a soup in `from_html` plus one through the unified readers (~2\u00d7), and the done-when \"each build every plan file's soup exactly once\" is unreachable as written",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:155",
+      "id": "done_when-1",
+      "reason": "a node can measure the three named readers' output parity directly; the mismatched count is a documentation inconsistency that does not redirect the mechanism.",
+      "text": "\u00a711's deliverable names three soup-building readers while its done-when asserts equality of \"the four readers' outputs\", leaving the parity assertion without a defined referent",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "151315231ea92f612135bbad30427902d77f477798c16916682ab7c3fd57c1af",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 37,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261013T003646771938-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "0c17c840730ae853ef89e4f949f3f36faa157db2",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/resources.py` (`_SCAN_SCOPE:433`, `resource_scan_scope:439`, `iter_resources:459`, `_scan_resources:489`), `reckon/mcp.py` (`_audit:2269`), `reckon/_plan_html.py` (`read_state_and_text_file:1406`, `parse_plan:2331`, `parse_meta:2204`), `reckon/project_state.py` (`_cached_plan_state:1175`), `reckon/file_memo.py` and the section anchors all resolve; the extensionless evidence hrefs resolve as `<path>.html`.",
+    "done_when": "a finding \u2014 s11's done-when asserts parity for \"the four readers\" while the deliverable names three, and its audit arm cannot be satisfied by the stated change (see reasoning).",
+    "evidence_paths": "pass \u2014 \u00a78, \u00a710 and \u00a711 each log their gate and negative control under the run's report directory, a durable path a later reader can open.",
+    "naming": "pass \u2014 the new test filenames (`test_a_warm_read_scans_the_tree_once.py`, `test_identification_is_reused_across_reads.py`, `test_a_cold_read_parses_each_plan_once.py`) carry no plan labels, ticket numbers or version tags.",
+    "reasoning": "a finding \u2014 \u00a78's scope does not reach the audit's own walk, and \u00a711 omits the audit's soup-building reader.",
+    "single_goal": "pass \u2014 \u00a78 names one deliverable (one walk per read) and explicitly defers identification reuse to \u00a710; \u00a710 names one; \u00a711 names one.",
+    "wiring": "pass \u2014 the only open followup `f-araiid-007` (`data-status=\"open\"`) names \u00a78, \u00a710 and \u00a711 and the \u00a710-after-\u00a78 ordering in its body, so the plan's remaining work has a dispatch route."
+  },
+  "section_digests": {
+    "_document": "83079040f779c7b717cf7a52a5476d91254c8004654e040305aac9b5f62b4702",
+    "s1": "71942607f4df4eca011a41734257645ef2adce9664dd45b628d96b066c34e813",
+    "s10": "5261ebecb0fa5c4351c00f324d2378797d384ba4246b22b52bc96e9dda5392d1",
+    "s11": "68e20b5a8180bfaed69f241f4be8db3d601fb69f3693eb954c6b3c16fbfb2530",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s3": "cbe34f619f869b3c3346239e8823a63a8de98dd92b7fb8ed5cfa2b8a4ab26a39",
+    "s4": "d2ec58f5ac4e72c5e8bcde1f156bdd4c85bde3848b4e3b6131e6112bb6395d49",
+    "s5": "b14c0e28c2c28544a08d4b3d7ab621f48464471360d202c7a4bd1a1ec776f557",
+    "s6": "00db597c53dfd6e3d857f89ee748a8c6ecfe51576b2b66e64772393805c59b52",
+    "s7": "503099f7e945f5038a64b142ffa49b88c02dbbd0f0a5ad5882f6da8b22d25883",
+    "s8": "835afa81ccc63cf511f82d24b5fdb2e1b56e554d4bedf8676dc93227b8d48fc2",
+    "s9": "a356ecd44b8ee634f6b45b64ec3785e3af7ffb255d4d3adf46574d3a10afc7b3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T00:50:20.222610+00:00"
+}
