@@ -51,35 +51,42 @@
     and every test file importing <code>reckon/crew/dispatch_picker.py</code> or
     <code>reckon/crew/picker/outcomes.py</code> (21 files), run in place on the
     fleet allocation with the shared environment's
-    <code>.venv/bin/python -m pytest -p no:cacheprovider -n 8</code>. Head arm
-    with the change: 191 passed, 2 failed, <code>EXIT=1</code>. Both failures are
-    stated rather than absorbed:
+    <code>.venv/bin/python -m pytest -p no:cacheprovider -n 8</code>. Base arm at
+    the pre-repair revision <code>baf5f99bf021a8211d61546c7c2e081ad3b7c28f</code>:
+    191 passed, <code>EXIT=0</code>. Head arm with the change: 194 passed,
+    <code>EXIT=0</code> — the three added tests are the whole delta and no
+    failure is added.
     <code>tests/test_dispatch_returns_without_worker.py::test_a_discarded_run_is_not_recreated</code>
-    fails at the pre-repair revision too (measured in isolation, 72 s, same
-    assertion) and is pre-existing and unrelated;
+    is timing-sensitive: it failed in an earlier head run and passed in both
+    arms here, which is recorded rather than chased.
     <code>tests/test_picker_in_dispatch.py::test_dispatch_survives_a_picker_past_the_bound</code>
-    fails at its line 202, which asserts
-    <code>picker_selection.fallback_reason == "timeout"</code> on the
-    <code>invoke</code> path — the real repository's context estimate exceeds
-    that test's 0.02 s deadline, so the stage the pick is inside is now
-    correctly named <code>context-estimate</code>. That assertion encodes the
-    bare reading this node was dispatched to remove, and the file is outside
-    this node's write scope; it is recorded as a follow-on. Its line 25
-    (the direct call) still passes. Log <code>logs/head.pytest.log</code> under
-    the run directory, ending in an <code>EXIT=</code> line.
+    now asserts the stage the production path actually produces: its
+    <code>invoke</code> path measures a real node against a real repository, so
+    the 0.02 s deadline expires inside the estimate and the fallback reads
+    <code>timeout in context-estimate</code>; its direct call measures a bare
+    <code>SimpleNamespace</code> node, whose estimate finishes inside the same
+    deadline, so that arm still reads the bare <code>timeout</code> because the
+    opaque picker call is the stage it is inside.
+    <code>tests/test_picker_pick_within_bound.py</code>'s slow-client test keeps
+    the bare reading for the same reason and asserts the estimate's recorded time
+    beside it, so the reading names the picker call rather than an unrecorded
+    stage. Logs <code>logs/base.pytest.log</code> and
+    <code>logs/head.pytest.log</code> under the run directory, each ending in an
+    <code>EXIT=</code> line.
   </p>
   <p id="a-pick-names-its-slow-stage-negative-control">
-    <strong>Negative control.</strong> The two added checks —
+    <strong>Negative control.</strong> The three added checks —
     <code>test_a_production_pick_names_the_estimate_it_ran_out_in</code> (the
-    stage is named) and
+    stage is named),
     <code>test_a_normal_production_pick_carries_all_five_stage_times</code> (the
-    caller-supplied inputs' times reach the selection) — were run against the
-    pre-repair source at
-    <code>baf5f99bf021a8211d61546c7c2e081ad3b7c28f</code>: <code>2 failed, 3
-    passed</code>, <code>EXIT=1</code>. Without the answering change the
-    fallback reads the bare <code>timeout</code> and
-    <code>stage_ms["records"]</code> stays <code>None</code>, so neither check
-    can hold. Because the working copy's <code>.git</code> is mounted read-only,
+    caller-supplied inputs' times reach the selection) and
+    <code>test_a_failed_input_build_leaves_no_stale_stage_times</code> (a failed
+    build leaves nothing for a later pick) — were run against the pre-repair
+    source at <code>baf5f99bf021a8211d61546c7c2e081ad3b7c28f</code>: <code>3
+    failed, 3 passed</code>, <code>EXIT=1</code>. Without the change the fallback
+    reads the bare <code>timeout</code>, <code>stage_ms["records"]</code> stays
+    <code>None</code>, and the stash the third check reads does not exist, so no
+    check can hold. Because the working copy's <code>.git</code> is mounted read-only,
     the pre-repair source is a <code>git archive</code> of that revision into a
     scratch tree whose <code>conftest.py</code> strips the shared environment's
     editable-install finder so the run resolves to base source (verified in the

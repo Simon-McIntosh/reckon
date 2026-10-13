@@ -199,7 +199,12 @@ def test_dispatch_survives_a_picker_past_the_bound(repo, monkeypatch):
     result, payload = invoke(repo)
     assert result.exit_code == 0, result.output
     assert payload["backend"] == "alpha"
-    assert payload["picker_selection"]["fallback_reason"] == "timeout"
+    # The dispatcher measures a real node's context here, so this pick's budget
+    # is spent in that estimate rather than in the picker call the bound also
+    # caps; the fallback names the stage it was inside, not the bare reading.
+    assert (
+        payload["picker_selection"]["fallback_reason"] == "timeout in context-estimate"
+    )
 
 
 def test_picker_route_uses_selected_backend(repo, monkeypatch):

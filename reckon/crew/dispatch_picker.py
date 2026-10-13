@@ -312,6 +312,10 @@ def dispatch_picker_selection(
         # An input the dispatcher could not build is not re-read here: the same
         # source that failed once would only fail again, so the picker's own
         # pick is skipped and the failure is named in the recorded fallback.
+        # This pick consumes no build times, so the stash is cleared here too: a
+        # builder that failed part-way left a partial map on the thread, and a
+        # later pick on it must read its own build rather than this one's.
+        _BUILD_STAGE_MS.times = None
         return _picker_fallback(
             "; ".join(f"{name}: {detail}" for name, detail in input_errors.items()),
             comment,

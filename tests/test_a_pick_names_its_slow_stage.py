@@ -177,6 +177,32 @@ def test_a_normal_production_pick_carries_all_five_stage_times(monkeypatch, tmp_
         assert isinstance(result["stage_ms"][stage], (int, float)), stage
 
 
+def test_a_failed_input_build_leaves_no_stale_stage_times(monkeypatch, tmp_path):
+    """A build that failed part-way leaves nothing for the next pick to read."""
+
+    def boom(*_args, **_kwargs):
+        raise RuntimeError("input build failed")
+
+    _quiet_inputs(monkeypatch)
+    monkeypatch.setattr(dispatch_picker_module, "_picker_verdict_inputs", boom)
+    records, verdicts, budget, errors = dispatch_picker_module.build_picker_inputs(
+        "proj", {}, tmp_path
+    )
+    assert errors
+    result = dispatch_picker_module.dispatch_picker_selection(
+        node=SimpleNamespace(),
+        config={},
+        project="proj",
+        repo=tmp_path,
+        records=records,
+        verdict_inputs=verdicts,
+        budget_snapshot=budget,
+        input_errors=errors,
+    )
+    assert result["action"] == "fallback"
+    assert dispatch_picker_module._BUILD_STAGE_MS.times is None
+
+
 def test_outcomes_classify_a_staged_timeout_by_its_stage():
     """A summary separates a staged timeout from the bare unattributed one."""
     assert outcomes._fallback_kind("timeout in budget-snapshot") == (
