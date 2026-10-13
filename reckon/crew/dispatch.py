@@ -222,6 +222,43 @@ def _queued_share_cap(backend: Mapping[str, Any]) -> object:
     return _lane_document.read_lane_admission(payload).get("fair_share")
 
 
+def _offered_local_backend(
+    selection: Mapping[str, Any] | None, config: Mapping[str, Any]
+) -> str | None:
+    """The local backend among a picker answer's offered candidates, or ``None``.
+
+    A picker answer lists the candidates it weighed, each marked with the lane
+    it names. A hold whose offered candidates include the local lane is a wait
+    for that lane, not a refusal, so the caller continues the request there. The
+    local backend is the configured ``local_backend``; a candidate is local when
+    the picker marked it so, or when its backend names the configured local lane.
+    """
+    if selection is None:
+        return None
+    local_backend = str(config.get("local_backend") or "").strip()
+    if not local_backend:
+        return None
+    for candidate in selection.get("offered") or ():
+        if not isinstance(candidate, Mapping):
+            continue
+        name = str(candidate.get("backend") or "")
+        if candidate.get("local") is True or name == local_backend:
+            return name or local_backend
+    return None
+
+
+def _overridden_hold_route_mode() -> str:
+    """The route mode a hold continued onto its offered local lane records.
+
+    Imported lazily: the picker package's ``__init__`` pulls the snapshot and
+    lane-context modules, which import back into this one, so resolving the
+    constant at module load would read a partially initialized dispatcher.
+    """
+    from reckon.crew.picker.outcomes import OVERRIDDEN_HOLD_ROUTE_MODE
+
+    return OVERRIDDEN_HOLD_ROUTE_MODE
+
+
 def shadow_source(
     run_id: str,
     *,
@@ -681,6 +718,27 @@ def dispatch(
             budget_snapshot=picker_budget,
             input_errors=picker_input_errors,
         )
+    # A hold whose offered candidates include the local lane is a wait for that
+    # lane, not a refusal: the request is validated and continued there, and the
+    # lane allowance then launches it if the lane has room or queues it. The hold
+    # is kept aside so the run still records Jev's answer, and the picker-hold
+    # record is written with the run it became.
+    held_selection: dict[str, Any] | None = None
+    if (
+        picker_selection is not None
+        and resolve_dispatch_route(config, route) == "picker"
+        and picker_selection.get("action") == "hold"
+    ):
+        held_local_backend = _offered_local_backend(picker_selection, config)
+        if held_local_backend:
+            held_selection = picker_selection
+            picker_selection = {
+                **picker_selection,
+                "action": "route",
+                "backend": held_local_backend,
+                "local": True,
+            }
+            local = True
     try:
         resolution = plan_dispatch(
             node=node,
@@ -965,6 +1023,22 @@ def dispatch(
                 "position": position,
                 "reason": lane_allowance.get("reason"),
             }
+            if held_selection is not None:
+                # The hold that offered the local lane is kept in the outcome
+                # history, marked queued with the run it became, so a reader of
+                # the holds file reads Jev's answer and where it landed.
+                from reckon.crew.picker.outcomes import record_picker_hold
+
+                record_picker_hold(
+                    project=project,
+                    docs=Path(str(authority["plan"]["docs"])),
+                    node=node.id,
+                    plan=node.plan,
+                    selection=held_selection,
+                    reason=_picker_refusal_reasons(held_selection),
+                    run_id=str(queued["run_id"]),
+                    queued=True,
+                )
             raise held
         raise LaneHeld(lane_allowance)
 
@@ -1517,9 +1591,14 @@ def dispatch(
             "dialect": None,
             "budget": _backends.unknown_budget("no events yet"),
             "budget_fallback": budget_fallback,
-            "picker_selection": picker_selection,
+            "picker_selection": held_selection or picker_selection,
             "route_mode": (
-                "explicit"
+                # A hold overridden onto the local lane it offered is its own
+                # route mode, so a reader can count a hold the dispatcher
+                # continued rather than tuning it in with the shadow picks.
+                _overridden_hold_route_mode()
+                if held_selection is not None
+                else "explicit"
                 if backend_name
                 == str(
                     backend_override
