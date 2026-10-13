@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.98">
-<meta name="plan-version" content="273">
+<meta name="plan-version" content="274">
 <meta name="plan-modified" content="2026-10-13">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
@@ -761,9 +761,15 @@
     <pre class="r-fu-prompt">/reckon-build the-suite-is-green-at-head §3</pre>
     <p class="r-fu-outcome">the three load-only ids pass in three consecutive -n 8 runs at 77362a554 with no code change (merge e554dce74); §3's remaining measure is the bounded full run, carried by f-tsigah-bounded-full-run</p>
     </article>
-<article class="r-fu" data-id="f-tsigah-bounded-full-run" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-12" data-recommends-skill="/reckon-build the-suite-is-green-at-head §3" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tsigah-bounded-full-run" data-status="resolved" data-written-by="reckon-build" data-written-at="2026-10-12" data-recommends-skill="/reckon-build the-suite-is-green-at-head §3" data-resolved-at="2026-10-13T00:14:18+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Measure the bounded full run (§3)</h4>
     <div class="r-fu-body"><p>§3's last measure: the full suite under <code>-n 8</code> on the fleet node, in a stated wall time, with zero failures apart from ids attributed to a named owner outside this plan. Two follower-reload ids failed at base on 2026-10-12 and need that attribution.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-suite-is-green-at-head §3</pre>
+    <p class="r-fu-outcome">measured at a7a9cf3d2: bounded at 39:36 with no timeout, but red on 30 ids; the deterministic groups are carried by f-tsigah-red-at-a7a9cf3d2</p>
+    </article>
+<article class="r-fu" data-id="f-tsigah-red-at-a7a9cf3d2" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-13" data-recommends-skill="/reckon-build the-suite-is-green-at-head §3" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Repair the deterministic red groups at a7a9cf3d2 (§3)</h4>
+    <div class="r-fu-body"><p>One node per group, from the bounded run's report: the worker-window bound (<code>routing.py</code> and <code>tests/test_crew.py</code>); the four tests pinned to the claude-code harness reference; the section-reader census; and the dispatch-speed, ledger-race and teardown-guard ids. The live-state ids (<code>test_mcp_census</code>, cross-project conformance) need their state isolated. The follower family stays in the load class. Then re-run the bounded full run.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-suite-is-green-at-head §3</pre>
     </article>
 </section>
@@ -1496,6 +1502,9 @@ reviewed worktree is untouched (git status --porcelain empty).</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261012T231148050511-bounded-full-run-at-head" data-who="reckon-build" data-when="2026-10-13T00:11:15.103Z">
     <div class="r-comment-body"><p>Full suite under -n 8 --timeout=300 at a7a9cf3d2 (fleet node, job 1281970):  |28 failed, 13101 passed, 79 skipped, 2 teardown errors in 2376.78s (39:36), EXIT=1</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-s3-bounded-run-1013" data-who="reckon-build" data-when="2026-10-13T00:20:00Z">
+    <div class="r-comment-body"><p>The bounded full run at <code>a7a9cf3d2</code> completes in 39:36 under <code>-n 8</code> with no timeout, but it is red on 30 ids. Thirteen are the load-sensitive follower family; the rest are deterministic groups new since this morning, named for repair. <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed.html#s3-bounded-full-run-1012">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260928T142353317590-s21-audit-placement" data-who="reckon-build" data-when="2026-09-28T15:23:36.908Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/the-suite-is-green-at-head/s21-audit-placement.html</p></div>
