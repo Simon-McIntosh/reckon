@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "f43cf0a8c8e86125ece11f4ef7c9afe7f717a0cb",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/promotion_release.py:407",
+    "reckon/crew/routing.py:1454",
+    "reckon/crew/routing.py:2242",
+    "reckon/crew/routing.py:2256",
+    "reckon/crew/routing.py:2957",
+    "reckon/crew/dispatch.py:1863"
+  ],
+  "completed_at": "2026-10-13T05:22:35.703Z",
+  "dispatched_at": "2026-10-13T05:06:56Z",
+  "findings": [
+    {
+      "file": "tests/test_staged_write_inventory.py",
+      "line": "54",
+      "severity": "follow-on",
+      "text": "follow-on: the gained commit declares `reckon/crew/routing.py::_release_worktree_whole` as a staged writer in tests/test_staged_write_inventory.py:54, a file outside the node's declared write paths (reckon/crew/promotion_release.py, reckon/crew/routing.py, tests/test_a_worktree_release_is_whole.py); the edit is necessary, since the census observes the helper's rename (running the gate at 349ee98cc reports the extra item when the declaration is absent), but the node was not fenced to the file."
+    },
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "1117",
+      "severity": "follow-on",
+      "text": "follow-on: `_releasable_roots` (reckon/crew/routing.py:1109) still documents 'a tree someone registered by hand elsewhere - is not' releasable, but the gained commit removed the location rule from `_release_withhold_reason` (routing.py:1197), so a registered linked worktree outside every releasable root is now released whole (tests/test_a_worktree_release_is_whole.py:305); the docstring no longer describes the code."
+    }
+  ],
+  "head_log_revision": "d3e4b44f7229d52cf1e088c3a3a81829053d8d71",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read the single gained commit 349ee98cc against base 443210f83 commit by commit; it drops the location rule and its branch in routing.py:1176-1197, rewrites one release case and adds a main-checkout case in tests/test_a_worktree_release_is_whole.py, adds census declarations at tests/test_staged_write_inventory.py:50 and :54, and updates the evidence fragment's gate counts.",
+    "done_when": "the node's done_when asks for the release suite, the wide-claim caller test, the gc tests, the promotion suite, the gate-log suite and the negative controls; the manifest records 13/3/27/5 and the six population cases EXIT=0 with both controls EXIT=1, and logs/gate-newfile.log records 13 passed at the reviewed content.",
+    "goal": "the gained commit keeps the node's contract, a tree is a release candidate only when the repository registers it and it is neither the repository, an ancestor nor the main checkout (reckon/crew/routing.py:1176), and shifts the location judgement to the caller; the node goal, a worktree released whole or not at all, is unchanged.",
+    "manifest": "read manifest.md; status complete at head 349ee98cc, gates 13/3/27/5 plus six population cases EXIT=0, two negative controls EXIT=1.",
+    "write_paths": "read the manifest's declared paths (reckon/crew/promotion_release.py, reckon/crew/routing.py, tests/test_a_worktree_release_is_whole.py); the gained commit stays inside them for routing.py and the release test but also edits tests/test_staged_write_inventory.py:54, outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_worktree_release_is_whole.py:305 reddens if the location rule returns (asserts released True, the tree gone, deregistered and no trash) and :329 reddens if the identity guard drops (asserts the checkout keeps its .git), both independent of the value under test.",
+    "evidence": "logs/gate-newfile.log (13 passed) and the six-case logs/gate-population.log (6 passed) are EXIT=0, but they name no revision and the population arm logs/head-arm.log ran at d3e4b44f7, not the reviewed head, so the per-file result covers the head by content rather than by a recorded revision.",
+    "fit": "the message rewrite at routing.py:1194 and the new test names follow the module's mechanism-naming style, though the untouched `_releasable_roots` docstring at routing.py:1117 now contradicts the behaviour (see finding).",
+    "goal_fidelity": "reckon/crew/routing.py:1180 now judges a registered linked worktree by identity alone and holds the whole-or-nothing rename at routing.py:1240, which is the node's stated contract.",
+    "reuse": "the gained commit adds no definition; it deletes the location branch and leaves `_releasable_roots` (routing.py:1109) serving its remaining callers, extending the existing owner rather than duplicating it.",
+    "scope_discipline": "the gained diff adds two census declarations in tests/test_staged_write_inventory.py, a file outside the declared write paths, acknowledged in the manifest's follow_ons but still outside the fence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the gained commit keeps the node's contract, a tree is a release candidate only when the repository registers it and it is neither the repository, an ancestor nor the main checkout (reckon/crew/routing.py:1176), and shifts the location judgement to the caller; the node goal, a worktree released whole or not at all, is unchanged.\nVERDICT done_when: the node's done_when asks for the release suite, the wide-claim caller test, the gc tests, the promotion suite, the gate-log suite and the negative controls; the manifest records 13/3/27/5 and the six population cases EXIT=0 with both controls EXIT=1, and logs/gate-newfile.log records 13 passed at the reviewed content.\nVERDICT write_paths: read the manifest's declared paths (reckon/crew/promotion_release.py, reckon/crew/routing.py, tests/test_a_worktree_release_is_whole.py); the gained commit stays inside them for routing.py and the release test but also edits tests/test_staged_write_inventory.py:54, outside them.\nVERDICT manifest: read manifest.md; status complete at head 349ee98cc, gates 13/3/27/5 plus six population cases EXIT=0, two negative controls EXIT=1.\nVERDICT diff: read the single gained commit 349ee98cc against base 443210f83 commit by commit; it drops the location rule and its branch in routing.py:1176-1197, rewrites one release case and adds a main-checkout case in tests/test_a_worktree_release_is_whole.py, adds census declarations at tests/test_staged_write_inventory.py:50 and :54, and updates the evidence fragment's gate counts.\nREVIEWED_BASE_SHA: 443210f83f5ac9b72313f89cdeba67b4979c3e33\nREVIEWED note: the gained diff starts at 443210f83, the head of the preceding review of this run.\nREVIEWED_HEAD_SHA: 349ee98cc3a8d4d5583e9ca95f542e5e01d63a02\nCALL_SITES: reckon/crew/promotion_release.py:407, reckon/crew/routing.py:1454, reckon/crew/routing.py:2242, reckon/crew/routing.py:2256, reckon/crew/routing.py:2957, reckon/crew/dispatch.py:1863\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/routing.py:1180 now judges a registered linked worktree by identity alone and holds the whole-or-nothing rename at routing.py:1240, which is the node's stated contract.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/gate-newfile.log (13 passed) and the six-case logs/gate-population.log (6 passed) are EXIT=0, but they name no revision and the population arm logs/head-arm.log ran at d3e4b44f7, not the reviewed head, so the per-file result covers the head by content rather than by a recorded revision.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: the gained diff adds two census declarations in tests/test_staged_write_inventory.py, a file outside the declared write paths, acknowledged in the manifest's follow_ons but still outside the fence.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_worktree_release_is_whole.py:305 reddens if the location rule returns (asserts released True, the tree gone, deregistered and no trash) and :329 reddens if the identity guard drops (asserts the checkout keeps its .git), both independent of the value under test.\nSCORE fit: 17\nJUSTIFICATION fit: the message rewrite at routing.py:1194 and the new test names follow the module's mechanism-naming style, though the untouched `_releasable_roots` docstring at routing.py:1117 now contradicts the behaviour (see finding).\nSCORE reuse: 20\nJUSTIFICATION reuse: the gained commit adds no definition; it deletes the location branch and leaves `_releasable_roots` (routing.py:1109) serving its remaining callers, extending the existing owner rather than duplicating it.\nFINDING tests/test_staged_write_inventory.py:54 follow-on: the gained commit declares `reckon/crew/routing.py::_release_worktree_whole` as a staged writer in a file outside the node's declared write paths; the edit is necessary, since running the gate at 349ee98cc reports the extra item when the declaration is absent, but the node was not fenced to the file.\nFINDING reckon/crew/routing.py:1117 follow-on: `_releasable_roots` still documents 'a tree someone registered by hand elsewhere - is not' releasable, but the gained commit removed the location rule from `_release_withhold_reason` (routing.py:1197), so a registered linked worktree outside every releasable root is now released whole (tests/test_a_worktree_release_is_whole.py:305); the docstring no longer describes the code.\n",
+  "review_run_id": "r-20261013T050628223681-review-of-a-worktree-release-is-whole-349ee98cc3a8",
+  "reviewed_base_sha": "443210f83f5ac9b72313f89cdeba67b4979c3e33",
+  "reviewed_head_sha": "349ee98cc3a8d4d5583e9ca95f542e5e01d63a02",
+  "reviewed_run_id": "r-20261012T051827498181-a-worktree-release-is-whole",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T05:23:56.151782+00:00",
+  "total": 103
+}
