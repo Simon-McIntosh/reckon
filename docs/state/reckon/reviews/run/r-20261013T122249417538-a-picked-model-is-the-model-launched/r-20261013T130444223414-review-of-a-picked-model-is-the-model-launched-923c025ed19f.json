@@ -1,0 +1,101 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite at 43846824a (3 failed, 312 passed, EXIT=1) and after_suite at e079e09d3 (315 passed, EXIT=0). The base failures are the three new tests in tests/test_a_picked_model_is_the_model_launched.py, absent at base by design; the head arm adds no failure the base arm did not carry, so added_failure_count is 0.",
+  "after_suite": {
+    "command": "PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -n 8 -q tests/test_a_picked_model_is_the_model_launched.py tests/test_a_brief_points_rather_than_quotes.py tests/test_brief_beside_a_plan_section.py tests/test_crew.py tests/test_crew_launch_resolution.py tests/test_crew_refusal_visibility.py tests/test_dispatch_names_its_backend.py tests/test_lane_advisory_on_dispatch.py tests/test_orchestrator_lane_fence.py tests/test_resume_anchors_the_run_harness_home.py tests/test_routing_picker_key.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T122249417538-a-picked-model-is-the-model-launched/logs/head-arm.log",
+    "revision": "e079e09d3af3e47f723725a27e6e6b6b05a8f247"
+  },
+  "baseline_suite": {
+    "command": "PYTHONPATH=/tmp/negcontrol-a-picked-model /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -n 8 -q tests/test_a_picked_model_is_the_model_launched.py tests/test_a_brief_points_rather_than_quotes.py tests/test_brief_beside_a_plan_section.py tests/test_crew.py tests/test_crew_launch_resolution.py tests/test_crew_refusal_visibility.py tests/test_dispatch_names_its_backend.py tests/test_lane_advisory_on_dispatch.py tests/test_orchestrator_lane_fence.py tests/test_resume_anchors_the_run_harness_home.py tests/test_routing_picker_key.py",
+    "completed": true,
+    "exit_status": 1,
+    "failure_count": 3,
+    "failure_ids": [
+      "tests/test_a_picked_model_is_the_model_launched.py::test_a_picked_model_reaches_the_launch_argv",
+      "tests/test_a_picked_model_is_the_model_launched.py::test_the_picked_model_is_recorded_on_the_run",
+      "tests/test_a_picked_model_is_the_model_launched.py::test_a_model_the_lane_does_not_declare_is_refused"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T122249417538-a-picked-model-is-the-model-launched/logs/base-arm.log",
+    "revision": "43846824a223550605d0f9ed51e21c433fe10fdf"
+  },
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch.py:704",
+    "reckon/crew/dispatch.py:882",
+    "reckon/crew_dispatch_commands.py:1330",
+    "reckon/crew_dispatch_commands.py:1379",
+    "reckon/crew_dispatch_commands.py:1610"
+  ],
+  "completed_at": "2026-10-13T13:16:53.694Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "exempted",
+      "reason": "carried by lane-and-model-routing \u00a723 (d77fb4384): one resolver beside ledger.resolve_name narrows a model for --model and a picker route. It cannot be folded into this run because it writes reckon/crew_dispatch_commands.py, which \u00a714, \u00a716 and \u00a717 hold first",
+      "recorded_at": "2026-10-13T13:18:32.161683+00:00"
+    }
+  },
+  "dispatched_at": "2026-10-13T13:05:13Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_plan.py",
+      "line": "207",
+      "severity": "follow-on",
+      "text": "follow-on: _backend_serving_picked_model re-implements the model-narrowing capability owned by reckon/crew_dispatch_commands.py:455 _model_narrowed_backend, matching config fields by hand instead of calling ledger.resolve_name (reckon/ledger.py:228) which the module already imports, so the two surfaces can diverge (a catalogue-only historical alias resolves via --model but is refused by this helper), contradicting the docstring's \"exactly as --model resolves a named pair\"."
+    },
+    {
+      "file": "tests/test_a_picked_model_is_the_model_launched.py",
+      "line": "200",
+      "severity": "follow-on",
+      "text": "follow-on: the argv assertion rebuilds the launch plan from the literal backend name \"codex-astra\" the test itself supplies instead of from payload[\"backend\"], so it verifies the flight fixture expands the model rather than that dispatch resolved it, and would stay green on a regression that only the payload assertions at :189-191 catch."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read e079e09d3 and 923c025ed against base 43846824a; reckon/crew/dispatch_plan.py adds _backend_serving_picked_model (51 lines) and its call in plan_dispatch, a 237-line test file is added, and a 43-line evidence fragment lands; +331/-0 across three files, all in scope.",
+    "done_when": "the done_when's three cases are each a test in tests/test_a_picked_model_is_the_model_launched.py (argv carries gpt-6-astra at :200, the record reads model_key astra at :221, an undeclared model is refused naming lane and model at :224); the manifest records head 315 passed EXIT=0 and base 3 failed/312 passed EXIT=1, the three failures being exactly those cases.",
+    "goal": "the node goal is that a picker route applies the selected model as well as its backend; reckon/crew/dispatch_plan.py:346-352 resolves picker_selection[\"model\"] to the picked lane's model entry through _backend_serving_picked_model before role resolution, so a codex:astra pick launches gpt-6-astra where the base launched the lane default gpt-6-sol.",
+    "manifest": "read; status complete, it names commits e079e09d3 and 923c025ed, the head-arm/base-arm logs, and structured baseline_suite/after_suite arms (completed true, base 3 failures the three new tests, head 0), and its landing line states the mechanism.",
+    "write_paths": "the manifest declares reckon/crew/dispatch_plan.py, tests/test_a_picked_model_is_the_model_launched.py, docs/evidence/fragments/lane-and-model-routing/a-picked-model-is-the-model-launched.html and a figures dir; the diff touches the first three only and creates no figure, so every path the change reaches is inside the fence."
+  },
+  "justifications": {
+    "durability": "the base arm reddens all three tests (logs/base-arm.log) so the assertions at tests/test_a_picked_model_is_the_model_launched.py:200,221,228 fail on the reverted source, but the launch_plan assertion at :200 builds its backend from the literal \"codex-astra\" the test supplies rather than the resolved payload, so it would hold even if dispatch regressed and only the payload assertions at :189-191 carry the guard.",
+    "evidence": "the done_when's three cases are tests/test_a_picked_model_is_the_model_launched.py:200,221,228; both arms are logged with revision/tree/command headers and the base arm at 43846824a fails exactly those three (logs/base-arm.log) against head 315 passed (logs/head-arm.log).",
+    "fit": "_backend_serving_picked_model at reckon/crew/dispatch_plan.py:207 sits beside plan_dispatch with the module's docstring style and a descriptive name, and its comments carry no plan, sprint or issue label.",
+    "goal_fidelity": "reckon/crew/dispatch_plan.py:350 sets requested_backend to _backend_serving_picked_model(config, backend_name=named_backend, model=picked_model), which resolve_role_override turns into backend codex-astra and agent model gpt-6-astra in the dry-run payload.",
+    "reuse": "the new helper duplicates the model-to-backend narrowing the repository already owns at reckon/crew_dispatch_commands.py:455 (_model_narrowed_backend), which resolves the same model key/id/alias through ledger.resolve_name (:228) that dispatch_plan.py already imports, rather than extending that owner.",
+    "scope_discipline": "git diff 43846824a..923c025ed touches only reckon/crew/dispatch_plan.py, tests/test_a_picked_model_is_the_model_launched.py and the fragment, each inside the declared write paths, +331/-0 with nothing the goal does not imply."
+  },
+  "node": "review-of-a-picked-model-is-the-model-launched-923c025ed19f",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a picker route applies the selected model as well as its backend; reckon/crew/dispatch_plan.py:346-352 resolves picker_selection[\"model\"] to the picked lane's model entry through _backend_serving_picked_model before role resolution, so a codex:astra pick launches gpt-6-astra where the base launched the lane default gpt-6-sol.\nVERDICT done_when: the done_when's three cases are each a test in tests/test_a_picked_model_is_the_model_launched.py (argv carries gpt-6-astra at :200, the record reads model_key astra at :221, an undeclared model is refused naming lane and model at :224); the manifest records head 315 passed EXIT=0 and base 3 failed/312 passed EXIT=1, the three failures being exactly those cases.\nVERDICT write_paths: the manifest declares reckon/crew/dispatch_plan.py, tests/test_a_picked_model_is_the_model_launched.py, docs/evidence/fragments/lane-and-model-routing/a-picked-model-is-the-model-launched.html and a figures dir; the diff touches the first three only and creates no figure, so every path the change reaches is inside the fence.\nVERDICT manifest: read; status complete, it names commits e079e09d3 and 923c025ed, the head-arm/base-arm logs, and structured baseline_suite/after_suite arms (completed true, base 3 failures the three new tests, head 0), and its landing line states the mechanism.\nVERDICT diff: read e079e09d3 and 923c025ed against base 43846824a; reckon/crew/dispatch_plan.py adds _backend_serving_picked_model (51 lines) and its call in plan_dispatch, a 237-line test file is added, and a 43-line evidence fragment lands; +331/-0 across three files, all in scope.\nCALL_SITES: reckon/crew/dispatch.py:704, reckon/crew/dispatch.py:882, reckon/crew_dispatch_commands.py:1330, reckon/crew_dispatch_commands.py:1379, reckon/crew_dispatch_commands.py:1610\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_plan.py:350 sets requested_backend to _backend_serving_picked_model(config, backend_name=named_backend, model=picked_model), which resolve_role_override turns into backend codex-astra and agent model gpt-6-astra in the dry-run payload.\nSCORE evidence: 18\nJUSTIFICATION evidence: the done_when's three cases are tests/test_a_picked_model_is_the_model_launched.py:200,221,228; both arms are logged with revision/tree/command headers and the base arm at 43846824a fails exactly those three (logs/base-arm.log) against head 315 passed (logs/head-arm.log).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 43846824a..923c025ed touches only reckon/crew/dispatch_plan.py, tests/test_a_picked_model_is_the_model_launched.py and the fragment, each inside the declared write paths, +331/-0 with nothing the goal does not imply.\nSCORE durability: 17\nJUSTIFICATION durability: the base arm reddens all three tests (logs/base-arm.log) so the assertions at tests/test_a_picked_model_is_the_model_launched.py:200,221,228 fail on the reverted source, but the launch_plan assertion at :200 builds its backend from the literal \"codex-astra\" the test supplies rather than the resolved payload, so it would hold even if dispatch regressed and only the payload assertions at :189-191 carry the guard.\nSCORE fit: 18\nJUSTIFICATION fit: _backend_serving_picked_model at reckon/crew/dispatch_plan.py:207 sits beside plan_dispatch with the module's docstring style and a descriptive name, and its comments carry no plan, sprint or issue label.\nSCORE reuse: 4\nJUSTIFICATION reuse: the new helper duplicates the model-to-backend narrowing the repository already owns at reckon/crew_dispatch_commands.py:455 (_model_narrowed_backend), which resolves the same model key/id/alias through ledger.resolve_name (:228) that dispatch_plan.py already imports, rather than extending that owner.\nFINDING reckon/crew/dispatch_plan.py:207 follow-on: _backend_serving_picked_model re-implements the model-narrowing capability owned by reckon/crew_dispatch_commands.py:455 _model_narrowed_backend, matching config fields by hand instead of calling ledger.resolve_name (reckon/ledger.py:228) which the module already imports, so the two surfaces can diverge (a catalogue-only historical alias resolves via --model but is refused by this helper), contradicting the docstring's \"exactly as --model resolves a named pair\".\nFINDING tests/test_a_picked_model_is_the_model_launched.py:200 follow-on: the argv assertion rebuilds the launch plan from the literal backend name \"codex-astra\" the test itself supplies instead of from payload[\"backend\"], so it verifies the flight fixture expands the model rather than that dispatch resolved it, and would stay green on a regression that only the payload assertions at :189-191 catch.\n",
+  "review_run_id": "r-20261013T130444223414-review-of-a-picked-model-is-the-model-launched-923c025ed19f",
+  "reviewed_base_sha": "43846824a223550605d0f9ed51e21c433fe10fdf",
+  "reviewed_head_sha": "923c025ed19fc853625b867273064acd8587cf6e",
+  "reviewed_run_id": "r-20261013T122249417538-a-picked-model-is-the-model-launched",
+  "reviewer_run_id": "r-20261013T130444223414-review-of-a-picked-model-is-the-model-launched-923c025ed19f",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 4,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "test_logs": [
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T122249417538-a-picked-model-is-the-model-launched/logs/base-arm.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T122249417538-a-picked-model-is-the-model-launched/logs/head-arm.log"
+  ],
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T13:19:48.830479+00:00",
+  "total": 95
+}

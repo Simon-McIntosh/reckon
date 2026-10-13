@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-north-star" content="unattended-execution">
 <meta name="plan-impl" content="0.8823529411764706">
-<meta name="plan-version" content="105">
+<meta name="plan-version" content="106">
 <meta name="plan-modified" content="2026-10-13">
 </head>
 <body>
@@ -405,6 +405,9 @@
 </div>
 <div class="r-comment" data-section="s22" data-id="c-s22-split-the-pick-stage" data-who="" data-when="2026-10-13">
     <div class="r-comment-body"><p>Also owed before §22 dispatches, measured from §20's first production timings on 2026-10-13. The stage §20 calls <code>jev</code> times the whole <code>pick()</code> call, not the Jev HTTP request. Across seven successful picks between 11:58Z and 12:21Z, that stage took 487–2,437 ms while <code>jev_latency_ms</code>, the HTTP request alone, took 313–622 ms. The rest is local work inside <code>pick()</code>. The one timed-out pick, <code>r-20261013T122249417538</code>, finished its input stages in about 930 ms and spent over 4 s inside <code>pick()</code>, and nothing records how much of that was the request. §22 should split that stage into the steps <code>pick()</code> runs (candidate scan, state rendering, the HTTP request) and name the one a deadline expires in. Renaming the bare reading to <code>timeout in jev</code> alone would blame Jev for local work.</p></div>
+</div>
+<div class="r-comment" data-section="s21" data-id="c-run-r-20261013T130444223414-review-of-a-picked-model-is-the-model-launched-923c025ed19f" data-who="reckon-build" data-when="2026-10-13T13:16:53.694Z">
+    <div class="r-comment-body"><p>review of a-picked-model-is-the-model-launched (r-20261013T122249417538 @ 923c025ed19f, base 43846824a223): verdict recorded, no finding blocks. The picker route applies the selected model — reckon/crew/dispatch_plan.py:350 resolves picker_selection.model through _backend_serving_picked_model to the picked lane&#x27;s model entry, launching gpt-6-astra and recording model_key astra, and refusing an undeclared model by name; the base arm reddens exactly the three new tests. Scores goal_fidelity 19, evidence 18, scope_discipline 19, durability 17, fit 18, reuse 4 (total 95). Two follow-on findings: reckon/crew/dispatch_plan.py:207 duplicates the model-narrowing capability owned by reckon/crew_dispatch_commands.py:455 _model_narrowed_backend instead of extending ledger.resolve_name, and tests/test_a_picked_model_is_the_model_launched.py:200 asserts on a backend name the test supplies rather than the resolved payload.</p></div>
 </div>
 </section>
 </main>
