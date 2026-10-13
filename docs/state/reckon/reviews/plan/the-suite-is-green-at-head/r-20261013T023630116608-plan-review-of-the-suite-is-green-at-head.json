@@ -1,0 +1,60 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-13T02:43:34.449Z",
+  "dispatched_at": "2026-10-13T02:37:13Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-suite-is-green-at-head.html:60",
+      "id": "reasoning-1",
+      "reason": "the section's remaining plan for those ids (relax or justify a wall-clock bound) targets contention the plan's own evidence says is not the cause, so a node could close \u00a73 without finding the shared cause the followup says \u00a73 owes.",
+      "text": "\u00a73 lists test_follower_checks_its_owner and test_follower_freshness under \"Load-sensitive ids found during \u00a72. Each passes alone and fails when several test processes contend\" and explains them as \"real follower subprocesses with 2\u20138 s waits\", but the plan's own bounded run at a7a9cf3d2 (line 1562) and the open repair-wave followup (line 827) record the fourteen follower-family ids as failing alone with zero emissions \u2014 a deterministic shared cause, not load contention \u2014 so the mechanism \u00a73 names for the family it carries is the wrong one",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-suite-is-green-at-head.html:94",
+      "id": "done_when-1",
+      "reason": "a done-when that can be met by prose rather than a green id gives \u00a73 a closure path that proves nothing about the follower family, which is the section's remaining substantive work.",
+      "text": "the \u00a73 \"Load-sensitive ids robust\" row reads \"Each id listed above passes in three consecutive -n 8 full-file runs, or is recorded with the contention it measures and why its bound cannot be relaxed\", so a node can satisfy it by writing a justification for every id without any of them passing \u2014 the second arm cannot fail",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "6170af5ff152d0c0fb1f3dc9bc662b6d4bd96929bab7b65b686e9d2f12628fb3",
+  "plan_slug": "the-suite-is-green-at-head",
+  "plan_version": 275,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261013T023630116608-plan-review-of-the-suite-is-green-at-head",
+  "reviewed_blob_sha": "da5a2308c7884c23af1d268a4bf122fead1f27fa",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited research doc (docs/research/suite-failures-at-head.html), the landed-evidence archive (docs/evidence/archive/the-suite-is-green-at-head-landed.html), every figure under docs/figures/the-suite-is-green-at-head/, the named test and source files, the cited symbols (_run_file_is_binary, _bound_run_file, _PLAN_SECTION_REFERENCE, IMAGE_BYTES_OPENED, the declared_dimension_floors/record_finding_disposition block), and the cited commits all resolve; the one sha \u00a712 names as unresolvable (5b5c6c6454d20a64a793120fdaf7889da1a2a898) is confirmed absent as a git object and present in the record it names, so \u00a712's premise is accurate.",
+    "done_when": "a finding \u2014 \u00a73's \"Load-sensitive ids robust\" row carries an excuse arm that no run can falsify.",
+    "evidence_paths": "pass \u2014 landed evidence and gate logs sit under crew/reports and the crew run directory (e.g. crew/reports/reckon/suite-green-at-head/... and ~/.config/reckon/crew/runs/<run>/), both durable, none in a node-local temp path.",
+    "naming": "pass \u2014 the new artifacts are named by what they hold (reckon/crew/review_dispositions.py, tests/test_crew_shadow.py, tests/test_report_section_reference_uses_the_core.py), with no plan labels, ticket numbers or version tags.",
+    "reasoning": "a finding \u2014 \u00a73's stated cause for the follower-family ids contradicts the plan's own latest measurement and its open followup.",
+    "single_goal": "pass \u2014 each of \u00a74\u2013\u00a714 names one deliverable (one module split, one test-file move, one census/grammar/reference/record/ledger/guard repair), and \u00a73 is a single measure section.",
+    "wiring": "pass \u2014 the section dependencies are declared (in \u00a76 and \u00a710 prose and in the open repair-wave followup at line 827: \u00a710 waits on a-read-answers-inside-its-deadline \u00a78, \u00a76 on the run a-worktree-release-is-whole, the rest independent), and each named target resolves \u2014 the plan a-read-answers-inside-its-deadline exists with \u00a78 \"One read scans the resource tree once\" writing resources.py, and a-worktree-release-is-whole resolves to a live run directory."
+  },
+  "section_digests": {
+    "_document": "de761ba0e2e9f1adf93958674c2799d00cfb6caf90544ec632635ff4fdb83966",
+    "s1": "93d7e8eb3f04bb8d9aad0f5ac7d68a9d009b7fe7feaa6f4932738242154d8d4d",
+    "s10": "9633fb928a6c720c8fae74ed3da0a5f7ed555c4230f29ebf2ee89e5432566bb1",
+    "s11": "3e9c94371cc0b22adeb21c71a08fdd16433d8b4c1a22e73cd63d1171332089ba",
+    "s12": "dd8650523d29d87e6fa41408db7d0440cf17dfbd57f0ab6da0d5fcd223692d95",
+    "s13": "7b00f23667f49ba7de16f8823860c86ad35a562eebddf434fd1a6b9f1f5e9993",
+    "s14": "1469c86b5327d2429ce07b9ddd2fbca586d8831acb94119f8a187e315f48dcf7",
+    "s2": "d8e1d44eab3d041cfa8f08f045885bcf9a783d27f0cb613fe7de2c0476c13887",
+    "s3": "20817cc9e1be450cdae7f6c383f0346e2f138ffda6e4eb2d038a177b588b0a2f",
+    "s4": "e7003c1b5457d6229da28b7d90f825f0e3ef67be2a012291c12a2daf14bf2273",
+    "s5": "934ff53a2b41de523672b7760ab4bbe2e8be5d3da6b580c600383ac0217825a2",
+    "s6": "f303e134582668c776b576622bada8b11c616551d62518da4675a7ac233a379c",
+    "s7": "655ef45aae9c9f31c0c67cb28422cff4a16611cfce488326c298768a23f58efd",
+    "s8": "c78e67e053ac3d61a73df4b965e8209a12ca4d9b745535a102b0b0040cce3adc",
+    "s9": "f4ef4f0dc18779331d3654037d55a7dd1c27d3769bfbfe753867fccbb53f9a28"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T02:53:57.999749+00:00"
+}
