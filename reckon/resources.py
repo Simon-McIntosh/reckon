@@ -440,10 +440,14 @@ def resource_scan_scope() -> Iterator[None]:
     """Reuse one tree scan for every resource lookup inside a read-only pass.
 
     Resolving a slug scans the whole docs tree, and a roadmap resolves one slug
-    per plan, so an unscoped pass costs a scan per plan. Inside the scope each
-    distinct scan runs once. The scope must not span a write: a resource
-    created or moved inside it stays invisible until the scope exits. Nested
-    scopes share the outermost one.
+    per plan, so an unscoped pass costs a scan per plan. Inside the scope the
+    tree is walked once per docs tree, with the widest ``include_archived`` and
+    ``include_legacy`` flags, and each caller filters that single result to the
+    resources its own flags select. Keying on the flags instead would walk the
+    tree once per distinct flag combination, which is four walks for a roadmap
+    and ten for an audit. The scope must not span a write: a resource created
+    or moved inside it stays invisible until the scope exits. Nested scopes
+    share the outermost one.
     """
 
     if _SCAN_SCOPE.get() is not None:
@@ -466,7 +470,7 @@ def iter_resources(
 ) -> list[Resource]:
     """Discover resources in typed roots and bounded flat compatibility paths."""
     scope = _SCAN_SCOPE.get()
-    if scope is None:
+    if scope is None or not ignore_invalid:
         return _scan_resources(
             docs_dir,
             project,
@@ -474,16 +478,26 @@ def iter_resources(
             include_legacy=include_legacy,
             ignore_invalid=ignore_invalid,
         )
-    key = (str(docs_dir), project, include_archived, include_legacy, ignore_invalid)
-    if key not in scope:
-        scope[key] = _scan_resources(
+    key = (str(docs_dir), project)
+    cached = scope.get(key)
+    if cached is None:
+        # One walk with the widest flags serves every caller in the scope;
+        # each caller's view is filtered from it below, so distinct flag
+        # combinations no longer cost a separate walk.
+        cached = _scan_resources(
             docs_dir,
             project,
-            include_archived=include_archived,
-            include_legacy=include_legacy,
-            ignore_invalid=ignore_invalid,
+            include_archived=True,
+            include_legacy=True,
+            ignore_invalid=True,
         )
-    return list(scope[key])
+        scope[key] = cached
+    return [
+        resource
+        for resource in cached
+        if (include_archived or not resource.archived)
+        and (include_legacy or not resource.legacy)
+    ]
 
 
 def _scan_resources(
