@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:573",
+    "reckon/project_maintenance_commands.py:1055"
+  ],
+  "completed_at": "2026-10-13T03:50:57.240Z",
+  "dispatched_at": "2026-10-13T03:39:23Z",
+  "findings": [
+    {
+      "file": "tests/test_mcp_census.py",
+      "line": "248",
+      "severity": "follow-on",
+      "text": "follow-on: _recent repeats the stamp formatting of _instant at line 28 (the strftime prefix, the millisecond suffix and the +00:00 to Z swap) instead of parameterising one helper."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T031408328042-census-test-reads-its-own-fixture/manifest.md",
+      "line": "11",
+      "severity": "follow-on",
+      "text": "follow-on: the tests: field carries the placeholder PYTHONPATH=<worktree> rather than the literal command the contract requires; the authoritative literal command is present in after_suite so the evidence stands."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base 40186023d; one commit fd7a0908c over three files -- the doctor binds the census roots at call time instead of through census's import-time default arguments, the census test is rebuilt to construct its own now-relative fixture and derive its expected lines, and the landing fragment is added.",
+    "done_when": "the done_when requires the id to pass on a node with live MCP connections, its expected line to come from its own fixture, the real configuration home to be unchanged, no added failure among the files importing reckon/mcp_census.py, and a negative control set one above the fixture's and logged under the run directory; the manifest records head \"6 passed\" (gate_head.log), base \"1 failed, 5 passed\" (baseline_suite.log) whose sole failure is test_doctor_prints_the_census_figures, and negative_control.log ending EXIT=1, and I re-ran the single named id and got \"1 passed\".",
+    "goal": "the node's goal is to make the doctor pass a census log root a test can point at a temporary directory and have the test build the logs there and derive the expected line from them; reckon/project_maintenance_commands.py:1222-1226 now passes log_root=mcp_census.LOG_ROOT and transcript_root=mcp_census.TRANSCRIPT_ROOT at call time, and tests/test_mcp_census.py:256-386 builds its own connections and transcripts under tmp_path and computes every expected line from those records, so the goal is met.",
+    "manifest": "read; it records status complete, changed_paths matching the diff, head \"6 passed\", base \"1 failed, 5 passed\", negative_control EXIT=1, and baseline_suite/after_suite JSON carrying the literal commands and absolute log paths; its tests: line carries an unsubstituted PYTHONPATH=<worktree> placeholder (FINDING).",
+    "write_paths": "the declared scope is reckon/mcp_census.py, reckon/project_maintenance_commands.py, tests/test_mcp_census.py, the fragment docs/.../census-test-reads-its-own-fixture.html and its figures directory; git diff --stat 40186023d..fd7a0908c lists exactly three files -- reckon/project_maintenance_commands.py, tests/test_mcp_census.py and the fragment -- every one inside the declaration, and reckon/mcp_census.py is declared but untouched."
+  },
+  "justifications": {
+    "durability": "tests/test_mcp_census.py:385 asserts a line derived from the fixture records against census's output, and reverting the doctor to census's import-time defaults would leave the fixture uncensused and redden it, though the negative control mutates the expectation rather than the product.",
+    "evidence": "gate_head.log records \"6 passed / EXIT=0\" and baseline_suite.log \"1 failed, 5 passed / EXIT=1\" on the same id, both reproduced in the manifest's suite JSON, reduced one for the placeholder standing in the manifest's tests: field.",
+    "fit": "reckon/project_maintenance_commands.py:1218-1221 carries a mechanism comment on the call-time binding and no plan, stage or ticket token enters either file.",
+    "goal_fidelity": "reckon/project_maintenance_commands.py:1225-1226 passes log_root=mcp_census.LOG_ROOT and transcript_root=mcp_census.TRANSCRIPT_ROOT at call time, so the monkeypatch at tests/test_mcp_census.py:276-277 redirects the census.",
+    "reuse": "the helper tests/test_mcp_census.py:248 duplicates the filename-stamp formatting already in _instant at tests/test_mcp_census.py:28; no production capability is forked and no owner outside this test file exists.",
+    "scope_discipline": "git diff --stat 40186023d..fd7a0908c lists only reckon/project_maintenance_commands.py, tests/test_mcp_census.py and the evidence fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make the doctor pass a census log root a test can point at a temporary directory and have the test build the logs there and derive the expected line from them; reckon/project_maintenance_commands.py:1222-1226 now passes log_root=mcp_census.LOG_ROOT and transcript_root=mcp_census.TRANSCRIPT_ROOT at call time, and tests/test_mcp_census.py:256-386 builds its own connections and transcripts under tmp_path and computes every expected line from those records, so the goal is met.\nVERDICT done_when: the done_when requires the id to pass on a node with live MCP connections, its expected line to come from its own fixture, the real configuration home to be unchanged, no added failure among the files importing reckon/mcp_census.py, and a negative control set one above the fixture's and logged under the run directory; the manifest records head \"6 passed\" (gate_head.log), base \"1 failed, 5 passed\" (baseline_suite.log) whose sole failure is test_doctor_prints_the_census_figures, and negative_control.log ending EXIT=1, and I re-ran the single named id and got \"1 passed\".\nVERDICT write_paths: the declared scope is reckon/mcp_census.py, reckon/project_maintenance_commands.py, tests/test_mcp_census.py, the fragment docs/evidence/fragments/the-suite-is-green-at-head/census-test-reads-its-own-fixture.html and its figures directory; git diff --stat 40186023d..fd7a0908c lists exactly three files -- reckon/project_maintenance_commands.py, tests/test_mcp_census.py and the fragment -- every one inside the declaration, and reckon/mcp_census.py is declared but untouched.\nVERDICT manifest: read; it records status complete, changed_paths matching the diff, head \"6 passed\", base \"1 failed, 5 passed\", negative_control EXIT=1, and baseline_suite/after_suite JSON carrying the literal commands and absolute log paths; its tests: line carries an unsubstituted PYTHONPATH=<worktree> placeholder (FINDING).\nVERDICT diff: read commit by commit against base 40186023d; one commit fd7a0908c over three files -- the doctor binds the census roots at call time instead of through census's import-time default arguments, the census test is rebuilt to construct its own now-relative fixture and derive its expected lines, and the landing fragment is added.\nCALL_SITES: reckon/cli.py:573 (registers the doctor command), reckon/project_maintenance_commands.py:1055 (_echo_mcp_census prints the report)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/project_maintenance_commands.py:1225-1226 passes log_root=mcp_census.LOG_ROOT and transcript_root=mcp_census.TRANSCRIPT_ROOT at call time, so the monkeypatch at tests/test_mcp_census.py:276-277 redirects the census.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate_head.log records \"6 passed / EXIT=0\" and baseline_suite.log \"1 failed, 5 passed / EXIT=1\" on the same id, both reproduced in the manifest's suite JSON, reduced one for the placeholder standing in the manifest's tests: field.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 40186023d..fd7a0908c lists only reckon/project_maintenance_commands.py, tests/test_mcp_census.py and the evidence fragment, all inside the declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_mcp_census.py:385 asserts a line derived from the fixture records against census's output, and reverting the doctor to census's import-time defaults would leave the fixture uncensused and redden it, though the negative control mutates the expectation rather than the product.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/project_maintenance_commands.py:1218-1221 carries a mechanism comment on the call-time binding and no plan, stage or ticket token enters either file.\nSCORE reuse: 16\nJUSTIFICATION reuse: the helper tests/test_mcp_census.py:248 duplicates the filename-stamp formatting already in _instant at tests/test_mcp_census.py:28; no production capability is forked and no owner outside this test file exists.\nFINDING tests/test_mcp_census.py:248 follow-on: _recent repeats the stamp formatting of _instant at line 28 (the strftime prefix, the millisecond suffix and the +00:00 to Z swap) instead of parameterising one helper.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T031408328042-census-test-reads-its-own-fixture/manifest.md:11 follow-on: the tests: field carries the placeholder PYTHONPATH=<worktree> rather than the literal command the contract requires; the authoritative literal command is present in after_suite so the evidence stands.",
+  "review_run_id": "r-20261013T033842807720-review-of-census-test-reads-its-own-fixture-fd7a0908c315",
+  "reviewed_base_sha": "40186023d58ce16ae64eba11dd385db74698980c",
+  "reviewed_head_sha": "fd7a0908c315be7af25e8b0a5c084bed8609e6d5",
+  "reviewed_run_id": "r-20261013T031408328042-census-test-reads-its-own-fixture",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T03:47:32.874620+00:00",
+  "total": 108
+}
