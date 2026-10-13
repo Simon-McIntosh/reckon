@@ -231,9 +231,11 @@ def _restore_queued(snapshot: Mapping[str, Any], failure: str) -> None:
     _write_pointer(str(snapshot["run_id"]), restored)
 
 
-def _record_queued_failure(snapshot: Mapping[str, Any], failure: str) -> None:
+def _record_queued_failure(
+    snapshot: Mapping[str, Any], failure: str, requeued_run_id: str = ""
+) -> None:
     """Keep a newer re-queue, or restore the request if dispatch removed it."""
-    run_id = str(snapshot["run_id"])
+    run_id = requeued_run_id or str(snapshot["run_id"])
 
     def annotate(current: dict[str, Any]) -> dict[str, Any]:
         current["failure"] = failure
@@ -308,19 +310,30 @@ def admit_once(
             snapshot = copy.deepcopy(dict(pointer))
             record = None
             failure = "dispatch did not return a launched record"
+            requeued_run_id = ""
             try:
-                record = _require_launched_record(
-                    _launch_queued(pointer, launcher=launcher, config_for=config_for)
+                candidate = _launch_queued(
+                    pointer, launcher=launcher, config_for=config_for
                 )
+                if (
+                    isinstance(candidate, Mapping)
+                    and candidate.get("phase") == "queued"
+                ):
+                    requeued_run_id = str(candidate.get("run_id") or "")
+                record = _require_launched_record(candidate)
             except Exception as exc:  # noqa: BLE001 - every dispatch failure keeps its request
                 failure = f"{type(exc).__name__}: {exc}"
+                if isinstance(exc, LaneHeld):
+                    queued = getattr(exc, "queued", None)
+                    if isinstance(queued, Mapping):
+                        requeued_run_id = str(queued.get("run_id") or "")
                 key = "held" if isinstance(exc, (LaneHeld, LanePaused)) else "failed"
                 detail_key = "hold_detail" if key == "held" else "failure_detail"
                 result[key].append(str(pointer["run_id"]))
                 result.setdefault(detail_key, {})[str(pointer["run_id"])] = str(exc)
             finally:
                 if record is None:
-                    _record_queued_failure(snapshot, failure)
+                    _record_queued_failure(snapshot, failure, requeued_run_id)
             if record is None:
                 continue
             _stamp_admission(str(record["run_id"]), snapshot, admitted_at=_utc_now())

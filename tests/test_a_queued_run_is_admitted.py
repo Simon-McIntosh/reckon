@@ -312,17 +312,22 @@ def test_a_refused_launch_keeps_its_queued_request(
         assert gate_state in result["failure_detail"]["r-refused"]
 
 
+@pytest.mark.parametrize("returns_queued", [False, True])
 def test_a_requeued_hold_keeps_the_newer_pointer(
-    admit_repo: Path, monkeypatch: pytest.MonkeyPatch
+    admit_repo: Path, monkeypatch: pytest.MonkeyPatch, returns_queued: bool
 ) -> None:
     _, resolve = _config_for()
     runs.queue_dispatch(_queue(admit_repo, node_id="held", run_id="r-held"))
 
     def requeue(**kwargs):
-        pointer = _queue(admit_repo, node_id="held", run_id="r-held")
+        pointer = _queue(admit_repo, node_id="held", run_id="r-requeued")
         pointer["hold"] = {"held": True, "reason": "newer allowance"}
         runs.queue_dispatch(pointer)
-        raise LaneHeld({"state": "full", "detail": "newer allowance"})
+        if returns_queued:
+            return runs.read_pointer("r-requeued")
+        held = LaneHeld({"state": "full", "detail": "newer allowance"})
+        held.queued = {"run_id": "r-requeued", "position": 1}
+        raise held
 
     monkeypatch.setattr(
         importlib.import_module("reckon.crew.dispatch"), "dispatch", requeue
@@ -330,12 +335,16 @@ def test_a_requeued_hold_keeps_the_newer_pointer(
 
     result = queue_admission.admit_once(config_for=resolve)
 
-    pointer = runs.read_pointer("r-held")
+    pointer = runs.read_pointer("r-requeued")
     assert pointer["phase"] == "queued"
     assert pointer["hold"]["reason"] == "newer allowance"
-    assert "newer allowance" in pointer["failure"]
+    failure = (
+        "did not return a launched record" if returns_queued else "newer allowance"
+    )
+    assert failure in pointer["failure"]
     assert pointer["failure_at"]
-    assert result["held"] == ["r-held"]
+    assert not runs.pointer_path("r-held").exists()
+    assert "r-held" in result["held"] + result["failed"]
 
 
 @pytest.mark.parametrize("returned", [None, {"run_id": "r-held", "phase": "queued"}])
