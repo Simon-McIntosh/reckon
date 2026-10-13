@@ -452,6 +452,22 @@ def _model_availability_refusal(
     }
 
 
+def _lane_declaring_model(model: str) -> str | None:
+    """The lane the catalogue declares ``model`` under, ignoring any lane filter.
+
+    Used to name the declaring lane when a model is refused for being outside
+    the lane it was asked for. An undeclared or ambiguous name returns ``None``,
+    leaving the caller's unknown-name refusal to stand.
+    """
+    from reckon import ledger
+
+    try:
+        lane, _key = ledger.resolve_name(model)
+    except ValueError:
+        return None
+    return lane
+
+
 def _model_narrowed_backend(config, model, backend, *, local):
     """Resolve ``--model`` to the backend whose expanded entry serves that model.
 
@@ -478,6 +494,17 @@ def _model_narrowed_backend(config, model, backend, *, local):
     except ValueError as exc:
         raise click.UsageError(str(exc)) from exc
     if lane is None:
+        # A lane was named and this model is declared elsewhere: the refusal
+        # names the model, the lane it was asked for and the lane that declares
+        # it, so a caller spelling a pair the wrong way is told which lane the
+        # model belongs to rather than only that the name is unknown.
+        if lane_filter is not None:
+            declaring_lane = _lane_declaring_model(model)
+            if declaring_lane is not None and declaring_lane != lane_filter:
+                raise click.UsageError(
+                    f"--model {model!r} is declared by lane {declaring_lane!r}, "
+                    f"not by the {lane_filter!r} lane it was asked for"
+                )
         raise click.UsageError(
             f"--model {model!r} names no model, model id or alias the catalogue "
             "declares"
