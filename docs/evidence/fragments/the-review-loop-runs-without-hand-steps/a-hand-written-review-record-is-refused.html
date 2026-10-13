@@ -6,9 +6,10 @@
     <code>store_review</code> so the store's write and the manifest check share
     one owner for the accepted set. <code>audit_manifest</code>
     (<code>reckon/crew/reports.py</code>) re-applies it, through
-    <code>_review_record_status_findings</code>, to each record a review run's
-    granted record paths hold, refusing the manifest naming the record, the
-    status found and the accepted set.
+    <code>_review_record_status_findings</code>, to each record the store's own
+    reader (<code>_reviewer_store_records</code>) selects from a review run's
+    granted record paths, refusing the manifest naming the record, the status
+    found and the accepted set.
     <code>tests/test_a_hand_written_review_record_is_refused.py</code>: 4
     passed, EXIT=0; negative control removing the audit-side call: 1 failed, 3
     passed, EXIT=1.
