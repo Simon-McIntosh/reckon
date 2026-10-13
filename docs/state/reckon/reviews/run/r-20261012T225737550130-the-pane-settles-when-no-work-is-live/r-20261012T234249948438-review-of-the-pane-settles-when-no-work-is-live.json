@@ -1,0 +1,81 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs: the reviewed run recorded baseline_suite: null and after_suite: null (see run classification.json), so no base/head arm pair exists and no failure can be shown added. The reviewed run's manifest records the named gate at 10 passed; a re-run at f14e7d8e from the source worktree is 10 passed EXIT=0 (gate-head.log), matching the claim, and the negative control reddens the settle case. The done_when clause 'no added failure against base' is therefore unverified for want of a base arm.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:2132",
+    "reckon/crew_follow_commands.py:2417",
+    "reckon/crew/session_host.py:610",
+    "reckon/cli.py:401",
+    "reckon/crew/dispatch.py:1220"
+  ],
+  "completed_at": "2026-10-13T00:04:58.648Z",
+  "dispatched_at": "2026-10-12T23:43:13Z",
+  "findings": [
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": "64",
+      "severity": "follow-on",
+      "text": "follow-on: commit 952e1ce3 folds a whole-file ruff reformat (many blank-line removals) into the settle mechanics, so the feature commit's diff carries reformatting of lines it did not otherwise touch."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261012T225737550130-the-pane-settles-when-no-work-is-live/manifest.md",
+      "line": "23",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest records no baseline_suite or after_suite arm logs (both null in classification.json), so the done_when clause that the existing session-host and follower tests show no added failure against base is asserted but not evidenced."
+    },
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": "1158",
+      "severity": "follow-on",
+      "text": "follow-on: _check_settle judges the whole project-wide population with session=None, while the section's deliverable text says \"when the session has no live run\"; the done_when's peer case requires the project-wide reading, so the two readings conflict and the coordinator should confirm the intended scope."
+    },
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": "1159",
+      "severity": "follow-on",
+      "text": "follow-on: the saw_live hinge means a follower armed after its session's last run already reached a terminal phase never settles and holds the pane open until its lifetime expires, which is intended for the dispatch window but is a lingering-pane edge a reader may see."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read both commits against the base 40d10a7; 952e1ce3 adds the settle protocol to reckon/crew/session_host.py and the follower and the new test file, and f14e7d8e adds only the six-line evidence fragment.",
+    "done_when": "read the section's \"Done when\" list at reckon:the-monitor-shows-the-work-it-watches#s4; tests/test_a_pane_settles_when_no_work_is_live.py asserts all four cases plus one per mixed pair, and re-run at f14e7d8e from the source worktree it is 10 passed EXIT=0 (gate-head.log under the review run dir); negative-control.log reddens the settle case at EXIT=1.",
+    "goal": "read the source node goal (\"A session's follower child prints one idle line and exits when _population_has_live_work finds no live run, the host stays alive, and the session's next dispatch starts one new child that replays nothing already printed\") against f14e7d8e; reckon/crew_follow_commands.py:697-720 composes the \"no live work in <session> since HH:MM\" line and :2630-2635 exits with SETTLED_EXIT_CODE once it fires, reckon/crew/session_host.py:475-483 retires the settled pair without ending the host, and :377-384 re-arms the pair on the next request.",
+    "manifest": "read; it records status complete at f14e7d8e, commits 952e1ce3 and f14e7d8e, the two recorded test results, negative_control_log, two follow_ons and blockers none, but carries no baseline_suite or after_suite arm logs.",
+    "write_paths": "read the node's declared fence (reckon/crew/session_host.py, reckon/crew_follow_commands.py, tests/test_a_pane_settles_when_no_work_is_live.py, the evidence fragment, and the figures dir); git diff 40d10a7..f14e7d8e touches four files, every one inside the fence."
+  },
+  "justifications": {
+    "durability": "tests/test_a_pane_settles_when_no_work_is_live.py:398 reddens under the declared mutation (_settled_status returning False for every status) as negative-control.log shows, so the retirement guard fires; the no-advertisement case at :561 asserts only non-exit, which a broken follower also satisfies.",
+    "evidence": "the gate passes at 10 passed EXIT=0 re-run at f14e7d8e and negative-control.log reddens it, but the reviewed run recorded baseline_suite null and after_suite null, so the done_when's \"no added failure against base\" clause has no arm log behind it.",
+    "fit": "the added names SETTLE_ENV, SETTLED_EXIT_CODE, _settled_status, _poll_exit and _check_settle describe the mechanism and carry no plan, ticket or plan-label.",
+    "goal_fidelity": "reckon/crew_follow_commands.py:697-720 composes the idle line and :2635 exits with SETTLED_EXIT_CODE, session_host.py:475-483 retires the pair with the host alive and :377-384 re-arms it on the next request.",
+    "reuse": "reckon/crew_follow_commands.py:1158 calls the existing _population_has_live_work rather than re-deriving the judgement, and :2483 extends the FOLLOWER_END_EVENT dispatch path to the new event rather than forking a second final-line path.",
+    "scope_discipline": "git diff 40d10a7..f14e7d8e touches only the four declared paths, but commit 952e1ce3 also folds a whole-file ruff reformat of reckon/crew_follow_commands.py into the feature."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the source node goal (\"A session's follower child prints one idle line and exits when _population_has_live_work finds no live run, the host stays alive, and the session's next dispatch starts one new child that replays nothing already printed\") against f14e7d8e; reckon/crew_follow_commands.py:697-720 composes the \"no live work in <session> since HH:MM\" line and :2630-2635 exits with SETTLED_EXIT_CODE once it fires, reckon/crew/session_host.py:475-483 retires the settled pair without ending the host, and :377-384 re-arms the pair on the next request.\nVERDICT done_when: read the section's \"Done when\" list at reckon:the-monitor-shows-the-work-it-watches#s4; tests/test_a_pane_settles_when_no_work_is_live.py asserts all four cases plus one per mixed pair, and re-run at f14e7d8e from the source worktree it is 10 passed EXIT=0 (gate-head.log under the review run dir); negative-control.log reddens the settle case at EXIT=1.\nVERDICT write_paths: read the node's declared fence (reckon/crew/session_host.py, reckon/crew_follow_commands.py, tests/test_a_pane_settles_when_no_work_is_live.py, the evidence fragment, and the figures dir); git diff 40d10a7..f14e7d8e touches four files, every one inside the fence.\nVERDICT manifest: read; it records status complete at f14e7d8e, commits 952e1ce3 and f14e7d8e, the two recorded test results, negative_control_log, two follow_ons and blockers none, but carries no baseline_suite or after_suite arm logs.\nVERDICT diff: read both commits against the base 40d10a7; 952e1ce3 adds the settle protocol to reckon/crew/session_host.py and the follower and the new test file, and f14e7d8e adds only the six-line evidence fragment.\nCALL_SITES: reckon/crew_follow_commands.py:2132, reckon/crew_follow_commands.py:2417, reckon/crew/session_host.py:610, reckon/cli.py:401, reckon/crew/dispatch.py:1220\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew_follow_commands.py:697-720 composes the idle line and :2635 exits with SETTLED_EXIT_CODE, session_host.py:475-483 retires the pair with the host alive and :377-384 re-arms it on the next request.\nSCORE evidence: 13\nJUSTIFICATION evidence: the gate passes at 10 passed EXIT=0 re-run at f14e7d8e and negative-control.log reddens it, but the reviewed run recorded baseline_suite null and after_suite null, so the done_when's \"no added failure against base\" clause has no arm log behind it.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: git diff 40d10a7..f14e7d8e touches only the four declared paths, but commit 952e1ce3 also folds a whole-file ruff reformat of reckon/crew_follow_commands.py into the feature.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_pane_settles_when_no_work_is_live.py:398 reddens under the declared mutation (_settled_status returning False for every status) as negative-control.log shows, so the retirement guard fires; the no-advertisement case at :561 asserts only non-exit, which a broken follower also satisfies.\nSCORE fit: 18\nJUSTIFICATION fit: the added names SETTLE_ENV, SETTLED_EXIT_CODE, _settled_status, _poll_exit and _check_settle describe the mechanism and carry no plan, ticket or plan-label.\nSCORE reuse: 17\nJUSTIFICATION reuse: reckon/crew_follow_commands.py:1158 calls the existing _population_has_live_work rather than re-deriving the judgement, and :2483 extends the FOLLOWER_END_EVENT dispatch path to the new event rather than forking a second final-line path.\nFINDING reckon/crew_follow_commands.py:64 follow-on: commit 952e1ce3 folds a whole-file ruff reformat (many blank-line removals) into the settle mechanics, so the feature commit's diff carries reformatting of lines it did not otherwise touch.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261012T225737550130-the-pane-settles-when-no-work-is-live/manifest.md:23 follow-on: the manifest records no baseline_suite or after_suite arm logs (both null in classification.json), so the done_when clause that the existing session-host and follower tests show no added failure against base is asserted but not evidenced.\nFINDING reckon/crew_follow_commands.py:1158 follow-on: _check_settle judges the whole project-wide population with session=None, while the section's deliverable text says \"when the session has no live run\"; the done_when's peer case requires the project-wide reading, so the two readings conflict and the coordinator should confirm the intended scope.\nFINDING reckon/crew_follow_commands.py:1159 follow-on: the saw_live hinge means a follower armed after its session's last run already reached a terminal phase never settles and holds the pane open until its lifetime expires, which is intended for the dispatch window but is a lingering-pane edge a reader may see.",
+  "review_run_id": "r-20261012T234249948438-review-of-the-pane-settles-when-no-work-is-live",
+  "reviewed_base_sha": "40d10a70084954dda169b532efa3bf73a9566a7a",
+  "reviewed_head_sha": "f14e7d8e4bbb990a6c42f0161b1e31d44a5139a5",
+  "reviewed_run_id": "r-20261012T225737550130-the-pane-settles-when-no-work-is-live",
+  "reviewer": {
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 17,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T00:01:08.913015+00:00",
+  "total": 99
+}

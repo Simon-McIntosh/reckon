@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="16">
+<meta name="plan-version" content="17">
 <meta name="plan-modified" content="2026-10-13">
 </head>
 <body>
@@ -139,6 +139,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-s4-design-review-1012" data-who="reckon-build" data-when="2026-10-12T21:15:00Z">
     <div class="r-comment-body"><p>To apply to §4's text before it builds. This is design review finding <code>duplicate_owner-1</code>, §4 half.</p><p>"No live work in this session" is already owned by <code>_population_has_live_work(project, session=...)</code> in <code>reckon/crew_follow_commands.py</code>. <code>crew follow --lifetime</code> already prints one final line, and <code>crew watch --exit-on-empty</code> already exits when no pointer remains. <code>_session_host_child</code> and <code>_session_host_runs_follower</code> already read the host-child relation.</p><p>§4 settles the child by calling <code>_population_has_live_work</code>. Its idle line extends the existing final-line path rather than adding a second one.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261012T234249948438-review-of-the-pane-settles-when-no-work-is-live" data-who="reckon-build" data-when="2026-10-13T00:04:58.648Z">
+    <div class="r-comment-body"><p>review of r-20261012T225737550130-the-pane-settles-when-no-work-is-live stored at reviewed base 40d10a70084954dda169b532efa3bf73a9566a7a and reviewed head f14e7d8e4bbb990a6c42f0161b1e31d44a5139a5; scores goal_fidelity 18, evidence 13, scope_discipline 16, durability 17, fit 18, reuse 17 (total 99); 4 follow-on findings, no blocking findings</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-s5-design-review-1012" data-who="reckon-build" data-when="2026-10-12T21:15:00Z">
     <div class="r-comment-body"><p>To apply to §5's text before it builds. These are design review findings <code>duplicate_owner-1</code> (§5 half) and <code>interface_budget-1</code>.</p><p>The state-to-word owner already exists: <code>DISPLAY</code> in <code>reckon/crew/ticker.py</code>, consumed in one place. The seven-word table supersedes <code>DISPLAY</code> in place, rather than sitting beside it. §5 also reconciles the counter bucket labels (<code>_WAIT_CELL</code> and <code>_COUNT_FIELD</code>) with the seven words, and names what it retires.</p></div>
