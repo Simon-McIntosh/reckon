@@ -1312,6 +1312,30 @@ def _fleet_counts(
     return counts
 
 
+def _fleet_live_nodes(
+    snapshots: Mapping[str, Mapping[str, Any]], *, session: str | None = None
+) -> list[str]:
+    """The nodes of the runs a session has working, for a row's live roll-up.
+
+    The population is the one ``_fleet_counts`` already partitions: the same
+    ``_partition_session_rows`` narrowing and the same ``FLEET_WORKING_STATES``
+    membership that fill the working bucket, so the names a row carries and the
+    count beside them can never describe two different fleets. A count cannot
+    name who is in flight, so this carries only what the count leaves out.
+    Returned sorted and unique, because two runs of one node are one node to a
+    reader and the row's columns must not move between observations.
+    """
+    rows, _peers = _partition_session_rows(snapshots.values(), session)
+    return sorted(
+        {
+            str(snapshot.get("node") or "")
+            for snapshot in rows
+            if str(snapshot.get("state") or "") in FLEET_WORKING_STATES
+            and str(snapshot.get("node") or "")
+        }
+    )
+
+
 def _manifest_rewritten(
     previous: Mapping[str, Any], current: Mapping[str, Any]
 ) -> bool:
@@ -1637,6 +1661,7 @@ def _watch_transition(
     previous: str | None,
     current: str,
     counts: Mapping[str, int],
+    live_nodes: Sequence[str] | None = None,
     spend_runs: Sequence[Mapping[str, Any]] | None = None,
     rate_statuses: Mapping[str, Any] | None = None,
     streams_root: str | Path | None = None,
@@ -1687,6 +1712,11 @@ def _watch_transition(
         "working": counts["working"],
         "blocked": counts["blocked"],
         "unpromoted": counts["unpromoted"],
+        # The nodes the working count stands for, so a row names which runs are
+        # in flight rather than only how many. Carried as a fact beside the
+        # count, from the same partitioned population, so a renderer adds no
+        # second read and the two can never disagree.
+        "live_nodes": [str(node) for node in (live_nodes or []) if str(node)],
         "detail": str(snapshot.get("detail") or ""),
         "recovery_classification": str(
             snapshot.get("recovery_classification") or current
@@ -1922,6 +1952,10 @@ def _scoped_watch_event(event: Mapping[str, Any], session: str) -> dict[str, Any
     scoped["working"] = counts["working"]
     scoped["blocked"] = counts["blocked"]
     scoped["unpromoted"] = counts["unpromoted"]
+    # Re-select the roll-up's nodes over the same scoped population the counts
+    # were just taken over, so the row names the reader's own live runs and
+    # never a peer's — the counter beside them already counts only those.
+    scoped["live_nodes"] = _fleet_live_nodes(current, session=session)
     previous = scoped.get("from_state")
     state = scoped.get("to_state")
     if "waiting" in counts or previous in WAITING_STATES or state in WAITING_STATES:
@@ -2215,6 +2249,7 @@ def watch_ticker(
                 continue
 
             counts = _fleet_counts(current)
+            live_nodes = _fleet_live_nodes(current)
             if not fleet_seen:
                 fleet_seen = True
                 known = {run_id: dict(snapshot) for run_id, snapshot in current.items()}
@@ -2226,6 +2261,7 @@ def watch_ticker(
                         previous=None,
                         current=str(snapshot["state"]),
                         counts=counts,
+                        live_nodes=live_nodes,
                         spend_runs=pointers,
                         rate_statuses=rate_statuses,
                     )
@@ -2242,6 +2278,7 @@ def watch_ticker(
                     previous=previous,
                     current=state,
                     counts=event_counts,
+                    live_nodes=live_nodes,
                     spend_runs=pointers,
                     rate_statuses=rate_statuses,
                 )
