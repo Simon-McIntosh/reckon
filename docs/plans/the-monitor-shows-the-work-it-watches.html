@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="65">
+<meta name="plan-version" content="66">
 <meta name="plan-modified" content="2026-10-14">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -497,6 +497,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s19" data-id="c-run-r-20261013T204153072372-a-crashed-producer-is-restarted" data-who="reckon-build" data-when="2026-10-13T21:45:03Z">
     <div class="r-comment-body"><p>Fallback producer uses the fleet owner curve (5 s first, 300 s cap, 600 s steady reset), waits before doubling, and stops only after five consecutive short-lived crashes; final 11-file comparison moved from 8 failed/84 passed at base to 92 passed at head, with reset-removal control red (EXIT=1).</p></div>
+</div>
+<div class="r-comment" data-section="s19" data-id="c-run-r-20261013T214720655216-review-of-a-crashed-producer-is-restarted-c8f1865bf1c4" data-who="reckon-build" data-when="2026-10-13T21:59:32.268Z">
+    <div class="r-comment-body"><p>Review of r-20261013T204153072372-a-crashed-producer-is-restarted over the diff 04bc460463bcc918dd88c2fa5f0376cda302686f..c8f1865bf1c43a712b06eec5cbdb1f154b6e98dd scored 104/120 (reuse 14, the only non-20 shortfall), added-failure count 0, one follow-on finding that the inline supervisor still duplicates fleet_supervisor.next_backoff&#x27;s mechanism beneath the constants it now imports.</p></div>
 </div>
 </section>
 </main>
