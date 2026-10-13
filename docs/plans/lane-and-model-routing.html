@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-north-star" content="unattended-execution">
 <meta name="plan-impl" content="0.8823529411764706">
-<meta name="plan-version" content="143">
+<meta name="plan-version" content="144">
 <meta name="plan-modified" content="2026-10-14">
 </head>
 <body>
@@ -477,6 +477,9 @@
 </div>
 <div class="r-comment" data-section="s26" data-id="c-close-s26" data-who="" data-when="2026-10-14">
     <div class="r-comment-body"><p>Landed at <code>a24736e36</code> (review 115, 0 added failures). Holds and their payloads are written to the crew home. Legacy logs are still read, and their payloads still replay. <a href="/reckon/evidence/archive/lane-and-model-routing-landed.html#s26">Landing record</a>.</p></div>
+</div>
+<div class="r-comment" data-section="s26" data-id="c-run-r-20261013T223636737630-a-hold-is-kept-in-the-crew-home" data-who="reckon-build" data-when="2026-10-13T22:59:19.913Z">
+    <div class="r-comment-body"><p>moves a picker hold and its oversized payload from the project&#x27;s docs/state log to the crew home keyed by project, reads both the crew-home and any legacy docs-side log, and resolves a row&#x27;s payload_ref against the log it was read from so legacy holds still replay; head arm 48 passed EXIT=0, base arm 3 failed 45 passed EXIT=1</p></div>
 </div>
 <div class="r-comment" data-section="s17" data-id="c-s17-ambiguous-model" data-who="" data-when="2026-10-13">
     <div class="r-comment-body"><p>Owed before §17 dispatches (from §14's review, run <code>r-20261013T180426574495</code>). <code>_lane_declaring_model</code> returns <code>None</code> when more than one lane declares the model, so a model declared by two lanes but asked for under a third still gets the unknown-name message §14 removed. §17 already refuses by naming lanes and models; have it name every lane that declares the model.</p></div>
