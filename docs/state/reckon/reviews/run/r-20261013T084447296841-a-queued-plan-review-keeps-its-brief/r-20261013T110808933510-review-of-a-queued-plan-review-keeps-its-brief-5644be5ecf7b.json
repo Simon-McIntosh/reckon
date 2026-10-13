@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite/after_suite keys; its head population arm (head-population.log) recorded 120 passed with zero failures, so the head tree adds no failing test id regardless of a base arm.",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:2186",
+    "reckon/crew/recovery_watch.py:2473",
+    "reckon/crew/recovery_review_acceptance.py:481"
+  ],
+  "completed_at": "2026-10-13T11:23:29.528Z",
+  "dispatched_at": "2026-10-13T11:08:49Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T084447296841-a-queued-plan-review-keeps-its-brief/manifest.md",
+      "line": "10",
+      "severity": "follow-on",
+      "text": "follow-on: the population arm (head-population.log, 120 passed EXIT=0) ran at rev a5ce1377 rather than the reviewed head 5644be5 and the log carries no revision header, so the arm's provenance is not self-evident; acceptable because the production module is byte-identical between the two commits."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s) reaching dispatch_review_for_run for a plan subject.",
+    "diff": "read a5ce1377 and 5644be5 against base 4f4e5913; three files changed, all additions, the production module identical between the two commits.",
+    "done_when": "tests/test_a_queued_plan_review_keeps_its_brief.py composes while held, asserts the queued pointer's brief survives, then admits and asserts the launch read the marked brief; gate.log 1 passed EXIT=0, head-population 120 passed EXIT=0, negative control 1 failed EXIT=1.",
+    "goal": "the goal is that a held plan-review compose keeps its run directory and brief when a queued pointer names it, judged from the pointer; recovery_review_dispatch.py:1493 does exactly that via _queued_pointer_names_directory.",
+    "manifest": "read; reports the named test 1 passed and the head population 120 passed, and names gate.log and head-population.log.",
+    "write_paths": "declared: reckon/crew/recovery_review_dispatch.py, tests/test_a_queued_plan_review_keeps_its_brief.py, the evidence fragment and a figures directory; the diff is entirely inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_queued_plan_review_keeps_its_brief.py:138 reddens on the reverted report-shape check, as negative-control-report-shape.log records with EXIT=1.",
+    "evidence": "tests/test_a_queued_plan_review_keeps_its_brief.py drives the real dispatch_review_for_run path; gate.log records it 1 passed EXIT=0, but the population arm ran at a5ce1377 with no header and no base arm exists.",
+    "fit": "the helper at recovery_review_dispatch.py:1474 matches the file's private-import idiom, and the new test file carries a trailing newline so it adds no W292.",
+    "goal_fidelity": "recovery_review_dispatch.py:1493 keeps the composed directory when _queued_pointer_names_directory names it, and the queued pointer's node.brief is the composed brief (recovery_review_dispatch.py:1614 sets brief=fields['brief']), judged from the pointer as the goal states.",
+    "reuse": "no owner for a directory-keyed queued-pointer lookup exists; the addition reuses runs._list_live_records and _review_store_record_paths (recovery_review_delivery.py:47) serves a different purpose.",
+    "scope_discipline": "the diff touches only reckon/crew/recovery_review_dispatch.py, tests/test_a_queued_plan_review_keeps_its_brief.py and the evidence fragment, all inside the granted write paths."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 4f4e5913d5f20d4764d39a5820f60f4c26952faa\nreviewed_head_sha: 5644be5ecf7bde54c9d3e8038fa942cf559d2e45\nVERDICT goal: the goal is to keep a composed plan review's run directory and brief whenever a queued pointer names it, judged from the pointer; reckon/crew/recovery_review_dispatch.py:1493 keeps the directory when _queued_pointer_names_directory (recovery_review_dispatch.py:1474) finds a queued pointer whose node.brief's parent is that directory.\nVERDICT done_when: the done_when names tests/test_a_queued_plan_review_keeps_its_brief.py, which composes while the lane holds the session, asserts the queued pointer's brief is still on disk, then admits the request and asserts the admitted launch read the marked brief; the run directory records gate.log (1 passed EXIT=0), head-population.log (120 passed EXIT=0) and negative-control-report-shape.log (1 failed EXIT=1).\nVERDICT write_paths: the manifest declares reckon/crew/recovery_review_dispatch.py, tests/test_a_queued_plan_review_keeps_its_brief.py, the evidence fragment and a figures directory; the diff (base 4f4e5913..head 5644be5) touches exactly the first three paths, all inside the declared scope.\nVERDICT manifest: read; it reports the named test 1 passed, the head population 120 passed, names gate.log and head-population.log, and records the negative control at negative-control-report-shape.log.\nVERDICT diff: read both commits against base 4f4e5913 (a5ce1377 adds the pointer check and helper; 5644be5 rewrites only the test file, so the production module is identical between them); three files changed, all additions.\nCALL_SITES: reckon/crew_dispatch_commands.py:2186, reckon/crew/recovery_watch.py:2473, reckon/crew/recovery_review_acceptance.py:481\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: recovery_review_dispatch.py:1493 keeps the composed directory when _queued_pointer_names_directory names it, judged from runs._list_live_records(phase=\"queued\") rather than the report's queued key.\nSCORE evidence: 15\nJUSTIFICATION evidence: gate.log records tests/test_a_queued_plan_review_keeps_its_brief.py 1 passed EXIT=0, but the population arm (head-population.log, 120 passed) was run at rev a5ce1377 and carries no revision header, and the manifest names no base arm so the added-failure count is unmeasured.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the diff is inside the manifest's declared write paths; the only non-fix addition is the empty evidence fragment at docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/a-queued-plan-review-keeps-its-brief.html.\nSCORE durability: 19\nJUSTIFICATION durability: negative-control-report-shape.log shows the test reddening at tests/test_a_queued_plan_review_keeps_its_brief.py:138 (EXIT=1) when the pointer check is removed, so the guard fires.\nSCORE fit: 18\nJUSTIFICATION fit: the private helper at recovery_review_dispatch.py:1474 and the private _list_live_records import match the module's existing idiom, and the new test file ends with a trailing newline (no W292).\nSCORE reuse: 20\nJUSTIFICATION reuse: no existing owner scans queued pointers by brief directory; the addition reuses runs._list_live_records instead of re-reading pointers, and _review_store_record_paths (recovery_review_delivery.py:47) selects a different thing.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T084447296841-a-queued-plan-review-keeps-its-brief/manifest.md:10 follow-on: the population arm (head-population.log, 120 passed EXIT=0) was run at rev a5ce1377 rather than the reviewed head 5644be5, and the log carries no revision header naming its tree, so the arm's provenance is not self-evident from the log \u2014 acceptable here because the production module is byte-identical between the two commits, but it is a provenance gap for a later reader.\n",
+  "review_run_id": "r-20261013T110808933510-review-of-a-queued-plan-review-keeps-its-brief-5644be5ecf7b",
+  "reviewed_base_sha": "4f4e5913d5f20d4764d39a5820f60f4c26952faa",
+  "reviewed_head_sha": "5644be5ecf7bde54c9d3e8038fa942cf559d2e45",
+  "reviewed_run_id": "r-20261013T084447296841-a-queued-plan-review-keeps-its-brief",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T11:21:10.477229+00:00",
+  "total": 109
+}
