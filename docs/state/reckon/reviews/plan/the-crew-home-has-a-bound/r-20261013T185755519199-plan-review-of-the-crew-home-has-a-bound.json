@@ -1,0 +1,36 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-13T19:20:11.856Z",
+  "dispatched_at": "2026-10-13T18:59:01Z",
+  "findings": [],
+  "plan_fingerprint": "d355a41e444a8a657f942f2c74e29425bfa54a1a91d2b802cd3a21b7189a9570",
+  "plan_slug": "the-crew-home-has-a-bound",
+  "plan_version": 39,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261013T185755519199-plan-review-of-the-crew-home-has-a-bound",
+  "reviewed_blob_sha": "6ea0aa94db961a1f6609149e27bfd987e9223403",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the changed sentence's claim (\"the archive ref the dirty path already builds, `refs/reckon/archive/` followed by the worktree's directory name (its node id)\") resolves: `ARCHIVE_REF_PREFIX = \"refs/reckon/archive/\"` at `routing.py:1029` and the dirty pin branch builds `f\"{ARCHIVE_REF_PREFIX}{path.name}\"` at `routing.py:2224`, and `obligations.py:450` confirms the directory name equals the node id. The quoted refusal string matches `routing.py`'s guard text.",
+    "done_when": "pass \u2014 \u00a76 now declares TWO negative controls, one per behaviour, and each maps to a bullet that reddens: control 1 (\"keeps pinning to dirty trees only\") falsifies bullet 2 (clean tree pinned and released), control 2 (\"restores the refusal for a recorded worktree that is gone or unregistered\") falsifies bullet 3 (already-removed exits 0). Both behaviours are measurable: bullet 2 asserts a ref resolves to the tree's head, bullet 3 asserts exit 0 plus an `already-removed` report plus a cleared lock.",
+    "evidence_paths": "pass \u2014 the done-when logs both controls \"under the run directory\", a durable path under `~/.config/reckon/crew/runs/<run-id>` on GPFS, not a node-local temp.",
+    "naming": "pass \u2014 \u00a76 carries no plan labels, stage names, ticket numbers or version tags; `already-removed`, `unintegrated`, `--pin-unique-commits` are code/behaviour vocabulary.",
+    "reasoning": "pass \u2014 all three checks hold on the changed unit. (a) Root cause matches evidence: the two named gates are real \u2014 the measurement is made only under `release_residue and not reachable and dirty` (`routing.py:804`, reached with `release_residue=True` from the gc path), so a clean tree's `non_equivalent_commits` is `None`; and `_pinnable_unique_commits` (`routing.py:1591`) plus the apply loop's `elif item[\"classification\"] == \"dirty\":` pin branch both require the `dirty` classification while a clean unreachable tree is classified `unintegrated` (`routing.py:840-848`). (b) The mechanism produces the done-when: widening the measurement AND admitting `unintegrated` to the pin branch is what lets a clean tree be pinned under the archive ref the dirty path builds and then released, which is what bullet 2 checks. (c) The mechanism runs on the real code path with the caller named: `garbage_collect` is reached by `crew gc` (`reckon/crew_run_commands.py:1240-1246`), and `--run` and `--pin-unique-commits` are accepted together (only `--run` with `--scratch` is refused), so `crew gc --run <id> --pin-unique-commits` is a reachable invocation.",
+    "single_goal": "pass \u2014 \u00a76's two behaviours share one code path (`_run_worktree_path`/`garbage_collect` confinement in `routing.py`) and are closed by one gate (`pytest tests/test_gc_clears_an_abandoned_clean_tree.py`); both bullets must pass for that gate to pass, so one verdict proves both.",
+    "wiring": "pass \u2014 \u00a76's only inter-node dependency (it runs after `r-20261012T051827498181-a-worktree-release-is-whole`, and \u00a77 after \u00a76). \u00a76 declares itself standalone; the run ids it cites resolve (their run directories exist under `~/.config/reckon/crew/runs/`), and no depends-on points at a wrong node."
+  },
+  "section_digests": {
+    "_document": "2a851ecc27afd816aee037ab80838994452970b9e8a58f4ffd5dc08d0f275181",
+    "s1": "32d74b1202f967c9688afa80dbd94719f49d78f6a5afcc8d56d9c46602e1c0a5",
+    "s2": "9328c20a14a28cadebc0cf3424b9fa61772f8c3bea7e4f7b1e097571697c0369",
+    "s3": "42466bfb93ed68c3dcdb669550dae38d00ebbdea5e24407a7579076255209fbf",
+    "s4": "ea437bee063bb05e8f8ddb6f7a30f7f066d66dff1770c1488e31b86a6f5c7ba8",
+    "s5": "75a8a336e2ee62426e5a8c3ed3310e0cf614b82a8cf7ae6a5985fcb99f2b1648",
+    "s6": "3f82b3311550663b1d18b1428203c2b44805aff91f1c998049de11dd82bfe201",
+    "s7": "d966e9dc54000fcf7d43d9d39567b2a791c2670b0224b881649472a126a8f106"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T19:20:19.701837+00:00"
+}
