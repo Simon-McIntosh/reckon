@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-13T21:42:28.702Z",
+  "dispatched_at": "2026-10-13T21:19:31Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T200905492696-ticker-row-render-tests/manifest.md",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed node's manifest records its gate under tests/test_logs and names no baseline_suite/after_suite arm and lives under the earlier dispatch id, so annotate_review_of_run finds no manifest at the reviewed run id r-20261013T202033377549 and the suite delta cannot be derived from the run's own logs."
+    },
+    {
+      "file": "tests/test_resume_offer_needs_a_dead_process.py",
+      "line": "48",
+      "severity": "follow-on",
+      "text": "follow-on: DECLARED_MUTATION is retained but now describes a mutation and assertion, the live case's row must contain resume again, that this change removed; the file's real control is the fixture-state mutation its manifest records, so the constant is stale text a later reader cannot reconcile."
+    },
+    {
+      "file": "tests/test_stalled_row_names_liveness.py",
+      "line": "193",
+      "severity": "follow-on",
+      "text": "follow-on: the added _counters() helper duplicates the counter regex already defined in tests/test_follow_counts_its_session.py:123, so the pattern now exists in three test files where a shared helper would hold it once."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit e81059843 against base 1eb38716 commit by commit; the single commit carries 108 insertions and 487 deletions across the five declared test paths, all test-only, retiring 27 added failures, 10 by deleting tests/test_ticker_renders_wait_facts.py whole, 1 by deleting the pane-clip case and 16 by rewriting the expectation.",
+    "done_when": "the done-when requires the added failures for the owned files to pass or be deleted with a rewritten expectation and zero failures beyond base-failures.txt shown by a gate.log; gate.log records 45 passed, EXIT=0 for the four surviving files and base-failures.txt names no failure in any of the five owned files.",
+    "goal": "the source node's goal, from its prompt at runs/r-20261013T202033377549-ticker-row-render-tests/prompt.txt, is to bring the wait, stall and lift row tests to the side commit's new row; the landed commit e81059843 rewrites those cases across tests/test_resume_offer_needs_a_dead_process.py, tests/test_stalled_row_names_liveness.py, tests/test_follower_names_a_lift.py and tests/test_crew_ticker.py to the fixed-column row.",
+    "manifest": "read at runs/r-20261013T200905492696-ticker-row-render-tests/manifest.md; status complete, one commit e81059843, gate.log 45 passed EXIT=0, a red negative control at EXIT=1, but the manifest records its gate under tests/test_logs and names no baseline_suite or after_suite arm, and it sits under the earlier dispatch id rather than the reviewed run id.",
+    "write_paths": "the manifest declares tests/test_ticker_renders_wait_facts.py, tests/test_crew_ticker.py, tests/test_stalled_row_names_liveness.py, tests/test_resume_offer_needs_a_dead_process.py and tests/test_follower_names_a_lift.py; git diff --name-status 1eb38716 e81059843 shows exactly those five, four modified and one deleted, and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_crew_ticker.py:300 fails if the counter block stops holding its right edge, and tests/test_stalled_row_names_liveness.py:215 reddens if the stalled run is counted in the wrong bucket, but the negative control exercises only the state-word assertion, leaving the counter and ordering assertions demonstrated by construction rather than by a recorded red.",
+    "evidence": "gate.log records 45 passed and EXIT=0 for the four surviving files, but the reviewed manifest records no baseline_suite/after_suite arm, so the review's added-failure count derives unmeasured rather than measured.",
+    "fit": "tests/test_resume_offer_needs_a_dead_process.py:48 keeps a DECLARED_MUTATION string that no longer names any assertion in the file, so the file's declared control contradicts the fixture mutation its manifest records.",
+    "goal_fidelity": "tests/test_stalled_row_names_liveness.py:214 and tests/test_resume_offer_needs_a_dead_process.py:178 assert the row's state word and counters, which is the fixed-column row the goal names.",
+    "reuse": "tests/test_stalled_row_names_liveness.py:193 and tests/test_resume_offer_needs_a_dead_process.py:153 each add a _counters() helper for a regex already implemented in tests/test_follow_counts_its_session.py:123, forking a per-file helper rather than sharing one.",
+    "scope_discipline": "git diff --name-status 1eb38716 e81059843 lists only the five declared test paths, with no source, config or out-of-scope file touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal, from its prompt at runs/r-20261013T202033377549-ticker-row-render-tests/prompt.txt, is to bring the wait, stall and lift row tests to the side commit's new row; the landed commit e81059843 rewrites those cases across tests/test_resume_offer_needs_a_dead_process.py, tests/test_stalled_row_names_liveness.py, tests/test_follower_names_a_lift.py and tests/test_crew_ticker.py to the fixed-column row.\nVERDICT done_when: the done-when requires the added failures for the owned files to pass or be deleted with a rewritten expectation and zero failures beyond base-failures.txt shown by a gate.log; gate.log records 45 passed, EXIT=0 for the four surviving files and base-failures.txt names no failure in any of the five owned files.\nVERDICT write_paths: the manifest declares tests/test_ticker_renders_wait_facts.py, tests/test_crew_ticker.py, tests/test_stalled_row_names_liveness.py, tests/test_resume_offer_needs_a_dead_process.py and tests/test_follower_names_a_lift.py; git diff --name-status 1eb38716 e81059843 shows exactly those five, four modified and one deleted, and nothing else.\nVERDICT manifest: read at runs/r-20261013T200905492696-ticker-row-render-tests/manifest.md; status complete, one commit e81059843, gate.log 45 passed EXIT=0, a red negative control at EXIT=1, but the manifest records its gate under tests/test_logs and names no baseline_suite or after_suite arm, and it sits under the earlier dispatch id rather than the reviewed run id.\nVERDICT diff: read commit e81059843 against base 1eb38716 commit by commit; the single commit carries 108 insertions and 487 deletions across the five declared test paths, all test-only, retiring 27 added failures, 10 by deleting tests/test_ticker_renders_wait_facts.py whole, 1 by deleting the pane-clip case and 16 by rewriting the expectation.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_stalled_row_names_liveness.py:214 and tests/test_resume_offer_needs_a_dead_process.py:178 assert the row's state word and counters, which is the fixed-column row the goal names.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate.log records 45 passed and EXIT=0 for the four surviving files, but the reviewed manifest records no baseline_suite/after_suite arm, so the review's added-failure count derives unmeasured rather than measured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-status 1eb38716 e81059843 lists only the five declared test paths, with no source, config or out-of-scope file touched.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_crew_ticker.py:300 fails if the counter block stops holding its right edge, and tests/test_stalled_row_names_liveness.py:215 reddens if the stalled run is counted in the wrong bucket, but the negative control exercises only the state-word assertion, leaving the counter and ordering assertions demonstrated by construction rather than by a recorded red.\nSCORE fit: 15\nJUSTIFICATION fit: tests/test_resume_offer_needs_a_dead_process.py:48 keeps a DECLARED_MUTATION string that no longer names any assertion in the file, so the file's declared control contradicts the fixture mutation its manifest records.\nSCORE reuse: 15\nJUSTIFICATION reuse: tests/test_stalled_row_names_liveness.py:193 and tests/test_resume_offer_needs_a_dead_process.py:153 each add a _counters() helper for a regex already implemented in tests/test_follow_counts_its_session.py:123, forking a per-file helper rather than sharing one.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T200905492696-ticker-row-render-tests/manifest.md:1 follow-on: the reviewed node's manifest records its gate under tests/test_logs and names no baseline_suite/after_suite arm and lives under the earlier dispatch id, so annotate_review_of_run finds no manifest at the reviewed run id r-20261013T202033377549 and the suite delta cannot be derived from the run's own logs.\nFINDING tests/test_resume_offer_needs_a_dead_process.py:48 follow-on: DECLARED_MUTATION is retained but now describes a mutation and assertion, the live case's row must contain resume again, that this change removed; the file's real control is the fixture-state mutation its manifest records, so the constant is stale text a later reader cannot reconcile.\nFINDING tests/test_stalled_row_names_liveness.py:193 follow-on: the added _counters() helper duplicates the counter regex already defined in tests/test_follow_counts_its_session.py:123, so the pattern now exists in three test files where a shared helper would hold it once.",
+  "review_run_id": "r-20261013T211905581658-review-of-ticker-row-render-tests-e8105984334d",
+  "reviewed_base_sha": "1eb387165734620baa5f573bed61beef362cc87b",
+  "reviewed_head_sha": "e8105984334d0095cbdf9383ecf3a43d26abdc2c",
+  "reviewed_run_id": "r-20261013T202033377549-ticker-row-render-tests",
+  "reviewer_run_id": "r-20261013T211905581658-review-of-ticker-row-render-tests-e8105984334d",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T21:40:01.733531+00:00",
+  "total": 100
+}
