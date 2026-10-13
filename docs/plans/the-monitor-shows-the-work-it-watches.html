@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="21">
+<meta name="plan-version" content="22">
 <meta name="plan-modified" content="2026-10-13">
 </head>
 <body>
@@ -63,7 +63,7 @@
 
     <h2 id="s4">§4 — The pane ends when no work is live</h2>
 <section data-reckon="section" data-id="s4" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> When the session has no live run, its follower child prints one idle line, <code>no live work in &lt;session&gt; since HH:MM</code>, and exits. "No live run" is the answer of <code>_population_has_live_work(project, session=...)</code> in <code>reckon/crew_follow_commands.py</code>, which already owns that judgement; it is not derived a second time. The idle line extends the final-line path <code>crew follow --lifetime</code> already prints.</p><p> The session host stays alive, and the pane's last line reads idle. When the session next dispatches, the request that dispatch already writes to the host's pipe starts a new follower child for that project and session. The new child replays nothing it has already printed and delivers the new run's start row. No turn is spent re-arming. The host itself still never exits on its own, because a plugin monitor that exits is never restarted in the session (decision <code>pane-end</code>). Claude Code therefore still lists the monitor as running, which this section accepts.</p>
+    <p><strong>Deliverable.</strong> When the session has no live run, its follower child prints one idle line, <code>no live work in &lt;session&gt; since HH:MM</code>, and exits. "No live run" is the answer of <code>_population_has_live_work(project, session=...)</code> in <code>reckon/crew_follow_commands.py</code>, which already owns that judgement; it is not derived a second time. The idle line extends the final-line path <code>crew follow --lifetime</code> already prints. Today <code>SessionHost.handle</code> drops a request for a project and session already in its children, and <code>tick</code> restarts a keyed child on backoff without removing the key. So when a child settles, the host removes it from its census. The next request for that pair then starts a new child, and backoff never restarts a settled one.</p><p> The session host stays alive, and the pane's last line reads idle. When the session next dispatches, the request that dispatch already writes to the host's pipe starts a new follower child for that project and session. The new child replays nothing it has already printed and delivers the new run's start row. No turn is spent re-arming. The host itself still never exits on its own, because a plugin monitor that exits is never restarted in the session (decision <code>pane-end</code>). Claude Code therefore still lists the monitor as running, which this section accepts.</p>
     <p><strong>Done when</strong> <code>tests/test_a_pane_settles_when_no_work_is_live.py</code> passes over a temporary host state directory:</p>
     <ul>
       <li>When the last live run of session S settles, the idle line is delivered once and the follower child exits, while the host process stays alive.</li>
