@@ -126,6 +126,7 @@ from reckon.crew.runs import (
     _shared_write_paths,
     _utc_now,
     _write_json,
+    crew_home,
     drain,
     list_live,
     pointer_path,
@@ -1351,14 +1352,51 @@ def discard_record_path(run_id: str) -> Path:
     return run_dir(run_id) / DISCARD_RECORD_NAME
 
 
+def discard_spool_dir() -> Path:
+    """Directory holding a discard's record for a run with no run directory.
+
+    A queued request that never launched has no run directory, and a discard
+    must not create one — the run directory is the run's own home, and a write
+    that recreated it would bring a discarded run back into existence. So a
+    discard of such a request records its departure here instead, keyed by run
+    id, where a restore and a later reader find it without a home the run never
+    had.
+    """
+    return crew_home() / "discards"
+
+
+def discard_spool_path(run_id: str) -> Path:
+    """Path of the discard marker for a run whose directory may not exist."""
+    return discard_spool_dir() / f"{run_id}.json"
+
+
+def discard_recorded(run_id: str) -> bool:
+    """Whether a deliberate discard has been recorded for this run.
+
+    A discard records its departure in the run's own directory when there is
+    one, and in :func:`discard_spool_path` when there is not, so both places are
+    read here. An unreadable marker answers ``False``: a departure the fleet
+    cannot corroborate is read as one nobody recorded.
+    """
+    for path in (discard_record_path(run_id), discard_spool_path(run_id)):
+        try:
+            if path.is_file():
+                return True
+        except OSError:
+            continue
+    return False
+
+
 def discard(run_id: str) -> dict[str, Any]:
     """Remove a stopped or abandoned pointer without promoting it.
 
-    The departure is recorded in the run directory before the pointer goes, so
-    a reader sees a discard rather than the same absence a reaped or
-    hand-removed pointer produces. The record is never written into a directory
-    that does not already exist: the run directory is the run's own home, and a
-    write that recreated it would bring a discarded run back into existence.
+    The departure is recorded before the pointer goes, so a reader sees a
+    discard rather than the same absence a reaped or hand-removed pointer
+    produces. The run directory is the run's own home and is never created here
+    — a write that recreated it would bring a discarded run back into existence
+    — so a request that never launched, and so has no run directory, records its
+    departure in the shared discards spool instead, keyed by run id. A reader
+    asks :func:`discard_recorded`, which reads both places.
 
     The run's own worktree is released through the same audit promotion applies
     on release. A discarded run whose tree is clean and whose head adds no
@@ -1431,18 +1469,18 @@ def _remove_discarded_worktree(record: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
-def _write_discard_record(
-    run_id: str, record: Mapping[str, Any]
-) -> str | None:
-    """Record a deliberate discard in the run directory, or report its absence.
+def _write_discard_record(run_id: str, record: Mapping[str, Any]) -> str | None:
+    """Record a deliberate discard where a reader will find it.
 
-    Returns the record's path when the run directory was there to hold it, and
-    ``None`` when the directory had already gone — a run whose home is gone has
-    nothing left to mark, and creating the directory here would resurrect it.
+    The record lands in the run's own directory when one exists — the run's
+    home, which a discard never creates. A request that never launched has no
+    such directory, so its departure is recorded in the shared discards
+    directory keyed by run id instead: the marker must outlive the pointer for a
+    restore to read, whether or not a run directory was ever made.
     """
     path = discard_record_path(run_id)
     if not path.parent.is_dir():
-        return None
+        path = discard_spool_path(run_id)
     _write_json(
         path,
         {

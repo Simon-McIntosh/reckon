@@ -1492,19 +1492,18 @@ def _departure_word(run_id: str, recorded: Mapping[str, str] | None) -> str:
 
 
 def _discard_recorded(run_id: str) -> bool:
-    """Whether the run directory holds a marker a deliberate discard left.
+    """Whether a deliberate discard has left a marker for this run.
 
-    The run's own home is read only for a departure and only for a run the
-    ledger does not record, so an ordinary observation touches no run
-    directory. An unreadable or absent marker answers False: a departure the
-    fleet cannot corroborate takes the word that promises nothing.
+    The marker is read only for a departure and only for a run the ledger does
+    not record, so an ordinary observation touches no run directory. Both the
+    run's own directory and the shared discards spool are read, so a request
+    discarded before it ever launched is corroborated too. An unreadable or
+    absent marker answers False: a departure the fleet cannot corroborate takes
+    the word that promises nothing.
     """
-    from reckon.crew.promotion import discard_record_path
+    from reckon.crew.promotion import discard_recorded
 
-    try:
-        return discard_record_path(run_id).is_file()
-    except OSError:
-        return False
+    return discard_recorded(run_id)
 
 
 def fleet_transitions(

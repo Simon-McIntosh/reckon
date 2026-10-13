@@ -438,16 +438,15 @@ def _discarded_since(snapshot: Mapping[str, Any]) -> bool:
 
     The pass holds the queued pointer in memory while it attempts a launch and
     writes it back when the launch does not survive. A ``crew discard`` issued in
-    that window removes the pointer and records the departure in the run
-    directory; without this reading the restore would write the request back and
-    undo the discard. The record's presence is the fact the restore reads.
+    that window removes the pointer and records the departure — in the run
+    directory, or in the shared discards spool for a request that never launched
+    and so has no run directory. Without this reading the restore would write the
+    request back and undo the discard. The record's presence is the fact the
+    restore reads.
     """
-    from reckon.crew.promotion import discard_record_path
+    from reckon.crew.promotion import discard_recorded
 
-    try:
-        return discard_record_path(str(snapshot["run_id"])).exists()
-    except OSError:
-        return False
+    return discard_recorded(str(snapshot["run_id"]))
 
 
 def _restore_queued(

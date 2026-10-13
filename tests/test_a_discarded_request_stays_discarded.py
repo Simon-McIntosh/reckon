@@ -2,10 +2,12 @@
 
 The admission pass holds a queued request in memory while it attempts a launch
 and writes the request back when the launch does not survive. A ``crew discard``
-issued during that pass removes the pass's pointer and records the departure in
-the run directory; the restore then wrote the request back and undid the discard.
-These tests bind the restore to that record: a discarded request stays gone, and
-a request nobody discarded is still restored.
+issued during that pass removes the pass's pointer and records the departure;
+the restore then wrote the request back and undid the discard. A request that
+never launched has no run directory, so its departure is recorded in the shared
+discards spool instead of a run directory the discard must not create. These
+tests bind the restore to that record: a discarded request stays gone whether or
+not it has a run directory, and a request nobody discarded is still restored.
 """
 
 # ruff: noqa: F811 - the fixture is imported and also named as each test's parameter.
@@ -34,19 +36,13 @@ def _attempted_request(repository: Path, run_id: str) -> None:
     runs.run_dir(run_id).mkdir(parents=True, exist_ok=True)
 
 
-def test_a_request_discarded_during_the_pass_is_not_written_back(
-    admit_repo: Path, monkeypatch
-) -> None:
-    """A discard made while the pass holds the request stands.
+def _discard_mid_pass(monkeypatch) -> None:
+    """Make the pass discard the request it holds, before its restore runs.
 
-    The discard is issued after the pass has snapshotted the queued pointer and
-    before its restore runs, which is the window the field showed. The restore
-    must read the discard's record and leave the pointer removed.
+    The pass snapshots the queued pointer and then releases it inside
+    ``_launch_queued``. Wrapping that step issues the discard after the snapshot
+    but before the release, which is the window the field showed.
     """
-    _, resolve = _config_for()
-    run_id = "r-discarded"
-    _attempted_request(admit_repo, run_id)
-
     real_launch = queue_admission._launch_queued
 
     def discard_then_launch(pointer, **kwargs):
@@ -57,12 +53,52 @@ def test_a_request_discarded_during_the_pass_is_not_written_back(
 
     monkeypatch.setattr(queue_admission, "_launch_queued", discard_then_launch)
 
+
+def test_a_request_discarded_during_the_pass_is_not_written_back(
+    admit_repo: Path, monkeypatch
+) -> None:
+    """A discard made while the pass holds the request stands.
+
+    The restore must read the discard's record and leave the pointer removed.
+    """
+    _, resolve = _config_for()
+    run_id = "r-discarded"
+    _attempted_request(admit_repo, run_id)
+
+    _discard_mid_pass(monkeypatch)
+
     result = queue_admission.admit_once(config_for=resolve, launcher=_failing_launcher)
 
-    assert promotion.discard_record_path(run_id).exists(), "the discard left a record"
+    assert promotion.discard_recorded(run_id), "the discard left a record"
     assert not runs.pointer_path(run_id).exists(), (
         "a discarded request must not be written back by the pass"
     )
+    assert run_id in result["failed"]
+
+
+def test_a_request_with_no_run_directory_is_found_discarded(
+    admit_repo: Path, monkeypatch
+) -> None:
+    """A queued review that never launched has no run directory.
+
+    The discard must leave a durable record the restore can read even then, and
+    must not create the run directory to do it — recreating a run's home is what
+    a discard exists to avoid.
+    """
+    _, resolve = _config_for()
+    run_id = "r-no-home"
+    runs.queue_dispatch(_queue(admit_repo, node_id="queued", run_id=run_id))
+    assert not runs.run_dir(run_id).exists(), "the request never launched"
+
+    _discard_mid_pass(monkeypatch)
+
+    result = queue_admission.admit_once(config_for=resolve, launcher=_failing_launcher)
+
+    assert not runs.pointer_path(run_id).exists(), (
+        "a discarded request must not be written back by the pass"
+    )
+    assert promotion.discard_recorded(run_id), "the discard left a readable record"
+    assert not runs.run_dir(run_id).exists(), "the discard must not create a run dir"
     assert run_id in result["failed"]
 
 
@@ -74,7 +110,7 @@ def test_a_request_nobody_discarded_is_still_restored(admit_repo: Path) -> None:
 
     result = queue_admission.admit_once(config_for=resolve, launcher=_failing_launcher)
 
-    assert not promotion.discard_record_path(run_id).exists()
+    assert not promotion.discard_recorded(run_id)
     pointer = runs.read_pointer(run_id)
     assert pointer["phase"] == "queued"
     assert run_id in result["failed"]
