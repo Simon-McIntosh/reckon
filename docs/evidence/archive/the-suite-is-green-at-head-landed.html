@@ -2908,6 +2908,11 @@ reckon/crew/dispatch.py:4535: TypeError
     <p><code>docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html</code> cited <code>5b5c6c64</code>, which is not an object in this repository. Its row describes run <code>r-20260924T211233454588-manifest-names-the-tree-it-imported</code>. The commit on main that landed that work is <code>1ec9a2c7b</code>, "docs(plans): land the manifest template naming the tree it imported", which changes this record and its plan and sits between the row's other two citations. Both citations of the unresolved sha now name it (commit <code>97b6f90d1</code>; merged at <code>9a64d9ee9</code>). The conformance id fails at base and passes at head; an invented all-zero sha in a scratch copy fails it. Review 117/120, no added failure; <code>crew verify-gate</code> passed at the integrated head.</p>
   </section>
 
+  <section id="s16-gc-scratch">
+    <h2>§16 — the gc scratch test cannot trip on its own basetemp</h2>
+    <p><code>tests/test_gc_sweeps_orphan_scratch.py</code> asserted that gc removes nothing under the real scratch root <code>/tmp/reckon-crew-scratch</code>, which a worker's basetemp sits inside, so the fixture's own legitimate removal tripped it. A helper, <code>_outside_fixture_in_real_root</code>, now excludes the fixture's own tree before the comparison (commit <code>5c79a1995</code>; merged at <code>4041f280f</code>). The id fails at base with the basetemp under the real root, and passes at head with it both under and outside; the whole file passes 3 in each arm. A pytest plugin that makes the sweep also remove a directory in the real root outside the fixture fails the test in both arms. Review 108/120, no added failure; its follow-on notes that one of the two guards is now redundant behind an exact-match assertion. <code>crew verify-gate</code> passed at the integrated head.</p>
+  </section>
+
 </main>
 </body>
 </html>

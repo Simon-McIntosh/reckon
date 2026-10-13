@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.98">
-<meta name="plan-version" content="317">
+<meta name="plan-version" content="318">
 <meta name="plan-modified" content="2026-10-13">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;done&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
@@ -1693,7 +1693,10 @@ reviewed worktree is untouched (git status --porcelain empty).</p></div>
     <div class="r-comment-body"><p>Independent review of r-20261013T031535787917-landing-record-cites-a-real-commit stored: status parsed, all 6 dimensions scored goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 20, reuse 20 (total 117), reviewed_base_sha 40186023d58ce16ae64eba11dd385db74698980c / reviewed_head_sha 97b6f90d1c5fcdf9d7ae361127acb0723d3a2610, added_failure_count 0 with no added failure ids, and two follow-on findings.</p></div>
 </div>
 <div class="r-comment" data-section="s16" data-id="c-run-r-20261013T044819791134-gc-scratch-test-ignores-its-own-basetemp" data-who="reckon-build" data-when="2026-10-13T05:02:47.278Z">
-    <div class="r-comment-body"><p>The gc scratch test&#x27;s real-root guard now excludes the fixture&#x27;s own tree via a shared `_outside_fixture_in_real_root` predicate used by both removal checks, so the target id passes with `--basetemp` under `/tmp/reckon-crew-scratch` and outside it (each `1 passed`, `EXIT=0`) and fails (`EXIT=1`) under the declared mutation.</p></div>
+    <div class="r-comment-body"><p>The gc scratch test's real-root guard now excludes the fixture's own tree via a shared `_outside_fixture_in_real_root` predicate used by both removal checks, so the target id passes with `--basetemp` under `/tmp/reckon-crew-scratch` and outside it (each `1 passed`, `EXIT=0`) and fails (`EXIT=1`) under the declared mutation.</p></div>
+</div>
+<div class="r-comment" data-section="s16" data-id="c-close-s16" data-who="reckon-build" data-when="2026-10-13T05:25:00Z">
+    <div class="r-comment-body"><p>§16 landed: the gc scratch test's real-root guard excludes the fixture's own tree (commit <code>5c79a1995</code>). Passes with the basetemp inside and outside the real root; the intruder control fails both; review 108, 0 added; verify-gate passed at <code>4041f280f</code>. <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed.html#s16-gc-scratch">evidence</a></p></div>
 </div>
 </section>
 </main>
