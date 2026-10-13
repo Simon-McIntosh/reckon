@@ -23,7 +23,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew.runs import _write_json, pointer_path, run_dir
+from reckon.crew.runs import _write_json, pointer_path, run_dir, runs_dir
 from tests.helpers.git import git as _git
 
 routing_module = importlib.import_module("reckon.crew.routing")
@@ -343,6 +343,68 @@ def test_a_path_that_is_no_worktree_at_all_is_withheld(
     assert "not registered" in released["withheld"], released
     assert keeper.is_file()
     assert _trash_entries(repository) == []
+
+
+def _runs_root_tree(repository: Path, name: str) -> Path:
+    """A registered worktree under the crew runs root, as a worker creates one."""
+    tree = runs_dir() / name / "source"
+    tree.parent.mkdir(parents=True, exist_ok=True)
+    _git(repository, "worktree", "add", "-q", "--detach", str(tree), "HEAD")
+    return tree
+
+
+def test_a_registered_worktree_under_the_runs_root_is_released_and_reported_removed(
+    repository: Path,
+) -> None:
+    """gc walks the runs root, so a tree a worker left there must be releasable.
+
+    The managed root alone is not the whole managed set: a worker that runs its
+    own ``git worktree add`` inside its run directory leaves a registered tree
+    under the crew runs root, and gc's candidate filter admits it. A release
+    that refused it would report the tree removed while it stayed on disk.
+    """
+    tree = _runs_root_tree(repository, "r-20261012T050000000000-runs-root-tree")
+    assert str(tree) in _registered(repository)
+
+    report = routing_module.garbage_collect(
+        repo=repository, project=PROJECT, apply=True
+    )
+
+    assert str(tree) in report["removed_worktrees"], report["withheld_worktrees"]
+    assert report["withheld_worktrees"] == []
+    assert not tree.exists()
+    assert str(tree) not in _registered(repository)
+    assert list((runs_dir() / "_trash").glob("*")) == []
+
+
+def test_gc_reports_a_withheld_release_and_leaves_it_out_of_removed(
+    repository: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A release the helper refuses is a withheld row, never a removal.
+
+    The helper reports a refusal by returning rather than raising, so a caller
+    that ignores the flag reports a tree as removed that is still on disk.
+    """
+    tree = _runs_root_tree(repository, "r-20261012T050000000001-refused-tree")
+    reason = "worktree lies outside the managed worktree root"
+    monkeypatch.setattr(
+        routing_module,
+        "_release_worktree_whole",
+        lambda repo, path, **kwargs: {
+            "path": str(path),
+            "released": False,
+            "withheld": reason,
+        },
+    )
+
+    report = routing_module.garbage_collect(
+        repo=repository, project=PROJECT, apply=True
+    )
+
+    assert report["withheld_worktrees"] == [{"worktree": str(tree), "reason": reason}]
+    assert str(tree) not in report["removed_worktrees"]
+    assert tree.is_dir(), "a withheld release left the tree removed anyway"
+    assert str(tree) in _registered(repository)
 
 
 def _literal_argv(call: ast.Call) -> list[str]:

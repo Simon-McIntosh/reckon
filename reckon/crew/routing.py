@@ -44,6 +44,7 @@ from reckon.crew.node import (
     PlanVisibilityError,
     TaskNode,
     parse_duration,
+    repository_identity,
 )
 from reckon.crew.refusals import format_refusal
 from reckon.crew.runs import (
@@ -562,7 +563,11 @@ def _run_directory_extractions(runs_root: Path) -> list[Path]:
     if not runs_root.is_dir():
         return []
     found: list[Path] = []
-    for run_dir in sorted(path for path in runs_root.iterdir() if path.is_dir()):
+    for run_dir in sorted(
+        path
+        for path in runs_root.iterdir()
+        if path.is_dir() and path.name != WORKTREE_TRASH_DIRNAME
+    ):
         for candidate in run_directory_source_trees(run_dir):
             if carries_git_directory(candidate) or candidate in found:
                 continue
@@ -1101,15 +1106,32 @@ def _run_worktree_path(repo: Path, project: str | None, run_id: str) -> Path:
 WORKTREE_TRASH_DIRNAME = "_trash"
 
 
+def _releasable_roots(repo: Path) -> list[Path]:
+    """The roots whose trees this node owns and may release.
+
+    Two places hold a disposable tree: the managed worktree roots a dispatch
+    creates trees in, and the crew runs root, where a worker's own ``git
+    worktree add`` puts a source tree inside its run directory. Both are
+    managed, and `crew gc` already walks both, so a tree under either is
+    releasable; anything else — the checkout, its ancestors, a tree someone
+    registered by hand elsewhere — is not.
+    """
+    roots = list(_workspace_roots(repo))
+    runs = runs_dir()
+    if runs not in roots:
+        roots.append(runs)
+    return roots
+
+
 def _worktree_trash_root(repo: Path, path: Path) -> Path:
     """The trash directory a tree is moved into, on the tree's own filesystem.
 
-    Trash sits inside the workspace root that holds the tree, so the rename
-    stays on one filesystem and cannot fail with a cross-device error; a tree
-    outside every managed root falls back to the primary root's trash.
+    Trash sits inside the root that holds the tree, so the rename stays on one
+    filesystem and cannot fail with a cross-device error; a tree outside every
+    releasable root falls back to the primary root's trash.
     """
     resolved = path.resolve()
-    roots = _workspace_roots(repo)
+    roots = _releasable_roots(repo)
     for root in roots:
         if resolved.is_relative_to(root):
             return root / WORKTREE_TRASH_DIRNAME
@@ -1151,28 +1173,11 @@ def _worktree_is_locked(repo: Path, tree: Path) -> bool:
     return bool(record and record["locked"])
 
 
-def _main_worktree(repo: Path) -> Path | None:
-    """The primary checkout, whose directory git does not register as linked.
-
-    Read from the common git directory, which every worktree of the repository
-    resolves to, so a linked tree and the main checkout give the same answer.
-    ``None`` when git cannot name it, and the caller then treats the repository
-    it was handed as the main worktree.
-    """
-    probe = _git(
-        repo, "rev-parse", "--path-format=absolute", "--git-common-dir", check=False
-    )
-    if probe.returncode or not probe.stdout.strip():
-        return None
-    common = Path(probe.stdout.strip()).resolve()
-    return common.parent if common.name == ".git" else None
-
-
 def _release_withhold_reason(repo: Path, tree: Path) -> str:
     """Why ``tree`` must not be vacated, or the empty string when it may be.
 
     Only a linked worktree that this repository registers, that lies inside a
-    managed worktree root, and that is neither the repository nor one of its
+    releasable root, and that is neither the repository nor one of its
     ancestors is a release candidate. Without these the release would move
     something other than a disposable tree: a run pointer naming the main
     checkout would take the checkout itself, and the directory it moved to
@@ -1182,13 +1187,11 @@ def _release_withhold_reason(repo: Path, tree: Path) -> str:
     repository = repo.resolve()
     if repository.is_relative_to(resolved):
         return "worktree names the repository root or one of its ancestors"
-    main = _main_worktree(repo)
-    if main is not None and resolved == main:
+    if resolved == repository_identity(repo):
         return "worktree names the main checkout, which is not a linked worktree"
     if resolved not in _registered_worktrees(repo):
         return "worktree is not registered with the repository"
-    roots = _workspace_roots(repo)
-    if not any(resolved.is_relative_to(root) for root in roots):
+    if not any(resolved.is_relative_to(root) for root in _releasable_roots(repo)):
         return "worktree lies outside the managed worktree root"
     return ""
 
@@ -1262,7 +1265,7 @@ def _sweep_worktree_trash(repo: Path, *, apply: bool) -> list[dict[str, Any]]:
     that runs with ``apply`` deletes each directory and prints it.
     """
     rows: list[dict[str, Any]] = []
-    for root in _workspace_roots(repo):
+    for root in _releasable_roots(repo):
         trash_root = root / WORKTREE_TRASH_DIRNAME
         if not trash_root.is_dir():
             continue
@@ -1854,7 +1857,11 @@ def _unledgered_run_directories(
     current = now or datetime.now(tz=UTC)
     cutoff = current - timedelta(days=retention_days)
     entries: list[dict[str, Any]] = []
-    for directory in sorted(path for path in runs_root.iterdir() if path.is_dir()):
+    for directory in sorted(
+        path
+        for path in runs_root.iterdir()
+        if path.is_dir() and path.name != WORKTREE_TRASH_DIRNAME
+    ):
         directory_run_id = directory.name
         if run_id and directory_run_id != run_id:
             continue
@@ -2109,6 +2116,7 @@ def garbage_collect(
     worktrees: list[dict[str, Any]] = []
     removed: list[str] = []
     refused: list[str] = []
+    withheld: list[dict[str, Any]] = []
     residue_report: list[dict[str, Any]] = []
     trash_rows: list[dict[str, Any]] = []
     failed_path = ""
@@ -2169,6 +2177,7 @@ def garbage_collect(
                         item["classification"] = "live-referenced"
                         item["claimed_by_live_runs"] = sorted(current_claims)
                         continue
+                    release: dict[str, Any] | None = None
                     if item["classification"] == "dirty-integrated":
                         current = _inspect_workspace(
                             repo_root,
@@ -2229,7 +2238,7 @@ def garbage_collect(
                         ):
                             item["classification"] = "unintegrated"
                             continue
-                        _release_worktree_whole(repo_root, path)
+                        release = _release_worktree_whole(repo_root, path)
                     elif _git(
                         path, "status", "--porcelain", "--untracked-files=all"
                     ).stdout.strip():
@@ -2243,8 +2252,17 @@ def garbage_collect(
                         if "unique" in saved["residue_classes"].values():
                             residue_report.append({"worktree": str(path), **saved})
                     else:
-                        _release_worktree_whole(repo_root, path)
-                    removed.append(str(path))
+                        release = _release_worktree_whole(repo_root, path)
+                    if release is not None and not release.get("released", True):
+                        # The helper moved nothing: this tree is not one it may
+                        # take. A withheld release is reported as withheld with
+                        # its reason, never as a removal that happened.
+                        item["worktree_withheld"] = release["withheld"]
+                        withheld.append(
+                            {"worktree": str(path), "reason": release["withheld"]}
+                        )
+                    else:
+                        removed.append(str(path))
                 except Exception:
                     if path.is_dir():
                         # A removal this pass attempted and did not complete:
@@ -2515,6 +2533,7 @@ def garbage_collect(
         "counts": counts,
         "worktrees": worktrees,
         "removed_worktrees": removed,
+        "withheld_worktrees": withheld,
         "residue_report": residue_report,
         "worktree_trash": trash_rows,
         "worktree_trash_removed": sum(
