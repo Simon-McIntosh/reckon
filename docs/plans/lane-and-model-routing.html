@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-north-star" content="unattended-execution">
 <meta name="plan-impl" content="0.8823529411764706">
-<meta name="plan-version" content="102">
+<meta name="plan-version" content="103">
 <meta name="plan-modified" content="2026-10-13">
 </head>
 <body>
@@ -398,6 +398,9 @@
 </div>
 <div class="r-comment" data-section="s22" data-id="c-s22-pinned-reading" data-who="" data-when="2026-10-13">
     <div class="r-comment-body"><p>Owed before §22 dispatches (content review <code>r-20261013T120350216141</code>). First, the done-when must say the bare-reading contract is reversed for a Jev-call expiry. <code>tests/test_picker_pick_within_bound.py::test_slow_client_still_times_out_as_a_recorded_fallback</code> asserts <code>fallback_reason == "timeout"</code> for exactly that expiry, and the docstring at <code>reckon/crew/dispatch_picker.py:437</code> documents the bare reading. Both are updated to <code>timeout in jev</code>, or the no-added-failure clause cannot be met. Second, the Why's "two gaps" counts three defects and should read three.</p></div>
+</div>
+<div class="r-comment" data-section="s22" data-id="c-s22-split-the-pick-stage" data-who="" data-when="2026-10-13">
+    <div class="r-comment-body"><p>Also owed before §22 dispatches, measured from §20's first production timings on 2026-10-13. The stage §20 calls <code>jev</code> times the whole <code>pick()</code> call, not the Jev HTTP request. Across seven successful picks between 11:58Z and 12:21Z, that stage took 487–2,437 ms while <code>jev_latency_ms</code>, the HTTP request alone, took 313–622 ms. The rest is local work inside <code>pick()</code>. The one timed-out pick, <code>r-20261013T122249417538</code>, finished its input stages in about 930 ms and spent over 4 s inside <code>pick()</code>, and nothing records how much of that was the request. §22 should split that stage into the steps <code>pick()</code> runs (candidate scan, state rendering, the HTTP request) and name the one a deadline expires in. Renaming the bare reading to <code>timeout in jev</code> alone would blame Jev for local work.</p></div>
 </div>
 </section>
 </main>
