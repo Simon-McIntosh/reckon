@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed run's manifest records baseline_suite and after_suite as null, so the added-failure count was not taken",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-13T05:02:47.278Z",
+  "dispatched_at": "2026-10-13T04:49:07Z",
+  "findings": [
+    {
+      "file": "tests/test_gc_sweeps_orphan_scratch.py",
+      "line": "94",
+      "severity": "follow-on",
+      "text": "follow-on: the assertion `not [path for path in removed_targets if _outside_fixture_in_real_root(path, real_root, root)]` cannot fail once line 93 has required `removed_targets == [old]` and `old` is inside the fixture root, because the filter is then always empty; it guards nothing beyond line 93 and should either be dropped or rewritten to a form whose failure mode is real."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T044819791134-gc-scratch-test-ignores-its-own-basetemp/head-under-realroot.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: four gate logs (head-under-realroot.log, head-outside-realroot.log, negative-control-under-realroot.log, negative-control-outside-realroot.log) name revision 45d735d2, the base, on their `revision:` line while they ran the head content \u2014 they were captured before the commit at 5c79a1995 \u2014 so the revision each log claims is not the one it ran, though the head claim is independently supported at 5c79a1995 by file-under-realroot.log and file-outside-realroot.log."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against base 45d735d2fdc9c48336a875836cc48a27cc49aac8; the single commit 5c79a1995 changes tests/test_gc_sweeps_orphan_scratch.py (23 insertions, 4 deletions) adding `_outside_fixture_in_real_root` and rewriting two assertions, plus a new 24-line evidence fragment, with no production source touched.",
+    "done_when": "the done_when names tests/test_gc_sweeps_orphan_scratch.py::test_sweep_reports_and_removes_only_old_unclaimed_scratch passing with `--basetemp` under `/tmp/reckon-crew-scratch` and outside, each logged with an `EXIT=` line plus a negative control; the run records head-under-realroot.log and head-outside-realroot.log at `1 passed`/`EXIT=0`, negative-control-under/outside-realroot.log at `1 failed`/`EXIT=1`, and repro-before-basetemp-under-realroot.log at `1 failed`/`EXIT=1`.",
+    "goal": "the goal is to exclude the fixture's own tree from the real-root check so the scratch-gc test holds wherever pytest places its basetemp; tests/test_gc_sweeps_orphan_scratch.py:36 adds `_outside_fixture_in_real_root`, which returns True only for a path inside `/tmp/reckon-crew-scratch` and not inside the fixture root, and both removal checks now assert on its negation.",
+    "manifest": "read; it states the target id `1 passed`/`EXIT=0` in both basetemp arms and `1 failed`/`EXIT=1` under the mutation, names its seven log paths, and records baseline_suite and after_suite as null.",
+    "write_paths": "the manifest declares tests/test_gc_sweeps_orphan_scratch.py, the evidence fragment docs/evidence/fragments/the-suite-is-green-at-head/gc-scratch-test-ignores-* ; the diff 45d735d2..5c79a1995 touches only the test file and that fragment, both inside the declared scope."
+  },
+  "justifications": {
+    "durability": "the entries guard at tests/test_gc_sweeps_orphan_scratch.py:103 reddens under the mutation, but tests/test_gc_sweeps_orphan_scratch.py:94 cannot fail given line 93, and the original trip is caught only when basetemp lands under the real root.",
+    "evidence": "the done_when's arms are logged with `EXIT=` lines under the run directory, but head-under-realroot.log:1, head-outside-realroot.log:1, negative-control-under-realroot.log:1 and negative-control-outside-realroot.log:1 each name revision 45d735d2 while exercising the head content, so four logs misname the revision they ran at.",
+    "fit": "`_outside_fixture_in_real_root` at tests/test_gc_sweeps_orphan_scratch.py:36 follows the module-level `_fixture`/`_entry` helper idiom, carries a docstring in the surrounding voice, and introduces no plan or version label.",
+    "goal_fidelity": "tests/test_gc_sweeps_orphan_scratch.py:36-47 excludes the fixture tree from the real-root predicate named in the goal, and head-under-realroot.log and head-outside-realroot.log both read `1 passed`.",
+    "reuse": "a search over reckon/ for the `is_relative_to` capability finds only inline uses (reckon/crew/routing.py:1922, reckon/_worker_fence.py:953) and not a shared root-exclusion helper, so the new predicate is the first owner and forks nothing.",
+    "scope_discipline": "the diff 45d735d2..5c79a1995 touches only tests/test_gc_sweeps_orphan_scratch.py and the declared evidence fragment, both inside the node's write_paths, with no production source changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to exclude the fixture's own tree from the real-root check so the scratch-gc test holds wherever pytest places its basetemp; tests/test_gc_sweeps_orphan_scratch.py:36 adds `_outside_fixture_in_real_root`, which returns True only for a path inside `/tmp/reckon-crew-scratch` and not inside the fixture root, and both removal checks now assert on its negation.\nVERDICT done_when: the done_when names tests/test_gc_sweeps_orphan_scratch.py::test_sweep_reports_and_removes_only_old_unclaimed_scratch passing with `--basetemp` under `/tmp/reckon-crew-scratch` and outside, each logged with an `EXIT=` line plus a negative control; the run records head-under-realroot.log and head-outside-realroot.log at `1 passed`/`EXIT=0`, negative-control-under/outside-realroot.log at `1 failed`/`EXIT=1`, and repro-before-basetemp-under-realroot.log at `1 failed`/`EXIT=1`.\nVERDICT write_paths: the manifest declares tests/test_gc_sweeps_orphan_scratch.py, the evidence fragment docs/evidence/fragments/the-suite-is-green-at-head/gc-scratch-test-ignores-* ; the diff 45d735d2..5c79a1995 touches only the test file and that fragment, both inside the declared scope.\nVERDICT manifest: read; it states the target id `1 passed`/`EXIT=0` in both basetemp arms and `1 failed`/`EXIT=1` under the mutation, names its seven log paths, and records baseline_suite and after_suite as null.\nVERDICT diff: read commit by commit against base 45d735d2fdc9c48336a875836cc48a27cc49aac8; the single commit 5c79a1995 changes tests/test_gc_sweeps_orphan_scratch.py (23 insertions, 4 deletions) adding `_outside_fixture_in_real_root` and rewriting two assertions, plus a new 24-line evidence fragment, with no production source touched.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_gc_sweeps_orphan_scratch.py:36-47 excludes the fixture tree from the real-root predicate named in the goal, and head-under-realroot.log and head-outside-realroot.log both read `1 passed`.\nSCORE evidence: 18\nJUSTIFICATION evidence: the done_when's arms are logged with `EXIT=` lines under the run directory, but head-under-realroot.log:1, head-outside-realroot.log:1, negative-control-under-realroot.log:1 and negative-control-outside-realroot.log:1 each name revision 45d735d2 while exercising the head content, so four logs misname the revision they ran at.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff 45d735d2..5c79a1995 touches only tests/test_gc_sweeps_orphan_scratch.py and the declared evidence fragment, both inside the node's write_paths, with no production source changed.\nSCORE durability: 14\nJUSTIFICATION durability: the entries guard at tests/test_gc_sweeps_orphan_scratch.py:103 reddens under the mutation, but tests/test_gc_sweeps_orphan_scratch.py:94 cannot fail given line 93, and the original trip is caught only when basetemp lands under the real root.\nSCORE fit: 18\nJUSTIFICATION fit: `_outside_fixture_in_real_root` at tests/test_gc_sweeps_orphan_scratch.py:36 follows the module-level `_fixture`/`_entry` helper idiom, carries a docstring in the surrounding voice, and introduces no plan or version label.\nSCORE reuse: 20\nJUSTIFICATION reuse: a search over reckon/ for the `is_relative_to` capability finds only inline uses (reckon/crew/routing.py:1922, reckon/_worker_fence.py:953) and not a shared root-exclusion helper, so the new predicate is the first owner and forks nothing.\nFINDING tests/test_gc_sweeps_orphan_scratch.py:94 follow-on: the assertion `not [path for path in removed_targets if _outside_fixture_in_real_root(path, real_root, root)]` cannot fail once line 93 has required `removed_targets == [old]` and `old` is inside the fixture root, because the filter is then always empty; it guards nothing beyond line 93 and should either be dropped or rewritten to a form whose failure mode is real.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T044819791134-gc-scratch-test-ignores-its-own-basetemp/head-under-realroot.log:1 follow-on: four gate logs (head-under-realroot.log, head-outside-realroot.log, negative-control-under-realroot.log, negative-control-outside-realroot.log) name revision 45d735d2, the base, on their `revision:` line while they ran the head content \u2014 they were captured before the commit at 5c79a1995 \u2014 so the revision each log claims is not the one it ran, though the head claim is independently supported at 5c79a1995 by file-under-realroot.log and file-outside-realroot.log.",
+  "review_run_id": "r-20261013T050602966018-review-of-gc-scratch-test-ignores-its-own-basetemp",
+  "reviewed_base_sha": "45d735d2fdc9c48336a875836cc48a27cc49aac8",
+  "reviewed_head_sha": "5c79a19953fb906521fe1114cfcfac36049a267f",
+  "reviewed_run_id": "r-20261013T044819791134-gc-scratch-test-ignores-its-own-basetemp",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "medium",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261013T050602966018-review-of-gc-scratch-test-ignores-its-own-basetemp",
+  "scores": {
+    "durability": 14,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T05:22:00+00:00",
+  "total": 108
+}
