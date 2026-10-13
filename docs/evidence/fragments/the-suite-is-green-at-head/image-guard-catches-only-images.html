@@ -1,0 +1,4 @@
+<section id="image-guard-catches-only-images">
+  <h2>image-guard-catches-only-images — the capture image guard refuses only image reads</h2>
+  <p id="image-guard-catches-only-images-landing">The capture gate's <code>IMAGE_BYTES_OPENED</code> refusal was scoped from every <code>Path.read_bytes</code> to reads of image files alone, so the per-test seat-record reap's <code>/proc/&lt;pid&gt;/environ</code> attribution read no longer trips it at teardown. A control test opens a PNG under the guard and requires the refusal. Measured at <code>4fc92ea5</code>: <code>tests/test_spa_owed_captures.py</code> 8 passed, EXIT=0; the collision arm (a seat record present under the base temp root) passes with no teardown error; the declared negative control — a PNG opened inside the guarded window — fails that id, EXIT=1.</p>
+</section>
