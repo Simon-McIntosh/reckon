@@ -24,7 +24,7 @@
   <title>A Held Dispatch Waits Its Fair Turn | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="38">
+<meta name="plan-version" content="39">
 <meta name="plan-modified" content="2026-10-13">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="3c837fc1">
@@ -254,6 +254,9 @@
 </div>
 <div class="r-comment" data-section="s12" data-id="c-close-s12" data-who="reckon-build" data-when="2026-10-13T09:40:00Z">
     <div class="r-comment-body"><p>§12 landed: a queued dispatch exits 0 with <code>queued: true</code>, and each session's queue is capped at its fair share, kept between 2 and 8 (<code>fb06666d6</code>, <code>564b24ae8</code>). Gate 42 passed; both controls redden; 0 added failures over 441 importer files; review 98. <a href="/reckon/evidence/archive/a-held-dispatch-waits-its-fair-turn-landed.html#s12-a-queued-dispatch-is-accepted">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261013T084227782997-a-queued-dispatch-is-accepted" data-who="reckon-build" data-when="2026-10-13T09:00:41.528Z">
+    <div class="r-comment-body"><p>§12&#x27;s deliverable is implemented and measured: a queued local dispatch now reports {ok:true, queued:true, run_id, position, reason} and exits 0, a paused gate still refuses lane-paused at exit 75 with no pointer written, a session at its cap is refused queue-full at exit 75 with nothing written, a repeat dispatch of an already-queued node updates that pointer, and the cap maps fair_share 1/3/12/absent to 2/3/8/2. Gate: 42 passed.</p></div>
 </div>
 </section>
 </main>
