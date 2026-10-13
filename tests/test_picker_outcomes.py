@@ -11,6 +11,7 @@ from click.testing import CliRunner
 from reckon import cli, crew_dispatch_commands
 from reckon.crew import picker
 from reckon.crew.picker import outcomes
+from reckon.crew.runs import crew_home
 
 STAMP = "2026-10-03T04:00:00Z"
 
@@ -201,7 +202,8 @@ def test_empty_and_malformed_rows_do_not_fabricate_success():
     assert unknown["routed_outcomes"][0]["success_rate"] is None
 
 
-def test_hold_record_is_durable_and_finds_later_run(tmp_path):
+def test_hold_record_is_durable_and_finds_later_run(tmp_path, monkeypatch):
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
     docs = tmp_path / "docs"
     hold = outcomes.record_picker_hold(
         project="demo",
@@ -213,7 +215,9 @@ def test_hold_record_is_durable_and_finds_later_run(tmp_path):
         now=datetime(2026, 10, 3, 3, tzinfo=UTC),
     )
     assert "run_id" not in hold
-    saved = (docs / "state" / "demo" / "picker-holds.jsonl").read_text()
+    saved = (
+        crew_home() / outcomes.HOLD_LOG_DIR / "demo" / outcomes.HOLD_LOG_FILENAME
+    ).read_text()
     assert json.loads(saved)["confidence"] == 0.8
     records, malformed = outcomes._read_holds(docs, "demo")
     assert malformed == 0

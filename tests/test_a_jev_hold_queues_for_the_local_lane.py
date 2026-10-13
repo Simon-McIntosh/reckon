@@ -20,6 +20,8 @@ from click.testing import CliRunner
 
 from reckon import cli, crew_dispatch_commands
 from reckon.crew import queue_admission, runs
+from reckon.crew.picker.outcomes import HOLD_LOG_DIR, HOLD_LOG_FILENAME
+from reckon.crew.runs import crew_home
 from tests import test_dispatch_names_its_backend as backend_tests
 
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
@@ -142,7 +144,7 @@ def _payload(result) -> dict:
 
 
 def _holds(repo: Path) -> list[dict]:
-    path = repo / "docs" / "state" / PROJECT / "picker-holds.jsonl"
+    path = crew_home() / HOLD_LOG_DIR / PROJECT / HOLD_LOG_FILENAME
     if not path.is_file():
         return []
     return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]

@@ -1,0 +1,38 @@
+<article class="landed-report" data-run-id="r-20261013T223636737630-a-hold-is-kept-in-the-crew-home" data-node="a-hold-is-kept-in-the-crew-home">
+  <h3 id="a-hold-is-kept-in-the-crew-home-summary">a-hold-is-kept-in-the-crew-home — a picker hold is kept in the crew home, not in the project's checkout</h3>
+  <p id="a-hold-is-kept-in-the-crew-home-change">
+    <strong>Change.</strong> <code>record_picker_hold</code> appends each Jev
+    hold to <code>&lt;crew home&gt;/picker-holds/&lt;project&gt;/picker-holds.jsonl</code>
+    instead of <code>docs/state/&lt;project&gt;/picker-holds.jsonl</code> inside
+    the project's own checkout, and an oversized request is written to the
+    <code>picker-holds/</code> directory beside that log
+    (<code>_write_hold_payload</code>). No file is created under the project's
+    docs directory. <code>_read_holds</code> reads the crew-home log and any
+    legacy docs-side log, and stamps each row with the directory it was read
+    from; <code>replay_hold</code> resolves a row's <code>payload_ref</code>
+    against that origin — an explicit <code>log_dir</code> first, then the
+    row's stamp — never against the current write location, so a legacy hold
+    still replays from its own directory after the move.
+  </p>
+  <p id="a-hold-is-kept-in-the-crew-home-measure">
+    <strong>Measure.</strong> Gate:
+    <code>tests/test_a_hold_is_kept_in_the_crew_home.py</code> plus every test
+    file importing <code>reckon/crew/picker/outcomes.py</code> (8 files), run in
+    place on the fleet allocation with the shared environment's
+    <code>.venv/bin/python -m pytest -p no:cacheprovider -n 10</code>. Head arm
+    at the change: 48 passed, <code>EXIT=0</code>. Base arm at the pre-repair
+    revision <code>6ab7c925a2d5aa50100801f26136144992797964</code> with the new
+    test added: 3 failed, 45 passed, <code>EXIT=1</code> — the three added checks
+    are the whole delta and no failure is added to the other files. Logs
+    <code>gate-head.log</code> and <code>negative-control-base.log</code> under
+    the run directory, each ending in an <code>EXIT=</code> line.
+  </p>
+  <p id="a-hold-is-kept-in-the-crew-home-negative-control">
+    <strong>Negative control.</strong> At the base revision the hold lands under
+    the project's docs directory, so the head test's assertion that the
+    crew-home log holds both rows reads <code>[] == ['small', 'large']</code> and
+    fails; the legacy-origin and merged-reader checks fail on the base
+    signature. The three added checks are the only failures the base arm
+    reports.
+  </p>
+</article>
