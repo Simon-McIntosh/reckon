@@ -14,6 +14,7 @@ from typing import Any
 import click
 
 from reckon._timestamps import parse_utc
+from reckon.crew.session_host import SETTLE_ENV, SETTLED_EXIT_CODE
 from reckon.crew_dispatch_commands import _crew_modules, _emit_crew_result, crew
 
 
@@ -405,6 +406,15 @@ FOLLOWER_END_EVENT = "follower-end"
 
 
 
+FOLLOWER_SETTLE_EVENT = "follower-settle"
+
+
+# How often a follower allowed to settle samples its session's population. The
+# scan is a live-pointer read and the wait pass is fast, so it is throttled to
+# this cadence rather than paid on every pass.
+FOLLOWER_SETTLE_INTERVAL_SECONDS = 1.0
+
+
 FOLLOWER_RESUME_EVENT = "follower-resume"
 
 
@@ -711,6 +721,35 @@ def _follower_end_event(
         ),
     }
 
+
+
+def _follower_settle_line(session: str | None, *, since: float) -> str:
+    """The one line the pane shows when a session has no work left to watch.
+
+    The stamp is the wall clock the reader's own tools print, taken at the
+    moment the session's last live run was seen, so ``since`` names when the
+    fleet actually drained rather than when this poll happened to notice.
+    """
+    stamp = time.strftime("%H:%M", time.localtime(since))
+    return f"no live work in {session} since {stamp}"
+
+
+def _follower_settle_event(
+    project: str, *, session: str | None, since: float
+) -> dict[str, Any]:
+    """Build the follower's terminal row for a session whose work drained.
+
+    Like the lifetime end row it is about the follower rather than the fleet,
+    so it carries the line to print verbatim; it is the last thing the child
+    emits before it leaves.
+    """
+    return {
+        "event": FOLLOWER_SETTLE_EVENT,
+        "project": project,
+        "session": session or "",
+        "run_id": None,
+        "line": _follower_settle_line(session, since=since),
+    }
 
 
 def _follow_resume_plan(
@@ -1044,6 +1083,8 @@ def _follow_watch_lines(
     registration=None,
     producer_reload_window: float | None = None,
     reloaded_in_place: bool = False,
+    settle: bool = False,
+    settle_interval: float = FOLLOWER_SETTLE_INTERVAL_SECONDS,
 ):
     """Yield this follower's transitions for as long as its session lives.
 
@@ -1118,6 +1159,51 @@ def _follow_watch_lines(
         lifetime_deadline = started_at + max(0.0, float(lifetime))
     lifetime_elapsed = False
     consumer_gone = False
+    # The settle: a follower a settle-aware host runs ends once no live work
+    # remains, printing one idle line. ``saw_live`` is the hinge -- a dispatch
+    # asks the host for this follower before it publishes the run's pointer, so
+    # a follower that settled on its first empty reading would leave before its
+    # own run appeared. Only a fleet this follower has actually seen go empty
+    # settles.
+    settled = False
+    saw_live = False
+    last_live_at: float | None = None
+    settle_sampled_at: float | None = None
+    # The sessions whose work this pane carries: its own, plus each one it was
+    # asked to observe. A run of any other session is work this follower never
+    # prints.
+    settle_populations = (session, *sorted(observed_sessions - {None}))
+
+    def _is_live(name: str | None) -> bool:
+        return _population_has_live_work(project, session=name)
+
+    def _check_settle() -> None:
+        """End this arming when the work this pane carries has drained.
+
+        The judgement is ``_population_has_live_work``'s, not one derived here:
+        the same call a producer stop is reported against. It is sampled on a
+        cadence because a settle costs a live-pointer scan.
+        """
+        nonlocal settled, saw_live, last_live_at, settle_sampled_at
+        if not settle or settled:
+            return
+        moment = clock()
+        if (
+            settle_sampled_at is not None
+            and moment - settle_sampled_at < settle_interval
+        ):
+            return
+        settle_sampled_at = moment
+        # The population is the pane's own session plus the sessions it was
+        # asked to observe, and nothing else: a peer session this follower does
+        # not observe is work it never prints, so it must not hold the pane
+        # open. Each session is asked through the same judgement that owns it.
+        if any(_is_live(name) for name in settle_populations):
+            saw_live = True
+            last_live_at = time.time()
+            return
+        if saw_live:
+            settled = True
 
     def _check_consumer() -> None:
         """End this arming when the process it reports to has gone.
@@ -1281,6 +1367,7 @@ def _follow_watch_lines(
             _record_checkpoint(stream_path, offset, identity=identity)
         _check_lifetime()
         _check_consumer()
+        _check_settle()
         _renew_producer_lease()
 
     from reckon.crew.resumption import DEFAULT_SWEEP_SECONDS
@@ -1477,7 +1564,7 @@ def _follow_watch_lines(
         )
         _echo_follow_line(line)
 
-    while not _stopped() and not lifetime_elapsed and not consumer_gone:
+    while not _stopped() and not lifetime_elapsed and not consumer_gone and not settled:
         identity = runs.watch_producer_identity(project)
         if not runs.producer_live(project):
             reason = _logged_producer_stop(project)
@@ -1745,7 +1832,7 @@ def _follow_watch_lines(
         # row gates the same as any other.
         _sweep_on_cadence()
 
-        while not stream_path.exists() and not consumer_gone:
+        while not stream_path.exists() and not consumer_gone and not settled:
             if not runs.producer_live(project):
                 break
             if _stopped():
@@ -1760,7 +1847,7 @@ def _follow_watch_lines(
                     runs.watch_producer_identity(project)
                 ):
                     yield event
-            if lifetime_elapsed or consumer_gone:
+            if lifetime_elapsed or consumer_gone or settled:
                 break
             sleeper(poll_interval)
         if not stream_path.exists():
@@ -1790,7 +1877,7 @@ def _follow_watch_lines(
                         offset=stream.tell(),
                         identity=stream_file_identity,
                     )
-                    if lifetime_elapsed or consumer_gone:
+                    if lifetime_elapsed or consumer_gone or settled:
                         break
                     _sweep_on_cadence()
                     continue
@@ -1823,7 +1910,7 @@ def _follow_watch_lines(
                 # later transition that may never come.
                 for printed in path.flush(now=clock()):
                     yield printed
-                if lifetime_elapsed or consumer_gone:
+                if lifetime_elapsed or consumer_gone or settled:
                     break
                 # The gate is time-based, so calling it from the wait pass as
                 # well as the line pass runs the recovery on elapsed time while
@@ -1833,6 +1920,14 @@ def _follow_watch_lines(
 
     for printed in path.flush(now=float("inf")):
         yield printed
+
+    if settled:
+        yield _follower_settle_event(
+            project,
+            session=session,
+            since=last_live_at if last_live_at is not None else time.time(),
+        )
+        return
 
     if lifetime_elapsed:
         yield _follower_end_event(
@@ -2303,6 +2398,11 @@ def crew_follow(
         lifetime_deadline = time.monotonic() + max(0.0, deadline_epoch - time.time())
 
     delivery = runs_module.delivery_mode()
+    # Whether the host that started this follower understands a settled child.
+    # Only that host re-arms the pair on its next request; an older one restarts
+    # a child that exited, so a follower under it keeps following rather than
+    # settling and being restarted in a loop.
+    settle = os.environ.get(SETTLE_ENV) == "1"
     grid = _ticker_grid(width, theme, no_color)
     # Whether this image replaced a previous follower in place. The reloader
     # sets the checkpoint variable for exactly that replacement, so its presence
@@ -2414,6 +2514,10 @@ def crew_follow(
             delivered_states[run_id] = state
             runs_module.write_delivered(project, session, delivered_states)
 
+        # Whether the last event was the settle row. The follower ends its
+        # generator after that row, so this is read once the loop has drained,
+        # and the process leaves with the settle status its host keys on.
+        settled = False
         for event in _follow_watch_lines(
             project,
             session=session,
@@ -2425,6 +2529,7 @@ def crew_follow(
             lifetime_deadline=lifetime_deadline,
             registration=registration,
             reloaded_in_place=reloaded_in_place,
+            settle=settle,
         ):
             # An attach event carries the states the pane already showed, so the
             # grid is seeded from the same remembered map the follower filtered
@@ -2437,9 +2542,13 @@ def crew_follow(
             # stored history carries, so recording it again would replay the
             # same run twice on the next burst.
             reannounced = bool(event.pop("reannounced", False))
-            if event.get("event") == FOLLOWER_END_EVENT:
+            if event.get("event") in (FOLLOWER_END_EVENT, FOLLOWER_SETTLE_EVENT):
                 # This one line is about the follower, not the fleet, so it is
                 # printed as it was written rather than rendered as a fleet row.
+                # The settle row is the child's last: the process leaves with
+                # the settle status so its host does not restart it.
+                if event.get("event") == FOLLOWER_SETTLE_EVENT:
+                    settled = True
                 if json_output:
                     _emit_crew_result(event, pretty, observation=True)
                 else:
@@ -2577,6 +2686,13 @@ def crew_follow(
                         max_rows=history_caps[0],
                         max_seconds=history_caps[1],
                     )
+
+        if settled:
+            # The session's work drained and the idle line is on the pane. The
+            # process leaves with the settle status rather than as a failed
+            # child, so the host that runs it retires the pair instead of
+            # restarting it and repeating the line.
+            sys.exit(SETTLED_EXIT_CODE)
 
     try:
         if session is None:
