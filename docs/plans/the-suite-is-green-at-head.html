@@ -23,9 +23,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.98">
-<meta name="plan-version" content="274">
+<meta name="plan-version" content="275">
 <meta name="plan-modified" content="2026-10-13">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
 <meta name="plan-commits" content="7ff63a7d,238f5e77,4e813fec,0fa8733c,24d4a264,66a118f1,f3015a58,bc89b5fd,e5dbe176,de851cfa,83d48d25,14995811,000c7881,28e281cc,b4bef72b,a45d8b9c,c2b30b1f,24aeb95b,ed2054cc,4bef6acc,a06da1de">
 </head>
@@ -50,6 +50,7 @@
 </section>
 
     <h2 id="s3">&#167;3 &mdash; The suite runs bounded, in parallel, and robust to load</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
     <p>Green is not enough if nobody can afford to measure it. At <code>bafcd4cc</code> a serial
     <code>pytest tests/</code> reached 14% in 30 minutes, and one test spun forever because nothing bounded a test's
     run time. The per-file wall-clock sum was about 68 minutes. A peer session has since added
@@ -207,6 +208,7 @@
       the 128-plan loop at <code>tests/test_plan_read_warns_unparsed.py:201</code> re-parses each plan
       at ~118 ms and is the other sizeable target.</p>
 
+    </div>
     <div class="r-note" data-reckon="landed" data-node="no-watch-producer-outlives-the-suite" data-when="2026-09-25">
       <p><strong>Outcome &mdash; a session check now fails the run on a crew watch producer a test leaked.</strong>
       The session fixture that reaps a run's producers by seat record could not see a producer that never registered
@@ -243,6 +245,7 @@
       evidence</a>, figure <a href="/reckon/figures/the-suite-is-green-at-head/watch-producer-session-check.png">watch
       producer session check</a>.</p>
 
+    </div>
     <div class="r-note" data-reckon="landed" data-node="a-launcher-oserror-is-a-refusal" data-when="2026-09-25">
       <p><strong>Outcome &mdash; a dispatch whose worker launch cannot start now refuses with a
       remedy instead of escaping as an <code>OSError</code>. A start-time <code>OSError</code> from
@@ -501,6 +504,7 @@
       <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed#slow-dispatch-tests-wait-on-events">landed
       evidence</a>.</p>
 
+    </div>
     <div class="r-note" data-reckon="landed" data-node="process-tests-hold-under-load" data-when="2026-09-25">
       <p><strong>Outcome &mdash; the process-backed cases hold under parallel load.</strong> Commits
       <code>91e3fd05</code> <em>test(crew): hold the reload and arming cases under a loaded parallel
@@ -592,6 +596,7 @@
       <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed#node-a-scalar-reexec-carrier-starts-clean">landed
       evidence</a>.</p>
 
+    </div>
     <div class="r-note" data-reckon="landed" data-node="test-ledger-reads-only-its-own-state" data-when="2026-09-25">
       <p><strong>Outcome &mdash; the ledger tests compare only the state a test in the
       file could have created, so a peer session's write no longer fails them.</strong>
@@ -632,6 +637,50 @@
       <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed#node-test-ledger-reads-only-its-own-state">test-ledger-reads-only-its-own-state</a>.</p>
       <p><strong>Follow-ons.</strong> None.</p>
     </div>
+
+    <h2 id="s4">§4 — reckon/crew/review.py fits a worker window</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Why.</strong> <code>test_every_module_fits_a_worker_window</code> fails at main partly because <code>reckon/crew/review.py</code> is 50,598 estimated tokens against the 50,000 bound. The bound is the standing rule, so the file is split rather than allowlisted.</p><p><strong>Deliverable.</strong> The dimension and finding disposition block, <code>declared_dimension_floors</code> through <code>record_finding_disposition</code>, moves to a new module <code>reckon/crew/review_dispositions.py</code>, and its callers import it from there. <code>_write_record</code> stays in <code>review.py</code>, whose remaining code uses it. No moved name is re-exported from <code>review.py</code>.</p><p><strong>Done when</strong> the window test names neither file, and the test files importing either module show no added failure against base. The negative control appends the moved block back to <code>review.py</code>, and the window test must then name <code>review.py</code>. It is logged under the run directory. Write paths: <code>reckon/crew/review.py</code>, <code>reckon/crew/review_dispositions.py</code>, <code>reckon/crew/obligation_snapshot.py</code>, <code>reckon/crew/obligations.py</code>, <code>reckon/crew_run_commands.py</code>, <code>tests/test_dispositions_and_answers_survive_promotion.py</code>, <code>tests/test_review_record_reads_answers_from_every_copy.py</code>, <code>tests/test_sub_floor_dimension_is_an_obligation.py</code> and <code>tests/test_sub_floor_disposition_has_a_writer.py</code>.</p>
+
+    <h2 id="s5">§5 — tests/test_crew.py fits a worker window</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p><strong>Why.</strong> <code>tests/test_crew.py</code> is 50,332 estimated tokens against the same 50,000 bound.</p><p><strong>Deliverable.</strong> The ten tests of <code>crew shadow</code>, the <code>test_shadow_*</code> functions, move to <code>tests/test_crew_shadow.py</code> with the helpers only they use. A helper both files use stays in <code>test_crew.py</code>.</p><p><strong>Done when</strong> the window test names neither file, the moved tests pass in their new file, and collecting both files finds the same number of tests as collecting <code>test_crew.py</code> did before the move. The negative control appends the moved tests back to <code>test_crew.py</code>, and the window test must then name it. It is logged under the run directory. Write paths: <code>tests/test_crew.py</code> and <code>tests/test_crew_shadow.py</code>.</p>
+
+    <h2 id="s6">§6 — reckon/crew/routing.py fits a worker window</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="deferred" data-links=""></section>
+    <p><strong>Why.</strong> <code>reckon/crew/routing.py</code> is 50,651 estimated tokens. Commit <code>784d580de</code>, which keeps a peer project's run directory out of gc's reach, took it over the bound; the window test passes at that commit's parent.</p><p><strong>Deliverable.</strong> <code>routing.py</code> is split along the run-directory and gc policy seam that commit added, into a new module named by what it holds, and the moved names' callers import them from there.</p><p><strong>Held.</strong> A peer session's unmerged run, <code>a-worktree-release-is-whole</code>, changes <code>routing.py</code>. Splitting the file first would turn that run's merge into a conflict across moved code, so this section runs after that run lands.</p><p><strong>Done when</strong> the window test names neither file, and the test files importing either module show no added failure against base. The negative control appends the moved code back to <code>routing.py</code>, and the window test must then name it. It is logged under the run directory. Write paths: <code>reckon/crew/routing.py</code>, the new module, and the moved names' importers, counted again when the section is dispatched.</p>
+
+    <h2 id="s7">§7 — The census tests know the run-file bounding code</h2>
+<section data-reckon="section" data-id="s7" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p><strong>Why.</strong> Two census tests fail at main because the run-file bounding change in <code>reckon/crew/fleet_supervisor.py</code> added two functions their expected sets do not list. <code>test_one_raw_text_section_reader.py</code> reports <code>_run_file_is_binary</code> as a raw-text reader, and <code>test_staged_write_inventory.py</code> reports <code>_bound_run_file</code> as a staged write.</p><p><strong>Deliverable.</strong> For each function, first establish from the code whether it has the property its test guards. <code>_run_file_is_binary</code> belongs with the census's exemptions only if it inspects bytes rather than reading plan sections. <code>_bound_run_file</code> belongs in the inventory only if its staged write reaches the owner the test checks. A function that qualifies is added to its test's expected set with a comment giving the reason. One that does not is a product defect: the node stops and reports it rather than listing it.</p><p><strong>Done when</strong> both ids pass, and the manifest quotes the lines that establish each property. The negative control adds a function that reads plan sections as raw text to a scratch copy of <code>fleet_supervisor.py</code>, and the raw-reader census must still report it. It is logged under the run directory. Write paths: <code>tests/test_one_raw_text_section_reader.py</code> and <code>tests/test_staged_write_inventory.py</code>.</p>
+
+    <h2 id="s8">§8 — The report's section reference uses the shared grammar</h2>
+<section data-reckon="section" data-id="s8" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p><strong>Why.</strong> <code>test_section_spelling_grammars_share_one_core.py</code> and <code>test_the_invocation_parser_spells_a_section.py</code> fail at main. <code>_PLAN_SECTION_REFERENCE</code> in <code>reckon/crew/reports.py</code> writes its section number as the literal pattern <code>§\s*\d</code>, and the census requires every composed section reference to use the shared <code>SECTION_NUMBER</code> core.</p><p><strong>Deliverable.</strong> <code>_PLAN_SECTION_REFERENCE</code> composes from the shared core and still matches every reference the literal matched.</p><p><strong>Done when</strong> both census ids pass, a new test shows the composed pattern matches each sample reference the literal matched, and the test files importing <code>reckon/crew/reports.py</code> show no added failure against base. The negative control restores the literal, and both census ids must then fail. It is logged under the run directory. Write paths: <code>reckon/crew/reports.py</code> and <code>tests/test_report_section_reference_uses_the_core.py</code>.</p>
+
+    <h2 id="s9">§9 — The harness reference states the rules its tests guard</h2>
+<section data-reckon="section" data-id="s9" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p><strong>Why.</strong> <code>test_monitor_invocation_docs.py</code> and <code>test_skill_session_ownership_rules.py</code> fail at main. Commit <code>8362b726d</code> rewrote <code>skills/reckon-build/references/orchestrator-harness/claude-code.md</code> to describe session-host delivery and treat the monitor as a fallback. The rewrite dropped the two sentences these tests look for: "1,800,000 milliseconds" and "A monitor expires; the follower inside it does not".</p><p><strong>Deliverable.</strong> For each test, decide whether the reference still states the rule. If it does in other words, the test looks for the sentence that states it. If the rewrite dropped the rule, the rule is restored in the reference's fallback part, because both rules still bind a session that has no session host.</p><p><strong>Done when</strong> both ids pass, and the manifest quotes the sentence each test now looks for. The negative control removes that sentence from a scratch copy of the reference, and the test must then fail. It is logged under the run directory. Write paths: <code>skills/reckon-build/references/orchestrator-harness/claude-code.md</code>, <code>tests/test_monitor_invocation_docs.py</code> and <code>tests/test_skill_session_ownership_rules.py</code>.</p>
+
+    <h2 id="s10">§10 — A plan filed twice is refused</h2>
+<section data-reckon="section" data-id="s10" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Why.</strong> <code>test_dispatch_speed.py::test_plan_estimate_cache_tracks_edits_and_duplicate_identity</code> fails at main: <code>routing._estimated_hours</code> no longer raises <code>ResourceCollision</code> for a plan slug filed twice. <code>resolve_resource</code> in <code>reckon/resources.py</code> now returns a plan's canonical file without walking the tree, so it never sees a second copy elsewhere.</p><p><strong>Deliverable.</strong> Find the commit that made <code>resolve_resource</code> read the canonical path directly, and decide from its message and tests whether dropping duplicate detection on that path was intended. If it was, the test asserts the duplicate where that change now detects it. If it was not, <code>resolve_resource</code> detects a duplicate of a canonical slug without giving back the walk the direct read saved, for example by reading the scan scope's one walk when a scope is open.</p><p><strong>Done when</strong> the id passes, and the manifest names the commit and quotes its reasoning. The test files importing <code>reckon/resources.py</code> show no added failure against base. The negative control removes the duplicate detection the node relies on, and the id must then fail. It is logged under the run directory. This section runs after <a href="/reckon/plans/a-read-answers-inside-its-deadline">a-read-answers-inside-its-deadline</a> §8 merges, which also writes <code>resources.py</code>. Write paths: <code>reckon/resources.py</code> and <code>tests/test_dispatch_speed.py</code>.</p>
+
+    <h2 id="s11">§11 — The census test reads its own fixture</h2>
+<section data-reckon="section" data-id="s11" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p><strong>Why.</strong> <code>test_mcp_census.py::test_doctor_prints_the_census_figures</code> asserts a line that copies this node's live MCP connection census, such as <code>imas-cx: 7 connections, 6 failed, 1 clean</code>. The census reads its logs from <code>LOG_ROOT</code> in <code>reckon/mcp_census.py</code>, under the real home, so the test passes or fails with the machine.</p><p><strong>Deliverable.</strong> The doctor in <code>reckon/project_maintenance_commands.py</code> passes a log root the test can point at a temporary directory, and the test builds the census logs there and computes the expected line from them.</p><p><strong>Done when</strong> the id passes on a node with live MCP connections, its expected line comes from its own fixture, and the real configuration home is unchanged after the test. The test files importing <code>reckon/mcp_census.py</code> show no added failure against base. The negative control sets the expected count one above the fixture's, and the test must then fail. It is logged under the run directory. Write paths: <code>reckon/mcp_census.py</code>, <code>reckon/project_maintenance_commands.py</code> and <code>tests/test_mcp_census.py</code>.</p>
+
+    <h2 id="s12">§12 — A landing record cites a commit that exists</h2>
+<section data-reckon="section" data-id="s12" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p><strong>Why.</strong> <code>test_schema.py::test_cross_project_conformance[reckon:work-does-not-fall-to-the-coordinator-landed]</code> fails at main. The landing record <code>docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html</code> cites <code>5b5c6c6454d20a64a793120fdaf7889da1a2a898</code>, which is not an object in this repository.</p><p><strong>Deliverable.</strong> Find the commit on main that landed the work the record describes, by its subject and changed paths, and replace the unresolved sha with it. If no landed commit carries that work, the record says so in place of a sha.</p><p><strong>Done when</strong> the id passes, and the manifest shows what links the replacement commit to the record. The negative control puts an invented sha into a scratch copy of the record, and the conformance check must then fail on it. It is logged under the run directory. Write paths: <code>docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html</code>.</p>
+
+    <h2 id="s13">§13 — The race winner reads its own ledger write</h2>
+<section data-reckon="section" data-id="s13" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Why.</strong> <code>test_ledger_write_keeps_run_files.py::test_a_loser_of_the_write_race_cannot_overwrite_the_winner</code> fails at main, alone and under load. The winning child exits 1 with an <code>IndexError</code> because the ledger index it reads after its own write holds no runs.</p><p><strong>Deliverable.</strong> Find why the child's view of the ledger, through <code>_indexed_data</code> in <code>reckon/ledger.py</code>, holds no runs after its write, and repair the cause in whichever of the product or the test it lies.</p><p><strong>Done when</strong> the id passes five times in a row, the manifest names the cause, and the test files importing <code>reckon/ledger.py</code> show no added failure against base. The negative control puts the cause back, and the id must then fail. It is logged under the run directory. Write paths: <code>reckon/ledger.py</code> and <code>tests/test_ledger_write_keeps_run_files.py</code>.</p>
+
+    <h2 id="s14">§14 — The image guard catches only image reads</h2>
+<section data-reckon="section" data-id="s14" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p><strong>Why.</strong> <code>test_spa_owed_captures.py</code> errors at the teardown of <code>test_plan_capture_gate_opens_no_image_bytes</code>. Its <code>IMAGE_BYTES_OPENED</code> guard fires on an open of <code>/proc/&lt;pid&gt;/environ</code> inside the guarded window. That read is not an image, so the guard reports a read it was not written to catch.</p><p><strong>Deliverable.</strong> Find which code opens <code>/proc/&lt;pid&gt;/environ</code> during the window. If it is harness or fixture code, the guard ignores reads that are not image files. If it is the capture gate itself, the node stops and reports it, because the defect is then in the product.</p><p><strong>Done when</strong> the test passes with no teardown error, and an image opened inside the window still trips the guard. The negative control opens a PNG inside the window, and the guard must then fire. It is logged under the run directory. Write paths: <code>tests/test_spa_owed_captures.py</code>.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
@@ -767,10 +816,16 @@
     <pre class="r-fu-prompt">/reckon-build the-suite-is-green-at-head §3</pre>
     <p class="r-fu-outcome">measured at a7a9cf3d2: bounded at 39:36 with no timeout, but red on 30 ids; the deterministic groups are carried by f-tsigah-red-at-a7a9cf3d2</p>
     </article>
-<article class="r-fu" data-id="f-tsigah-red-at-a7a9cf3d2" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-13" data-recommends-skill="/reckon-build the-suite-is-green-at-head §3" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tsigah-red-at-a7a9cf3d2" data-status="resolved" data-written-by="reckon-build" data-written-at="2026-10-13" data-recommends-skill="/reckon-build the-suite-is-green-at-head §3" data-resolved-at="2026-10-13T02:35:51+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Repair the deterministic red groups at a7a9cf3d2 (§3)</h4>
     <div class="r-fu-body"><p>One node per group, from the bounded run's report: the worker-window bound (<code>routing.py</code> and <code>tests/test_crew.py</code>); the four tests pinned to the claude-code harness reference; the section-reader census; and the dispatch-speed, ledger-race and teardown-guard ids. The live-state ids (<code>test_mcp_census</code>, cross-project conformance) need their state isolated. The follower family stays in the load class. Then re-run the bounded full run.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-suite-is-green-at-head §3</pre>
+    <p class="r-fu-outcome">Re-attributed at 95ff28824: 26 of the 30 ids are still red. The follower family (14 ids) stays in §3; every other group is now a repair section, §4 to §14, with §6 held until a peer's routing.py change lands.</p>
+    </article>
+<article class="r-fu" data-id="f-tsigah-repair-wave-at-95ff28824" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-13" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Repair the deterministic reds (§4–§14), then find the follower family&#x27;s shared cause (§3)</h4>
+    <div class="r-fu-body"><p>§4, §5, §7, §8, §9, §11, §12, §13 and §14 are independent and dispatch together. §10 follows a-read-answers-inside-its-deadline §8. §6 waits for the peer run a-worktree-release-is-whole to land. The fourteen follower-family ids fail alone with zero emissions, so §3 next looks for one shared cause.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-suite-is-green-at-head §4</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
