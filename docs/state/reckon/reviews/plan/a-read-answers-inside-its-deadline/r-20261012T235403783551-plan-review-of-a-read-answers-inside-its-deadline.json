@@ -1,0 +1,55 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-13T00:05:06.351Z",
+  "dispatched_at": "2026-10-12T23:54:31Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:143",
+      "id": "done_when-1",
+      "reason": "a worker cannot write a control that fires without first deciding which of the two structures holds the reuse, and an inert control is exactly the failure mode the done-when exists to prevent.",
+      "text": "the declared negative control \"restores the per-read scope, and the scan-count case must then fail\" presumes the reuse is implemented inside `resource_scan_scope` (the `_SCAN_SCOPE` ContextVar at reckon/resources.py:433), but the deliverable's key is \"each resource file's own stat signature (path, mtime_ns, size)\", a cache that holds per-file identifications outside the scope; arming the control by restoring the per-read scope would leave such a memo untouched and the scan-count assertion still green, so the control proves nothing",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:143",
+      "id": "reasoning-1",
+      "reason": "the mechanism as keyed reduces hashing but leaves the repeated walk the same evidence blames, so the node fixes half the measured cost and its \"run the scan once\" assertion cannot be written until the plan says what unit it counts.",
+      "text": "the deliverable's key \"each resource file's own stat signature ... read in one walk without hashing\" requires walking `docs_dir.rglob(\"*.html\")` and stat-ing every file on each scan entry, so \"The resource scan is computed once per tree state and reused across reads\" is not achieved; \u00a77's own kept head profile (logs/analysis-warm-head.txt) shows `_scan_resources` entered 4 times per warm roadmap read and 10 per warm audit read, and those repeats come from callers passing different `include_archived`/`include_legacy`/`ignore_invalid` arguments (distinct `_SCAN_SCOPE` keys, reckon/resources.py:477), which the per-file key does not name and cannot collapse",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "190157bb3c1a62af2e256e5938b6519ca05648e01081db93c4525b20dd9c8445",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 31,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261012T235403783551-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "3d8a2a2f679400ea58e6d54e939594663acf48e3",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_scan_resources`, `iter_resources`, `_SCAN_SCOPE`, `resource_map`, `resolve_resource` all resolve in `reckon/resources.py`, and the `\u00a73` and `\u00a76` references resolve to declared sections.",
+    "done_when": "a finding \u2014 \u00a78's declared negative control (\"restores the per-read scope\") only reddens the assertion if the new cache lives inside `_SCAN_SCOPE`, but the deliverable keys the cache on each file's own stat signature, a store that sits outside the scope.",
+    "evidence_paths": "pass \u2014 the gate, the negative-control log and the re-measurement are all named under the run directory, not a node-local temporary path.",
+    "naming": "pass \u2014 \u00a78's text and its proposed symbols are named by mechanism, with no plan label, stage name, ticket number or changelog prose.",
+    "reasoning": "a finding \u2014 the deliverable's key (each resource file's own stat signature, \"read in one walk\") still walks the tree on every scan entry, so the scan is not \"computed once per tree state\", and the per-read re-entries the profile measures (4 for roadmap, 10 for audit) come from differing filter arguments that the key does not name.",
+    "single_goal": "pass \u2014 \u00a78 carries one deliverable, carrying the resource scan across reads; the deep-copy removal is an implementation detail of that same reuse.",
+    "wiring": "pass \u2014 the open followup f-araiid-006 recommends \u00a78 and \u00a79 (both `data-status=\"implementable\"`), \u00a78's independence from \u00a79 and \u00a76's re-measure-after-\u00a78 ordering match the node table, and the \u00a73/\u00a76 references resolve."
+  },
+  "section_digests": {
+    "_document": "f3f688213f1ad65909f6593aadbcfb887978ed1ec2508d03042b9740d928eb0f",
+    "s1": "71942607f4df4eca011a41734257645ef2adce9664dd45b628d96b066c34e813",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s3": "cbe34f619f869b3c3346239e8823a63a8de98dd92b7fb8ed5cfa2b8a4ab26a39",
+    "s4": "d2ec58f5ac4e72c5e8bcde1f156bdd4c85bde3848b4e3b6131e6112bb6395d49",
+    "s5": "b14c0e28c2c28544a08d4b3d7ab621f48464471360d202c7a4bd1a1ec776f557",
+    "s6": "00db597c53dfd6e3d857f89ee748a8c6ecfe51576b2b66e64772393805c59b52",
+    "s7": "503099f7e945f5038a64b142ffa49b88c02dbbd0f0a5ad5882f6da8b22d25883",
+    "s8": "907c2956fd59f71ca6a50cda9a4dc75f31178809fce5247960cfd41ce8118853",
+    "s9": "a356ecd44b8ee634f6b45b64ec3785e3af7ffb255d4d3adf46574d3a10afc7b3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T00:05:53.846429+00:00"
+}
