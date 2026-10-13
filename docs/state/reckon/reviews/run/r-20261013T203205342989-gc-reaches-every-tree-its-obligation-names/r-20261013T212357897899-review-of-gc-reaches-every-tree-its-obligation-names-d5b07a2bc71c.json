@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite/after_suite arm (no base gate log), so the added-failure count was not taken",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew_run_commands.py:1240 (crew gc to garbage_collect); reckon/crew/routing.py:2169 (_run_worktree_path confinement); reckon/crew/obligations.py:440 (_names_worktree) used at obligations.py:508 and obligations.py:588"
+  ],
+  "completed_at": "2026-10-13T21:39:51.835Z",
+  "dispatched_at": "2026-10-13T21:24:31Z",
+  "findings": [
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "1095",
+      "severity": "follow-on",
+      "text": "follow-on: the new guard compares the tree's parent directory name to record[\"session\"], but a shadow-lineage run's record carries the dispatching session (reckon/crew/dispatch.py:1587) while its tree is created under the shadow session token (reckon/crew/dispatch.py:653, :746), so a withheld shadow run's tree is no longer matched by node id where it previously was."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit d5b07a2bc against 7962c482 file by file; routing.py adds a session guard to record_names_worktree (reckon/crew/routing.py:1089-1095) and the test adds a two-session case plus docstring updates, nothing else.",
+    "done_when": "the done_when names tests/test_gc_reaches_every_tree_its_obligation_names.py; the manifest records head_arm.log (4 passed, EXIT=0) at revision d5b07a2bc and negative_control.log (1 failed, EXIT=1), but records no baseline/after arm, so the added-failure count is unmeasured and the broader importer-suite log (suite_head.log, 164 passed) names the base d3eba929 with a placeholder command.",
+    "goal": "the node goal is that crew gc --run resolves a run's tree from the same evidence the obligations view uses; the gained commit d5b07a2bc keeps that one shared rule and narrows it, so record_names_worktree (reckon/crew/routing.py:1071) now names a tree by node id only within the run's own session, and obligations._names_worktree (reckon/crew/obligations.py:440) still delegates to it.",
+    "manifest": "read; status complete, it names head_arm.log (4 passed) and negative_control.log and the extended negative control matching on node id alone, with no baseline_suite/after_suite arm recorded.",
+    "write_paths": "the run manifest declares reckon/crew/routing.py, reckon/crew/obligations.py, the test and the evidence fragment; the gained commit touches only reckon/crew/routing.py (+11/-2) and tests/test_gc_reaches_every_tree_its_obligation_names.py (+47/-6), both inside the declared scope."
+  },
+  "justifications": {
+    "durability": "the negative control matches on node id alone and reddens tests/test_gc_reaches_every_tree_its_obligation_names.py::test_two_sessions_one_node_id_resolve_their_own_tree (1 failed, EXIT=1), so removing the session guard at reckon/crew/routing.py:1095 fails the test.",
+    "evidence": "head_arm.log records 4 passed EXIT=0 at revision d5b07a2bc and negative_control.log is red EXIT=1, but the run manifest records no baseline/after arm (added_failure_count unmeasured) and suite_head.log:1 names the base d3eba929 with an unsubstituted command placeholder.",
+    "fit": "the added guard follows the leading-underscore idiom of reckon/crew/routing.py:1071 and the test's new constants (SESSION_EARLY, RUN_LATE) carry no plan, version or ticket token.",
+    "goal_fidelity": "the shared predicate at reckon/crew/routing.py:1071 now matches a node id only within the run's session directory, and both the gc resolver and the obligations view resolve through it, holding the \u00a77 property that one rule serves both surfaces.",
+    "reuse": "the change modifies the existing owner record_names_worktree at reckon/crew/routing.py:1071 rather than adding a definition, and obligations._names_worktree at reckon/crew/obligations.py:440 still delegates, so no capability is duplicated.",
+    "scope_discipline": "git diff --stat 7962c482..d5b07a2bc lists only reckon/crew/routing.py and tests/test_gc_reaches_every_tree_its_obligation_names.py, both inside the declared write paths."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "REVIEW of run r-20261013T203205342989-gc-reaches-every-tree-its-obligation-names (gained commit only)\nplan reckon:the-crew-home-has-a-bound \u00a77\nreviewed_base_sha: 7962c482eb463622838d814f82ac61f10ab36734\nreviewed_head_sha: d5b07a2bc71c86ed4dd75bbfec5d3ac529eeeb87\n\nVERDICT goal: the node goal is that crew gc --run resolves a run's tree from the same evidence the obligations view uses; the gained commit d5b07a2bc keeps that one shared rule and narrows it, so record_names_worktree (reckon/crew/routing.py:1071) now names a tree by node id only within the run's own session, and obligations._names_worktree (reckon/crew/obligations.py:440) still delegates to it.\nVERDICT done_when: the done_when names tests/test_gc_reaches_every_tree_its_obligation_names.py; the manifest records head_arm.log (4 passed, EXIT=0) at revision d5b07a2bc and negative_control.log (1 failed, EXIT=1), but records no baseline/after arm, so the added-failure count is unmeasured and the broader importer-suite log (suite_head.log, 164 passed) names the base d3eba929 with a placeholder command.\nVERDICT write_paths: the run manifest declares reckon/crew/routing.py, reckon/crew/obligations.py, the test and the evidence fragment; the gained commit touches only reckon/crew/routing.py (+11/-2) and tests/test_gc_reaches_every_tree_its_obligation_names.py (+47/-6), both inside the declared scope.\nVERDICT manifest: read; status complete, it names head_arm.log (4 passed) and negative_control.log and the extended negative control matching on node id alone, with no baseline_suite/after_suite arm recorded.\nVERDICT diff: read commit d5b07a2bc against 7962c482 file by file; routing.py adds a session guard to record_names_worktree (reckon/crew/routing.py:1089-1095) and the test adds a two-session case plus docstring updates, nothing else.\nCALL_SITES: reckon/crew_run_commands.py:1240 (crew gc to garbage_collect); reckon/crew/routing.py:2169 (_run_worktree_path confinement); reckon/crew/obligations.py:440 (_names_worktree) used at obligations.py:508 and obligations.py:588\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the shared predicate at reckon/crew/routing.py:1071 now matches a node id only within the run's session directory, and both the gc resolver and the obligations view resolve through it, holding the \u00a77 property that one rule serves both surfaces.\nSCORE evidence: 15\nJUSTIFICATION evidence: head_arm.log records 4 passed EXIT=0 at revision d5b07a2bc and negative_control.log is red EXIT=1, but the run manifest records no baseline/after arm (added_failure_count unmeasured) and suite_head.log:1 names the base d3eba929 with an unsubstituted command placeholder.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 7962c482..d5b07a2bc lists only reckon/crew/routing.py and tests/test_gc_reaches_every_tree_its_obligation_names.py, both inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: the negative control matches on node id alone and reddens tests/test_gc_reaches_every_tree_its_obligation_names.py::test_two_sessions_one_node_id_resolve_their_own_tree (1 failed, EXIT=1), so removing the session guard at reckon/crew/routing.py:1095 fails the test.\nSCORE fit: 16\nJUSTIFICATION fit: the added guard follows the leading-underscore idiom of reckon/crew/routing.py:1071 and the test's new constants (SESSION_EARLY, RUN_LATE) carry no plan, version or ticket token.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change modifies the existing owner record_names_worktree at reckon/crew/routing.py:1071 rather than adding a definition, and obligations._names_worktree at reckon/crew/obligations.py:440 still delegates, so no capability is duplicated.\nFINDING reckon/crew/routing.py:1095 follow-on: the new guard compares the tree's parent directory name to record[\"session\"], but a shadow-lineage run's record carries the dispatching session (reckon/crew/dispatch.py:1587) while its tree is created under the shadow session token (reckon/crew/dispatch.py:653, :746), so a withheld shadow run's tree is no longer matched by node id where it previously was.\n",
+  "review_run_id": "r-20261013T212357897899-review-of-gc-reaches-every-tree-its-obligation-names-d5b07a2bc71c",
+  "reviewed_base_sha": "7962c482eb463622838d814f82ac61f10ab36734",
+  "reviewed_head_sha": "d5b07a2bc71c86ed4dd75bbfec5d3ac529eeeb87",
+  "reviewed_run_id": "r-20261013T203205342989-gc-reaches-every-tree-its-obligation-names",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T21:37:00.802839+00:00",
+  "total": 108
+}
