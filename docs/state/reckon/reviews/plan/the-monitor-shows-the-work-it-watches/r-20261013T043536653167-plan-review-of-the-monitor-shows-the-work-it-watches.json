@@ -1,0 +1,44 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-13T04:46:45.396Z",
+  "dispatched_at": "2026-10-13T04:36:37Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-monitor-shows-the-work-it-watches.html:122",
+      "id": "done_when-1",
+      "reason": "a node that maps the seeded memory through `_display_state` alone passes both cases and ships the raw-vs-word defect \u00a76 exists to remove, for four of the seven words; the second case must assert each seeded seven-word input renders that exact word on the left.",
+      "text": "the second done-when case checks only that rendered left words fall \"among the seven\", which does not distinguish an identity mapping from one that blanks a word: `_display_state(delivered/halted/landed/dropped)` returns \"\" (verified), and a blanked `from_state` renders a row with no left word, so the plan never requires a seeded seven-word input to render as itself and the first case seeds only `working`, which already maps to itself \u2014 the deliverable's stated requirement that those four words map to themselves is therefore unmeasured",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "52e9ea5e17a9f752f6e2fc467e16ac0f8dd57d530479c212a62d01585a62c353",
+  "plan_slug": "the-monitor-shows-the-work-it-watches",
+  "plan_version": 32,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261013T043536653167-plan-review-of-the-monitor-shows-the-work-it-watches",
+  "reviewed_blob_sha": "b2c546304fce48bb440402b0b926fcea1d51aa71",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_seed_ticker_memory` resolves at reckon/crew_follow_commands.py:2118, `_display_state` at reckon/crew/ticker.py:921, `PANE_STATES` at reckon/crew/ticker.py:304, and the claim that `_display_state` blanks the four named words is confirmed by running it (`_display_state('delivered')` returns '').",
+    "done_when": "a finding \u2014 \u00a76's second case asserts only that rendered left words are \"among the seven\", which does not require a seeded seven-word input to render as itself, and the first case seeds only `working`, a word `_display_state` already maps correctly, so the deliverable's requirement for `delivered`/`halted`/`landed`/`dropped` has no check that fails when it is violated.",
+    "evidence_paths": "pass \u2014 the gate and its negative control are logged under the run directory, and the write paths are repository source plus a test file, all durable.",
+    "naming": "pass \u2014 \u00a76's test file and prose use mechanism names with no plan labels, ticket numbers or version tags.",
+    "reasoning": "pass \u2014 the root cause matches the code: `PaneRowPath._remember` stores raw producer `to_state` values, `_seed_ticker_memory` copies them into `Ticker._reported` unmapped, and `render` reads that memory as the left word; the named intake runs on the live path (called at reckon/crew_follow_commands.py:2539 before any fresh row).",
+    "single_goal": "pass \u2014 \u00a76 carries one deliverable: the grid maps a remembered state to a pane word at the point it takes the memory in.",
+    "wiring": "pass \u2014 \u00a76 declares no plan-section-depends-on entry, but \u00a75, whose PANE_STATES table \u00a76 reads, is declared done and its table is not changing, so no dispatch can be mis-ordered against it and the prose states the ordering."
+  },
+  "section_digests": {
+    "_document": "c1eb903e7dd84bfb47a2336b2441274de6aba81f4b17044796ebfb27ce8ff1ce",
+    "s1": "52c4b79a6da0bc1e71b00748d6314e8a255bd5fa91b6acae30f6943e3c16cee5",
+    "s2": "eeca9b70e096de79d92846f4178d8f31832962cb9c7c73d122ac2a9e06546f32",
+    "s3": "a37e4f17cfa5318f2229db2eabe7a7b80adf7bb6fcb474e3d262981478abba8e",
+    "s4": "fb6bae83cab6ff2e0a33bf64f8a01d35db72cb3113a73e4659d22617724629c9",
+    "s5": "349ee19ab8c71fbc5e62c4cfa2fd4c32d34af2e2f3e9ced2db0580bfd0e74815",
+    "s6": "999ddd7c383e1b71ce59a5810c0449229b306a0419236cad05973ac154bde2c8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T04:50:36.108636+00:00"
+}
