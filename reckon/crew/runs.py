@@ -315,8 +315,63 @@ def _mutate_pointer(
         return record
 
 
-def queue_dispatch(record: dict[str, Any]) -> tuple[dict[str, Any], int]:
-    """Store a held local request once per project, session, section and node."""
+# The floor and ceiling of a session's queued-dispatch allowance. A share the
+# lane publishes below the floor is raised to it and one above the ceiling is
+# trimmed to it, so a session always holds at least two and never more than
+# eight queued runs whatever the lane's arithmetic reads; a lane that publishes
+# no share at all leaves the session on the floor.
+QUEUED_DISPATCH_CAP_FLOOR = 2
+QUEUED_DISPATCH_CAP_CEILING = 8
+
+
+class QueueFull(CrewError):  # noqa: N818 - named as the refusal states it, beside BudgetHold
+    """A session is already holding its share of queued dispatches.
+
+    The cap is the lane document's own fair share, kept between its floor and
+    ceiling, so the refusal carries the session's counted held runs beside the
+    cap it exceeded. Nothing is written: the check runs under the queue's own
+    lock before the record is stored.
+    """
+
+    def __init__(self, *, session: str, held: int, cap: int) -> None:
+        self.session = session
+        self.held = held
+        self.cap = cap
+        super().__init__(
+            f"session {session or 'unidentified'} already holds {held} queued "
+            f"runs, at its cap of {cap}; a queued run launches when a slot frees"
+        )
+
+
+def queued_dispatch_cap(fair_share: object) -> int:
+    """Resolve the session's queued-dispatch cap from the lane's fair share.
+
+    The lane document publishes the share the router gives each session; the
+    cap is that figure kept between ``QUEUED_DISPATCH_CAP_FLOOR`` and
+    ``QUEUED_DISPATCH_CAP_CEILING``. A share the document does not publish, or
+    one that is not a number, leaves the session on the floor: a lane
+    publishing nothing says nothing about its capacity, and a cap of none would
+    refuse the very dispatch the queue exists to hold.
+    """
+    if isinstance(fair_share, bool) or not isinstance(fair_share, (int, float)):
+        return QUEUED_DISPATCH_CAP_FLOOR
+    return max(
+        QUEUED_DISPATCH_CAP_FLOOR, min(QUEUED_DISPATCH_CAP_CEILING, int(fair_share))
+    )
+
+
+def queue_dispatch(
+    record: dict[str, Any], *, cap: int | None = None
+) -> tuple[dict[str, Any], int]:
+    """Store a held local request once per project, session, section and node.
+
+    ``cap`` is the session's allowance of queued runs. A dispatch that would
+    push a session past it is refused with :class:`QueueFull` before the
+    record is stored, while a repeat dispatch of a node the session already
+    has queued only updates that pointer and is never refused by the cap. Both
+    the count and the requeue decision are taken under the queue's own lock, so
+    two concurrent dispatches from one session cannot both pass the check.
+    """
     lock = crew_home() / "locks" / "queued-dispatch.lock"
     lock.parent.mkdir(parents=True, exist_ok=True)
     with lock.open("a+b") as handle:
@@ -357,6 +412,16 @@ def queue_dispatch(record: dict[str, Any]) -> tuple[dict[str, Any], int]:
                     # discarded underneath the re-queue: fall through and queue
                     # afresh rather than reading a pointer that is gone.
             if not requeued:
+                if cap is not None:
+                    session = str(record.get("session") or "")
+                    held = sum(
+                        1
+                        for pointer in live
+                        if pointer.get("phase") == "queued"
+                        and str(pointer.get("session") or "") == session
+                    )
+                    if held >= cap:
+                        raise QueueFull(session=session, held=held, cap=cap)
                 run_id = str(record["run_id"])
                 with _pointer_lock(run_id):
                     _write_json(pointer_path(run_id), record)

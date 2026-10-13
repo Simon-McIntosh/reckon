@@ -1144,6 +1144,7 @@ def crew_dispatch(
     from reckon.crew.dispatch import (
         LaneHeld,
         LanePaused,
+        QueueFull,
         TmpHeadroomError,
         resolve_dispatch_route,
     )
@@ -1641,6 +1642,57 @@ def crew_dispatch(
             pretty,
         )
         raise click.exceptions.Exit(3) from exc
+    except QueueFull as exc:
+        # A refusal, not a hold: the session is already holding its share of
+        # queued runs and nothing was written, so it exits on the temporary-
+        # failure code and the payload names the session's count and its cap.
+        _emit(
+            {
+                "ok": False,
+                "error": "queue-full",
+                "detail": str(exc),
+                "queued": exc.held,
+                "cap": exc.cap,
+                "session": exc.session,
+            },
+            pretty,
+        )
+        raise click.exceptions.Exit(75) from exc
+    except LaneHeld as exc:
+        # The lane's router grants the session no slot and the local lane has
+        # stored the request as a queued run. That is an acceptance the queue
+        # service will launch, not a refusal; the success is reported with the
+        # run id, its position and the hold's reason on the same channel every
+        # other dispatch result uses, and it exits 0 so a caller keeps
+        # dispatching rather than stopping on a lane that is doing its job.
+        if getattr(exc, "queued", None):
+            _emit(
+                {
+                    "ok": True,
+                    "queued": True,
+                    "detail": (
+                        f"the local lane queued run {exc.queued['run_id']} at "
+                        f"position {exc.queued['position']}"
+                    ),
+                    "run_id": exc.queued["run_id"],
+                    "position": exc.queued["position"],
+                    "reason": exc.queued.get("reason"),
+                    "lane_gate": exc.gate,
+                },
+                pretty,
+            )
+            raise click.exceptions.Exit(0) from None
+        _emit(
+            {
+                "ok": False,
+                "error": "lane-paused",
+                "detail": _lane_paused_detail(exc.gate),
+                "reason": exc.gate.get("reason"),
+                "lane_gate": exc.gate,
+            },
+            pretty,
+        )
+        raise click.exceptions.Exit(75) from exc
     except LanePaused as exc:
         # Neither a launch nor a refusal: the lane's own gate says paused, or
         # cannot be answered, so the dispatch waits. Nothing was created and the
@@ -1654,11 +1706,6 @@ def crew_dispatch(
                 "detail": _lane_paused_detail(exc.gate),
                 "reason": exc.gate.get("reason"),
                 "lane_gate": exc.gate,
-                **(
-                    exc.queued
-                    if isinstance(exc, LaneHeld) and hasattr(exc, "queued")
-                    else {}
-                ),
             },
             pretty,
         )
