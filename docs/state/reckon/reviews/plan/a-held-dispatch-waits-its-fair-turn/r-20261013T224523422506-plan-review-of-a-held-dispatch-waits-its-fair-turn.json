@@ -1,0 +1,64 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-13T22:55:26.991Z",
+  "dispatched_at": "2026-10-13T22:45:54Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-held-dispatch-waits-its-fair-turn.html:135",
+      "id": "reasoning-1",
+      "reason": "built as written, \u00a718 turns that landed green test red; \u00a718's own done-when (\"the test files importing `dispatch_claims.py` or `queue_admission.py` show no added failure against base\") would then fail, and that test file is not among \u00a718's write paths, so the builder is fenced out of the repair and the contradiction must be resolved in the plan first.",
+      "text": "\u00a718's deliverable states \"A queued request's claim refuses neither the launch of another queued request nor a new dispatch\" and its case 3 asserts \"a new dispatch overlapping a queued request exits 0 queued, behind it\", but \u00a714 (status: done, landed 2026-10-13) pins the opposite and pins it by test: tests/test_a_node_is_queued_once.py:307 `test_a_different_node_over_a_claimed_path_is_still_refused` dispatches a second node while a first is queued with lane room and asserts exit 7 with `error == \"scope-conflict\"` \u2014 I ran it at this base and it passes (2 passed), with its own comment naming \"the queued request's claim on result.json\" as the claim enforced",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-held-dispatch-waits-its-fair-turn.html:135",
+      "id": "wiring-1",
+      "reason": "without a stated supersession a builder cannot tell whether \u00a714's assertion or \u00a718's governs the queued-claim treatment, so the two landed sections cannot be reconciled and \u00a718's population gate stays permanent red.",
+      "text": "\u00a718 reverses a behaviour \u00a714 delivered and asserts, yet names no relationship to \u00a714 and declares no ordering, where every other shared-file section in the plan states its ordering explicitly (\u00a712 on `runs.py`, \u00a713 \"runs after \u00a712\", \u00a714 \"runs after \u00a711, \u00a712, \u00a713 and monitor \u00a715\", \u00a715 on its predecessors)",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "4f20f934aad73e0d3e0bff5ecee7ac839170856088dbf8094771cb7dd9cc6f70",
+  "plan_slug": "a-held-dispatch-waits-its-fair-turn",
+  "plan_version": 85,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261013T224523422506-plan-review-of-a-held-dispatch-waits-its-fair-turn",
+  "reviewed_blob_sha": "27d664fad5df46963e3785d88c172172c028be82",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_repository_scope_claims` (reckon/crew/dispatch_claims.py:222), `claim_disposition` (reckon/crew/node.py:1450) and \"monitor-plan \u00a718\" (a real section, `the-monitor-shows-the-work-it-watches` \u00a718, whose write path includes `reckon/crew_follow_commands.py`) all resolve.",
+    "done_when": "pass \u2014 five measurable cases, each with a declared negative control (\"count queued pointers as claims again; the first two cases must then fail\").",
+    "evidence_paths": "pass \u2014 the negative-control log is written \"under the run directory\", a durable path that survives the run.",
+    "naming": "pass \u2014 no plan labels, ticket numbers, version tags or changelog prose reach symbols or comments; the mechanism is named (claims order, queue behind).",
+    "reasoning": "a finding \u2014 \u00a718's mechanism cannot produce its own done-when, because the landed \u00a714 pins the opposite of the behaviour \u00a718 describes.",
+    "single_goal": "pass \u2014 one deliverable: a queued request's claim orders overlapping requests rather than refusing them.",
+    "wiring": "a finding \u2014 \u00a718 shares `reckon/crew/queue_admission.py` with \u00a711/\u00a714/\u00a715 and `reckon/crew/dispatch.py` with \u00a712/\u00a713/\u00a714 but declares no ordering, and silently reverses the queued-claim treatment \u00a714 already landed and pins by test."
+  },
+  "section_digests": {
+    "_document": "5e14043a491f99858173e3b893442375f85c205295e44c4f706b9faca823dba4",
+    "s1": "e09f72c38fa12dd06b1fede9137b6a8731c7f42dad95ea4d7873e48b6bcebc93",
+    "s10": "769f35c4ff338677b1083340b990086682e629701a25af49a8b6e2d3b8a175a4",
+    "s11": "3aafc106945bdc346a0f808fc26c7fc8e028b922103641455da38536ae24c036",
+    "s12": "f72ab709e3a40644be43c6e558b558089f939e3368a20a2b34321a9043c80c88",
+    "s13": "1f1792d925edd6b7c0b33bd02bebc3db1f499f9d5e1505b3ba04b305d9ed7f64",
+    "s14": "a86f35810a5d1446f8cf9294a46f7a7a393c1452cc3080ef8b9e51cf83670acf",
+    "s15": "694218fb467e061648aac13eed1a446529dbff08aca86ecfdb24792eb5b2820e",
+    "s16": "5d0a87ee69959477d707fb8d7b442b283f6ae0e7bc896382dd4c65c7e3efb9b8",
+    "s17": "d3bfb51ccfbe6c602a6a11cd9d7e433d1385fd2b90b604f2eb307029dc97f703",
+    "s18": "a369819b7f9cf8ad60c602ebfdf02d5a9ede0c5c0624e43af167a86f37a62bc0",
+    "s2": "c37ed4ecb2dad1331b0b031fb8351608243790308312236d375bede3594285b7",
+    "s3": "ef687123318fac196bded366330cf2e92b586c4991b5c1cc8670f228182f916c",
+    "s4": "e6a41eadc72e4752cc0ebe35a14a9bce3f28bc1061ec677e8f779fa09d8c037c",
+    "s5": "4b674f96924c3dbfde217945d16c606df376d034dc060f02360a4336412e74f8",
+    "s6": "9e35fc2341a06de64fed9ff7f176a0e83b22c1482c1b5a04a5539b6e4c07aab4",
+    "s7": "764a72dad2d59bddd4d3b1209f07c0c210ff6c46cd14147d4bcc7ffe9fa9426d",
+    "s8": "1b92313fdf672f4b813b45aa8e26f1304ca363cdc5a4d1752238f794a2019e27",
+    "s9": "ef8f75976cf8d243089cb5955b0e084cf6e2c6bcd478f9e56b8e8654080c6ad6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T22:55:31.239262+00:00"
+}
