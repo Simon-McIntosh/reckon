@@ -1,0 +1,55 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-13T08:32:44.606Z",
+  "dispatched_at": "2026-10-13T08:25:06Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-shows-the-work-it-watches.html:300",
+      "id": "reasoning-1",
+      "reason": "a node implementing \u00a717 literally against `RowPolicy._reported` will find the memory run-id-keyed and lift rows carrying none, so the named mechanism is a no-op for the very rows it is meant to hold; the plan must name the lift identity the memory is held under (the lift's group/id), or the node burns a round discovering and re-deciding the key mid-implementation.",
+      "text": "\u00a717's deliverable names the mechanism \"`RowPolicy`'s per-pane `_reported` memory in `reckon/crew/ticker.py` holds a baseline lift row whose lift the pane already drew\", but that memory cannot key a lift row: `_reported` is `dict[str, str]` keyed by run id (`reckon/crew/ticker.py:1293`) and `RowPolicy.feed` derives its key as `str(event.get(\"run_id\") or \"\")` with no node fallback (`reckon/crew/ticker.py:1498`), while a lift row is built with `\"run_id\": None` (`reckon/crew/lift_watch.py:192`). So for every lift row the key is the empty string, each guarded read/write is skipped (`if run_id` guards at `reckon/crew/ticker.py:1579`), and the row is delivered unconditionally by the `not run_id` fallback (`reckon/crew/ticker.py:1615`, `:1628`) \u2014 the policy never remembers and never suppresses a lift row as named. The plan's claim is false of the code it cites. (Contrast the renderer's own grid, which does fall back to the node: `run_id = str(event.get(\"run_id\") or node)` at `reckon/crew/ticker.py:2065`, so the grid keys a lift row by its group \u2014 but \u00a717 names the policy's memory, not the grid's.)",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "de4c26c80805a81c3285a4fd8b61ab1cff545f33713efb1fa06a1dfbf0ac6920",
+  "plan_slug": "the-monitor-shows-the-work-it-watches",
+  "plan_version": 48,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261013T082427744125-plan-review-of-the-monitor-shows-the-work-it-watches",
+  "reviewed_blob_sha": "a29d7f1e9987dd5b27a364ffa3b1ac7c5cb02250",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/lift_watch.py` and",
+    "done_when": "pass \u2014 \u00a717 states a negative control (\"the negative control",
+    "evidence_paths": "pass \u2014 the negative control is \"logged under the run",
+    "naming": "pass \u2014 no plan labels, stage names or ticket numbers reach the",
+    "reasoning": "a finding \u2014 \u00a717 names `RowPolicy`'s per-pane `_reported` as the",
+    "single_goal": "pass \u2014 \u00a717 carries one deliverable: a standing lift is drawn",
+    "wiring": "pass \u2014 the s16\u2192s17 edge is declared, matching \u00a717's prose that"
+  },
+  "section_digests": {
+    "_document": "9ee3fd569356b19a6bf22da41765ec12acdd1e4f71fda2701fadb307ddb1857e",
+    "s1": "52c4b79a6da0bc1e71b00748d6314e8a255bd5fa91b6acae30f6943e3c16cee5",
+    "s10": "ce58141a18e475a484415380e6ae181e597ad53c112e6cb22e1cfc60bb6b09fc",
+    "s11": "24bc7e718fa0dce82e99f82b1a80aa7f382204659e1a5fe08844c9bd4df9f21d",
+    "s12": "6b56be12afc45f4700363688128158c594eba3edb30de411ea7d4ca356b3335b",
+    "s13": "af506684f5bf69d74d9b3cdbdf5fa5888d1c3e2ec6b43d93fb08dc79c5821889",
+    "s14": "87e50c4f3edfdf578cc4501636727b40a183a8737e7f4673669428dbae23a0e5",
+    "s15": "09f7a8c8a774c6a9eebd4d5d69d79451363a282a7bf1bb77100479e9a7e98a02",
+    "s16": "867b2716d09b2503e28914fb9f8d9ef0902ca6517f1b150bda6a941a7b0be06b",
+    "s17": "27b421a8f821a55ce7e68073801c48c44b2111de3b90289e1e5fc61c8c85a4ec",
+    "s2": "eeca9b70e096de79d92846f4178d8f31832962cb9c7c73d122ac2a9e06546f32",
+    "s3": "a37e4f17cfa5318f2229db2eabe7a7b80adf7bb6fcb474e3d262981478abba8e",
+    "s4": "fb6bae83cab6ff2e0a33bf64f8a01d35db72cb3113a73e4659d22617724629c9",
+    "s5": "349ee19ab8c71fbc5e62c4cfa2fd4c32d34af2e2f3e9ced2db0580bfd0e74815",
+    "s6": "301b59df6e0fdccf6650e206628516f0e967dbf4e1b58a616e3d6999015f18cc",
+    "s7": "aede0bed1a72c26f45a72032497a3a58f24022a1a5e8cd4f8f6e08aada09aab3",
+    "s8": "7b9b1e94e523da3024a014b4d3d8532114544257c92fcfe64893085d2166840f",
+    "s9": "b85d6764b003c3933d1609383c69602e5f4b2d502c8200fe4bab51f3e9085466"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T08:32:49.687087+00:00"
+}
