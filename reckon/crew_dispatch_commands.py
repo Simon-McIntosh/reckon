@@ -1659,23 +1659,33 @@ def crew_dispatch(
         )
         raise click.exceptions.Exit(75) from exc
     except LaneHeld as exc:
-        # The lane's router grants the session no slot and the local lane has
-        # stored the request as a queued run. That is an acceptance the queue
-        # service will launch, not a refusal; the success is reported with the
-        # run id, its position and the hold's reason on the same channel every
-        # other dispatch result uses, and it exits 0 so a caller keeps
-        # dispatching rather than stopping on a lane that is doing its job.
+        # The lane's router grants the session no slot. The lane has either
+        # stored the request as a queued run the queue service will launch, or
+        # answered with the run of the same node that is already being admitted
+        # or working. Both are acceptances, not refusals: the outcome is reported
+        # with the run id, its phase and the hold's reason on the same channel
+        # every other dispatch result uses, and it exits 0 so a caller keeps
+        # dispatching rather than stopping on a lane that is doing its job. The
+        # phase distinguishes a fresh queueing from an already-live run, so a
+        # reader never takes the latter for the former.
         if getattr(exc, "queued", None):
+            phase = str(exc.queued.get("phase") or "queued")
+            run_id = str(exc.queued.get("run_id") or "")
+            queued_now = phase == "queued"
+            detail = (
+                f"the local lane queued run {run_id} at "
+                f"position {exc.queued.get('position')}"
+                if queued_now
+                else f"run {run_id} is already {phase} for this node"
+            )
             _emit(
                 {
                     "ok": True,
-                    "queued": True,
-                    "detail": (
-                        f"the local lane queued run {exc.queued['run_id']} at "
-                        f"position {exc.queued['position']}"
-                    ),
-                    "run_id": exc.queued["run_id"],
-                    "position": exc.queued["position"],
+                    "queued": queued_now,
+                    "phase": phase,
+                    "detail": detail,
+                    "run_id": run_id,
+                    "position": exc.queued.get("position"),
                     "reason": exc.queued.get("reason"),
                     "lane_gate": exc.gate,
                 },

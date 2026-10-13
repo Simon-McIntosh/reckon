@@ -173,7 +173,9 @@ def test_a_dispatch_in_the_handover_writes_no_second_pointer(
     payload = backend_tests._payload(result)
 
     assert result.exit_code == 0, result.output
-    assert payload["queued"] is True
+    assert payload["queued"] is False
+    assert payload["phase"] == "admitted"
+    assert payload["detail"] == "run r-admitted is already admitted for this node"
     assert payload["run_id"] == "r-admitted"
     assert payload["position"] is None
     assert runs.list_live(project=PROJECT) == []
@@ -205,6 +207,9 @@ def test_a_dispatch_of_a_working_node_reports_it_and_writes_no_pointer(
     payload = backend_tests._payload(result)
 
     assert result.exit_code == 0, result.output
+    assert payload["queued"] is False
+    assert payload["phase"] == "working"
+    assert payload["detail"] == "run r-working is already working for this node"
     assert payload["run_id"] == "r-working"
     assert payload["position"] is None
     assert [p["run_id"] for p in runs.list_live(project=PROJECT)] == ["r-working"]
