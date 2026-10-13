@@ -23,9 +23,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S26">
-<meta name="plan-version" content="8">
+<meta name="plan-version" content="10">
 <meta name="plan-modified" content="2026-10-13">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="f2ea9301,5b1759ab,428477c7">
 <meta name="plan-impl" content="0.4">
 </head>
@@ -210,6 +210,14 @@
       already carries.</p>
     </section>
 
+    <h2 id="s6">§6 — The dispatch carries a node&#x27;s figures</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> §2 made <code>launch_plan</code> emit one <code>-i</code> per image and refuse a dialect that cannot carry one. Nothing yet hands a node's figures to it: the dispatch in <code>reckon/crew/dispatch.py</code> calls <code>launch_plan</code> with no images.</p><p><strong>Deliverable.</strong> <code>TaskNode</code> in <code>reckon/crew/node.py</code> carries the node's figures as an <code>images</code> list, empty by default, and the dispatch passes it to <code>launch_plan</code>. No CLI option is added: §4's figure review is the only caller that sets it.</p><p><strong>Done when</strong> a test dispatches a node carrying two images to a codex backend in a temporary configuration, stops the launch at the process boundary, and finds both <code>-i</code> flags in the argv the launcher would run. The same node on a clive backend is refused with the lane named. The test files importing <code>reckon/crew/node.py</code> show no added failure against base. The negative control drops the images at the dispatch call, and the two-flag case must then fail. It is logged under the run directory. Write paths: <code>reckon/crew/node.py</code>, <code>reckon/crew/dispatch.py</code> and <code>tests/test_dispatch_attaches_the_figures.py</code>.</p>
+
+    <h2 id="s7">§7 — A codex lane declares image input once delivery is shown</h2>
+<section data-reckon="section" data-id="s7" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> A lane's <code>input_modalities</code> is a claim about what its model receives, not about the flag it accepts. So the declaration follows a measured delivery, and §3's pairs run only on a lane that has one.</p><p><strong>Deliverable.</strong> One node dispatched through §6's path to one codex backend carries a figure whose content its prompt does not state, and asks for a description. If the description matches the figure, <code>input_modalities: [text, image]</code> is declared on that backend in <code>docs/state/reckon/flight.yaml</code>. If it does not, nothing is declared and the report says what the lane answered. This runs on a metered lane: one prompt.</p><p><strong>Done when</strong> the report under the run directory holds the figure, the prompt, the lane's answer verbatim and the verdict. When the verdict is delivered, <code>declared_input_modalities</code> in <code>reckon/flight.py</code> returns image for that backend, and the test files importing <code>reckon/flight.py</code> show no added failure against base. The negative control is a figure the prompt describes in words, which shows only that the lane can repeat a prompt. This section runs after §6. Write paths: <code>docs/state/reckon/flight.yaml</code> and the run's report directory.</p>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-arcstf-001" data-status="resolved" data-written-by="reckon-ee" data-written-at="2026-09-22" data-recommends-skill="/reckon-build a-review-can-see-the-figure §1" data-resolved-at="2026-09-23T01:43:53+00:00" data-resolved-by="">
@@ -218,10 +226,16 @@
     <pre class="r-fu-prompt">/reckon-build a-review-can-see-the-figure §1</pre>
     <p class="r-fu-outcome">§1 landed: BackendConfig declares input_modalities, and select_profile_backend refuses a figure profile on a lane without image input by name, never falling through to default_backend. 93 flight tests pass, the fall-through mutation turns both refusal tests red, and the review scored 77. It has no caller and no lane declares image yet; §2 adds the codex declaration once the dialect forwards -i, and §4 adds the caller.</p>
     </article>
-<article class="r-fu" data-id="f-arcstf-002" data-status="open" data-written-by="reckon-ship" data-written-at="2026-09-23T03:45:00+02:00" data-recommends-skill="/reckon-build a-review-can-see-the-figure §2" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-arcstf-002" data-status="resolved" data-written-by="reckon-ship" data-written-at="2026-09-23T03:45:00+02:00" data-recommends-skill="/reckon-build a-review-can-see-the-figure §2" data-resolved-at="2026-10-13T02:12:55+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Thread the figure through the codex dialect, then declare image on the lanes that receive it</h4>
     <div class="r-fu-body"><p>§1 landed the slot and the refusal. §2 makes the codex dialect emit one <code>-i</code> per declared figure and raise rather than drop images on a dialect that cannot carry them. It then declares <code>input_modalities: [text, image]</code> on the codex lanes that receive the attachment, because the schema forbids declaring a modality the lane does not deliver.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-review-can-see-the-figure §2</pre>
+    <p class="r-fu-outcome">§2's argv half landed (launch_plan emits one -i per image; dialects that cannot carry one refuse). The dispatch wiring moved to §6 and the codex declaration to §7, which follows a measured delivery.</p>
+    </article>
+<article class="r-fu" data-id="f-arcstf-003" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-13" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Carry a node&#x27;s figures through dispatch (§6), then measure delivery on codex (§7)</h4>
+    <div class="r-fu-body"><p>§6 is spend-free. §7 sends one prompt on a metered codex lane and declares image input only if the figure arrived. §3's pairs follow §7. §4 is deferred until the lead decides whether a figure review may run on a metered lane.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-review-can-see-the-figure §6</pre>
     </article>
 </section>
 
@@ -237,6 +251,12 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260923T083142273871-review-of-launch-plan-carries-images" data-who="reckon-ship" data-when="2026-09-23T09:01:37.761Z">
     <div class="r-comment-body"><p>fresh high-effort review stored at 91 after one early-ended turn was resumed; read before promotion</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-s2-remainder-moved" data-who="reckon-build" data-when="2026-10-13T02:20:00Z">
+    <div class="r-comment-body"><p>§2's argv half landed. Its two remaining pieces are now sections of their own: the dispatch wiring is §6, and the codex declaration is §7, because a declaration claims a measured delivery rather than an accepted flag. §3's pairs run after §7.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-s4-lane-design-and-hold" data-who="reckon-build" data-when="2026-10-13T02:20:00Z">
+    <div class="r-comment-body"><p><strong>Design, from the design reviews.</strong> The figure review's lane is chosen where the text review's already is: <code>_dispatch_composed_review</code> in <code>reckon/crew/recovery_review_dispatch.py</code> takes its candidates from <code>_review_lane_candidates</code> and, for a figure review, drops every candidate <code>missing_input_modalities</code> reports short of image input. It dispatches with <code>role="review"</code>, so <code>resolve_role</code>'s overlays apply. <code>select_profile_backend</code> in <code>reckon/flight.py</code> has no caller and selects lanes beside <code>resolve_role</code>, so it is retired in this section's node, with its tests.</p><p><strong>Held for the lead.</strong> No local lane carries images, so every figure review runs on a metered lane, and <code>review_excluded_backends</code> keeps reviews off metered lanes. §4 is deferred until the lead decides whether a figure review is exempt from that exclusion.</p></div>
 </div>
 </section>
 </main>
