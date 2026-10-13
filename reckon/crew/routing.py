@@ -1176,23 +1176,24 @@ def _worktree_is_locked(repo: Path, tree: Path) -> bool:
 def _release_withhold_reason(repo: Path, tree: Path) -> str:
     """Why ``tree`` must not be vacated, or the empty string when it may be.
 
-    Only a linked worktree that this repository registers, that lies inside a
-    releasable root, and that is neither the repository nor one of its
-    ancestors is a release candidate. Without these the release would move
-    something other than a disposable tree: a run pointer naming the main
-    checkout would take the checkout itself, and the directory it moved to
-    would be swept as trash.
+    Only a linked worktree that this repository registers and that is neither
+    the repository, one of its ancestors nor its main checkout is a release
+    candidate. Without these the release would move something other than a
+    disposable tree: a run pointer naming the main checkout would take the
+    checkout itself, and the directory it moved to would be swept as trash.
+    Where a tree sits is not one of these: which trees are offered at all is
+    the caller's decision, and `crew gc` already narrows its candidates to the
+    roots it manages, so refusing by location here would only withhold a tree a
+    caller legitimately owns.
     """
     resolved = tree.resolve()
     repository = repo.resolve()
     if repository.is_relative_to(resolved):
         return "worktree names the repository root or one of its ancestors"
     if resolved == repository_identity(repo):
-        return "worktree names the main checkout, which is not a linked worktree"
+        return "worktree is not a linked worktree"
     if resolved not in _registered_worktrees(repo):
         return "worktree is not registered with the repository"
-    if not any(resolved.is_relative_to(root) for root in _releasable_roots(repo)):
-        return "worktree lies outside the managed worktree root"
     return ""
 
 

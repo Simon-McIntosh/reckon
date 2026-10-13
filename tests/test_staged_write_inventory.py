@@ -43,6 +43,15 @@ def test_every_staged_write_reaches_the_owner(trees):
         ("reckon/_store.py", "write_atomically"),
         ("reckon/resources.py", "migrate_typed_layout"),
         ("reckon/ledger.py", "_indexed_data"),
+        # _bound_run_file stages its replacement: it writes the head, marker
+        # and tail to a mkstemp temporary beside the run file and os.replace-s
+        # that local temporary over the destination, so the rename reaches the
+        # owner this census checks.
+        ("reckon/crew/fleet_supervisor.py", "_bound_run_file"),
+        # _release_worktree_whole stages its replacement: it os.rename-s the
+        # tree onto a same-filesystem trash directory before git is told to
+        # forget it, so the registered path is vacated by one rename.
+        ("reckon/crew/routing.py", "_release_worktree_whole"),
     }, sorted(observed)
 
 

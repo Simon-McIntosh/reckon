@@ -302,30 +302,49 @@ def test_a_pointer_naming_the_repository_root_is_withheld_and_the_checkout_survi
     assert str(repository) in _registered(repository)
 
 
-def test_a_registered_tree_outside_the_worktree_root_is_withheld(
+def test_a_registered_tree_outside_the_releasable_roots_is_released(
     repository: Path, tmp_path: Path
 ) -> None:
-    """A registered worktree outside the managed root is not this tool's to take.
+    """Where a tree sits is the caller's judgement, not this helper's.
 
-    Registration alone is not the licence to move a tree: a tree git knows about
-    but the workspace does not manage is left alone, and the refusal names the
-    root rather than the registration.
+    A caller that names a tree legitimately owns it — a dispatch fixture, a
+    temporary directory, a tree under a root this build does not know — so the
+    helper judges only whether the path is a disposable linked worktree, and
+    `crew gc` narrows what it offers through its own candidate filter.
     """
-    outsider = tmp_path / "outside-root"
-    _git(repository, "worktree", "add", "-q", "--detach", str(outsider), "HEAD")
-    keeper = outsider / "tracked-0.txt"
+    outside = tmp_path / "outside-roots"
+    _git(repository, "worktree", "add", "-q", "--detach", str(outside), "HEAD")
+    keeper = outside / "tracked-0.txt"
     assert keeper.is_file()
-    assert str(outsider) in _registered(repository)
+    assert str(outside) in _registered(repository)
 
-    released = routing_module._release_worktree_whole(repository, outsider)
+    released = routing_module._release_worktree_whole(repository, outside)
+
+    assert released["released"] is True, released
+    assert not outside.exists()
+    assert str(outside) not in _registered(repository)
+    assert _trash_entries(repository) == []
+
+
+def test_the_main_checkout_is_withheld_from_a_linked_worktree(repository: Path) -> None:
+    """The main checkout is not a disposable tree, whichever worktree asks.
+
+    A run pointer naming the main checkout reaches this helper from a linked
+    worktree, whose own path is not an ancestor of the checkout, so the
+    repository-root rule does not fire: the main checkout is refused by
+    identity instead, and the checkout keeps its files and its git directory.
+    """
+    linked = repository.parent / "linked-worktree"
+    _git(repository, "worktree", "add", "-q", "--detach", str(linked), "HEAD")
+    keeper = repository / "tracked-0.txt"
+    assert keeper.is_file()
+
+    released = routing_module._release_worktree_whole(linked, repository)
 
     assert released["released"] is False, released
-    assert "outside the managed worktree root" in released["withheld"], released
+    assert "not a linked worktree" in released["withheld"], released
+    assert (repository / ".git").exists(), "the checkout lost its git directory"
     assert keeper.is_file()
-    with pytest.raises(routing_module.CrewError):
-        routing_module._remove_worktree(repository, str(outsider))
-    assert keeper.is_file()
-    assert str(outsider) in _registered(repository)
     assert _trash_entries(repository) == []
 
 
@@ -386,7 +405,7 @@ def test_gc_reports_a_withheld_release_and_leaves_it_out_of_removed(
     that ignores the flag reports a tree as removed that is still on disk.
     """
     tree = _runs_root_tree(repository, "r-20261012T050000000001-refused-tree")
-    reason = "worktree lies outside the managed worktree root"
+    reason = "worktree names the repository root or one of its ancestors"
     monkeypatch.setattr(
         routing_module,
         "_release_worktree_whole",
