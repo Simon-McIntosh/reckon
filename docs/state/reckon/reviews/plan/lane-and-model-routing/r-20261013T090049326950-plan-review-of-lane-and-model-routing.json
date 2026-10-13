@@ -1,0 +1,83 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-13T09:13:55.009Z",
+  "dispatched_at": "2026-10-13T09:01:34Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/lane-and-model-routing.html:132",
+      "id": "reasoning-1",
+      "reason": "the node's own gate is red until another agent's edit lands, so the worker must either stall or silently re-scope the test to a synthetic fixture, which deviates from the written done-when; the measure must name a fixture host path, or the host edits must precede the node.",
+      "text": "\u00a719's \"Done when\" says a test resolves this repository's flight \"and finds no entry carrying derived_from\", but this repository's resolved flight also reads the host layer ~/Code/dotfiles/reckon/flight.yaml, which \u2014 at the very lines \u00a719 cites (181\u2013182, 484, 500) \u2014 still declares codex-astra, codex-luna, claude-opus and claude-haiku, so the four derived entries survive the node's edit of docs/state/reckon/flight.yaml alone; resolving reckon's flight today returns exactly those four derived_from entries (claude-haiku, claude-opus, codex-astra, codex-luna), and the plan places the host edits after the node (\"the coordinator applies them in the same beat, after the node lands\").",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "dab0ec280b5334553c6a7e86f53caaac39f264ff7fe5ad7261c59c2fda387594",
+  "plan_slug": "lane-and-model-routing",
+  "plan_version": 89,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-13T09:14:13.872816+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "valid; deferred to \u00a719's revision before its dispatch (\u00a719 runs after \u00a717 and \u00a718). The fix text is recorded as comment c-s19-fixture-host on \u00a719",
+      "when": "2026-10-13T09:15:23.646269+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "valid; deferred to \u00a719's revision before its dispatch (\u00a719 runs after \u00a717 and \u00a718). The fix text is recorded as comment c-s19-fixture-host on \u00a719",
+      "when": "2026-10-13T09:15:23.646269+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-lane-and-model-routing.v89.json",
+  "review_run_id": "r-20261013T090049326950-plan-review-of-lane-and-model-routing",
+  "reviewed_blob_sha": "52039de9640c38d95f185990101c32c62c9a4e96",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 verified the design report at ~/.config/reckon/crew/reports/reckon/lane-and-model-design/report.md, the symbols (_DIALECTS, mounted_repository_projects, repository_identity, PICKER_DISPATCH_TIMEOUT_SECONDS, test_default_stdout_parses_as_json_and_exits_zero), the five \u00a716 sites, the host-flight lines 181\u2013182/484/500, the power_convertor exclusions (lines 19\u201320), this repo's project layer, every cited commit sha (3a9d3e9b4, bb9a94e23, af12dbd54, 9ce7876d3, a58f9efb8, dba1dbfaa, c901ef916, 943d9ded5, d93d8918e, 9c4356047, 0e4b8adba, e75f1b406), and the cross-plan anchors one-typesafe-model-picker#s6/#s12 and every-module-fits-a-worker-window#s4; the extensionless href in f-lmr-001 resolves as .html per the house convention.",
+    "done_when": "pass \u2014 each implementable node states a measurable measure and names a control that can fail (main, or an explicit mutation): \u00a714 \"fails on the code \u00a74 merges\", \u00a716 \"fails there\" on main, \u00a717 removes the refusal, \u00a718 negative control is main, \u00a719 restores codex-astra, \u00a720 negative control is main.",
+    "evidence_paths": "pass \u2014 gate logs and evidence land under durable repository and config paths (docs/evidence/..., ~/.config/reckon/crew/...), never a node-local temp; \u00a719's end-state is recorded \"with the command and its output\".",
+    "naming": "pass \u2014 the new symbols and test modules are mechanism-named (test_dispatch_names_a_model, test_jev_is_offered_every_model_of_a_lane, test_no_layer_declares_a_lane_model_name, test_a_pick_names_its_slow_stage, test_dispatch_refuses_a_lane_model_name); no plan label, stage name, ticket number or version tag reaches a name or comment.",
+    "reasoning": "a finding \u2014 \u00a719's first done-when clause is not achievable by the section's own mechanism in the sequence the plan gives.",
+    "single_goal": "pass \u2014 each node carries one deliverable (one refusal, one resolver consolidation, one candidate build, one layer retirement, one stage-timing measure); \u00a719's split between the node's edit and the coordinator's host/power_convertor edits is a scope split, not two goals.",
+    "wiring": "pass \u2014 every depends-on edge resolves to a node that exists and matches the section's own \"runs after\" statement (s4/s10 \u2192 every-module-fits-a-worker-window#s4; s14 \u2192 s4; s17 \u2192 [s14, s16]; s19 \u2192 [s17, s18]), and the \u00a717-before-\u00a719 ordering that \u00a717's done-when requires is carried by s19 depending on s17."
+  },
+  "section_digests": {
+    "_document": "bd8554bdffaa717ca23f121a8ccd1236b91c132f34e0968013303e7a3153fdb1",
+    "s0": "e2c642da07c961805d37dcf4c3d78601d9c70f91c6900a033c1d06a931bcc72d",
+    "s1": "6760f63ebdb0d0db10c3c004f30d4f4253bfb7582bc7a0e4054fed73e017a02d",
+    "s10": "9f3b98da9be42bc1d1dad77d11079186c59e62315308454b2f442bdfffa7755c",
+    "s11": "2e566713b8ee8cbfcf94503cba2640bac78329b96f748ff0334a858e08287755",
+    "s12": "8a7841af15c5beacc75bf716eab0a317f722daab3a302ec190299ce0c3315350",
+    "s13": "6cc9f5f5d1d9a0d7a981363b2961d554bc1670d016cf5da011e18fd20d24b604",
+    "s14": "f4192a6b66ca1a9df3c0c8b84d6a76f9b7e2708145600fc43403217b7a52c540",
+    "s15": "f771307d6c5f071d884953878a527fd166185d3d25c88171a3028f27f2a174b8",
+    "s16": "f223e6b5a96e8c6195a47af2261f3ffdb2da6592ac65ab36dc87669411b7f75d",
+    "s17": "c25e53b94999e6070d4f523ca3bd14da195812a44489dfe8f0ad7d9e3b3167ff",
+    "s18": "a8fdaccbcc00dea2d881e6f33dbca396f55ac9a48a784860531f01f14666d645",
+    "s19": "7f43424c2bd387e0debb46796f353c7ce6dec61ec65dc6dac335a75ce54e13ce",
+    "s2": "0c6488cdae0f23d0600410d02191390e773858e9bc75008234f71cc66f01889b",
+    "s20": "9dca86a7ea316e5b22b94c70024ba182f82622bb73f8243655562dc2cb4fc8d3",
+    "s3": "6cb602347e0232fe459028eff2010884381d987053d550c4565f581c23032095",
+    "s4": "aa5a29a8662005607992ae17fc914d47e8e48c68b7e65395b4865f6d33ea37f4",
+    "s5": "2ffa1a3b1d2b09433f25a83f8a7a59b1774249bac29b945f2c2273ace57cb1ba",
+    "s6": "6c8117bcfdc7d4b0bafdc4fb2185779998c71b1730b07a0d900b543f02c08ec1",
+    "s7": "07952e2e354db24e76860530568500cc2066b69b4255c020db83677e46cb18e2",
+    "s8": "7ca129403c95fcbc111273a2b419b29279191bc54c157bb6f7d8de0d5b160d34",
+    "s9": "0c546f1c0ce99eb4f03333edf6955f597fcb37c49baa31305dfd52c6b03364d8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T09:14:04.061106+00:00"
+}
