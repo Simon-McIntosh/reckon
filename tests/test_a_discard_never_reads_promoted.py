@@ -73,7 +73,11 @@ def _record_ledger_row(run_id: str) -> None:
 
 
 def test_a_discarded_block_never_reads_promoted(home) -> None:
-    """A blocked run removed by crew discard departs without a promotion word."""
+    """A blocked run removed by crew discard departs discarded, never promoted.
+
+    A run with no run directory records its departure in the shared spool, so
+    the discard is corroborated there as well as in the run's own directory.
+    """
     pointer = _blocked_pointer(home, "r-discarded")
     snapshot = _snapshot(pointer)
     assert snapshot["state"] == "blocked"
@@ -88,7 +92,7 @@ def test_a_discarded_block_never_reads_promoted(home) -> None:
     _emitted, previous, state, _counts = folded[0]
     assert previous == "blocked"
     assert state != "promoted"
-    assert state == "withdrawn"
+    assert state == "discarded"
 
 
 def test_a_recorded_promotion_reads_promoted(home) -> None:
