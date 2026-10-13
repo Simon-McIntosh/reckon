@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="the-review-loop-runs-without-hand-steps">
   <meta name="plan-title" content="The Review Loop Runs Without Hand Steps">
   <meta name="plan-summary" content="Four hand steps in the review loop, measured 2026-10-12, become mechanical: self-promoting reviews, test-only review, evidence checks, remote producers.">
-  <meta name="plan-status" content="done">
+  <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="4.25">
   <meta name="plan-capability-version" content="1.0">
@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-standalone" content="Lead rulings of 2026-10-12 that amend landed review, promotion and hook mechanisms; no live plan waits on these sections and they wait on none.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
   <title>The Review Loop Runs Without Hand Steps | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="19">
-<meta name="plan-modified" content="2026-10-12">
+<meta name="plan-version" content="20">
+<meta name="plan-modified" content="2026-10-13">
 </head>
 <body>
   <main class="plan-doc">
@@ -113,6 +113,10 @@
     </ul>
     <p>Write paths: <code>reckon/crew/obligation_snapshot.py</code>, <code>reckon/hooks/coordinator_obligations.py</code>, <code>reckon/crew/watch_unit.py</code> (a public name only), <code>tests/test_a_remote_producer_reads_as_live.py</code>.</p>
 
+    <h2 id="s6">§6 — A review record a reviewer wrote is checked before it finishes</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> <code>store_review</code> in <code>reckon/crew/review.py</code> refuses a record whose <code>status</code> is outside <code>RECOGNISED_REVIEW_STATUSES</code>, because no reader acts on such a record. A reviewer can bypass it by writing the record straight into the review store. A peer session found one on 2026-10-13: the review of <code>r-20261013T035012337867</code> wrote <code>status: complete</code> with an inline <code>json.dump</code>, and promotion would have read the run as unreviewed. Every reviewer passes check-manifest before it finishes, so that is where the check belongs as well.</p><p><strong>Deliverable.</strong> <code>audit_manifest</code> in <code>reckon/crew/reports.py</code>, which check-manifest runs, re-validates each review record among a review run's write paths with the same status check <code>store_review</code> applies, and refuses the manifest naming the record, the status found and the accepted set. The check is one function both callers use, so the accepted set has one owner.</p><p><strong>Done when</strong> a test writes a review record with <code>status: complete</code> at a review run's write path and check-manifest refuses it with that status named. A record written through <code>store_review</code> passes the same check. The test files importing <code>reckon/crew/reports.py</code> show no added failure against base. The negative control removes the audit-side call, and the hand-written case must then pass check-manifest. It is logged under the run directory. Write paths: <code>reckon/crew/reports.py</code>, <code>reckon/crew/review.py</code> and <code>tests/test_a_hand_written_review_record_is_refused.py</code>.</p>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-trlrwhs-001" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-build (health-review-1010)" data-written-at="2026-10-12" data-recommends-skill="/reckon-build the-review-loop-runs-without-hand-steps" data-resolved-at="2026-10-12T05:26:46+00:00" data-resolved-by="reckon-build (health-review-1010)">
@@ -126,6 +130,11 @@
     <div class="r-fu-body"><p>A pointer, not work. This plan's four hand steps are mechanical. The one review-loop repair still open, giving a re-review round its own id, is carried by a-moved-head-is-reviewed §3.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-moved-head-is-reviewed §3</pre>
     <p class="r-fu-outcome">done — no followup; §2 to §5 landed on 2026-10-12, and the remaining round-identity repair is carried by a-moved-head-is-reviewed §3</p>
+    </article>
+<article class="r-fu" data-id="f-trlrwhs-hand-written-record" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-13" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Check a hand-written review record at check-manifest (§6)</h4>
+    <div class="r-fu-body"><p>A reviewer wrote its record directly with an invented status, bypassing store_review's check. A peer session repaired that record and kept its as-delivered copy.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-review-loop-runs-without-hand-steps §6</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
