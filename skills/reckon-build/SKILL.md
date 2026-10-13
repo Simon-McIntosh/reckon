@@ -445,6 +445,22 @@ of a signal is not exhaustion; a hold is never silent. Resuming a held wave
 without a human is a host capability documented in
 `references/orchestrator-harness/<harness>.md`.
 
+A full local lane is not a budget hold, and you do not wait it out. Dispatch
+every ready node through the picker. A dispatch the lane holds is stored as
+queued, and the `reckon-admit-local` fleet service launches it when a slot
+frees.
+
+- **Recognising queued work.** Until dispatch reports queueing as success, it
+  prints `"error": "lane-paused"` with exit 75 together with a `run_id` and
+  `position`. That pair means queued, not refused.
+- **Leaving it alone.** Never discard a queued run to re-dispatch it.
+- **The limit.** Queue up to your session's share of the lane, at least 2 and
+  at most 8 runs.
+- **Timing.** Never poll `lane.json` to decide when to dispatch.
+- **Holds that do not queue yet.** A picker hold (exit 3) and a review composed
+  at the session's share are still not queued. Re-dispatch them when one of
+  your own runs completes.
+
 #### The pace hold, its reserves and `releases_at`
 
 The hold is a burn test on a declared budget group, an account-wide wallet
