@@ -1,0 +1,56 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-13T23:36:32.638Z",
+  "dispatched_at": "2026-10-13T23:27:30Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-held-dispatch-waits-its-fair-turn.html:135",
+      "id": "reasoning-1",
+      "reason": "the section requires a recorded conflict and an immediate retry-after-promotion at once, which the existing pass cannot both give, so either the done-when's timing or the design (exempt the queued-behind overlap from the retry back-off) must change before a node builds it.",
+      "text": "while the earlier run is still working, \u00a718 has the later request's launch \"refused on that claim\" and \"put back in the queue with the conflict recorded as its last failure\"; a recorded non-lane-hold failure starts the admission back-off (`_retry_backoff_hold` in `reckon/crew/queue_admission.py:337` holds until `retry_at`, set by `_stamp_failure` at line 390 to `now + 30s\u00b72\u207f` capped at 600s, and a `ScopeConflict` is not a `LaneHeld`/`LanePaused` hold per `_is_lane_hold` at line 234), so when the earlier run is promoted the later one is still held by its own back-off and cannot launch \"on the next pass\" \u2014 the done-when as written is unreachable on the real pass loop, and the builder will either weaken the assertion (hiding the behaviour) or bend the pass to defeat the back-off",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "d2dfa12e9cab1e5830e5be4ebd84709f63d17855230ead9d08d52a2b8dddacf8",
+  "plan_slug": "a-held-dispatch-waits-its-fair-turn",
+  "plan_version": 88,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261013T232658029594-plan-review-of-a-held-dispatch-waits-its-fair-turn",
+  "reviewed_blob_sha": "2dd0f45211eb637ee58b2081d74832763cf7c5d6",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited file resolves (`reckon/crew/dispatch_claims.py`, `reckon/crew/node.py`, `reckon/crew/queue_admission.py`, `reckon/crew/dispatch.py`, `tests/test_a_node_is_queued_once.py`); the one absent path, `tests/test_overlapping_queued_requests_launch_in_turn.py`, is declared as a file this section creates; and \u00a712/\u00a714 are real sections with the content \u00a718 attributes to them.",
+    "done_when": "pass \u2014 each of the five cases is measurable and the section declares a negative control (count queued pointers as claims again) whose expected red is named.",
+    "evidence_paths": "pass \u2014 the control is logged under the run directory, and no gate or log is placed on a session scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach any symbol or filename; \u00a712/\u00a714/\u00a715 are section references in plan prose, which is where they belong.",
+    "reasoning": "a finding \u2014 \u00a718's root cause is exactly what the code shows, but its done-when case 2 (\"after the first run is promoted, the second launches on the next pass\") is not produced by the mechanism the same section specifies.",
+    "single_goal": "pass \u2014 \u00a718 carries one deliverable: a queued pointer's claim orders overlaps into \"queue behind\" instead of mutually refusing.",
+    "wiring": "pass \u2014 \u00a718 declares it runs after \u00a714 (landed) and before \u00a715, which is the only other pending section writing `reckon/crew/queue_admission.py`, and no declared relationship points at a wrong node."
+  },
+  "section_digests": {
+    "_document": "5e14043a491f99858173e3b893442375f85c205295e44c4f706b9faca823dba4",
+    "s1": "e09f72c38fa12dd06b1fede9137b6a8731c7f42dad95ea4d7873e48b6bcebc93",
+    "s10": "769f35c4ff338677b1083340b990086682e629701a25af49a8b6e2d3b8a175a4",
+    "s11": "3aafc106945bdc346a0f808fc26c7fc8e028b922103641455da38536ae24c036",
+    "s12": "f72ab709e3a40644be43c6e558b558089f939e3368a20a2b34321a9043c80c88",
+    "s13": "1f1792d925edd6b7c0b33bd02bebc3db1f499f9d5e1505b3ba04b305d9ed7f64",
+    "s14": "a86f35810a5d1446f8cf9294a46f7a7a393c1452cc3080ef8b9e51cf83670acf",
+    "s15": "694218fb467e061648aac13eed1a446529dbff08aca86ecfdb24792eb5b2820e",
+    "s16": "5d0a87ee69959477d707fb8d7b442b283f6ae0e7bc896382dd4c65c7e3efb9b8",
+    "s17": "d3bfb51ccfbe6c602a6a11cd9d7e433d1385fd2b90b604f2eb307029dc97f703",
+    "s18": "38f931b00cd8aee0a41b187e6381648be9353f94b7e6912902d5e256363a183e",
+    "s2": "c37ed4ecb2dad1331b0b031fb8351608243790308312236d375bede3594285b7",
+    "s3": "ef687123318fac196bded366330cf2e92b586c4991b5c1cc8670f228182f916c",
+    "s4": "e6a41eadc72e4752cc0ebe35a14a9bce3f28bc1061ec677e8f779fa09d8c037c",
+    "s5": "4b674f96924c3dbfde217945d16c606df376d034dc060f02360a4336412e74f8",
+    "s6": "9e35fc2341a06de64fed9ff7f176a0e83b22c1482c1b5a04a5539b6e4c07aab4",
+    "s7": "764a72dad2d59bddd4d3b1209f07c0c210ff6c46cd14147d4bcc7ffe9fa9426d",
+    "s8": "1b92313fdf672f4b813b45aa8e26f1304ca363cdc5a4d1752238f794a2019e27",
+    "s9": "ef8f75976cf8d243089cb5955b0e084cf6e2c6bcd478f9e56b8e8654080c6ad6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T23:36:47.609530+00:00"
+}
