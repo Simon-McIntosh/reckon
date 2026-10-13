@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-after" content="the-review-loop-runs-without-hand-steps">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
   <title>A Seat Held Elsewhere Is Not Restarted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="4">
+<meta name="plan-version" content="6">
 <meta name="plan-modified" content="2026-10-13">
 </head>
 <body>
@@ -64,15 +64,13 @@
       <strong>Deliverable.</strong> When <code>reckon crew watch</code> finds the project's seat held by a live producer on another
       host, it stays up and re-reads the seat at a bounded interval, taking the seat when that producer's stream goes stale, instead
       of exiting into the unit's restart. The foreign-seat judgement reuses <code>_seat_names_a_foreign_host</code> and
-      <code>_seat_stream_fresh</code> in <code>reckon/crew/watch_unit.py</code>. <code>--ensure</code> reports a unit whose restart
-      count rises between two readings as cycling, not healthy, with both readings. The unit's restart policy stays as it is, because
-      a crash should still restart it.
+      <code>_seat_stream_fresh</code> in <code>reckon/crew/watch_unit.py</code>. The unit's restart policy stays as it is, because
+      a crash should still restart it. Reporting a cycling unit is §5's deliverable.
     </p>
     <p>
       <strong>Done when</strong> a test gives the watch a seat naming another host with a fresh stream and finds the process still
-      running after three re-read intervals, having written no restart; with the stream made stale it takes the seat. An
-      <code>--ensure</code> test with a unit whose restart count rose between readings reports it cycling. The watch and unit test files
-      show no added failure against base. Negative control: with the wait removed, the first test must see the process exit 0.
+      running after three re-read intervals, having written no restart; with the stream made stale it takes the seat. The watch test
+      files show no added failure against base. Negative control: with the wait removed, the first test must see the process exit 0.
     </p>
 
     <h2 id="s3">§3 — Follow-on study: why the hook still reads no producer</h2>
@@ -112,6 +110,10 @@
       for a scoring run whose session's follower is on the second host. Negative control: with liveness read from the local
       process table again, the reflex reports that run as awaiting its coordinator.
     </p>
+
+    <h2 id="s5">§5 — A cycling unit is reported as cycling</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p><strong>Deliverable.</strong> <code>reckon crew watch --ensure</code> reads the unit's restart count twice, a few seconds apart. When the count rises between the readings, it reports the unit as cycling, not healthy, with both readings. On 2026-10-13 it reported "already active on an unchanged unit; started nothing" for a unit that had restarted 2,376 times. This is independent of §2: it is how a cycle of any cause becomes visible.</p><p><strong>Done when</strong> a test gives <code>--ensure</code> a unit whose restart count rises between its two readings and finds it reported as cycling with both counts, while a unit whose count holds is reported as before. The unit test files show no added failure against base. Negative control: with only one reading taken, the rising unit must read as healthy, reproducing 2026-10-13.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
