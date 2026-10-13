@@ -100,7 +100,7 @@ def test_new_numbered_heading_without_contract_is_refused(sid):
         _store._require_new_section_contracts("", f'<h2 id="{sid}">Work</h2>')
 
 
-@pytest.mark.parametrize("operation", ["declaration", "authored", "collapse"])
+@pytest.mark.parametrize("operation", ["declaration", "authored"])
 def test_store_identity_validations_use_schema_and_refuse_invalid_ids(
     operation, monkeypatch
 ):
@@ -121,9 +121,6 @@ def test_store_identity_validations_use_schema_and_refuse_invalid_ids(
         ),
         "authored": lambda: _store._require_authored_section_fields(
             {"id": "bad/id", "title": "Work", "body": ""}
-        ),
-        "collapse": lambda: _store._apply_collapse_section(
-            {}, {"section": "bad/id"}, False, []
         ),
     }
     with pytest.raises(_store.OpError, match="safe section identity"):

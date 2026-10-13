@@ -274,7 +274,6 @@ def test_section_identity_has_one_definition_and_the_store_routes_through_it() -
     assert {
         "_apply_set",
         "_require_authored_section_fields",
-        "_apply_collapse_section",
     } <= callers
 
     inline = {

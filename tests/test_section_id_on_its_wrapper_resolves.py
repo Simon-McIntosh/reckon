@@ -1,8 +1,9 @@
-"""A section id on its wrapping element resolves in collapse and in the read.
+"""A section id on its wrapping element resolves in the landing and in the read.
 
 Some plans carry the section id on a ``<section id=...>`` element wrapping the
-heading rather than on the ``h2`` itself. Both the collapse op and the section
-read locate such a section, and both keep locating one whose id sits on its h2.
+heading rather than on the ``h2`` itself. Both the landing card write and the
+section read locate such a section, and both keep locating one whose id sits on
+its h2.
 """
 
 from __future__ import annotations
@@ -15,6 +16,7 @@ import pytest
 from click.testing import CliRunner
 
 import reckon.mcp as mcp_module
+from reckon import _store
 from reckon._plan_html import read_state, write_state
 from reckon.cli import main
 from tests.mcp_family_reload import reload_mcp_family
@@ -120,27 +122,32 @@ def _plan_path(root: Path, slug: str) -> Path:
     return root / "docs" / "plans" / f"{slug}.html"
 
 
-def _collapse_op(section: str, summary: str = SUMMARY, anchor: str = ANCHOR) -> dict:
-    return {
-        "op": "collapse_section",
-        "section": section,
-        "summary": summary,
-        "evidence_anchor": anchor,
-    }
+def _land(
+    root: Path,
+    slug: str,
+    section: str,
+    summary: str = SUMMARY,
+    anchor: str = ANCHOR,
+) -> None:
+    """Write one section's landing card and its done declaration in one state write.
 
-
-def _edit(root: Path, slug: str, op: dict) -> dict:
+    The declaration is read from the authored text, before the card replaces the
+    section body: a card carries no checklist row, so reading it back would drop
+    the section's own record.
+    """
     path = _plan_path(root, slug)
-    state = read_state(path.read_text(encoding="utf-8"))
-    return mcp_module._edit_plan_tool(
-        PROJECT,
-        slug,
-        expected_version=state["version"],
-        checkout_path=str(root),
-        doc_type="plan",
-        mode="state",
-        ops=[op],
+    original = path.read_text(encoding="utf-8")
+    text = _store._collapse_authored_section(
+        original,
+        {"section": section, "summary": summary, "evidence_anchor": anchor},
     )
+    state = read_state(original)
+    state["section_declarations"][section] = "done"
+    for record in state.get("sections", []):
+        if record.get("id") == section:
+            record["status"] = "done"
+            break
+    path.write_text(write_state(text, state), encoding="utf-8")
 
 
 def _read(section: str, slug: str = WRAPPED) -> dict:
@@ -155,9 +162,8 @@ def test_collapse_resolves_an_id_on_its_wrapper(
 ) -> None:
     path = _plan_path(checkout, WRAPPED)
 
-    result = _edit(checkout, WRAPPED, _collapse_op(section_id))
+    _land(checkout, WRAPPED, section_id)
 
-    assert result["ok"] is True, result
     text = path.read_text(encoding="utf-8")
     # The identity survives the collapse, now carried by the heading.
     assert f'<h2 id="{section_id}">' in text
@@ -178,11 +184,10 @@ def test_collapsing_a_wrapper_twice_leaves_one_card(
     checkout: Path, section_id: str
 ) -> None:
     path = _plan_path(checkout, WRAPPED)
-    assert _edit(checkout, WRAPPED, _collapse_op(section_id))["ok"] is True
+    _land(checkout, WRAPPED, section_id)
 
-    result = _edit(checkout, WRAPPED, _collapse_op(section_id, SUMMARY_2, ANCHOR_2))
+    _land(checkout, WRAPPED, section_id, SUMMARY_2, ANCHOR_2)
 
-    assert result["ok"] is True, result
     text = path.read_text(encoding="utf-8")
     assert text.count('<section class="section-landed"') == 1
     assert SUMMARY not in text
@@ -194,9 +199,8 @@ def test_collapsing_a_wrapper_twice_leaves_one_card(
 def test_collapse_still_resolves_an_id_on_its_h2(checkout: Path) -> None:
     path = _plan_path(checkout, HEADED)
 
-    result = _edit(checkout, HEADED, _collapse_op("s1"))
+    _land(checkout, HEADED, "s1")
 
-    assert result["ok"] is True, result
     text = path.read_text(encoding="utf-8")
     assert '<h2 id="s1">Headed first</h2>' in text
     assert "The h2-borne phrase." not in text
@@ -248,7 +252,7 @@ def test_section_read_lists_wrapper_carried_identities(checkout: Path) -> None:
 def test_collapsed_wrapper_section_still_reads_by_its_id(
     checkout: Path, section_id: str
 ) -> None:
-    assert _edit(checkout, WRAPPED, _collapse_op(section_id))["ok"] is True
+    _land(checkout, WRAPPED, section_id)
 
     result = _read(section_id)
 
