@@ -312,6 +312,16 @@ base revision rather than against the head with the change reverted.</p>
 </article>
   </section>
 
+  <section id="s17">
+    <h2>§17 — A lane-and-model name is refused at dispatch, naming the lane and the model</h2>
+    <p><strong>Coordinator's landing record.</strong> Run <code>r-20261013T220636291908-a-lane-model-name-is-refused</code>, commits <code>c6ce592e2</code>, <code>02c28f688</code>, <code>ba0db466d</code> and <code>45ba09b40</code>, merged as <code>21c65d62a</code>. The run first delivered with one added failure. <code>test_dispatch_names_a_model.py::test_model_narrowing_matches_the_legacy_backend</code> asserted that <code>--backend claude-opus</code> resolves, which §17 deliberately refuses. That test file was granted with <code>crew widen</code>, and the test now compares the pair's full launch argv with the <code>claude-opus</code> entry's own argv. Review 111, 0 added failures. Population at the merge, run sequentially: the 57 test files importing the command module gave 755 passed, 2 failed and 1 skipped at the merge, against 749 passed, 2 failed and 1 skipped at the base <code>bc10a6bab</code>, with the same 2 failures in both arms. Logs are <code>~/.cache/reckon-suite-logs/population-{base,head}-lane-s17.log</code>, and the focused gate is <code>merge-lane-s17-21c65d62a.log</code>. The review worker wrote its record without <code>reviewed_run_id</code>, which blocked the review's promotion. The coordinator added the field and kept the as-delivered copies beside the record. From this merge on, <code>--backend codex-astra</code> is refused with a pointer to <code>--model astra</code>. Sessions that dispatch with a combined name must name the model instead.</p>
+<article class="r-note" id="a-lane-model-name-is-refused-landing" data-node="a-lane-model-name-is-refused" data-reckon="landed" data-when="2026-10-13">
+  <p><strong>A lane-and-model backend name is refused at dispatch</strong></p>
+  <p id="a-lane-model-name-is-refused-summary">A <code>--backend</code> value such as <code>codex-astra</code> or <code>claude-opus</code> that the name resolver maps to a lane and model pair is refused, naming the lane it resolves to and the <code>--model</code> key that replaces it, so a caller reaching for the retired combined spelling is told the two-dimension form. <code>--model astra</code> and <code>--backend codex --model astra</code> resolve to the same backend the combined name named, a resume of a record whose backend is the combined name still resolves, and a model declared by two lanes and asked for under a third is refused by naming both declaring lanes.</p>
+  <p id="a-lane-model-name-is-refused-measure">Gate: 6 passed in <code>tests/test_dispatch_refuses_a_lane_model_name.py</code>. Importer set at head: 2 failed, 749 passed, 1 skipped, the same two pre-existing failures as the base arm — no added failure. The equivalence test in <code>tests/test_dispatch_names_a_model.py</code> now builds its legacy launch argv from the <code>claude-opus</code> backend entry rather than dispatching the retired spelling, and still asserts the pair composes the identical argv.</p>
+</article>
+  </section>
+
 </main>
 </body>
 </html>
