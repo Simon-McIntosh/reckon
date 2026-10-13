@@ -1,0 +1,45 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-13T12:35:54.801Z",
+  "dispatched_at": "2026-10-13T12:21:25Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-crew-home-has-a-bound.html:142",
+      "id": "reasoning-1",
+      "reason": "the plan names the wrong identifier and would send a node to a ref name incompatible with the existing namespace it is told to mirror.",
+      "text": "the deliverable pins under `refs/reckon/archive/<run-id>` \"as it does for a dirty tree\", but the dirty path assembles the ref as `ARCHIVE_REF_PREFIX + path.name` (reckon/crew/routing.py:2224), and `path.name` is the worktree directory name, which \u00a77 says equals the node id, not the run id; the 13 existing refs under `refs/reckon/archive/` are 12 node-id-named and one run-id-named, so a node following the plan literally mints a second, run-id-named ref for a tree whose dirty sibling uses the node id, diverging from the path the phrase \"as it does for a dirty tree\" requires it to reuse",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "503d9bff4239b20565fc67fcfa640fce752112a84f7ca151de28953da68e7564",
+  "plan_slug": "the-crew-home-has-a-bound",
+  "plan_version": 38,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261013T122046217599-plan-review-of-the-crew-home-has-a-bound",
+  "reviewed_blob_sha": "ba2ae9759e236b241e1d79c34d4c75e46081ff7e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_pinnable_unique_commits` (reckon/crew/routing.py:1591), the measurement gate (routing.py:804), the pin branch (routing.py:2206), the confinement refusal message (routing.py:2112-2116) and the cited run `r-20261008T122151393511-cfs-point-jet-custom-rule` all resolve; the run-id citation resolves to a live run directory.",
+    "done_when": "pass \u2014 \u00a76 declares two negative controls, one per deliverable (\"keeps pinning to dirty trees only\" falsifies the pin-release bullet; \"restores the refusal\" falsifies the already-removed bullet), each auditable against the four done-when bullets.",
+    "evidence_paths": "pass \u2014 the tests build temporary repositories and the two control logs are written under the run directory, which is durable GPFS, not a scratchpad.",
+    "naming": "pass \u2014 no plan label, stage name or ticket number is introduced by \u00a76.",
+    "reasoning": "a finding \u2014 \u00a76 specifies the archive ref as `refs/reckon/archive/<run-id>`, but the dirty path it tells the worker to mirror builds that ref from the worktree directory name, so the identifier named is the wrong one.",
+    "single_goal": "pass \u2014 the section's two done-when halves (pin a clean abandoned tree; tolerate an already-removed one) touch one function path on the same run class and close on one test file, so one verdict closes the node; the two prior findings on this section were answered by adding the second control rather than splitting, and nothing since has changed what it describes.",
+    "wiring": "pass \u2014 \u00a76 names its sequencing dependency (`r-20261012T051827498181-a-worktree-release-is-whole`, merged as 2e44591a1, an ancestor of HEAD) and \u00a77 names \u00a76; no needed dependency is absent."
+  },
+  "section_digests": {
+    "_document": "2a851ecc27afd816aee037ab80838994452970b9e8a58f4ffd5dc08d0f275181",
+    "s1": "32d74b1202f967c9688afa80dbd94719f49d78f6a5afcc8d56d9c46602e1c0a5",
+    "s2": "9328c20a14a28cadebc0cf3424b9fa61772f8c3bea7e4f7b1e097571697c0369",
+    "s3": "42466bfb93ed68c3dcdb669550dae38d00ebbdea5e24407a7579076255209fbf",
+    "s4": "ea437bee063bb05e8f8ddb6f7a30f7f066d66dff1770c1488e31b86a6f5c7ba8",
+    "s5": "75a8a336e2ee62426e5a8c3ed3310e0cf614b82a8cf7ae6a5985fcb99f2b1648",
+    "s6": "ae3d5770b5c8508e266d21ec2b9a87f0b53ec629011f084630f1f89fd7b10060",
+    "s7": "d966e9dc54000fcf7d43d9d39567b2a791c2670b0224b881649472a126a8f106"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T12:36:25.643340+00:00"
+}
