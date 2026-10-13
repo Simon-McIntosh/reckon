@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "3f0b9158a",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch_picker.py:301",
+    "reckon/crew/picker/__init__.py:276",
+    "reckon/crew/picker/replay.py:45"
+  ],
+  "commits_read": [
+    "b23165ab54466451be2d963d9693fd58da95e35e",
+    "548865d2af6bbf4334f2d60dcec7810c3f6acdce"
+  ],
+  "completed_at": "2026-10-13T17:38:42.928Z",
+  "dispatched_at": "2026-10-13T17:17:58Z",
+  "findings": [
+    {
+      "file": "reckon/crew/picker/snapshot.py",
+      "line": "776",
+      "severity": "follow-on",
+      "text": "follow-on: the assignment backend[model_key] = model_key writes a key the picker never reads, since Candidate (reckon/crew/picker/types.py:21) has no model_key field and no module under reckon/crew/picker/ reads it, so the assignment is dead within the candidate path."
+    }
+  ],
+  "head_log_revision": "548865d2a",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit-by-commit against base 3f0b9158; b23165ab5 adds the test file and 548865d2 changes only reckon/crew/picker/snapshot.py.",
+    "done_when": "the done_when names tests/test_jev_is_offered_every_model_of_a_lane.py; the run records head-importers.log 145 passed EXIT=0, negative-control.log 2 failed EXIT=1 over the same file at base 3f0b9158, and I re-ran that file at the head (2 passed).",
+    "goal": "the node's goal is to offer Jev one candidate per lane-and-model pair read from the lanes block; reckon/crew/picker/snapshot.py:749-776 expands each non-derived backend that names a lane into one variant per lane model, so lanes.codex yields codex:sol, codex:astra and codex:luna.",
+    "manifest": "read the run's manifest.md (status complete); it names commits b23165ab5 and 548865d2, baseline_suite 143 passed, after_suite 145 passed, and negative_control_log at the run directory.",
+    "write_paths": "the declared paths are reckon/crew/picker/snapshot.py and tests/test_jev_is_offered_every_model_of_a_lane.py."
+  },
+  "justifications": {
+    "durability": "tests/test_jev_is_offered_every_model_of_a_lane.py:67 reddens if the per-model expansion is dropped (base offered only codex:sol) and :72 reddens if the derived_from skip is removed (four codex candidates), so both halves of the change are guarded.",
+    "evidence": "the manifest's baseline_suite and after_suite name baseline-importers.log (143 passed) and head-importers.log (145 passed) and negative-control.log reproduces the base defect (2 failed), all read against base 3f0b9158.",
+    "fit": "the added loop at reckon/crew/picker/snapshot.py:749-776 follows the surrounding Mapping and .items() idiom and introduces no name the repository naming rules forbid.",
+    "goal_fidelity": "reckon/crew/picker/snapshot.py:750-759 expands each non-derived backend naming a lane into one candidate per lane model and skips entries carrying derived_from, matching the section's deliverable.",
+    "reuse": "no new definition is added; the change reads the resolved lanes block and the derived_from marker that reckon/flight.py:1429 _lane_entry writes, and its model-settings merge coincides with that owner's LANE_MODEL_KEYS set, forking no capability.",
+    "scope_discipline": "git diff 3f0b9158..548865d2 alters only reckon/crew/picker/snapshot.py and tests/test_jev_is_offered_every_model_of_a_lane.py, both declared, with one line (snapshot.py:776) beyond what the section requires."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to offer Jev one candidate per lane-and-model pair read from the lanes block; reckon/crew/picker/snapshot.py:749-776 expands each non-derived backend that names a lane into one variant per lane model, so lanes.codex yields codex:sol, codex:astra and codex:luna.\nVERDICT done_when: the done_when names tests/test_jev_is_offered_every_model_of_a_lane.py; the run records head-importers.log 145 passed EXIT=0, negative-control.log 2 failed EXIT=1 over the same file at base 3f0b9158, and I re-ran that file at the head (2 passed).\nVERDICT write_paths: the declared paths are reckon/crew/picker/snapshot.py and tests/test_jev_is_offered_every_model_of_a_lane.py.\nVERDICT manifest: read the run's manifest.md (status complete); it names commits b23165ab5 and 548865d2, baseline_suite 143 passed, after_suite 145 passed, and negative_control_log at the run directory.\nVERDICT diff: read commit-by-commit against base 3f0b9158; b23165ab5 adds the test file and 548865d2 changes only reckon/crew/picker/snapshot.py.\nCALL_SITES: reckon/crew/dispatch_picker.py:301, reckon/crew/picker/__init__.py:276, reckon/crew/picker/replay.py:45\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/picker/snapshot.py:750-759 expands each non-derived backend naming a lane into one candidate per lane model and skips entries carrying derived_from, matching the section's deliverable.\nSCORE evidence: 19\nJUSTIFICATION evidence: the manifest's baseline_suite and after_suite name baseline-importers.log (143 passed) and head-importers.log (145 passed) and negative-control.log reproduces the base defect (2 failed), all read against base 3f0b9158.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 3f0b9158..548865d2 alters only reckon/crew/picker/snapshot.py and tests/test_jev_is_offered_every_model_of_a_lane.py, both declared, with one line (snapshot.py:776) beyond what the section requires.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_jev_is_offered_every_model_of_a_lane.py:67 reddens if the per-model expansion is dropped (base offered only codex:sol) and :72 reddens if the derived_from skip is removed (four codex candidates), so both halves of the change are guarded.\nSCORE fit: 18\nJUSTIFICATION fit: the added loop at reckon/crew/picker/snapshot.py:749-776 follows the surrounding Mapping and .items() idiom and introduces no name the repository naming rules forbid.\nSCORE reuse: 18\nJUSTIFICATION reuse: no new definition is added; the change reads the resolved lanes block and the derived_from marker that reckon/flight.py:1429 _lane_entry writes, and its model-settings merge coincides with that owner's LANE_MODEL_KEYS set, forking no capability.\nFINDING reckon/crew/picker/snapshot.py:776 follow-on: the assignment backend[model_key] = model_key writes a key the picker never reads, since Candidate (reckon/crew/picker/types.py:21) has no model_key field and no module under reckon/crew/picker/ reads it, so the assignment is dead within the candidate path.\n",
+  "review_run_id": "r-20261013T171734525126-review-of-jev-offered-every-model-of-a-lane-548865d2af6b",
+  "reviewed_base_sha": "3f0b9158ad3ef1ca6a28bf744f09fdbf8e58f245",
+  "reviewed_head_sha": "548865d2af6bbf4334f2d60dcec7810c3f6acdce",
+  "reviewed_run_id": "r-20261013T092654335934-jev-offered-every-model-of-a-lane",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "subject": "node",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T17:34:49.373459+00:00",
+  "total": 113
+}
