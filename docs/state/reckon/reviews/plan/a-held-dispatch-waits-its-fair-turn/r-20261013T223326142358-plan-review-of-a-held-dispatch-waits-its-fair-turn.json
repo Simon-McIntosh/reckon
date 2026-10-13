@@ -1,0 +1,64 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-13T22:42:53.925Z",
+  "dispatched_at": "2026-10-13T22:34:00Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-held-dispatch-waits-its-fair-turn.html:135",
+      "id": "reasoning-1",
+      "reason": "as written a builder implements \"non-binding\", passes bullets 1, 2, 4 and 5, and fails bullet 3, because nothing is left to hold the new dispatch back once the queued claim is discarded rather than ordered.",
+      "text": "the deliverable says \"Only a pointer in the `queued` phase stops binding\", but the binding verdict is `claim.binding` from `claim_disposition` (reckon/crew/dispatch_claims.py:1055, 1588: `if not claim.binding: ... continue`); once a queued claim stops binding the scope check discards it entirely, so a new dispatch overlapping a queued request finds no conflict and launches \u2014 contradicting done-when bullet 3, which requires that dispatch to exit 0 queued behind it. Ordering a newcomer behind a queued request is a distinct mechanism the plan never names a caller for",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-held-dispatch-waits-its-fair-turn.html:135",
+      "id": "reasoning-2",
+      "reason": "the constant is real and contains `starting`, and the normative requirement (only `queued` stops binding) is unambiguous, so the loose citation does not change what gets built; it is noted so the builder does not add `queued` to `_UNLAUNCHED_CLAIM_PHASES` expecting that to release the claim it actually leaves binding.",
+      "text": "the deliverable's closing sentence attributes a `starting` run keeping its claim to `claim_disposition` \"(`_UNLAUNCHED_CLAIM_PHASES` in `reckon/crew/dispatch_claims.py`)\", but `claim_disposition` (reckon/crew/node.py:1480) keeps every pointer that records no pid binding, reading no phase, while `_UNLAUNCHED_CLAIM_PHASES` (reckon/crew/dispatch_claims.py:121) drives the separate `launched` field used by the racing-arrival arbitration",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "4aeeafa16d318e05e1b09c11503e12e032152d9d2f4cc9e0598fafc4ca76e5e8",
+  "plan_slug": "a-held-dispatch-waits-its-fair-turn",
+  "plan_version": 83,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261013T223326142358-plan-review-of-a-held-dispatch-waits-its-fair-turn",
+  "reviewed_blob_sha": "e534baf6f5b8247471a8e9df57f9aa5e5b5e7dfb",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_repository_scope_claims` (reckon/crew/dispatch_claims.py:222), `claim_disposition` (reckon/crew/node.py:1450), `_UNLAUNCHED_CLAIM_PHASES` (reckon/crew/dispatch_claims.py:121) and `reckon/crew_follow_commands.py` all resolve.",
+    "done_when": "pass \u2014 \u00a718 declares a negative control (\"count queued pointers as claims again; the first two cases must then fail with the requests refusing each other\") and each bullet names an observable outcome.",
+    "evidence_paths": "pass \u2014 \u00a718 writes its control log \"under the run directory\", a durable live-run path, not a scratchpad.",
+    "naming": "pass \u2014 no plan label, ticket number or version tag reaches a symbol or comment; the section is named by what it does.",
+    "reasoning": "a finding \u2014 \u00a718's stated mechanism (a queued pointer \"stops binding\") cannot produce its own done-when bullet 3 (a new dispatch overlapping a queued request is queued behind it); and its justification cites `_UNLAUNCHED_CLAIM_PHASES` as the reason a `starting` claim stays binding, which that constant does not govern.",
+    "single_goal": "pass \u2014 \u00a718 carries one deliverable: a queued request's claim stops refusing, so overlapping queued requests launch in turn.",
+    "wiring": "pass \u2014 \u00a718 declares no depends-on, and each module it writes is shared only with sections that have already landed (\u00a711, \u00a712, \u00a714), so no ordering is owed and no dependency is missing."
+  },
+  "section_digests": {
+    "_document": "5e14043a491f99858173e3b893442375f85c205295e44c4f706b9faca823dba4",
+    "s1": "e09f72c38fa12dd06b1fede9137b6a8731c7f42dad95ea4d7873e48b6bcebc93",
+    "s10": "769f35c4ff338677b1083340b990086682e629701a25af49a8b6e2d3b8a175a4",
+    "s11": "3aafc106945bdc346a0f808fc26c7fc8e028b922103641455da38536ae24c036",
+    "s12": "f72ab709e3a40644be43c6e558b558089f939e3368a20a2b34321a9043c80c88",
+    "s13": "1f1792d925edd6b7c0b33bd02bebc3db1f499f9d5e1505b3ba04b305d9ed7f64",
+    "s14": "a86f35810a5d1446f8cf9294a46f7a7a393c1452cc3080ef8b9e51cf83670acf",
+    "s15": "694218fb467e061648aac13eed1a446529dbff08aca86ecfdb24792eb5b2820e",
+    "s16": "5d0a87ee69959477d707fb8d7b442b283f6ae0e7bc896382dd4c65c7e3efb9b8",
+    "s17": "d3bfb51ccfbe6c602a6a11cd9d7e433d1385fd2b90b604f2eb307029dc97f703",
+    "s18": "0e00ab4427bf7cbac7a643446a11edf554046c33904ece30d4c7a7c863508664",
+    "s2": "c37ed4ecb2dad1331b0b031fb8351608243790308312236d375bede3594285b7",
+    "s3": "ef687123318fac196bded366330cf2e92b586c4991b5c1cc8670f228182f916c",
+    "s4": "e6a41eadc72e4752cc0ebe35a14a9bce3f28bc1061ec677e8f779fa09d8c037c",
+    "s5": "4b674f96924c3dbfde217945d16c606df376d034dc060f02360a4336412e74f8",
+    "s6": "9e35fc2341a06de64fed9ff7f176a0e83b22c1482c1b5a04a5539b6e4c07aab4",
+    "s7": "764a72dad2d59bddd4d3b1209f07c0c210ff6c46cd14147d4bcc7ffe9fa9426d",
+    "s8": "1b92313fdf672f4b813b45aa8e26f1304ca363cdc5a4d1752238f794a2019e27",
+    "s9": "ef8f75976cf8d243089cb5955b0e084cf6e2c6bcd478f9e56b8e8654080c6ad6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T22:43:14.501528+00:00"
+}
