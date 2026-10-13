@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-after" content="the-review-loop-runs-without-hand-steps">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
   <title>A Seat Held Elsewhere Is Not Restarted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="4">
 <meta name="plan-modified" content="2026-10-13">
 </head>
 <body>
@@ -76,7 +76,7 @@
     </p>
 
     <h2 id="s3">§3 — Follow-on study: why the hook still reads no producer</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s3" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
     <p>
       Reproduce the 2026-10-13 state: a seat on another host with a fresh stream, a session with a follower attached on this host, and
       no snapshot for that session. Record which branch of <code>reckon/hooks/coordinator_obligations.py</code> prints "no producer", and
@@ -97,6 +97,21 @@
       each, and the hook on the second host prints the checklist rather than "no producer". Negative control: with publication restricted
       to the producer's host, the second session's hook must print "no producer".
     </p>
+    <p>
+      <strong>Where the fix goes, from §3.</strong> §3 confirmed this section's premise and located it: the producer selects the
+      sessions it publishes from follower rows that read <code>live</code>, and <code>live</code> asks the producer host's own process
+      table about the follower's recorded pids, so a registration made on another host reads registered and gone
+      (<a href="/reckon/evidence/archive/a-seat-held-elsewhere-is-not-restarted-landed.html#s3">evidence</a>). The same reading, through
+      <code>runs.follower_state</code>, decides whether the watch's review reflex dispatches a review for a session's run
+      (<code>reckon/crew/recovery_watch.py</code>), so the review reflex is lost to the same sessions. On 2026-10-13 a delivered
+      investigation of session <code>f653840f</code>, whose follower runs on a different node from the producer, had no reflex
+      review after eight minutes and was reviewed only by hand. The change is therefore made once, where liveness is read: a
+      registration made on another host is not judged gone from this host's process table. How it is judged instead is this
+      section's to settle. Both consumers read the result, and neither gains a second liveness rule of its own.
+      <strong>Done when</strong>, in addition to the above: the same two-host fixture finds the review reflex dispatching a review
+      for a scoring run whose session's follower is on the second host. Negative control: with liveness read from the local
+      process table again, the reflex reports that run as awaiting its coordinator.
+    </p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
@@ -112,6 +127,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261013T085219616755-sheinr-hook-no-producer-repro" data-who="reckon-build" data-when="2026-10-13T09:08:51Z">
     <div class="r-comment-body"><p>The producer filters the cross host follower at runs.py:1920-1927 because follower_registration.py:506-533 reads its PIDs locally; absent snapshot makes the prompt hook take coordinator_obligations.py:904-907 and print no producer at lines 747-769.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-13T09:35:00Z">
+    <div class="r-comment-body"><p>§3 landed: the producer skips a follower attached from another host because follower liveness probes its pids in the producer host's own <code>/proc</code> (<code>follower_registration.py:506-533</code>), so no snapshot is published and the hook prints "no producer". Same cause as §4's premise; reproduced in an isolated fixture and re-run by a claims review (3/3 reproduced). <a href="/reckon/evidence/archive/a-seat-held-elsewhere-is-not-restarted-landed.html#s3">evidence</a></p></div>
 </div>
 </section>
 </main>

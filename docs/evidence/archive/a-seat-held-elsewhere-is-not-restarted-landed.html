@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-seat-held-elsewhere-is-not-restarted-landed">
+  <meta name="plan-title" content="A Seat Held Elsewhere Is Not Restarted — landed record">
+  <meta name="plan-summary" content="Closure synthesis for A Seat Held Elsewhere Is Not Restarted: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="a-seat-held-elsewhere-is-not-restarted">
+  <meta name="plan-verdict" content="qualified">
+  <title>A Seat Held Elsewhere Is Not Restarted — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A Seat Held Elsewhere Is Not Restarted — landed record</h1>
+  <p>Closure synthesis for A Seat Held Elsewhere Is Not Restarted: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s3">
+    <h2>§3 — why the hook still reads no producer</h2>
+    <p><strong>Cause.</strong> The seated producer publishes obligation snapshots only for sessions whose <code>list_followers</code> row reads <code>live</code> (<code>reckon/crew/runs.py:1920-1927</code> at <code>81b1d6e</code>). <code>live</code> requires the registration's recorded pid and parent pid to be alive in the <em>producer host's</em> process table (<code>reckon/crew/follower_registration.py:506-533</code>), and the registration records no host (<code>:296-307</code>). A follower attached from another host therefore reads <code>registered=True live=False</code>, no snapshot is written for its session, and <code>freshness</code> returns <code>NO_PRODUCER</code> on the absent document (<code>reckon/crew/obligation_snapshot.py:385-386</code>) before its foreign-seat fallback (<code>:389-390</code>) can apply. The prompt hook takes the not-fresh branch (<code>reckon/hooks/coordinator_obligations.py:904-907</code>) and prints the literal "no producer" (<code>:747-769</code>).</p><p><strong>Reproduction</strong> (isolated: <code>RECKON_HOME</code>, mounts, state and cache all under the report directory). Three arms, published-snapshot counts 1 / 2 / 1:</p><table><thead><tr><th>Arm</th><th>Producer publishes</th><th>Follower-host hook</th></tr></thead><tbody><tr><td>Reproduction: both follower locks held, remote pids absent locally</td><td>own-host session only</td><td>not current: no producer</td></tr><tr><td>Control: only the remote row's <code>live</code> forced true</td><td>both sessions</td><td>1 outstanding (foreign-seat check reads it fresh)</td></tr><tr><td>Restored selector</td><td>own-host session only</td><td>not current: no producer</td></tr></tbody></table><p>Positive control: the own-host session's hook read its snapshot as fresh in every arm. The plan <code>the-review-loop-runs-without-hand-steps</code> §5 classifies a snapshot that exists; it does not cover selecting remote followers for publication, so §4 here is the fix.</p><p><strong>Live corroboration</strong> (coordinator, 2026-10-13 09:32Z): the reckon producer (pid 3981987) runs on <code>98dci4-clu-2018</code>; all four live followers in the project (sessions <code>f653840f</code>, <code>67139f13</code>, <code>health-review-1010</code>, <code>s25-picker</code>) run on <code>98dci4-clu-2002</code>, and <code>~/.config/reckon/crew/obligations/reckon/</code> holds a snapshot for none of them.</p><p><strong>Run</strong> <code>r-20261013T085219616755-sheinr-hook-no-producer-repro</code> (codex, investigate, read-only, no commit). Report, <code>repro.py</code> and <code>repro.log</code>: <code>~/.config/reckon/crew/reports/reckon/study/a-seat-held-elsewhere-is-not-restarted/sheinr-hook-no-producer-repro/</code>. Claims review <code>r-20261013T091541156783</code>: all three arms re-ran identically; summary line agrees with the table.</p>
+  </section>
+
+</main>
+</body>
+</html>
