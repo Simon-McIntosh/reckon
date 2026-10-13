@@ -223,7 +223,18 @@ def test_heading_rule_reports_only_the_parser_and_shape_exemptions():
         rows = interface_counts._heading_walks(interface_counts.definitions(tree), tree)
         if rows:
             found[str(path.relative_to(ROOT))] = rows
-    assert set(found) == {"reckon/_plan_html.py"}, found
+    # _run_file_is_binary is exempt rather than a document-recognition site:
+    # it probes a file's head for a NUL byte to decide whether the file is
+    # binary, and never inspects an authored plan section. The rule follows
+    # RUN_FILE_BINARY_SUFFIXES' ".h5" literal as an h5 heading and reports the
+    # comparison, so the operator is named here.
+    assert set(found) == {
+        "reckon/_plan_html.py",
+        "reckon/crew/fleet_supervisor.py",
+    }, found
+    assert {name for name, _line in found["reckon/crew/fleet_supervisor.py"]} == {
+        "_run_file_is_binary"
+    }, found
     assert {name for name, _line in found["reckon/_plan_html.py"]} == {
         "_StructuredSectionSpanParser.handle_starttag",
         "_read_section_records",
