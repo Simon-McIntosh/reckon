@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate arms: head-arm-importer-set.log (revision ba0db466d) records 2 failed / 749 passed / 1 skipped with FAILED ids tests/test_congested_local_lane_still_reaches_the_picker.py::test_congested_local_lane_routing[alpha] and [explicit], and base-arm-importer-set.log (revision f59c6695e) records the identical 2 failed / 749 passed / 1 skipped with the same two FAILED ids, so the head adds no failing test and the set difference is empty",
+  "backend": "deepseek-v4.1-flash",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:1230"
+  ],
+  "completed_at": "2026-10-13T23:18:07.261Z",
+  "dispatched_at": "2026-10-13T23:06:18Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T220636291908-a-lane-model-name-is-refused/manifest.md",
+      "line": "3",
+      "severity": "follow-on",
+      "text": "follow-on: orientation_write_paths lists four paths and omits tests/test_dispatch_names_a_model.py, which the diff does change; the coordinator's resume advice extended the fence to that file, so the diff is in scope, but a reader reconciling the orientation line against the diff sees an out-of-scope file \u2014 changed_paths (line 8) does list it, so only the orientation line is stale."
+    },
+    {
+      "file": "tests/test_dispatch_refuses_a_lane_model_name.py",
+      "line": "327",
+      "severity": "follow-on",
+      "text": "follow-on: assert body[\"backend\"] == \"codex-astra\" compares the resume output against the exact literal _seed_pointer (line 318) itself wrote into the pointer, so it holds whatever resume does with a backend it merely echoes; the path's real guard is the independent line 324, assert \"lane and model pair\" not in result.output, which reddens if the dispatch-side refusal is added to resume."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read the four commits against base f59c6695e; the production change is one refusal function plus the every-declaring-lane rename in reckon/crew_dispatch_commands.py, and the tests assert the refusal, the equivalence and the two-lane naming.",
+    "done_when": "the done_when names tests/test_dispatch_refuses_a_lane_model_name.py; node-gate-new-tests.log records 6 passed EXIT=0 at ba0db466d, base-arm-importer-set.log and head-arm-importer... head-arm-importer-set.log record 2 failed / 749 passed / 1 skipped each with identical FAILED ids, and negative-control-combined-name.log records 2 failed EXIT=1 with the combined-name assertions failing.",
+    "goal": "the goal is to refuse a combined lane-and-model --backend name at dispatch and name the lane and its model key; _refuse_a_combined_lane_model_backend at reckon/crew_dispatch_commands.py:486 raises click.UsageError naming the lane and the --model key, called at :1230 in crew_dispatch before --model narrowing.",
+    "manifest": "read the reviewed manifest; it carries status complete, records the refusal message, the 6-passed gate, the base/head importer arms with their two pre-existing failures, the negative control EXIT=1, and names every log path.",
+    "write_paths": "the orientation line declares four paths and the resume advice extends the fence to tests/test_dispatch_names_a_model.py; git diff --name-only over f59c6695e..45ba09b40 touches only those four plus that fifth file, so every changed path is inside the granted scope."
+  },
+  "justifications": {
+    "durability": "tests/test_dispatch_refuses_a_lane_model_name.py:236-241 (the parametrized combined-name test) reddens on the declared mutation, removing the _refuse_a_combined_lane_model_backend(backend) call, as negative-control-combined-name.log records 2 failed EXIT=1, though line 327 asserts a value the test itself seeded.",
+    "evidence": "the reviewed manifest names runs/r-20261013T220636291908-a-lane-model-name-is-refused/node-gate-new-tests.log (6 passed EXIT=0) and base-arm-importer-set.log and head-arm-importer-set.log (both 2 failed 749 passed 1 skipped, identical ids), giving added_failure_count 0.",
+    "fit": "reckon/crew_dispatch_commands.py:486 raises click.UsageError with a single-sentence message in the same local-import and dry-run-channel idiom as the surrounding refusals, and both new names describe the mechanism with no plan label.",
+    "goal_fidelity": "reckon/crew_dispatch_commands.py:1230 calls the refusal for the raw --backend value before any route is chosen, and :486 names the lane and the --model key; the resume path in tests/test_dispatch_refuses_a_lane_model_name.py:311 shows reading history is unchanged.",
+    "reuse": "the change extends the existing _lane_declaring_model owner in reckon/crew_dispatch_commands.py:455 into _lanes_declaring_model; a search of reckon/ledger.py:228 resolve_name, reckon/flight.py:532 read_layer_file and the catalogue readers found no function returning the lanes that declare a model, so no capability is forked.",
+    "scope_discipline": "git diff --name-only f59c6695e..45ba09b40 lists docs/evidence/fragments/lane-and-model-routing/a-lane-model-name-is-refused.html, reckon/crew_dispatch_commands.py, tests/test_dispatch_names_a_model.py and tests/test_dispatch_refuses_a_lane_model_name.py, every one inside the granted scope."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to refuse a combined lane-and-model --backend name at dispatch and name the lane and its model key; _refuse_a_combined_lane_model_backend at reckon/crew_dispatch_commands.py:486 raises click.UsageError naming the lane and the --model key, called at :1230 in crew_dispatch before --model narrowing.\nVERDICT done_when: the done_when names tests/test_dispatch_refuses_a_lane_model_name.py; node-gate-new-tests.log records 6 passed EXIT=0 at ba0db466d, base-arm-importer-set.log and head-arm-importer-set.log record 2 failed / 749 passed / 1 skipped each with identical FAILED ids, and negative-control-combined-name.log records 2 failed EXIT=1 with the combined-name assertions failing.\nVERDICT write_paths: the orientation line declares four paths and the resume advice extends the fence to tests/test_dispatch_names_a_model.py; git diff --name-only over f59c6695e..45ba09b40 touches only those four plus that fifth file, so every changed path is inside the granted scope.\nVERDICT manifest: read the reviewed manifest; it carries status complete, records the refusal message, the 6-passed gate, the base/head importer arms with their two pre-existing failures, the negative control EXIT=1, and names every log path.\nVERDICT diff: read the four commits against base f59c6695e; the production change is one refusal function plus the every-declaring-lane rename in reckon/crew_dispatch_commands.py, and the tests assert the refusal, the equivalence and the two-lane naming.\nCALL_SITES: reckon/crew_dispatch_commands.py:1230\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_dispatch_commands.py:1230 calls the refusal for the raw --backend value before any route is chosen, and :486 names the lane and the --model key; the resume path in tests/test_dispatch_refuses_a_lane_model_name.py:311 shows reading history is unchanged.\nSCORE evidence: 18\nJUSTIFICATION evidence: the reviewed manifest names runs/r-20261013T220636291908-a-lane-model-name-is-refused/node-gate... node-gate-new-tests.log (6 passed EXIT=0) and base-arm-importer-set.log and head-arm-importer-set.log (both 2 failed 749 passed 1 skipped, identical ids), giving added_failure_count 0.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --name-only f59c6695e..45ba09b40 lists docs/evidence/fragments/lane-and-model-routing/a-lane-model-name-is-refused.html, reckon/crew_dispatch_commands.py, tests/test_dispatch_names_a_model.py and tests/test_dispatch_refuses_a_lane_model_name.py, every one inside the granted scope.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_dispatch_refuses_a_lane_model_name.py:236-241 (the parametrized combined-name test) reddens on the declared mutation, removing the _refuse_a_combined_lane_model_backend(backend) call, as negative-control-combined-name.log records 2 failed EXIT=1, though line 327 asserts a value the test itself seeded.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew_dispatch_commands.py:486 raises click.UsageError with a single-sentence message in the same local-import and dry-run-channel idiom as the surrounding refusals, and both new names describe the mechanism with no plan label.\nSCORE reuse: 19\nJUSTIFICATION reuse: the change extends the existing _lane_declaring_model owner in reckon/crew_dispatch_commands.py:455 into _lanes_declaring_model; a search of reckon/ledger.py:228 resolve_name, reckon/flight.py:532 read_layer_file and the catalogue readers found no function returning the lanes that declare a model, so no capability is forked.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T220636291908-a-lane-model-name-is-refused/manifest.md:3 follow-on: orientation_write_paths lists four paths and omits tests/test_dispatch_names_a_model.py, which the diff does change; the coordinator's resume advice extended the fence to that file, so the diff is in scope, but a reader reconciling the orientation line against the diff sees an out-of-scope file, so \u2014 changed_paths (line 8) does list it, so only the orientation line is stale.\nFINDING tests/test_dispatch_refuses_a_lane_model_name.py:327 follow-on: assert body[\"backend\"] == \"codex-astra\" compares the resume output against the exact literal _seed_pointer (line 318) itself wrote into the pointer, so it holds whatever resume does with a backend it merely echoes; the path's real guard is the independent line 324, assert \"lane and model pair\" not in result.output, which reddens if the dispatch-side refusal is added to resume.",
+  "review_run_id": "r-20261013T230550906842-review-of-a-lane-model-name-is-refused-45ba09b40bd4",
+  "reviewed_base_sha": "f59c6695ef5a229058163ceca2bb65918619f016",
+  "reviewed_head_sha": "45ba09b40bd4de643e0aaa52268a718e41629b86",
+  "reviewed_run_id": "r-20261013T220636291908-a-lane-model-name-is-refused",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T23:14:38.729812+00:00",
+  "total": 111
+}
