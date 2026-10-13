@@ -1000,6 +1000,14 @@ def dispatch_repair_for_run(
     # from ``config.gates.suite_command``, so the inherited command rides the
     # config handed to the launch rather than editing the resolved config the
     # lane above already read.
+    # A repair held by a full local lane is recorded as a queued request and
+    # relaunched by the admission pass, which rebuilds every launch input from
+    # ``dispatch_options`` rather than from the arguments passed here, which the
+    # request does not keep. Two inputs would otherwise be lost with the
+    # request: the unreconciled waiver, since the run a repair exists to fix is
+    # itself an unreconciled delivered run and the fence would refuse the
+    # relaunch that reconciles it; and the base, since the repair is cut at the
+    # head its review read and a rebuild from nothing relaunches it at the tip.
     repair_config = _config_carrying_suite(resolved, inherited_suite)
     try:
         launched = dispatch_module.dispatch(
@@ -1018,6 +1026,10 @@ def dispatch_repair_for_run(
             local=on_local_lane,
             backend_override=None if on_local_lane else backend,
             unreconciled_override=True,
+            dispatch_options={
+                "allow_unreconciled_runs": True,
+                "base": reviewed_head or "HEAD",
+            },
         )
     except BudgetHold as exc:
         reason = f"the {backend} lane is unavailable: {exc}"
