@@ -40,6 +40,14 @@ SESSION = "gc-reaches-session"
 RUN_WITHHELD = "r-20261013T130000000000-withheld-node"
 NODE = "withheld-node"
 
+# Two sessions, each holding a tree for the one node id. The run's own session
+# sorts after the peer's, so a node-id-only rule that resolved the first
+# registered same-named tree would pick the peer's tree.
+SESSION_EARLY = "gc-reaches-alpha"
+SESSION_LATE = "gc-reaches-zeta"
+RUN_EARLY = "r-20261013T132000000000-early-node"
+RUN_LATE = "r-20261013T132000000001-late-node"
+
 
 @pytest.fixture()
 def repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
@@ -65,10 +73,10 @@ def repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return repository
 
 
-def _withheld(repository: Path, name: str) -> tuple[Path, str]:
+def _withheld(repository: Path, name: str, session: str = SESSION) -> tuple[Path, str]:
     """A clean worktree carrying one commit unreachable from the integration head."""
     root = routing_module._workspace_roots(repository)[0]
-    tree = root / SESSION / name
+    tree = root / session / name
     tree.parent.mkdir(parents=True, exist_ok=True)
     _git(repository, "worktree", "add", "-q", "--detach", str(tree), "HEAD")
     (tree / "unique.py").write_text("commits nowhere else\n", encoding="utf-8")
@@ -78,12 +86,15 @@ def _withheld(repository: Path, name: str) -> tuple[Path, str]:
     return tree, _git(tree, "rev-parse", "HEAD")
 
 
-def _promoted_withheld(repository: Path, run_id: str, tree: Path) -> None:
+def _promoted_withheld(
+    repository: Path, run_id: str, tree: Path, session: str = ""
+) -> None:
     """A promoted run whose row names its withheld tree by node id alone.
 
     A withheld tree is not a retained one, so the row carries no
     ``worktree_retention`` and no ``worktree`` field: the node id is the only
-    evidence that names the tree.
+    evidence that names the tree. ``session`` narrows the node-id match to the
+    run's session directory, so a peer session's same-named tree is not it.
     """
     record = ledger.build_record(
         run_id=run_id,
@@ -91,6 +102,7 @@ def _promoted_withheld(repository: Path, run_id: str, tree: Path) -> None:
         gate="passed",
         project=PROJECT,
         node=tree.name,
+        session=session or None,
     )
     assert record.get("worktree_retention") is None
     assert not record.get("worktree")
@@ -170,3 +182,30 @@ def test_the_obligations_view_and_gc_name_the_same_tree(repo: Path) -> None:
     assert (
         routing_module._run_worktree_path(repo, PROJECT, RUN_WITHHELD) == tree.resolve()
     )
+
+
+def test_two_sessions_one_node_id_resolve_their_own_tree(repo: Path) -> None:
+    """Each run resolves its own session's tree; a peer's tree is untouched."""
+    early, early_head = _withheld(repo, NODE, session=SESSION_EARLY)
+    late, late_head = _withheld(repo, NODE, session=SESSION_LATE)
+    _promoted_withheld(repo, RUN_EARLY, early, session=SESSION_EARLY)
+    _promoted_withheld(repo, RUN_LATE, late, session=SESSION_LATE)
+    _git(repo, "merge", "--no-ff", "-q", early_head, "-m", "test: merge the early tree")
+    _git(repo, "merge", "--no-ff", "-q", late_head, "-m", "test: merge the late tree")
+
+    assert routing_module._run_worktree_path(repo, PROJECT, RUN_LATE) == late.resolve()
+    assert (
+        routing_module._run_worktree_path(repo, PROJECT, RUN_EARLY) == early.resolve()
+    )
+
+    held = obligations_module._held_worktree_records(PROJECT)
+    assert str(held[late.resolve()].get("run_id") or "") == RUN_LATE
+    assert str(held[early.resolve()].get("run_id") or "") == RUN_EARLY
+
+    exit_code, payload = _gc_run(repo, RUN_LATE)
+
+    assert exit_code == 0, payload
+    assert str(late.resolve()) in _removed(payload), payload
+    assert not late.is_dir()
+    assert str(early.resolve()) not in _removed(payload), payload
+    assert early.is_dir()

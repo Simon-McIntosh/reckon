@@ -1074,7 +1074,11 @@ def record_names_worktree(record: Mapping[str, Any], worktree: Path) -> bool:
     Two fields name a tree: the path a promotion retained, and the node id the
     tree's directory is named for. The obligations view and ``crew gc --run``
     resolve a run's tree from this one rule, so every tree an obligation names
-    is one its remedy can reach.
+    is one its remedy can reach. A tree lives at ``<root>/<session>/<node id>``,
+    so the node id names a tree only within the run's own session directory; a
+    record that carries no session keeps the node-id-only rule. Without the
+    session the node id alone would resolve to whichever same-named tree
+    registers first, which may be a peer session's.
     """
     retention = record.get("worktree_retention")
     if isinstance(retention, Mapping):
@@ -1085,7 +1089,10 @@ def record_names_worktree(record: Mapping[str, Any], worktree: Path) -> bool:
     node_id = (
         str(node.get("id") or "") if isinstance(node, Mapping) else str(node or "")
     )
-    return bool(node_id) and worktree.name == node_id
+    if not node_id or worktree.name != node_id:
+        return False
+    session = str(record.get("session") or "").strip()
+    return not session or worktree.parent.name == session
 
 
 def _run_worktree_path(repo: Path, project: str | None, run_id: str) -> Path:
