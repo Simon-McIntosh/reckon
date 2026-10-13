@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite/after_suite arm (no base gate log), so the added-failure count was not taken",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/routing.py:2134",
+    "reckon/crew/obligations.py:518",
+    "reckon/crew/obligations.py:598"
+  ],
+  "completed_at": "2026-10-13T21:16:24.088Z",
+  "dispatched_at": "2026-10-13T21:06:25Z",
+  "findings": [
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "1120",
+      "severity": "follow-on",
+      "text": "follow-on: the node-id fallback returns the first registered tree whose directory basename equals the record's node id, so when two sessions hold a worktree of the same node id gc --run can resolve, and with --apply release, a tree other than the one the obligation named; the obligations view attributes a tree to a run by merged-ledger order, so the done_when property that both name the same path is not held in that case."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T202631090379-gc-reaches-every-tree-its-obligation-names/logs/head_arm.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the head arm log's revision header names the base d3eba929 rather than the reviewed head 7962c482, so the recorded head_log_revision ties the gate to the wrong revision even though the run is green."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read revision 7962c482 against d3eba929 file by file; four files, +231/-16, all inside the declared scope: routing.py gains the shared predicate and a node-id fallback, obligations.py delegates to it, and a new 172-line synthesised-repository test lands.",
+    "done_when": "the done_when names tests/test_gc_reaches_every_tree_its_obligation_names.py and requires a head log carrying its revision and an EXIT=0 line plus a negative-control log carrying the runner's FAILED line and a non-zero EXIT; the manifest records head_arm.log (3 passed, EXIT=0) and negative_control.log (3 failed, EXIT=1), but the head log's own revision header names the base d3eba929 rather than the reviewed head 7962c482.",
+    "goal": "the node goal is that crew gc --run resolves a run's tree from the same evidence the obligations view uses; the diff extracts record_names_worktree at reckon/crew/routing.py:1071 and resolves through it from both _run_worktree_path (reckon/crew/routing.py:1091) and obligations._names_worktree (reckon/crew/obligations.py:434), so one predicate now serves both surfaces.",
+    "manifest": "read as delivered; status complete; it names head_arm.log, suite_head.log and negative_control.log, reports 3 passed for the new test and 164 passed for the focused importer suite, and records no baseline_suite/after_suite arm, so the added-failure derivation returns unmeasured.",
+    "write_paths": "the manifest declares reckon/crew/routing.py, reckon/crew/obligations.py and the new test, with the evidence fragment granted; the diff touches exactly those four files and nothing else."
+  },
+  "justifications": {
+    "durability": "the negative control reverts the fix to resolve from the row worktree field alone and the new tests redden (3 failed, EXIT=1), so tests/test_gc_reaches_every_tree_its_obligation_names.py fails if the change regresses.",
+    "evidence": "the gate is recorded and green (head_arm.log 3 passed EXIT=0) but its revision header names the base d3eba929, and the reviewed manifest names no baseline/after arm so added_failure_count is unmeasured.",
+    "fit": "record_names_worktree and the fallback follow the surrounding idiom of reckon/crew/routing.py:1091 and introduce no plan label or version token.",
+    "goal_fidelity": "both surfaces now resolve through record_names_worktree (reckon/crew/routing.py:1071), but the gc fallback at reckon/crew/routing.py:1120 returns the first registered tree named by node id while the obligations view picks by ledger order, so the two can name different trees when two sessions hold a tree for one node id.",
+    "reuse": "the predicate's body moved to reckon/crew/routing.py:1071 and obligations._names_worktree (reckon/crew/obligations.py:434) now delegates to it, extending the owner rather than duplicating it; no other owner of the same capability exists.",
+    "scope_discipline": "every path in revision 7962c482 is inside the declared write paths plus the granted evidence fragment docs/evidence/fragments/the-crew-home-has-a-bound/gc-reaches-every-tree-its-obligation-names.html."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "REVIEW of run r-20261013T203205342989-gc-reaches-every-tree-its-obligation-names\nplan reckon:the-crew-home-has-a-bound \u00a77\nreviewed_base_sha: d3eba92930c747d74619d58780bc19866dbb53c9\nreviewed_head_sha: 7962c482eb463622838d814f82ac61f10ab36734\n\nVERDICT goal: the node goal is that crew gc --run resolves a run's tree from the same evidence the obligations view uses; the diff extracts record_names_worktree at reckon/crew/routing.py:1071 and resolves through it from both _run_worktree_path (reckon/crew/routing.py:1091) and obligations._names_worktree (reckon/crew/obligations.py:434), so one predicate now serves both surfaces.\nVERDICT done_when: the done_when names tests/test_gc_reaches_every_tree_its_obligation_names.py and requires a head log carrying its revision and an EXIT=0 line plus a negative-control log carrying the runner's FAILED line and a non-zero EXIT; the manifest records head_arm.log (3 passed, EXIT=0) and negative_control.log (3 failed, EXIT=1), but the head log's own revision header names the base d3eba929 rather than the reviewed head 7962c482.\nVERDICT write_paths: the manifest declares reckon/crew/routing.py, reckon/crew/obligations.py and the new test, with the evidence fragment granted; the diff touches exactly those four files and nothing else.\nVERDICT manifest: read as delivered; status complete; it names head_arm.log, suite_head.log and negative_control.log, reports 3 passed for the new test and 164 passed for the focused importer suite, and records no baseline_suite/after_suite arm, so the added-failure derivation returns unmeasured.\nVERDICT diff: read revision 7962c482 against d3eba929 file by file; four files, +231/-16, all inside the declared scope: routing.py gains the shared predicate and a node-id fallback, obligations.py delegates to it, and a new 172-line synthesised-repository test lands.\nCALL_SITES: reckon/crew/routing.py:2134, reckon/crew/obligations.py:518, reckon/crew/obligations.py:598\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: both surfaces now resolve through record_names_worktree (reckon/crew/routing.py:1071), but the gc fallback at reckon/crew/routing.py:1120 returns the first registered tree named by node id while the obligations view picks by ledger order, so the two can name different trees when two sessions hold a tree for one node id.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate is recorded and green (head_arm.log 3 passed EXIT=0) but its revision header names the base d3eba929, and the reviewed manifest names no baseline/after arm so added_failure_count is unmeasured.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in revision 7962c482 is inside the declared write paths plus the granted evidence fragment docs/evidence/fragments/the-crew-home-has-a-bound/gc-reaches-every-tree-its-obligation-names.html.\nSCORE durability: 19\nJUSTIFICATION durability: the negative control reverts the fix to resolve from the row worktree field alone and the new tests redden (3 failed, EXIT=1), so tests/test_gc_reaches_every_tree_its_obligation_names.py fails if the change regresses.\nSCORE fit: 16\nJUSTIFICATION fit: record_names_worktree and the fallback follow the surrounding idiom of reckon/crew/routing.py:1091 and introduce no plan label or version token.\nSCORE reuse: 17\nJUSTIFICATION reuse: the predicate's body moved to reckon/crew/routing.py:1071 and obligations._names_worktree (reckon/crew/obligations.py:434) now delegates to it, extending the owner rather than duplicating it; no other owner of the same capability exists.\nFINDING reckon/crew/routing.py:1120 follow-on: the node-id fallback returns the first registered tree whose directory basename equals the record's node id, so when two sessions hold a worktree of the same node id gc --run can resolve, and with --apply release, a tree other than the one the obligation named; the obligations view attributes a tree to a run by merged-ledger order, so the done_when property that both name the same path is not held in that case.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T202631090379-gc-reaches-every-tree-its-obligation-names/logs/head_arm.log:1 follow-on: the head arm log's revision header names the base d3eba929 rather than the reviewed head 7962c482, so the recorded head_log_revision ties the gate to the wrong revision even though the run is green.\n",
+  "review_run_id": "r-20261013T210556482482-review-of-gc-reaches-every-tree-its-obligation-names-7962c482eb46",
+  "reviewed_base_sha": "d3eba92930c747d74619d58780bc19866dbb53c9",
+  "reviewed_head_sha": "7962c482eb463622838d814f82ac61f10ab36734",
+  "reviewed_run_id": "r-20261013T203205342989-gc-reaches-every-tree-its-obligation-names",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 17,
+    "reuse": 17,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T21:13:29.453565+00:00",
+  "total": 102
+}
