@@ -7,7 +7,7 @@
   <meta name="reckon-type" content="plan">
   <meta name="plan-slug" content="a-held-session-routes-to-a-serving-lane">
   <meta name="plan-title" content="A Held Session Routes To A Serving Lane">
-  <meta name="plan-summary" content="Jev routed well-defined work to a local lane that then held the session at zero slots while codex had room; read the session's admission before routing.">
+  <meta name="plan-summary" content="Jev routed well-defined work to a local lane that then held the session at zero slots while codex had room; read the session&#x27;s admission before routing.">
   <meta name="plan-status" content="draft">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="4.5">
@@ -25,6 +25,8 @@
   <title>A Held Session Routes To A Serving Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-10-13">
 </head>
 <body>
   <main class="plan-doc">
@@ -70,6 +72,15 @@
           discard race recorded in <code>a-held-dispatch-waits-its-fair-turn</code> §11.</td>
           <td><code>reckon crew redispatch</code></td>
         </tr>
+        <tr>
+          <td>A queued run cannot change lane at all</td>
+          <td>At 09:00Z <code>reckon crew redispatch --run r-20261013T084213905862-review-of-jccm-circuits-00de3452289c --backend codex</code>
+          was refused with "needs a fresh session but its original prompt is unavailable": a request that never launched
+          has no prompt to carry. The same review was then re-queued twice by the review reflex on the local lane, which still
+          granted the session no slot, 17 minutes after the first hold. Each time the coordinator discarded the pointer and
+          dispatched the review again by hand, naming codex.</td>
+          <td><code>reckon crew redispatch</code> and the review reflex's lane choice</td>
+        </tr>
       </tbody>
     </table>
     <p>
@@ -79,7 +90,7 @@
     </p>
 
     <h2 id="s2">§2 — Jev reads the session's own admission before it routes</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="2" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
     <p>
       <strong>Deliverable.</strong> The state rendered for Jev carries, for each lane with a router, the worker slots
       the router would grant this coordinator session, taken from the lane document's
@@ -120,7 +131,9 @@
       <code>dispatch_options</code> (<code>allow_unreviewed_plan</code>, <code>accept_directory_claim</code> and the reason in
       <code>comment</code>) into the new launch and records them as carried, so moving a run to another lane is not refused
       by a gate the original dispatch had already answered. A waiver is never added by a redispatch, only carried. A queued
-      run is moved by redispatch without being discarded, so the move does not race the admission pass.
+      run is moved by redispatch without being discarded, so the move does not race the admission pass, and a queued run
+      that never launched is moved by re-composing its launch from the recorded node rather than refused for having no
+      prompt. The review reflex's retry asks the same question §2 asks before it re-queues on the lane that refused it.
     </p>
     <p>
       <strong>Done when</strong> a test dispatches a node with <code>--allow-unreviewed-plan</code> against an uncovered plan,
@@ -130,7 +143,7 @@
     </p>
 
     <h2 id="s5">§5 — Follow-on study: how long held sessions waited while another lane served</h2>
-<section data-reckon="section" data-id="s5" data-effort-hours="1" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
     <p>
       Measure, over the fourteen days to the study, every dispatch that Jev routed to a lane whose router then held the
       session, by role and specification level, with the time from that hold to launch and the state of every other serving
