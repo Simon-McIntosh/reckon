@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s6">
+  <meta name="plan-recorded-at" content="2026-10-13">
+  <title>A remembered state renders as its pane word | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="remembered-states-are-pane-words-landing" data-node="remembered-states-are-pane-words" data-reckon="landed" data-when="2026-10-13">
+  <h2>A remembered state renders as its pane word, not a raw internal state</h2>
+  <p>The grid reads a row's left word straight from the state it remembers for the run, and <code>_seed_ticker_memory</code> in <code>reckon/crew_follow_commands.py</code> fills that memory on attach and reload from the follower's checkpoint-merged map, which can hold producer states. <code>_remembered_word</code> in <code>reckon/crew/ticker.py</code> maps a state to its pane word where the memory is taken in — a state already one of the seven words maps to itself, so <code>_display_state</code>'s blanks for <code>delivered</code>, <code>halted</code>, <code>landed</code> and <code>dropped</code> are handled. A run remembered as <code>completed_unpromoted</code> now draws <code>delivered</code> on the left, where it drew the raw state before.</p>
+</article>
+</body>
+</html>
