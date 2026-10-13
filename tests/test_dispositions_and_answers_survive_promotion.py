@@ -29,6 +29,7 @@ import pytest
 from reckon import crew, flight
 from reckon.crew import plan_review
 from reckon.crew import review as review_module
+from reckon.crew import review_dispositions as dispositions_module
 from reckon.crew.runs import _write_json, pointer_path
 from tests.conftest import EXECUTABLE_GATE_COMMAND
 from tests.helpers.git import git as _git
@@ -292,7 +293,7 @@ def test_a_disposition_after_promotion_lands_in_a_commit(repository: Path) -> No
     )
     before = _git(repository, "rev-parse", "HEAD")
 
-    review_module.record_dimension_disposition(
+    dispositions_module.record_dimension_disposition(
         PROJECT, SUBJECT, "evidence", kind="exempted", reason="no evidence"
     )
 

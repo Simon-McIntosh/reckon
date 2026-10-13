@@ -27,6 +27,7 @@ from pathlib import Path
 import pytest
 
 from reckon.crew import review as review_module
+from reckon.crew import review_dispositions as dispositions_module
 from reckon.crew import runs
 
 obligations_module = importlib.import_module("reckon.crew.obligations")
@@ -266,7 +267,7 @@ def test_a_review_of_a_superseded_revision_owes_nothing(fixture: Fixture) -> Non
 
 def test_a_recorded_disposition_retires_the_row(fixture: Fixture) -> None:
     """A fold naming its node clears the finding without touching the total."""
-    review_module.record_dimension_disposition(
+    dispositions_module.record_dimension_disposition(
         PROJECT,
         fixture.below,
         "durability",
@@ -286,15 +287,15 @@ def test_a_recorded_disposition_retires_the_row(fixture: Fixture) -> None:
 def test_the_closed_disposition_set_is_enforced(fixture: Fixture) -> None:
     """A kind outside the set, and a fold naming no node, are both refused."""
     with pytest.raises(ValueError, match="unknown disposition"):
-        review_module.record_dimension_disposition(
+        dispositions_module.record_dimension_disposition(
             PROJECT, fixture.below, "durability", kind="noted"
         )
     with pytest.raises(ValueError, match="folded disposition must name"):
-        review_module.record_dimension_disposition(
+        dispositions_module.record_dimension_disposition(
             PROJECT, fixture.below, "durability", kind="folded"
         )
     with pytest.raises(ValueError, match="exempted disposition must record"):
-        review_module.record_dimension_disposition(
+        dispositions_module.record_dimension_disposition(
             PROJECT, fixture.below, "durability", kind="exempted"
         )
     assert [row["run_id"] for row in _sub_floor_rows()] == [fixture.below]
@@ -324,7 +325,7 @@ def test_an_exempted_disposition_records_its_reason(fixture: Fixture) -> None:
         fixture.clean,
     }
 
-    review_module.record_dimension_disposition(
+    dispositions_module.record_dimension_disposition(
         PROJECT,
         fixture.clean,
         "fit",
@@ -348,7 +349,7 @@ def test_the_report_reads_and_writes_only_the_temporary_config_home(
     assert runs.pointer_path("probe").is_relative_to(fixture.config_home)
 
     _sub_floor_rows()
-    review_module.record_dimension_disposition(
+    dispositions_module.record_dimension_disposition(
         PROJECT, fixture.below, "durability", kind="folded", node="probe-node"
     )
     store = review_module.review_store_root() / PROJECT

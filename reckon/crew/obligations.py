@@ -27,7 +27,7 @@ from typing import Any
 
 from reckon import _store, flight, ledger
 from reckon._timestamps import parse_utc
-from reckon.crew import recovery, review_lifecycle, runs
+from reckon.crew import recovery, review_dispositions, review_lifecycle, runs
 from reckon.crew import review as review_module
 from reckon.crew.node import INTERRUPTED_RUN_PHASE, parse_duration
 from reckon.crew.routing import _registered_worktrees
@@ -799,7 +799,7 @@ def _sub_floor_items_by_session(
                     "exempted with the recorded reason"
                 ),
             }
-            for finding in review_module.sub_floor_dimensions(record, floors)
+            for finding in review_dispositions.sub_floor_dimensions(record, floors)
         )
     return by_session
 
@@ -868,7 +868,7 @@ def obligations(project: str, session: str) -> dict[str, Any]:
         _sub_floor_items(
             project,
             session,
-            review_module.declared_dimension_floors(config),
+            review_dispositions.declared_dimension_floors(config),
             now=now,
         )
     )

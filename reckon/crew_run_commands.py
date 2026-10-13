@@ -482,7 +482,7 @@ def crew_dispose(
     operator stands in; see :func:`_reviewed_head_from_run_records`.
     """
     from reckon.crew import obligations as obligations_module
-    from reckon.crew import recovery, runs
+    from reckon.crew import recovery, review_dispositions, runs
     from reckon.crew import review as review_module
 
     named_dimension = str(dimension or "").strip() if dimension is not None else ""
@@ -496,7 +496,7 @@ def crew_dispose(
     # A code review scores no dimensions, so its only disposition space is its
     # findings: a dimension named against one is refused by name rather than
     # resolved to a dimension no code review carries.
-    code_key = review_module.code_review_identity(reviewed_run_id)
+    code_key = review_dispositions.code_review_identity(reviewed_run_id)
     if code_key and named_dimension:
         raise click.ClickException(
             f"run {reviewed_run_id!r} is a code review, and a code review "
@@ -508,7 +508,7 @@ def crew_dispose(
         # A code review is keyed by the neighbourhood it read rather than by a
         # revision, so its record is resolved through the store's own path
         # builder and read directly; no head or run pointer is consulted.
-        _record_path, stored = review_module.code_review_record_for_run(
+        _record_path, stored = review_dispositions.code_review_record_for_run(
             project, reviewed_run_id
         )
         described = ""
@@ -564,7 +564,7 @@ def crew_dispose(
     reviewed_head_sha = stored_head if carries_head and stored_head else None
     try:
         if finding_index is None:
-            path = review_module.record_dimension_disposition(
+            path = review_dispositions.record_dimension_disposition(
                 project,
                 reviewed_run_id,
                 named_dimension,
@@ -574,7 +574,7 @@ def crew_dispose(
                 reviewed_head_sha=reviewed_head_sha,
             )
         else:
-            path = review_module.record_finding_disposition(
+            path = review_dispositions.record_finding_disposition(
                 project,
                 reviewed_run_id,
                 finding_index,
@@ -585,7 +585,7 @@ def crew_dispose(
             )
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
-    record = review_module.stored_record_for_disposition(
+    record = review_dispositions.stored_record_for_disposition(
         project, reviewed_run_id, reviewed_head_sha=reviewed_head_sha
     )
     if finding_index is None:
