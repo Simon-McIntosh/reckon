@@ -1,0 +1,41 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-13T02:31:47.917Z",
+  "dispatched_at": "2026-10-13T02:20:05Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-fingerprint-has-one-form.html:55",
+      "id": "anchors_resolve-1",
+      "reason": "the name is importable from routing.py, so a node locating it is not sent down a wrong path; this is a citation that resolves, not a missing one.",
+      "text": "`list_live()` is named as being \"in `reckon/crew/routing.py`\", but that module only imports it (routing.py:53); it is defined in `reckon/crew/runs.py:455`",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "50ec6f4fd4e3419c93c9ad2e39f9c908608688449c4e5027966b5ac6ad780f97",
+  "plan_slug": "the-fingerprint-has-one-form",
+  "plan_version": 4,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261013T021922554154-plan-review-of-the-fingerprint-has-one-form",
+  "reviewed_blob_sha": "74ac05efd53858df9356648ff449396c2ea13d37",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 `list_live()` is attributed to `reckon/crew/routing.py` but is defined in `reckon/crew/plan_review`-unrelated `reckon/crew/runs.py:455` and only imported into routing.py (routing.py:53); the name resolves, so the anchor is usable, but it points a reader at the importer rather than the owner.",
+    "done_when": "pass \u2014 \u00a72's done-when names two fixtures as controls: a collapsed-plan review that must be counted pre-collapse-only and lose coverage (positive), and a section-set-form review that must be counted as neither (negative); both are falsifiable against the census output.",
+    "evidence_paths": "pass \u2014 the census report and its script are written under the run's own report directory, a durable path a later reader opens, not a scratchpad.",
+    "naming": "pass \u2014 \u00a72 introduces no code symbols; its \u00a7-references are the plan's own section ids, which the plan HTML owns.",
+    "reasoning": "pass \u2014 the stated root cause matches the code: `_fingerprint_forms` (plan_review.py:678) returns three digests whose second is the declaration-keeping legacy form, `review_coverage` (plan_review.py:823-851) early-returns on a whole-plan match and otherwise falls to per-unit coverage, so withholding that form is a faithful simulation of \u00a73's change; a scratch run over the plan under review confirms the mechanism produces its done-when \u2014 with `plan_fingerprint` set to forms[1] and stale stored unit digests, `review_coverage` reports `{_document, s2, s3}` uncovered only once the pre-collapse form is withheld, and a section-set-form record stays fully covered either way.",
+    "single_goal": "pass \u2014 \u00a72 carries one deliverable, the read-only census; the retirement it gates is \u00a73's separate goal.",
+    "wiring": "pass \u2014 \u00a73 declares its dependency on \u00a72 (`plan-section-depends-on {\"s3\": [the-fingerprint-has-one-form#s2]}`), and \u00a72's read-only census needs no upstream node, so no dependency is missing or misdirected."
+  },
+  "section_digests": {
+    "_document": "677897f224d4982e8e4ad098e4a8e02724e888de68334e6f312c9761b61d6af8",
+    "s1": "d20bf808be72a862d484c4115618ad75325bad73c4c33997e87ac25da272e077",
+    "s2": "027d1ed444b9670001a38ea99cafa34934846721c2fc9bd37c52cf07e023cb3e",
+    "s3": "a97f2dba7c0b826127cadbaf524405188cc954888913fe5f98f3c4948ed55de1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T02:43:30.748145+00:00"
+}
