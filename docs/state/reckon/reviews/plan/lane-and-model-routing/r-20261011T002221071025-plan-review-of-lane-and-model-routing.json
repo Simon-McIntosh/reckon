@@ -1,0 +1,63 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-11T00:28:29.637Z",
+  "dispatched_at": "2026-10-11T00:22:52Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/lane-and-model-routing.html:120",
+      "id": "done_when-1",
+      "reason": "as written the node's gate cannot be satisfied for shadow_source, so a worker either blocks on an unconstructible test or fudges it, and the resolver's effect on this call site goes unmeasured.",
+      "text": "\u00a716's done-when says the test \"shows the resolver, shadow_source and _project_for_repository each name the mounted project for the worktree path\" and that \"on main, shadow_source and _project_for_repository find no project, so the test fails there\", but shadow_source cannot name the mounted project on the described fixture: it returns only after matching a committed ledger record (reckon/crew/dispatch.py:218-235), and the fixture removes the very `docs/state/<project>/crew.json` that would supply one \u2014 `ledger.runs(project, root=<worktree>)` reads the worktree's own ledger and an absent ledger \"reads as an empty roster at version 0\" (reckon/ledger.py:_load_aggregate), so `matches` is empty and shadow_source raises the same D20 refusal with and without the fix. Both arms therefore refuse identically and the clause's \"fails on main\" control does not fire",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/lane-and-model-routing.html:120",
+      "id": "done_when-2",
+      "reason": "the node's whole deliverable is \"one owner\"; a gate that cannot show the four call sites share it cannot distinguish a completed consolidation from a partial one, and adding a delegation assertion (patch the resolver and assert each of the four calls it) would close that gap.",
+      "text": "\u00a716's done-when leads with \"one function \u2026 and the four sites above call it\", but the named test exercises only the new resolver plus `shadow_source` and `_project_for_repository`; it never shows that `_repository_owning_projects` or `_scope_derivation_project` route through the one owner, so a node that refactors only the two site that were broken and leaves the two already-identity-based sites duplicated still passes.",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "69bca418572cb916f36d422ac32136549c854761e1a058788d3a2a82a841fcb1",
+  "plan_slug": "lane-and-model-routing",
+  "plan_version": 78,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261011T002221071025-plan-review-of-lane-and-model-routing",
+  "reviewed_blob_sha": "7d81a9e37429a42f6942bd5bcfd485a111d29f93",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited symbol resolves: `_repository_owning_projects` (reckon/crew_dispatch_commands.py:518), `_scope_derivation_project` (reckon/crew/dispatch_claims.py:153), `shadow_source` (reckon/crew/dispatch.py:198), `_project_for_repository` (reckon/crew/promotion_records.py:60), `project_mount_repository` (reckon/crew/dispatch_sections.py:42), `_mounted_projects` (reckon/crew/query.py:359), `mounted_repository_projects` (reckon/crew/routing.py:3227) and `repository_identity` (reckon/crew/node.py:1340).",
+    "done_when": "a finding \u2014 \u00a716's done-when (line 120) asserts \"the four sites above call it\" but the named test can verify neither that clause nor, for `shadow_source`, its own negative control.",
+    "evidence_paths": "pass \u2014 no gate log or evidence artifact is routed to a session scratchpad or node-local temp; the node's landing record accumulates in the plan's evidence record under `docs/evidence/`.",
+    "naming": "pass \u2014 no plan labels, stage names or ticket numbers reach the cited symbols or the section's prose; the four sites are named by their real identifiers.",
+    "reasoning": "pass \u2014 the census matches the code: all four named sites are `mounted_repository_projects()` callers that resolve a repository to its projects, the two excluded sites (`project_mount_repository`, `_mounted_projects`) resolve the other direction, and the resolver's placement in `routing.py` is forced because `routing.py` imports `reckon/crew/node.py` at module scope (line 38) while `node.py` imports neither routing nor dispatch.",
+    "single_goal": "pass \u2014 \u00a716 names one deliverable: one identity-based repository-to-projects resolver with all four call sites routed through it.",
+    "wiring": "pass \u2014 s16 is declared implementable with no missing dependency; its serialization behind \u00a714 on `reckon/crew_dispatch_commands.py` is declared in the open followup f-lmr-009 (\"\u00a714 and \u00a716 both edit \u2026 so they run one at a time, \u00a714 first\"), and the plan's file-claim refusal prevents concurrent runs, so no `plan-section-depends-on` entry is required."
+  },
+  "section_digests": {
+    "_document": "8aee0b66d26dc5ce7edb18efdcbaf5fe43cf7a90b751f9320700da6c7c5ac8c1",
+    "s0": "19f29ce7f4d739b631468c119c6d758faff1d1bd15018de2a5e1e7c1957203ea",
+    "s1": "6760f63ebdb0d0db10c3c004f30d4f4253bfb7582bc7a0e4054fed73e017a02d",
+    "s10": "9f3b98da9be42bc1d1dad77d11079186c59e62315308454b2f442bdfffa7755c",
+    "s11": "2e566713b8ee8cbfcf94503cba2640bac78329b96f748ff0334a858e08287755",
+    "s12": "8a7841af15c5beacc75bf716eab0a317f722daab3a302ec190299ce0c3315350",
+    "s13": "6cc9f5f5d1d9a0d7a981363b2961d554bc1670d016cf5da011e18fd20d24b604",
+    "s14": "f4192a6b66ca1a9df3c0c8b84d6a76f9b7e2708145600fc43403217b7a52c540",
+    "s15": "f771307d6c5f071d884953878a527fd166185d3d25c88171a3028f27f2a174b8",
+    "s16": "af328d90baba7b035faee702cb0d358c37db3436756a07bf6bbffcf7ed37c45d",
+    "s2": "0c6488cdae0f23d0600410d02191390e773858e9bc75008234f71cc66f01889b",
+    "s3": "6cb602347e0232fe459028eff2010884381d987053d550c4565f581c23032095",
+    "s4": "aa5a29a8662005607992ae17fc914d47e8e48c68b7e65395b4865f6d33ea37f4",
+    "s5": "2ffa1a3b1d2b09433f25a83f8a7a59b1774249bac29b945f2c2273ace57cb1ba",
+    "s6": "6c8117bcfdc7d4b0bafdc4fb2185779998c71b1730b07a0d900b543f02c08ec1",
+    "s7": "07952e2e354db24e76860530568500cc2066b69b4255c020db83677e46cb18e2",
+    "s8": "7ca129403c95fcbc111273a2b419b29279191bc54c157bb6f7d8de0d5b160d34",
+    "s9": "0c546f1c0ce99eb4f03333edf6955f597fcb37c49baa31305dfd52c6b03364d8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T04:34:29.060658+00:00"
+}
