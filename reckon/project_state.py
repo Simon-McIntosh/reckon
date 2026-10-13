@@ -1181,7 +1181,8 @@ def _cached_plan_state(path: Path) -> dict[str, Any]:
         if cached is not None and cached[0] == signature:
             return cached[1]
 
-    state = _plan_html.read_state(path.read_text(encoding="utf-8", errors="replace"))
+    # Derived from the shared parse so this reader builds no soup of its own.
+    state = _plan_html.read_state_and_text_file(path)[0]
     with _PLAN_STATE_CACHE_LOCK:
         cached = _PLAN_STATE_CACHE.get(path)
         if cached is not None and cached[0] == signature:
