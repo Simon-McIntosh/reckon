@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed run's manifest carries no baseline suite or after arm, so the added-failure count was not taken; the section's importer-population half is delegated to the coordinator's merged-head run",
+  "artifacts": {
+    "gate_discard_named_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T084550116355-a-discarded-request-stays-discarded/discard-named-tests.log",
+    "gate_head_focused_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T084550116355-a-discarded-request-stays-discarded/focused-tests.log",
+    "headline": "status parsed; six dimensions scored (goal_fidelity 19, evidence 16, scope_discipline 20, durability 19, fit 19, reuse 18); total 111; item_aggregate 6; call_site_count 5; findings 1 follow-on; reviewed 444cc82f8..980535b73",
+    "negative_control_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T084550116355-a-discarded-request-stays-discarded/negative-control.log",
+    "reviewed_manifest": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T084550116355-a-discarded-request-stays-discarded/manifest.md"
+  },
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:_restore_queued",
+    "reckon/crew/recovery_watch.py:_discard_recorded",
+    "reckon/crew/promotion.py:discard",
+    "reckon/crew/recovery_review_dispatch.py:_discard_stranded_review",
+    "reckon/crew/routing.py:garbage_collect_scratch"
+  ],
+  "completed_at": "2026-10-13T11:39:03.703Z",
+  "dispatched_at": "2026-10-13T11:22:12Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": "250",
+      "severity": "follow-on",
+      "text": "follow-on: _discard_stranded_review calls promotion.discard_record_path to read the marker back and write the strand reason onto it, but a stranded review pointer may have no run directory (the never-launched case this increment records in the shared spool), so after this change the marker lands at discard_spool_path and this read finds nothing, losing the reason its docstring promises; the reader was not migrated to the widened discard-record location."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against base 444cc82f8: 392def9bf adds discard_spool_dir, discard_spool_path, discard_recorded and the spool fallback in _write_discard_record (reckon/crew/promotion.py:1355-1483) and delegates both callers; 7e17e141a routes the retry back-off stamp through reckon/_timestamps.parse_utc (reckon/crew/queue_admission.py:362); cb55fa181 adds the never-launched case and updates two superseded assertions; 980535b73 records the widened behaviour in the evidence fragment.",
+    "done_when": "the done_when names tests/test_a_discarded_request_stays_discarded.py, whose test_a_request_with_no_run_directory_is_found_discarded (tests/test_a_discarded_request_stays_discarded.py:79) discards mid-pass and asserts no pointer remains and no run directory is created; the manifest records the focused set (43 passed, EXIT=0) and the discard-named population (35 passed, EXIT=0) at cb55fa181 and negative-control.log (EXIT=1), but it declares no baseline suite or after arm, so the done_when half 'no added failure against base' is not measured here.",
+    "goal": "the node's goal is that an admission pass whose launch fails writes a request back only when nobody discarded it, and a discard leaves a record the read-back finds; the landed increment adds promotion.discard_recorded (reckon/crew/promotion.py:1373) answering from both the run's own discard record (reckon/crew/promotion.py:1350) and a shared spool (reckon/crew/promotion.py:1368), read by the pass at reckon/crew/queue_admission.py:465, so a request that never launched now stays discarded.",
+    "manifest": "read; status complete, commits 444cc82f8, 392def9bf, 7e17e141a, cb55fa181, 980535b73, changed_paths matching the seven diff paths; it records the focused and discard-named gates with a red negative control, and it participates in retiring the prior review's follow-on at reckon/crew/recovery_watch.py:1494.",
+    "write_paths": "the dispatch fenced reckon/crew/queue_admission.py, reckon/crew/promotion.py, reckon/crew/recovery_watch.py, the three test files and the evidence fragment; the diff touches exactly those seven paths and nothing outside them."
+  },
+  "justifications": {
+    "durability": "removing the spool fallback at reckon/crew/promotion.py:1483 reddens tests/test_a_discarded_request_stays_discarded.py:97 with the discarded pointer reappearing, exactly as the declared negative control's EXIT=1 shows, and every added assertion reads filesystem state or the pass result rather than a value the test supplied.",
+    "evidence": "tests/test_a_discarded_request_stays_discarded.py:79 covers the never-launched discard and the manifest records 43 passed EXIT=0 with a red negative control EXIT=1, but it names no baseline suite or after arm so the done_when's 'no added failure against base' half is unmeasured.",
+    "fit": "the added helpers at reckon/crew/promotion.py:1355-1381 are mechanism-named with no version, plan or ticket identifier, and 7e17e141a routes the back-off stamp through the repository's shared reckon/_timestamps.parse_utc rather than a second ISO parser.",
+    "goal_fidelity": "the spool fallback at reckon/crew/promotion.py:1483 makes _write_discard_record record a never-launched request where promotion.discard_recorded (reckon/crew/promotion.py:1373) can read it, and the pass consults it at reckon/crew/queue_admission.py:465, closing the section's defect for the request that never had a run directory.",
+    "reuse": "the increment retires neither owner: it makes reckon/crew/queue_admission.py:447 and reckon/crew/recovery_watch.py:1506 both call the single owner promotion.discard_recorded, though a further reader of discard_record_path at reckon/crew/recovery_review_dispatch.py:250 is left unmigrated.",
+    "scope_discipline": "the diff's seven paths, reckon/crew/promotion.py, reckon/crew/queue_admission.py, reckon/crew/recovery_watch.py, the three tests and the evidence fragment, are all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 444cc82f8a3604c8137d4458c0e9a708dedc1180\nreviewed_head_sha: 980535b73349a205789e246a9a00c22db3995e8b\nVERDICT goal: the node's goal is that an admission pass whose launch fails writes a request back only when nobody discarded it, and a discard leaves a record the read-back finds; the landed increment adds promotion.discard_recorded (reckon/crew/promotion.py:1373) answering from both the run's own discard record (reckon/crew/promotion.py:1350) and a shared spool (reckon/crew/promotion.py:1368), read by the pass at reckon/crew/queue_admission.py:465, so a request that never launched now stays discarded.\nVERDICT done_when: the done_when names tests/test_a_discarded_request_stays_discarded.py, whose test_a_request_with_no_run_directory_is_found_discarded (tests/test_a_discarded_request_stays_discarded.py:79) discards mid-pass and asserts no pointer remains and no run directory is created; the manifest records the focused set (43 passed, EXIT=0) and the discard-named population (35 passed, EXIT=0) at cb55fa181 and negative-control.log (EXIT=1), but it declares no baseline suite or after arm, so the done_when half 'no added failure against base' is not measured here.\nVERDICT write_paths: the dispatch fenced reckon/crew/queue_admission.py, reckon/crew/promotion.py, reckon/crew/recovery_watch.py, the three test files and the evidence fragment; the diff touches exactly those seven paths and nothing outside them.\nVERDICT manifest: read; status complete, commits 444cc82f8, 392def9bf, 7e17e141a, cb55fa181, 980535b73, changed_paths matching the seven diff paths; it records the focused and discard-named gates with a red negative control, and it participates in retiring the prior review's follow-on at reckon/crew/recovery_watch.py:1494.\nVERDICT diff: read commit by commit against base 444cc82f8: 392def9bf adds discard_spool_dir, discard_spool_path, discard_recorded and the spool fallback in _write_discard_record (reckon/crew/promotion.py:1355-1483) and delegates both callers; 7e17e141a routes the retry back-off stamp through reckon/_timestamps.parse_utc (reckon/crew/queue_admission.py:362); cb55fa181 adds the never-launched case and updates two superseded assertions; 980535b73 records the widened behaviour in the evidence fragment.\nCALL_SITES: reckon/crew/queue_admission.py:_restore_queued, reckon/crew/recovery_watch.py:_discard_recorded, reckon/crew/promotion.py:discard, reckon/crew/recovery_review_dispatch.py:_discard_stranded_review, reckon/crew/routing.py:garbage_collect_scratch\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the spool fallback at reckon/crew/promotion.py:1483 makes _write_discard_record record a never-launched request where promotion.discard_recorded (reckon/crew/promotion.py:1373) can read it, and the pass consults it at reckon/crew/queue_admission.py:465, closing the section's defect for the request that never had a run directory.\nSCORE evidence: 16\nJUSTIFICATION evidence: tests/test_a_discarded_request_stays_discarded.py:79 covers the never-launched discard and the manifest records 43 passed EXIT=0 with a red negative control EXIT=1, but it names no baseline suite or after arm so the done_when's 'no added failure against base' half is unmeasured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff's seven paths, reckon/crew/promotion.py, reckon/crew/queue_admission.py, reckon/crew/recovery_watch.py, the three tests and the evidence fragment, are all inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: removing the spool fallback at reckon/crew/promotion.py:1483 reddens tests/test_a_discarded_request_stays_discarded.py:97 with the discarded pointer reappearing, exactly as the declared negative control's EXIT=1 shows, and every added assertion reads filesystem state or the pass result rather than a value the test supplied.\nSCORE fit: 19\nJUSTIFICATION fit: the added helpers at reckon/crew/promotion.py:1355-1381 are mechanism-named with no version, plan or ticket identifier, and 7e17e141a routes the back-off stamp through the repository's shared reckon/_timestamps.parse_utc rather than a second ISO parser.\nSCORE reuse: 18\nJUSTIFICATION reuse: the increment retires neither owner: it makes reckon/crew/queue_admission.py:447 and reckon/crew/recovery_watch.py:1506 both call the single owner promotion.discard_recorded, though a further reader of discard_record_path at reckon/crew/recovery_review_dispatch.py:250 is left unmigrated.\nFINDING reckon/crew/recovery_review_dispatch.py:250 follow-on: _discard_stranded_review calls promotion.discard_record_path to read the marker back and write the strand reason onto it, but a stranded review pointer may have no run directory (the never-launched case this increment records in the shared spool), so after this change the marker lands at discard_spool_path and this read finds nothing, losing the reason its docstring promises; the reader was not migrated to the widened discard-record location.\n",
+  "review_run_id": "r-20261013T112140785551-review-of-a-discarded-request-stays-discarded-980535b73349",
+  "reviewed_base_sha": "444cc82f8a3604c8137d4458c0e9a708dedc1180",
+  "reviewed_head_sha": "980535b73349a205789e246a9a00c22db3995e8b",
+  "reviewed_run_id": "r-20261013T084550116355-a-discarded-request-stays-discarded",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T11:37:00.270730+00:00",
+  "total": 111
+}
