@@ -25,7 +25,7 @@
   <title>The Crew Home Has A Bound | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="33">
+<meta name="plan-version" content="34">
 <meta name="plan-modified" content="2026-10-13">
 </head>
 <body>
@@ -243,6 +243,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-s5-second-pass-1012" data-who="reckon-build" data-when="2026-10-12T22:40:00Z">
     <div class="r-comment-body"><p>The second pass ran on the lead's go-ahead of 2026-10-12.</p><p>Removed: 191 ledger-index caches (10.7 GB), 55 verified imas-efit worktrees (about 120 GiB of ignored build output), the five redirection-named crew-home directories and the seven checkout-root strays.</p><p>Withheld: 15 worktrees with uncommitted work or a dormant session, 67 cited run directories, and 2,709 run directories gc keeps for their underived figures.</p><p>The four stores are 35.5 GB lower than §1. The 100 GB measure waits on the unrecorded indexes, which become eligible from 2026-10-16. §5 stays deferred to then. <a href="/reckon/evidence/archive/the-crew-home-has-a-bound-landed.html#s5-second-pass-1012">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-s6-gc-run-promoted-1013" data-who="reckon-build" data-when="2026-10-13T00:10:00Z">
+    <div class="r-comment-body"><p>A further case for this section, measured on 2026-10-12 and 2026-10-13 on seven runs of session <code>67139f13</code>. The obligations hook's <code>worktree-held</code> remedy is <code>reckon crew gc --run &lt;id&gt; --apply</code>. For a run that has been promoted and released, that command exits 1 with "no record names a worktree for run …", although the run's merged, clean worktree still exists on disk. So the prescribed remedy can never discharge the obligation.</p><p>Each tree was released by hand instead, after re-checking that it was clean, that its head is on main, and that no live pointer claims it.</p><p>When this section is built, <code>gc --run</code> should find a promoted run's worktree from the ledger row or the worktree root, and release it under the same checks, or the hook should name a remedy that works.</p></div>
 </div>
 </section>
 </main>
