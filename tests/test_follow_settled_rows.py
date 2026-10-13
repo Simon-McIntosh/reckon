@@ -247,18 +247,18 @@ def _deliver(
 
 
 def test_the_pane_receives_only_the_settled_changes(home) -> None:
-    """Two runs deliver exactly two rows: the completion and the block.
+    """Two runs deliver their start, completion, and block.
 
-    The start (``dispatched -> working``), the bare ``working`` and the
-    terminal echo (``complete -> recorded``) ask for nothing, so they are held
-    back; the completion and the block are the news the coordinator acts on.
+    The owning pane shows the first run's start. The bare ``working`` and the
+    terminal echo (``complete -> recorded``) ask for nothing and stay hidden.
     """
     first, rows, _ = _deliver(home)
     # The attach's own re-announcements ask for nothing, so the first arming
     # wakes nobody.
     assert first == [], first
-    assert len(rows) == 2, rows
+    assert len(rows) == 3, rows
     assert _states(rows) == [
+        ("dispatched", "working"),
         ("working", "complete"),
         ("exited-unfinished", "blocked"),
     ], rows

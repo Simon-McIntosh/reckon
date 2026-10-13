@@ -73,7 +73,7 @@ def _plain(event: dict) -> str:
     return recovery.format_watch_transition(event)
 
 
-def test_four_departures_render_four_words(home: Path, monkeypatch) -> None:
+def test_four_departures_render_three_pane_words(home: Path, monkeypatch) -> None:
     run_id = "r-same-shape"
     snapshot = _snapshot(run_id)
     _row(home, run_id, commits=["recorded-commit"])
@@ -94,8 +94,13 @@ def test_four_departures_render_four_words(home: Path, monkeypatch) -> None:
     words = [promoted, discarded, stopped, withdrawn]
     assert words == ["promoted", "discarded", "stopped", "withdrawn"]
     lines = [_plain(_event(snapshot, word)) for word in words]
-    assert all(word in line for word, line in zip(words, lines, strict=True))
-    assert len(set(lines)) == 4
+    assert all(
+        word in line
+        for word, line in zip(
+            ("landed", "dropped", "halted", "dropped"), lines, strict=True
+        )
+    )
+    assert len(set(lines)) == 3
 
 
 def test_a_row_with_no_commits_cannot_claim_promotion(home: Path) -> None:
@@ -105,7 +110,7 @@ def test_a_row_with_no_commits_cannot_claim_promotion(home: Path) -> None:
     word = recovery.fleet_transitions({run_id: snapshot}, {})[0][0][2]
     assert word == "recorded"
     assert "promoted" not in _plain(_event(snapshot, word))
-    assert "recorded" in _plain(_event(snapshot, word))
+    assert "landed" in _plain(_event(snapshot, word))
 
     pointer = {"run_id": run_id, "project": "sample", "repo": str(home)}
     assert recovery._promote_record_holds(pointer)
@@ -172,7 +177,7 @@ def test_promoted_transition_keeps_the_live_pointer_figures(home: Path) -> None:
     after = _event(snapshot, word, spend_runs=[])
     for key in ("spend_wall_seconds", "spend_charged_tokens", "spend_generation_rate"):
         assert after[key] == before[key], key
-    assert "promoted" in _plain(after)
+    assert "landed" in _plain(after)
     assert "0m" in _plain(after)
 
 

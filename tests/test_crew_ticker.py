@@ -199,13 +199,13 @@ def test_ticker_line_is_compact_and_bounds_free_text_to_one_clause() -> None:
     # The stamp is stored UTC and rendered in the reader's own zone, because
     # the pane sits beside a harness that timestamps locally.
     assert line.startswith(ticker_module.local_clock(_event()["observed_at"]))
-    assert line.index("ticker-node") < line.index("working")
+    assert line.index("ticker-node") < line.index("halted")
     # The row carries one transition, centred on its fixed arrow.
-    assert "working → blocked" in line
+    assert "new → halted" in line
     assert ticker_module.BASELINE_MARKER not in line
     # The counts are a fixed grid whose digits share a column, each number
     # followed by its state's single letter, one space between the cells.
-    assert " 3w  1b  0u" in line
+    assert " 3w  1h  0d" in line
     # Free text is bounded to one clause and stays on the line; a second row
     # would cost a quarter of a pane that shows about eight.
     assert "first clause" in line
@@ -217,7 +217,7 @@ def test_counter_cells_stay_apart_at_every_digit_width() -> None:
     """Two counts never run into each other, whatever their digit width.
 
     Every counter is its count right-aligned to a fixed digit width and followed
-    by the bucket's letter, with one space between cells, so ``10w 12b`` is two
+    by the bucket's letter, with one space between cells, so ``10w 12h`` is two
     tokens at any digit width and the abutting ``10w12b`` is never printed as
     one. The right alignment is what lets that hold together with the block's
     own width: a single-digit count pads inside its own cell rather than
@@ -228,7 +228,7 @@ def test_counter_cells_stay_apart_at_every_digit_width() -> None:
     width inside its cells shortens the block and has to fail here.
     """
     escapes = re.compile(r"\x1b\[[0-9;]*m")
-    counters = re.compile(r"(\d+)w\s+(\d+)b\s+(\d+)u\s+(\d+)q")
+    counters = re.compile(r"(\d+)w\s+(\d+)h\s+(\d+)d\s+(\d+)W")
 
     block_ends: set[int] = set()
     clause_starts: set[int] = set()
@@ -300,7 +300,7 @@ def test_a_count_above_the_fixed_width_widens_its_own_row() -> None:
     the pane's width and the counts stay four separate tokens.
     """
     escapes = re.compile(r"\x1b\[[0-9;]*m")
-    counters = re.compile(r"(\d+)w\s+(\d+)b\s+(\d+)u\s+(\d+)q")
+    counters = re.compile(r"(\d+)w\s+(\d+)h\s+(\d+)d\s+(\d+)W")
 
     def render(index: int, **counts: int) -> str:
         grid = ticker_module.Ticker(width=180, color=False, model_aliases=())
@@ -328,15 +328,18 @@ def test_a_count_above_the_fixed_width_widens_its_own_row() -> None:
 def test_cli_follow_prints_compact_transition_lines_by_default(
     home, monkeypatch
 ) -> None:
-    (monkeypatch.setattr(
-        recovery_watch,
-        "watch_follow",
-        lambda *_args, **_kwargs: iter([_event()]),
-    ), monkeypatch.setattr(
-        recovery,
-        "watch_follow",
-        lambda *_args, **_kwargs: iter([_event()]),
-    ))
+    (
+        monkeypatch.setattr(
+            recovery_watch,
+            "watch_follow",
+            lambda *_args, **_kwargs: iter([_event()]),
+        ),
+        monkeypatch.setattr(
+            recovery,
+            "watch_follow",
+            lambda *_args, **_kwargs: iter([_event()]),
+        ),
+    )
 
     result = CliRunner().invoke(
         cli_module.main,
@@ -348,7 +351,7 @@ def test_cli_follow_prints_compact_transition_lines_by_default(
     # follower stopped is written to stderr and must not be counted as a row.
     assert result.stdout.count("\n") == 1
     assert "ticker-node" in result.stdout
-    assert "working → blocked" in result.stdout
+    assert "new → halted" in result.stdout
     assert not result.stdout.startswith("{")
 
 
@@ -360,15 +363,18 @@ def test_follow_renders_at_the_resolved_terminal_width(home, monkeypatch) -> Non
     by instantiating a Ticker directly.
     """
     monkeypatch.setattr(ticker_module, "resolve_terminal_width", lambda: 207)
-    (monkeypatch.setattr(
-        recovery_watch,
-        "watch_follow",
-        lambda *_args, **_kwargs: iter([_event()]),
-    ), monkeypatch.setattr(
-        recovery,
-        "watch_follow",
-        lambda *_args, **_kwargs: iter([_event()]),
-    ))
+    (
+        monkeypatch.setattr(
+            recovery_watch,
+            "watch_follow",
+            lambda *_args, **_kwargs: iter([_event()]),
+        ),
+        monkeypatch.setattr(
+            recovery,
+            "watch_follow",
+            lambda *_args, **_kwargs: iter([_event()]),
+        ),
+    )
 
     result = CliRunner().invoke(
         cli_module.main,
@@ -380,22 +386,25 @@ def test_follow_renders_at_the_resolved_terminal_width(home, monkeypatch) -> Non
     assert len(line) <= 207
     # The counters hold their own column inside the resolved-width grid, ahead
     # of the reason a clipping pane is allowed to cut.
-    assert " 3w  1b  0u" in line
+    assert " 3w  1h  0d" in line
 
 
 def test_follow_explicit_width_beats_the_measurement(home, monkeypatch) -> None:
     """A stated --width still wins over the resolved terminal, so a caller who
     asks for a specific pane gets it even when the measurement differs."""
     monkeypatch.setattr(ticker_module, "resolve_terminal_width", lambda: 207)
-    (monkeypatch.setattr(
-        recovery_watch,
-        "watch_follow",
-        lambda *_args, **_kwargs: iter([_event()]),
-    ), monkeypatch.setattr(
-        recovery,
-        "watch_follow",
-        lambda *_args, **_kwargs: iter([_event()]),
-    ))
+    (
+        monkeypatch.setattr(
+            recovery_watch,
+            "watch_follow",
+            lambda *_args, **_kwargs: iter([_event()]),
+        ),
+        monkeypatch.setattr(
+            recovery,
+            "watch_follow",
+            lambda *_args, **_kwargs: iter([_event()]),
+        ),
+    )
 
     result = CliRunner().invoke(
         cli_module.main,
@@ -419,15 +428,18 @@ def test_follow_explicit_width_beats_the_measurement(home, monkeypatch) -> None:
 
 
 def test_cli_follow_keeps_machine_objects_behind_json_flag(home, monkeypatch) -> None:
-    (monkeypatch.setattr(
-        recovery_watch,
-        "watch_follow",
-        lambda *_args, **_kwargs: iter([_event()]),
-    ), monkeypatch.setattr(
-        recovery,
-        "watch_follow",
-        lambda *_args, **_kwargs: iter([_event()]),
-    ))
+    (
+        monkeypatch.setattr(
+            recovery_watch,
+            "watch_follow",
+            lambda *_args, **_kwargs: iter([_event()]),
+        ),
+        monkeypatch.setattr(
+            recovery,
+            "watch_follow",
+            lambda *_args, **_kwargs: iter([_event()]),
+        ),
+    )
 
     result = CliRunner().invoke(
         cli_module.main,
@@ -466,15 +478,18 @@ def test_cli_watch_follow_emit_site_preserves_painted_escape_codes(
     """`crew watch --follow` writes through its own emit site, not
     `_echo_follow_line` — it must not let Click strip colour there either."""
     monkeypatch.delenv("NO_COLOR", raising=False)
-    (monkeypatch.setattr(
-        recovery_watch,
-        "watch_follow",
-        lambda *_args, **_kwargs: iter([_event()]),
-    ), monkeypatch.setattr(
-        recovery,
-        "watch_follow",
-        lambda *_args, **_kwargs: iter([_event()]),
-    ))
+    (
+        monkeypatch.setattr(
+            recovery_watch,
+            "watch_follow",
+            lambda *_args, **_kwargs: iter([_event()]),
+        ),
+        monkeypatch.setattr(
+            recovery,
+            "watch_follow",
+            lambda *_args, **_kwargs: iter([_event()]),
+        ),
+    )
 
     result = CliRunner().invoke(
         cli_module.main,
@@ -490,15 +505,18 @@ def test_cli_watch_follow_emits_no_escapes_when_colour_is_off(
     home, monkeypatch, suppress
 ) -> None:
     """--no-color and NO_COLOR both leave the emitted line free of escapes."""
-    (monkeypatch.setattr(
-        recovery_watch,
-        "watch_follow",
-        lambda *_args, **_kwargs: iter([_event()]),
-    ), monkeypatch.setattr(
-        recovery,
-        "watch_follow",
-        lambda *_args, **_kwargs: iter([_event()]),
-    ))
+    (
+        monkeypatch.setattr(
+            recovery_watch,
+            "watch_follow",
+            lambda *_args, **_kwargs: iter([_event()]),
+        ),
+        monkeypatch.setattr(
+            recovery,
+            "watch_follow",
+            lambda *_args, **_kwargs: iter([_event()]),
+        ),
+    )
     args = ["crew", "watch", "--project", "proj", "--follow"]
     if suppress == "flag":
         args.append("--no-color")
@@ -518,15 +536,18 @@ def test_cli_watch_follows_without_being_asked(home, monkeypatch) -> None:
     A watcher that returns after one event releases the seat, so every landing
     would have to be followed by a re-arm before the next dispatch could run.
     """
-    (monkeypatch.setattr(
-        recovery_watch,
-        "watch_follow",
-        lambda *_args, **_kwargs: iter([_event()]),
-    ), monkeypatch.setattr(
-        recovery,
-        "watch_follow",
-        lambda *_args, **_kwargs: iter([_event()]),
-    ))
+    (
+        monkeypatch.setattr(
+            recovery_watch,
+            "watch_follow",
+            lambda *_args, **_kwargs: iter([_event()]),
+        ),
+        monkeypatch.setattr(
+            recovery,
+            "watch_follow",
+            lambda *_args, **_kwargs: iter([_event()]),
+        ),
+    )
 
     result = CliRunner().invoke(
         cli_module.main,
@@ -535,7 +556,7 @@ def test_cli_watch_follows_without_being_asked(home, monkeypatch) -> None:
 
     assert result.exit_code == 0
     assert "ticker-node" in result.output
-    assert "working → blocked" in result.output
+    assert "new → halted" in result.output
 
 
 def test_cli_watch_returns_after_one_event_only_when_asked(home, monkeypatch) -> None:
@@ -573,15 +594,18 @@ def test_cli_watch_treats_exit_on_empty_as_selecting_single_event(
     Ignoring it under the new default would silently follow forever for a
     caller that explicitly asked to be told about an empty fleet.
     """
-    (monkeypatch.setattr(
-        recovery_watch,
-        "watch_follow",
-        lambda *_args, **_kwargs: pytest.fail("follow must not run here"),
-    ), monkeypatch.setattr(
-        recovery,
-        "watch_follow",
-        lambda *_args, **_kwargs: pytest.fail("follow must not run here"),
-    ))
+    (
+        monkeypatch.setattr(
+            recovery_watch,
+            "watch_follow",
+            lambda *_args, **_kwargs: pytest.fail("follow must not run here"),
+        ),
+        monkeypatch.setattr(
+            recovery,
+            "watch_follow",
+            lambda *_args, **_kwargs: pytest.fail("follow must not run here"),
+        ),
+    )
 
     result = CliRunner().invoke(
         cli_module.main,
@@ -776,7 +800,7 @@ def test_a_follower_delivers_only_lines_with_a_node_and_a_state_pair(monkeypatch
     assert len(plain_lines) == 2
     for line, node in zip(plain_lines, ("ticker-node", "second-node"), strict=True):
         assert node in line, line
-        assert "working → blocked" in line, line
+        assert "new → halted" in line, line
 
     json_lines = CliRunner().invoke(
         cli_module.main, ["crew", "follow", "--project", "proj", "--json"]
@@ -791,7 +815,9 @@ def test_a_follower_delivers_only_lines_with_a_node_and_a_state_pair(monkeypatch
 def _follow_rows(monkeypatch, events, *args) -> list[str]:
     """The rows `crew follow` prints for these log lines, colour off."""
     monkeypatch.setattr(
-        crew_follow_commands, "_follow_watch_lines", lambda *_a, **_kw: iter(list(events))
+        crew_follow_commands,
+        "_follow_watch_lines",
+        lambda *_a, **_kw: iter(list(events)),
     )
     result = CliRunner().invoke(
         cli_module.main,
@@ -844,18 +870,18 @@ def test_the_retired_baseline_marker_never_renders(
     # the only label a row prints.
     assert not re.search(r"\bnow\b", "\n".join(rows))
     assert ticker_module.BASELINE_MARKER not in "\n".join(rows)
-    assert "working" in baseline and "working → blocked" in transition
-    # The baseline has no arrow, while the transition names both sides.
+    assert "working" in baseline and "working → halted" in transition
+    # The first row names its arrival; later rows name the state they left.
     assert "dispatched" not in baseline
     assert "dispatched" not in transition
-    assert "\u2192" not in baseline
+    assert "new → working" in baseline
     assert "\u2192" in transition
 
     # The kind, never the absent source: this transition has no from-state and
     # is still rendered as a transition — no marker, and the state it moved
     # into is the only state word on the row.
     assert ticker_module.BASELINE_MARKER not in first_sighting
-    assert "dispatched" in first_sighting
+    assert "new → working" in first_sighting
 
 
 def test_a_baseline_row_keeps_the_state_column_of_a_transition(
@@ -883,11 +909,11 @@ def test_a_baseline_row_keeps_the_state_column_of_a_transition(
     # The word is on no row, and the state is not printed twice on one.
     assert not re.search(r"\bnow\b", "\n".join(rows))
     assert baseline.count("working") == 1
-    assert transition.count("blocked") == 1
+    assert transition.count("halted") == 1
 
     # The state cell begins at the same screen column on both rows.
     assert _state_cell_start(baseline, "working") == _state_cell_start(
-        transition, "blocked"
+        transition, "halted"
     )
 
 
@@ -966,7 +992,7 @@ def test_a_row_wider_than_the_pane_loses_reason_characters_and_no_counter(
         "207",
     )
 
-    for row, counts in zip(rows, (" 3w  1b  0u", "12w  9b  7u"), strict=True):
+    for row, counts in zip(rows, (" 3w  1h  0d", "12w  9h  7d"), strict=True):
         assert len(row) <= 207
         clipped = row[:pane]
         # The whole counter block survives the clip, at every count width.
@@ -1012,7 +1038,7 @@ def test_every_field_holds_one_column_across_every_row_kind(monkeypatch) -> None
             {
                 _state_cell_start(row, state)
                 for row, state in zip(
-                    rows, ("working", "blocked", "blocked", "blocked"), strict=True
+                    rows, ("working", "halted", "halted", "halted"), strict=True
                 )
             }
         )
@@ -1035,7 +1061,7 @@ def test_every_field_holds_one_column_across_every_row_kind(monkeypatch) -> None
         # start one column early on a two-digit count by absorbing the space
         # that separates the cells from each other.
         found = re.search(
-            r"(?<=\s)([ \d]{2}w) ([ \d]{2}b) ([ \d]{2}u) ([ \d]{2}q)", row
+            r"(?<=\s)([ \d]{2}w) ([ \d]{2}h) ([ \d]{2}d) ([ \d]{2}W)", row
         )
         assert found, row
         # Both edges come off the row: the first cell's own pad is where the

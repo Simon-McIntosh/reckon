@@ -24,7 +24,7 @@ ESCAPES = re.compile(r"\x1b\[[0-9;]*m")
 # The age-plus-bucket cell this revision stops rendering: a span in minutes with
 # the initial of the bucket it qualified immediately after it, as in the columns
 # a row used to spend on the oldest member of each outstanding bucket.
-AGE_PATTERN = re.compile(r"[0-9]+m[a-z]\b")
+AGE_PATTERN = re.compile(r"[0-9]+m[whdW]\b")
 
 TRANSITION_COLUMN = (
     ticker_module.CLOCK
@@ -63,7 +63,7 @@ def _event(**overrides):
         "run_id": "r-row-drops-cells",
         "node": "n-row-drops-cells",
         "role": "review",
-        "from_state": "working",
+        "from_state": None,
         "to_state": "working",
         "working": 3,
         "blocked": 1,
@@ -112,8 +112,8 @@ def test_the_pattern_matches_the_age_cell_it_forbids():
     that matches nothing at all. The shape it forbids is a span with the
     initial of its bucket printed adjacent, and here is that shape.
     """
-    assert AGE_PATTERN.search(" 57mb")
-    assert AGE_PATTERN.search(" 12mb")
+    assert AGE_PATTERN.search(" 57mh")
+    assert AGE_PATTERN.search(" 12md")
 
 
 @pytest.mark.parametrize("with_rate", [True, False])

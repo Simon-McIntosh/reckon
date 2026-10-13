@@ -67,9 +67,13 @@ def _read_new(handle, ticker: ticker_module.Ticker | None = None) -> list[str]:
     """Render whatever the stream has produced since this handle last read."""
     grid = ticker or ticker_module.Ticker()
     return [
-        recovery.format_watch_transition(runs.parse_stream_line(line), ticker=grid)
-        for line in handle.read().splitlines()
-        if line.strip()
+        rendered
+        for rendered in (
+            recovery.format_watch_transition(runs.parse_stream_line(line), ticker=grid)
+            for line in handle.read().splitlines()
+            if line.strip()
+        )
+        if rendered
     ]
 
 
@@ -97,7 +101,7 @@ def test_successive_arms_share_one_producer_and_stream(home) -> None:
             ]
             assert baselines[0] == baselines[1]
             assert len(baselines[0]) == 2
-            assert all(" 2w  0b  0u" in line for line in baselines[0])
+            assert all(" 2w  0h  0d" in line for line in baselines[0])
 
             _set_phase("r-first", "working")
             crew.list_live(project="proj")
@@ -107,9 +111,7 @@ def test_successive_arms_share_one_producer_and_stream(home) -> None:
             ]
 
         assert transitions[0] == transitions[1]
-        assert len(transitions[0]) == 1
-        assert "first-node" in transitions[0][0]
-    assert "dispatched → working" in transitions[0][0]
+        assert transitions[0] == []
 
 
 def test_transition_appends_once_and_reader_restart_from_end_is_quiet(home) -> None:
@@ -139,22 +141,22 @@ def test_transition_appends_once_and_reader_restart_from_end_is_quiet(home) -> N
     lines = [recovery.format_watch_transition(event, ticker=wide) for event in events]
     assert len(lines) == 2
     # The baseline names inventory; the transition names both sides once.
-    assert sum("blocked" in line for line in lines) == 1
-    assert "working → blocked" in lines[-1]
+    assert sum("halted" in line for line in lines) == 1
+    assert "working → halted" in lines[-1]
     assert ticker_module.BASELINE_MARKER not in lines[0]
     assert "working" in lines[0]
-    assert "→" not in lines[0]
+    assert "new → working" in lines[0]
     # The clause explaining a blocked state sits on the line, after the counts
     # rather than before them — never on a row of its own, which would cost a
     # quarter of a pane that shows about eight. The counters go first because
     # the pane clips its own right edge, so what is lost is free text.
     assert "dependency unavailable" in lines[-1]
-    assert lines[-1].index(" 0w  1b  0u") < lines[-1].index("dependency unavailable")
+    assert lines[-1].index(" 0w  1h  0d") < lines[-1].index("dependency unavailable")
     # The fixed reading order begins at the clock and keeps the node before the
     # transition even when model and effort are absent.
     assert re.match(r"^\d{2}:\d{2}:\d{2}", lines[-1])
     assert lines[-1].index("only-node") < lines[-1].index("working")
-    assert " 0w  1b  0u" in lines[-1]
+    assert " 0w  1h  0d" in lines[-1]
     assert events[-1]["run_id"] == "r-only"
 
 
@@ -179,7 +181,7 @@ def test_late_reader_gets_current_baseline_and_only_future_lines(home) -> None:
             subsequent = _read_new(late_reader)
 
     assert len(subsequent) == 1
-    assert "blocked → unpromoted" in subsequent[0]
+    assert "new → delivered" in subsequent[0]
     assert "dispatched" not in subsequent[0]
     assert "working" not in subsequent[0]
-    assert " 0w  0b  1u" in subsequent[0]
+    assert " 0w  0h  1d" in subsequent[0]

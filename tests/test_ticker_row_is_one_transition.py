@@ -139,26 +139,17 @@ def test_every_classifier_transition_keeps_one_grid() -> None:
                 event
             )
         )
-        previous_seen = ticker_module._display_state(previous) if previous else ""
-        if previous_seen == ticker_module._display_state(new):
-            # A first sighting whose effective previous state is the state it
-            # entered is not a transition: the left half and the arrow would only
-            # restate the destination, so the row is not printed at all.
-            assert row == "", (previous, new, row)
-            continue
+        # Each case uses a fresh painter, so its first row always opens from
+        # the arrival word even when the stream names an older internal state.
+        assert "new" in row, (previous, new, row)
         assert len(row) <= width, row
 
         measured = {
             "model": row.index(model_text),
             "node": row.index("n"),
-            "counters": row.index(" 1w  0b"),
+            "counters": row.index(" 1w  0h"),
         }
-        # A first sighting has no remembered state, so its left half and arrow
-        # are blank and only a later transition carries the arrow. The gutter
-        # assertions below cover the blank half; the arrow is located here where
-        # one was drawn.
-        if previous_seen:
-            measured["arrow"] = row.index(ticker_module.ARROW)
+        measured["arrow"] = row.index(ticker_module.ARROW)
         for name, start in measured.items():
             observed[name].add(start)
             assert start == columns[name], (name, start, columns[name], row)
@@ -218,9 +209,9 @@ def test_reported_state_chains_when_the_producer_skips_an_observation() -> None:
         )
     )
 
-    assert "dispatched → abandoned" in abandoned
-    assert "abandoned → working" in working
-    assert "dispatched → working" not in working
+    assert "new → halted" in abandoned
+    assert "halted → working" in working
+    assert "working → working" not in working
 
 
 def test_repeated_same_state_events_render_one_row() -> None:
@@ -240,45 +231,31 @@ def test_repeated_same_state_events_render_one_row() -> None:
     assert repeated == ""
 
 
-def test_first_seen_same_state_prints_no_row() -> None:
-    """A run seen for the first time after it did not move prints nothing.
+def test_a_repeat_of_a_first_seen_state_prints_no_row() -> None:
+    """The first row opens from new, then a repeated pane word is silent.
 
-    With no remembered state the row's left side falls back to the event's own
-    ``from_state``, so a producer that emits the state the run is already in
-    would otherwise print ``unpromoted → unpromoted`` — a transition claimed
-    where the two sides are one state. The effective previous state is the
-    remembered one when the pane has seen the run and the event's otherwise, and
-    a row is printed only when that differs from the state entered. The
-    collision pair is the same defect by display: the internal
-    ``completed_unpromoted`` renders as ``unpromoted``, so the two sides are one
-    word a reader can see.
+    Two internal states that share one pane word also make a silent repeat.
     """
     grid = ticker_module.Ticker(width=208, color=False, model_aliases=())
     for index, state in enumerate(sorted(CLASSIFIER_STATES)):
-        row = plain(
-            grid.render(
-                _event(
-                    run_id=f"r-still-{index}",
-                    from_state=state,
-                    to_state=state,
-                    recovery_classification="",
-                    detail="",
-                )
-            )
+        event = _event(
+            run_id=f"r-still-{index}",
+            from_state=state,
+            to_state=state,
+            recovery_classification="",
+            detail="",
         )
-        assert row == "", (state, row)
-    collided = plain(
-        grid.render(
-            _event(
-                run_id="r-collided",
-                from_state="completed_unpromoted",
-                to_state="unpromoted",
-                recovery_classification="",
-                detail="",
-            )
-        )
+        assert "new →" in plain(grid.render(event)), state
+        assert grid.render(event) == "", state
+    event = _event(
+        run_id="r-collided",
+        to_state="completed_unpromoted",
+        recovery_classification="",
+        detail="",
     )
-    assert collided == "", collided
+    assert "new → delivered" in plain(grid.render(event))
+    event.update(from_state="completed_unpromoted", to_state="unpromoted")
+    assert grid.render(event) == ""
 
 
 def test_first_seen_transition_keeps_its_arrow() -> None:
@@ -302,7 +279,7 @@ def test_first_seen_transition_keeps_its_arrow() -> None:
         )
     )
     assert ticker_module.ARROW in moved, moved
-    assert "dispatched → working" in moved, moved
+    assert "new → working" in moved, moved
     still = plain(
         grid.render(
             _event(
@@ -314,7 +291,19 @@ def test_first_seen_transition_keeps_its_arrow() -> None:
             )
         )
     )
-    assert still == "", still
+    assert "new → delivered" in still, still
+    assert (
+        grid.render(
+            _event(
+                run_id="r-still-arrow",
+                from_state="unpromoted",
+                to_state="unpromoted",
+                recovery_classification="",
+                detail="",
+            )
+        )
+        == ""
+    )
 
 
 def test_reported_examples_keep_name_gutters_and_no_mark() -> None:
@@ -460,7 +449,7 @@ def test_a_reason_whose_first_word_does_not_fit_still_prints_characters() -> Non
             _event(
                 run_id="r-labelled",
                 to_state="blocked",
-                detail=f"blocked {claim}",
+                detail=f"halted {claim}",
             )
         )
     )
@@ -472,7 +461,7 @@ def test_a_reason_whose_first_word_does_not_fit_still_prints_characters() -> Non
             _event(
                 run_id="r-overlong",
                 to_state="blocked",
-                detail=f"blocked {long_token}",
+                detail=f"halted {long_token}",
             )
         )
     )
@@ -482,30 +471,18 @@ def test_a_reason_whose_first_word_does_not_fit_still_prints_characters() -> Non
     assert overlong.rstrip().endswith("\N{HORIZONTAL ELLIPSIS}"), overlong
 
 
-def test_a_display_alias_is_not_a_classifier_word() -> None:
-    """A word a reader sees is not a word a producer or classifier emits.
-
-    The state cell spells a display form that differs from the internal word,
-    and the renderer resolves the display form to a hue of its own. The
-    classifier vocabulary is the set a producer or the recovery classifier can
-    put on either side of the transition, so a display form belongs to neither
-    side of it: a set carrying one tells a reader that a word only the cell
-    spells is something the fleet emits. Both shapes of alias are checked — a
-    display form that differs from its internal key, and any word carrying a
-    space — and each must still resolve to a hue on both themes, so keeping the
-    alias out of the vocabulary cannot leave its cell unpainted.
-    """
-    aliases = {
-        display for word, display in ticker_module.DISPLAY.items() if display != word
-    } | {
-        word
-        for theme in ("light", "dark")
-        for word in ticker_module.STATE_HUE[theme]
-        if " " in word
+def test_every_pane_word_is_a_hued_table_key() -> None:
+    """Internal recovery distinctions do not become extra pane words."""
+    assert not hasattr(ticker_module, "DISPLAY")
+    assert set(ticker_module.PANE_STATES) == {
+        "queued",
+        "working",
+        "waiting",
+        "halted",
+        "delivered",
+        "landed",
+        "dropped",
     }
-    assert aliases, "no display alias is declared, so the check is vacuous"
-    leaked = aliases & ticker_module.CLASSIFIER_STATE_WORDS
-    assert not leaked, sorted(leaked)
-    for alias in aliases:
-        for theme in ("light", "dark"):
-            assert ticker_module._state_hue(theme, alias) != "dim", (theme, alias)
+    for theme in ("light", "dark"):
+        for word in ticker_module.PANE_STATES:
+            assert ticker_module._state_hue(theme, word) != "dim", (theme, word)

@@ -1,16 +1,12 @@
 """The counter block carries counts alone: the span beside a count is gone.
 
 The row's counters are totals. A total holds no membership and no time, so the
-age of the oldest member of an actionable bucket used to be printed beside the
-count it qualified — that was the one reading on the row separating a backlog
-being worked from one standing still. The cell is removed: the row has no room
-for a figure its reader goes to another surface for, and the surface that
-answers it is the needs-you line, which spells the age beside the node it
-belongs to. Nothing computes a bucket age while that line is unbuilt, so this
-file holds the row to what follows: two fleets with the same counts render the
-same row whatever their arrival times, the fleet whose oldest member has stood
-for hours prints no span, and the one span the row still prints is the reading
-run's own elapsed time.
+age of the oldest member of an actionable bucket belongs beside its node on a
+surface that identifies the member. The counter row carries counts alone and
+reserves its measure cell for the reading run's own elapsed time. This file
+holds the row to what follows: two fleets with the same counts render the
+same row whatever their arrival times, and a backlog standing for hours adds
+no age to its counter cell.
 """
 
 from __future__ import annotations
@@ -27,7 +23,7 @@ ESCAPES = re.compile(r"\x1b\[[0-9;]*m")
 # hour or day count with the letter of the bucket it qualified immediately after
 # it. The counts are digits followed by w, b, u or q with no unit between them,
 # so requiring a unit before the letter finds a span and never a count.
-AGES = re.compile(r"(\d+[mhd]\+?)([buq])")
+AGES = re.compile(r"(\d+[mhd]\+?)([hdW])")
 
 # Two transitions of the same run, far enough apart that a rendered span would
 # land in different units and could not be confused by a rounding difference.
@@ -66,7 +62,7 @@ def _transition(run: str, at: str, state: str = "blocked", **overrides):
 
 def _reading(at: str, **overrides):
     """A row rendered at ``at``, carrying no reason of its own."""
-    return _transition("r-reader", at, state="working", **overrides)
+    return _transition("r-reader", at, state="working", from_state=None, **overrides)
 
 
 def _row(events, at: str = READ_AT, width: int = 180, **overrides) -> str:
@@ -84,9 +80,9 @@ def test_the_pattern_matches_the_span_beside_a_counter_it_forbids():
     pattern that matches nothing at all. The shape it forbids is a span with the
     letter of its bucket printed adjacent, and here is that shape.
     """
-    assert AGES.search(" 7hb")
-    assert AGES.search(" 12mu")
-    assert AGES.search(" 2dq")
+    assert AGES.search(" 7hh")
+    assert AGES.search(" 12md")
+    assert AGES.search(" 2dW")
 
 
 def test_two_fleets_with_the_same_counts_render_identically():
@@ -114,7 +110,7 @@ def test_a_long_standing_member_prints_no_span_beside_its_counter():
     row = _row([_transition("r-old", ARRIVED_LONG_AGO)], blocked=1)
     assert spans(row) == {}
     assert not AGES.search(row)
-    assert "1b" in row
+    assert "1h" in row
 
 
 def test_the_only_span_on_the_row_is_the_reading_runs_own_elapsed_time():
