@@ -235,13 +235,17 @@ def _queued_request_record(
     lane_allowance: Mapping[str, Any],
     dispatch_options: Mapping[str, Any] | None,
     queued_at: str,
+    admitted_from: str = "",
 ) -> dict[str, Any]:
     """The request record a held local dispatch stores as one queued pointer.
 
     Kept in one place so the held path and a re-dispatch of an already-queued
     node store the same shape, down to the request options the run launches from.
+    A request an admission pass re-queues under a new id names the request it
+    replaces, so the fold reads one request still waiting rather than a
+    withdrawal and a new arrival.
     """
-    return {
+    record = {
         "run_id": run_id,
         "project": project,
         "plan": node.plan,
@@ -260,6 +264,9 @@ def _queued_request_record(
         "reason": lane_allowance.get("reason"),
         "dispatch_options": dict(dispatch_options or {}),
     }
+    if admitted_from:
+        record["admitted_from"] = admitted_from
+    return record
 
 
 def _answer_existing_node_run(
@@ -698,6 +705,7 @@ def dispatch(
     picker_selection: Mapping[str, Any] | None = None,
     dispatch_options: Mapping[str, Any] | None = None,
     admission_launch: bool = False,
+    admitted_from: str = "",
 ) -> dict[str, Any]:
     """Validate, prepare and launch one node; return its run record.
 
@@ -741,6 +749,11 @@ def dispatch(
     The repository is the project's own mount, resolved before any worktree,
     pointer or ledger row exists, so a dispatch run from another checkout
     cannot cut its worktree from that checkout.
+
+    ``admitted_from`` names the queued request an admission pass is launching.
+    It is written on the first pointer this dispatch publishes, launched or
+    re-queued, so the fleet fold reads the new run as that request continuing
+    rather than as one run withdrawn and an unrelated one arriving.
     """
     repo_root = resolve_project_repository(project, repo)
     worktree_identity = str(worktree_session or session)
@@ -1138,6 +1151,7 @@ def dispatch(
                     lane_allowance=lane_allowance,
                     dispatch_options=dispatch_options,
                     queued_at=_utc_now(),
+                    admitted_from=admitted_from,
                 ),
                 cap=queued_dispatch_cap(_queued_share_cap(backend)),
             )
@@ -1596,6 +1610,11 @@ def dispatch(
             # without re-resolving a backend name that may since have retired.
             "lane": backend.get("lane"),
             "model_key": backend.get("model_key"),
+            # The queued request an admission pass launched this run from, on
+            # the pointer from its first write: the fleet fold reads the queued
+            # pointer's disappearance as this run continuing it, never as a
+            # withdrawal beside an unrelated arrival.
+            "admitted_from": admitted_from or None,
             "requested_backend": resolution.requested_backend,
             "lane_declaration": resolution.lane_declaration,
             "lane_reading": resolution.lane_reading,

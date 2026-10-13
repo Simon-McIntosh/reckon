@@ -1065,6 +1065,17 @@ def _refresh_snapshot(
     return refreshed
 
 
+def _admitted_from(pointer: Mapping[str, Any]) -> str:
+    """The queued request a launched run continues, or an empty string."""
+    named = str(pointer.get("admitted_from") or "")
+    if named:
+        return named
+    request = pointer.get("admit_request")
+    if isinstance(request, Mapping):
+        return str(request.get("run_id") or "")
+    return ""
+
+
 def _compute_watch_snapshot(
     pointer: Mapping[str, Any], *, moment: float, stall_seconds: int
 ) -> dict[str, Any]:
@@ -1113,6 +1124,11 @@ def _compute_watch_snapshot(
         # The dispatching session, so a reader can tell its own fleet from a
         # peer's on a stream that is necessarily project-wide.
         "session": str(pointer.get("session") or ""),
+        # The queued request this run was admitted from, so the fold reads that
+        # request's disappearance as this run continuing it. A run launched by
+        # an admission pass that predates the field names it through the
+        # request the pass stamps on it afterwards.
+        "admitted_from": _admitted_from(pointer),
         "lane": row.get("lane"),
         "model_key": row.get("model_key"),
         "backend": str(agent_map.get("backend") or "").strip(),
@@ -1312,30 +1328,6 @@ def _fleet_counts(
     return counts
 
 
-def _fleet_live_nodes(
-    snapshots: Mapping[str, Mapping[str, Any]], *, session: str | None = None
-) -> list[str]:
-    """The nodes of the runs a session has working, for a row's live roll-up.
-
-    The population is the one ``_fleet_counts`` already partitions: the same
-    ``_partition_session_rows`` narrowing and the same ``FLEET_WORKING_STATES``
-    membership that fill the working bucket, so the names a row carries and the
-    count beside them can never describe two different fleets. A count cannot
-    name who is in flight, so this carries only what the count leaves out.
-    Returned sorted and unique, because two runs of one node are one node to a
-    reader and the row's columns must not move between observations.
-    """
-    rows, _peers = _partition_session_rows(snapshots.values(), session)
-    return sorted(
-        {
-            str(snapshot.get("node") or "")
-            for snapshot in rows
-            if str(snapshot.get("state") or "") in FLEET_WORKING_STATES
-            and str(snapshot.get("node") or "")
-        }
-    )
-
-
 def _manifest_rewritten(
     previous: Mapping[str, Any], current: Mapping[str, Any]
 ) -> bool:
@@ -1511,8 +1503,9 @@ def fleet_transitions(
     current: Mapping[str, Mapping[str, Any]],
     *,
     ledger_run_ids: Callable[[], Iterable[str] | Mapping[str, str]] | None = None,
+    handovers: Iterable[str] = (),
 ) -> tuple[
-    list[tuple[dict[str, Any], str | None, str, dict[str, int]]],
+    list[tuple[dict[str, Any], str | None, str, dict[str, Any]]],
     dict[str, dict[str, Any]],
 ]:
     """Fold one fleet observation into ordered transitions and the next state.
@@ -1533,6 +1526,21 @@ def fleet_transitions(
     settles there: the completion is announced once, a later pointer
     reading cannot move it back to ``dispatched``, and the pointer's own
     disappearance — a gc reap included — emits nothing further for the run.
+
+    An admission pass launches a queued request by releasing its pointer and
+    publishing the launch under a new run id, so the request is absent for the
+    length of a launch. That absence is not a departure. While a handover
+    record names the request — ``handovers`` holds their run ids — the request
+    keeps its remembered state. Once a run naming it in ``admitted_from``
+    arrives, the request leaves silently and the new run arrives in its place.
+    A queued request that vanishes with neither is held one observation more
+    before it is worded, which covers a handover cleared between this
+    observation's two reads.
+
+    Each transition's counts carry ``sessions``: the same partition taken per
+    owning session, with the unowned rows under the empty key, so a follower
+    scoped to one session reads the figures the fold held at that transition
+    rather than re-reading the fleet when it renders.
     """
     if ledger_run_ids is None:
         # The published-stream fold supplies no ledger reader: it is the tick
@@ -1549,7 +1557,26 @@ def fleet_transitions(
     running = {run_id: dict(snapshot) for run_id, snapshot in known.items()}
     changes: list[tuple[Mapping[str, Any], str | None, str]] = []
 
-    departures = [item for item in known if item not in current]
+    held_by_admission = {str(run_id) for run_id in handovers}
+    continued = {
+        str(snapshot.get("admitted_from") or "")
+        for run_id, snapshot in current.items()
+        if run_id not in known
+    } - {""}
+    departures = []
+    for run_id in (item for item in known if item not in current):
+        if run_id in continued:
+            # The run an admission pass launched from this request arrives
+            # below in its place, so the request leaves without a row.
+            running.pop(run_id, None)
+        elif run_id in held_by_admission:
+            # An admission pass holds the request mid-launch: it keeps the
+            # state it was remembered in until its launch or its restore.
+            pass
+        elif _awaits_its_admission(run_id, known[run_id]):
+            running[run_id] = {**known[run_id], "departure_deferred": True}
+        else:
+            departures.append(run_id)
     # A run leaves the fleet for reasons a pointer cannot tell apart on its own:
     # a completion that wrote its ledger row, a deliberate discard that left its
     # marker in the run directory, and a pointer that vanished with nothing
@@ -1648,8 +1675,54 @@ def fleet_transitions(
             pass
         elif not snapshot.get("manifest_rewritten"):
             running[run_id] = dict(snapshot)
-        events.append((dict(snapshot), previous, state, _fleet_counts(running)))
+        events.append((dict(snapshot), previous, state, _transition_counts(running)))
     return events, running
+
+
+def _awaits_its_admission(run_id: str, snapshot: Mapping[str, Any]) -> bool:
+    """Whether a vanished queued request is held one observation before wording.
+
+    The admission pass clears its handover record once the launched run's
+    pointer exists, so an observation that read the live pointers just before
+    that write and the handovers just after it sees neither. One more
+    observation reads the launched run. A request already held once, or one a
+    deliberate discard removed, is worded now.
+    """
+    if str(snapshot.get("state") or "") != "queued":
+        return False
+    if snapshot.get("departure_deferred"):
+        return False
+    return not _discard_recorded(run_id)
+
+
+def handover_run_ids(project: str) -> set[str]:
+    """The queued requests an admission pass is launching for ``project`` now."""
+    return {
+        str(record.get("run_id") or "") for record in runs.list_handovers(project)
+    } - {""}
+
+
+def _session_fleet_counts(
+    snapshots: Mapping[str, Mapping[str, Any]],
+) -> dict[str, dict[str, int]]:
+    """The fleet partition per owning session, unowned rows under ``""``.
+
+    Each figure is the partition ``_fleet_counts`` takes for that session, so a
+    follower that picks its own session's entry reads exactly what a scoped
+    count over the same rows would. A session that owns no row reads the
+    ``""`` entry, which counts only the rows no session owns.
+    """
+    owners = {str(snapshot.get("session") or "") for snapshot in snapshots.values()}
+    return {
+        owner: _fleet_counts(snapshots, session=owner) for owner in owners | {""}
+    }
+
+
+def _transition_counts(
+    snapshots: Mapping[str, Mapping[str, Any]],
+) -> dict[str, Any]:
+    """The fleet's counts at one transition, with the per-session partition."""
+    return {**_fleet_counts(snapshots), "sessions": _session_fleet_counts(snapshots)}
 
 
 def _watch_transition(
@@ -1659,8 +1732,7 @@ def _watch_transition(
     snapshot: Mapping[str, Any],
     previous: str | None,
     current: str,
-    counts: Mapping[str, int],
-    live_nodes: Sequence[str] | None = None,
+    counts: Mapping[str, Any],
     spend_runs: Sequence[Mapping[str, Any]] | None = None,
     rate_statuses: Mapping[str, Any] | None = None,
     streams_root: str | Path | None = None,
@@ -1711,11 +1783,14 @@ def _watch_transition(
         "working": counts["working"],
         "blocked": counts["blocked"],
         "unpromoted": counts["unpromoted"],
-        # The nodes the working count stands for, so a row names which runs are
-        # in flight rather than only how many. Carried as a fact beside the
-        # count, from the same partitioned population, so a renderer adds no
-        # second read and the two can never disagree.
-        "live_nodes": [str(node) for node in (live_nodes or []) if str(node)],
+        # The same partition per owning session, taken by the fold at this
+        # transition. A follower scoped to one session reads its own entry, so
+        # the row's figures describe the fleet the transition left rather than
+        # whatever the pointers say when the row is drawn.
+        "session_counts": counts.get("sessions"),
+        # The queued request this run continues, so a pane that drew the
+        # request reads the launch as the same job rather than a second one.
+        "admitted_from": snapshot.get("admitted_from") or None,
         "detail": str(snapshot.get("detail") or ""),
         "recovery_classification": str(
             snapshot.get("recovery_classification") or current
@@ -1926,39 +2001,48 @@ def _notional_cost(
 
 
 def _scoped_watch_event(event: Mapping[str, Any], session: str) -> dict[str, Any]:
-    """Re-derive a transition's figures over one session's live pointers.
+    """A transition's figures over the runs one session owns.
 
-    The watcher seat is project-global and the stream it writes carries the
-    whole fleet's totals, so a follower cannot ask for per-session figures on
-    the wire; the population is re-selected here at render time from the same
-    live pointers, using the ownership already persisted on each pointer. A
-    legacy pointer with no recorded owner stays counted, matching the dispatch
-    fence.
+    The watcher seat is project-global, so every transition carries the whole
+    fleet's totals beside ``session_counts``, the same partition the fold took
+    per owning session at that transition. The session's own entry is read, or
+    the unowned entry for a session that owns no run, so the row describes the
+    fleet the transition left: a row drawn later still counts the run it
+    announces in the state it announces.
+
+    An event written before the per-session figures existed carries none, and
+    only then is the population re-selected from the live pointers at render
+    time, using the ownership persisted on each pointer. A legacy pointer with
+    no recorded owner stays counted, matching the dispatch fence.
     """
-    project = str(event.get("project") or "")
-    stall_seconds = parse_duration(DEFAULT_WATCH_STALL_WINDOW)
-    moment = _utc_seconds()
-    pointers = runs._list_live_records(project=project) if project else ()
-    current = {
-        str(pointer.get("run_id") or ""): _watch_snapshot(
-            pointer, moment=moment, stall_seconds=stall_seconds
-        )
-        for pointer in pointers
-        if pointer.get("run_id")
-    }
-    counts = _fleet_counts(current, session=session)
+    sessions = event.get("session_counts")
+    if isinstance(sessions, Mapping):
+        counts = sessions.get(session)
+        if not isinstance(counts, Mapping):
+            counts = sessions.get("")
+        if not isinstance(counts, Mapping):
+            counts = {}
+    else:
+        project = str(event.get("project") or "")
+        stall_seconds = parse_duration(DEFAULT_WATCH_STALL_WINDOW)
+        moment = _utc_seconds()
+        pointers = runs._list_live_records(project=project) if project else ()
+        current = {
+            str(pointer.get("run_id") or ""): _watch_snapshot(
+                pointer, moment=moment, stall_seconds=stall_seconds
+            )
+            for pointer in pointers
+            if pointer.get("run_id")
+        }
+        counts = _fleet_counts(current, session=session)
     scoped = dict(event)
-    scoped["working"] = counts["working"]
-    scoped["blocked"] = counts["blocked"]
-    scoped["unpromoted"] = counts["unpromoted"]
-    # Re-select the roll-up's nodes over the same scoped population the counts
-    # were just taken over, so the row names the reader's own live runs and
-    # never a peer's — the counter beside them already counts only those.
-    scoped["live_nodes"] = _fleet_live_nodes(current, session=session)
+    scoped["working"] = int(counts.get("working") or 0)
+    scoped["blocked"] = int(counts.get("blocked") or 0)
+    scoped["unpromoted"] = int(counts.get("unpromoted") or 0)
     previous = scoped.get("from_state")
     state = scoped.get("to_state")
     if "waiting" in counts or previous in WAITING_STATES or state in WAITING_STATES:
-        scoped["waiting"] = counts.get("waiting", 0)
+        scoped["waiting"] = int(counts.get("waiting") or 0)
     elif "waiting" in scoped:
         del scoped["waiting"]
     return scoped
@@ -2213,6 +2297,7 @@ def watch_ticker(
 
             _backends.take_parsed_stream_bytes()
             take_admission_stream_bytes()
+            handed = handover_run_ids(project)
             pointers = list_live(project=project)
             # The lift document is folded on the same poll as the fleet, so a
             # coordinator watching this project's stream sees a peer lift a
@@ -2247,8 +2332,7 @@ def watch_ticker(
                 )
                 continue
 
-            counts = _fleet_counts(current)
-            live_nodes = _fleet_live_nodes(current)
+            counts = _transition_counts(current)
             if not fleet_seen:
                 fleet_seen = True
                 known = {run_id: dict(snapshot) for run_id, snapshot in current.items()}
@@ -2260,14 +2344,19 @@ def watch_ticker(
                         previous=None,
                         current=str(snapshot["state"]),
                         counts=counts,
-                        live_nodes=live_nodes,
                         spend_runs=pointers,
                         rate_statuses=rate_statuses,
                     )
                 continue
 
+            # The handovers are read on both sides of the pointer listing, so a
+            # request an admission pass takes during the listing is named by
+            # one read or the other.
             folded, next_known = fleet_transitions(
-                known, current, ledger_run_ids=_ledger_run_id_reader(project)
+                known,
+                current,
+                ledger_run_ids=_ledger_run_id_reader(project),
+                handovers=handed | handover_run_ids(project),
             )
             events = [
                 _watch_transition(
@@ -2277,7 +2366,6 @@ def watch_ticker(
                     previous=previous,
                     current=state,
                     counts=event_counts,
-                    live_nodes=live_nodes,
                     spend_runs=pointers,
                     rate_statuses=rate_statuses,
                 )

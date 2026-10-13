@@ -1943,7 +1943,7 @@ def _stream_transition(
     snapshot: Mapping[str, Any],
     previous: str | None,
     current: str,
-    counts: Mapping[str, int],
+    counts: Mapping[str, Any],
 ) -> dict[str, Any]:
     """Build the transition object consumed by the established formatter."""
     from reckon.crew.recovery import _watch_transition
@@ -1976,9 +1976,17 @@ def _publish_watch_transitions(
     Reports whether this sweep appended a transition, which is the event the
     session snapshots republish on.
     """
-    from reckon.crew.recovery import _fleet_counts, fleet_transitions
+    from reckon.crew.recovery import (
+        _transition_counts,
+        fleet_transitions,
+        handover_run_ids,
+    )
     from reckon.flight import FlightConfigError
 
+    # Read before the snapshots are classified, as close to the caller's
+    # pointer listing as this tick can, so a request an admission pass holds
+    # mid-launch reads as still queued rather than withdrawn.
+    handed = handover_run_ids(project)
     current = _watch_stream_snapshots(records, stall_window=producer.stall_window)
     if not current and not producer.fleet_seen:
         return False
@@ -1986,7 +1994,7 @@ def _publish_watch_transitions(
     try:
         if not producer.fleet_seen:
             baseline = {run_id: dict(snapshot) for run_id, snapshot in current.items()}
-            counts = _fleet_counts(current)
+            counts = _transition_counts(current)
             lines = [
                 _stream_transition(
                     project,
@@ -2006,7 +2014,9 @@ def _publish_watch_transitions(
         # The same fold the seat's own ticker uses, so a follower reading the
         # stream and a reader watching the seat's stdout cannot disagree about
         # either the transitions or their counts.
-        folded, next_known = fleet_transitions(producer.known, current)
+        folded, next_known = fleet_transitions(
+            producer.known, current, handovers=handed
+        )
         lines = [
             _stream_transition(
                 project,

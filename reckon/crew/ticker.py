@@ -1,26 +1,26 @@
 """Render one fleet transition as a line of a fixed grid.
 
 The pane this feeds is read down a column rather than across a line — which
-worker, what state, how many still running — and it shows roughly eight lines at
+job, what state, how many still running — and it shows roughly eight lines at
 a time. Two consequences shape everything here. Every field occupies the same
 screen column on every row, so a scan does not have to re-find it. And no line
-ever wraps, because a wrapped row costs a quarter of the visible history; free
-text is truncated to the room the grid leaves rather than allowed to overrun.
+ever wraps, because a wrapped row costs a quarter of the visible history; a row
+wider than the pane drops its trailing cells rather than overrun it.
 
 Colour carries two questions. *Which worker is this?* is answered by the node's
 own hue, handed out in order of first appearance. *Does this need me?* is
 answered by the destination state, painted by the verdict that state names.
 Identity is kept perceptually clear of the four verdict hues, so a worker's
 colour is never mistaken for a verdict about that worker; the reading order is
-time, model, effort, role, node, transition, elapsed, fleet counters and the
-plain reason.
+time, stage, job, transition, elapsed and fleet counters, then the lane's rate,
+the model and the effort.
 
-The row prints no separate attention mark. ``!`` beside the transition was
-tried and dropped: the orchestrator reads the transition and decides, and the
-destination state's colour already carries urgency, so a mark only repeats what
-the new state says. The recovery vocabulary still owns the specific remedy, but
-the row never prints that action word either: the transition says what happened
-and the plain reason clause says why.
+The row carries no free text. A reason clause and a roll-up of live job names
+were both tried after the counters, and each pushed the cells after it off
+their columns and repeated what the pane or the run already says; the reason a
+run stopped is read from the run, where it is never cut to fit. The row prints
+no separate attention mark either: the destination state's colour already
+carries urgency, so a mark only repeats what the new state says.
 """
 
 from __future__ import annotations
@@ -41,34 +41,30 @@ from reckon._timestamps import parse_iso, parse_utc
 from reckon.crew import lane_document as _lane_document
 
 CLOCK = 8
-# The cell is 28, not 36: a name already elides from the middle, so the eight
-# columns the cell gave up are spent on the reason clause, the one column a
-# reader is actually trying to read. The cut below still keeps both ends of a
-# truncated name, so a name that fits the narrower cell keeps its whole text and
-# only the ones that already elided lose a little more of their middle.
+# The job cell is 28 wide. A name wider than that is cut from the middle, so
+# the end that distinguishes it from the rest of its wave survives the cut, and
+# a name that fits keeps its whole text.
 NODE = 28
-# The live roll-up names the session's working nodes after the counters. Each
-# name takes the node column's own middle cut so a long name keeps the end that
-# distinguishes it from its wave, but at a narrower width than the column: the
-# roll-up names several nodes in the room the reason clause is about to use, so
-# a cell the width of the node column would spend the reader's explanation on
-# the list. Ten columns show a node's tail and enough of its head to recognise
-# it, and a name that fits keeps its whole text.
-ROLLUP_NODE = 10
-# A node name wider than its cell is cut from the middle, so the end that
-# distinguishes it from the rest of its wave survives the cut. Two rows can
-# still land on one text — two names that differ only where the cut falls, and
-# two runs of one node, which share a name outright — and a row is the only
-# place a reader can tell them apart, so each then carries the tail of its own
-# run's minted stamp, appended inside the cell: the name is cut a little
-# tighter to make the room rather than the suffix pushing the columns after the
-# node cell. The stamp and never the id's own tail, which repeats the node name
-# the cell already carries and so separates nothing.
-RUN_STAMP_TAIL = 4
-# Model and effort are two cells so a reader scans the effort down a column
-# instead of parsing it out of a composed label. Every boundary uses the same
-# two-column gutter, so effort begins at the same screen column on every row
-# while no row carries padding wider than the alias it pads. The model
+# A job the pane has drawn under more than one run — a retry, a redispatch, a
+# second review of one node — carries a number after its name, 1 for the first
+# run the pane drew and counting up, so a reader can tell the runs apart and
+# read their order. A run an admission pass launched from a queued request is
+# that request continuing, so it keeps the request's number rather than taking
+# the next one.
+#
+# The stage cell says what kind of work the job is, so a review's job cell
+# drops what its node id spends saying the same thing: the review prefix and
+# the reviewed head's digest. A review of ``jccm-circuits`` reads ``review``
+# then ``jccm-circuits``, and a second review of it reads ``jccm-circuits 2``.
+REVIEW_JOB_PREFIXES = (
+    ("plan-review-of-", "plan-"),
+    ("review-of-", ""),
+    ("review-", ""),
+)
+REVIEWED_HEAD = re.compile(r"-[0-9a-f]{12}$")
+# Model and effort are two cells at the row's right end, after the lane's rate,
+# so a reader scans the effort down a column instead of parsing it out of a
+# composed label. Every boundary uses the same two-column gutter. The model
 # cell is sized from the longest alias the resolved flight config declares, so
 # a pane whose rows all carry a configured alias lands its effort column on one
 # screen column. MODEL is the width used only when the config declares no alias
@@ -101,16 +97,6 @@ SPEND = WALL
 # both facts at once — an unpriced lane really did spend nothing chargeable,
 # while an unobserved run's tokens are simply unknown.
 DIM_MARKER = "\N{EN DASH}"
-
-# A wait whose condition has never been probed is not the same situation as one
-# whose probe has run and not yet met its terminal: nothing is testing the
-# first, so its condition cannot lift on its own and a reader waiting for it
-# waits for nothing. The record separates them — the probe's verdict is absent
-# when no probe has run — but the row rendered both identically, which is how a
-# wait nobody was checking read as a slow dependency. It takes the same glyph
-# the measure cells use for a figure that was never taken, because that is what
-# the probe's verdict is: a measurement nobody has made.
-UNPROBED_MARKER = DIM_MARKER
 
 # Identity hues, one set per background. Picked by measurement rather than eye:
 # each clears a 3.8:1 contrast ratio against its pane, sits in the cool arc
@@ -273,45 +259,16 @@ NEEDS_ACTION = frozenset(
 # keys on the lift's group rather than a run id: the producer builds it with no
 # run id and the group in ``node``. The words are spelled here rather than read
 # from the lift module, which imports the recovery watch, which imports this
-# renderer — reading them back would close the cycle ``CLAUSE_STATES`` already
-# exists to avoid. The fixtures in ``lift_watch`` bind them.
+# renderer — reading them back would close an import cycle. The fixtures in
+# ``lift_watch`` bind them.
 LIFT_GRANTED = "lift-granted"
 LIFT_IN_FORCE = "lift-in-force"
 LIFT_ENDED = "lift-ended"
 LIFT_STATES = frozenset({LIFT_GRANTED, LIFT_IN_FORCE, LIFT_ENDED})
-
-# Every destination or recovery classification whose clause may explain itself.
-# A state outside this set renders a bare transition with no reason, because
-# only a state a reader must act on has anything to explain. The recovery module
-# imports this renderer, so the display contract cannot import its own set
-# without a cycle; this is the one documented display copy, and the property
-# test covers the classifier's full vocabulary. The three lift states are the
-# one non-run member: a lift row carries the group, its form and multiple and
-# what ended it in its clause, and no classifier emits them, so they are added
-# here rather than reached for from the lift module, which would close the cycle
-# this set exists to avoid.
-CLAUSE_STATES = NEEDS_ACTION | frozenset(
-    {
-        "complete",
-        "completed_unpromoted",
-        "ended-without-manifest",
-        "held",
-        "interrupted",
-        LIFT_ENDED,
-        LIFT_GRANTED,
-        LIFT_IN_FORCE,
-        "needs-help",
-        "promotable",
-        "ready",
-        "refused-at-admission",
-        "scoring",
-        "unpromoted",
-        "unwritten",
-    }
-)
+LIFT_STAGE = "lift"
 
 # The sole state vocabulary printed by the pane. Recovery distinctions and
-# capacity-lift causes stay in the event's reason clause.
+# capacity-lift causes stay in the event's own facts.
 PANE_STATES = {
     "queued": frozenset({"queued"}),
     "working": frozenset(
@@ -430,13 +387,15 @@ _WAIT_CELL = "waiting"
 # use pane words; a waiting count includes queued and externally waiting runs.
 _COUNT_FIELD = {"halted": "blocked", "delivered": "unpromoted", "waiting": "waiting"}
 
-# Compact counter labels preserve the clause width. Waiting uses an upper-case
-# initial to distinguish it from working without inventing an eighth state.
+# Each counter is labelled with the lower-case initial of a pane word. The
+# waiting bucket holds queued runs as well as runs waiting on a declared
+# condition, and its label is ``q`` for the queued word, so no two labels share
+# a letter and none needs a case to tell it apart.
 STAT_LETTER = {
     "working": "w",
     "halted": "h",
     "delivered": "d",
-    "waiting": "W",
+    "waiting": "q",
 }
 
 # Each counter is its count right-aligned to a fixed digit width followed by the
@@ -459,31 +418,14 @@ STATS = sum(STAT_DIGITS + len(STAT_LETTER[label]) for label in _MAX_CELLS) + (
     len(_MAX_CELLS) - 1
 )
 
-# The widest the fixed columns can be, plus the stats block and one gap. A width
-# below this cannot be honoured without wrapping, so it is raised to this.
-# Everything before the reason consumes exactly this many columns with the role
-# cell at nine, the model cell at its default width of ten (a grid sized from a
-# longer configured alias raises this floor by the same amount it widens the
-# cell), the effort cell at seven, the node cell at twenty-eight, each
-# transition half at ten, the four fleet counters and the elapsed cell in full.
-# Against the 180-column DEFAULT_WIDTH budget this leaves 57 columns for the
-# reason — 85 on the 208-column pane this workstation measures — measured at the
-# default model cell width of ten, and each column a longer configured alias
-# adds to that cell comes straight off both figures. The narrowing that funded
-# the reason is the four cells this row cut: the node cell from thirty-six to
-# twenty-eight, the role cell from thirteen to nine, the transition halves from
-# twenty-two to ten each, and the counter block's separators, which are single
-# spaces the block keeps rather than abutting cells — the three columns they
-# spend are the price of keeping two counts apart, and the reason's room
-# pays them. The clause starts at column 123 on every row at the default width;
-# the arrow still holds one fixed column and every boundary keeps its two-space
-# gutter.
+# The fixed head every row carries: time, stage, job, transition, elapsed and
+# the four counters, each separated by the two-column gutter. A width below this
+# cannot be honoured without wrapping, so it is raised to this. The lane's rate,
+# the model and the effort follow the head in that order, each added only where
+# the pane has the room for it, so a narrow pane loses the effort first and the
+# rate last and never wraps.
 MIN_WIDTH = (
     CLOCK
-    + GAP
-    + MODEL
-    + GAP
-    + EFFORT
     + GAP
     + ROLE
     + GAP
@@ -495,7 +437,19 @@ MIN_WIDTH = (
     + SPEND
     + GAP
     + STATS
-    + GAP
+)
+# The order of the row's cells, carried into the follower's layout signature so
+# a reorder alone is a different layout even where every width is unchanged.
+COLUMN_ORDER = (
+    "clock",
+    "stage",
+    "job",
+    "transition",
+    "elapsed",
+    "counters",
+    "rate",
+    "model",
+    "effort",
 )
 DEFAULT_WIDTH = 180
 DEFAULT_THEME = "light"
@@ -581,19 +535,6 @@ def resolve_terminal_width() -> int:
     return DEFAULT_WIDTH
 
 
-# Below this there is no room for a clause worth reading, and a two-word stub is
-# worse than the whitespace it replaces.
-MIN_REASON = 12
-
-# A run that never wrote a stream record reached no model, so the counter's
-# blocked bucket holds it and the clause is the only place the line can say the
-# stop is an infrastructure fault rather than a worker turn wanting a decision.
-# The classification normally supplies the cause and this clause is not reached;
-# it is here for the record that carries the state without one, because a
-# blocked number rendering no reason is the defect this line exists to close.
-LAUNCH_FAULT_STATE = "launch-failed"
-LAUNCH_FAULT_CLAUSE = "the launch failed before any turn and no model was reached"
-
 _RESET = "\x1b[0m"
 _DIM = "\x1b[2m"
 
@@ -670,63 +611,6 @@ def _bucket_of(state: Any, classification: Any) -> str | None:
     return None
 
 
-def _first_clause(value: Any) -> str:
-    """Collapse free text to its first clause, with no width cut yet.
-
-    A worker writes prose; the grid has a column. Cutting at the first clause
-    boundary keeps the sentence that states the problem and drops the elaboration
-    after it, which is what survives a hard truncation anyway — and truncating
-    alone would let a second clause occupy room the first one needed.
-
-    A clause that collapses to bare punctuation is refused outright: a parse
-    failure upstream (a block-scalar indicator returned as if it were the value)
-    must not render as a "reason" no reader can act on. The refusal lives here,
-    where the clause is derived, so the producer never has to make it.
-
-    The width cut is deliberately a separate step: a caller that must also drop
-    a leading label or a word the state cell already says needs the whole clause
-    to test, because a field already cut has already eaten the label it matches.
-    """
-    compact = " ".join(str(value or "").split())
-    clause = re.split(
-        r";|(?<=[.!?])\s+|\s+[\N{EM DASH}\N{EN DASH}]\s+", compact, maxsplit=1
-    )[0].strip()
-    if clause and not re.search(r"[A-Za-z0-9]", clause):
-        return ""
-    return clause
-
-
-def _fit_clause(clause: str, limit: int) -> str:
-    """Cut a clause to a field, never to a bare ellipsis.
-
-    A clause wider than its field is cut at the last word boundary inside it, so
-    what a reader keeps is a whole word: a cut through a word reads as a typo
-    rather than as a cut. A clause whose first word alone is wider than the field
-    has no boundary to cut at, so the cut falls inside that word and keeps as
-    much of its head as the ellipsis leaves room for. It never returns just the
-    ellipsis: a field one column wide returns its first character alone, because
-    a reason that shows a reader nothing to start reading is worse than a word
-    cut short.
-    """
-    if limit <= 0:
-        return ""
-    if len(clause) <= limit:
-        return clause
-    boundary = clause.rfind(" ", 0, limit)
-    if boundary > 0:
-        head = clause[:boundary].rstrip(" ,:")
-        if head:
-            return head + "…"
-    if limit < 2:
-        return clause[:1]
-    return clause[: limit - 1].rstrip(" ,:") + "…"
-
-
-def single_clause(value: Any, *, limit: int = 96) -> str:
-    """Collapse free text to one clause bounded to fit a ticker field."""
-    return _fit_clause(_first_clause(value), limit)
-
-
 def elide(text: str, width: int, *, keep_end: bool = False) -> str:
     """Fit text to a column, marking the cut so a reader knows it was one.
 
@@ -748,93 +632,17 @@ def elide(text: str, width: int, *, keep_end: bool = False) -> str:
     return text[:head] + "…" + text[len(text) - tail :]
 
 
-# The stamp ``new_run_id`` mints into a run id: ``r-<stamp>-<node token>``,
-# with the token repeating the node's own name. Held as a pattern rather than
-# as a field position, because only a field that is a stamp identifies a run:
-# read by position, the middle field of any dashed id parses as one, and two
-# ids agreeing on that field would carry the same suffix.
-RUN_STAMP = re.compile(r"^r-(\d{8}T\d{6}\d{6})-")
-
-
-def minted_stamp(run_id: str) -> str:
-    """The part of a run id that tells two runs of one node apart.
-
-    Two runs of one node share everything in an id but the minted stamp, and
-    the id's tail is the node name outright, so a suffix meant to separate two
-    rows has to come from here. An id that carries no minted stamp — one from
-    a reader or a fixture rather than from ``new_run_id`` — has no such part to
-    draw from, so the whole id is the run's identity and its own tail is what
-    the row can show.
-    """
-    minted = RUN_STAMP.match(run_id)
-    return minted.group(1) if minted else run_id
-
-
-# The prefix the fleet surface prints ahead of the bound that is binding. A
-# word rather than a glyph, because the reading is a sentence fragment a reader
-# has to be able to search for, and because the same clause appears in a
-# refusal where no legend is available to decode a symbol.
-BOUND_PREFIX = "bind"
-# What the clause says when no bound could be read. Distinct from a bound that
-# reads as ample: an unreadable slice is a fact about the instrument, and a
-# reader who sees it should go looking rather than assume headroom.
-BOUND_UNKNOWN = "unknown"
-# The widest the bound clause is allowed to grow before it is elided. The
-# clause carries a label and a measured value, so it is longer than a counter;
-# this holds the right edge of the row steady across readings.
-BOUND_WIDTH = 46
-
-
-def bound_clause(report: Mapping[str, Any] | None) -> str:
-    """Name the binding bound with its measured value, for the fleet surface.
-
-    A label alone says a resource was considered, not how close it is: the
-    reader's next question is the figure, so the clause carries both and never
-    reports the label on its own. A report that names no binding bound — every
-    candidate unreadable or unbounded — says ``unknown`` rather than naming one,
-    because there is nothing to name.
-    """
-    if not report or not report.get("binding"):
-        return f"{BOUND_PREFIX} {BOUND_UNKNOWN}"
-    value = single_clause(report.get("value"), limit=BOUND_WIDTH)
-    clause = f"{BOUND_PREFIX} {report['binding']} {value}".strip()
-    return elide(clause, BOUND_WIDTH)
-
-
-def bound_cells(report: Mapping[str, Any] | None) -> list[tuple[str, Any]]:
-    """The binding-bound clause as a ranked grid cell, or empty when absent.
-
-    A transition whose record carries no bound reading adds no cell rather than
-    an ``unknown`` one: the fleet surface says what it was told, and inventing
-    an unknown for every older record would drown the reading where it exists.
-    """
-    if not report:
-        return []
-    return [(" " * GAP, None), (bound_clause(report), "dim")]
-
-
-# The lane cell: the run's own generation rate beside the lane's mean, so the
-# row carries the denominator that makes its own figure readable. A rate
-# without the lane's mean cannot separate a slow worker from a slow lane — the
-# row was read as the second by two coordinators independently — and a measure
-# that misleads in the direction of the reader's own node is the failure this
-# cell exists to prevent.
-LANE_LABEL = "lane"
+# The rate cell: the mean generation rate the run's lane publishes, with its
+# unit. The run's own rate is not shown beside it: it is unmeasured on nearly
+# every row, so the cell would spend a column on an absence marker. The figure
+# is right-aligned to a fixed width so the unit holds one column down the pane.
 LANE_RATE = 5
-# What the cell prints after the run's own rate when it can name no mean, one
-# clause per cause. A clause rather than a zero or a bare absence marker: a
-# document that has not published a figure is not a lane that measured none, and
-# a reader must be able to tell the two apart. Each names its cause, because a
-# word that reads as an outage is read as one — a lane whose document is merely
-# late is not a lane that is down.
+RATE_UNIT = "tok/s"
+RATE = LANE_RATE + len(" ") + len(RATE_UNIT)
+# Why a declared lane document yielded no figure. The cell prints the absence
+# marker for either; the cause stays with the reader of the document.
 LANE_MEAN_UNPUBLISHED = "lane mean unpublished"
 LANE_DOC_STALE = "lane doc stale"
-# The clause holds one width in every state — the figure and each phrase alike —
-# so the reason after it begins at one screen column whichever state the lane is
-# in and the run's own figure stays put as it moves down a pane.
-LANE_CLAUSE_WIDTH = max(len(LANE_MEAN_UNPUBLISHED), len(LANE_DOC_STALE))
-LANE_MEAN_WIDTH = LANE_CLAUSE_WIDTH - len(LANE_LABEL) - len(" ")
-LANE_WIDTH = LANE_RATE + len(" ") + len(LANE_LABEL) + len(" ") + LANE_MEAN_WIDTH
 # How long a read lane document serves the pane's later rows. The lane
 # republishes on its own cadence and the pane draws rows in bursts, so one
 # resolution and one read cover every row inside the window rather than one of
@@ -1853,25 +1661,6 @@ def declares_a_wait(event: Mapping[str, Any]) -> bool:
     return isinstance(event.get("expected_horizon_seconds"), Real)
 
 
-def probe_has_run(event: Mapping[str, Any]) -> bool:
-    """Whether the declared wait's condition has been probed at all.
-
-    The probe's verdict — met, pending or an observation matching no declared
-    terminal — is written only when a probe answered, so its presence is the
-    record of execution and its absence is the record of none. A run whose
-    probe could not be launched at all still carries a verdict, because that
-    failure is what the probe reported; only a wait that was never read has
-    nothing to say, which is exactly the case a reader must not mistake for a
-    condition still being tested.
-    """
-    return bool(str(event.get("wait_condition_state") or "").strip())
-
-
-def _unprobed_wait(event: Mapping[str, Any]) -> bool:
-    """Whether the row declares a wait no probe has ever been executed for."""
-    return declares_a_wait(event) and not probe_has_run(event)
-
-
 def _agent_label(agent: Any) -> str:
     """The agent column label: alias plus the full effort word, or the record as it stands.
 
@@ -1893,6 +1682,25 @@ def _agent_label(agent: Any) -> str:
     if not suffix:
         return base
     return base + "·" + suffix if base else suffix
+
+
+def _job_name(node: str, role: Any) -> str:
+    """The node as the job cell shows it beside its stage.
+
+    A review's node id repeats what the stage cell already says — the review
+    prefix — and ends in the reviewed head's digest, which identifies nothing a
+    reader can use. Both are dropped for a review, so the cell names the job
+    under review. Every other stage shows its node id whole.
+    """
+    if str(role or "") != "review":
+        return node
+    for prefix, replacement in REVIEW_JOB_PREFIXES:
+        if node.startswith(prefix):
+            rest = node[len(prefix) :]
+            if prefix == "review-of-":
+                rest = REVIEWED_HEAD.sub("", rest)
+            return f"{replacement}{rest}" if rest else node
+    return node
 
 
 class Ticker:
@@ -1927,17 +1735,16 @@ class Ticker:
         self._project = project
         self._alias_widths: dict[str | None, int] = {}
         self.model_width = self._model_width(project)
-        self.width = self._grid_width(self.model_width)
+        self.width = self._grid_width()
         # NO_COLOR is the caller's environment overriding the caller's flag, per
         # the convention; any non-empty value disables.
         self.color = bool(color) and not os.environ.get("NO_COLOR")
         self._hues: dict[str, int] = {}
-        # The node texts this pane has rendered, by the run that claimed each
-        # of them, and the runs whose texts collided. Both live as long as the
-        # pane: a row seen once cannot be un-seen, and a later attach replays
-        # its baselines through this same grid.
-        self._node_claims: dict[str, str] = {}
-        self._colliding_runs: set[str] = set()
+        # The runs this pane has drawn under each job cell, keyed by stage and
+        # the cell's text, each with the number the pane gave it. Kept as long
+        # as the pane: a number a reader has seen must not change, and a later
+        # attach replays its baselines through this same grid.
+        self._job_runs: dict[str, dict[str, int]] = {}
         # The state this pane last put on screen for each run. A producer may
         # skip an intermediate observation in its own ``from_state``; the pane
         # must not rewrite the story it already showed, so every later left side
@@ -1968,9 +1775,9 @@ class Ticker:
             )
         return self._alias_widths[project]
 
-    def _grid_width(self, model_width: int) -> int:
-        """The whole grid's width: the request, raised to fit a wider model cell."""
-        return max(self._requested_width, MIN_WIDTH - MODEL + model_width)
+    def _grid_width(self) -> int:
+        """The whole grid's width: the request, raised to fit the fixed head."""
+        return max(self._requested_width, MIN_WIDTH)
 
     def _lane_reading(self, project: str | None, backend: str) -> float | str | None:
         """The lane's mean, the phrase naming why none was read, or None.
@@ -1984,10 +1791,9 @@ class Ticker:
         one read serve every row drawn inside the window.
 
         None means the row's backend declares no lane document at all: there is
-        no lane for the cell to speak about, so it prints the run's own rate
-        with no lane clause rather than naming the absence of a lane the row
-        never used. A clause string means a document was declared and read, and
-        names why it yielded no figure.
+        no lane for the cell to speak about, so it stays blank rather than
+        naming the absence of a lane the row never used. A string means a
+        document was declared and read, and names why it yielded no figure.
         """
         key = f"{project or ''}\0{backend}"
         now = datetime.now(UTC)
@@ -2007,37 +1813,26 @@ class Ticker:
         self._lane_means[key] = (now, reading)
         return reading
 
-    def _lane_cells(self, event: Mapping[str, Any]) -> list[tuple[str, Any]]:
-        """The lane cell: the run's own rate, and the lane's mean beside it.
+    def _rate_cell(self, event: Mapping[str, Any]) -> tuple[str, Any]:
+        """The lane's mean generation rate with its unit, at a fixed width.
 
-        The run's own figure is rendered whether or not the lane answered: it is
-        what the run did on the lane, and withholding it because the lane's
-        document could not be read would cost the reader the row's own
-        measurement as well. Beside it stands the lane's mean, or the phrase
-        naming why no mean could be read — a rate alone is the reading this cell
-        exists to replace, so the two travel together or the second says why it
-        is missing. Each phrase names its cause rather than an absence that
-        reads as an outage.
-
-        A row naming no backend adds no cell at all: the document is declared
-        per backend, so such a row has no lane to read and keeps the exact shape
-        it rendered before. A backend that declares no lane document carries the
-        run's own rate and no lane clause, because there is no lane to read and
-        so no cause to name.
+        The cell has one width in every state, so the model and effort after it
+        hold their columns. A row naming no backend, or a backend that declares
+        no lane document, has no lane to read and leaves the cell blank. A
+        declared document that yields no figure prints the absence marker,
+        never a zero, because a lane that published nothing has not measured
+        nothing.
         """
         backend = str(event.get("backend") or "").strip()
         if not backend:
-            return []
+            return (" " * RATE, None)
         project = str(event.get("project") or "").strip() or None
-        rate = lane_rate_text(event.get("spend_generation_rate"))
         reading = self._lane_reading(project, backend)
         if reading is None:
-            return [(" " * GAP, None), (f"{rate:>{LANE_RATE}}", "dim")]
+            return (" " * RATE, None)
         if isinstance(reading, str):
-            text = f"{rate:>{LANE_RATE}} {reading:<{LANE_CLAUSE_WIDTH}}"
-            return [(" " * GAP, None), (text, "dim")]
-        figure = f"{LANE_LABEL} {lane_rate_text(reading):<{LANE_MEAN_WIDTH}}"
-        return [(" " * GAP, None), (f"{rate:>{LANE_RATE}} {figure}", None)]
+            return (f"{DIM_MARKER:>{LANE_RATE}} {RATE_UNIT}", "dim")
+        return (f"{lane_rate_text(reading):>{LANE_RATE}} {RATE_UNIT}", None)
 
     def hue(self, node: str) -> int:
         """The node's colour, claimed on first sighting and kept thereafter."""
@@ -2046,54 +1841,44 @@ class Ticker:
             self._hues[node] = palette[len(self._hues) % len(palette)]
         return self._hues[node]
 
-    def _node_cell(self, node: str, run_id: str) -> str:
-        """The node name fitted to its cell, marked when two rows read alike.
+    def _job_cell(self, job: str, stage: str, run_id: str, predecessor: str) -> str:
+        """The job name fitted to its cell, numbered once the job has two runs.
 
-        The name is cut from the middle so its end survives, because the node
+        The name is cut from the middle so its end survives, because the job
         column answers *which worker is this?* and the peers of a wave share a
-        long head — a right-hand cut renders every one of them as the same
-        string, which is a reader attributing a row to the wrong worker. The
-        hue cannot repair that: hues are handed out per name, so two names that
-        cut to one text are two entries and two colours reading as one name.
-
-        What is compared is the cell a reader sees, not the name behind it: two
-        names that differ where the cut falls land on one text, and two runs of
-        one node land on one text outright, so the run that claims a text is
-        what a later row is measured against. The second run to claim a text
-        marks both, and each then carries the tail of its own minted stamp
-        after the name, spaced so the suffix reads as an identifier rather than
-        as the name's own tail. The claim is remembered rather than applied
-        once, because the copy already written to a pane cannot be recalled — a
-        row for either run rendered after the collision carries its own suffix.
+        long head. What is compared is the cell a reader sees under its stage:
+        two runs of one job, and two names that cut to one text, land on one
+        key. Each run on a key takes the next number in the order the pane drew
+        it, and every row on that key carries its number once the key has two,
+        so the runs read apart and in order. A run launched from a queued
+        request (``predecessor``) is the request continuing and takes its
+        number.
         """
-        text = elide(node, NODE, keep_end=True)
-        claimed = self._node_claims.get(text)
-        if claimed is None:
-            self._node_claims[text] = run_id
-        elif claimed != run_id:
-            self._colliding_runs.update((claimed, run_id))
-        if run_id not in self._colliding_runs:
+        text = elide(job, NODE, keep_end=True)
+        numbered = self._job_runs.setdefault(f"{stage}\0{text}", {})
+        if run_id not in numbered:
+            if predecessor and predecessor in numbered:
+                numbered[run_id] = numbered[predecessor]
+            else:
+                numbered[run_id] = max(numbered.values(), default=0) + 1
+        if len(set(numbered.values())) < 2:
             return text
-        tail = minted_stamp(run_id)[-RUN_STAMP_TAIL:]
-        if not tail:
-            return text
-        return f"{elide(node, NODE - RUN_STAMP_TAIL - 1, keep_end=True)} {tail}"
+        number = str(numbered[run_id])
+        return f"{elide(job, NODE - len(number) - 1, keep_end=True)} {number}"
 
     def render(self, event: Mapping[str, Any], *, with_session: bool = False) -> str:
         """One transition as one line, at most ``width`` visible characters.
 
         ``with_session`` is accepted for call-site compatibility. Ownership is
-        no longer a row column: the follower already scopes delivery, while an
-        extra glyph between the time and model would make the lead's reading
-        order conditional.
+        no longer a row column: the follower already scopes delivery.
 
-        Everything before the reason is fixed-width, in the reading order set
-        by the pane: time, model, effort, role, node, transition, elapsed and
-        fleet counters. A row rendered wider than the pane can spare loses
-        trailing free text and nothing else. No separate attention mark is
-        printed: the destination state's colour and its clause carry the
-        reading order's whole answer, so the model cell follows the time
-        directly with only the two-column gutter between them.
+        The row reads in the pane's order: time, stage, job, transition,
+        elapsed and the fleet counters, which every row carries at fixed
+        widths, then the lane's rate, the model and the effort. Those three
+        are added while the pane has room for them, so a narrow pane drops the
+        effort first and never wraps. Nothing follows the effort: the row
+        carries no free text, and ends on its last cell with any trailing pad
+        removed.
         """
         node = str(event.get("node") or event.get("run_id") or "unknown")
         # The row names its own project, so the model column is sized from the
@@ -2105,11 +1890,7 @@ class Ticker:
         raw_to_state = str(event.get("to_state") or "unknown")
         typed_state = str(event.get("recovery_classification") or "")
         # The compatibility lifecycle state may group several stops as blocked.
-        # The row spells the cause-specific type when the producer supplied one,
-        # so the reader sees the recovery distinction. The full word is held
-        # beside the elided one because the clause's gate reads it: the state
-        # cell is ten columns wide and a longer state word is cut to fit it, so
-        # a gate keyed on the rendered form matches no state at all.
+        # The row spells the cause-specific type when the producer supplied one.
         entry_state = (
             typed_state
             if typed_state in {"held", "needs-help", "unwritten"}
@@ -2118,6 +1899,17 @@ class Ticker:
         to_state = _display_state(entry_state)
         run_id = str(event.get("run_id") or node)
         stream_event = bool(str(event.get("event") or "").strip())
+        # A run an admission pass launched from a queued request continues the
+        # story the pane told about that request, so it starts from the word the
+        # pane last showed for the request rather than from ``new``.
+        predecessor = str(event.get("admitted_from") or "")
+        if (
+            stream_event
+            and predecessor
+            and run_id not in self._reported
+            and predecessor in self._reported
+        ):
+            self._reported[run_id] = self._reported[predecessor]
         reported = self._reported.get(run_id) if stream_event else None
         # The first streamed row begins at `new`, even when its event names an
         # earlier internal state. Later rows use the word this painter showed.
@@ -2135,20 +1927,23 @@ class Ticker:
         if stream_event:
             self._reported[run_id] = to_state
 
-        role = _display_role(event.get("role"))
+        # A lift row carries no run and so no role: its stage is the lift
+        # itself, and its job cell names the budget group it lifts.
+        stage = (
+            LIFT_STAGE
+            if raw_to_state in LIFT_STATES
+            else _display_role(event.get("role"))
+        )
         model_cell, effort_cell = _model_and_effort(event)
+        job = _job_name(node, event.get("role"))
 
         cells: list[tuple[str, Any]] = [
             (f"{local_clock(event.get('observed_at')):<{CLOCK}}", "dim"),
             (" " * GAP, None),
-            (f"{elide(model_cell, model_width):<{model_width}}", "dim"),
-            (" " * GAP, None),
-            (f"{effort_cell:<{EFFORT}}", "dim"),
-            (" " * GAP, None),
-            (f"{role:<{ROLE}}", "dim"),
+            (f"{stage:<{ROLE}}", "dim"),
             (" " * GAP, None),
             (
-                f"{self._node_cell(node, run_id):<{NODE}}",
+                f"{self._job_cell(job, stage, run_id, predecessor):<{NODE}}",
                 self.hue(node),
             ),
             (" " * GAP, None),
@@ -2173,33 +1968,32 @@ class Ticker:
         cells.extend(self._spend_cells(event, to_state))
         cells.append((" " * GAP, None))
         cells.extend(self._stats(event))
-        grid_width = self._grid_width(model_width)
-        head = sum(len(text) for text, _ in cells)
-        # The lane cell is an addition the row makes only where the pane has the
-        # room for it. At its narrowest the grid holds the fixed columns and
-        # nothing else, and a cell appended past that edge would wrap the row,
-        # which costs a quarter of the visible history. The cell spends the
-        # clause's margin and never the pane's edge.
-        if head + GAP + LANE_WIDTH <= grid_width:
-            cells.extend(self._lane_cells(event))
-        head = sum(len(text) for text, _ in cells)
-
-        # The clause is the row's last column and nothing follows it, so it is
-        # bounded by the room the fixed columns leave after the separator that
-        # introduces it, and it is not right-padded into it: a pad would buy no
-        # alignment and only overrun the pane the row is read in. Every column
-        # ahead of the clause keeps its fixed width, so the fixed columns'
-        # offsets are unchanged; the row's visible width is its content, at most
-        # the grid width. The separator travels with the clause, so a row with
-        # nothing to explain ends on its last fixed glyph rather than on painted
-        # blanks. A width that leaves the reason nothing renders the fixed
-        # columns alone. The clause is one row and never wraps, so a bound on
-        # its length is a bound on the row.
-        room = max(grid_width - head - GAP, 0)
-        reason = self._reason(event, entry_state, room)
-        if reason:
-            cells.append((" " * GAP, None))
-            cells.append((reason, "dim"))
+        # The trailing cells, in reading order. Each is added only where the
+        # pane has the room for it, because a cell appended past the pane's edge
+        # would wrap the row, which costs a quarter of the visible history.
+        trailing: list[list[tuple[str, Any]]] = [
+            [(" " * GAP, None), self._rate_cell(event)],
+            [
+                (" " * GAP, None),
+                (f"{elide(model_cell, model_width):<{model_width}}", "dim"),
+            ],
+            [(" " * GAP, None), (f"{effort_cell:<{EFFORT}}", "dim")],
+        ]
+        room = self._grid_width() - sum(len(text) for text, _ in cells)
+        for group in trailing:
+            span = sum(len(text) for text, _ in group)
+            if span > room:
+                break
+            cells.extend(group)
+            room -= span
+        # The row ends on its last glyph: a blank trailing cell, such as the
+        # model of a request that never launched, is dropped and the last
+        # cell's pad is trimmed, so no row carries painted blanks at its end.
+        while cells and not cells[-1][0].strip():
+            cells.pop()
+        if cells:
+            text, style = cells[-1]
+            cells[-1] = (text.rstrip(), style)
         # A shadow will never merge, so the row says so about itself end to end
         # rather than spending a column on an identifier a reader cannot use.
         shadow = is_shadow(event)
@@ -2207,74 +2001,6 @@ class Ticker:
             self._paint(text, "dim" if shadow and style is not None else style)
             for text, style in cells
         )
-
-    def _reason(self, event: Mapping[str, Any], entry_state: str, room: int) -> str:
-        """The clause explaining an actionable state, bounded by the margin.
-
-        Only the state being entered may explain itself. Keying on the state
-        being left is how a promotion ends up still reporting the block it
-        recovered from — describing a problem that is already over.
-
-        ``entry_state`` is the internal classification, because several causes
-        share one pane word while their reasons and recovery actions differ.
-
-        The destination state's own word is derived here from the same input the
-        row composes it from, so the clause can avoid saying it a second time.
-        The remedy remains a structured event fact and is deliberately not
-        printed: the destination state's colour says whether the coordinator
-        must look, while this clause says what happened.
-        """
-        explained = CLAUSE_STATES | {
-            "waiting",
-            "wait-aged",
-            "held",
-            "needs-help",
-            "unwritten",
-        }
-        unprobed = _unprobed_wait(event)
-        # A wait no probe has run for is a fact about the wait alone, and the
-        # state word beside it can be any the classifier emitted — a live run
-        # with a broken declaration reads as ordinary working. So the marker is
-        # reachable from every state, and survives a clause with no room for it.
-        if entry_state not in explained and not unprobed:
-            return ""
-        if room < MIN_REASON:
-            return UNPROBED_MARKER if unprobed else ""
-        detail = event.get("detail")
-        if detail is None:
-            detail = event.get("reason")
-        marker = ""
-        if unprobed:
-            # This glyph is a measurement fact: it says the declared probe
-            # never ran, so the wait's condition cannot lift on its own.
-            marker = UNPROBED_MARKER
-        reserve = len(marker) + (1 if marker else 0)
-        room_for_clause = max(0, room - reserve)
-        # The label is dropped before the field cuts, not after: a clause whose
-        # first word repeats the state cell is stripped to its explanation, and
-        # if the cut came first the field could have already eaten everything
-        # past that word — leaving an empty reason where a shorter one belonged.
-        # Cutting last is what lets a clause longer than its field keep its head
-        # instead of collapsing to the ellipsis alone.
-        # Producer labels may name the internal state while the cell uses its
-        # pane word, so either label can repeat the cell's meaning.
-        state_word = _display_state(entry_state)
-        clause = _fit_clause(
-            self._strip_repeated_label(
-                _first_clause(detail), f"{state_word} {entry_state}"
-            ),
-            room_for_clause,
-        )
-        if not clause and entry_state == LAUNCH_FAULT_STATE:
-            # The blocked bucket is where a launch failure's number arrives, so
-            # the clause is the only place the row can say the stop is an
-            # infrastructure fault. The classifier's cause normally fills it;
-            # this names the fault itself for a record that carried the state
-            # without one, rather than rendering a number with no reason.
-            clause = single_clause(LAUNCH_FAULT_CLAUSE, limit=room_for_clause)
-        if marker and clause:
-            return f"{marker} {clause}"
-        return marker or clause
 
     def _spend_cells(
         self, event: Mapping[str, Any], to_state: str
@@ -2352,76 +2078,7 @@ class Ticker:
                     None if count else "dim",
                 )
             )
-        # The bound sits beside the counters the transition carries, because
-        # the counters say how much work is in flight and the bound says what
-        # limits it. A record written before the reading existed carries none,
-        # so the clause is absent rather than unknown.
-        cells += bound_cells(event.get("bounds"))
-        cells += self._rollup_cells(event)
         return cells
-
-    def _rollup_cells(self, event: Mapping[str, Any]) -> list[tuple[str, Any]]:
-        """The session's live nodes, named beside the counters that count them.
-
-        The counters say how many runs are in flight; the roll-up says which
-        nodes they are, so a reader sees all active work on the latest line
-        without the full stream. The population is chosen by the fleet
-        partition in ``reckon/crew/recovery_watch.py`` — the same session
-        narrowing and the same working-state membership the count beside it
-        uses — so the names and the working figure can never describe two
-        different fleets. Each name takes the ticker's existing middle cut, so
-        a long name keeps the end that tells it apart from its wave. A session
-        with no live node adds nothing: the working counter's zero already
-        reports that, and a token on every quiet row is the verbosity the pane
-        is avoiding.
-        """
-        nodes = [str(node) for node in (event.get("live_nodes") or []) if str(node)]
-        cells: list[tuple[str, Any]] = []
-        for node in nodes:
-            cells.append((" " * GAP, None))
-            cells.append((elide(node, ROLLUP_NODE, keep_end=True), self.hue(node)))
-        return cells
-
-    @staticmethod
-    def _reason_words(state_cell: str) -> set[str]:
-        """The words the state cell already says, so a clause repeats none."""
-        return set(re.findall(r"[A-Za-z0-9_-]+", state_cell))
-
-    def _strip_repeated_label(self, clause: str, state_cell: str) -> str:
-        """Drop a leading label whose words the state cell already carries.
-
-        A producer that prefixes its clause with the remedy — ``resume: ready
-        to resume: the worker process is gone`` — spends the shortest column on
-        the row saying what the state cell now says, and in the worst case says
-        it twice. The label is dropped when any of its words names the state or
-        its action, so what remains is the explanation; a leading word that
-        repeats the cell is dropped for the same reason.
-        """
-        if not clause:
-            return clause
-        own = self._reason_words(state_cell)
-        words = clause.split()
-        # A leading label — one or more words closed by a colon — spends the
-        # row's first column saying something the state cell already says, so
-        # the clause begins with the explanation instead. The search is bounded
-        # to the opening words so a colon later in the sentence, which is
-        # punctuation rather than a label, is left where it is; a single-word
-        # label is dropped whether or not it names the cell, because a clause
-        # that opens with ``word:`` is naming a category a reader already has.
-        for index, word in enumerate(words[:5]):
-            if not word.endswith(":"):
-                continue
-            label = set(re.findall(r"[A-Za-z0-9_-]+", " ".join(words[: index + 1])))
-            if label & own or index == 0:
-                words = words[index + 1 :]
-            break
-        while words:
-            head = re.findall(r"[A-Za-z0-9_-]+", words[0])
-            if head and head[0] in own:
-                words = words[1:]
-            else:
-                break
-        return " ".join(words).strip()
 
     def _paint(self, text: str, style: Any) -> str:
         if not self.color or style is None or not text:
