@@ -39,6 +39,10 @@ from typing import Any, NamedTuple
 
 from reckon._timestamps import parse_iso, parse_utc
 from reckon.crew import lane_document as _lane_document
+from reckon.crew.recovery_vocabulary import (
+    PLAN_REVIEW_NODE_PREFIX,
+    REVIEW_NODE_PREFIX,
+)
 
 CLOCK = 8
 # The job cell is 28 wide. A name wider than that is cut from the middle, so
@@ -57,8 +61,8 @@ NODE = 28
 # the reviewed head's digest. A review of ``jccm-circuits`` reads ``review``
 # then ``jccm-circuits``, and a second review of it reads ``jccm-circuits 2``.
 REVIEW_JOB_PREFIXES = (
-    ("plan-review-of-", "plan-"),
-    ("review-of-", ""),
+    (PLAN_REVIEW_NODE_PREFIX, "plan-"),
+    (REVIEW_NODE_PREFIX, ""),
     ("review-", ""),
 )
 REVIEWED_HEAD = re.compile(r"-[0-9a-f]{12}$")
@@ -1697,7 +1701,7 @@ def _job_name(node: str, role: Any) -> str:
     for prefix, replacement in REVIEW_JOB_PREFIXES:
         if node.startswith(prefix):
             rest = node[len(prefix) :]
-            if prefix == "review-of-":
+            if prefix == REVIEW_NODE_PREFIX:
                 rest = REVIEWED_HEAD.sub("", rest)
             return f"{replacement}{rest}" if rest else node
     return node

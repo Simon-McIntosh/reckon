@@ -212,10 +212,10 @@ def test_the_transition_prints_no_action_and_no_attention_mark(grid, classificat
         re.findall(r"[A-Za-z0-9_-]+", line[TRANSITION_COLUMN:ELAPSED_COLUMN])
     )
     assert action not in transition_words, line
-    # No attention column can reach here, whatever the destination: an attention
-    # mark tried by an earlier revision was dropped at the lead's direction. The
-    # stage cell follows the time's two-column gutter directly, so nothing can
-    # occupy a reserved column between them.
+    # No attention column can reach here, whatever the destination: the row
+    # draws no column between the clock and the stage. The stage cell follows
+    # the time's two-column gutter directly, so nothing can occupy a reserved
+    # column between them.
     assert "!" not in line, line
     gutter = line[ticker_module.CLOCK : ticker_module.CLOCK + ticker_module.GAP]
     assert gutter == " " * ticker_module.GAP, line
