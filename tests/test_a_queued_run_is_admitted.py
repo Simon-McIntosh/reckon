@@ -9,6 +9,7 @@ drainers racing launch each run once, and a run the reaper later marks
 
 from __future__ import annotations
 
+import importlib
 import json
 import os
 import subprocess
@@ -19,6 +20,7 @@ from pathlib import Path
 import pytest
 
 from reckon.crew import dispatch_sessions, queue_admission, runs
+from reckon.crew.dispatch_admission import LaneHeld, LanePaused
 from reckon.crew.fleet_supervisor import declared_services, services_config_path
 
 PROJECT = "proj"
@@ -266,6 +268,155 @@ def test_a_failed_spawn_leaves_the_request_queued(
     assert pointer["phase"] == "queued"
     assert "the worker launch could not start" in pointer["failure"]
     assert pointer["failure_at"]
+
+
+@pytest.mark.parametrize(
+    ("error_type", "gate_state", "local"),
+    [
+        (LanePaused, "paused", True),
+        (LanePaused, "unreadable", True),
+        (LaneHeld, "full", False),
+        (ValueError, "unexpected value", True),
+        (KeyError, "missing key", True),
+    ],
+)
+def test_a_refused_launch_keeps_its_queued_request(
+    admit_repo: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    error_type: type[Exception],
+    gate_state: str,
+    local: bool,
+) -> None:
+    _, resolve = _config_for()
+    request = _queue(admit_repo, node_id="refused", run_id="r-refused")
+    request["local"] = local
+    runs.queue_dispatch(request)
+
+    def refuse(**kwargs):
+        if issubclass(error_type, LanePaused):
+            raise error_type({"state": gate_state, "detail": gate_state})
+        raise error_type(gate_state)
+
+    monkeypatch.setattr(
+        importlib.import_module("reckon.crew.dispatch"), "dispatch", refuse
+    )
+
+    result = queue_admission.admit_once(config_for=resolve)
+
+    pointer = runs.read_pointer("r-refused")
+    assert pointer["phase"] == "queued"
+    assert gate_state in pointer["failure"]
+    assert pointer["failure_at"]
+    assert "r-refused" in result["held"] + result["failed"]
+    if not issubclass(error_type, LanePaused):
+        assert gate_state in result["failure_detail"]["r-refused"]
+
+
+def test_an_annotation_write_error_restores_the_request(
+    admit_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _, resolve = _config_for()
+    runs.queue_dispatch(_queue(admit_repo, node_id="write-failed", run_id="r-write"))
+
+    def refuse(**kwargs):
+        raise ValueError("launch refused")
+
+    def fail_write(*args, **kwargs):
+        raise OSError("annotation storage unavailable")
+
+    monkeypatch.setattr(
+        importlib.import_module("reckon.crew.dispatch"), "dispatch", refuse
+    )
+    monkeypatch.setattr(runs, "_mutate_pointer", fail_write)
+
+    result = queue_admission.admit_once(config_for=resolve)
+
+    pointer = runs.read_pointer("r-write")
+    assert pointer["phase"] == "queued"
+    assert "launch refused" in pointer["failure"]
+    assert result["failed"] == ["r-write"]
+
+
+def test_a_restore_write_error_is_reported_without_ending_the_pass(
+    admit_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _, resolve = _config_for()
+    runs.queue_dispatch(_queue(admit_repo, node_id="write-failed", run_id="r-write"))
+
+    def refuse(**kwargs):
+        raise ValueError("launch refused")
+
+    def fail_write(*args, **kwargs):
+        raise OSError("storage unavailable")
+
+    monkeypatch.setattr(
+        importlib.import_module("reckon.crew.dispatch"), "dispatch", refuse
+    )
+    monkeypatch.setattr(runs, "_mutate_pointer", fail_write)
+    monkeypatch.setattr(queue_admission, "_restore_queued", fail_write)
+
+    result = queue_admission.admit_once(config_for=resolve)
+
+    assert result["failed"] == ["r-write"]
+    assert "storage unavailable" in result["restore_failure_detail"]["r-write"]
+
+
+@pytest.mark.parametrize("returns_queued", [False, True])
+def test_a_requeued_hold_keeps_the_newer_pointer(
+    admit_repo: Path, monkeypatch: pytest.MonkeyPatch, returns_queued: bool
+) -> None:
+    _, resolve = _config_for()
+    runs.queue_dispatch(_queue(admit_repo, node_id="held", run_id="r-held"))
+
+    def requeue(**kwargs):
+        pointer = _queue(admit_repo, node_id="held", run_id="r-requeued")
+        pointer["hold"] = {"held": True, "reason": "newer allowance"}
+        runs.queue_dispatch(pointer)
+        if returns_queued:
+            return runs.read_pointer("r-requeued")
+        held = LaneHeld({"state": "full", "detail": "newer allowance"})
+        held.queued = {"run_id": "r-requeued", "position": 1}
+        raise held
+
+    monkeypatch.setattr(
+        importlib.import_module("reckon.crew.dispatch"), "dispatch", requeue
+    )
+
+    result = queue_admission.admit_once(config_for=resolve)
+
+    pointer = runs.read_pointer("r-requeued")
+    assert pointer["phase"] == "queued"
+    assert pointer["hold"]["reason"] == "newer allowance"
+    failure = (
+        "did not return a launched record" if returns_queued else "newer allowance"
+    )
+    assert failure in pointer["failure"]
+    assert pointer["failure_at"]
+    assert not runs.pointer_path("r-held").exists()
+    assert "r-requeued" in result["held"] + result["failed"]
+    assert result["superseded"]["r-requeued"] == "r-held"
+    assert runs.pointer_path((result["held"] + result["failed"])[0]).exists()
+
+
+@pytest.mark.parametrize("returned", [None, {"run_id": "r-held", "phase": "queued"}])
+def test_a_dispatch_without_a_launch_keeps_the_request(
+    admit_repo: Path, monkeypatch: pytest.MonkeyPatch, returned: dict | None
+) -> None:
+    _, resolve = _config_for()
+    runs.queue_dispatch(_queue(admit_repo, node_id="held", run_id="r-held"))
+    monkeypatch.setattr(
+        importlib.import_module("reckon.crew.dispatch"),
+        "dispatch",
+        lambda **kwargs: returned,
+    )
+
+    result = queue_admission.admit_once(config_for=resolve)
+
+    pointer = runs.read_pointer("r-held")
+    assert pointer["phase"] == "queued"
+    assert "did not return a launched record" in pointer["failure"]
+    assert pointer["failure_at"]
+    assert result["failed"] == ["r-held"]
 
 
 def test_a_run_marked_launch_failed_is_requeued(
