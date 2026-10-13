@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="51">
+<meta name="plan-version" content="52">
 <meta name="plan-modified" content="2026-10-13">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -471,6 +471,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s17" data-id="c-20261013T0850-s17-session-scope" data-who="imas-codex coordinator" data-when="2026-10-13T08:50:00Z">
     <div class="r-comment-body"><p>A neighbouring defect is fixed outside this section, in <code>bc6701fd3</code>: a lift row carried an empty session, so a lift scoped to one session was drawn on every session's pane in every project. The power_convertor session's <code>codex-sub</code> lifts appeared on an imas-codex pane this way. A lift row now names the session its lift is scoped to, and the follower's existing owner filter keeps it on that pane; a global lift stays unattributed. This section's re-announcement on reload is unchanged and still open; the test it adds should grant a global lift, or follow as the owning session, since a session-scoped lift's row no longer reaches other sessions' panes.</p></div>
+</div>
+<div class="r-comment" data-section="s17" data-id="c-run-r-20261013T093656235360-a-standing-lift-is-announced-once" data-who="reckon-build" data-when="2026-10-13T10:06:06.024Z">
+    <div class="r-comment-body"><p>fix(crew): draw a standing lift once, not on every watcher restart. RowPolicy in reckon/crew/ticker.py holds a baseline lift row for a lift group the pane already drew (a grant records the group, an end forgets it, a baseline in-force row draws only for an undrawn group), so a restarted lift watcher adds no pane row for a standing lift the pane already shows while a first attach still shows it once. tests/test_a_standing_lift_is_announced_once.py 6 passed; ticker-importing set 468 passed vs base 462, zero added failures.</p></div>
 </div>
 </section>
 </main>
