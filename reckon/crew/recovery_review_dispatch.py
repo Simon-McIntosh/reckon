@@ -27,6 +27,7 @@ from reckon.crew.reports import (
     parse_manifest,
 )
 from reckon.crew.runs import (
+    _list_live_records,
     _mutate_pointer,
     _utc_now,
     list_live,
@@ -1470,6 +1471,26 @@ def dispatch_review_for_run(
     )
 
 
+def _queued_pointer_names_directory(project: str, directory: Path) -> bool:
+    """Whether a queued pointer names the brief inside this composed directory.
+
+    The decision is read from the pointer, not from the dispatch report: a held
+    compose that queues the request leaves a pointer whose node names the brief
+    this directory holds, and that pointer launches from the brief once the lane
+    admits it. A report whose ``queued`` key is dropped, or a caller that reads
+    the report without that key, then loses nothing — the brief is kept for the
+    pointer that will read it, and removed only when no queued pointer names it.
+    """
+    if not project:
+        return False
+    target = Path(directory)
+    for pointer in _list_live_records(project=project, phase="queued"):
+        brief = str((pointer.get("node") or {}).get("brief") or "").strip()
+        if brief and Path(brief).parent == target:
+            return True
+    return False
+
+
 def _discard_composed_plan_review(
     fields: Mapping[str, Any], report: Mapping[str, Any]
 ) -> dict[str, Any]:
@@ -1485,10 +1506,17 @@ def _discard_composed_plan_review(
     ``discard_error`` with the path and the error, so a caller can see what was
     left behind. A hold that queued the request keeps the directory: the queued
     pointer names the brief inside it and reads it when the lane admits the run.
+    That keep is judged from the pointer — see
+    :func:`_queued_pointer_names_directory` — so a report that dropped the
+    ``queued`` key does not remove a brief a queued launch will read. A report
+    that still carries the ``queued`` key keeps the directory as well, so a
+    caller that has not yet been moved off the report shape loses nothing.
     """
     if not fields.get("report_directory_created") or report.get("queued"):
         return dict(report)
     directory = Path(str(fields.get("write_path") or ""))
+    if _queued_pointer_names_directory(str(fields.get("project") or ""), directory):
+        return dict(report)
     try:
         shutil.rmtree(directory)
     except OSError as exc:
