@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-import reckon.resources as resources
+from reckon import resources
 from reckon.resources import iter_resources, resource_scan_scope
 
 PROJECT = "sample"
