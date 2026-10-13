@@ -1,15 +1,14 @@
 """A queued plan review keeps the brief its queued pointer will read.
 
 A plan-review attempt composes its run directory — the brief, the plan snapshot
-and the sidecar — before the lane admits it. When the lane holds the session
-the request is queued: a pointer is written naming the brief inside that
-directory, and the pointer launches from the brief once a slot frees. The
-dispatch report that comes back from that hold does not always carry the
-``queued`` key, so a discard that removes the directory whenever the report
-lacks it takes the brief out from under a request that will later read it.
-Here the brief is kept for the request the pointer names, judged from the
-pointer itself rather than the shape of the report, and the admitted launch
-reads the brief the pointer kept.
+and the sidecar — before the lane admits it. When the lane holds the session the
+request is queued: a pointer is written naming the brief inside that directory,
+and the pointer launches from the brief once a slot frees. The dispatch report
+that comes back from that hold does not always carry the ``queued`` key, so a
+discard that removes the directory whenever the report lacks it takes the brief
+out from under a request that will later read it. Here the brief is kept for the
+request the pointer names, judged from the pointer itself rather than the shape
+of the report, and the admitted launch reads the brief the pointer kept.
 """
 
 from __future__ import annotations
@@ -21,7 +20,11 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import plan_review, recovery, runs
+from reckon.crew import recovery, runs
+
+# Written into the brief at compose time, so the launch proves it: it read the
+# brief the compose kept rather than any brief composed later.
+LAUNCH_MARKER = "marker-line-the-admitted-launch-must-read\n"
 
 
 def _config() -> dict:
@@ -87,12 +90,16 @@ def test_a_queued_pointer_keeps_the_brief_the_admitted_launch_reads(
     dispatch = importlib.import_module("reckon.crew.dispatch")
     admission = importlib.import_module("reckon.crew.queue_admission")
     subject = _subject()
-    directory = plan_review.review_report_directory(
-        "sample", "fixture", subject["run_id"]
-    )
+    composed: dict[str, str] = {}
 
     def hold(**kwargs):
         node = kwargs["node"]
+        # The path the compose reported, and a literal marker written into the
+        # brief at compose time. The pointer stores the path; the launch reads
+        # the bytes, and the marker proves which brief it read.
+        composed["brief"] = str(node.brief)
+        with Path(node.brief).open("a", encoding="utf-8") as handle:
+            handle.write(LAUNCH_MARKER)
         runs.queue_dispatch(
             {
                 "run_id": "queued-review",
@@ -121,14 +128,17 @@ def test_a_queued_pointer_keeps_the_brief_the_admitted_launch_reads(
     assert result["dispatched"] is False
     assert result["error"] == "lane-paused"
     assert "queued" not in result
-    assert (directory / "brief.md").is_file()
+
+    # Independent of the test's own directory: the brief path recorded on disk
+    # by the queued pointer equals the path the compose reported, and the file
+    # it names survives the discard a report without the ``queued`` key drives.
+    recorded = runs.read_pointer("queued-review")
+    recorded_brief = str(recorded["node"]["brief"])
+    assert recorded_brief == composed["brief"]
+    assert Path(recorded_brief).is_file()
 
     queued = runs.list_live(project="sample", phase="queued")
-    assert len(queued) == 1
-    pointer = queued[0]
-    brief_path = Path(pointer["node"]["brief"])
-    assert brief_path == directory / "brief.md"
-    assert brief_path.is_file()
+    assert [pointer["run_id"] for pointer in queued] == ["queued-review"]
 
     read: dict[str, str] = {}
 
@@ -138,9 +148,8 @@ def test_a_queued_pointer_keeps_the_brief_the_admitted_launch_reads(
 
     monkeypatch.setattr(dispatch, "dispatch", launcher)
     launched = admission._launch_queued(
-        pointer, launcher=None, config_for=lambda _pointer: _config()
+        recorded, launcher=None, config_for=lambda _pointer: _config()
     )
 
     assert launched["run_id"] == "launched-review"
-    assert read["brief"] == (directory / "brief.md").read_text(encoding="utf-8")
-    assert read["brief"].strip()
+    assert LAUNCH_MARKER.strip() in read["brief"]
