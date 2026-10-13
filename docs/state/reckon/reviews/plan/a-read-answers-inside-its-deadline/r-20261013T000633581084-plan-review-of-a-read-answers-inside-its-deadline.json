@@ -1,0 +1,55 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-13T00:16:06.990Z",
+  "dispatched_at": "2026-10-13T00:07:07Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html#s8",
+      "id": "single_goal-1",
+      "reason": "a node that lands the within-read one-walk fix but not the across-reads memo (or the reverse) is half-delivered, yet the gate's single declared negative control exercises only the memo clause, so the node cannot be closed on one verdict and its gate proves neither half.",
+      "text": "\u00a78's deliverable is explicitly \"Two changes in `reckon/resources.py`\": one walk per read. the scan runs once per read with the widest flags ... and a per-file identification memo reused across reads, and the done-when measures the two independently (walks once; two warm reads identify each file once in total, with a control that drops only the memo)",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html#s8",
+      "id": "reasoning-1",
+      "reason": "every caller reached inside a `resource_scan_scope` passes `ignore_invalid=True` (reckon/serve.py:1868, :2313; `resolve_resource` passes True at reckon/resources.py:681), and the strict-`ignore_invalid=False` callers (`reckon/doccheck.py:426`) run unscoped, so the read paths this section targets are unaffected and the loose wording need not change the plan.",
+      "text": "the deliverable says \"each caller's `include_archived`, `include_legacy` and `ignore_invalid` view is filtered from that one result\", but `ignore_invalid` is not a filter: `_scan_resources` either raises `ResourceCollision` (`ignore_invalid=False`) or silently drops the file (`ignore_invalid=True`) at reckon/resources.py:503-506, so a single widest-flags scan cannot reproduce a strict caller's raise, and the plan asserts a filterability the mechanism does not have",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "a869e3b259c58f03c58e864aab00bc1333351eaab6a23282d2a37270129802a2",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 32,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261013T000633581084-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "53649eaf192d19408925918334d5c1e8c2f4c795",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 \u00a78 cites by name; `_scan_resources` (reckon/resources.py:489), `iter_resources` (:459), `_SCAN_SCOPE` (:433), `resource_map` (:517) and `resolve_resource` (:650) all resolve, and the section cites no line number that could drift.",
+    "done_when": "pass \u2014 both measures are falsifiable against the current code (a warm roadmap enters `_scan_resources` four times, reckoned not once) and the section declares a negative control that drops the per-file identification memo, which fails the across-reads identification case.",
+    "evidence_paths": "pass \u2014 the negative-control log and walk/identification counts are placed \"under the run directory\", and the write paths (`reckon/resources.py`, an optional public name in `reckon/metadata_index.py`, `tests/test_a_warm_read_scans_the_tree_once.py`) are durable repository paths, not a scratchpad.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach a symbol or file; the new test path names the mechanism.",
+    "reasoning": "a finding \u2014 the deliverable enumerates `ignore_invalid` among the per-caller views \"filtered from that one result\", but `ignore_invalid` selects raise-versus-skip on `ResourceCollision`, not a filter over a superset.",
+    "single_goal": "a finding \u2014 \u00a78 declares \"Two changes in `reckon/resources.py`\" (a within-read one-walk dedup, and an across-reads identification memo) as one node, each independently measured.",
+    "wiring": "pass \u2014 \u00a78's relationships are carried by the open followup f-araiid-006 (data-status=\"open\", data-recommends-skill=\"/reckon-build a-read-answers-inside-its-deadline \u00a78\") and its \u00a73 (\u00a73 directory identity), \u00a76 (re-measure) and \u00a77 (residual-time finding) references all resolve; no dependency it needs is missing and no relationship points at the wrong node."
+  },
+  "section_digests": {
+    "_document": "f3f688213f1ad65909f6593aadbcfb887978ed1ec2508d03042b9740d928eb0f",
+    "s1": "71942607f4df4eca011a41734257645ef2adce9664dd45b628d96b066c34e813",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s3": "cbe34f619f869b3c3346239e8823a63a8de98dd92b7fb8ed5cfa2b8a4ab26a39",
+    "s4": "d2ec58f5ac4e72c5e8bcde1f156bdd4c85bde3848b4e3b6131e6112bb6395d49",
+    "s5": "b14c0e28c2c28544a08d4b3d7ab621f48464471360d202c7a4bd1a1ec776f557",
+    "s6": "00db597c53dfd6e3d857f89ee748a8c6ecfe51576b2b66e64772393805c59b52",
+    "s7": "503099f7e945f5038a64b142ffa49b88c02dbbd0f0a5ad5882f6da8b22d25883",
+    "s8": "e874570d81c406e2188701ebbc6ba0bf5cf72c6c2c54bd58db47be66df5dd3a8",
+    "s9": "a356ecd44b8ee634f6b45b64ec3785e3af7ffb255d4d3adf46574d3a10afc7b3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T00:21:48.985201+00:00"
+}
