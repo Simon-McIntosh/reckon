@@ -1,0 +1,45 @@
+<section id="a-queued-repair-keeps-its-waiver" class="evidence-fragment">
+  <h2>§17 — A repair has one path: it resumes the reviewed run, or it is refused</h2>
+  <p>
+    The section was written on the premise that a repair the local lane holds is
+    recorded as a queued request and relaunched by the admission pass, so the
+    request must carry every launch input that pass rebuilds — its unreconciled
+    waiver and its reviewed-head base — in <code>dispatch_options</code>. Reading
+    the reflex showed the premise did not hold. <code>dispatch_repair_for_run</code>
+    reached its composed <code>dispatch()</code> call only when
+    <code>_repair_launch_refusal</code> was truthy at the resume/dispatch split,
+    and the <em>same</em> predicate re-evaluated immediately before the launch
+    then returned <code>refused</code>: an unpromoted reviewed run always took
+    the in-place resume, and any other was refused before composing a node. The
+    composed <code>dispatch()</code> call was unreachable, so no repair was ever
+    launched or queued and there was no queued request for a waiver to ride.
+  </p>
+  <p>
+    The re-planned section removes the dead block and gives a repair one path.
+    <code>_repair_launch_refusal</code> now reports a gone pointer as a refusal
+    on the real path: <code>runs.read_pointer</code> raises <code>CrewError</code>
+    for a missing, invalid or non-object pointer, and a single helper turns that
+    raise into <code>None</code> for the reads that only degrade on absence, so
+    the gone-pointer case is a returned refusal rather than an exception escaping
+    the reflex. The composed-dispatch block, its <code>TaskNode</code> and
+    <code>importlib</code>/<code>dispatch_module</code> launch, are removed; the
+    imports and helpers only that block used are removed; the second refusal
+    read's <code>refused</code> return is kept, and its record is written only
+    while the run still has a live pointer, because the write re-reads the
+    pointer under its lock.
+  </p>
+  <p id="a-queued-repair-keeps-its-waiver-measure">
+    Measure: the focused gate
+    <code>python -m pytest -q tests/test_a_repair_has_one_path.py tests/test_reflex_dispatches_one_repair.py</code>
+    reports <strong>21 passed</strong> at the head revision. The population of
+    test files that import <code>reckon/crew/recovery_repair_dispatch.py</code>,
+    built from the head's <code>tests/</code> with grep, reports <strong>123
+    passed</strong>; the same set (minus the new file, which exists only at head)
+    reports <strong>121 passed</strong> at the base — no added failures. The
+    negative control restores the unguarded read (<code>fresh =
+    read_pointer(run_id)</code>) at the single refusal-read site, and both the new
+    file's and the reflex file's gone-pointer cases then fail with
+    <code>CrewError: no live run '…'</code>, so the real-path refusal is what the
+    pass rests on.
+  </p>
+</section>
