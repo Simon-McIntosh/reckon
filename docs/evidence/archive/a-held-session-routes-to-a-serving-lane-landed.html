@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-held-session-routes-to-a-serving-lane-landed">
+  <meta name="plan-title" content="A Held Session Routes To A Serving Lane — landed record">
+  <meta name="plan-summary" content="Closure synthesis for A Held Session Routes To A Serving Lane: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="a-held-session-routes-to-a-serving-lane">
+  <meta name="plan-verdict" content="qualified">
+  <title>A Held Session Routes To A Serving Lane — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A Held Session Routes To A Serving Lane — landed record</h1>
+  <p>Closure synthesis for A Held Session Routes To A Serving Lane: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s5">
+    <h2>§5 — census: how long held sessions waited while another lane served</h2>
+    <p>Run <code>r-20261013T093800967573-hsrs-held-session-wait-census</code> (investigation, local lane, resumed once to add the lane join) read every dispatch the router held for its session's allowance, from the live pointer store. It joined each held row to the nearest picker-hold record and read every other lane's state from that record's rendered payload. The report, scripts and data are in <code>~/.config/reckon/crew/reports/reckon/study/a-held-session-routes-to-a-serving-lane/hsrs-held-session-wait-census/</code> (<code>report.html</code>, <code>census.py</code>, <code>make_report.py</code>, <code>census.json</code>).</p><table><thead><tr><th>Measured at 2026-10-13T21:06Z</th><th>Value</th></tr></thead><tbody><tr><td>held dispatches in the live pointer store</td><td>24 (9 still queued, 15 held then launched), all exact or guided</td></tr><tr><td>wait accrued</td><td>28,091 s (468 min)</td></tr><tr><td>by role and level</td><td>review/exact 11 (14,192 s), implement/guided 9 (11,939 s), implement/exact 3 (1,582 s), investigate/guided 1 (379 s)</td></tr><tr><td>rows joined to a picker-hold record inside their own wait</td><td>3; another lane had room for 1</td></tr><tr><td>rows with no hold record in their wait window</td><td>21, named per row</td></tr><tr><td>positive control</td><td>the jccm-lines hold of 2026-10-13T08:16:20Z is found (route, decision source jev)</td></tr><tr><td>negative-control population</td><td>835 routes the router did not hold, excluded</td></tr><tr><td>pick probe at one instant</td><td>the thin arm (goal and done-when only) answered refuse; the full-input arm is not runnable today, because <code>crew pick</code> takes no write-path, negative-control or estimate fields (§3's subject)</td></tr></tbody></table><p>Claims review <code>r-20261013T213950930900-review-of-hsrs-held-session-wait-census-4f8e79719375</code> reproduced the positive control. It found the summary agrees with the tables. Rerun 38 minutes later, the headline counts read 16 held and 2 joined: twelve runs had left the live pointer store in between. The review says the facts that remained reproduce exactly.</p><p>So the census is a dated snapshot of a population that drains, not a fourteen-day count. Two further limits:</p><ul><li>Most held runs have no hold record, so the room share rests on three rows, too few to size §2's re-ask by itself.</li><li>Run records carry neither <code>queued_at</code> nor <code>admitted_at</code> once promoted, so a held-then-launched wait dies with its pointer.</li></ul>
+  </section>
+
+</main>
+</body>
+</html>

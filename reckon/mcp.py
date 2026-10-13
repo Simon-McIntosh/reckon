@@ -29,7 +29,9 @@ from __future__ import annotations
 
 import json
 import logging
-from collections.abc import Mapping
+import subprocess
+import sys
+from collections.abc import Callable, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 from types import UnionType
@@ -45,6 +47,7 @@ except ImportError:
     FastMCP = None  # type: ignore[assignment,misc]
 
 import reckon.crew.resumption as resumption_module
+from reckon.crew.follower_registration import follower_code_stamp
 from reckon import (
     _plan_html,
 )
@@ -236,6 +239,139 @@ from reckon.mcp_edit_plan import (
 )
 
 _LOGGER = logging.getLogger("reckon.mcp")
+
+# ── Stale-code guard ───────────────────────────────────────────────────────
+#
+# The server imports its classes once and keeps them for the life of the
+# process. A checkout that later moves past those imports — a schema or a
+# config shape that changed after the server started — is invisible to the
+# loaded classes, so a call that reads the new config from disk validates it
+# against the old classes and fails with a schema error that names nothing
+# about the restart owed. The guard answers on failure rather than before the
+# call: a call that returns normally is returned untouched and computes no
+# stamp, because most commits move the code without breaking a running image
+# and refusing them all would stop every session's server many times an hour.
+# Only when a call raises or returns an error result does the tool compare the
+# checkout's code stamp, the one the producers and followers already compute,
+# against the stamp this image started with. When it has moved and the new code
+# imports, the original failure is replaced by one refusal naming the server's
+# start time, the change and the reconnect remedy, carrying the original error
+# text. When the stamp has not moved, or the checkout does not import, the
+# original failure is returned unchanged — a tree mid-merge must never take a
+# running server down.
+_SERVER_STARTED_AT = datetime.now(UTC)
+_SERVER_CODE_STAMP = follower_code_stamp()
+
+_RECONNECT_REMEDY = "reconnect the reckon MCP server: /mcp → reckon → reconnect"
+
+# A fresh interpreter proves the checkout still loads before the server tells
+# its caller to reconnect onto it, the way a follower proves a reload safe
+# before it replaces its image. The running process is the wrong place to
+# discover a broken module: the check must not import the new code into the
+# image it would be judging.
+_CODE_IMPORT_PROBE = (
+    "import pathlib, sys\n"
+    "root = sys.argv[1]\n"
+    "sys.path.insert(0, root)\n"
+    "package = pathlib.Path(root, 'reckon')\n"
+    "for path in sorted(package.rglob('*.py')):\n"
+    "    compile(path.read_bytes(), str(path), 'exec')\n"
+    "import reckon.mcp\n"
+)
+_CODE_IMPORT_PROBE_TIMEOUT = 30
+
+
+def _import_root() -> Path:
+    """The sys.path root that supplied this imported package."""
+    return Path(__file__).resolve().parent.parent
+
+
+def _changed_checkout_imports() -> bool:
+    """Whether the checkout's current code loads in a throwaway interpreter."""
+    try:
+        completed = subprocess.run(
+            [sys.executable, "-c", _CODE_IMPORT_PROBE, str(_import_root())],
+            capture_output=True,
+            text=True,
+            timeout=_CODE_IMPORT_PROBE_TIMEOUT,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return completed.returncode == 0
+
+
+def _error_text(result: Any) -> str | None:
+    """The original error text of a failed tool result, when it carries one."""
+    if not isinstance(result, Mapping) or result.get("ok") is not False:
+        return None
+    detail = result.get("detail") or result.get("error")
+    return str(detail)
+
+
+def _stale_code_response(original_error: str | None) -> dict[str, Any] | None:
+    """The reconnect refusal when the imported code no longer matches the checkout.
+
+    Called only once a call has failed. ``None`` means the failure is not the
+    stale image's: either the code is the image this process started with, or
+    the checkout does not import and the original failure stands.
+    """
+    current = follower_code_stamp()
+    if current == _SERVER_CODE_STAMP:
+        return None
+    if not _changed_checkout_imports():
+        return None
+    started = _SERVER_STARTED_AT.isoformat()
+    response: dict[str, Any] = {
+        "ok": False,
+        "error": "stale_server_code",
+        "detail": (
+            f"this reckon MCP server started {started}; the code it imported has "
+            f"changed on disk since then (code stamp {_SERVER_CODE_STAMP[:12]} → "
+            f"{current[:12]}), so it no longer matches the checkout. This call "
+            f"failed against the stale image; {_RECONNECT_REMEDY}."
+        ),
+        "server_started_at": started,
+        "code_stamp_at_start": _SERVER_CODE_STAMP,
+        "code_stamp_now": current,
+        "reconnect": _RECONNECT_REMEDY,
+    }
+    if original_error is not None:
+        response["original_error"] = original_error
+    return response
+
+
+def _refuse_when_stale(tool: Callable[..., Any]) -> Callable[..., Any]:
+    """Wrap one registered tool so a failed call on a moved checkout names the remedy.
+
+    A call that returns normally is returned untouched, so a commit that moves
+    the code without breaking the running image costs nothing. The stamp is
+    computed only on failure.
+    """
+    signature = getattr(tool, "__signature__", None)
+
+    async def guarded(**kwargs: Any) -> Any:
+        try:
+            result = await tool(**kwargs)
+        except Exception as exc:
+            refusal = _stale_code_response(f"{type(exc).__name__}: {exc}")
+            if refusal is not None:
+                return refusal
+            raise
+        failure_text = _error_text(result)
+        if failure_text is not None:
+            refusal = _stale_code_response(failure_text)
+            if refusal is not None:
+                return refusal
+        return result
+
+    guarded.__name__ = tool.__name__
+    guarded.__qualname__ = tool.__qualname__
+    guarded.__doc__ = tool.__doc__
+    guarded.__module__ = tool.__module__
+    guarded.__signature__ = signature  # type: ignore[attr-defined]
+    return guarded
+
 
 # ── Server instance ────────────────────────────────────────────────────────
 
@@ -2811,29 +2947,39 @@ def _reject_unknown_tool_arguments(tool_name: str) -> None:
 
 if mcp is not None:
     read_plan_tool = mcp.tool(name="read_plan")(
-        _deadline_tool(
-            _read_plan_tool,
-            kind="read",
-            path_hint=_plan_path_hint,
-            response_budget=True,
+        _refuse_when_stale(
+            _deadline_tool(
+                _read_plan_tool,
+                kind="read",
+                path_hint=_plan_path_hint,
+                response_budget=True,
+            )
         )
     )
     edit_plan_tool = mcp.tool(name="edit_plan")(
-        _deadline_tool(_edit_plan_tool, kind="write", path_hint=_plan_path_hint)
+        _refuse_when_stale(
+            _deadline_tool(_edit_plan_tool, kind="write", path_hint=_plan_path_hint)
+        )
     )
     roadmap_tool = mcp.tool(name="roadmap")(
-        _deadline_tool(_roadmap_tool, kind="read", response_budget=True)
+        _refuse_when_stale(
+            _deadline_tool(_roadmap_tool, kind="read", response_budget=True)
+        )
     )
     audit_tool = mcp.tool(name="audit")(
-        _deadline_tool(
-            _audit_tool,
-            kind="read",
-            path_hint=_document_path_hint,
-            response_budget=True,
+        _refuse_when_stale(
+            _deadline_tool(
+                _audit_tool,
+                kind="read",
+                path_hint=_document_path_hint,
+                response_budget=True,
+            )
         )
     )
     crew_tool = mcp.tool(name="crew")(
-        _deadline_tool(_crew, kind=_crew_call_kind, response_budget=True)
+        _refuse_when_stale(
+            _deadline_tool(_crew, kind=_crew_call_kind, response_budget=True)
+        )
     )
     for tool_name in ("read_plan", "edit_plan", "roadmap", "audit", "crew"):
         _reject_unknown_tool_arguments(tool_name)

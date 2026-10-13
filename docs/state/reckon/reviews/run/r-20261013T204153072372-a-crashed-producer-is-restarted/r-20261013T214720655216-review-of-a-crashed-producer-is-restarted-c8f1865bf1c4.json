@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch_watch.py:342 (_ensure_watch_producer calls _start_watch_producer)",
+    "reckon/crew/dispatch_watch.py:243 (_start_watch_producer builds argv via _watch_producer_argv)",
+    "reckon/crew/dispatch.py:1426 (dispatch calls _ensure_watch_producer)"
+  ],
+  "completed_at": "2026-10-13T21:59:32.268Z",
+  "dispatched_at": "2026-10-13T21:47:47Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_watch.py",
+      "line": "234",
+      "severity": "follow-on",
+      "text": "follow-on: the inline supervisor re-implements the steady-run reset and doubling-to-cap that fleet_supervisor.next_backoff (reckon/crew/fleet_supervisor.py:539, applied by session_host at session_host.py:494) already owns; the change imports the owner's constants at :250 so the values now have one owner, but the mechanism is duplicated beside it and can drift."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read the two gained commits against 04bc460463bcc918dd88c2fa5f0376cda302686f; 54fdabb7a passes the fleet back-off constants into the inline supervisor and adds a steady-run reset with timing and lease coverage, and c8f1865bf moves the crash increment into an else so a steady run resets without consuming an allowance.",
+    "done_when": "the measure names tests/test_a_crashed_producer_is_restarted.py; the manifest records the 11-file gate at head as 92 passed EXIT=0 (review-head-final.log) against 8 failed and 84 passed EXIT=1 at base (review-baseline-final.log), and the reset-removal control red at EXIT=1 (steady-reset-negative-control-final.log).",
+    "goal": "the node's goal is that a crashed fallback watch producer is replaced without a coordinator; reckon/crew/dispatch_watch.py:213 relaunches the producer on a crash exit status and the two gained commits sharpen the bound, so the landed change still does what the goal states.",
+    "manifest": "read at runs/r-20261013T204153072372-a-crashed-producer-is-restarted/manifest.md; it carries commits through c8f1865bf, the 11-file gate at head as 92 passed EXIT=0, a red reset-removal control at EXIT=1, and status complete.",
+    "write_paths": "the manifest declares reckon/crew/dispatch_watch.py and tests/test_a_crashed_producer_is_restarted.py, and the diff of the two gained commits touches only those two files."
+  },
+  "justifications": {
+    "durability": "tests/test_a_crashed_producer_is_restarted.py:241 fails when the steady-run reset is removed (steady-reset-negative-control-final.log, EXIT=1) and the argv test at :154 fails when dispatch_watch.py:250 stops passing the fleet constants.",
+    "evidence": "the manifest records review-head-final.log at 92 passed EXIT=0 and review-baseline-final.log at 8 failed and 84 passed EXIT=1, so the done_when's no-added-failure measure is met and its added-failure count derives as 0.",
+    "fit": "the added symbols (first_delay, cap, steady_seconds, crashes) and tests (test_a_steady_run_resets_the_delay_and_crash_count) are plain and behaviour-named with no plan label, though the argv contract for argv[:6] is not commented at dispatch_watch.py:201.",
+    "goal_fidelity": "reckon/crew/dispatch_watch.py:234 gives the inline supervisor a bounded restart whose back-off curve and steady-run reset come from the fleet owner, and the crash bound at :239 stops a producer that keeps crashing.",
+    "reuse": "dispatch_watch.py:250 imports the fleet owner's constants, but the reset and doubling at :234-:244 still re-implement fleet_supervisor.next_backoff (fleet_supervisor.py:539) rather than calling it.",
+    "scope_discipline": "the combined diff of 54fdabb7a and c8f1865bf changes only reckon/crew/dispatch_watch.py and tests/test_a_crashed_producer_is_restarted.py, both inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a crashed fallback watch producer is replaced without a coordinator; reckon/crew/dispatch_watch.py:213 relaunches the producer on a crash exit status and the two gained commits sharpen the bound, so the landed change still does what the goal states.\nVERDICT done_when: the measure names tests/test_a_crashed_producer_is_restarted.py; the manifest records the 11-file gate at head as 92 passed EXIT=0 (review-head-final.log) against 8 failed and 84 passed EXIT=1 at base (review-baseline-final.log), and the reset-removal control red at EXIT=1 (steady-reset-negative-control-final.log).\nVERDICT write_paths: the manifest declares reckon/crew/dispatch_watch.py and tests/test_a_crashed_producer_is_restarted.py, and the diff of the two gained commits touches only those two files.\nVERDICT manifest: read at runs/r-20261013T204153072372-a-crashed-producer-is-restarted/manifest.md; it carries commits through c8f1865bf, the 11-file gate at head as 92 passed EXIT=0, a red reset-removal control at EXIT=1, and status complete.\nVERDICT diff: read the two gained commits against 04bc460463bcc918dd88c2fa5f0376cda302686f; 54fdabb7a passes the fleet back-off constants into the inline supervisor and adds a steady-run reset with timing and lease coverage, and c8f1865bf moves the crash increment into an else so a steady run resets without consuming an allowance.\nCALL_SITES: reckon/crew/dispatch_watch.py:342 (_ensure_watch_producer calls _start_watch_producer), reckon/crew/dispatch_watch.py:243 (_start_watch_producer builds argv via _watch_producer_argv), reckon/crew/dispatch.py:1426 (dispatch calls _ensure_watch_producer)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_watch.py:234 gives the inline supervisor a bounded restart whose back-off curve and steady-run reset come from the fleet owner, and the crash bound at :239 stops a producer that keeps crashing.\nSCORE evidence: 17\nJUSTIFICATION evidence: the manifest records review-head-final.log at 92 passed EXIT=0 and review-baseline-final.log at 8 failed and 84 passed EXIT=1, so the done_when's no-added-failure measure is met and its added-failure count derives as 0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the combined diff of 54fdabb7a and c8f1865bf changes only reckon/crew/dispatch_watch.py and tests/test_a_crashed_producer_is_restarted.py, both inside the manifest's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_crashed_producer_is_restarted.py:241 fails when the steady-run reset is removed (steady-reset-negative-control-final.log, EXIT=1) and the argv test at :154 fails when dispatch_watch.py:250 stops passing the fleet constants.\nSCORE fit: 17\nJUSTIFICATION fit: the added symbols (first_delay, cap, steady_seconds, crashes) and tests (test_a_steady_run_resets_the_delay_and_crash_count) are plain and behaviour-named with no plan label, though the argv contract for argv[:6] is not commented at dispatch_watch.py:201.\nSCORE reuse: 14\nJUSTIFICATION reuse: dispatch_watch.py:250 imports the fleet owner's constants, but the reset and doubling at :234-:244 still re-implement fleet_supervisor.next_backoff (fleet_supervisor.py:539) rather than calling it.\nFINDING reckon/crew/dispatch_watch.py:234 follow-on: the inline supervisor re-implements the steady-run reset and doubling-to-cap that fleet_supervisor.next_backoff (reckon/crew/fleet_supervisor.py:539, applied by session_host at session_host.py:494) already owns; the change imports the owner's constants at :250 so the values now have one owner, but the mechanism is duplicated beside it and can drift.\n",
+  "review_run_id": "r-20261013T214720655216-review-of-a-crashed-producer-is-restarted-c8f1865bf1c4",
+  "reviewed_base_sha": "04bc460463bcc918dd88c2fa5f0376cda302686f",
+  "reviewed_head_sha": "c8f1865bf1c43a712b06eec5cbdb1f154b6e98dd",
+  "reviewed_run_id": "r-20261013T204153072372-a-crashed-producer-is-restarted",
+  "reviewer_run_id": "r-20261013T214720655216-review-of-a-crashed-producer-is-restarted-c8f1865bf1c4",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 14,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T22:01:30.583615+00:00",
+  "total": 104
+}

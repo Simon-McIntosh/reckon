@@ -258,6 +258,11 @@ base revision rather than against the head with the change reverted.</p>
 </article>
   </section>
 
+  <section id="s16">
+    <h2>§16 — One owner resolves a repository to its projects</h2>
+    <p><strong>Coordinator's landing record.</strong> Run <code>r-20261013T192557486596-one-owner-resolves-repository-projects</code>, commits <code>ab7e65a12</code> and <code>e1c67e4a0</code>, merged as <code>2ebf63331</code>. Review 109. The review counted 6 added failures from the worker's arms, which had run the base and head concurrently, and the worker attributed them to that load. The coordinator re-measured. Run serially, the six passed at both base and merged head (<code>six-suspects-{base,head}-lane-s16.log</code>). Run as sequential population arms over the 302 test files importing any of the five modules, the base <code>fd7636f59</code> gave 2,979 passed and 10 failed, and the merged head gave 2,983 passed and 9 failed. Every head failure also fails at base, so 0 were added, and one base failure passes at head. Logs are <code>~/.cache/reckon-suite-logs/population-{base,head}-lane-s16.log</code>. Main moved by 12 run-record commits between the measured merge and the fast-forward, and the recomputed merge's <code>reckon/</code> and <code>tests/</code> trees are identical to the measured one. Focused gate at the merged head: <code>merge-lane-s16-2ebf63331.log</code>. The review's follow-ons are that two of the three negative-control cases fail with <code>AttributeError</code> rather than on the declared behaviour, and that the record names two scratch trees. Neither changes the result; the first is the same negative-control defect §22 and §24 already guard against.</p><section id="one-owner-resolves-repository-projects"></section>
+  </section>
+
 </main>
 </body>
 </html>

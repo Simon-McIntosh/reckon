@@ -548,17 +548,9 @@ def _repository_owning_projects(repo) -> tuple[str, ...]:
     other scope resolution consults, and the git common directory collapses a
     linked worktree onto the same project as its main checkout.
     """
-    from reckon.crew.node import repository_identity
-    from reckon.crew.routing import mounted_repository_projects
+    from reckon.crew.routing import repository_projects
 
-    identity = repository_identity(repo)
-    if identity is None:
-        return ()
-    owners: list[str] = []
-    for root, projects in mounted_repository_projects().items():
-        if repository_identity(root) == identity:
-            owners.extend(projects)
-    return tuple(dict.fromkeys(owners))
+    return repository_projects(repo)
 
 
 def _refuse_a_foreign_repository(crew_module, project, repo, pretty) -> None:

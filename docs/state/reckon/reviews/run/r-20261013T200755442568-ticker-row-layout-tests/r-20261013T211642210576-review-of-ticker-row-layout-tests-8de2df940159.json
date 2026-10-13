@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-13T21:35:03.620Z",
+  "dispatched_at": "2026-10-13T21:17:09Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T200755442568-ticker-row-layout-tests/manifest.md",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest records the gate under tests and test_logs but not under the baseline_suite and after_suite fields the review store's annotate_review_of_run reads, so this review's added_failure_count derives as unmeasured and the reviewed run's suite delta cannot be checked from its own logs."
+    },
+    {
+      "file": "tests/test_ticker_node_names_keep_their_ends.py",
+      "line": "149",
+      "severity": "follow-on",
+      "text": "follow-on: the lone-long-name case lost its trailing width assertion when the file was reworked, so the file no longer asserts a lone long name renders within ticker_module.DEFAULT_WIDTH; the bound survives in tests/test_the_row_reads_in_one_order.py:624 but not for this case."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against base 1eb38716; the single commit 8de2df940 carries 379 insertions and 239 deletions across the four declared test files, all test-only, with the removed cases confined to the reason clause, the rate and age cells and the minted-stamp suffix the row no longer draws.",
+    "done_when": "the brief's measure is zero failures in the four owned files apart from the base failures at /home/ITER/mcintos/.cache/reckon-ticker-fix/base-failures.txt; the manifest records 90 passed EXIT=0 in gate.log for exactly those four files.",
+    "goal": "the source node's goal, from its brief at runs/r-20261013T200755442568-ticker-row-layout-tests/brief.md, is to bring the four ticker test files it owns onto the fixed-column row; the landed commit 8de2df940 updates all four and adds tests/test_the_row_reads_in_one_order.py, which renders through Ticker.render at reckon/crew/ticker.py:1869.",
+    "manifest": "read at runs/r-20261013T200755442568-ticker-row-layout-tests/manifest.md; status complete, one commit 8de2df940, the gate 90 passed EXIT=0, a red negative control at EXIT=1, but the manifest records no baseline_suite or after_suite gate-log fields.",
+    "write_paths": "the manifest declares tests/test_crew_ticker_layout.py, tests/test_ticker_row_drops_unread_cells.py, tests/test_ticker_node_names_keep_their_ends.py and tests/test_the_row_reads_in_one_order.py; the diff touches exactly those four paths and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_the_row_reads_in_one_order.py:510 reddens when REVIEW_JOB_PREFIXES is emptied (negative_control.log EXIT=1), and :493, :526 and :589 fail if the counter letters, the run numbering or the narrow-pane drop order regress.",
+    "evidence": "the manifest records gate.log at 90 passed EXIT=0, but it names no baseline_suite or after_suite arm and gate.log:1 names no revision, so the added-failure delta cannot be derived from the reviewed run's own logs.",
+    "fit": "the new file keeps the per-file plain and _event helpers used across tests/test_ticker_row_drops_unread_cells.py:1, and no added name or comment carries a plan, sprint or ticket label.",
+    "goal_fidelity": "tests/test_the_row_reads_in_one_order.py:440 asserts the nine cells' screen offsets increase in the reading order Ticker.render draws at reckon/crew/ticker.py:1869.",
+    "reuse": "tests/helpers holds no ticker renderer helper and tests/conftest.py defines none, so the new file's local helpers extend the repository's per-file test-helper idiom rather than forking an owner.",
+    "scope_discipline": "every path in the diff is one of the four test files the manifest's write_paths declares, with no source or config file touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal, from its brief at runs/r-20261013T200755442568-ticker-row-layout-tests/brief.md, is to bring the four ticker test files it owns onto the fixed-column row; the landed commit 8de2df940 updates all four and adds tests/test_the_row_reads_in_one_order.py, which renders through Ticker.render at reckon/crew/ticker.py:1869.\nVERDICT done_when: the brief's measure is zero failures in the four owned files apart from the base failures at /home/ITER/mcintos/.cache/reckon-ticker-fix/base-failures.txt; the manifest records 90 passed EXIT=0 in gate.log for exactly those four files.\nVERDICT write_paths: the manifest declares tests/test_crew_ticker_layout.py, tests/test_ticker_row_drops_unread_cells.py, tests/test_ticker_node_names_keep_their_ends.py and tests/test_the_row_reads_in_one_order.py; the diff touches exactly those four paths and nothing else.\nVERDICT manifest: read at runs/r-20261013T200755442568-ticker-row-layout-tests/manifest.md; status complete, one commit 8de2df940, the gate 90 passed EXIT=0, a red negative control at EXIT=1, but the manifest records no baseline_suite or after_suite gate-log fields.\nVERDICT diff: read commit by commit against base 1eb38716; the single commit 8de2df940 carries 379 insertions and 239 deletions across the four declared test files, all test-only, with the removed cases confined to the reason clause, the rate and age cells and the minted-stamp suffix the row no longer draws.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_the_row_reads_in_one_order.py:440 asserts the nine cells' screen offsets increase in the reading order Ticker.render draws at reckon/crew/ticker.py:1869.\nSCORE evidence: 16\nJUSTIFICATION evidence: the manifest records gate.log at 90 passed EXIT=0, but it names no baseline_suite or after_suite arm and gate.log:1 names no revision, so the added-failure delta cannot be derived from the reviewed run's own logs.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff is one of the four test files the manifest's write_paths declares, with no source or config file touched.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_the_row_reads_in_one_order.py:510 reddens when REVIEW_JOB_PREFIXES is emptied (negative_control.log EXIT=1), and :493, :526 and :589 fail if the counter letters, the run numbering or the narrow-pane drop order regress.\nSCORE fit: 17\nJUSTIFICATION fit: the new file keeps the per-file plain and _event helpers used across tests/test_ticker_row_drops_unread_cells.py:1, and no added name or comment carries a plan, sprint or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: tests/helpers holds no ticker renderer helper and tests/conftest.py defines none, so the new file's local helpers extend the repository's per-file test-helper idiom rather than forking an owner.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T200755442568-ticker-row-layout-tests/manifest.md:1 follow-on: the manifest records the gate under tests and test_logs but not under the baseline_suite and after_suite fields the review store's annotate_review_of_run reads, so this review's added_failure_count derives as unmeasured and the reviewed run's suite delta cannot be checked from its own logs.\nFINDING tests/test_ticker_node_names_keep_their_ends.py:149 follow-on: the lone-long-name case lost its trailing width assertion when the file was reworked, so the file no longer asserts a lone long name renders within ticker_module.DEFAULT_WIDTH; the bound survives in tests/test_the_row_reads_in_one_order.py:624 but not for this case.\n",
+  "review_run_id": "r-20261013T211642210576-review-of-ticker-row-layout-tests-8de2df940159",
+  "reviewed_base_sha": "1eb387165734620baa5f573bed61beef362cc87b",
+  "reviewed_head_sha": "8de2df940159ef4669ff4318a6c9642fe6c9dac1",
+  "reviewed_run_id": "r-20261013T200755442568-ticker-row-layout-tests",
+  "reviewer_run_id": "r-20261013T211642210576-review-of-ticker-row-layout-tests-8de2df940159",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T21:34:00.468935+00:00",
+  "total": 110
+}

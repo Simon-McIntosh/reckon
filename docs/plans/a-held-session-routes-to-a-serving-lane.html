@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-held-session-routes-to-a-serving-lane">
   <meta name="plan-title" content="A Held Session Routes To A Serving Lane">
   <meta name="plan-summary" content="Jev routed well-defined work to a local lane that then held the session at zero slots while codex had room; read the session&#x27;s admission before routing.">
-  <meta name="plan-status" content="draft">
+  <meta name="plan-status" content="in-progress">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="4.5">
   <meta name="plan-capability-version" content="1.0">
@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-after" content="a-held-dispatch-waits-its-fair-turn">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;}">
   <title>A Held Session Routes To A Serving Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="4">
 <meta name="plan-modified" content="2026-10-13">
 </head>
 <body>
@@ -143,7 +143,7 @@
     </p>
 
     <h2 id="s5">§5 — Follow-on study: how long held sessions waited while another lane served</h2>
-<section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
     <p>
       Measure, over the fourteen days to the study, every dispatch that Jev routed to a lane whose router then held the
       session, by role and specification level, with the time from that hold to launch and the state of every other serving
@@ -161,6 +161,17 @@
     <pre class="r-fu-prompt">/reckon-build a-held-session-routes-to-a-serving-lane §2</pre>
     </article>
 </section>
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261013T093800967573-hsrs-held-session-wait-census" data-who="reckon-build" data-when="2026-10-13T21:11:27.343Z">
+    <div class="r-comment-body"><p>Held-session wait census at 2026-10-13T21:06:14Z counts 24 held dispatches in the surviving pointer store (9 queued, 15 held-then-launched) with 28091.2 s of wait, every row exact or guided; of the 3 rows joined to a picker-hold record inside their own wait window, another lane had room for 1 (share 0.33 of joined, 0.5 of rows with any other serving lane) and 21 rows carry no record in their wait window, named per row rather than guessed; report.html renders every row by role and spec level with its hold-to-launch wait and hold reason, the joined hold record and every lane's state at it, the share and the wait it accrues, the jccm-lines hold of 2026-10-13T08:16:20Z, and 835 excluded non-held routes as the negative-control population; the thin pick arm is recorded (refuse) and the full-input arm is recorded as not runnable (crew pick takes no write-path/negative-control/estimate fields, plan section 3's subject).</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261013T213950930900-review-of-hsrs-held-session-wait-census-4f8e79719375" data-who="reckon-build" data-when="2026-10-13T21:52:53.737Z">
+    <div class="r-comment-body"><p>claims review of r-20261013T093800967573-hsrs-held-session-wait-census at head 4f8e79719375c9d74e2f55b662e5b8d1ae2611a0 — CLAIM 1 differs (24-&gt;16 held), CLAIM 2 differs (share 0.333-&gt;0.5; wait_room 670.1 s reproduced), CLAIM 3 reproduced (jccm-lines positive control), CLAIM_SUMMARY agrees (24 / 28091.2 s are the table totals); record stored under the claims rubric at the two granted review paths.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-close-s5" data-who="reckon-build" data-when="2026-10-13T21:55:00Z">
+    <div class="r-comment-body"><p>§5 landed as a dated snapshot. At 21:06Z, 24 exact or guided dispatches were held by the router's session allowance, with 28,091 s of wait. Only 3 joined a picker-hold record, and another lane had room for 1. The jccm-lines hold is found. The full-input pick arm is not runnable until §3 gives <code>crew pick</code> the node fields. The claims review reproduced the control and found the counts drift as the pointer store drains. The sample is too thin to settle whether §2's single re-ask is enough, so §2 proceeds as written. <a href="/reckon/evidence/archive/a-held-session-routes-to-a-serving-lane-landed.html#s5">evidence</a></p></div>
+</div>
+</section>
+</main>
 </body>
 </html>

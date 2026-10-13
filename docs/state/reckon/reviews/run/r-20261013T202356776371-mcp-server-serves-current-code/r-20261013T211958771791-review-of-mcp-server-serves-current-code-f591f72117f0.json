@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/mcp.py:2950 read_plan",
+    "reckon/mcp.py:2960 edit_plan",
+    "reckon/mcp.py:2965 roadmap",
+    "reckon/mcp.py:2970 audit",
+    "reckon/mcp.py:2980 crew"
+  ],
+  "completed_at": "2026-10-13T21:33:02.433Z",
+  "dispatched_at": "2026-10-13T21:20:26Z",
+  "findings": [
+    {
+      "file": "reckon/mcp.py",
+      "line": "277",
+      "severity": "follow-on",
+      "severity_": null,
+      "text": "follow-on: _CODE_IMPORT_PROBE (reckon/mcp.py:272-280) and _import_root (reckon/mcp.py:284) duplicate the follower's throwaway-interpreter probe (reckon/crew_follow_commands.py:166-172) and import-root helper (reckon/crew_follow_commands.py:148) rather than extending the owner \u2014 the same compile-every-module-then-import capability in a second implementation, so a fix to one probe will not reach the other."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "the five production tool registrations in reckon/mcp.py route every incoming call through _refuse_when_stale.",
+    "diff": "read commit by commit against e717ee432; 203882d19 added the guard (stamp checked before every call) and f591f7211 reworked it to act only on a failed call, wrapping the five registered tools in reckon/mcp.py:2950-2980.",
+    "done_when": "the EVIDENCE fence is asserted by the three tests in tests/test_mcp_server_serves_current_code.py and recorded in gate.log (200 passed, EXIT=0) against base-arm.log (197 passed, EXIT=0).",
+    "goal": "the source node goal is to make a reckon MCP server say its imported code no longer matches its checkout, with the reconnect remedy; reckon/mcp.py:312 _stale_code_response returns that refusal when the stamp has moved.",
+    "manifest": "read; status complete, it names the head f591f7211, gate.log 200 passed / base-arm.log 197 passed, the red negative_control.log (1 failed, EXIT=1) and the follow_on about the stamp not covering reckon/_flight_schema.py; its commits list names only f591f7211 and omits the superseded 203882d19 the head rewrites.",
+    "write_paths": "the node declares reckon/mcp.py, reckon/mcp_views.py, tests/test_mcp_server_serves_current_code.py; the diff e717ee432..f591f721 touches only reckon/mcp.py and the new test file."
+  },
+  "justifications": {
+    "durability": "the negative control reddens tests/test_mcp_server_serves_current_code.py:200 when _stale_code_response's check is removed, and test 2 (line 213) reddens if the guard runs before the call; only server_started_at == payload['started_at'] (line 205) moves with the implementation.",
+    "evidence": "gate.log records '200 passed in 141.62s' EXIT=0 at f591f72117 and base-arm.log '197 passed' EXIT=0 at e717ee432, delta +3 with no failure beyond base, and negative_control.log is red EXIT=1.",
+    "fit": "the guard's names (_SERVER_CODE_STAMP, _refuse_when_stale, reckon/mcp.py:262-370) follow the module's leading-underscore idiom and carry no plan label, version or ticket reference.",
+    "goal_fidelity": "reckon/mcp.py:312 _stale_code_response names the start time, the change and the reconnect remedy when follower_code_stamp() differs from the import-time _SERVER_CODE_STAMP (reckon/mcp.py:263).",
+    "reuse": "the stamp is extended from its owner follower_code_stamp (reckon/crew/follower_registration.py:51) as the brief requires, but _import_root (reckon/mcp.py:284) and _CODE_IMPORT_PROBE (reckon/mcp.py:272) duplicate reckon/crew_follow_commands.py:148 and :166 rather than extending them.",
+    "scope_discipline": "git diff --stat e717ee432..f591f721 lists only reckon/mcp.py and tests/test_mcp_server_serves_current_code.py, both inside the declared paths."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: e717ee432b0c625cba363220659244f36d579bff\nreviewed_head_sha: f591f72117f01d0c84d12f342d05b29322f94ba3\nVERDICT goal: the source node goal is to make a reckon MCP server say its imported code no longer matches its checkout, with the reconnect remedy; reckon/mcp.py:312 _stale_code_response returns that refusal when the stamp has moved.\nVERDICT done_when: the EVIDENCE fence is asserted by the three tests in tests/test_mcp_server_serves_current_code.py and recorded in gate.log (200 passed, EXIT=0) against base-arm.log (197 passed, EXIT=0).\nVERDICT write_paths: the node declares reckon/mcp.py, reckon/mcp_views.py, tests/test_mcp_server_serves_current_code.py; the diff e717ee432..f591f721 touches only reckon/mcp.py and the new test file.\nVERDICT manifest: read; status complete, it names the head f591f7211, gate.log 200 passed / base-arm.log 197 passed, the red negative_control.log (1 failed, EXIT=1) and the follow_on about the stamp not covering reckon/_flight_schema.py; its commits list names only f591f7211 and omits the superseded 203882d19 the head rewrites.\nVERDICT diff: read commit by commit against e717ee432; 203882d19 added the guard (stamp checked before every call) and f591f7211 reworked it to act only on a failed call, wrapping the five registered tools in reckon/mcp.py:2950-2980.\nCALL_SITES: reckon/mcp.py:2950 (read_plan), reckon/mcp.py:2960 (edit_plan), reckon/mcp.py:2965 (edit_plan), reckon/mcp.py:2970 (audit), reckon/mcp.py:2980 (crew)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/mcp.py:312 _stale_code_response names the start time, the change and the reconnect remedy when follower_code_stamp() differs from the import-time _SERVER_CODE_STAMP (reckon/mcp.py:263).\nSCORE evidence: 18\nJUSTIFICATION evidence: gate.log records '200 passed in 141.62s' EXIT=0 at f591f72117 and base-arm.log '197 passed' EXIT=0 at e717ee432, delta +3 with no failure beyond base, and negative_control.log is red EXIT=1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat e717ee432..f591f721 lists only reckon/mcp.py and tests/test_mcp_server_serves_current_code.py, both inside the declared paths.\nSCORE durability: 19\nJUSTIFICATION durability: the negative control reddens tests/test_mcp_server_serves_current_code.py:200 when _stale_code_response's check is removed, and test 2 (line 213) reddens if the guard runs before the call; only server_started_at == payload['started_at'] (line 205) moves with the implementation.\nSCORE fit: 18\nJUSTIFICATION fit: the guard's names (_SERVER_CODE_STAMP, _refuse_when_stale, reckon/mcp.py:262-370) follow the module's leading-underscore idiom and carry no plan label, version or ticket reference.\nSCORE reuse: 5\nJUSTIFICATION reuse: the stamp is extended from its owner follower_code_stamp (reckon/crew/follower_registration.py:51) as the brief requires, but _import_root (reckon/mcp.py:284) and _CODE_IMPORT_PROBE (reckon/mcp.py:272) duplicate reckon/crew_follow_commands.py:148 and :166 rather than extending them.\nFINDING reckon/mcp.py:277 follow-on: _CODE_IMPORT_PROBE and _import_root duplicate reckon/crew_follow_commands.py:166 and :148 rather than extending the owner.",
+  "review_run_id": "r-20261013T211958771791-review-of-mcp-server-serves-current-code-f591f72117f0",
+  "reviewed_base_sha": "e717ee432b0c625cba363220659244f36d579bff",
+  "reviewed_head_sha": "f591f72117f01d0c84d12f342d05b29322f94ba3",
+  "reviewed_run_id": "r-20261013T202356776371-mcp-server-serves-current-code",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T21:29:25.009420+00:00",
+  "total": 98
+}

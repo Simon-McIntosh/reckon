@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-review-gate-judges-what-it-covers-landed">
+  <meta name="plan-title" content="A Review Gate Judges What It Covers — landed record">
+  <meta name="plan-summary" content="Closure synthesis for A Review Gate Judges What It Covers: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="a-review-gate-judges-what-it-covers">
+  <meta name="plan-verdict" content="qualified">
+  <title>A Review Gate Judges What It Covers — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A Review Gate Judges What It Covers — landed record</h1>
+  <p>Closure synthesis for A Review Gate Judges What It Covers: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s7">
+    <h2>§7 — census: how often the gate refused a covered section</h2>
+    <p>Run <code>r-20261013T090732844758-rgjc-covered-refusal-census</code> (investigation, local lane) harvested every plan-review gate refusal and every <code>--allow-unreviewed-plan</code> waiver in the fourteen days to 2026-10-13. It classified each refusal at the gate's own word-share boundary, <code>review.plan_change_threshold</code> = 0.30, read from <code>reckon flight --project reckon</code>. The report, scripts and per-refusal records are in <code>~/.config/reckon/crew/reports/reckon/study/a-review-gate-judges-what-it-covers/rgjc-covered-refusal-census/</code> (<code>report.html</code>, <code>census.py</code>, <code>classify.py</code>, <code>result.json</code>).</p><table><thead><tr><th>Refusal class</th><th>Count</th></tr></thead><tbody><tr><td>built section covered and unchanged</td><td>43</td></tr><tr><td>built section changed only by an edit an answered finding asked for</td><td>12</td></tr><tr><td>built section uncovered</td><td>13</td></tr><tr><td>unclassified (refused node's section not recoverable from any record)</td><td>34</td></tr><tr><td><strong>total refusals</strong></td><td><strong>102</strong></td></tr></tbody></table><p>So 55 of the 68 classified refusals (81 %) refused a node whose built section was already covered. The median delay from first refusal to the dispatch that went through was 756 s over 50 episodes, ranging from 23 s to 25,446 s. There were 430 deduplicated waivers: imas-codex 247, RabbitPy 64, reckon 48, power_convertor 27, nova 18 and the rest fewer.</p><p>A sensitivity row at the 0.05 boundary moves exactly five refusals, all from uncovered to changed-by-an-answered-finding, each named in the report. The negative control (imas-efit <code>west-imas-read-facade</code> s4) reads uncovered at either boundary. Of the four power_convertor refusals in §1, jccm-circuits and jccm-signs are covered and unchanged, and jccm-lines is changed by an answered finding. jccm-modes is absent from every record the census can read.</p><p>Claims review <code>r-20261013T213152822433-review-of-rgjc-covered-refusal-census-bc66c63b6b89</code> re-ran the top-ranked claim, the classification table, and reproduced it identically. It found the report's summary line agrees with its tables.</p><p>Follow-ons from the census:</p><ul><li>34 refusals cannot be classified because the gate's refusal text does not name the refused node's section.</li><li>The committed ledger row omits <code>unreviewed_plan_override</code>, so a waiver's history lives only on the live pointer.</li></ul>
+  </section>
+
+</main>
+</body>
+</html>

@@ -1,0 +1,80 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 6,
+  "added_failure_ids": [
+    "tests/test_a_killed_worker_resumes_to_completion.py::test_a_killed_worker_is_classified_resumed_and_completed",
+    "tests/test_arm_lock_is_never_held_by_a_follower.py::test_stubborn_orphan_cannot_hold_arm_lock_past_bound",
+    "tests/test_dispatch_returns_without_worker.py::test_a_discarded_run_is_not_recreated",
+    "tests/test_promotion_records_the_pick.py::test_promotion_waits_from_the_pick_start_not_the_run_start",
+    "tests/test_stop_before_spawn_spawns_nothing.py::test_a_stop_between_the_check_and_the_spawn_spawns_no_worker",
+    "tests/test_stop_before_spawn_spawns_nothing.py::test_a_stop_during_the_pre_spawn_snapshot_spawns_no_worker"
+  ],
+  "added_failures_note": "six head-arm-only failures under concurrent-arm load, all passing 6/6 when rerun serially (head-only-rerun.log EXIT=0); all six are named in the reviewed manifest's follow_ons, so the cap is not applied though the canonical matcher retires only three by full node id",
+  "base_log_revision": "d80d81e7e127885d13811f8c0a3a45604a98878c",
+  "call_site_count": 9,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:575 (_repository_owning_projects from the foreign-repository refusal)",
+    "reckon/crew/dispatch.py:352 (shadow_source",
+    "reached from crew_dispatch_commands.py:1888)",
+    "reckon/crew/dispatch_claims.py:161 (_scope_derived project selection for scope claims)",
+    "reckon/crew/promotion_records.py:105 (_project_for_repository)",
+    "reckon/crew/routing.py:3667 (resolve_dispatch_authority",
+    "reached from dispatch_plan.py",
+    "dispatch_sections.py",
+    "dispatch_sessions.py and dispatch_picker.py)"
+  ],
+  "completed_at": "2026-10-13T21:10:53.877Z",
+  "dispatched_at": "2026-10-13T20:52:57Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T192557486596-one-owner-resolves-repository-projects/negative-control.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: two of the three red cases fail with AttributeError on the absent repository_projects symbol rather than the declared \"finds no project\" behaviour, so only test_shadow_source_reads_the_mounted_project_ledger (its line 111, seen == []) exercises the declared failure."
+    },
+    {
+      "file": "runs/r-20261013T192156615795-one-owner-resolves-repository-projects/manifest.md",
+      "line": "17",
+      "severity": "follow-on",
+      "text": "follow-on: measurement_module and measurement_cwd name /tmp/nc-base-arm while the cited negative_control_log header names module_file=/tmp/nc-base/reckon/crew/routing.py, so a reader reconciling the record to the negative-control tree sees two scratch trees where the record names one."
+    }
+  ],
+  "head_log_revision": "ab7e65a1231ebeea42367e4ebd6d3b5b1de35423",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 9 production call site(s)",
+    "diff": "read commit by commit against d80d81e7e; ab7e65a12 adds repository_projects and rewires the five sites across routing.py, four caller modules and the new test (190 insertions, 30 deletions), and e1c67e4a0 adds the one-line evidence fragment, all inside the declared scope.",
+    "done_when": "the measure names tests/test_one_resolver_names_a_worktree_project.py, which builds a mounted repository plus a linked worktree and asserts identity resolution and per-site call-through; the manifest records 3 passed EXIT=0 at head and both suite arms in base-arm.log (16 failed) and head-arm.log (18 failed) under /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T192557486596-one-owner-resolves-repository-projects.",
+    "goal": "the node's goal is to consolidate the five path-to-projects resolvers into one identity-based function in routing.py; reckon/crew/routing.py:3723 adds repository_projects, and the five named sites (crew_dispatch_commands.py:553, dispatch_claims.py:161, dispatch.py:355, promotion_records.py:71, routing.py:3667) each call it, so the goal is met.",
+    "manifest": "read at runs/r-20261013T192156615795-one-owner-resolves-repository-projects/manifest.md, the reviewed run's own report arriving at a sibling run directory rather than under the reviewed run id; it carries commits ab7e65a and e1c67e4a, the gate at 3 passed, both suite arms and the negative-control log, and status complete.",
+    "write_paths": "the manifest declares five crew modules, the new test, a fragment under docs/evidence/fragments/lane-and-model-routing/ and a figures directory; the diff touches the five modules, the test and the fragment, all inside them, and the figures directory is unused."
+  },
+  "justifications": {
+    "durability": "tests/test_one_resolver_names_a_worktree_project.py:88 would redden if repository_projects keyed on path.resolve() instead of repository_identity, and :111 would redden if shadow_source stopped passing the resolved project to ledger.runs.",
+    "evidence": "tests/test_one_resolver_names_a_worktree_project.py re-run at head gives 3 passed, and base-arm.log/head-arm.log record the two suite arms, but the arms ran at -n 12 against the done_when's -n 10 and the head arm added six failures the done_when's zero-added bar does not meet.",
+    "fit": "the new name carries no plan or ticket label, but each of the five sites uses a function-local import (e.g. reckon/crew/promotion_records.py:68) rather than the module-top import block it already has, a deviation the test's monkeypatch of routing requires.",
+    "goal_fidelity": "reckon/crew/routing.py:3723 defines repository_projects beside mounted_repository_projects and the five named sites call it, so the repeated path-based lookups are consolidated as the goal states.",
+    "reuse": "reckon/crew/routing.py:3723 wraps the existing mounted_repository_projects owner with one identity lookup and the five sites now extend it, so no capability is duplicated.",
+    "scope_discipline": "every path in the diff (routing.py, dispatch.py, dispatch_claims.py, promotion_records.py, crew_dispatch_commands.py, the new test, the fragment) is inside the declared write paths and nothing else was touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to consolidate the five path-to-projects resolvers into one identity-based function in routing.py; reckon/crew/routing.py:3723 adds repository_projects, and the five named sites (crew_dispatch_commands.py:553, dispatch_claims.py:161, dispatch.py:355, promotion_records.py:71, routing.py:3667) each call it, so the goal is met.\nVERDICT done_when: the measure names tests/test_one_resolver_names_a_worktree_project.py, which builds a mounted repository plus a linked worktree and asserts identity resolution and per-site call-through; the manifest records 3 passed EXIT=0 at head and both suite arms in base-arm.log (16 failed) and head-arm.log (18 failed) under /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T192557486596-one-owner-resolves-repository-projects.\nVERDICT write_paths: the manifest declares five crew modules, the new test, a fragment under docs/evidence/fragments/lane-and-model-routing/ and a figures directory; the diff touches the five modules, the test and the fragment, all inside them, and the figures directory is unused.\nVERDICT manifest: read at runs/r-20261013T192156615795-one-owner-resolves-repository-projects/manifest.md, the reviewed run's own report arriving at a sibling run directory rather than under the reviewed run id; it carries commits ab7e65a and e1c67e4a, the gate at 3 passed, both suite arms and the negative-control log, and status complete.\nVERDICT diff: read commit by commit against d80d81e7e; ab7e65a12 adds repository_projects and rewires the five sites across routing.py, four caller modules and the new test (190 insertions, 30 deletions), and e1c67e4a0 adds the one-line evidence fragment, all inside the declared scope.\nCALL_SITES: reckon/crew_dispatch_commands.py:575 (_repository_owning_projects from the foreign-repository refusal), reckon/crew/dispatch.py:352 (shadow_source, reached from crew_dispatch_commands.py:1888), reckon/crew/dispatch_claims.py:161 (_scope_derived project selection for scope claims), reckon/crew/promotion_records.py:105 (_project_for_repository), reckon/crew/routing.py:3667 (resolve_dispatch_authority, reached from dispatch_plan.py, dispatch_sections.py, dispatch_sessions.py and dispatch_picker.py)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/routing.py:3723 defines repository_projects beside mounted_repository_projects and the five named sites call it, so the repeated path-based lookups are consolidated as the goal states.\nSCORE evidence: 15\nJUSTIFICATION evidence: tests/test_one_resolver_names_a_worktree_project.py re-run at head gives 3 passed, and base-arm.log/head-arm.log record the two suite arms, but the arms ran at -n 12 against the done_when's -n 10 and the head arm added six failures the done_when's zero-added bar does not meet.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff (routing.py, dispatch.py, dispatch_claims.py, promotion_records.py, crew_dispatch_commands.py, the new test, the fragment) is inside the declared write paths and nothing else was touched.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_one_resolver_names_a_worktree_project.py:88 would redden if repository_projects keyed on path.resolve() instead of repository_identity, and :111 would redden if shadow_source stopped passing the resolved project to ledger.runs.\nSCORE fit: 16\nJUSTIFICATION fit: the new name carries no plan or ticket label, but each of the five sites uses a function-local import (e.g. reckon/crew/promotion_records.py:68) rather than the module-top import block it already has, a deviation the test's monkeypatch of routing requires.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/routing.py:3723 wraps the existing mounted_repository_projects owner with one identity lookup and the five sites now extend it, so no capability is duplicated.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T192557486596-one-owner-resolves-repository-projects/negative-control.log:1 follow-on: two of the three red cases fail with AttributeError on the absent repository_projects symbol rather than the declared \"finds no project\" behaviour, so only test_shadow_source_reads_the_mounted_project_ledger (its line 111, seen == []) exercises the declared failure.\nFINDING runs/r-20261013T192156615795-one-owner-resolves-repository-projects/manifest.md:17 follow-on: measurement_module and measurement_cwd name /tmp/nc-base-arm while the cited negative_control_log header names module_file=/tmp/nc-base/reckon/crew/routing.py, so a reader reconciling the record to the negative-control tree sees two scratch trees where the record names one.\n",
+  "review_run_id": "r-20261013T205229507653-review-of-one-owner-resolves-repository-projects-e1c67e4a0b0f",
+  "reviewed_base_sha": "d80d81e7e127885d13811f8c0a3a45604a98878c",
+  "reviewed_head_sha": "e1c67e4a0b0f35d1464b304c1b02e81736064b7d",
+  "reviewed_run_id": "r-20261013T192557486596-one-owner-resolves-repository-projects",
+  "reviewer_run_id": "r-20261013T205229507653-review-of-one-owner-resolves-repository-projects",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T21:06:51.630331+00:00",
+  "total": 109
+}

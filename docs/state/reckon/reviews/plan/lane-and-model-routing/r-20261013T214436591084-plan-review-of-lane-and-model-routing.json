@@ -1,0 +1,103 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-13T21:54:45.404Z",
+  "dispatched_at": "2026-10-13T21:45:12Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/lane-and-model-routing.html:160",
+      "id": "done_when-1",
+      "reason": "the payload directories are the bulk of the untracked data \u00a726 cites (~7 MB, 2.4 MB in reckon), so a gate that does not force the directory to move lets the larger half of the stated defect survive a green node.",
+      "text": "\u00a726's done-when records \"a hold\" and asserts nothing new appears under the docs directory, but the payload-directory write is made only when the request exceeds `HOLD_PAYLOAD_INLINE_LIMIT` (`_write_hold_payload`, outcomes.py:74, called at outcomes.py:246 only above the 8192-byte threshold), so a small fixture hold is stored inline and no directory is created \u2014 a node that moves `picker-holds.jsonl` to the crew home but leaves `_write_hold_payload` reading `_hold_path(docs, project).parent / HOLD_PAYLOAD_DIR` passes the gate while still writing every large payload under the project's checkout; `replay_hold` (outcomes.py:96) reads that same docs-side directory and would break for moved records",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/lane-and-model-routing.html:124",
+      "id": "done_when-2",
+      "reason": "a node reading the clause against the real catalogue finds no such model and either skips the assertion or fabricates a catalogue without a stated basis, and the mechanism it must change (`_lane_declaring_model`, which returns `None` on `resolve_name`'s `ValueError`, crew_dispatch_commands.py:464-468) is named only in the misleading present-tense sentence.",
+      "text": "\u00a717's done-when requires \"a model declared by two lanes and asked for under a third ... refused by naming every lane that declares it\", but this repository's catalogue declares every model key under exactly one lane (model-catalogue.yaml `lanes:` \u2014 sonnet/opus/haiku in claude, sol/astra/luna in codex, flash in clive; no key repeats), so the clause can only be exercised by constructing a fixture catalogue, which the plan does not say; the following sentence (\"\u00a714's `_lane_declaring_model` returns `None` in that case and falls back to the unknown-name message\") states current behaviour inside the Done-when block and reads as an acceptance criterion rather than the gap to close",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "758e19a66496dffbb0c77578b4260d523e4b7a32c57dbfa187a812755f923f8e",
+  "plan_slug": "lane-and-model-routing",
+  "plan_version": 135,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-13T21:55:45.099049+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-2",
+      "reason": "",
+      "when": "2026-10-13T21:55:57.728863+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-13T21:55:45.099049+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-13T21:55:57.728863+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-lane-and-model-routing.v135.json",
+  "review_run_id": "r-20261013T214436591084-plan-review-of-lane-and-model-routing",
+  "reviewed_blob_sha": "210804827d8ad8aaaef4a56a957b1d82d86b2650",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the host layer's cited lines resolve as written (`~/Code/dotfiles/reckon/flight.yaml` `codex-luna: {}`=181, `codex-astra: {}`=182, `claude-opus: {}`=484, `claude-haiku: {}`=500); this repository's `docs/state/reckon/flight.yaml` declares the four names and lists them in `review_excluded_backends`; `power_convertor`'s layer excludes `claude-opus`/`claude-haiku`; and the cited code all exists \u2014 `_lane_declaring_model` (crew_dispatch_commands.py:455), `_model_narrowed_backend` (crew_dispatch_commands.py:471), `_backend_serving_picked_model` (dispatch_plan.py:207), `resolve_name` (ledger.py:228), `record_picker_hold`/`_hold_path`/`_read_holds`/`replay_hold` (outcomes.py:197/193/256/82), with `replay.py` holding only `replay`/`_summary`.",
+    "done_when": "findings \u2014 \u00a726's gate does not exercise the payload-directory write the deliverable retires, and \u00a717's two-lane-model clause is not reachable from the repository's catalogue.",
+    "evidence_paths": "pass \u2014 every write path and gate target is a repository path or a test module under `tests/`, none in a scratchpad or node-local temp path.",
+    "naming": "pass \u2014 no plan labels, stage names or ticket numbers reach the symbols or comments these units name; \u00a723's Why states the mechanism (the command module is a CLI surface, not a library) rather than a tracker reference.",
+    "reasoning": "pass \u2014 \u00a719's root cause matches its cited evidence (host lines and project layer verified as written), \u00a726's untracked-checkout premise reproduces (`docs/state/reckon/picker-holds.jsonl` untracked, `picker-holds/` present), \u00a723's stated defect reproduces (`_backend_serving_picked_model` matches `model_key`/`model`/`alias` by hand at dispatch_plan.py:231-241 instead of calling `ledger.resolve_name`), and each mechanism runs on a named production caller (`--model` via `_model_narrowed_backend`, a picker route via `_backend_serving_picked_model` at dispatch_plan.py:350).",
+    "single_goal": "pass \u2014 each unit carries one deliverable (refuse a combined name; retire combined names from layers; one narrowing function; hold to the crew home).",
+    "wiring": "pass \u2014 the `plan-section-depends-on` map resolves every edge these units declare: `s17:[s14,s16]`, `s19:[s17,s18,s21]`, `s23:[s14,s16,s17,s21]` each match their section prose, `s26` is a leaf and `s22:[s26]` now encodes the outcomes.py serialisation, and no edge points at a wrong node."
+  },
+  "section_digests": {
+    "_document": "61dd5e25832a6f78b8feb8d7391ef888e535a8fe929721f5f1b94c129acfe9fe",
+    "s0": "6e04ec2c2da6b7aa6a120157e2ea4f499c385f6c8f599c9dd4e1fcb27ceb84d5",
+    "s1": "6760f63ebdb0d0db10c3c004f30d4f4253bfb7582bc7a0e4054fed73e017a02d",
+    "s10": "9f3b98da9be42bc1d1dad77d11079186c59e62315308454b2f442bdfffa7755c",
+    "s11": "2e566713b8ee8cbfcf94503cba2640bac78329b96f748ff0334a858e08287755",
+    "s12": "8a7841af15c5beacc75bf716eab0a317f722daab3a302ec190299ce0c3315350",
+    "s13": "6cc9f5f5d1d9a0d7a981363b2961d554bc1670d016cf5da011e18fd20d24b604",
+    "s14": "f4192a6b66ca1a9df3c0c8b84d6a76f9b7e2708145600fc43403217b7a52c540",
+    "s15": "f771307d6c5f071d884953878a527fd166185d3d25c88171a3028f27f2a174b8",
+    "s16": "f223e6b5a96e8c6195a47af2261f3ffdb2da6592ac65ab36dc87669411b7f75d",
+    "s17": "493a796efa5b231862b3ce9af7a0b4d33eb47162c7cf9e75c19e78f041971a27",
+    "s18": "a8fdaccbcc00dea2d881e6f33dbca396f55ac9a48a784860531f01f14666d645",
+    "s19": "e1a470831773831c7253aa2402eab63c6a03e418004a6c140215f11e2aff3722",
+    "s2": "0c6488cdae0f23d0600410d02191390e773858e9bc75008234f71cc66f01889b",
+    "s20": "9dca86a7ea316e5b22b94c70024ba182f82622bb73f8243655562dc2cb4fc8d3",
+    "s21": "8dc7453f756c4d2310baaa5a97b36e69467be72d1cb4221107161ac2abe26293",
+    "s22": "add386faf72355fcafb3bbbd6cbe5fd20a838df47fab9f6c3a9d116db8d4d29e",
+    "s23": "10a05db6298f320a13762d348e0d6fc166aad25921753c17b3936ee7f9e25239",
+    "s24": "d5f6d292f47236016559d0a135c6fbf9b38d6a20fc8fa81171485a3df0c421e8",
+    "s25": "8de857403f88ebb44d1c2c152b208a3da0a6765205ccd0f3c52e77bb1501698a",
+    "s26": "d198501e6e6b13f454ae892392e804b7a585ab71d8978983ef1ced8909f1bf3f",
+    "s3": "6cb602347e0232fe459028eff2010884381d987053d550c4565f581c23032095",
+    "s4": "aa5a29a8662005607992ae17fc914d47e8e48c68b7e65395b4865f6d33ea37f4",
+    "s5": "2ffa1a3b1d2b09433f25a83f8a7a59b1774249bac29b945f2c2273ace57cb1ba",
+    "s6": "6c8117bcfdc7d4b0bafdc4fb2185779998c71b1730b07a0d900b543f02c08ec1",
+    "s7": "07952e2e354db24e76860530568500cc2066b69b4255c020db83677e46cb18e2",
+    "s8": "7ca129403c95fcbc111273a2b419b29279191bc54c157bb6f7d8de0d5b160d34",
+    "s9": "0c546f1c0ce99eb4f03333edf6955f597fcb37c49baa31305dfd52c6b03364d8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T21:55:34.579987+00:00"
+}
