@@ -433,6 +433,23 @@ def _write_pointer(run_id: str, record: dict[str, Any]) -> None:
     runs._write_json(runs.pointer_path(run_id), record)
 
 
+def _discarded_since(snapshot: Mapping[str, Any]) -> bool:
+    """Whether a deliberate discard has been recorded for this request.
+
+    The pass holds the queued pointer in memory while it attempts a launch and
+    writes it back when the launch does not survive. A ``crew discard`` issued in
+    that window removes the pointer and records the departure in the run
+    directory; without this reading the restore would write the request back and
+    undo the discard. The record's presence is the fact the restore reads.
+    """
+    from reckon.crew.promotion import discard_record_path
+
+    try:
+        return discard_record_path(str(snapshot["run_id"])).exists()
+    except OSError:
+        return False
+
+
 def _restore_queued(
     snapshot: Mapping[str, Any],
     failure: str,
@@ -444,8 +461,12 @@ def _restore_queued(
 
     The restored pointer carries the same bounded back-off a failure annotated
     in place would: a request whose release already withdrew it is retried once
-    per back-off, not on every pass.
+    per back-off, not on every pass. A request discarded during the pass is not
+    written back at all: the discard stood, so the restore reads its record and
+    leaves the absence the operator asked for.
     """
+    if _discarded_since(snapshot):
+        return
     restored = copy.deepcopy(dict(snapshot))
     restored["phase"] = "queued"
     _stamp_failure(restored, failure, moment=moment or _now(), guard=guard)
