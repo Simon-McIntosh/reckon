@@ -8,7 +8,9 @@ nothing, through one exit the refusal branches share, and never removes a
 directory that already existed when the call began. These cases hold both
 halves: a paused lane leaves no new directory and still reports ``lane-paused``,
 an admitted dispatch keeps its directory, and a directory that predates the
-call survives a refusal.
+call survives a refusal. A hold that queues the request has launched nothing
+yet but has left a pointer that reads the brief later, so it keeps the
+directory and names the queued run.
 """
 
 from __future__ import annotations
@@ -157,6 +159,34 @@ def test_an_admitted_dispatch_keeps_its_run_directory(
     assert (directory / "brief.md").is_file()
     assert (directory / "plan.html").is_file()
     assert (directory / "plan-review.json").is_file()
+
+
+def test_a_queued_hold_keeps_the_brief_its_pointer_reads(
+    project: tuple[Path, Path, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _home, _repo, _path = project
+    dispatch = importlib.import_module("reckon.crew.dispatch")
+    admission = importlib.import_module("reckon.crew.dispatch_admission")
+
+    def hold(**kwargs):
+        held = admission.LaneHeld(
+            {"held": True, "state": "held", "detail": "the router grants 0 slots"}
+        )
+        held.queued = {"run_id": "queued-review", "position": 1}
+        raise held
+
+    monkeypatch.setattr(dispatch, "dispatch", hold)
+    subject = _subject()
+
+    result = recovery.dispatch_review_for_run(subject, config=_config(None))
+
+    assert result["dispatched"] is False
+    assert result["error"] == "lane-paused"
+    assert result["queued"] == {"run_id": "queued-review", "position": 1}
+    directory = plan_review.review_report_directory(
+        "sample", "fixture", subject["run_id"]
+    )
+    assert (directory / "brief.md").is_file()
 
 
 def test_a_run_directory_that_existed_before_the_call_survives_a_refusal(

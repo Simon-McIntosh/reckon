@@ -1182,9 +1182,11 @@ class LaneHeld(LanePaused):
     """A dispatch holds because the lane's own router grants it no worker slot.
 
     The lane is answering and its own arithmetic leaves this coordinator
-    session no room, so the node is held rather than refused: nothing was
-    created, the node is still ready, and the caller retries when the router's
-    next reading grants a slot. The allowance decision that produced the hold
+    session no room, so the node is held rather than refused: no worktree was
+    created and the node is still ready. On the local lane the request is
+    queued instead, and the queued record rides the exception as ``queued``;
+    that pointer launches later from the node's brief, so a caller must keep
+    whatever the brief names. The allowance decision that produced the hold
     rides the exception, so every surface reports the figure the router
     published rather than a second opinion about it.
     """

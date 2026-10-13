@@ -1483,9 +1483,10 @@ def _discard_composed_plan_review(
     when the fields were composed leaves the returned report untouched. A
     removal that fails is not swallowed — it is named on the report under
     ``discard_error`` with the path and the error, so a caller can see what was
-    left behind.
+    left behind. A hold that queued the request keeps the directory: the queued
+    pointer names the brief inside it and reads it when the lane admits the run.
     """
-    if not fields.get("report_directory_created"):
+    if not fields.get("report_directory_created") or report.get("queued"):
         return dict(report)
     directory = Path(str(fields.get("write_path") or ""))
     try:
@@ -1712,7 +1713,7 @@ def _dispatch_composed_review(
             backend=backend,
             reviewed_head=fields["head"],
         )
-        return {
+        report = {
             "run_id": run_id,
             "dispatched": False,
             "error": "lane-paused",
@@ -1720,6 +1721,13 @@ def _dispatch_composed_review(
             "lane_gate": gate,
             "reason": reason,
         }
+        # A local-lane hold queues the request: the queued pointer launches
+        # later from the brief in the composed run directory, so the report
+        # names the queued run and the caller keeps that directory.
+        queued = getattr(exc, "queued", None)
+        if queued:
+            report["queued"] = dict(queued)
+        return report
     except CrewError as exc:
         # Scope, member, follower, context-fit, plan visibility and competence
         # refusals all arrive here. The automatic path must not be the one place
