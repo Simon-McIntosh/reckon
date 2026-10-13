@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.98">
-<meta name="plan-version" content="300">
+<meta name="plan-version" content="301">
 <meta name="plan-modified" content="2026-10-13">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
@@ -1647,11 +1647,17 @@ reviewed worktree is untouched (git status --porcelain empty).</p></div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261013T030612958004-test-crew-shadow-moves-out" data-who="reckon-build" data-when="2026-10-13T03:47:00.822Z">
     <div class="r-comment-body"><p>Moved the fourteen test_shadow_* tests and the two candidate-config helpers only they use from tests/test_crew.py to tests/test_crew_shadow.py, bringing test_crew.py from 50332 to 45087 estimated tokens and test_crew_shadow.py to 5517, both under the 50000 worker-window bound and neither named by the window test; the two files collect 206 tests together, the same count test_crew.py held before the move.</p></div>
 </div>
+<div class="r-comment" data-section="s5" data-id="c-close-s5" data-who="reckon-build" data-when="2026-10-13T04:30:00Z">
+    <div class="r-comment-body"><p>§5 landed: the crew shadow tests live in <code>tests/test_crew_shadow.py</code> and test_crew.py fits the window (commit <code>dd9567b18</code>). 206 collected before and after, 206 passed; review 111, 0 added; verify-gate passed. <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed.html#s5-test-crew-shadow">evidence</a></p></div>
+</div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261013T030854385722-report-section-reference-uses-the-core" data-who="reckon-build" data-when="2026-10-13T04:00:03.673Z">
     <div class="r-comment-body"><p>reckon/crew/reports.py composes _PLAN_SECTION_REFERENCE from the shared SECTION_NUMBER_PATTERN core (named grammar constant passed to re.compile); head gate 5 passed EXIT=0 (both census ids), negative control restores the literal and both census ids fail EXIT=1, importer files 0 added failure against base</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261013T040559206491-review-of-report-section-reference-uses-the-core-b1519b8094d1" data-who="reckon-build" data-when="2026-10-13T04:15:48.313Z">
     <div class="r-comment-body"><p>review of r-20261013T030854385722-report-section-reference-uses-the-core stored at the .at-b1519b8094d1913b0a81a667cd4de2d378f888d6.json store path: goal_fidelity 20, evidence 18, scope_discipline 20, durability 17, fit 19, reuse 20 (total 114); reviewed_base_sha a99e008e833645efa448b3bac4287a8eccfe8c79, reviewed_head_sha b1519b8094d1913b0a81a667cd4de2d378f888d6, added_failure_count 0; one follow-on finding (continuation assertion passes under the reverted literal)</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-close-s8" data-who="reckon-build" data-when="2026-10-13T04:30:00Z">
+    <div class="r-comment-body"><p>§8 landed: the report's section reference composes from the shared core (commit <code>b1519b809</code>). Both census ids pass; the literal fails them; review 114, 0 added; verify-gate passed. <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed.html#s8-report-grammar">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261013T040651321268-review-of-race-winner-reads-its-own-write-abab0b460f94" data-who="reckon-build" data-when="2026-10-13T04:17:26.558Z">
     <div class="r-comment-body"><p>Independent review of r-20261013T031659638211-race-winner-reads-its-own-write stored at reviews/reckon/r-20261013T031659638211-race-winner-reads-its-own-write.at-abab0b460f94addb435ca6164b64f3bd33375feb.json: 6/6 dimensions scored (total 109) with reviewed base 40186023d head abab0b460, 0 added failures, and one follow-on finding that a fragment gate row cites an absent log.</p></div>

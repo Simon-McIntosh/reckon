@@ -2883,6 +2883,16 @@ reckon/crew/dispatch.py:4535: TypeError
     <p>The <code>IMAGE_BYTES_OPENED</code> guard in <code>tests/test_spa_owed_captures.py</code> now fires only on opens of image files, so the harness's <code>/proc/&lt;pid&gt;/environ</code> read inside the guarded window no longer errors the teardown (commits <code>4fc92ea55</code>, <code>243702994</code>; merged at <code>9a820814b</code>). The reproduction with an injected environ read errored at base and passes at head; 8 passed; opening a PNG inside the window still trips the guard. Review 103/120, no added failure; its follow-on notes the test keeps its own image-suffix set beside <code>FIGURE_SUFFIXES</code>, deliberately narrower. <code>crew verify-gate</code> passed at the integrated head.</p>
   </section>
 
+  <section id="s5-test-crew-shadow">
+    <h2>§5 — tests/test_crew.py fits a worker window</h2>
+    <p>The ten <code>crew shadow</code> tests moved from <code>tests/test_crew.py</code> to <code>tests/test_crew_shadow.py</code> with the helpers only they use (commit <code>dd9567b18</code>; merged at <code>f25804d5b</code>). Collection finds 206 tests across the two files, as <code>test_crew.py</code> held before the move, and all 206 pass. <code>test_crew.py</code> no longer appears in the window test's findings; appending the moved tests back puts it at 50,126 estimated tokens and the window test names it. Review 111/120, no added failure; <code>crew verify-gate</code> passed at the integrated head.</p>
+  </section>
+
+  <section id="s8-report-grammar">
+    <h2>§8 — the report&#x27;s section reference uses the shared grammar</h2>
+    <p><code>_PLAN_SECTION_REFERENCE</code> in <code>reckon/crew/reports.py</code> now composes from <code>SECTION_NUMBER_PATTERN</code>, the shared section-number core in <code>reckon/_plan_html.py</code>, instead of the literal <code>§\s*\d</code> (commit <code>b1519b809</code>; merged at <code>153446876</code>). Both section-grammar census ids pass, and <code>tests/test_report_section_reference_uses_the_core.py</code> checks the composed pattern against the samples the literal matched. Restoring the literal fails both census ids. The review scored 114/120 with no added failure. Its one follow-on: the new continuation case (<code>§5.1</code>) also passes under the old literal, so the census ids are what pin the change. <code>crew verify-gate</code> passed at the integrated head.</p>
+  </section>
+
 </main>
 </body>
 </html>
