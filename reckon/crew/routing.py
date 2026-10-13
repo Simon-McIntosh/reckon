@@ -754,9 +754,12 @@ def _inspect_workspace(
 
     The two commit-list fields are null exactly when the commits beyond the
     integration head were not measured — this caller did not ask, the head is
-    an ancestor, the tree is clean, or the comparison could not run — and the
-    sibling ``commits_unmeasured_reason`` names which. A measured row keeps
-    both lists even when they are empty.
+    an ancestor, or the comparison could not run — and the sibling
+    ``commits_unmeasured_reason`` names which. A measured row keeps both lists
+    even when they are empty. A clean tree whose head is unreachable is
+    measured as well as a dirty one: the commits a deliberately abandoned tree
+    carries are what an explicit pin archives, and that list cannot be read off
+    the working-tree status.
     """
     state = _tree_state(path)
     if not state.get("available"):
@@ -801,7 +804,7 @@ def _inspect_workspace(
     )
     claims = sorted(claimed_by)
     commits: list[dict[str, str]] | None = None
-    if release_residue and not reachable and dirty:
+    if release_residue and not reachable:
         commits = _commits_beyond_merge_base(repo, path, integrated_into)
     if commits is None:
         if not release_residue:
@@ -813,10 +816,6 @@ def _inspect_workspace(
             unmeasured_reason = (
                 "the worktree head is an ancestor of the integration head, so "
                 "it carries no commits beyond it"
-            )
-        elif not dirty:
-            unmeasured_reason = (
-                "the worktree is clean, so no residue release reads its commits"
             )
         else:
             unmeasured_reason = (
@@ -1591,13 +1590,15 @@ class GcSweepError(CrewError):
 def _pinnable_unique_commits(item: Mapping[str, Any], pin_unique_commits: bool) -> bool:
     """Whether an explicit pin request makes this row reclaimable.
 
-    Only a dirty row carrying measured non-equivalent commits qualifies: the
-    archive ref is what makes its removal safe, so a row whose commits were
-    never measured is not released on the strength of an unread comparison.
+    Only a row carrying measured non-equivalent commits qualifies, and that
+    covers both a dirty tree and a clean one whose head is unreachable — the
+    two states a deliberately abandoned tree is left in. The archive ref is
+    what makes its removal safe, so a row whose commits were never measured is
+    not released on the strength of an unread comparison.
     """
     return bool(
         pin_unique_commits
-        and item["classification"] == "dirty"
+        and item["classification"] in ("dirty", "unintegrated")
         and item.get("non_equivalent_commits")
     )
 
@@ -1785,6 +1786,29 @@ def _stale_run_locks(
             entry["removed"] = True
         entries.append(entry)
     return entries
+
+
+def _clear_run_lock(run_id: str, *, apply: bool) -> dict[str, Any]:
+    """Remove one run's own lock file, the one ``_pointer_lock`` leaves behind.
+
+    A run whose recorded worktree is already gone has finished, so an explicit
+    run-scoped sweep clears its lock rather than waiting for the retention
+    window the age of a lock is otherwise judged against. The queue's own
+    ``queued-dispatch.lock`` is not a run's and is never matched.
+    """
+    from reckon.crew.runs import crew_home
+
+    lock = crew_home() / "locks" / f"{run_id}.lock"
+    entry: dict[str, Any] = {
+        "run_id": run_id,
+        "path": str(lock),
+        "action": "prune",
+        "removed": False,
+    }
+    if lock.is_file() and apply:
+        lock.unlink()
+        entry["removed"] = True
+    return entry
 
 
 def _mounted_ledgered_run_ids() -> tuple[set[str], list[str]]:
@@ -2087,12 +2111,14 @@ def garbage_collect(
 ) -> dict[str, Any]:
     """Inspect or remove disposable workspaces and promoted transient state.
 
-    ``pin_unique_commits`` releases a dirty worktree whose commits have no
-    patch-equivalent on the integration head by first pinning those commits
-    into an archive ref under ``refs/reckon/archive/``; without it such a tree
-    is kept, as before. ``run_id`` confines the pass to that run's own tree and
-    to that run's pointer and run directory, so clearing one held tree can
-    never reach a peer's.
+    ``pin_unique_commits`` releases a worktree — dirty, or clean with an
+    unreachable head — whose commits have no patch-equivalent on the integration
+    head by first pinning those commits into an archive ref under
+    ``refs/reckon/archive/``; without it such a tree is kept, as before.
+    ``run_id`` confines the pass to that run's own tree and to that run's
+    pointer and run directory, so clearing one held tree can never reach a
+    peer's; a recorded tree that is gone or no longer registered is reported as
+    already removed rather than refused.
     """
     if retention_days < 0:
         raise CrewError("retention days cannot be negative")
@@ -2102,6 +2128,8 @@ def garbage_collect(
     if not _resolve_commit(repo_root, integrated_into):
         raise CrewError(f"integration revision {integrated_into!r} is not a commit")
     confined_to: Path | None = None
+    already_removed_run = ""
+    already_removed_worktree = ""
     if run_id:
         confined_to = _run_worktree_path(repo_root, project, run_id)
         registered = {
@@ -2110,10 +2138,15 @@ def garbage_collect(
             if path != repo_root
         }
         if confined_to not in registered:
-            raise CrewError(
-                f"run {run_id} names worktree {confined_to}, which is not a "
-                "worktree this repository registers"
-            )
+            # The run's recorded tree is no longer a worktree this repository
+            # registers: an earlier release already took it. That is the state a
+            # caller reaches after pinning the tree's commits and removing it by
+            # hand, and it is the ordinary end of the run's life rather than a
+            # refusal, so nothing is confined here, the run's remaining leftovers
+            # are still cleared below, and the tree is reported as already removed.
+            already_removed_run = run_id
+            already_removed_worktree = str(confined_to)
+            confined_to = None
     worktrees: list[dict[str, Any]] = []
     removed: list[str] = []
     refused: list[str] = []
@@ -2141,7 +2174,7 @@ def garbage_collect(
                 any(path.is_relative_to(root) for root in roots)
                 or path.is_relative_to(runs_root)
             )
-            and (confined_to is None or path.resolve() == confined_to)
+            and (not run_id or path.resolve() == confined_to)
         ]
         worktrees = []
         for path in sorted(candidates):
@@ -2232,6 +2265,31 @@ def garbage_collect(
                         item.update(saved)
                         if "unique" in saved["residue_classes"].values():
                             residue_report.append({"worktree": str(path), **saved})
+                    elif item["classification"] == "unintegrated":
+                        # A clean, unreachable tree carrying commits with no
+                        # patch-equivalent on the integration head. There is no
+                        # residue to save, so the pin alone keeps them and the
+                        # tree is then released whole. Re-read it first, as the
+                        # dirty branch does, so a head that moved since the
+                        # classification is not released on a stale reading.
+                        current = _inspect_workspace(
+                            repo_root,
+                            path,
+                            integrated_into,
+                            (),
+                            raise_on_unavailable=False,
+                            release_residue=True,
+                        )
+                        if (
+                            current["classification"] != "unintegrated"
+                            or current["head"] != item["head"]
+                        ):
+                            item.update(current)
+                            continue
+                        archive_ref = f"{ARCHIVE_REF_PREFIX}{path.name}"
+                        _pin_archived_commits(repo_root, archive_ref, item["head"])
+                        item["archive_ref"] = archive_ref
+                        release = _release_worktree_whole(repo_root, path)
                     elif item["classification"] == "disposable":
                         shadow_record = shadow_records.get(path.resolve())
                         if shadow_record is None or not _shadow_patch_retained(
@@ -2436,6 +2494,16 @@ def garbage_collect(
             ledgered=ledgered,
             retention_days=retention_days,
         )
+        run_lock_reports: list[dict[str, Any]] = []
+        if already_removed_run and already_removed_run not in live_ids:
+            # An already-removed run's tree is gone, so its lock is cleared
+            # regardless of age: the retention window judges a lock left behind
+            # by a swept tree, and there is none to judge. It is dropped from
+            # the age-based list so the run's lock is reported once.
+            run_lock_reports = [_clear_run_lock(run_id, apply=apply)]
+            lock_reports = [
+                row for row in lock_reports if row["run_id"] != run_id
+            ]
         unledgered_run_reports = _unledgered_run_directories(
             apply=apply,
             now=now,
@@ -2560,6 +2628,10 @@ def garbage_collect(
         ),
         "lock_files": lock_reports,
         "lock_files_removed": sum(1 for item in lock_reports if item.get("removed")),
+        "already_removed": bool(already_removed_run),
+        "already_removed_run": already_removed_run,
+        "already_removed_worktree": already_removed_worktree,
+        "run_lock": run_lock_reports,
         "unledgered_run_directories": unledgered_run_reports,
         "unledgered_run_directories_removed": sum(
             1 for item in unledgered_run_reports if item.get("removed")

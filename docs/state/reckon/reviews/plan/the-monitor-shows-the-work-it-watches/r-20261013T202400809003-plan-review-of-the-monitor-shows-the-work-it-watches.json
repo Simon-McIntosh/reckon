@@ -1,0 +1,74 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-13T20:38:48.642Z",
+  "dispatched_at": "2026-10-13T20:25:07Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-shows-the-work-it-watches.html:308",
+      "id": "reasoning-1",
+      "reason": "the discriminator must restart an untrapped-signal death (excluding only the TERM/HUP the producer itself handles, which already exit 128+signum and are not negative) or state in the plan why such deaths are out of scope, or a fault-killed producer is left unrestarted and the publisher gap returns.",
+      "text": "\u00a719 lists \"a process killed by a signal reports a negative status\" among \"A deliberate stop is left alone\", so the supervisor's \"restarts only an error exit, a status from 1 to 127\" never restarts a producer killed by a signal it does not handle; the producer traps only SIGTERM and SIGHUP (reckon/crew_follow_commands.py:2836, exiting 128+signum), so a negative wait() status arises only from an untrapped signal \u2014 SIGKILL, or a fault signal such as SIGSEGV/SIGBUS (plausible on the GPFS-backed watch stream on this workstation) \u2014 which is a crash, not a deliberate stop, and leaves exactly the empty seat \u00a719 exists to fill",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "fa94b325ed5dce84d8a85a76543dd38bac7ace40c5edee9c0ddc81c835de2bf4",
+  "plan_slug": "the-monitor-shows-the-work-it-watches",
+  "plan_version": 61,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-13T20:40:46.001988+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-13T20:40:46.001988+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/the-monitor-shows-the-work-it-watches/r-20261013T202400809003-plan-review-of-the-monitor-shows-the-work-it-watches.json",
+  "review_run_id": "r-20261013T202400809003-plan-review-of-the-monitor-shows-the-work-it-watches",
+  "reviewed_blob_sha": "11b90b793568fd30df65146eb628224815bb77a6",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited sites resolve: _WATCH_PRODUCER_SUPERVISOR waits once and exits with the producer's status (reckon/crew/dispatch_watch.py:193), _start_watch_producer is at reckon/crew/dispatch_watch.py:235 and is reached from dispatch.py:1424 and via watch_unit.ensure_watcher_service, SystemExit(128 + signum) is at reckon/crew_follow_commands.py:2832 and pinned by tests/test_producer_says_why_it_stops.py:213 (exit_code == 128 + SIGTERM), and Restart=always is at reckon/crew/watch_unit.py:227; the \"see \u00a718\" reference resolves to #s18.",
+    "done_when": "pass \u2014 \u00a719's done-when is measurable (a restarted producer holds the seat within the back-off; exit-zero and exit-143 producers and a signalled supervisor are not restarted; the bound halts a repeat crasher) and it names a declared negative control (\"remove the restart; the seat must then stay empty after the crash\"), which is exactly today's one-wait supervisor, so the control is red on the base.",
+    "evidence_paths": "pass \u2014 \u00a719 logs its control \"under the run directory\", the durable per-run path under ~/.config/reckon/crew/runs/, not a session scratchpad or a node-local /tmp.",
+    "naming": "pass \u2014 \u00a719 names only mechanisms and paths (_WATCH_PRODUCER_SUPERVISOR, _start_watch_producer, tests/test_a_crashed_producer_is_restarted.py); no plan labels, ticket numbers or version tags, and no changelog prose.",
+    "reasoning": "a finding \u2014 \u00a719's exit-status discriminator folds every producer killed by an untrapped signal into \"a deliberate stop\" and never restarts it, though an untrapped-signal death is a crash.",
+    "single_goal": "pass \u2014 \u00a719 carries one deliverable, restarting a crashed fallback producer, and its non-restart cases are the bounds of that one goal, not a second deliverable.",
+    "wiring": "pass \u2014 \u00a719 declares no depends-on edge, and it needs none: \u00a719 writes only reckon/crew/dispatch_watch.py and tests/test_a_crashed_producer_is_restarted.py, which no other section claims, so no ordering relationship is missing or mis-pointed."
+  },
+  "section_digests": {
+    "_document": "37fd08fe56f7ebb815d375d72d55710d19a3a92edf70f43f0761cf26eff3f528",
+    "s1": "52c4b79a6da0bc1e71b00748d6314e8a255bd5fa91b6acae30f6943e3c16cee5",
+    "s10": "ce58141a18e475a484415380e6ae181e597ad53c112e6cb22e1cfc60bb6b09fc",
+    "s11": "24bc7e718fa0dce82e99f82b1a80aa7f382204659e1a5fe08844c9bd4df9f21d",
+    "s12": "6b56be12afc45f4700363688128158c594eba3edb30de411ea7d4ca356b3335b",
+    "s13": "af506684f5bf69d74d9b3cdbdf5fa5888d1c3e2ec6b43d93fb08dc79c5821889",
+    "s14": "87e50c4f3edfdf578cc4501636727b40a183a8737e7f4673669428dbae23a0e5",
+    "s15": "09f7a8c8a774c6a9eebd4d5d69d79451363a282a7bf1bb77100479e9a7e98a02",
+    "s16": "867b2716d09b2503e28914fb9f8d9ef0902ca6517f1b150bda6a941a7b0be06b",
+    "s17": "141c743461dc46b9edeb2cbc1bdc6d82a711cf479391112777980c80b87d6e01",
+    "s18": "fce8a8c220cf6ee49aad89aea5514558f0aef180fc5f908cd07bf61114fbfbd2",
+    "s19": "90e9c15d909505aef08e6a2e15efa3dcfa8ba8a004cc6732dc0091a1c7dae5e0",
+    "s2": "eeca9b70e096de79d92846f4178d8f31832962cb9c7c73d122ac2a9e06546f32",
+    "s3": "a37e4f17cfa5318f2229db2eabe7a7b80adf7bb6fcb474e3d262981478abba8e",
+    "s4": "fb6bae83cab6ff2e0a33bf64f8a01d35db72cb3113a73e4659d22617724629c9",
+    "s5": "349ee19ab8c71fbc5e62c4cfa2fd4c32d34af2e2f3e9ced2db0580bfd0e74815",
+    "s6": "301b59df6e0fdccf6650e206628516f0e967dbf4e1b58a616e3d6999015f18cc",
+    "s7": "aede0bed1a72c26f45a72032497a3a58f24022a1a5e8cd4f8f6e08aada09aab3",
+    "s8": "7b9b1e94e523da3024a014b4d3d8532114544257c92fcfe64893085d2166840f",
+    "s9": "b85d6764b003c3933d1609383c69602e5f4b2d502c8200fe4bab51f3e9085466"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T20:40:01.756303+00:00"
+}
