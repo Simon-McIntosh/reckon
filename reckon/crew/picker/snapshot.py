@@ -746,8 +746,19 @@ def candidates(
     review_excluded: set[str] = set()
     if request.node.role == "review":
         review_excluded = recovery._review_excluded_backends(config)
+    variants = []
+    lanes = config.get("lanes") or {}
+    for name, declared in config.get("backends", {}).items():
+        if declared.get("derived_from"):
+            continue
+        lane = lanes.get(name) if isinstance(lanes, Mapping) else None
+        models = lane.get("models") if isinstance(lane, Mapping) else None
+        if isinstance(models, Mapping) and models:
+            variants.extend((name, key, model) for key, model in models.items())
+        else:
+            variants.append((name, None, None))
     result = []
-    for name in config.get("backends", {}):
+    for name, model_key, model_settings in variants:
         local = name == config.get("local_backend")
         _, backend = routing.resolve_role_override(
             config,
@@ -756,6 +767,13 @@ def candidates(
             name,
             capability_class=str(request.capability.get("class") or ""),
         )
+        if isinstance(model_settings, Mapping):
+            backend.update(
+                (key, value)
+                for key, value in model_settings.items()
+                if key != "name" and value is not None
+            )
+            backend["model_key"] = model_key
         model = backend.get("model")
         reasons = []
         if name in review_excluded:
