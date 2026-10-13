@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.98">
-<meta name="plan-version" content="294">
+<meta name="plan-version" content="295">
 <meta name="plan-modified" content="2026-10-13">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
@@ -1629,11 +1629,17 @@ reviewed worktree is untouched (git status --porcelain empty).</p></div>
 <div class="r-comment" data-section="s14" data-id="c-run-r-20261013T031830337717-image-guard-catches-only-images" data-who="reckon-build" data-when="2026-10-13T03:38:58.414Z">
     <div class="r-comment-body"><p>Narrowed the capture image guard to image reads in tests/test_spa_owed_captures.py — the IMAGE_BYTES_OPENED refusal now fires only on image-file reads, so the conftest per-test seat-record reap's /proc/&lt;pid&gt;/environ attribution read no longer trips it at teardown; a control test opens a PNG under the guard and requires the refusal. Measured: tests/test_spa_owed_captures.py 8 passed EXIT=0, the collision arm (a seat record present under the base temp root) passes with no teardown error, and the negative control fails the gate id EXIT=1.</p></div>
 </div>
+<div class="r-comment" data-section="s14" data-id="c-close-s14" data-who="reckon-build" data-when="2026-10-13T04:20:00Z">
+    <div class="r-comment-body"><p>§14 landed: the capture test's guard fires only on image reads (commits <code>4fc92ea55</code>, <code>243702994</code>). 8 passed; a PNG opened in the window still trips it; review 103, 0 added; verify-gate passed. <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed.html#s14-image-guard">evidence</a></p></div>
+</div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261013T034241682202-review-of-review-dispositions-move-out-e20156cdf168" data-who="reckon-build" data-when="2026-10-13T03:59:19.235Z">
     <div class="r-comment-body"><p>independent review of r-20261013T030451228145-review-dispositions-move-out stored at head e20156cdf over base a99e008e: all 6 dimensions scored (goal_fidelity 20, evidence 15, scope_discipline 20, durability 16, fit 18, reuse 20; total 109), 2 follow-on findings and 0 blocking; added_failure_count is unmeasured (null) because the reviewed manifest names no baseline_suite/after_suite pair and its base arm log is truncated.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261013T030451228145-review-dispositions-move-out" data-who="reckon-build" data-when="2026-10-13T03:42:09.022Z">
     <div class="r-comment-body"><p>review.py split: the dimension and finding disposition block moved to reckon/crew/review_dispositions.py; review.py 50,598 -&gt; 45,544 estimated tokens and the new module is 5,646, both under the 50,000 bound, and the window test names neither file.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-10-13T04:20:00Z">
+    <div class="r-comment-body"><p>§4 landed: review.py's disposition block lives in <code>reckon/crew/review_dispositions.py</code> and neither file exceeds the window (commits <code>7b2011895</code>, <code>e20156cdf</code>). 98 importer files 881 passed at the integrated head; review 109, 0 added. <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed.html#s4-review-dispositions">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261013T034811621237-review-of-test-crew-shadow-moves-out-dd9567b18082" data-who="reckon-build" data-when="2026-10-13T04:03:41.497Z">
     <div class="r-comment-body"><p>Independently reviewed run r-20261013T030612958004-test-crew-shadow-moves-out at base a99e008e..head dd9567b18; the move of the fourteen test_shadow_* tests and two candidate-config helpers into tests/test_crew_shadow.py is faithful (moved bodies match the removed bodies line for line), the window test names neither target file, and the pre-move 206-test collection is preserved (base test_crew.py 206 = head 192+14); two follow-on findings recorded.</p></div>

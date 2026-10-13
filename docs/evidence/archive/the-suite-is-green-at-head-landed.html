@@ -2873,6 +2873,16 @@ reckon/crew/dispatch.py:4535: TypeError
     <p>The doctor in <code>reckon/project_maintenance_commands.py</code> now reads <code>mcp_census.LOG_ROOT</code> and <code>TRANSCRIPT_ROOT</code> at call time rather than through default arguments bound at import, so <code>tests/test_mcp_census.py</code> points both at a temporary fixture and computes its expected line from it (commit <code>fd7a0908c</code>, merged at <code>51e255160</code>). The test no longer reads this node's live MCP connections. 6 passed against 1 failed, 5 passed at base; an expectation one connection above the fixture fails. Review 108/120, no added failure; verify-gate passed at the integrated head.</p>
   </section>
 
+  <section id="s4-review-dispositions">
+    <h2>§4 — reckon/crew/review.py fits a worker window</h2>
+    <p>The dimension and finding disposition block, <code>declared_dimension_floors</code> through <code>record_finding_disposition</code>, moved from <code>reckon/crew/review.py</code> to <code>reckon/crew/review_dispositions.py</code> (422 lines out, 469 in), and its callers in <code>obligation_snapshot.py</code>, <code>obligations.py</code>, <code>crew_run_commands.py</code> and four test files import it from there (commits <code>7b2011895</code>, <code>e20156cdf</code>; merged at <code>81ede78e1</code>). <code>_write_record</code> stays in <code>review.py</code>, and no moved name is re-exported. The window test now names neither file; it still names <code>routing.py</code> and <code>tests/test_crew.py</code>, which §6 and §5 own. Appending the block back pushes <code>review.py</code> to 50,760 estimated tokens and the window test names it. The 98 test files importing either module passed 881 at the worker's head and 881 again when <code>crew verify-gate</code> replayed them at the integrated head. Review 109/120, no added failure.</p>
+  </section>
+
+  <section id="s14-image-guard">
+    <h2>§14 — the image guard catches only image reads</h2>
+    <p>The <code>IMAGE_BYTES_OPENED</code> guard in <code>tests/test_spa_owed_captures.py</code> now fires only on opens of image files, so the harness's <code>/proc/&lt;pid&gt;/environ</code> read inside the guarded window no longer errors the teardown (commits <code>4fc92ea55</code>, <code>243702994</code>; merged at <code>9a820814b</code>). The reproduction with an injected environ read errored at base and passes at head; 8 passed; opening a PNG inside the window still trips the guard. Review 103/120, no added failure; its follow-on notes the test keeps its own image-suffix set beside <code>FIGURE_SUFFIXES</code>, deliberately narrower. <code>crew verify-gate</code> passed at the integrated head.</p>
+  </section>
+
 </main>
 </body>
 </html>
