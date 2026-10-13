@@ -1,0 +1,82 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured from the reviewed run's own gate logs base-suite.log (4 failed, 72 passed) and after-suite.log (76 passed) under r-20261013T093851761826-a-jev-hold-queues-for-the-local-lane: the head arm fails no test the base arm passed, so the pre-existing covering files added no failure; the four base-arm failures are the four new tests in tests/test_a_jev_hold_queues_for_the_local_lane.py, absent at base by design.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:133",
+    "reckon/crew/plan_review.py:2767",
+    "reckon/crew/plan_review.py:3369",
+    "reckon/crew/recovery_repair_dispatch.py:1005"
+  ],
+  "completed_at": "2026-10-13T13:12:36.569Z",
+  "dispatched_at": "2026-10-13T12:51:38Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T093851761826-a-jev-hold-queues-for-the-local-lane/base-suite.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the gate logs (base-suite.log, after-suite.log, head-tests.log) open with bare pytest output and carry no header naming the revision, tree and command the manifest contract requires, so a reader cannot tie the recorded result to 86381d842 and aa7623bfc from the log itself."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T093851761826-a-jev-hold-queues-for-the-local-lane/manifest.md",
+      "line": "17",
+      "severity": "follow-on",
+      "text": "follow-on: the baseline_suite and after_suite fields are free prose (\"4 failed, 72 passed\") rather than the structured arm JSON (revision, command, exit_status, log_path, completed, failure_count, failure_ids), so a reader that reduces the two arms from the manifest finds no machine-readable base/head pair."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T093851761826-a-jev-hold-queues-for-the-local-lane/manifest.md",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed run's own directory (runs/r-20261013T121159494151-a-jev-hold-queues-for-the-local-lane) holds no manifest.md \u2014 it was delivered to the sibling run dir r-20261013T093851761826 per the dispatch's own delivery path \u2014 so a reader that resolves run_dir(reviewed_run_id)/manifest.md (reckon/crew/review.py:2163 annotate_review_of_run) derives no added-failure count for this run."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "1599",
+      "severity": "follow-on",
+      "text": "follow-on: a dispatcher-continued hold records route_mode OVERRIDDEN_HOLD_ROUTE_MODE, whose documented meaning at reckon/crew/picker/outcomes.py:516 is an operator overruling a hold, so summarize()'s route_modes counter now mixes operator overrides with automatic continuations and undercounts neither."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read aa7623bfc against its base 86381d842 revision by revision; it changes three files (+368/-3) \u2014 reckon/crew/dispatch.py adds _offered_local_backend (line 225) and the hold override (726), reckon/crew/picker/outcomes.py:236-239 adds run_id/queued to the picker-hold row, and a 274-line test file is added \u2014 and every path is inside the declared scope.",
+    "done_when": "the done_when's five cases are each a test in tests/test_a_jev_hold_queues_for_the_local_lane.py \u2014 queued (line 151), launch on local (174), no local candidate stays budget-hold (193), malformed node refused not-dispatchable (207), admission relaunch launches (225) \u2014 plus the \"no added failure against base\" clause; the manifest records 5 passed at that file, base arm 4 failed/72 passed and head arm 76 passed, so the four base-arm failures are the four new tests and the six pre-existing covering files added none.",
+    "goal": "the node goal is that a Jev hold whose offered candidates include the local backend queues the node on that lane; reckon/crew/dispatch.py:726 rewrites such a hold to a route on the offered local lane (backend name, local=True) before plan_dispatch runs, and a hold offering no local candidate is left untouched so it still raises BudgetHold.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T093851761826-a-jev-hold-queues-for-the-local-lane/manifest.md; it records status complete, the landed revision aa7623bfc, the base/head/negative-control logs, and gate results 4 failed/72 passed at base and 76 passed at head, though its baseline_suite and after_suite fields are prose rather than the structured arm record the manifest schema names.",
+    "write_paths": "the declared scope is reckon/crew/dispatch.py, reckon/crew/picker/outcomes.py, tests/test_a_jev_hold_queues_for_the_local_lane.py, docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/a-jev-hold-queues-for-the-local-lane.html and the matching figures dir; the diff touches only the first three, and the manifest reports no fragment or figure written, so every path the change touches is inside the fence."
+  },
+  "justifications": {
+    "durability": "the negative control (force _offered_local_backend to None, re-raising the hold before the local continuation) reddens four of the five tests in negative-control.log:1, and each added assertion reads an independent output (queued pointer, hold row, exit code) rather than a value the test passed in.",
+    "evidence": "the done_when's five cases are asserted in tests/test_a_jev_hold_queues_for_the_local_lane.py:151-244 and the manifest records the base 4 failed/72 passed and head 76 passed arms, so the measure's clause is evidenced rather than merely claimed.",
+    "fit": "the added code follows the surrounding lazy-import idiom of reckon/crew/dispatch.py:770 and names nothing the naming rules forbid, but _overridden_hold_route_mode at :250 is a whole function existing only to import one constant the module already binds at its bottom import block (:2334).",
+    "goal_fidelity": "reckon/crew/dispatch.py:732 rewrites a hold offering the local lane to a route on it and the queued branch at :1026 writes the queued pointer, so the goal's \"queues the node on the local lane\" is implemented.",
+    "reuse": "_offered_local_backend (reckon/crew/dispatch.py:225) reads the serialized picker answer rather than the Candidate objects reckon/crew/picker/lane_context.py:342 lane_groups already owns, so it repeats the \"local lane among the offered candidates\" grouping at :389 without extending that owner, though no dict-level helper existed to extend.",
+    "scope_discipline": "every path in the diff (reckon/crew/dispatch.py, reckon/crew/picker/outcomes.py, tests/test_a_jev_hold_queues_for_the_local_lane.py) is inside the declared write paths named in the manifest."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a Jev hold whose offered candidates include the local backend queues the node on that lane; reckon/crew/dispatch.py:726 rewrites such a hold to a route on the offered local lane (backend name, local=True) before plan_dispatch runs, and a hold offering no local candidate is left untouched so it still raises BudgetHold.\nVERDICT done_when: the done_when's five cases are each a test in tests/test_a_jev_hold_queues_for_the_local_lane.py \u2014 queued (line 151), launch on local (174), no local candidate stays budget-hold (193), malformed node refused not-dispatchable (207), admission relaunch launches (225) \u2014 plus the \"no added failure against base\" clause; the manifest records 5 passed at that file, base arm 4 failed/72 passed and head arm 76 passed, so the four base-arm failures are the four new tests and the six pre-existing covering files added none.\nVERDICT write_paths: the declared scope is reckon/crew/dispatch.py, reckon/crew/picker/outcomes.py, tests/test_a_jev_hold_queues_for_the_local_lane.py, docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/a-jev-hold-queues-for-the-local-lane.html and the matching figures dir; the diff touches only the first three, and the manifest reports no fragment or figure written, so every path the change touches is inside the fence.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T093851761826-a-jev-hold-queues-for-the-local-lane/manifest.md; it records status complete, the landed revision aa7623bfc, the base/head/negative-control logs, and gate results 4 failed/72 passed at base and 76 passed at head, though its baseline_suite and after_suite fields are prose rather than the structured arm record the manifest schema names.\nVERDICT diff: read aa7623bfc against its base 86381d842 revision by revision; it changes three files (+368/-3) \u2014 reckon/crew/dispatch.py adds _offered_local_backend (line 225) and the hold override (726), reckon/crew/picker/outcomes.py:236-239 adds run_id/queued to the picker-hold row, and a 274-line test file is added \u2014 and every path is inside the declared scope.\nCALL_SITES: reckon/crew/queue_admission.py:133, reckon/crew/plan_review.py:2767, reckon/crew/plan_review.py:3369, reckon/crew/recovery_repair_dispatch.py:1005\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:732 rewrites a hold offering the local lane to a route on it and the queued branch at :1026 writes the queued pointer, so the goal's \"queues the node on the local lane\" is implemented.\nSCORE evidence: 18\nJUSTIFICATION evidence: the done_when's five cases are asserted in tests/test_a_jev_hold_queues_for_the_local_lane.py:151-244 and the manifest records the base 4 failed/72 passed and head 76 passed arms, so the measure's clause is evidenced rather than merely claimed.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff (reckon/crew/dispatch.py, reckon/crew/picker/outcomes.py, tests/test_a_jev_hold_queues_for_the_local_lane.py) is inside the declared write paths named in the manifest.\nSCORE durability: 18\nJUSTIFICATION durability: the negative control (force _offered_local_backend to None, re-raising the hold before the local continuation) reddens four of the five tests in negative-control.log:1, and each added assertion reads an independent output (queued pointer, hold row, exit code) rather than a value the test passed in.\nSCORE fit: 16\nJUSTIFICATION fit: the added code follows the surrounding lazy-import idiom of reckon/crew/dispatch.py:770 and names nothing the naming rules forbid, but _overridden_hold_route_mode at :250 is a whole function existing only to import one constant the module already binds at its bottom import block (:2334).\nSCORE reuse: 17\nJUSTIFICATION reuse: _offered_local_backend (reckon/crew/dispatch.py:225) reads the serialized picker answer rather than the Candidate objects reckon/crew/picker/lane_context.py:342 lane_groups already owns, so it repeats the \"local lane among the offered candidates\" grouping at :389 without extending that owner, though no dict-level helper existed to extend.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T093851761826-a-jev-hold-queues-for-the-local-lane/base-suite.log:1 follow-on: the gate logs (base-suite.log, after-suite.log, head-tests.log) open with bare pytest output and carry no header naming the revision, tree and command the manifest contract requires, so a reader cannot tie the recorded result to 86381d842 and aa7623bfc from the log itself.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T093851761826-a-jev-hold-queues-for-the-local-lane/manifest.md:17 follow-on: the baseline_suite and after_suite fields are free prose (\"4 failed, 72 passed\") rather than the structured arm JSON (revision, command, exit_status, log_path, completed, failure_count, failure_ids), so a reader that reduces the two arms from the manifest finds no machine-readable base/head pair.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T093851761826-a-jev-hold-queues-for-the-local-lane/manifest.md:1 follow-on: the reviewed run's own directory (runs/r-20261013T121159494151-a-jev-hold-queues-for-the-local-lane) holds no manifest.md \u2014 it was delivered to the sibling run dir r-20261013T093851761826 per the dispatch's own delivery path \u2014 so a reader that resolves run_dir(reviewed_run_id)/manifest.md (reckon/crew/review.py:2163 annotate_review_of_run) derives no added-failure count for this run.\nFINDING reckon/crew/dispatch.py:1599 follow-on: a dispatcher-continued hold records route_mode OVERRIDDEN_HOLD_ROUTE_MODE, whose documented meaning at reckon/crew/picker/outcomes.py:516 is an operator overruling a hold, so summarize()'s route_modes counter now mixes operator overrides with automatic continuations and undercounts neither.",
+  "review_run_id": "r-20261013T125110028830-review-of-a-jev-hold-queues-for-the-local-lane-aa7623bfcadf",
+  "reviewed_base_sha": "86381d84235d8d2a5f3c7d30698e63556c0cbbbd",
+  "reviewed_head_sha": "aa7623bfcadfa806c1456e9590edb4e3a2c3b547",
+  "reviewed_run_id": "r-20261013T121159494151-a-jev-hold-queues-for-the-local-lane",
+  "reviewer": {
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261013T125110028830-review-of-a-jev-hold-queues-for-the-local-lane-aa7623bfcadf",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T13:09:56.622314+00:00",
+  "total": 106
+}
