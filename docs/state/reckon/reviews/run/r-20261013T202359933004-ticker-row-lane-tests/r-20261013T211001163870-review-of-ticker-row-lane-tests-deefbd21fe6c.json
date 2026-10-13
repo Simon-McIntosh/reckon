@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-13T21:24:36.147Z",
+  "dispatched_at": "2026-10-13T21:10:44Z",
+  "findings": [
+    {
+      "file": "tests/test_ticker_reads_cleanly.py",
+      "line": "216",
+      "severity": "follow-on",
+      "text": "follow-on: the reflowed comment says the attention mark 'was dropped at the lead's direction' after being 'tried by an earlier revision' \u2014 role attribution and changelog prose the naming rules forbid; state the mechanism ('the row draws no attention column between the clock and the stage') instead."
+    },
+    {
+      "file": "tests/test_ticker_reads_cleanly.py",
+      "line": "138",
+      "severity": "follow-on",
+      "text": "follow-on: state_columns.add(NEW_STATE_COLUMN) adds a constant rather than a measured column, so the guard assert len(state_columns) == 1 is a tautology that cannot fail; the state column is never actually measured off the rendered row (pre-existing, but in a test this node edited)."
+    },
+    {
+      "file": "tests/test_ticker_shows_the_lane_mean.py",
+      "line": "291",
+      "severity": "follow-on",
+      "text": "follow-on: the expected value is built from ticker_module.DIM_MARKER and ticker_module.RATE_UNIT, the same constants the renderer prints, so that assertion moves with the code it guards; only the companion '0.00' not-in-line check is independent of the value under test."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against 1eb38716; deefbd21f 'test(ticker): bring the lane and row tests to the fixed-column row' edits the seven owned files only \u2014 test_lane_cell_names_its_cause.py and test_ticker_reason_cut_at_a_word.py deleted whole (their subjects removed by the source commit), the lane-mean file rewritten to the rate cell, test_ticker_reads_cleanly.py and test_ticker_row_is_one_transition.py retargeted at the new columns, the counter letter W to q, and the clause/reason tests dropped.",
+    "done_when": "the EVIDENCE fence's measure is asserted across tests/test_ticker_shows_the_lane_mean.py:214-317 (51.2 reads '51.2 tok/s' at one column, blank for a backend with no lane document, the absence marker for an unreadable one) and recorded in gate.log ('65 passed in 7.92s') against gate-before.log ('29 failed, 48 passed') for the seven owned files.",
+    "goal": "the node's goal is to bring the lane-cell and clause tests to the side commit's new row; the landed diff rewrites tests/test_ticker_shows_the_lane_mean.py to the rate cell and retargets the row, reads-cleanly and counter tests at the fixed columns reckon/crew/ticker.py now draws.",
+    "manifest": "read from the reviewed run's classification record; status complete; it names the single commit deefbd21f, the gate result '65 passed, 0 failed, EXIT=0', negctl.log '6 failed, 5 passed' EXIT=1, the superseded/deleted files and the follow_on for test_a_pane_row_carries_the_live_rollup.py; its baseline_suite and after_suite fields are null, so the two arms are read from gate-before.log (base) and gate.log (head) in the run directory.",
+    "write_paths": "the node declares seven test paths; git diff --stat 1eb38716..deefbd21f lists exactly those seven files (tests/test_crew_binding_bound.py, tests/test_lane_cell_names_its_cause.py, tests/test_the_pane_speaks_seven_words.py, tests/test_ticker_reads_cleanly.py, tests/test_ticker_reason_cut_at_a_word.py, tests/test_ticker_row_is_one_transition.py, tests/test_ticker_shows_the_lane_mean.py) and nothing outside them."
+  },
+  "justifications": {
+    "durability": "the negative control (negctl.log) reddens tests/test_ticker_shows_the_lane_mean.py:225's written-out '51.2 tok/s' on a unit rename, but tests/test_ticker_shows_the_lane_mean.py:291 builds its expected from ticker_module.DIM_MARKER and RATE_UNIT and tests/test_ticker_reads_cleanly.py:138 adds a constant so its column guard cannot fail.",
+    "evidence": "gate.log records '65 passed in 7.92s' EXIT=0 at deefbd21f against gate-before.log's '29 failed, 48 passed' EXIT=1 for the same seven files, and the 29 owned failures in owned-failures.txt are all resolved, though the manifest left its baseline_suite/after_suite arms null.",
+    "fit": "the new names describe their mechanism (tests/test_ticker_shows_the_lane_mean.py:214 test_the_lane_mean_stands_at_one_fixed_column), but a comment the node reflowed at tests/test_ticker_reads_cleanly.py:216 keeps role attribution and changelog prose.",
+    "goal_fidelity": "tests/test_ticker_shows_the_lane_mean.py:214-317 assert the rate cell at the column read from reckon/crew/ticker.py's own constants, matching the renderer's reckon/crew/ticker.py:1826 _rate_cell, so the landed test set measures the new row the goal names.",
+    "reuse": "no repository owner computes a row cell's screen column from ticker constants; the search over tests/ and reckon/crew/ticker.py found only the pre-existing per-file arithmetic in tests/test_ticker_row_is_one_transition.py:62, and the new helpers extend that pattern rather than fork a shared capability.",
+    "scope_discipline": "git diff --stat 1eb38716..deefbd21f lists exactly the seven declared test paths and no other file."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 1eb387165734620baa5f573bed61beef362cc87b\nreviewed_head_sha: deefbd21fe6c9f32de29faea8bd0c21f29570ddb\nVERDICT goal: the node's goal is to bring the lane-cell and clause tests to the side commit's new row; the landed diff rewrites tests/test_ticker_shows_the_lane_mean.py to the rate cell and retargets the row, reads-cleanly and counter tests at the fixed columns reckon/crew/ticker.py now draws.\nVERDICT done_when: the EVIDENCE fence's measure is asserted across tests/test_ticker_shows_the_lane_mean.py:214-317 (51.2 reads '51.2 tok/s' at one column, blank for a backend with no lane document, the absence marker for an unreadable one) and recorded in gate.log ('65 passed in 7.92s') against gate-before.log ('29 failed, 48 passed') for the seven owned files.\nVERDICT write_paths: the node declares seven test paths; git diff --stat 1eb38716..deefbd21f lists exactly those seven files (tests/test_crew_binding_bound.py, tests/test_lane_cell_names_its_cause.py, tests/test_the_pane_speaks_seven_words.py, tests/test_ticker_reads_cleanly.py, tests/test_ticker_reason_cut_at_a_word.py, tests/test_ticker_row_is_one_transition.py, tests/test_ticker_shows_the_lane_mean.py) and nothing outside them.\nVERDICT manifest: read from the reviewed run's classification record; status complete; it names the single commit deefbd21f, the gate result '65 passed, 0 failed, EXIT=0', negctl.log '6 failed, 5 passed' EXIT=1, the superseded/deleted files and the follow_on for test_a_pane_row_carries_the_live_rollup.py; its baseline_suite and after_suite fields are null, so the two arms are read from gate-before.log (base) and gate.log (head) in the run directory.\nVERDICT diff: read commit by commit against 1eb38716; deefbd21f 'test(ticker): bring the lane and row tests to the fixed-column row' edits the seven owned files only \u2014 test_lane_cell_names_its_cause.py and test_ticker_reason_cut_at_a_word.py deleted whole (their subjects removed by the source commit), the lane-mean file rewritten to the rate cell, test_ticker_reads_cleanly.py and test_ticker_row_is_one_transition.py retargeted at the new columns, the counter letter W to q, and the clause/reason tests dropped.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_ticker_shows_the_lane_mean.py:214-317 assert the rate cell at the column read from reckon/crew/ticker.py's own constants, matching the renderer's reckon/crew/ticker.py:1826 _rate_cell, so the landed test set measures the new row the goal names.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate.log records '65 passed in 7.92s' EXIT=0 at deefbd21f against gate-before.log's '29 failed, 48 passed' EXIT=1 for the same seven files, and the 29 owned failures in owned-failures.txt are all resolved, though the manifest left its baseline_suite/after_suite arms null.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 1eb38716..deefbd21f lists exactly the seven declared test paths and no other file.\nSCORE durability: 15\nJUSTIFICATION durability: the negative control (negctl.log) reddens tests/test_ticker_shows_the_lane_mean.py:225's written-out '51.2 tok/s' on a unit rename, but tests/test_ticker_shows_the_lane_mean.py:291 builds its expected from ticker_module.DIM_MARKER and RATE_UNIT and tests/test_ticker_reads_cleanly.py:138 adds a constant so its column guard cannot fail.\nSCORE fit: 15\nJUSTIFICATION fit: the new names describe their mechanism (tests/test_ticker_shows_the_lane_mean.py:214 test_the_lane_mean_stands_at_one_fixed_column), but a comment the node reflowed at tests/test_ticker_reads_cleanly.py:216 keeps role attribution and changelog prose.\nSCORE reuse: 20\nJUSTIFICATION reuse: no repository owner computes a row cell's screen column from ticker constants; the search over tests/ and reckon/crew/ticker.py found only the pre-existing per-file arithmetic in tests/test_ticker_row_is_one_transition.py:62, and the new helpers extend that pattern rather than fork a shared capability.\nFINDING tests/test_ticker_reads_cleanly.py:216 follow-on: the reflowed comment says the attention mark 'was dropped at the lead's direction' after being 'tried by an earlier revision' \u2014 role attribution and changelog prose the naming rules forbid; state the mechanism ('the row draws no attention column between the clock and the stage') instead.\nFINDING tests/test_ticker_reads_cleanly.py:138 follow-on: state_columns.add(NEW_STATE_COLUMN) adds a constant rather than a measured column, so the guard assert len(state_columns) == 1 is a tautology that cannot fail; the state column is never actually measured off the rendered row (pre-existing, but in a test this node edited).\nFINDING tests/test_ticker_shows_the_lane_mean.py:291 follow-on: the expected value is built from ticker_module.DIM_MARKER and ticker_module.RATE_UNIT, the same constants the renderer prints, so that assertion moves with the code it guards; only the companion '0.00' not-in-line check is independent of the value under test.\n",
+  "review_run_id": "r-20261013T211001163870-review-of-ticker-row-lane-tests-deefbd21fe6c",
+  "reviewed_base_sha": "1eb387165734620baa5f573bed61beef362cc87b",
+  "reviewed_head_sha": "deefbd21fe6c9f32de29faea8bd0c21f29570ddb",
+  "reviewed_run_id": "r-20261013T202359933004-ticker-row-lane-tests",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 15,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T21:22:29.252765+00:00",
+  "total": 106
+}
