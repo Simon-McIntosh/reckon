@@ -1,0 +1,67 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-13T01:58:13.096Z",
+  "dispatched_at": "2026-10-13T01:51:02Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:128",
+      "id": "wiring-1",
+      "reason": "a dispatcher reading \u00a76's body alone would run the measurement before the cold-parse and resource-scan fixes land and get the same failed reading \u00a76 already recorded.",
+      "text": "\u00a76's deliverable still says the measurement node runs \"after \u00a72 to \u00a75 are promoted\", but \u00a77 and f-araiid-009 re-measure \u00a76 only after \u00a78, \u00a710, \u00a711, \u00a712 and \u00a713 land, so the section's declared dependency is stale and incomplete",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:155",
+      "id": "wiring-2",
+      "reason": "\u00a711 promises a cold audit builds each plan's soup once but delegates the audit to \u00a712, understating the \u00a711\u2192\u00a713 coupling a dispatcher must honour.",
+      "text": "\u00a711's done-when says \"The audit's own parse route is \u00a712\", but \u00a712 moves the audit's walk and \u00a713 takes its parse, as \u00a78's Why states (\"\u00a712 moves its walk and \u00a713 its parse\"), so the cross-reference points at the wrong node",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html:155",
+      "id": "reasoning-1",
+      "reason": "the node can regress that reader while every count it measures stays green, so the done-when must name a read that reaches it or drop it from the node.",
+      "text": "\u00a711's three readers are unified in one deliverable, but the third, `_cached_plan_state` (reckon/project_state.py:1175, which builds its own soup via `_plan_html.read_state`), is reached only from `_plan_state_by_slug` inside project_state and is not on the cold roadmap or discovery read the gate runs, so its change is neither reached by the measured path nor pinned by the negative control",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "c70fca2f3edcee1450264c732159a593176a506d0c558610b69fb70a19a568b7",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 45,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261013T015017082676-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "2a6fc675cb546d437fdc0f58f298d379b9e1bc69",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited file, function and report path resolves (reckon/resources.py, reckon/_plan_html.py:1406, reckon/mcp.py:2249/2355, reckon/project_state.py:1175, reckon/metadata_index.py:215/423/645, reckon/serve.py:1319, the health-review profiler, the \u00a79 profiles/head dir and the archive evidence href); line numbers in the done sections have drifted as \u00a75's caveat states.",
+    "done_when": "pass \u2014 every implementable node (\u00a76, \u00a78, \u00a710, \u00a711, \u00a712, \u00a713) states a countable measure and names a declared negative control whose removal must make that measure fail.",
+    "evidence_paths": "pass \u2014 \u00a76, \u00a77 and \u00a79 write durable absolute paths under ~/.config/reckon/crew/reports/, and \u00a78 to \u00a713 log under the run directory, which survives the run.",
+    "naming": "pass \u2014 cited symbols are mechanism names (`_reuse_covered`, `_scan_resources`, `read_state_and_text_file`) and the test filenames name behaviour (`test_a_read_takes_no_lock.py`), with no plan labels, stage names or ticket numbers.",
+    "reasoning": "a finding \u2014 \u00a711 changes `_cached_plan_state`, a project-state reader reached only through `_plan_state_by_slug` (reckon/project_state.py:1212, called at 1384 and 2216), which the node's gate does not measure.",
+    "single_goal": "pass \u2014 each node carries one deliverable; \u00a712's two controls police one change (the audit sharing the scan), not two goals.",
+    "wiring": "a finding \u2014 the dependency declared in \u00a76's body (runs after \u00a72 to \u00a75) no longer matches the live order in followup f-araiid-009, which re-measures \u00a76 only after \u00a78 to \u00a713 land; and \u00a711's cross-reference names \u00a712 for the audit's parse when \u00a712 moves the audit's walk and \u00a713 its parse."
+  },
+  "section_digests": {
+    "_document": "a72b1124948d5798f5ef80e945fd318ffdc7a66a5e9dbf2d2eda32cb82fdfa6f",
+    "s1": "71942607f4df4eca011a41734257645ef2adce9664dd45b628d96b066c34e813",
+    "s10": "5261ebecb0fa5c4351c00f324d2378797d384ba4246b22b52bc96e9dda5392d1",
+    "s11": "3a64769c6749a1d84d6c8b71f9c1b2c406198fcf56578a7dfa447465f1cd579e",
+    "s12": "b749b8ca0485e887d013804ab4d32bbed819eb00ee1b98a4edc2eaa6be508104",
+    "s13": "b4b56e5d24dad69d71c1a6459abafd8804e50d908cacef72d681c0388ea22176",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s3": "cbe34f619f869b3c3346239e8823a63a8de98dd92b7fb8ed5cfa2b8a4ab26a39",
+    "s4": "d2ec58f5ac4e72c5e8bcde1f156bdd4c85bde3848b4e3b6131e6112bb6395d49",
+    "s5": "b14c0e28c2c28544a08d4b3d7ab621f48464471360d202c7a4bd1a1ec776f557",
+    "s6": "00db597c53dfd6e3d857f89ee748a8c6ecfe51576b2b66e64772393805c59b52",
+    "s7": "503099f7e945f5038a64b142ffa49b88c02dbbd0f0a5ad5882f6da8b22d25883",
+    "s8": "a33e99912e2686cd2f76d6f4162ad7826f4acae7debefa3b83f811b46416fa6b",
+    "s9": "a356ecd44b8ee634f6b45b64ec3785e3af7ffb255d4d3adf46574d3a10afc7b3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T02:00:17.320638+00:00"
+}
