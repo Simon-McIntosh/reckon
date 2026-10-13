@@ -24,7 +24,7 @@
   <title>A Held Dispatch Waits Its Fair Turn | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="67">
+<meta name="plan-version" content="68">
 <meta name="plan-modified" content="2026-10-13">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="3c837fc1">
@@ -322,6 +322,9 @@
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261013T125110028830-review-of-a-jev-hold-queues-for-the-local-lane-aa7623bfcadf" data-who="reckon-build" data-when="2026-10-13T13:12:36.569Z">
     <div class="r-comment-body"><p>landing: independent review of run r-20261013T121159494151-a-jev-hold-queues-for-the-local-lane stored in the review store; scores goal_fidelity 18, evidence 18, scope_discipline 19, durability 18, fit 16, reuse 17 (total 106); 4 follow-on findings, 0 blocking; added_failure_count 0 derived from the reviewed run's base-suite.log (4 failed/72 passed) and after-suite.log (76 passed).</p></div>
+</div>
+<div class="r-comment" data-section="s17" data-id="c-run-r-20261013T132942072175-a-queued-repair-keeps-its-waiver" data-who="reckon-build" data-when="2026-10-13T15:20:06.334Z">
+    <div class="r-comment-body"><p>The section&#x27;s dead dispatch path is removed and a repair now resumes the reviewed run or is refused; the gone-pointer refusal is read on the real path (CrewError handled, not raised), the dead block, TaskNode and importlib/dispatch launch are deleted with their now-unused imports, and the second refusal read&#x27;s refused return is kept and recorded only while the pointer is live.</p></div>
 </div>
 </section>
 </main>
