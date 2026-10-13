@@ -101,6 +101,82 @@ def test_a_completed_pick_carries_every_stage_time(monkeypatch):
         assert isinstance(result["stage_ms"][stage], (int, float))
 
 
+def test_a_production_pick_names_the_estimate_it_ran_out_in(monkeypatch, tmp_path):
+    """A caller that builds the inputs and hands them in still names the stage.
+
+    Production builds the three dispatcher-scope inputs outside the pick's bound
+    and hands them in, so the stage the pick is inside when the deadline expires
+    is the context estimate. The fallback must name it rather than read the bare
+    ``timeout``, and the handed-in inputs' elapsed milliseconds must still be on
+    the fallback.
+    """
+    _quiet_inputs(monkeypatch)
+    monkeypatch.setattr(
+        dispatch_picker_module, "_picker_budget_snapshot", lambda *_a, **_k: {}
+    )
+    monkeypatch.setattr(dispatch_picker_module, "PICKER_DISPATCH_TIMEOUT_SECONDS", 0.05)
+
+    def slow_estimate(*_args, **_kwargs):
+        time.sleep(0.4)
+        return 0
+
+    monkeypatch.setattr(picker_snapshot, "estimated_context_tokens", slow_estimate)
+
+    records, verdicts, budget, errors = dispatch_picker_module.build_picker_inputs(
+        "proj", {}, tmp_path
+    )
+    assert not errors
+    result = dispatch_picker_module.dispatch_picker_selection(
+        node=SimpleNamespace(),
+        config={},
+        project="proj",
+        repo=tmp_path,
+        records=records,
+        verdict_inputs=verdicts,
+        budget_snapshot=budget,
+    )
+    assert result["action"] == "fallback"
+    assert result["fallback_reason"] == "timeout in context-estimate"
+    # The stage still running carries none; the inputs built by the caller carry
+    # their measured times even though they ran outside this pick's bound.
+    assert result["stage_ms"]["context-estimate"] is None
+    assert result["stage_ms"]["jev"] is None
+    for stage in ("records", "verdict-inputs", "budget-snapshot"):
+        assert isinstance(result["stage_ms"][stage], (int, float))
+
+
+def test_a_normal_production_pick_carries_all_five_stage_times(monkeypatch, tmp_path):
+    """A completed production pick records every stage's elapsed milliseconds."""
+    _quiet_inputs(monkeypatch)
+    monkeypatch.setattr(
+        dispatch_picker_module, "_picker_budget_snapshot", lambda *_a, **_k: {}
+    )
+    monkeypatch.setattr(picker_snapshot, "estimated_context_tokens", lambda *_a, **_k: 7)
+    monkeypatch.setattr(
+        picker,
+        "pick",
+        lambda *_a, **_k: SimpleNamespace(
+            as_dict=lambda: {"action": "route", "backend": "beta"}
+        ),
+    )
+    records, verdicts, budget, errors = dispatch_picker_module.build_picker_inputs(
+        "proj", {}, tmp_path
+    )
+    assert not errors
+    result = dispatch_picker_module.dispatch_picker_selection(
+        node=SimpleNamespace(),
+        config={},
+        project="proj",
+        repo=tmp_path,
+        records=records,
+        verdict_inputs=verdicts,
+        budget_snapshot=budget,
+    )
+    assert result["action"] == "route"
+    for stage in dispatch_picker_module.PICK_STAGES:
+        assert isinstance(result["stage_ms"][stage], (int, float)), stage
+
+
 def test_outcomes_classify_a_staged_timeout_by_its_stage():
     """A summary separates a staged timeout from the bare unattributed one."""
     assert outcomes._fallback_kind("timeout in budget-snapshot") == (

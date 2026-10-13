@@ -56,6 +56,13 @@ PICK_STAGES = (
     "jev",
 )
 
+# The dispatcher-scope inputs are built once, outside the pick's own bound, by
+# the caller that then hands them in. Their elapsed milliseconds are stashed
+# here for the pick that follows on the same thread to carry onto its selection,
+# so a production pick records all five stages' cost without the caller having
+# to thread the timings through its own call.
+_BUILD_STAGE_MS = threading.local()
+
 # A picker answer carries per-call measurements: how long the ask itself took.
 # They differ between two asks of the same node by construction, so a report
 # that keeps them cannot be compared with a second run of the same call — which
@@ -212,9 +219,17 @@ def build_picker_inputs(
     to the picker call that consumed the figures. ``running``, when given,
     records the input currently being read so a caller that times out mid-build
     knows which input still had the budget when the deadline expired.
+
+    The times are recorded even when the caller hands no ``stage_ms`` sink: they
+    are stashed for the pick that follows on this thread, whose caller built
+    these inputs outside its own bound and would otherwise carry no record of
+    what they cost.
     """
     input_errors: dict[str, str] = {}
     repo_root = Path(repo)
+    sink = stage_ms if stage_ms is not None else {}
+    if stage_ms is None:
+        _BUILD_STAGE_MS.times = sink
 
     def timed(stage: str, build: Callable[[], Any]) -> Any:
         if running is not None:
@@ -223,8 +238,7 @@ def build_picker_inputs(
         try:
             return build()
         finally:
-            if stage_ms is not None:
-                stage_ms[stage] = round((time.perf_counter() - started) * 1000, 3)
+            sink[stage] = round((time.perf_counter() - started) * 1000, 3)
             if running is not None:
                 running["stage"] = None
 
@@ -286,11 +300,13 @@ def dispatch_picker_selection(
 
     Every stage of the ask is timed and carried on the returned selection, and a
     pick that misses the deadline names the stage still running in its fallback
-    reason (``timeout in budget-snapshot``) with the finished stages'
-    milliseconds beside it. A caller that hands ``stage_ms`` and no inputs asks
-    for that accounting and has the dispatcher-scope inputs read here, inside
-    the bound, so a slow input is attributed to itself; a caller that has
-    already built the inputs keeps them and their cost stays with that build.
+    reason (``timeout in budget-snapshot`` or ``timeout in context-estimate``)
+    with the finished stages' milliseconds beside it. A caller that hands
+    ``stage_ms`` and no inputs has the dispatcher-scope inputs read here, inside
+    the bound, so a slow input is attributed to itself; a caller that built the
+    inputs outside the bound keeps them, and their cost is carried here from the
+    build that measured it — so a production pick records all five stages either
+    way, and names the estimate it was inside rather than the bare ``timeout``.
     """
     if input_errors:
         # An input the dispatcher could not build is not re-read here: the same
@@ -309,13 +325,31 @@ def dispatch_picker_selection(
     stages: dict[str, float | None] = {name: None for name in PICK_STAGES}
     if stage_ms:
         stages.update(stage_ms)
+    elif records is not None or verdict_inputs is not None or budget_snapshot is not None:
+        # A caller that built the dispatcher-scope inputs and handed them in left
+        # their cost stashed here; carry it onto the selection so all five stages
+        # are recorded, then clear it so a later pick cannot read a stale build.
+        built = getattr(_BUILD_STAGE_MS, "times", None)
+        _BUILD_STAGE_MS.times = None
+        if built:
+            stages.update({name: built[name] for name in built if name in stages})
     # The stage the ask is inside when the deadline expires, so a fallback names
     # the work that spent the budget rather than the call it overlapped. The
-    # dispatcher-scope inputs set it through ``build_picker_inputs``; the context
-    # estimate and the picker call do not, since neither is a single dispatch
-    # stage a reader can act on — a pick that expires during either keeps the
-    # bare ``timeout`` and records both durations beside it for the reader.
+    # context estimate sets it while it runs, since it is the stage before the
+    # picker call and the one that spends a production pick's budget; the picker
+    # call itself is opaque and leaves the bare ``timeout``, recording its
+    # duration beside it for the reader.
     running: dict[str, str | None] = {"stage": None}
+
+    def marked(stage: str, build: Callable[[], Any]) -> Any:
+        """Run one timed stage, recording the stage the ask is inside."""
+        running["stage"] = stage
+        moment = time.perf_counter()
+        try:
+            return build()
+        finally:
+            stages[stage] = round((time.perf_counter() - moment) * 1000, 3)
+            running["stage"] = None
 
     def ask() -> None:
         try:
@@ -339,10 +373,9 @@ def dispatch_picker_selection(
                 result["authority_error"] = pick_authority_error
 
             # The dispatcher-scope inputs are read inside the bound only when the
-            # caller asked for per-stage accounting and handed none: a build a
-            # caller already made carries its own timings and must not be paid
-            # twice, so it is used as given and its stage times arrive in
-            # ``stage_ms``.
+            # caller handed none and asked for per-stage accounting: a build a
+            # caller already made must not be paid twice, and its stage times are
+            # already carried on ``stages`` from the build that measured them.
             pick_records, pick_verdicts, pick_budget = (
                 records,
                 verdict_inputs,
@@ -379,12 +412,8 @@ def dispatch_picker_selection(
                 except Exception:  # noqa: BLE001 - the estimate is advisory to the pick
                     return 0
 
-            estimate_started = time.perf_counter()
-            estimated_context = measure_estimate()
-            estimated_context_ms = round(
-                (time.perf_counter() - estimate_started) * 1000, 3
-            )
-            stages["context-estimate"] = estimated_context_ms
+            estimated_context = marked("context-estimate", measure_estimate)
+            estimated_context_ms = stages["context-estimate"]
 
             inputs = {
                 "records": pick_records,
