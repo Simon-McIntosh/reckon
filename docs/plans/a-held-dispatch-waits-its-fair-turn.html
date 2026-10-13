@@ -24,7 +24,7 @@
   <title>A Held Dispatch Waits Its Fair Turn | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="51">
+<meta name="plan-version" content="52">
 <meta name="plan-modified" content="2026-10-13">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="3c837fc1">
@@ -275,6 +275,9 @@
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261013T112140785551-review-of-a-discarded-request-stays-discarded-980535b73349" data-who="reckon-build" data-when="2026-10-13T11:39:03.703Z">
     <div class="r-comment-body"><p>independent review of run r-20261013T084550116355-a-discarded-request-stays-discarded covering the commits it gained since its prior review (444cc82f8a3604c8137d4458c0e9a708dedc1180..980535b73349a205789e246a9a00c22db3995e8b) stored as a parsed six-dimension record at the two declared review paths (total 111: goal_fidelity 19, evidence 16, scope_discipline 20, durability 19, fit 19, reuse 18), with one follow-on finding (an unmigrated discard-record reader at reckon/crew/recovery_review_dispatch.py:250) and no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-close-s11" data-who="reckon-build" data-when="2026-10-13T11:50:00Z">
+    <div class="r-comment-body"><p>§11 landed. A request discarded during an admission pass stays discarded, including one that never launched, whose discard is now recorded in a shared spool. One public <code>discard_recorded</code> serves both readers. The run also restored the shared-parser invariant on <code>queue_admission.py</code>. Merged <code>980535b73</code> as <code>3ea039f7e</code>, with the gate replayed green there. Population: 0 added. Review: 111. Follow-on to §10: migrate <code>_discard_stranded_review</code>'s reader to the spool location. <a href="/reckon/evidence/archive/a-held-dispatch-waits-its-fair-turn-landed.html#s11-discard-stays">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261013T090131043708-review-of-a-queued-dispatch-is-accepted" data-who="reckon-build" data-when="2026-10-13T09:18:06.434Z">
     <div class="r-comment-body"><p>independent review of r-20261013T084227782997-a-queued-dispatch-is-accepted at head 564b24ae8 stored as a parsed record scoring all six dimensions (goal_fidelity 18, evidence 17, scope_discipline 13, durability 18, fit 18, reuse 14; total 98), carrying reviewed_base_sha da4cfd6363dc632fbd2c853080a4a2a2706ba3b3 and reviewed_head_sha 564b24ae8a1b1711601574eab28b6e72112be876, with two follow-on findings (tests/test_held_dispatch_is_queued.py:79 written outside the fence; reckon/crew/dispatch.py:200 duplicating the lane-document load at reckon/crew/dispatch_plan.py:1243) and no blocking finding.</p></div>
