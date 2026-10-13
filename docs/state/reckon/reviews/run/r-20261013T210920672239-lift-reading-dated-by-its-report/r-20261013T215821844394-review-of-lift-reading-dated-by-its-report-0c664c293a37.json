@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed manifest names no baseline_suite/after_suite pair; its single recorded gate arm (tests -> gate.log) reports 140 passed and no failing id, so the added-failure delta is zero (a head arm with no failure id adds none, whatever the base held)",
+  "backend": "clive",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/paid_lanes.py:1150",
+    "reckon/budget.py:1475",
+    "reckon/crew/obligations.py:256"
+  ],
+  "completed_at": "2026-10-13T22:13:52.022Z",
+  "dispatched_at": "2026-10-13T21:58:48Z",
+  "findings": [
+    {
+      "file": "reckon/budget.py",
+      "line": "3531",
+      "severity": "follow-on",
+      "text": "follow-on: budget.recorded_windows still builds its live-pointer rollout candidate with observed_at from the run record (its own docstring at budget.py:3453 says the age is the run record's), the same defect gather_sources just repaired; budget.py was in the declared write scope and left unchanged, so the pace path still lets a later record stamp publish an older figure as the newest."
+    },
+    {
+      "file": "reckon/crew/paid_lanes.py",
+      "line": "808",
+      "severity": "follow-on",
+      "text": "follow-on: the retained `rollouts is not None` fallback still dates a session receipt by the run record's stamp (observed_at=session[2] at line 817); no production caller passes rollouts so it is inert today, but a future caller that injects a reader and whose account the scan misses silently regains the record-stamp dating."
+    },
+    {
+      "file": "tests/test_headroom_publishes_real_readings.py",
+      "line": "121",
+      "severity": "follow-on",
+      "text": "follow-on: the gate the done_when names (test_paid_lanes*, test_budget_lift*) omits this file, which directly calls gather_sources and pins the source-selection the hunk edits, so a regression in gather_sources outside the named files would not be caught by the recorded gate."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read the single commit 0c664c293 against base aaab0bca4; it is one hunk in gather_sources (paid_lanes.py:765-822) moving the codex rollout scan out of the `rollouts is None` guard and deleting the record-stamped session candidate, plus the 237-line new test.",
+    "done_when": "read the done_when; the reviewed manifest names the bcm-resonance-damped candidate as source=rollout utilisation 0.39 observed_at 2026-10-13T19:41:38.914Z (bcm-candidate-probe.log line 3), the new tests/test_lift_reading_is_dated_by_its_report.py builds the two-rollout temp home the done_when describes, and the named gate files pass.",
+    "goal": "the goal is to date every paid-lane window figure by the instant its source reported it; reckon/crew/paid_lanes.py:788 now scans the rollout homes in every case and dates each candidate by its rate_limits event, and the record-stamped session candidate is gone from the production path (paid_lanes.py:808 fallback is caller-injected only).",
+    "manifest": "read the reviewed manifest at runs/r-20261013T200930886286-lift-reading-dated-by-its-report/manifest.md; it states 140 passed EXIT=0 and names gate.log, negative-control.log and bcm-candidate-probe.log, and it candidly records that the brief's 0.38 hypothesis did not reproduce.",
+    "write_paths": "read the manifest's declared paths reckon/crew/paid_lanes.py, reckon/budget.py, tests/test_lift_reading_is_dated_by_its_report.py; git diff shows the landed change touches only the first and third, both inside the declaration."
+  },
+  "justifications": {
+    "durability": "tests/test_lift_reading_is_dated_by_its_report.py:195 and :222 assert values independent of the code under test and both redden under the declared mutation as runs/r-20261013T200930886286/negative-control.log shows (2 failed, EXIT=1).",
+    "evidence": "the reviewed manifest's tests line and runs/r-20261013T200930886286/gate.log both record 140 passed EXIT=0 at revision 0c664c293, and bcm-candidate-probe.log line 3 records the candidate figure the done_when asks for, though the gate's named file set omits the test that directly exercises gather_sources.",
+    "fit": "the hunk follows the module idiom and reuses _codex_rollout_candidates, but the retained caller-injected fallback at reckon/crew/paid_lanes.py:808 is reached by no production caller and keeps the record-stamp dating the node exists to remove.",
+    "goal_fidelity": "reckon/crew/paid_lanes.py:779_801 removes the record-stamped session candidate from the production route and dates the scan by the event, but reckon/budget.py:3531 keeps the same record-stamp dating on the pace path, so the goal's \"every paid-lane window figure\" is met for gather_sources only.",
+    "reuse": "the diff adds no new definition; reckon/crew/paid_lanes.py:788 extends the existing _codex_rollout_candidates contributor rather than forking a reader, and the brief's instruction to reuse it is followed.",
+    "scope_discipline": "every path in the diff (reckon/crew/paid_lanes.py, tests/test_lift_reading_is_dated_by_its_report.py) is inside the manifest's declared write paths and no unrelated file is touched."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to date every paid-lane window figure by the instant its source reported it; reckon/crew/paid_lanes.py:788 now scans the rollout homes in every case and dates each candidate by its rate_limits event, and the record-stamped session candidate is gone from the production path (paid_lanes.py:808 fallback is caller-injected only).\nVERDICT done_when: read the done_when; the reviewed manifest names the bcm-resonance-damped candidate as source=rollout utilisation 0.39 observed_at 2026-10-13T19:41:38.914Z (bcm-candidate-probe.log line 3), the new tests/test_lift_reading_is_dated_by_its_report.py builds the two-rollout temp home the done_when describes, and the named gate files pass.\nVERDICT write_paths: read the manifest's declared paths reckon/crew/paid_lanes.py, reckon/budget.py, tests/test_lift_reading_is_dated_by_its_report.py; git diff shows the landed change touches only the first and third, both inside the declaration.\nVERDICT manifest: read the reviewed manifest at runs/r-20261013T200930886286-lift-reading-dated-by-its-report/manifest.md; it states 140 passed EXIT=0 and names gate.log, negative-control.log and bcm-candidate-probe.log, and it candidly records that the brief's 0.38 hypothesis did not reproduce.\nVERDICT diff: read the single commit 0c664c293 against base aaab0bca4; it is one hunk in gather_sources (paid_lanes.py:765-822) moving the codex rollout scan out of the `rollouts is None` guard and deleting the record-stamped session candidate, plus the 237-line new test.\nCALL_SITES: reckon/crew/paid_lanes.py:1150, reckon/budget.py:1475, reckon/crew/obligations.py:256\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/paid_lanes.py:779_801 removes the record-stamped session candidate from the production route and dates the scan by the event, but reckon/budget.py:3531 keeps the same record-stamp dating on the pace path, so the goal's \"every paid-lane window figure\" is met for gather_sources only.\nSCORE evidence: 18\nJUSTIFICATION evidence: the reviewed manifest's tests line and runs/r-20261013T200930886286/gate.log both record 140 passed EXIT=0 at revision 0c664c293, and bcm-candidate-probe.log line 3 records the candidate figure the done_when asks for, though the gate's named file set omits the test that directly exercises gather_sources.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the diff (reckon/crew/paid_lanes.py, tests/test_lift_reading_is_dated_by_its_report.py) is inside the manifest's declared write paths and no unrelated file is touched.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_lift_reading_is_dated_by_its_report.py:195 and :222 assert values independent of the code under test and both redden under the declared mutation as runs/r-20261013T200930886286/negative-control.log shows (2 failed, EXIT=1).\nSCORE fit: 17\nJUSTIFICATION fit: the hunk follows the module idiom and reuses _codex_rollout_candidates, but the retained caller-injected fallback at reckon/crew/paid_lanes.py:808 is reached by no production caller and keeps the record-stamp dating the node exists to remove.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no new definition; reckon/crew/paid_lanes.py:788 extends the existing _codex_rollout_candidates contributor rather than forking a reader, and the brief's instruction to reuse it is followed.\nFINDING reckon/budget.py:3531 follow-on: budget.recorded_windows still builds its live-pointer rollout candidate with observed_at from the run record (its own docstring at budget.py:3453 says the age is the run record's), the same defect gather_sources just repaired; budget.py was in the declared write scope and left unchanged, so the pace path still lets a later record stamp publish an older figure as the newest.\nFINDING reckon/crew/paid_lanes.py:808 follow-on: the retained `rollouts is not None` fallback still dates a session receipt by the run record's stamp (observed_at=session[2] at line 817); no production caller passes rollouts so it is inert today, but a future caller that injects a reader and whose account the scan misses silently regains the record-stamp dating.\nFINDING tests/test_headroom_publishes_real_readings.py:121 follow-on: the gate the done_when names (test_paid_lanes*, test_budget_lift*) omits this file, which directly calls gather_sources and pins the source-selection the hunk edits, so a regression in gather_sources outside the named files would not be caught by the recorded gate.",
+  "review_run_id": "r-20261013T215821844394-review-of-lift-reading-dated-by-its-report-0c664c293a37",
+  "reviewed_base_sha": "aaab0bca467abead50ecd3f3237d47c6c4d9c27b",
+  "reviewed_head_sha": "0c664c293a37cce671ec1f9ae11bee3ace3f7731",
+  "reviewed_run_id": "r-20261013T210920672239-lift-reading-dated-by-its-report",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T22:09:07.618684+00:00",
+  "total": 108
+}
