@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="the-fingerprint-has-one-form">
   <meta name="plan-title" content="The Fingerprint Has One Form">
   <meta name="plan-summary" content="A plan review&#x27;s fingerprint still accepts the pre-collapse form. Count the stored reviews that lean on it, then retire it and the collapse_section op.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="done">
   <meta name="plan-roi" content="mid">
   <meta name="plan-effort-hours" content="1.75">
   <meta name="plan-capability-version" content="1.0">
@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S26">
-<meta name="plan-version" content="14">
+<meta name="plan-version" content="15">
 <meta name="plan-modified" content="2026-10-13">
 </head>
 <body>
@@ -69,10 +69,17 @@
     <pre class="r-fu-prompt">/reckon-build the-fingerprint-has-one-form §2</pre>
     <p class="r-fu-outcome">The census found no stored review matching the pre-collapse form and no coverage shrink, so retiring it uncovers nothing.</p>
     </article>
-<article class="r-fu" data-id="f-tfhof-002" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-13" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tfhof-002" data-status="resolved" data-written-by="reckon-build" data-written-at="2026-10-13" data-recommends-skill="" data-resolved-at="2026-10-13T10:58:17+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Retire the pre-collapse form and the collapse op (§3)</h4>
     <div class="r-fu-body"><p>§2's census uncovered no review, so §3 runs without needing the lead's acceptance. Note that skills/reckon-edit/SKILL.md still documents the op.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-fingerprint-has-one-form §3</pre>
+    <p class="r-fu-outcome">§3 landed at 07b3b2855: the pre-collapse form and the collapse_section op are retired, the skill entry removed; review 105, 0 added.</p>
+    </article>
+<article class="r-fu" data-id="f-tfhof-close" data-status="resolved" data-written-by="reckon-build" data-written-at="2026-10-13" data-recommends-skill="" data-resolved-at="2026-10-13" data-resolved-by="reckon-build">
+    <h4 class="r-fu-title">Plan closed</h4>
+    <div class="r-fu-body"><p>All three sections are done: the census (§2) found no review leaning on the pre-collapse form, and §3 retired the form and the op. Two stale references to the op remain as follow-ons for whoever next writes the files that hold them.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-fingerprint-has-one-form</pre>
+    <p class="r-fu-outcome">done — no followup: every section landed and verified at the integrated head.</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -95,7 +102,10 @@
     <div class="r-comment-body"><p>_fingerprint_forms returns the section-set and whole-document digests only; a review stored under the retired pre-collapse form no longer matches; collapse_section is refused as an unknown verb (removed from _OP_DISPATCH, the MCP op vocabulary and the reckon-edit op table) while the card-rendering helper stays for the test files that call it directly. Coverage of a carded plan is now judged by review_coverage over a review the dispatcher composes, and both surviving forms are restated from their own definitions rather than read back from the function under test. Both arms green: head 444 passed EXIT=0, base 438 passed EXIT=0, no added failure</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261013T102416545360-review-of-the-fingerprint-has-one-form-d979530c1446" data-who="reckon-build" data-when="2026-10-13T10:49:49.870Z">
-    <div class="r-comment-body"><p>independent review of run r-20261013T050356104997-the-fingerprint-has-one-form at head d979530c1446 — the pre-collapse fingerprint form and the collapse_section op are retired with the display path unchanged, tests/test_the_fingerprint_has_one_form.py pins both the carded-plan coverage and the unknown-op refusal, and the reviewed run&#x27;s own arms (base 501 passed EXIT=0 at f819399, head 506 passed EXIT=0 at d979530c) give added_failure_count 0; scores goal_fidelity 19, evidence 18, scope_discipline 15, durability 18, fit 17, reuse 18, total 105; four follow-on findings (manifest.md:17 understates the out-of-scope path list; tests/test_the_fingerprint_has_one_form.py:175 self-referential equality; tests/test_skill_contracts.py:793 and reckon/_store.py:912 stale references to the retired op); no blocking findings, so the prior review&#x27;s blocking finding on the unrecorded head arm is resolved by head-arm.log now carrying its 506-passed summary.</p></div>
+    <div class="r-comment-body"><p>independent review of run r-20261013T050356104997-the-fingerprint-has-one-form at head d979530c1446 — the pre-collapse fingerprint form and the collapse_section op are retired with the display path unchanged, tests/test_the_fingerprint_has_one_form.py pins both the carded-plan coverage and the unknown-op refusal, and the reviewed run's own arms (base 501 passed EXIT=0 at f819399, head 506 passed EXIT=0 at d979530c) give added_failure_count 0; scores goal_fidelity 19, evidence 18, scope_discipline 15, durability 18, fit 17, reuse 18, total 105; four follow-on findings (manifest.md:17 understates the out-of-scope path list; tests/test_the_fingerprint_has_one_form.py:175 self-referential equality; tests/test_skill_contracts.py:793 and reckon/_store.py:912 stale references to the retired op); no blocking findings, so the prior review's blocking finding on the unrecorded head arm is resolved by head-arm.log now carrying its 506-passed summary.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-13T11:05:00Z">
+    <div class="r-comment-body"><p>§3 landed. The pre-collapse fingerprint form and the <code>collapse_section</code> op are retired, along with the op's unreachable implementation, and collapsed cards keep their reviews. Merged <code>d979530c1</code> as <code>07b3b2855</code>. Importer arms: 501 to 506 passed, so no failure was added. Review: 105, 0 added. The replay at the integrated head shows one failure, <code>test_only_the_shared_parser_calls_fromisoformat</code>. It comes from the monitor plan's <code>_retry_backoff_hold</code>, fails identically at pre-merge main, and is accepted for this node. Follow-ons: two stale references to the retired op. <a href="/reckon/evidence/archive/the-fingerprint-has-one-form-landed.html#s3-retired">evidence</a></p></div>
 </div>
 </section>
 </main>
