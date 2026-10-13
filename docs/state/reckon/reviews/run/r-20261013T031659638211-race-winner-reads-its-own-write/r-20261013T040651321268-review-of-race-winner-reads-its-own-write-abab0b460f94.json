@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": null,
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/serve.py:727",
+    "reckon/capabilities.py:752",
+    "reckon/crew/dispatch_admission.py:652",
+    "reckon/crew/promotion_release.py:585",
+    "reckon/crew/dispatch_plan.py:1054"
+  ],
+  "completed_at": "2026-10-13T04:17:26.558Z",
+  "dispatched_at": "2026-10-13T04:07:30Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-suite-is-green-at-head/race-winner-reads-its-own-write.html",
+      "line": "57",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment's Gate table cites logs/file-run.log for the \"Whole file (6 passed)\" row and the manifest's test_logs field names the same path, but no file-run.log exists in the run's logs directory, so that whole-file result cannot be opened and confirmed."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read the two commits against base 40186023d; d36897d88 adds a 4-line stamp check and a 13-line docstring to reckon/ledger.py plus a 35-line test, and abab0b460 adds the 67-line evidence fragment.",
+    "done_when": "the done_when names tests/test_ledger_write_keeps_run_files.py::test_a_loser_of_the_write_race_cannot_overwrite_the_winner passing five times; the manifest records logs/head-5x-clean.log as the gate (5 passed, EXIT=0) beside the population and negative-control figures.",
+    "goal": "the node's goal is to repair the ledger race winner's empty read of the index after its own write; reckon/ledger.py:1093 makes _last_good_index_data return nothing when the snapshot's recorded aggregate stamp disagrees with the aggregate's current file identity, so a refused refresh opens the aggregate rather than the stale pre-write revision.",
+    "manifest": "read; it records the gate id 5/5 pass EXIT=0, population base 3 failed -> head 1 failed (0 added), negative control 2 failed EXIT=1, and cites logs/head-5x-clean.log, repro.log, negative-control.log, pop-base.log and pop-head.log.",
+    "write_paths": "the declared paths are reckon/ledger.py, tests/test_ledger_write_keeps_run_files.py, the fragment docs/evidence/fragments/the-suite-is-green-at-head/race-winner-reads-its-own-write.html and its figures directory; the diff touches only the first three, all inside scope."
+  },
+  "justifications": {
+    "durability": "the negative control (logs/negative-control.log, 2 failed EXIT=1) removes the stamp check and test_a_refused_refresh_opens_the_aggregate_rather_than_a_stale_index:434 reddens on its independent literal \"completed by a later writer\" against the stale value \"completed with a recorded budget\".",
+    "evidence": "the manifest records the done_when's five-run gate (logs/head-5x-clean.log, 5 passed EXIT=0) and each figure carries an on-disk log, apart from the cited logs/file-run.log the run directory does not hold.",
+    "fit": "the added check at reckon/ledger.py:1093 reuses the stamp metadata key written at reckon/ledger.py:1172 and the _file_identity helper at reckon/ledger.py:862, matching the surrounding idiom with no forbidden name.",
+    "goal_fidelity": "reckon/ledger.py:1093 returns None on a stale stamp, so load at reckon/ledger.py:1301 falls through to _load_aggregate and the racing reader sees the committed row rather than the empty pre-write view.",
+    "reuse": "the aggregate-moved predicate is applied inline here as it already is at reckon/ledger.py:1150; no shared owner helper exists to extend, so the addition echoes the same one-line comparison rather than forking a capability.",
+    "scope_discipline": "git diff 40186023d..abab0b460 lists exactly reckon/ledger.py, tests/test_ledger_write_keeps_run_files.py and the fragment, all within the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to repair the ledger race winner's empty read of the index after its own write; reckon/ledger.py:1093 makes _last_good_index_data return nothing when the snapshot's recorded aggregate stamp disagrees with the aggregate's current file identity, so a refused refresh opens the aggregate rather than the stale pre-write revision.\nVERDICT done_when: the done_when names tests/test_ledger_write_keeps_run_files.py::test_a_loser_of_the_write_race_cannot_overwrite_the_winner passing five times; the manifest records logs/head-5x-clean.log as the gate (5 passed, EXIT=0) beside the population and negative-control figures.\nVERDICT write_paths: the declared paths are reckon/ledger.py, tests/test_ledger_write_keeps_run_files.py, the fragment docs/evidence/fragments/the-suite-is-green-at-head/race-winner-reads-its-own-write.html and its figures directory; the diff touches only the first three, all inside scope.\nVERDICT manifest: read; it records the gate id 5/5 pass EXIT=0, population base 3 failed -> head 1 failed (0 added), negative control 2 failed EXIT=1, and cites logs/head-5x-clean.log, repro.log, negative-control.log, pop-base.log and pop-head.log.\nVERDICT diff: read the two commits against base 40186023d; d36897d88 adds a 4-line stamp check and a 13-line docstring to reckon/ledger.py plus a 35-line test, and abab0b460 adds the 67-line evidence fragment.\nCALL_SITES: reckon/serve.py:727, reckon/capabilities.py:752, reckon/crew/dispatch_admission.py:652, reckon/crew/promotion_release.py:585, reckon/crew/dispatch_plan.py:1054\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/ledger.py:1093 returns None on a stale stamp, so load at reckon/ledger.py:1301 falls through to _load_aggregate and the racing reader sees the committed row rather than the empty pre-write view.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest records the done_when's five-run gate (logs/head-5x-clean.log, 5 passed EXIT=0) and each figure carries an on-disk log, apart from the cited logs/file-run.log the run directory does not hold.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 40186023d..abab0b460 lists exactly reckon/ledger.py, tests/test_ledger_write_keeps_run_files.py and the fragment, all within the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: the negative control (logs/negative-control.log, 2 failed EXIT=1) removes the stamp check and test_a_refused_refresh_opens_the_aggregate_rather_than_a_stale_index:434 reddens on its independent literal \"completed by a later writer\" against the stale value \"completed with a recorded budget\".\nSCORE fit: 18\nJUSTIFICATION fit: the added check at reckon/ledger.py:1093 reuses the stamp metadata key written at reckon/ledger.py:1172 and the _file_identity helper at reckon/ledger.py:862, matching the surrounding idiom with no forbidden name.\nSCORE reuse: 16\nJUSTIFICATION reuse: the aggregate-moved predicate is applied inline here as it already is at reckon/ledger.py:1150; no shared owner helper exists to extend, so the addition echoes the same one-line comparison rather than forking a capability.\nFINDING docs/evidence/fragments/the-suite-is-green-at-head/race-winner-reads-its-own-write.html:57 follow-on: the fragment's Gate table cites logs/file-run.log for the \"Whole file (6 passed)\" row and the manifest's test_logs field names the same path, but no file-run.log exists in the run's logs directory, so that whole-file result cannot be opened and confirmed.\n",
+  "review_run_id": "r-20261013T040651321268-review-of-race-winner-reads-its-own-write-abab0b460f94",
+  "reviewed_base_sha": "40186023d58ce16ae64eba11dd385db74698980c",
+  "reviewed_head_sha": "abab0b460f94addb435ca6164b64f3bd33375feb",
+  "reviewed_run_id": "r-20261013T031659638211-race-winner-reads-its-own-write",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T04:14:03.933248+00:00",
+  "total": 109
+}
