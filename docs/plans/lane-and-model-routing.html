@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-north-star" content="unattended-execution">
 <meta name="plan-impl" content="0.8823529411764706">
-<meta name="plan-version" content="101">
+<meta name="plan-version" content="102">
 <meta name="plan-modified" content="2026-10-13">
 </head>
 <body>
@@ -395,6 +395,9 @@
 </div>
 <div class="r-comment" data-section="s20" data-id="c-close-s20" data-who="" data-when="2026-10-13">
     <div class="r-comment-body"><p>Landed at <code>0c1154e51</code> (run <code>r-20261013T092400508839</code>, final review 111, 0 added failures). A pick now records five stage times on its selection. A fallback on the deadline names the input stage or the context estimate it ran out in. An expiry inside the Jev call still reads the bare <code>timeout</code>, which §22 names. <a href="/reckon/evidence/archive/lane-and-model-routing-landed.html#s20">Landing record</a>.</p></div>
+</div>
+<div class="r-comment" data-section="s22" data-id="c-s22-pinned-reading" data-who="" data-when="2026-10-13">
+    <div class="r-comment-body"><p>Owed before §22 dispatches (content review <code>r-20261013T120350216141</code>). First, the done-when must say the bare-reading contract is reversed for a Jev-call expiry. <code>tests/test_picker_pick_within_bound.py::test_slow_client_still_times_out_as_a_recorded_fallback</code> asserts <code>fallback_reason == "timeout"</code> for exactly that expiry, and the docstring at <code>reckon/crew/dispatch_picker.py:437</code> documents the bare reading. Both are updated to <code>timeout in jev</code>, or the no-added-failure clause cannot be met. Second, the Why's "two gaps" counts three defects and should read three.</p></div>
 </div>
 </section>
 </main>
