@@ -1560,7 +1560,10 @@ def _reviewer_store_records(
     that is not a record this store would read, or that cannot be read yet, is
     not a finding of its own — a review that has not stored its record is
     judged by the gates that require one, and the checks built on this only
-    report what a readable record says.
+    report what a readable record says. A body that is not a review — it names
+    no subject and carries no review material — is a placeholder rather than a
+    record whose fields a reader reads, so it is left to the gates that require
+    the record as well.
 
     A node that is not a review is not judged: its deliverable is repository
     work, and a path that happens to sit under the store root belongs to
@@ -1590,6 +1593,11 @@ def _reviewer_store_records(
             # record says, never a guess about an unreadable one.
             continue
         if record is None:
+            continue
+        if not (
+            review_module.names_a_review_subject(record)
+            or review_module.carries_review_material(record)
+        ):
             continue
         records.append(
             (stored_at or candidate, reviewed_run_id, ledger.normalize_identity(record))
@@ -1634,7 +1642,7 @@ def _unresolved_revision_findings(node: TaskNode | None) -> list[str]:
 
 
 def _review_record_status_findings(node: TaskNode | None) -> list[str]:
-    """Report a review run's written records whose status no reader acts on.
+    """Report a review run's stored records whose status no reader acts on.
 
     A reviewer can bypass :func:`reckon.crew.review.store_review`'s status check
     by writing its record straight into the record path its dispatch granted,
@@ -1647,55 +1655,17 @@ def _review_record_status_findings(node: TaskNode | None) -> list[str]:
     record path, the status found and the accepted set, so the reviewer repairs
     its own record while it still holds its turn rather than leaving a
     coordinator to find it hours later.
+
+    The records read are :func:`_reviewer_store_records`' own, so this audit
+    and the severity and revision audits beside it judge one list of records
+    rather than three readings that could disagree.
     """
-    if node is None or not _node_is_a_reviewer(node):
-        return []
     findings: list[str] = []
-    for record_path, record in _written_review_records(node):
+    for record_path, _run_id, record in _reviewer_store_records(node):
         refusal = review_module.review_status_refusal(record)
         if refusal:
             findings.append(f"review record {str(record_path)!r} {refusal}")
     return findings
-
-
-def _written_review_records(node: TaskNode) -> list[tuple[Path, dict[str, Any]]]:
-    """The review records written at a reviewer node's granted record paths.
-
-    The dispatch grants the review store's record paths on the node, so the
-    records to judge are read from those declarations rather than from the
-    store's own selection: a declared path is one of this run's records when it
-    sits under the store root's project directory, the same test the record
-    declarations the reviewer was handed satisfy, and the file's bytes are read
-    where they sit so a record the store would set aside — an incomplete one, a
-    copy filed apart from its run — is still judged. Only a body that is a
-    review is judged: a file that neither names a review subject nor carries
-    review material is a placeholder, not a record whose status a reader reads,
-    so it is left to the gates that require the record — this check reports
-    what a written record says, never a guess about a missing or unreadable
-    one.
-    """
-    store_root = review_module.review_store_root()
-    records: list[tuple[Path, dict[str, Any]]] = []
-    seen: set[Path] = set()
-    for declared in node.write_paths or ():
-        candidate = Path(str(declared)).expanduser()
-        if candidate.parent.parent != store_root or candidate in seen:
-            continue
-        seen.add(candidate)
-        try:
-            stored = json.loads(candidate.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            continue
-        if not isinstance(stored, Mapping):
-            continue
-        body = dict(stored)
-        if not (
-            review_module.names_a_review_subject(body)
-            or review_module.carries_review_material(body)
-        ):
-            continue
-        records.append((candidate, body))
-    return records
 
 
 def _unmarked_findings_in_record(
