@@ -179,7 +179,8 @@ def _lift_row(
     The row carries the same fields an ordinary run transition carries, so a
     follower on current main renders it without raising; the lift's group, form,
     multiple, scope and id are named in the row's ``detail`` clause, which is
-    the free-text field the formatter already knows.
+    the free-text field the formatter already knows. The row's session is the
+    session the lift is scoped to, so it reaches only that session's follower.
     """
     group = str(lift.get("group") or "")
     if ended is not None:
@@ -191,7 +192,7 @@ def _lift_row(
     snapshot = {
         "run_id": None,
         "node": group,
-        "session": "",
+        "session": _scope_session(lift),
         "role": "",
         "backend": "",
         "model": "",
@@ -212,6 +213,21 @@ def _lift_row(
         counts={"working": 0, "blocked": 0, "unpromoted": 0},
         spend_runs=[],
     )
+
+
+def _scope_session(lift: Mapping[str, Any]) -> str:
+    """The session a session-scoped lift belongs to, or ``""`` for a global one.
+
+    Every project's producer sweeps the workstation's whole lift document into
+    its own stream, and a follower skips a row that another session owns. A
+    session-scoped lift spends only for that session, so its row names that
+    session and other sessions' panes do not draw it. A global lift covers
+    every session, so its row stays unattributed and every follower draws it.
+    """
+    scope = str(lift.get("scope") or "")
+    if scope.startswith(budget_lift.SESSION_PREFIX):
+        return scope[len(budget_lift.SESSION_PREFIX) :]
+    return ""
 
 
 def _lift_detail(lift: Mapping[str, Any], *, kind: str, ended: str | None) -> str:
