@@ -35,7 +35,6 @@ from reckon.crew.runs import (
 )
 
 
-
 # ── The review reflex: a scoring run runs the command it composed ───────────
 # A run that reaches scoring has already had its whole review dispatch composed
 # and returned as a string, and leaving it there is what left six runs waiting
@@ -234,8 +233,10 @@ def _discard_stranded_review(review_run_id: str, *, reason: str) -> str:
 
     Returns a sentence recording what happened, for the reviewed run's own
     dispatch record. The discard leaves its departure marker in the review's
-    run directory, and the reason is written onto that marker because the
-    marker is the durable place a later reader asks why the pointer went. A
+    run directory when the run has one, and in the shared discards spool when it
+    does not — a review whose launch never spawned a worker has no run directory
+    to hold it. The reason is written onto whichever marker was written, because
+    the marker is the durable place a later reader asks why the pointer went. A
     discard that refuses or fails is reported rather than raised: the reflex is
     a sweep that must reach the rest of the fleet, and a pointer already gone
     is a release as much as one removed.
@@ -248,9 +249,16 @@ def _discard_stranded_review(review_run_id: str, *, reason: str) -> str:
     except Exception as exc:  # noqa: BLE001 - a release must not stop the sweep
         return f"its discard failed: {exc}"
     try:
-        marker = promotion_module.discard_record_path(review_run_id)
+        marker = next(
+            path
+            for path in (
+                promotion_module.discard_record_path(review_run_id),
+                promotion_module.discard_spool_path(review_run_id),
+            )
+            if path.is_file()
+        )
         data = json.loads(marker.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
+    except (StopIteration, OSError, ValueError):
         return "its pointer was discarded; no marker was readable to hold the reason"
     if isinstance(data, Mapping):
         data = dict(data)
@@ -488,7 +496,9 @@ CARRY_FORWARD_FIELD = "review_carry_forward"
 REVIEW_SETTLE_SECONDS = 300
 
 
-def _changed_paths_between(tree: Path | None, older: str, newer: str) -> list[str] | None:
+def _changed_paths_between(
+    tree: Path | None, older: str, newer: str
+) -> list[str] | None:
     """The paths that changed between two revisions, or None if git cannot say.
 
     None is the fail-safe: a history git cannot compare cannot be shown to
@@ -1704,6 +1714,12 @@ def _dispatch_composed_review(
             else None,
             unreconciled_override=allow_unreconciled_runs,
             route="deterministic",
+            # A review held by the lane is recorded as a queued request and
+            # relaunched later by the admission pass, which rebuilds the
+            # unreconciled waiver from these options. Passing the waiver here
+            # alone would be lost with the request: the relaunch would then
+            # refuse the review for the very run it exists to reconcile.
+            dispatch_options={"allow_unreconciled_runs": allow_unreconciled_runs},
         )
     except BudgetHold as exc:
         reason = f"the {backend} lane is unavailable: {exc}"

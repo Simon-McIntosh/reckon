@@ -1,0 +1,33 @@
+<section id="a-review-is-not-refused-for-its-run" class="evidence-fragment">
+  <h2>§10 — A review is not refused for the run it reviews</h2>
+  <p>
+    A review carries the unreconciled-runs waiver because the run it reviews
+    <em>is</em> an unreconciled run: past the grace the fence refuses the very
+    dispatch that reconciles it. The waiver reached dispatch as
+    <code>unreconciled_override</code>, but a request the lane holds is recorded
+    with only its <code>dispatch_options</code>, and the admission pass rebuilds
+    the waiver from there. Two composed-review callers — the reflex
+    (<code>reckon/crew/recovery_review_dispatch.py</code>) and the composed
+    plan-review dispatches (<code>reckon/crew/plan_review.py</code>) —
+    passed the override without the option, so a queued review relaunched with
+    no waiver and failed <code>UnreconciledRuns</code> on every admission pass.
+  </p>
+  <p>
+    The fix records <code>allow_unreconciled_runs</code> in the dispatch options
+    each caller passes, so the queued request carries the waiver into its
+    relaunch. A stranded review whose launch never spawned a worker now also
+    keeps its strand reason: the discard marker is read from the run directory
+    or the shared discards spool, whichever the discard wrote.
+  </p>
+  <p id="a-review-is-not-refused-for-its-run-measure">
+    Measure: the focused gate
+    <code>python -m pytest -q tests/test_a_review_is_not_refused_for_its_run.py</code>
+    reports <strong>4 passed</strong> at the head revision; the wider focused
+    set of reflex, stranded-review, plan-review and queue-admission test files
+    reports <strong>71 passed</strong>. The negative control (the reflex's
+    <code>dispatch_options</code> waiver dropped) turns the queued review's
+    admission into the fence refusal
+    (<code>project has 1 unreconciled run(s) older than the 1s grace</code>),
+    failing the head-green test.
+  </p>
+</section>
