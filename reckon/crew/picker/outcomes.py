@@ -202,9 +202,17 @@ def record_picker_hold(
     plan: str,
     selection: Mapping[str, Any],
     reason: str,
+    run_id: str = "",
+    queued: bool = False,
     now: datetime | None = None,
 ) -> dict[str, Any]:
-    """Append one run-free hold with an exclusive lock and durable flush."""
+    """Append one run-free hold with an exclusive lock and durable flush.
+
+    A hold the dispatcher continued on its offered local lane is recorded with
+    the run it became: ``run_id`` names that run and ``queued`` is set when the
+    request was queued rather than launched, so the outcome history shows Jev's
+    answer and where it landed instead of a bare hold that never moved.
+    """
     path = _hold_path(docs, project)
     path.parent.mkdir(parents=True, exist_ok=True)
     # The exact request the hold answered travels with the row, inline when it
@@ -225,6 +233,10 @@ def record_picker_hold(
         "request_digest": request_digest,
         "payload_bytes": len(payload),
     }
+    if run_id:
+        record["run_id"] = run_id
+    if queued:
+        record["queued"] = True
     if len(payload) <= HOLD_PAYLOAD_INLINE_LIMIT:
         record["state"] = state
         record["questions"] = questions
