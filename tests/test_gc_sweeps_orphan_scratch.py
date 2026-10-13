@@ -33,6 +33,20 @@ def _entry(root, name):
     return path
 
 
+def _outside_fixture_in_real_root(path, real_root, fixture_root):
+    """True when a path is in the real scratch root but not the fixture's own tree.
+
+    pytest can place its basetemp under the real scratch root, which puts the
+    fixture's root and every entry beneath it inside that root as well. The
+    guard is that the sweep touches nothing of the real root it did not create,
+    so the fixture's own tree is excluded before the comparison.
+    """
+    resolved = Path(path).resolve()
+    return resolved.is_relative_to(real_root) and not resolved.is_relative_to(
+        Path(fixture_root).resolve()
+    )
+
+
 def test_sweep_reports_and_removes_only_old_unclaimed_scratch(tmp_path, monkeypatch):
     root, home, real_root = _fixture(tmp_path, monkeypatch)
     live = _entry(root, "live")
@@ -77,15 +91,20 @@ def test_sweep_reports_and_removes_only_old_unclaimed_scratch(tmp_path, monkeypa
             applied = routing.garbage_collect_orphan_scratch(apply=True, now=now)
         removed_targets = [Path(call.args[0]) for call in remove.call_args_list]
         assert removed_targets == [old]
-        assert all(not path.is_relative_to(real_root) for path in removed_targets)
+        assert not [
+            path
+            for path in removed_targets
+            if _outside_fixture_in_real_root(path, real_root, root)
+        ]
         assert applied["removed"] == [str(old)]
         assert applied["bytes_freed"] == len(b"fixture")
         assert all(path.exists() for path in (live, held, young))
         assert not old.exists()
-        assert all(
-            not str(row["path"]).startswith(str(real_root))
+        assert not [
+            row
             for row in applied["entries"]
-        )
+            if _outside_fixture_in_real_root(row["path"], real_root, root)
+        ]
     finally:
         holder.terminate()
         holder.wait(timeout=5)

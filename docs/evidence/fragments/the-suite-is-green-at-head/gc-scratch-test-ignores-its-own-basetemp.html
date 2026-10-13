@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s16">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-recorded-at" content="2026-10-13">
+  <meta name="plan-tags" content="crew,scratch,gc,basetemp,test">
+  <title>The gc scratch test cannot trip on its own basetemp | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="gc-scratch-test-ignores-its-own-basetemp-landed" data-node="gc-scratch-test-ignores-its-own-basetemp" data-reckon="landed" data-when="2026-10-13">
+  <h2 id="gc-scratch-test-ignores-its-own-basetemp-heading">The gc scratch test cannot trip on its own basetemp</h2>
+  <p id="gc-scratch-test-ignores-its-own-basetemp-landing">The fixture's own tree is now excluded from the real-root guard, so a pytest basetemp placed under the real scratch root no longer trips it: <code>_outside_fixture_in_real_root</code> reports a path only when it is inside the real root and not inside the fixture's own tree. <code>test_gc_sweeps_orphan_scratch.py::test_sweep_reports_and_removes_only_old_unclaimed_scratch</code> passes with <code>--basetemp</code> under <code>/tmp/reckon-crew-scratch</code> and outside it (<code>1 passed</code>/<code>EXIT=0</code> each), and fails (<code>EXIT=1</code>) under a mutation that makes the sweep also remove a real-root path outside the fixture.</p>
+</article>
+</body>
+</html>
