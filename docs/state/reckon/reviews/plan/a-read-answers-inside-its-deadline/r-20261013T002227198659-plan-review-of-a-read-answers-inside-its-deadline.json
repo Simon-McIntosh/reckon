@@ -1,0 +1,81 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-13T00:35:29.336Z",
+  "dispatched_at": "2026-10-13T00:22:56Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html#_document",
+      "id": "wiring-1",
+      "reason": "an implementable unit with no followup never enters a build wave, so \u00a710 and \u00a711 would stall even though \u00a78's deliverable already forwards to \u00a710 (\"Reusing identification across reads is \u00a710\") and \u00a710 declares \"This section runs after \u00a78\".",
+      "text": "the only open followup `f-araiid-006` (`data-status=\"open\"`) names \u00a78, \u00a79 and \u00a76, but \u00a710 and \u00a711 are freshly declared `implementable` (`plan-section-declarations`) and appear in no followup, so the plan's remaining work has no dispatch route",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html#s8",
+      "id": "reasoning-1",
+      "reason": "a node lands \u00a78, re-measures the audit per \u00a76, and finds its stated pain point unmoved, because the fix as scoped reaches only the roadmap/discovery scopes and never the audit.",
+      "text": "\u00a78 motivates the one-walk change with \"Warm audit therefore reads 4.91 s against a 3 s target\" and attributes the audit's ten scan entries to \"each combination is a separate scope key\", but no `resource_scan_scope` wraps the audit path (only `reckon/roadmap.py:2525`, `reckon/serve.py:1847` and the crew picker open one; `reckon/mcp.py`, where the audit lives, is not among \u00a78's write paths), so the audit's ten entries are ten independent unscoped walks and \u00a78's \"scan runs once inside a scope\" cannot reduce them",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html#s11",
+      "id": "reasoning-2",
+      "reason": "the fenced write scope cannot cover the file the change must edit to unify those readers, so the node either blocks at the fence or lands a partial fix that leaves `parse_meta`/`parse_plan` building their own parses against the deliverable's claim.",
+      "text": "\u00a711's deliverable says every kind derives from \"the file memo \u00a75 introduced\", but the write paths list `reckon/_store.py`, `metadata_index.py`, `project_state.py`, `file_memo.py` and the test, omitting `reckon/_plan_html.py`, which holds two of the four named readers (`_parse_plan_uncached` at `_plan_html.py:2340`, `parse_meta` at `_plan_html.py:2204`) and the shared memo `read_state_and_text_file` (`_plan_html.py:1406`)",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html#s11",
+      "id": "reasoning-3",
+      "reason": "the root-cause enumeration does not match the code path, so a node told to collapse four BeautifulSoup parses into one chases a parse `parse_meta` never makes and may change its output to satisfy \"one parse\", against \u00a711's own \"No reader's output changes\".",
+      "text": "\u00a711 states \"four memo kinds each build their own BeautifulSoup\", naming `parse_meta` and \"the metadata index's `_parse_plan_uncached`\", but `parse_meta` is a regex parse that builds no soup by design (\"parsed by regex (no bs4)\", `_plan_html.py:2204-2208`) and `_parse_plan_uncached` lives in `reckon/_plan_html.py` (kind `parse_plan`, `_plan_html.py:2340`), reached by neither the metadata index nor the audit \u2014 the index reads plans through `read_state_and_text_file` (`metadata_index.py:670`) and `parse_meta` (`metadata_index.py:618`)",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-answers-inside-its-deadline.html#s8",
+      "id": "single_goal-1",
+      "reason": "\u00a78's gate counts walks and \u00a710's counts identifications, so neither node measures the copy change, and a node dropping the guard to satisfy the clause can alias mutable state across reads with no gate to catch it.",
+      "text": "\u00a78's deliverable states two changes: the scope's one-walk-per-read, and, in its second paragraph, \"A memo hit returns its value without the defensive deep copy, wherever the caller does not mutate it\", a clause repeated verbatim in \u00a710 and tied to the shared `file_memo.memoized` (`file_memo.py:66,76`) whose docstring makes the deep copy the guard against \"mutating a returned value poison[ing] the entry another request will read\"",
+      "type": "single_goal",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "e465b6fdd10ff3f3667c6319a66985ef6b6451b1e207254786e4c29c0f2697c3",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 35,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261013T002227198659-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "7fddda15fd7439bc6a6826553e8ae652d024e557",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited modules (`reckon/resources.py`, `metadata_index.py`, `project_state.py`, `file_memo.py`) and the evidence anchors `#s7-attribution` and `#s9-cold-attribution` resolve, with extensionless hrefs read as `<path>.html`.",
+    "done_when": "pass \u2014 \u00a78, \u00a710 and \u00a711 each declare an executed negative control that keys the fix off (drop the scope key / drop the memo / give one reader its own parse), so each gate can fail on the unfixed code.",
+    "evidence_paths": "pass \u2014 the changed sections log their gates under the run's own report directory (`docs/plans/a-read-answers-inside-its-deadline.html:143,151,155`), and \u00a79's cited `profiles/head/` directory resolves.",
+    "naming": "pass \u2014 the changed sections name mechanisms (`_scan_resources`, `read_state_and_text_file`, `_cached_plan_state`) without plan labels, ticket numbers or version tags; the new section headings are descriptive, not stage-coded.",
+    "reasoning": "a finding \u2014 \u00a78's stated motivation (the warm audit) is not reached by its scope-based mechanism, and \u00a711 mis-enumerates the readers it would unify and cannot be implemented within its declared write paths.",
+    "single_goal": "a finding \u2014 \u00a78's deliverable carries a second, unrelated requirement (return memo hits without the defensive deep copy) that is repeated in \u00a710 and measured by neither node.",
+    "wiring": "a finding \u2014 no open followup routes the two newest implementable units, \u00a710 and \u00a711 (`docs/plans/a-read-answers-inside-its-deadline.html#_document`)."
+  },
+  "section_digests": {
+    "_document": "83079040f779c7b717cf7a52a5476d91254c8004654e040305aac9b5f62b4702",
+    "s1": "71942607f4df4eca011a41734257645ef2adce9664dd45b628d96b066c34e813",
+    "s10": "fc43c6a36ecc0e44e9cfb42427918959e90dd9b06d2f1960af40b11f8f8dae24",
+    "s11": "e565b68f99a2ab550d84b14a3fbe09aafa14b2d4c842dc7388b843bfa692f1a4",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s3": "cbe34f619f869b3c3346239e8823a63a8de98dd92b7fb8ed5cfa2b8a4ab26a39",
+    "s4": "d2ec58f5ac4e72c5e8bcde1f156bdd4c85bde3848b4e3b6131e6112bb6395d49",
+    "s5": "b14c0e28c2c28544a08d4b3d7ab621f48464471360d202c7a4bd1a1ec776f557",
+    "s6": "00db597c53dfd6e3d857f89ee748a8c6ecfe51576b2b66e64772393805c59b52",
+    "s7": "503099f7e945f5038a64b142ffa49b88c02dbbd0f0a5ad5882f6da8b22d25883",
+    "s8": "14e9060481246edc93fe95c3cb2aac675110a78242beebc22c5013f36b1ff330",
+    "s9": "a356ecd44b8ee634f6b45b64ec3785e3af7ffb255d4d3adf46574d3a10afc7b3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T00:35:53.703462+00:00"
+}
