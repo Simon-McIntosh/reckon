@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-13T01:03:44.444Z",
+  "dispatched_at": "2026-10-13T00:51:35Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-answers-inside-its-deadline.html:199",
+      "id": "wiring-1",
+      "reason": "the same defect a prior review raised for \u00a710/\u00a711 recurs for \u00a712; without naming \u00a712 the newly declared section is undispatched and the followup misdirects the worker that reads it.",
+      "text": "f-araiid-007 is the only open followup; it recommends `/reckon-build a-read-answers-inside-its-deadline \u00a78` and its body names \u00a78, \u00a710 and \u00a711, describing \u00a78 as \"one walk per read, the audit included\", yet \u00a78 (line 143) now defers the audit to \u00a712 which is freshly declared `implementable` (plan-section-declarations) and appears in no followup \u2014 so \u00a712 has no dispatch route and the followup body contradicts \u00a78's own text",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-answers-inside-its-deadline.html:159",
+      "id": "reasoning-1",
+      "reason": "the plan's stated invariant (\"output unchanged\", done-when \"findings equal\") cannot hold as written for a corpus containing invalid resource paths, and the temporary-corpus measure will not catch it because such a corpus need not contain one.",
+      "text": "\u00a712's deliverable has `_audit` take its resources from `iter_resources` inside `resource_scan_scope` and states \"The audit's output is unchanged\", but `_audit` (reckon/mcp.py:2355-2359) currently emits `invalid-resource-path` findings from the `ResourceCollision` it catches on its own `identify_resource` loop; `_scan_resources` under `ignore_invalid=True` (the flag \u00a78 requires of every in-scope caller) drops exactly those files silently, so routing the audit through `iter_resources` removes those findings",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "fc08668d29a4d89df29b049dbedfeedc8196fae687c28987bec79b481fe563d5",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 39,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261013T005105744059-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "a1fb9bfcf6ff2b932bb96bce4df272e84614ed4a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 \u00a78 cites \u00a710 and \u00a712, \u00a711 cites \u00a75, \u00a79 and \u00a712, and \u00a712 cites \u00a77, \u00a78 and \u00a711, all of which resolve to sections that exist, and every symbol the changed units cite by name (`_scan_resources`, `iter_resources`, `resource_scan_scope`, `_SCAN_SCOPE`, `read_state_and_text_file`, `parse_plan`, `_parse_plan_uncached`, `_cached_plan_state`, `_audit`, `_audit_plan_state`, `_plan_html.from_html`) resolves in the tree at the reviewed revision.",
+    "done_when": "pass \u2014 each of \u00a78, \u00a711 and \u00a712 names a measurable count (walks, soup builds, findings equality) and a declared negative control that must fail.",
+    "evidence_paths": "pass \u2014 \u00a78, \u00a711 and \u00a712 log their negative controls under the run directory, a durable crew path, not a node-local scratchpad.",
+    "naming": "pass \u2014 the changed units name test files and functions by what they do; no plan labels, ticket numbers or version tags reach them.",
+    "reasoning": "a finding \u2014 \u00a712 requires `_audit` to take its resources from `iter_resources` inside a scan scope while asserting the audit's output is unchanged, but `iter_resources` with `ignore_invalid=True` (the flag \u00a78 requires in scope) silently drops the invalid resources `_audit` reports.",
+    "single_goal": "pass \u2014 \u00a78, \u00a711 and \u00a712 each name one deliverable; \u00a712's walk and parse clauses are two facets of one goal (make the audit share the shared scan and parse) measured by one test.",
+    "wiring": "a finding \u2014 the only open followup, f-araiid-007, names \u00a78, \u00a710 and \u00a711 but not \u00a712, which is freshly declared implementable and so has no dispatch route."
+  },
+  "section_digests": {
+    "_document": "770d8e6fab2fd7f5506a6f12d3d355945c5e8cf9236472348ae47d38b9b14128",
+    "s1": "71942607f4df4eca011a41734257645ef2adce9664dd45b628d96b066c34e813",
+    "s10": "5261ebecb0fa5c4351c00f324d2378797d384ba4246b22b52bc96e9dda5392d1",
+    "s11": "3a64769c6749a1d84d6c8b71f9c1b2c406198fcf56578a7dfa447465f1cd579e",
+    "s12": "99ab9f095250c9dc7c97e3cbadbbf7602d1c3e399d028ea7561ec5c3df345f66",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s3": "cbe34f619f869b3c3346239e8823a63a8de98dd92b7fb8ed5cfa2b8a4ab26a39",
+    "s4": "d2ec58f5ac4e72c5e8bcde1f156bdd4c85bde3848b4e3b6131e6112bb6395d49",
+    "s5": "b14c0e28c2c28544a08d4b3d7ab621f48464471360d202c7a4bd1a1ec776f557",
+    "s6": "00db597c53dfd6e3d857f89ee748a8c6ecfe51576b2b66e64772393805c59b52",
+    "s7": "503099f7e945f5038a64b142ffa49b88c02dbbd0f0a5ad5882f6da8b22d25883",
+    "s8": "d34e4559f87b4b8a8bc8b58e12dc26b2eeee527979f013e441d10648120e7b60",
+    "s9": "a356ecd44b8ee634f6b45b64ec3785e3af7ffb255d4d3adf46574d3a10afc7b3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T01:05:59.428465+00:00"
+}
