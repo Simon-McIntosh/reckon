@@ -3279,7 +3279,6 @@ _OP_DISPATCH = {
     "retire_prose": _apply_retire_prose,
     "insert_section": _apply_insert_section,
     "append_evidence": _apply_append_evidence,
-    "collapse_section": _apply_collapse_section,
     "move": _apply_move,
 }
 

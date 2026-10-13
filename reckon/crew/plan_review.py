@@ -675,23 +675,38 @@ def _wanted_fingerprints(value: str | Iterable[str] | None) -> frozenset[str] | 
     return frozenset(str(item) for item in value)
 
 
-def _fingerprint_forms(plan: Mapping[str, Any] | str | Path) -> tuple[str, str, str]:
-    """Section-set, pre-collapse and whole-document digests of one snapshot."""
+def _fingerprint_forms(plan: Mapping[str, Any] | str | Path) -> tuple[str, str]:
+    """Section-set and whole-document digests of one snapshot.
+
+    The section-set form digests each authored unit independently, so a review
+    stored under it keeps covering the units it read after another section
+    lands. The whole-document form digests the remaining document as one unit,
+    so a review stored before unit digests existed still matches while the
+    document is unchanged.
+
+    The pre-collapse form this function used to return is retired. It was the
+    older definition that kept each section's lifecycle declaration and the
+    section's landed card in the digest, both of which moved on a collapse that
+    a landing beat no longer performs, so nothing writes a fresh one.
+    """
     document = _as_document(plan)
     content = document if document is not None else plan
     forms = [plan_fingerprint(content)]
-    for keep_declarations in (True, False):
-        payload = {"state": _digest_state(content, keep_declarations=keep_declarations)}
-        if document is not None:
-            keep_cards = keep_declarations or not bool(landed_section_ids(document))
-            payload["prose"] = " ".join(
-                prose
-                for _, prose in _plan_html.section_prose(
-                    document, keep_landed_cards=keep_cards
-                )
-                if prose
+    payload = {"state": _digest_state(content)}
+    if document is not None:
+        # Drop the interior of a landed card: its body is the section's own
+        # landed form, so counting it would re-arm the fingerprint on the
+        # landing beat that wrote it. A document with no landed card carries
+        # no card interior and is digested whole.
+        keep_cards = not bool(landed_section_ids(document))
+        payload["prose"] = " ".join(
+            prose
+            for _, prose in _plan_html.section_prose(
+                document, keep_landed_cards=keep_cards
             )
-        forms.append(_digest(payload))
+            if prose
+        )
+    forms.append(_digest(payload))
     return tuple(forms)
 
 
