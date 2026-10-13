@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import fcntl
 import os
 import signal
 import subprocess
@@ -35,10 +36,8 @@ def watch_follow(project, **_kwargs):
         with times.open('a', encoding='utf-8') as output:
             output.write(f'start {attempt} {time.monotonic()}\\n')
         crash = (mode == 'crash' and attempt == 1) or mode == 'always-crash'
-        crash = crash or (mode == 'steady-reset' and attempt <= 5)
         if crash:
-            time.sleep(float(os.environ['RECKON_TEST_STEADY_SLEEP']) if
-                       mode == 'steady-reset' and attempt == 3 else 0.15)
+            time.sleep(0.15)
             with times.open('a', encoding='utf-8') as output:
                 output.write(f'exit {attempt} {time.monotonic()}\\n')
             raise RuntimeError('watch loop crashed')
@@ -57,6 +56,31 @@ def watch_follow(project, **_kwargs):
 
 recovery.watch_follow = watch_follow
 main()
+"""
+
+_FAST_WATCH_LOOP = """
+import fcntl
+import os
+import time
+from pathlib import Path
+
+events = Path(os.environ['RECKON_TEST_PRODUCER_EVENTS'])
+times = Path(os.environ['RECKON_TEST_PRODUCER_TIMES'])
+seat = Path(os.environ['RECKON_TEST_PRODUCER_SEAT'])
+with seat.open('a+') as lock:
+    fcntl.flock(lock, fcntl.LOCK_EX)
+    with events.open('a', encoding='utf-8') as output:
+        output.write(str(os.getpid()) + '\\n')
+    attempt = len(events.read_text().splitlines())
+    with times.open('a', encoding='utf-8') as output:
+        output.write(f'start {attempt} {time.monotonic()}\\n')
+    if attempt <= 7:
+        time.sleep(0.55 if attempt == 3 else 0.02)
+        with times.open('a', encoding='utf-8') as output:
+            output.write(f'exit {attempt} {time.monotonic()}\\n')
+        raise RuntimeError('watch loop crashed')
+    while True:
+        time.sleep(0.05)
 """
 
 
@@ -90,17 +114,24 @@ def _arm(tmp_path: Path, monkeypatch, mode: str):
     home.mkdir()
     events = tmp_path / "starts"
     times = tmp_path / "times"
+    seat = tmp_path / "seat"
     log = tmp_path / "watch.log"
     monkeypatch.setenv("RECKON_HOME", str(home))
     monkeypatch.setenv("RECKON_WATCH_ARMING", "on")
     monkeypatch.setenv("RECKON_TEST_PRODUCER_EVENTS", str(events))
     monkeypatch.setenv("RECKON_TEST_PRODUCER_TIMES", str(times))
+    monkeypatch.setenv("RECKON_TEST_PRODUCER_SEAT", str(seat))
     monkeypatch.setenv("RECKON_TEST_PRODUCER_MODE", mode)
-    monkeypatch.setenv("RECKON_TEST_STEADY_SLEEP", "3.25")
     monkeypatch.setenv(
         "PYTHONPATH", str(Path(dispatch_watch.__file__).resolve().parents[2])
     )
     monkeypatch.setattr(dispatch_watch, "_read_fleet_record", lambda: None)
+    fast = mode == "steady-reset"
+    child = (
+        [sys.executable, "-c", _FAST_WATCH_LOOP]
+        if fast
+        else [sys.executable, "-c", _WATCH_LOOP, "crew", "watch", "--project", "sample"]
+    )
     monkeypatch.setattr(
         dispatch_watch,
         "_watch_producer_argv",
@@ -110,16 +141,10 @@ def _arm(tmp_path: Path, monkeypatch, mode: str):
             dispatch_watch._WATCH_PRODUCER_SUPERVISOR,
             dispatch_watch.WATCH_LOG_ENV,
             str(log),
-            "0.3",
-            "1.2",
-            "3.0",
-            sys.executable,
-            "-c",
-            _WATCH_LOOP,
-            "crew",
-            "watch",
-            "--project",
-            "sample",
+            "0.1" if fast else "0.3",
+            "0.8" if fast else "1.2",
+            "0.4" if fast else "3.0",
+            *child,
         ],
     )
     supervisor = dispatch_watch._start_watch_producer("sample")
@@ -217,17 +242,16 @@ def test_a_steady_run_resets_the_delay_and_crash_count(tmp_path, monkeypatch):
     supervisor, events, _log = _arm(tmp_path, monkeypatch, "steady-reset")
     try:
         _until(
-            lambda: len(_pids(events)) >= 6,
+            lambda: len(_pids(events)) >= 8,
             "a steady producer crash exhausted the short-crash bound",
-            timeout=25,
+            timeout=5,
         )
         assert supervisor.poll() is None
         times = tmp_path / "times"
         first_gap = _event_time(times, "start", 2) - _event_time(times, "exit", 1)
         steady_gap = _event_time(times, "start", 4) - _event_time(times, "exit", 3)
-        assert 0.3 <= steady_gap < first_gap + 0.5
-        assert (
-            dispatch_watch.watch_state("sample")["watcher"]["pid"] == _pids(events)[5]
-        )
+        assert 0.1 <= steady_gap < first_gap + 0.3
+        with (tmp_path / "seat").open("a+") as seat, pytest.raises(BlockingIOError):
+            fcntl.flock(seat, fcntl.LOCK_EX | fcntl.LOCK_NB)
     finally:
         _stop_own_processes(supervisor, events)

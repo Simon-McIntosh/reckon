@@ -234,7 +234,8 @@ while True:
     if ran_seconds >= steady_seconds:
         delay = first_delay
         crashes = 0
-    crashes += 1
+    else:
+        crashes += 1
     if crashes == 5:
         with open(sys.argv[2], 'a', encoding='utf-8') as log:
             log.write('reckon crew watch stopped: producer crashed repeatedly; restart limit reached\\n')
