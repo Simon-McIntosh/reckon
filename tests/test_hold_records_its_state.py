@@ -20,12 +20,15 @@ import pytest
 from reckon.crew.node import TaskNode
 from reckon.crew.picker import PickRequest, lane_context, pick
 from reckon.crew.picker.outcomes import (
+    HOLD_LOG_DIR,
+    HOLD_LOG_FILENAME,
     HOLD_PAYLOAD_INLINE_LIMIT,
     hold_request_digest,
     record_picker_hold,
     replay_hold,
 )
 from reckon.crew.picker.types import Candidate
+from reckon.crew.runs import crew_home
 
 PROJECT = "reckon"
 
@@ -47,10 +50,15 @@ CONFIG = {
 
 @pytest.fixture(autouse=True)
 def _isolated_lane(tmp_path, monkeypatch):
-    """Keep the state render off the host's live lane document and live runs."""
+    """Keep the state render off the host's live lane document and live runs.
+
+    The crew home is redirected at a temporary path too, so a hold is written
+    under the test's own home rather than the operator's.
+    """
 
     lane = tmp_path / "lane.json"
     monkeypatch.setenv("RECKON_LOCAL_LANE_DOCUMENT", str(lane))
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
     monkeypatch.setattr(lane_context, "list_live", list)
     monkeypatch.setattr("reckon.crew.picker._record_pick_timings", lambda *a, **k: None)
 
@@ -130,8 +138,12 @@ def _hold_pick(tmp_path, *, probability: float = 0.84, padded: str = ""):
     return selection, seen
 
 
-def _hold_rows(docs) -> list[dict]:
-    path = docs / "state" / PROJECT / "picker-holds.jsonl"
+def _crew_hold_log(project: str = PROJECT):
+    return crew_home() / HOLD_LOG_DIR / project / HOLD_LOG_FILENAME
+
+
+def _hold_rows() -> list[dict]:
+    path = _crew_hold_log()
     return [json.loads(line) for line in path.read_text().splitlines()]
 
 
@@ -153,8 +165,8 @@ def test_hold_row_carries_the_exact_request(tmp_path):
 
     selection, _ = _hold_pick(tmp_path)
     assert selection.action == "hold"
-    docs = _record(tmp_path, selection)
-    rows = _hold_rows(docs)
+    _record(tmp_path, selection)
+    rows = _hold_rows()
     assert len(rows) == 1
     row = rows[0]
 
@@ -173,10 +185,10 @@ def test_replay_rebuilds_byte_identical_state_and_questions(tmp_path):
     """A replay of the row reproduces the request Jev was actually shown."""
 
     selection, seen = _hold_pick(tmp_path)
-    docs = _record(tmp_path, selection)
-    row = _hold_rows(docs)[0]
+    _record(tmp_path, selection)
+    row = _hold_rows()[0]
 
-    replay = replay_hold(row, docs=docs, project=PROJECT)
+    replay = replay_hold(row, project=PROJECT)
     # Byte-identical: the state string, and the questions mapping, are the ones
     # the client saw when it answered.
     assert replay["state"].encode("utf-8") == selection.rendered_state.encode("utf-8")
@@ -191,14 +203,14 @@ def test_oversized_request_is_stored_by_reference_and_still_replays(tmp_path):
     """A request above the inline limit is written beside the row and referenced."""
 
     selection, seen = _hold_pick(tmp_path, padded="x" * (HOLD_PAYLOAD_INLINE_LIMIT * 2))
-    docs = _record(tmp_path, selection)
-    row = _hold_rows(docs)[0]
+    _record(tmp_path, selection)
+    row = _hold_rows()[0]
 
     assert row["payload_bytes"] > HOLD_PAYLOAD_INLINE_LIMIT
     assert "payload_ref" in row and "state" not in row
-    assert (docs / "state" / PROJECT / row["payload_ref"]).is_file()
+    assert (_crew_hold_log().parent / row["payload_ref"]).is_file()
 
-    replay = replay_hold(row, docs=docs, project=PROJECT)
+    replay = replay_hold(row, project=PROJECT)
     assert json.loads(replay["state"]) == seen["state"]
     assert replay["questions"] == seen["questions"]
     assert replay["request_digest"] == row["request_digest"]
@@ -208,20 +220,20 @@ def test_a_tampered_row_is_refused_by_its_digest(tmp_path):
     """An edited state fails the digest rather than replaying a different request."""
 
     selection, _ = _hold_pick(tmp_path)
-    docs = _record(tmp_path, selection)
-    row = _hold_rows(docs)[0]
+    _record(tmp_path, selection)
+    row = _hold_rows()[0]
     row["state"] = row["state"] + " "
 
     with pytest.raises(ValueError, match="digest mismatch"):
-        replay_hold(row, docs=docs, project=PROJECT)
+        replay_hold(row, project=PROJECT)
 
 
 def test_the_recorded_size_of_a_hold_is_measurable(tmp_path):
     """The row reports the serialized size of its request, and the caller can read it."""
 
     selection, _ = _hold_pick(tmp_path)
-    docs = _record(tmp_path, selection)
-    row = _hold_rows(docs)[0]
+    _record(tmp_path, selection)
+    row = _hold_rows()[0]
     assert row["payload_bytes"] == len(
         json.dumps(
             {"state": row["state"], "questions": row["questions"]},
@@ -235,8 +247,8 @@ def test_record_carries_a_utc_timestamp_and_reason(tmp_path):
     """The row keeps the fields an existing reader already relies on."""
 
     selection, _ = _hold_pick(tmp_path)
-    docs = _record(tmp_path, selection)
-    row = _hold_rows(docs)[0]
+    _record(tmp_path, selection)
+    row = _hold_rows()[0]
     assert row["project"] == PROJECT
     assert row["node"] == "held-node"
     assert row["reasons"] == ["picker selected hold"]

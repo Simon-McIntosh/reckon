@@ -25,6 +25,7 @@ from typing import Any
 from reckon import flight, ledger
 from reckon._timestamps import parse_utc
 from reckon.crew.run_time_profile import _number, _percentile, run_time_profile
+from reckon.crew.runs import crew_home
 
 REVIEW_SUCCESS_SCORE = 80
 SUCCESS_RULE = (
@@ -50,6 +51,13 @@ OVERRIDDEN_HOLD_ROUTE_MODE = "overridden-hold"
 HOLD_PAYLOAD_INLINE_LIMIT = 8192
 HOLD_PAYLOAD_DIR = "picker-holds"
 
+#: A hold is machine-local operational state, like the picks' timing log, so it
+#: is written under the crew home keyed by project rather than inside the
+#: project's own checkout. The log name is unchanged from the docs-side file, so
+#: a legacy log and a crew-home log parse identically.
+HOLD_LOG_DIR = "picker-holds"
+HOLD_LOG_FILENAME = "picker-holds.jsonl"
+
 
 def _hold_payload_bytes(state: str, questions: Any) -> bytes:
     """Canonical bytes of one hold's request, so its digest is stable.
@@ -71,30 +79,34 @@ def hold_request_digest(state: str, questions: Any) -> str:
     return hashlib.sha256(_hold_payload_bytes(state, questions)).hexdigest()
 
 
-def _write_hold_payload(docs: Path, project: str, digest: str, payload: bytes) -> str:
-    """Write a request beside the holds file and return the reference to it."""
-    directory = _hold_path(docs, project).parent / HOLD_PAYLOAD_DIR
+def _write_hold_payload(log_dir: Path, digest: str, payload: bytes) -> str:
+    """Write a request beside the holds log and return the reference to it."""
+    directory = log_dir / HOLD_PAYLOAD_DIR
     directory.mkdir(parents=True, exist_ok=True)
     (directory / f"{digest}.json").write_bytes(payload)
     return f"{HOLD_PAYLOAD_DIR}/{digest}.json"
 
 
 def replay_hold(
-    record: Mapping[str, Any], *, docs: Path, project: str
+    record: Mapping[str, Any], *, project: str, log_dir: Path | None = None
 ) -> dict[str, Any]:
     """Rebuild the exact state and questions a hold recorded, verified by digest.
 
     A row stores its request inline or, when it was too large, beside the holds
-    file behind a reference. Either way the state and questions are recovered
-    byte-identical and the recomputed digest is compared against the recorded
-    one, so a row that has been edited, or a reference that has been lost, is
-    refused rather than replayed as a different request.
+    log behind a reference. The reference resolves against the directory of the
+    log the row was read from — ``log_dir`` when the caller names it, otherwise
+    the directory :func:`_read_holds` stamped on the row, and the current
+    crew-home write location only as a last resort. It is never resolved against
+    the current write location when the row came from elsewhere, so a legacy
+    hold stays replayable after the move. Either way the state and questions are
+    recovered byte-identical and the recomputed digest is compared against the
+    recorded one, so a row that has been edited, or a reference that has been
+    lost, is refused rather than replayed as a different request.
     """
     ref = record.get("payload_ref")
     if ref is not None:
-        stored = json.loads(
-            (_hold_path(docs, project).parent / str(ref)).read_text(encoding="utf-8")
-        )
+        base = Path(log_dir) if log_dir is not None else _row_log_dir(record, project)
+        stored = json.loads((base / str(ref)).read_text(encoding="utf-8"))
         state, questions = stored["state"], stored["questions"]
     else:
         state, questions = record.get("state", ""), record.get("questions") or {}
@@ -190,8 +202,26 @@ def _codex_lane(row: Mapping[str, Any]) -> bool:
     return lane == "codex"
 
 
-def _hold_path(docs: Path, project: str) -> Path:
-    return docs / "state" / project / "picker-holds.jsonl"
+def _hold_path(project: str) -> Path:
+    """The crew-home log a project's holds are appended to."""
+    return crew_home() / HOLD_LOG_DIR / project / HOLD_LOG_FILENAME
+
+
+def _legacy_hold_path(docs: Path, project: str) -> Path:
+    """The docs-side log a project's holds were written to before the move."""
+    return docs / "state" / project / HOLD_LOG_FILENAME
+
+
+def _row_log_dir(record: Mapping[str, Any], project: str) -> Path:
+    """The directory of the log a hold row was read from.
+
+    :func:`_read_holds` stamps the source directory on every row so a replay
+    resolves the row's payload beside the log it actually came from. A row that
+    carries a source directory names its own origin; a caller reading a row off
+    disk without that stamp falls back to the current write location.
+    """
+    stamped = record.get("_log_dir")
+    return Path(str(stamped)) if stamped else _hold_path(project).parent
 
 
 def record_picker_hold(
@@ -213,7 +243,7 @@ def record_picker_hold(
     request was queued rather than launched, so the outcome history shows Jev's
     answer and where it landed instead of a bare hold that never moved.
     """
-    path = _hold_path(docs, project)
+    path = _hold_path(project)
     path.parent.mkdir(parents=True, exist_ok=True)
     # The exact request the hold answered travels with the row, inline when it
     # is small and by reference when it is not, so a replay sends the identical
@@ -242,7 +272,7 @@ def record_picker_hold(
         record["questions"] = questions
     else:
         record["payload_ref"] = _write_hold_payload(
-            docs, project, request_digest, payload
+            path.parent, request_digest, payload
         )
     with path.open("a", encoding="utf-8") as stream:
         fcntl.flock(stream, fcntl.LOCK_EX)
@@ -253,8 +283,13 @@ def record_picker_hold(
     return record
 
 
-def _read_holds(docs: Path, project: str) -> tuple[list[dict[str, Any]], int]:
-    path = _hold_path(docs, project)
+def _read_hold_log(path: Path) -> tuple[list[dict[str, Any]], int]:
+    """Parse one holds log, stamping each row with the directory it came from.
+
+    The stamp lets a replay resolve the row's payload beside the log it was read
+    from, so a legacy docs-side log and a crew-home log are both replayable
+    without the caller having to remember which one a row came from.
+    """
     if not path.is_file():
         return [], 0
     records: list[dict[str, Any]] = []
@@ -266,9 +301,27 @@ def _read_holds(docs: Path, project: str) -> tuple[list[dict[str, Any]], int]:
             malformed += 1
             continue
         if isinstance(item, dict) and parse_utc(item.get("held_at")) is not None:
+            item["_log_dir"] = str(path.parent)
             records.append(item)
         else:
             malformed += 1
+    return records, malformed
+
+
+def _read_holds(docs: Path, project: str) -> tuple[list[dict[str, Any]], int]:
+    """Read a project's holds from the crew home and any legacy docs-side log.
+
+    Both logs are read so no history is lost by the move: the crew-home log is
+    where holds are written now, and a docs-side log left from before is still
+    read. Rows carry the directory they were read from attached by
+    :func:`_read_hold_log`.
+    """
+    records: list[dict[str, Any]] = []
+    malformed = 0
+    for path in (_hold_path(project), _legacy_hold_path(docs, project)):
+        rows, count = _read_hold_log(path)
+        records.extend(rows)
+        malformed += count
     return records, malformed
 
 
@@ -471,7 +524,9 @@ def summarize(
             )
             hold_rows.append(
                 {
-                    **hold,
+                    # ``_log_dir`` is the reader's stamp for payload resolution,
+                    # not part of the row, so the report does not carry it.
+                    **{k: v for k, v in hold.items() if k != "_log_dir"},
                     "later_run_id": first.get("run_id") if first else None,
                     "later_backend": first.get("backend") if first else None,
                     "later_success": _success(first) if first else None,
