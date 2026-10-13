@@ -22,11 +22,11 @@
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-standalone" content="The lead&#x27;s 2026-10-12 requirements for the session-host pane, revising the start-row rule of the shipped a-follower-row-is-worth-a-wake; no live plan waits on it and it waits on none.">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;the-monitor-shows-the-work-it-watches#s5&quot;], &quot;s4&quot;: [&quot;the-monitor-shows-the-work-it-watches#s2&quot;], &quot;s5&quot;: [&quot;the-monitor-shows-the-work-it-watches#s2&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;}">
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="17">
+<meta name="plan-version" content="18">
 <meta name="plan-modified" content="2026-10-13">
 </head>
 <body>
@@ -82,7 +82,7 @@
     <p>Write paths: <code>reckon/crew/session_host.py</code>, <code>reckon/crew_follow_commands.py</code>, <code>tests/test_a_pane_settles_when_no_work_is_live.py</code>.</p>
 
     <h2 id="s5">§5 — The pane speaks seven state words, in pairs</h2>
-<section data-reckon="section" data-id="s5" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> The pane prints whatever word each layer leaves behind: pointer phase, recovery classification, watch state and display alias. On 2026-10-12 it showed both <code>completed_unpromoted</code> and its alias <code>unpromoted</code> for one state. It also printed <code>unpromoted → complete</code> for a run moving forwards, and <code>complete → unpromoted</code> for a reviewed run that went back for fixes. The classifier grew a state for each incident: <code>wait-aged</code>, <code>stopped</code>, <code>unwritten</code>, <code>exited-unfinished</code> and others. Each is right for choosing a recovery action, and each was printed as its own word. Measured over every project's watch stream (11,408 runs, 39,042 transitions), the pane has used 19 state words in 143 distinct pairs. The dwell times show which ones carry no information for a reader:</p>
 <ul>
 <li><code>dispatched</code>: median 95 s, followed by <code>working</code> 6,307 times.</li>
