@@ -454,12 +454,13 @@ frees.
   prints `"error": "lane-paused"` with exit 75 together with a `run_id` and
   `position`. That pair means queued, not refused.
 - **Leaving it alone.** Never discard a queued run to re-dispatch it.
-- **The limit.** Queue up to your session's share of the lane, at least 2 and
-  at most 8 runs.
+- **The limit.** Queue up to your session's share, the lane document's
+  `admission.fair_share`, at least 2 and at most 8 runs. `worker_slots` reads 0
+  whenever the lane is full, so it is not the share.
 - **Timing.** Never poll `lane.json` to decide when to dispatch.
-- **Holds that do not queue yet.** A picker hold (exit 3) and a review composed
-  at the session's share are still not queued. Re-dispatch them when one of
-  your own runs completes.
+- **The hold that does not queue yet.** A picker hold (exit 3) is not queued.
+  Re-dispatch it when one of your own runs completes. A composed review queues
+  with its brief kept.
 
 #### The pace hold, its reserves and `releases_at`
 
