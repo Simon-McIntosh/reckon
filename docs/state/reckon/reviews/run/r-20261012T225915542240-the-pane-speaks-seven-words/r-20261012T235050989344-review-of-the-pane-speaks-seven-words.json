@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "40d10a70084954dda169b532efa3bf73a9566a7a",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:1962",
+    "reckon/crew_follow_commands.py:2015",
+    "reckon/crew_follow_commands.py:505"
+  ],
+  "completed_at": "2026-10-13T00:09:00.999Z",
+  "dispatched_at": "2026-10-12T23:51:13Z",
+  "findings": [
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": "2181",
+      "severity": "follow-on",
+      "text": "the internal-label trim added in commit 4c47611ce is unguarded: reinstating the pre-fix f\"{state_word}\" (dropping entry_state from the strip argument) leaves every test green, so nothing fails if that fix regresses."
+    },
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": "915",
+      "severity": "follow-on",
+      "text": "_display_state returns the empty string for any state outside PANE_STATES, so an unmapped state renders a blank state cell (or, on a first row, a blank right half) where the retired DISPLAY fallback showed the raw word; it is reachable only if the producer vocabulary outruns the enumeration test, but the failure is silent rather than surfaced."
+    }
+  ],
+  "head_log_revision": "4c47611ce52713041bd003c53aa8e1173624e675",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified reckon/crew/recovery_watch.py:1962 renders each watch line and reckon/crew_follow_commands.py:2015 builds the CLI follower grid; reckon/crew_follow_commands.py:505 reads the STATE/STATS layout constants the change resizes.",
+    "diff": "Read all three commits against base 40d10a700 (9dae929d3 feat, 6016f0e90 test, 4c47611ce fix); the change retires DISPLAY, adds PANE_STATES, reconciles _MAX_CELLS/_COUNT_FIELD/STAT_LETTER/DISPLAY_HUE, and adds an explicit `new` arrival.",
+    "done_when": "The done_when names tests/test_the_pane_speaks_seven_words.py and the ticker-importing files; the manifest records head-core-final.log 132 passed and head-importers-final.log 457 passed at 4c47611ce, plus the negative control.",
+    "goal": "The node goal is that every pane state word comes from one seven-word table superseding DISPLAY, with DISPLAY_HUE and the counter bucket labels reconciled; reckon/crew/ticker.py:296 defines PANE_STATES as that sole table and ticker.py:913 resolves every printed word through it.",
+    "manifest": "Read; it reports status complete, the two head gates, base-observes.log 5 failed (base-identical), the negative control log, and names the updated launch-counter tests.",
+    "write_paths": "Read the manifest's declared paths (reckon/crew/ticker.py, ~31 test files, the evidence fragment and figure dir); all 18 paths in the diff are inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_the_pane_speaks_seven_words.py:28 reddens on an unmapped state (negative-control-final.log EXIT=1), but commit 4c47611ce's reason trim at ticker.py:2181 has no test that fails if reverted.",
+    "evidence": "head-core-final.log (132 passed) and head-importers-final.log (457 passed) are logged at 4c47611ce, but the source manifest carries no baseline_suite/after_suite pair, so the added-failure derivation rests on base-observes.log alone.",
+    "fit": "the PANE_STATES table and the _display_state/_state_hue helpers follow ticker.py's existing idiom and introduce no name the repository naming rules forbid.",
+    "goal_fidelity": "reckon/crew/ticker.py:296 PANE_STATES covers every plan-listed internal state and supersedes DISPLAY, which git grep finds absent at the reviewed head.",
+    "reuse": "no state-to-word owner exists elsewhere \u2014 a search of reckon/crew found neither a DISPLAY sibling or another mapping \u2014 so PANE_STATES extends ticker.py's own retired capability rather than forking one.",
+    "scope_discipline": "every path in the diff is inside the declared write paths, though tests/test_crew_ticker.py carries ruff-format reflow of blocks unrelated to the state words."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that every state word the pane prints comes from one seven-word table that supersedes DISPLAY, with DISPLAY_HUE and the counter bucket labels reconciled to it; reckon/crew/ticker.py:296 defines PANE_STATES as that sole table and ticker.py:913 resolves every printed word through it.\nVERDICT done_when: the done_when names tests/test_the_pane_speaks_seven_words.py and the ticker-importing files; the manifest records head-core-final.log 132 passed and head-importers-final.log 457 passed at 4c47611ce, plus the negative control under the run directory.\nVERDICT write_paths: read the manifest's declared paths (reckon/crew/ticker.py, ~31 test files, the evidence fragment and figure directory); all 18 paths in the diff are inside them.\nVERDICT manifest: read; it reports status complete, the two head gates, base-observes.log 5 failed (base-identical), the negative control log, and names the five updated launch-counter tests.\nVERDICT diff: read all three commits against base 40d10a700 (9dae929d3 feat, 6016f0e90 test, 4c47611ce fix); the change retires DISPLAY, adds PANE_STATES, reconciles _MAX_CELLS/_COUNT_FIELD/STAT_LETTER/DISPLAY_HUE, and adds an explicit `new` first-row arrival.\nCALL_SITES: reckon/crew/recovery_watch.py:1962, reckon/crew_follow_commands.py:2015, reckon/crew_follow_commands.py:505\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/ticker.py:296 PANE_STATES covers every plan-listed internal state and supersedes DISPLAY, which git grep finds absent at the reviewed head.\nSCORE evidence: 16\nJUSTIFICATION evidence: head-core-final.log (132 passed) and head-importers-final.log (457 passed) are logged at 4c47611ce, but the source manifest carries no baseline_suite/after_suite pair, so the added-failure derivation rests on base-observes.log alone.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared write paths, though tests/test_crew_ticker.py carries ruff-format reflow of blocks unrelated to the state words.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_the_pane_speaks_seven_words.py:28 reddens on an unmapped state (negative-control-final.log EXIT=1), but commit 4c47611ce's reason trim at ticker.py:2181 has no test that fails if reverted.\nSCORE fit: 18\nJUSTIFICATION fit: the PANE_STATES table and the _display_state/_state_hue helpers follow ticker.py's existing idiom and introduce no name the repository naming rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: no state-to-word owner exists elsewhere \u2014 a search of reckon/crew found neither a DISPLAY sibling or another mapping \u2014 so PANE_STATES extends ticker.py's own retired capability rather than forking one.\nFINDING reckon/crew/ticker.py:2181 follow-on: the internal-label trim added in commit 4c47611ce is unguarded: reinstating the pre-fix f\"{state_word}\" (dropping entry_state from the strip argument) leaves every test green, so nothing fails if that fix regresses.\nFINDING reckon/crew/ticker.py:915 follow-on: _display_state returns the empty string for any state outside PANE_STATES, so an unmapped state renders a blank state cell (or, on a first row, a blank right half) where the retired DISPLAY fallback showed the raw word; it is reachable only if the producer vocabulary outruns the enumeration test, but the failure is silent rather than surfaced.\n",
+  "review_run_id": "r-20261012T235050989344-review-of-the-pane-speaks-seven-words",
+  "reviewed_base_sha": "40d10a70084954dda169b532efa3bf73a9566a7a",
+  "reviewed_head_sha": "4c47611ce52713041bd003c53aa8e1173624e675",
+  "reviewed_run_id": "r-20261012T225915542240-the-pane-speaks-seven-words",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T00:05:30.827127+00:00",
+  "total": 103
+}
