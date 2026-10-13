@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-read-answers-inside-its-deadline">
+  <meta name="plan-evidence-for" content="reckon:a-read-answers-inside-its-deadline">
+  <meta name="plan-verifies" content="reckon:a-read-answers-inside-its-deadline#s10">
+  <meta name="plan-recorded-at" content="2026-10-13">
+  <meta name="plan-verdict" content="passed">
+  <title>A file's identification is reused across reads | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-file-identification-is-reused-landing" data-node="a-file-identification-is-reused" data-reckon="landed" data-when="2026-10-13">
+  <h2>A file's identification is reused across reads</h2>
+  <p>Every discovery read re-identified every file it walked — hashing the bytes and parsing the meta head — although nothing had changed between reads. <code>identify_resource</code> in <code>reckon/resources.py</code> now memoises each file's identification on its own stat signature, path, <code>mtime_ns</code> and size, through the shared <code>file_memo</code> helper, so a warm read stats each file and reuses the result; only the files whose signature moved are hashed and parsed again, an unstattable file is identified uncached so its error path is unchanged, and memo hits keep the helper's defensive copy. In <code>tests/test_identification_is_reused_across_reads.py</code> a wrapped <code>_identify_resource</code> shows two reads of an unchanged tree identify each file once in total, and after one file's bytes change only that file is identified again on the next read. Under the declared mutation — dropping the memo so every read identifies every file — the same test fails (EXIT=1). Gate figure over every test file importing <code>reckon/resources.py</code>: 2832 passed (EXIT=0) at <code>4c3ab7fc1</code> against 1 failed, 2831 passed at base <code>45672df1f</code> — the base failure a peer-owned archive citation that resolved before the after arm, so zero added failures.</p>
+</article>
+</body>
+</html>
