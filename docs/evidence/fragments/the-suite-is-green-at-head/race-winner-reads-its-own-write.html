@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-suite-is-green-at-head">
+  <meta name="plan-evidence-for" content="the-suite-is-green-at-head">
+  <title>Race winner reads its own ledger write | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <article class="landed-report" data-run-id="r-20261013T031659638211-race-winner-reads-its-own-write" id="race-winner-reads-its-own-write">
+      <h3>race-winner-reads-its-own-write &#8212; a stale index fallback no longer hides a committed run from its reader</h3>
+
+      <section id="race-winner-reads-its-own-write-cause">
+        <h2>Cause</h2>
+        <p>
+          <code>test_a_loser_of_the_write_race_cannot_overwrite_the_winner</code> runs two writers of one
+          ledger as separate processes. Both call <code>ledger.load</code> before either writes. Each
+          read refreshes an SQLite index keyed by the aggregate path; while one process holds the
+          index's write lock the other's refresh is refused with
+          <code>sqlite3.OperationalError: database is locked</code>, and <code>load</code> falls back to
+          <code>_last_good_index_data</code>. That fallback served the last published snapshot without
+          checking it still described the aggregate on disk. The fixture's own seed had published an
+          index while the aggregate was still absent &#8212; <code>_seed</code> writes through the
+          writer, whose internal read refreshes the index before the aggregate envelope is written
+          &#8212; so the fallback handed the refused reader the empty pre-write revision. The child then
+          ran <code>data["runs"][0]</code> against no runs and exited 1 with <code>IndexError: list index
+          out of range</code>; the other writer, waiting on the first's seam, timed out behind it.
+        </p>
+      </section>
+
+      <section id="race-winner-reads-its-own-write-fix">
+        <h2>Fix</h2>
+        <p>
+          <code>_last_good_index_data</code> now compares the aggregate stamp the snapshot recorded
+          against the aggregate's current file identity and returns nothing when they disagree, so a
+          refresh refused under a peer's lock falls through to the aggregate instead of a revision a
+          committed write has replaced. The check is a stat, not a parse, so an unchanged aggregate
+          still avoids the scan. A deterministic case,
+          <code>test_a_refused_refresh_opens_the_aggregate_rather_than_a_stale_index</code>, publishes an
+          index, moves the aggregate past it, forces every refresh to be refused, and asserts the read
+          sees the later revision with no <code>index_age_seconds</code>.
+        </p>
+      </section>
+
+      <section id="race-winner-reads-its-own-write-gate">
+        <h2>Gate</h2>
+        <table>
+          <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
+          <tbody>
+            <tr><td>Gate id, 5 consecutive runs, from the worktree</td><td>5 passed, <code>EXIT=0</code></td><td><code>logs/head-5x-clean.log</code></td></tr>
+            <tr><td>Whole file (<code>6 passed</code>)</td><td>6 passed, <code>EXIT=0</code></td><td><code>logs/file-run.log</code></td></tr>
+            <tr><td>Base <code>40186023d</code>, gate id 5 runs (reproduces the defect)</td><td>5 failed, <code>EXIT=1</code></td><td><code>logs/repro.log</code></td></tr>
+            <tr><td>Negative control: guard removed</td><td>2 failed, <code>EXIT=1</code></td><td><code>logs/negative-control.log</code></td></tr>
+            <tr><td>Population (<code>reckon.ledger</code> importers), base vs head, each <code>-n 8</code></td><td>base 3 failed / 493 passed / 3 skipped; head 1 failed / 496 passed / 3 skipped; <strong>0 added failures</strong></td><td><code>logs/pop-base.log</code>, <code>logs/pop-head.log</code></td></tr>
+          </tbody>
+        </table>
+      </section>
+    </article>
+  </main>
+</body>
+</html>

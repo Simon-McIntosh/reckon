@@ -1074,6 +1074,16 @@ def _last_good_index_data(
     is read here instead, together with the number of seconds since it was
     written. Absent or unreadable or malformed, it reads as ``None`` and the
     caller keeps its existing fallback.
+
+    A snapshot is last-good only while the aggregate it was built from is still
+    the one on disk. Once the aggregate has been replaced, the stamp it recorded
+    names a revision the ledger has moved past, and serving the snapshot would
+    hand the caller history the aggregate contradicts — the empty view a
+    promotion's own read publishes before it writes, held by a later reader
+    whose refresh was refused under a peer's lock. The aggregate's identity is a
+    stat rather than a parse, so a moved aggregate is detected here and the
+    caller falls through to the aggregate itself; an unchanged one still avoids
+    the scan.
     """
     path = _run_index_path(project, root)
     if not path.is_file():
@@ -1083,6 +1093,10 @@ def _last_good_index_data(
             sqlite3.connect(f"file:{path}?mode=ro", uri=True, timeout=0.2)
         ) as connection:
             meta = dict(connection.execute("SELECT name, payload FROM metadata"))
+            if meta.get("stamp") != json.dumps(
+                _file_identity(ledger_path(project, root))
+            ):
+                return None
             refreshed_at = float(meta["refreshed_at"])
             data, version = _index_payload(
                 connection,
