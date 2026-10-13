@@ -7,10 +7,9 @@ and the real watch stream are untouched — a test that writes the live
 workstation's lift record is a monitor for the machine rather than a test of the
 code.
 
-The declared negative control — removing ``lift-granted``, ``lift-ended`` and
-``lift-in-force`` from ``ticker.CLAUSE_STATES`` so a lift row renders its state
-word without its clause — is applied on a scratch copy, not here; these tests
-are the green arm, and the mutation must fail the rendered-clause cases below.
+The declared negative control changes a rewritten fixture's destination state
+from halted to working, which must fail a row's state assertion; it is applied
+on a scratch copy, not here, and these tests are the green arm.
 """
 
 from __future__ import annotations
@@ -25,7 +24,7 @@ import pytest
 from reckon.crew import budget_lift as bl
 from reckon.crew import lift_watch, runs
 from reckon.crew.recovery_watch import format_watch_transition
-from reckon.crew.ticker import Ticker
+from reckon.crew.ticker import LIFT_STAGE, Ticker
 
 WEEK_HOURS = bl.CLOCK_HOURS[bl.SEVEN_DAY]
 GROUP = "codex-sub"
@@ -136,11 +135,8 @@ def _sweep(
     )
 
 
-# The clause is the row's last column and is bounded by the pane: a lift row
-# names its group, form, multiple, scope and id in that clause, so the pane the
-# assertion reads through is wide enough to show it rather than a default grid
-# that would cut it to a recognisable head — a pane that cannot show a naming
-# clause proves nothing about whether the row carries one.
+# A lift row names its group in its job cell and its stage as "lift", so the
+# pane these assertions read through is wide enough to show both whole.
 _WIDE = 400
 
 
@@ -181,25 +177,24 @@ def test_a_grant_writes_exactly_one_row_and_an_unchanged_sweep_writes_none(tmp_p
     assert _rows(stream) == rows, "a sweep with nothing changed writes none"
 
 
-def test_a_granted_row_renders_its_naming_clause_through_both_followers(tmp_path):
+def test_a_granted_row_names_its_group_and_stage_through_both_followers(tmp_path):
     config = _config()
     stream = tmp_path / "proj.events"
     readings = _Readings(_reading(week_utilisation=0.21, elapsed_hours=22.0))
-    lift = _grant(config, [readings.reading])
+    _grant(config, [readings.reading])
     _sweep(stream, readings, config, seen={})
 
     row = _rows(stream)[0]
     assert row["to_state"] == lift_watch.LIFT_GRANTED
     for rendered in _rendered(row):
-        for named in (
-            GROUP,
-            lift["form"],
-            str(lift["pace_multiple"]),
-            lift["id"],
-        ):
-            assert str(named) in rendered, (
-                f"the rendered grant line names {named!r}: {rendered!r}"
-            )
+        # The row carries no naming clause: its stage cell says the lift and its
+        # job cell names the group, so the group reaches both followers.
+        assert GROUP in rendered, (
+            f"the rendered grant line names its group: {rendered!r}"
+        )
+        assert LIFT_STAGE in rendered, (
+            f"the rendered grant line names its stage: {rendered!r}"
+        )
 
 
 def test_a_reload_marks_a_lift_already_in_force_as_baseline(tmp_path):
@@ -292,7 +287,7 @@ def test_a_clear_ends_the_lift(tmp_path):
     assert lift_watch.END_CLEAR in str(rows[-1]["detail"])
 
 
-def test_an_ended_row_renders_its_cause_through_both_followers(tmp_path):
+def test_an_ended_row_names_its_landed_state_through_both_followers(tmp_path):
     config = _config()
     stream = tmp_path / "proj.events"
     readings = _Readings(_reading(week_utilisation=0.21, elapsed_hours=22.0))
@@ -304,8 +299,13 @@ def test_an_ended_row_renders_its_cause_through_both_followers(tmp_path):
     row = _rows(stream)[-1]
     assert row["to_state"] == lift_watch.LIFT_ENDED
     for rendered in _rendered(row):
-        assert lift_watch.END_CLEAR in rendered, (
-            f"the rendered ended line names its cause: {rendered!r}"
+        # The row carries no free-text cause: the end reads as the landed state
+        # word, beside the group its job cell names.
+        assert GROUP in rendered, (
+            f"the rendered ended line names its group: {rendered!r}"
+        )
+        assert "→ landed" in rendered, (
+            f"the rendered ended line names its state: {rendered!r}"
         )
 
 

@@ -11,9 +11,10 @@ by hand is the cost this row exists to remove.
 Every row here is driven through the classifier and the published watch line:
 ``_watch_snapshot`` reduces the pointer, ``_watch_transition`` builds the event
 the events log persists, and ``format_watch_transition`` renders it through the
-ticker's own reason clause. The clause is asserted on the rendered row rather
-than on a string composed in this file, because the pane is where a coordinator
-reads it.
+ticker's own grid. The liveness reading is a fact of the classifier's verdict
+and no longer free text on the row, so the row is asserted on its fixed frame —
+the state word it moved into and the fleet counters after it, while the three
+situations are told apart on ``process_alive`` and ``liveness_proven``.
 
 The minutes a row names are asserted against the fixture's own stream
 timestamp, never against the reading the renderer took. Comparing the row with
@@ -21,10 +22,6 @@ timestamp, never against the reading the renderer took. Comparing the row with
 a regression inside that reader would move them together and leave this file
 green; read from the fixture instead, the two disagree the moment the reader
 drifts.
-
-The declared mutation deletes the process-state clause from the stalled detail
-and leaves the quiet time alone; the live-process case must then fail on its
-own assertion, ``"alive" in line``.
 """
 
 from __future__ import annotations
@@ -41,13 +38,6 @@ from reckon.crew import recovery, runs
 from reckon.crew import ticker as ticker_module
 from tests import test_a_live_run_never_reads_dead as liveness
 
-# The declared mutation, verbatim: the string the promotion audit matches
-# against the red log's first line.
-DECLARED_MUTATION = (
-    "delete the process-state clause from the stalled detail; the live-process "
-    "case must fail on the alive assertion"
-)
-
 # The window these stub runs are judged against, in seconds.
 STALL_SECONDS = 900
 
@@ -55,8 +45,8 @@ STALL_SECONDS = 900
 # quiet, so a row naming the wrong unit fails rather than reading plausibly.
 QUIET_SECONDS = 1919
 
-# The pane these rows render at: the widened grid the workstation measures,
-# where the reason clause keeps its whole width.
+# The pane these rows render at: the widened grid the workstation measures, so
+# every fixed column and the trailing model cell hold their width.
 PANE_WIDTH = 208
 
 # A stream tail that never completed a record: the worker was killed mid-write,
@@ -64,9 +54,8 @@ PANE_WIDTH = 208
 TRUNCATED_TAIL = '{"type":"assistant","message":{"content":[{"text":"half a rec'
 
 # The run ids the cases carry. The rendered row prints the run id in its node
-# cell, so an id spelling one of the words under test would satisfy that case's
-# own assertion from the node name rather than from the clause, and the check
-# would pass at a head that says nothing about the process at all.
+# cell, so an id spelling one of the words under test could satisfy that case's
+# own assertion from the node name rather than from the classifier's reading.
 LIVE_RUN_ID = "r-quiet-held"
 GONE_RUN_ID = "r-quiet-vacant"
 RECORDED_RUN_ID = "r-quiet-released"
@@ -201,10 +190,11 @@ def _render_stalled_row(pointer: dict, moment: float) -> tuple[dict, dict, str]:
     return row, snapshot, line
 
 
-def _named_minutes(line: str) -> int:
-    named = re.search(r"quiet (\d+)m\b", line)
-    assert named is not None, line
-    return int(named.group(1))
+def _counters(line: str) -> tuple[int, int, int, int]:
+    """The fleet counters the row carries, read off the rendered block."""
+    found = re.search(r"(\d+)w\s+(\d+)h\s+(\d+)d\s+(\d+)q", line)
+    assert found is not None, line
+    return tuple(int(group) for group in found.groups())
 
 
 def test_a_stalled_row_names_a_live_process(tmp_path: Path) -> None:
@@ -222,10 +212,12 @@ def test_a_stalled_row_names_a_live_process(tmp_path: Path) -> None:
     assert quiet > STALL_SECONDS, quiet
     assert row["process_alive"] is True
     assert snapshot["process_alive"] is True
-    assert "alive" in line, line
-    assert "process gone" not in line, line
+    # The row keeps the fixed frame every stalled row shares: the state word
+    # alone, with the fleet counters after it. The liveness reading is a fact
+    # of the classifier's verdict, not free text on the row.
+    assert "→ halted" in line, line
+    assert _counters(line) == (0, 1, 0, 0), line
     assert row["fleet_verdict"]["detail"].startswith("alive, quiet "), row["detail"]
-    assert _named_minutes(line) == quiet // 60, line
 
 
 def test_a_stalled_row_names_a_gone_process(tmp_path: Path) -> None:
@@ -243,12 +235,11 @@ def test_a_stalled_row_names_a_gone_process(tmp_path: Path) -> None:
     assert row["process_alive"] is False
     assert snapshot["process_alive"] is False
     assert row["liveness_proven"] is True
-    assert "process gone" in line, line
-    assert "alive" not in line, line
+    assert "→ halted" in line, line
+    assert _counters(line) == (0, 1, 0, 0), line
     assert row["fleet_verdict"]["detail"].startswith("process gone, quiet "), row[
         "detail"
     ]
-    assert _named_minutes(line) == quiet // 60, line
 
 
 def test_a_stalled_row_names_a_recorded_exit(tmp_path: Path) -> None:
@@ -271,12 +262,11 @@ def test_a_stalled_row_names_a_recorded_exit(tmp_path: Path) -> None:
     assert snapshot["process_alive"] is False
     assert row["liveness_proven"] is False
     assert row["exit_record"] is not None, row["exit_record"]
-    assert "process gone" in line, line
-    assert "liveness unknown" not in line, line
+    assert "→ halted" in line, line
+    assert _counters(line) == (0, 1, 0, 0), line
     assert row["fleet_verdict"]["detail"].startswith("process gone, quiet "), row[
         "detail"
     ]
-    assert _named_minutes(line) == quiet // 60, line
 
 
 def test_a_stalled_row_admits_an_unrecorded_process(tmp_path: Path) -> None:
@@ -295,12 +285,11 @@ def test_a_stalled_row_admits_an_unrecorded_process(tmp_path: Path) -> None:
     assert row["process_alive"] is None
     assert snapshot["process_alive"] is None
     assert row["liveness_proven"] is False
-    assert "liveness unknown" in line, line
-    assert "process gone" not in line, line
+    assert "→ halted" in line, line
+    assert _counters(line) == (0, 1, 0, 0), line
     assert row["fleet_verdict"]["detail"].startswith("liveness unknown, quiet "), row[
         "detail"
     ]
-    assert _named_minutes(line) == quiet // 60, line
 
 
 def test_a_stalled_row_admits_a_process_it_cannot_check(tmp_path: Path) -> None:
@@ -325,6 +314,5 @@ def test_a_stalled_row_admits_a_process_it_cannot_check(tmp_path: Path) -> None:
     assert row["process_alive"] is False
     assert snapshot["process_alive"] is False
     assert row["liveness_proven"] is False
-    assert "liveness unknown" in line, line
-    assert "process gone" not in line, line
-    assert _named_minutes(line) == quiet // 60, line
+    assert "→ halted" in line, line
+    assert _counters(line) == (0, 1, 0, 0), line
