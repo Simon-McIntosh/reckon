@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed run's manifest records no baseline_suite or after_suite gate log, so the added-failure count was not derived",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:1662",
+    "reckon/crew/dispatch.py:940"
+  ],
+  "completed_at": "2026-10-13T09:18:06.434Z",
+  "dispatched_at": "2026-10-13T09:02:16Z",
+  "findings": [
+    {
+      "file": "tests/test_held_dispatch_is_queued.py",
+      "line": "79",
+      "severity": "follow-on",
+      "text": "follow-on: the file was edited although the dispatch's write paths did not include it, so the node changed a suite it was not fenced to write; the edit only follows the new exit-0 contract, so it does not hold the node."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "200",
+      "severity": "follow-on",
+      "text": "follow-on: _queued_share_cap re-implements the declared lane_document load (path, read_text, json.loads, Mapping narrowing) that _dispatch_lane_allowance already performs at reckon/crew/dispatch_plan.py:1243-1263 rather than sharing it, so the two loaders can drift."
+    }
+  ],
+  "head_log_revision": "564b24ae8a1b1711601574eab28b6e72112be876",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read fb06666d6 (production) and 564b24ae8 (tests) against base da4cfd63 commit by commit; the production change adds only the queued-success branch in crew_dispatch_commands.py plus QueueFull and the cap in runs.py, all inside the declared paths, and the two test files carry the new CLI coverage and the held-dispatch suite repointed at exit 0.",
+    "done_when": "the done_when names CLI coverage of the five cases plus tests/test_a_crew_verb_ok_reads_its_outcome.py and both negative controls; gate.log records 42 passed EXIT=0 over the three named files and negative-control-1.log and negative-control-2.log each record EXIT=1 on a failing test id the head arm passes.",
+    "goal": "the node's goal is that a dispatch the lane queues reports success, capped at the session's fair share; reckon/crew_dispatch_commands.py:1662 emits {ok:true, queued:true, run_id, position, reason} and Exit(0) for a queued hold, and reckon/crew/runs.py:412 refuses a dispatch past the session's cap with QueueFull before the record is stored, both matching the goal.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T084127139096-a-queued-dispatch-is-accepted/manifest.md; status complete; commits fb06666d6 564b24ae8; tests the three named files at 42 passed EXIT=0; both negative controls named; blockers none; the manifest itself records that the section's added-failure-against-base clause was not measured.",
+    "write_paths": "the dispatch fenced reckon/crew_dispatch_commands.py, reckon/crew/dispatch.py, reckon/crew/runs.py, tests/test_a_queued_dispatch_is_accepted.py and the namespaced evidence/figures directories; git diff lists those three production files and tests/test_a_queued_dispatch_is_accepted.py, and additionally tests/test_held_dispatch_is_queued.py, which the fence did not grant."
+  },
+  "justifications": {
+    "durability": "negative-control-2.log reddens test_a_session_at_its_cap_is_refused_queue_full when the cap check at reckon/crew/runs.py:415 is removed and negative-control-1.log reddens test_queued_dispatch_exits_zero_and_names_its_pointer when the success branch at reckon/crew_dispatch_commands.py:1662 falls back, and the added assertions compare the CLI payload's run_id against the stored pointer rather than against a value the test supplied.",
+    "evidence": "gate.log records 42 passed EXIT=0 over the three files the done_when names and negative-control-1.log and negative-control-2.log each record EXIT=1 on a test id the head arm passes, so every done-when bullet is measured and the result recorded.",
+    "fit": "the added QueueFull refusal and queued_dispatch_cap helper follow the surrounding refusal idiom of reckon/crew/runs.py:320 beside BudgetHold and carry no plan, sprint or ticket identifier in name or comment.",
+    "goal_fidelity": "reckon/crew_dispatch_commands.py:1662 emits ok and queued true with the run id, position and reason and exits 0 for a queued hold while reckon/crew/runs.py:412 refuses a past-cap dispatch before writing, exactly the node goal.",
+    "reuse": "_queued_share_cap at reckon/crew/dispatch.py:200 extends read_lane_admission (reckon/crew/lane_document.py:444) for the fair share but re-implements the backend lane_document load already spelled at reckon/crew/dispatch_plan.py:1243.",
+    "scope_discipline": "the three production files and tests/test_a_queued_dispatch_is_accepted.py sit inside the fence, but tests/test_held_dispatch_is_queued.py:79 was changed though the dispatch granted neither that path nor a scope change."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: da4cfd6363dc632fbd2c853080a4a2a2706ba3b3\nreviewed_head_sha: 564b24ae8a1b1711601574eab28b6e72112be876\nVERDICT goal: the node's goal is that a dispatch the lane queues reports success, capped at the session's fair share; reckon/crew_dispatch_commands.py:1662 emits {ok:true, queued:true, run_id, position, reason} and Exit(0) for a queued hold, and reckon/crew/runs.py:412 refuses a dispatch past the session's cap with QueueFull before the record is stored, both matching the goal.\nVERDICT done_when: the done_when names CLI coverage of the five cases plus tests/test_a_crew_verb_ok_reads_its_outcome.py and both negative controls; gate.log records 42 passed EXIT=0 over the three named files and negative-control-1.log and negative-control-2.log each record EXIT=1 on a failing test id the head arm passes.\nVERDICT write_paths: the dispatch fenced reckon/crew_dispatch_commands.py, reckon/crew/dispatch.py, reckon/crew/runs.py, tests/test_a_queued_dispatch_is_accepted.py and the namespaced evidence/figures directories; git diff lists those three production files and tests/test_a_queued_dispatch_is_accepted.py, and additionally tests/test_held_dispatch_is_queued.py, which the fence did not grant.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T084127139096-a-queued-dispatch-is-accepted/manifest.md; status complete; commits fb06666d6 564b24ae8; tests the three named files at 42 passed EXIT=0; both negative controls named; blockers none; the manifest itself records that the section's added-failure-against-base clause was not measured.\nVERDICT diff: read fb06666d6 (production) and 564b24ae8 (tests) against base da4cfd63 commit by commit; the production change adds only the queued-success branch in crew_dispatch_commands.py plus QueueFull and the cap in runs.py, all inside the declared paths, and the two test files carry the new CLI coverage and the held-dispatch suite repointed at exit 0.\nCALL_SITES: reckon/crew_dispatch_commands.py:1662, reckon/crew/dispatch.py:940\nSCORE goal_fidelity: 18\nSCORE evidence: 17\nSCORE scope_discipline: 13\nSCORE durability: 18\nSCORE fit: 18\nSCORE reuse: 14\nJUSTIFICATION goal_fidelity: reckon/crew_dispatch_commands.py:1662 emits ok and queued true with the run id, position and reason and exits 0 for a queued hold while reckon/crew/runs.py:412 refuses a past-cap dispatch before writing, exactly the node goal.\nJUSTIFICATION evidence: gate.log records 42 passed EXIT=0 over the three files the done_when names and negative-control-1.log and negative-control-2.log each record EXIT=1 on a test id the head arm passes, so every done-when bullet is measured and the result recorded.\nJUSTIFICATION scope_discipline: the three production files and tests/test_a_queued_dispatch_is_accepted.py sit inside the fence, but tests/test_held_dispatch_is_queued.py:79 was changed though the dispatch granted neither that path nor a scope change.\nJUSTIFICATION durability: negative-control-2.log reddens test_a_session_at_its_cap_is_refused_queue_full when the cap check at reckon/crew/runs.py:415 is removed and negative-control-1.log reddens test_queued_dispatch_exits_zero_and_names_its_pointer when the success branch at reckon/crew_dispatch_commands.py:1662 falls back, and the added assertions compare the CLI payload's run_id against the stored pointer rather than against a value the test supplied.\nJUSTIFICATION fit: the added QueueFull refusal and queued_dispatch_cap helper follow the surrounding refusal idiom of reckon/crew/runs.py:320 beside BudgetHold and carry no plan, sprint or ticket identifier in name or comment.\nJUSTIFICATION reuse: _queued_share_cap at reckon/crew/dispatch.py:200 extends read_lane_admission (reckon/crew/lane_document.py:444) for the fair share but re-implements the backend lane_document load already spelled at reckon/crew/dispatch_plan.py:1243.\nFINDING tests/test_held_dispatch_is_queued.py:79 follow-on: the file was edited although the dispatch's write paths did not include it, so the node changed a suite it was not fenced to write; the edit only follows the new exit-0 contract, so it does not hold the node.\nFINDING reckon/crew/dispatch.py:200 follow-on: _queued_share_cap re-implements the declared lane_document load (path, read_text, json.loads, Mapping narrowing) that _dispatch_lane_allowance already performs at reckon/crew/dispatch_plan.py:1243-1263 rather than sharing it, so the two loaders can drift.",
+  "review_run_id": "r-20261013T090131043708-review-of-a-queued-dispatch-is-accepted",
+  "reviewed_base_sha": "da4cfd6363dc632fbd2c853080a4a2a2706ba3b3",
+  "reviewed_head_sha": "564b24ae8a1b1711601574eab28b6e72112be876",
+  "reviewed_run_id": "r-20261013T084227782997-a-queued-dispatch-is-accepted",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 14,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T09:16:07.597312+00:00",
+  "total": 98
+}

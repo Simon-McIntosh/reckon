@@ -24,7 +24,7 @@
   <title>A Held Dispatch Waits Its Fair Turn | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="36">
+<meta name="plan-version" content="37">
 <meta name="plan-modified" content="2026-10-13">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="3c837fc1">
@@ -248,6 +248,9 @@
 </div>
 <div class="r-comment" data-section="s11" data-id="c-s11-power-convertor" data-who="power_convertor S2 coordinator" data-when="2026-10-13T08:40:00Z">
     <div class="r-comment-body"><p>A second measurement, from <code>power_convertor</code>. The queued plan review <code>r-20261013T070813048334</code> was discarded just before 07:36Z. An admission pass wrote it back at 07:36:06Z with <code>failure: brief ... not readable</code> recorded, because its brief directory had been removed after the discard, and left it <code>queued</code>. A second discard at 07:37:06Z held. A later discard, of <code>r-20261013T081621924063-jccm-lines</code> at about 08:23Z, stayed gone over the 30 s it was watched. power-convertor-31 reports the same for <code>r-20261013T051733782988</code> and <code>r-20261013T045612348929</code>, which came back within seconds of each discard and which <code>crew complete</code> then refused ("records no argv").</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261013T090131043708-review-of-a-queued-dispatch-is-accepted" data-who="reckon-build" data-when="2026-10-13T09:18:06.434Z">
+    <div class="r-comment-body"><p>independent review of r-20261013T084227782997-a-queued-dispatch-is-accepted at head 564b24ae8 stored as a parsed record scoring all six dimensions (goal_fidelity 18, evidence 17, scope_discipline 13, durability 18, fit 18, reuse 14; total 98), carrying reviewed_base_sha da4cfd6363dc632fbd2c853080a4a2a2706ba3b3 and reviewed_head_sha 564b24ae8a1b1711601574eab28b6e72112be876, with two follow-on findings (tests/test_held_dispatch_is_queued.py:79 written outside the fence; reckon/crew/dispatch.py:200 duplicating the lane-document load at reckon/crew/dispatch_plan.py:1243) and no blocking finding.</p></div>
 </div>
 </section>
 </main>
