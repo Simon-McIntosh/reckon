@@ -61,6 +61,19 @@ LOG_DIR_ENV = "RECKON_SESSION_HOST_LOG_DIR"
 POLL_ENV = "RECKON_SESSION_HOST_POLL_SECONDS"
 BACKOFF_ENV = "RECKON_SESSION_HOST_BACKOFF"
 
+# The host advertises, in a child's environment, that it understands a settled
+# child -- one that has printed its idle line and left because its session has
+# no live work. A host already running when this protocol landed does not set
+# the variable, so a child it starts keeps following rather than settling: an
+# old host reads a settled child as a child that exited, and would restart it on
+# the backoff, repeating the idle line for as long as the session stayed quiet.
+SETTLE_ENV = "RECKON_SESSION_HOST_SETTLE"
+
+# The exit status a child uses to report that it settled rather than failed. The
+# host restarts a child that exits with anything else, so a settled pair is not
+# sent back to the backoff and the pane does not repeat the idle line.
+SETTLED_EXIT_CODE = 66
+
 # The owner is re-checked this often while the host waits for a request. It is
 # the same cadence a follower uses to notice its owner, so a session that ends
 # takes its followers down within one tick of the session host noticing.
@@ -159,6 +172,14 @@ class _Child:
     delay: float = fleet_supervisor.FIRST_BACKOFF_SECONDS
     next_attempt: float | None = None
     started_at: float | None = None
+    # Set when the child left by settling rather than by failing. A settled
+    # child is not restarted; the pair is re-armed by its next request.
+    settled: bool = False
+    # Set when a request for this pair arrived while its child was still
+    # running -- a dispatch that published work the pane has not yet shown. A
+    # child that settles with this set is re-armed at once, so the run the
+    # request named is never left unwatched.
+    wanted: bool = False
 
     @property
     def key(self) -> tuple[str, str]:
@@ -354,8 +375,16 @@ class SessionHost:
             return
         project, session = parsed
         key = (project, session)
-        if key in self._children:
+        existing = self._children.get(key)
+        if existing is not None and not existing.settled:
+            # A pair already followed changes nothing on a second request, but
+            # the request is remembered: it names work a dispatch has just
+            # published, and if this same child settles before that run is
+            # delivered the pair must be re-armed rather than left idle.
+            existing.wanted = True
             return
+        if existing is not None:
+            del self._children[key]
         if self._foreign_live_follower(project, session, pid=None):
             # A live follower this host did not start owns the pair -- a
             # coordinator armed one by hand. The pair is wanted but deferred:
@@ -406,6 +435,11 @@ class SessionHost:
         environ[_FOLLOWER_OWNER_ENV] = _format_follower_owner(
             (os.getpid(), process_start_time(os.getpid()) or "")
         )
+        # Advertise that this host understands a settled child, so a follower
+        # that finds its session's work drained prints its idle line and leaves
+        # instead of waiting for the next producer. A host that does not set
+        # this is one that would restart the child on the backoff.
+        environ[SETTLE_ENV] = "1"
         self._log_path.parent.mkdir(parents=True, exist_ok=True)
         parent = os.getpid()
         try:
@@ -432,13 +466,38 @@ class SessionHost:
         """Re-check every child once: restart the exited, leave the hand-armed."""
         now = self._clock()
         for child in list(self._children.values()):
-            if child.pid is not None and not self._alive(child):
-                ran = now - child.started_at if child.started_at is not None else 0.0
-                delay, following = fleet_supervisor.next_backoff(child.delay, ran)
-                child.delay = following
-                child.pid = None
-                child.started_at = None
-                child.next_attempt = now + delay
+            if child.pid is not None:
+                status = self._poll_exit(child)
+                if status is not None:
+                    if _settled_status(status):
+                        # The child reached the end of its session's work: it
+                        # printed its idle line and left. It is not restarted,
+                        # so the pane does not repeat that line, and the pair is
+                        # re-armed by its next request.
+                        child.pid = None
+                        child.started_at = None
+                        child.next_attempt = None
+                        child.settled = True
+                        if child.wanted:
+                            # A dispatch asked for this pair while the settling
+                            # child still ran, so the run it published is work
+                            # the pane has not shown. Re-arm now; the fresh
+                            # child delivers that run's rows.
+                            child.settled = False
+                            child.wanted = False
+                            child.next_attempt = now
+                        else:
+                            continue
+                    ran = (
+                        now - child.started_at if child.started_at is not None else 0.0
+                    )
+                    delay, following = fleet_supervisor.next_backoff(child.delay, ran)
+                    child.delay = following
+                    child.pid = None
+                    child.started_at = None
+                    child.next_attempt = now + delay
+            if child.settled:
+                continue
             if child.pid is None and child.next_attempt is not None:
                 if now < child.next_attempt:
                     continue
@@ -453,18 +512,27 @@ class SessionHost:
                     child.next_attempt = now + child.delay
                     continue
                 child.pid = pid
+                child.wanted = False
                 child.started_at = now
         self._write_record()
 
-    def _alive(self, child: _Child) -> bool:
-        """Whether a child's recorded pid still runs, collecting it if it exited."""
+    def _poll_exit(self, child: _Child) -> int | None:
+        """Collect a child that has exited, returning its wait status.
+
+        ``None`` means the child still runs. A child whose status cannot be read
+        -- it was reaped elsewhere, or a subreaper took it -- reports a plain
+        exit, so it is restarted rather than mistaken for a settled one: only a
+        child that actually exited with the settle code stops being restarted.
+        """
         if child.pid is None:
-            return False
+            return None
         try:
-            reaped, _status = os.waitpid(child.pid, os.WNOHANG)
+            reaped, status = os.waitpid(child.pid, os.WNOHANG)
         except ChildProcessError:
-            return False
-        return reaped != child.pid
+            return 0
+        if reaped != child.pid:
+            return None
+        return status
 
     def stop(self, reason: str) -> None:
         """Stop every child and wait for it, then write the final record.
@@ -643,6 +711,20 @@ def _drain(descriptor: int) -> None:
             return
         except OSError:
             return
+
+
+def _settled_status(status: int) -> bool:
+    """Whether a wait status came from a child that settled rather than failed.
+
+    A child killed by a signal decodes to a negative value and is never a
+    settle; only the child's own exit with the settle code is. A status this
+    Python cannot decode is read as an ordinary exit, so an unreadable one
+    restarts the child rather than silently retiring the pair.
+    """
+    try:
+        return os.waitstatus_to_exitcode(status) == SETTLED_EXIT_CODE
+    except ValueError:
+        return False
 
 
 def _signal(pid: int, signum: int) -> None:
