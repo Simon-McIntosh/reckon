@@ -95,6 +95,107 @@
     <p><code>crew dispatch --repo</code> given a repository another project owns now exits non-zero with a one-line refusal naming the project the repository belongs to and the project the dispatch named, instead of a traceback. <code>_repository_owning_projects</code> in <code>reckon/crew_dispatch_commands.py</code> resolves the owner through <code>mounted_repository_projects</code> and also recognises a linked worktree. <code>tests/test_foreign_repo_is_refused.py</code> asserts no traceback reaches stderr. With the catch removed, the test fails.</p><p>Run <code>r-20261010T223438073950-foreign-repo-is-refused</code>, commits <code>6479e3ed3</code> and <code>77c628c85</code>, merged at <code>0e4b8adba</code>. Review 112, no added failures. Lane §10, picker §30 and picker §32 were stacked as one virtual merge and measured together. Population of 92 test files that import the picker or the dispatch commands: base and head carry the same one failure (<code>test_plan_estimate_cache_tracks_edits_and_duplicate_identity</code>) and one <code>conftest</code> collection error, so none were added. The gate at the merged head passed 96 tests (<code>EXIT=0</code>). Logs are <code>~/.cache/reckon-suite-logs/merge-l10-s30-s32-*.log</code>. The review noted that this is the third spelling of the repository-to-projects resolution; §16 consolidates them.</p>
   </section>
 
+  <section id="s20">
+    <h2>§20 — A pick records each stage&#x27;s time, and a fallback names the stage that ran out</h2>
+    <p><strong>Coordinator's landing record.</strong> Run <code>r-20261013T092400508839-a-pick-names-its-slow-stage</code>, commits <code>baf5f99bf</code>, <code>ef8ce51a5</code> and <code>9e59ed0a3</code>, merged as <code>0c1154e51</code>. The first review (score 68) found that stage naming fired only on the test path: all three production callers built the inputs outside the timed function. The repair (97) named the production pick's running stage, which reddened <code>test_picker_in_dispatch.py</code>'s pin on the bare <code>timeout</code>. Both pinning tests were granted with <code>crew widen</code> and now assert the named stage exactly. The final review scored 111 with 0 added failures. Population at the merged head: the 22 test files importing <code>dispatch_picker</code> or <code>picker/outcomes</code> gave 203 passed and 1 failed. At the base <code>2f88bf88d</code> they gave 197 passed and 1 failed, and the one failure, <code>test_dispatch_returns_without_worker.py::test_dispatch_returns_once_its_supervisor_runs</code>, is the same test in both arms, so none was added. Logs: <code>~/.cache/reckon-suite-logs/population-{base,head}-lane-s20.log</code>. Focused gate at the merged head: 23 passed, EXIT=0, <code>~/.cache/reckon-suite-logs/merge-lane-s20-0c1154e51.log</code>.</p><article class="landed-report" data-run-id="r-20261013T092400508839-a-pick-names-its-slow-stage" data-node="a-pick-names-its-slow-stage">
+  <p><strong>a-pick-names-its-slow-stage — a pick records each stage's time and names the stage a deadline ran out in</strong></p>
+  <p id="a-pick-names-its-slow-stage-change">
+    A dispatch-path pick runs a known sequence of stages — the ledger records,
+    the verdict inputs, the budget snapshot, the context estimate, and the Jev
+    call — all under one wait,
+    <code>PICKER_DISPATCH_TIMEOUT_SECONDS</code> (5 s) in
+    <code>reckon/crew/dispatch_picker.py</code>. When that wait expired the
+    recorded selection read <code>fallback_reason: "timeout"</code> whatever had
+    actually spent the budget, so every expiry read as a Jev timeout though most
+    of the pick is spent before Jev: over 2026-10-12/13, 91 picks fell back as
+    <code>timeout</code> while Jev itself answered in 0.3–0.6 s.
+  </p>
+  <p id="a-pick-names-its-slow-stage-production">
+    <strong>Production path.</strong> In the dispatcher the three
+    dispatcher-scope inputs are built once, outside the pick's own bound, by
+    <code>build_picker_inputs</code>, and handed to
+    <code>dispatch_picker_selection</code> as pre-built figures — all three
+    production call sites (<code>reckon/crew/dispatch.py</code> and
+    <code>reckon/crew_dispatch_commands.py</code> on the dispatch path,
+    <code>_record_shadow_picker_selection</code> on the shadow path) read that
+    way. So the stages a production pick is actually inside when the deadline
+    expires are the context estimate and the Jev call, and the naming fix has to
+    reach them rather than only a caller that rebuilds the inputs itself.
+    <code>build_picker_inputs</code> therefore records each input's elapsed
+    milliseconds into a thread-local sink when its caller hands no
+    <code>stage_ms</code>, and <code>dispatch_picker_selection</code> reads that
+    sink, carries the three input times onto the selection's
+    <code>stage_ms</code> and clears it, so a production pick records all five
+    stages without the caller threading the timings through its own call. The
+    context estimate is now <em>marked</em> as well as timed, because in
+    production it is the stage that spends the pick's budget before the picker
+    call is reached: a caller that hands pre-built inputs and gets no answer
+    before the deadline now reads
+    <code>fallback_reason: "timeout in context-estimate"</code> with the three
+    input stages' milliseconds beside it. The Jev call remains timed but not
+    marked: its own snapshot, render and Jev stages are inside it, so an expiry
+    during the opaque call is attributed to no single dispatch stage a reader
+    can act on and keeps the bare <code>timeout</code>, its duration recorded
+    beside it.
+  </p>
+  <p id="a-pick-names-its-slow-stage-outcomes">
+    <code>reckon/crew/picker/outcomes.py</code> classifies a staged timeout by
+    its stage (a staged reason summarises under the key
+    <code>timeout:&lt;stage&gt;</code>) while a bare <code>timeout</code> remains
+    its own count, so a report shows which stages spend the pick's budget rather
+    than collapsing them into one.
+  </p>
+  <p id="a-pick-names-its-slow-stage-measure">
+    <strong>Measure.</strong> Gate: <code>tests/test_a_pick_names_its_slow_stage.py</code>
+    and every test file importing <code>reckon/crew/dispatch_picker.py</code> or
+    <code>reckon/crew/picker/outcomes.py</code> (21 files), run in place on the
+    fleet allocation with the shared environment's
+    <code>.venv/bin/python -m pytest -p no:cacheprovider -n 8</code>. Base arm at
+    the pre-repair revision <code>baf5f99bf021a8211d61546c7c2e081ad3b7c28f</code>:
+    191 passed, <code>EXIT=0</code>. Head arm with the change: 194 passed,
+    <code>EXIT=0</code> — the three added tests are the whole delta and no
+    failure is added.
+    <code>tests/test_dispatch_returns_without_worker.py::test_a_discarded_run_is_not_recreated</code>
+    is timing-sensitive: it failed in an earlier head run and passed in both
+    arms here, which is recorded rather than chased.
+    <code>tests/test_picker_in_dispatch.py::test_dispatch_survives_a_picker_past_the_bound</code>
+    now asserts the stage the production path actually produces: its
+    <code>invoke</code> path measures a real node against a real repository, so
+    the 0.02 s deadline expires inside the estimate and the fallback reads
+    <code>timeout in context-estimate</code>; its direct call measures a bare
+    <code>SimpleNamespace</code> node, whose estimate finishes inside the same
+    deadline, so that arm still reads the bare <code>timeout</code> because the
+    opaque picker call is the stage it is inside.
+    <code>tests/test_picker_pick_within_bound.py</code>'s slow-client test keeps
+    the bare reading for the same reason and asserts the estimate's recorded time
+    beside it, so the reading names the picker call rather than an unrecorded
+    stage. Logs <code>logs/base.pytest.log</code> and
+    <code>logs/head.pytest.log</code> under the run directory, each ending in an
+    <code>EXIT=</code> line.
+  </p>
+  <p id="a-pick-names-its-slow-stage-negative-control">
+    <strong>Negative control.</strong> The three added checks —
+    <code>test_a_production_pick_names_the_estimate_it_ran_out_in</code> (the
+    stage is named),
+    <code>test_a_normal_production_pick_carries_all_five_stage_times</code> (the
+    caller-supplied inputs' times reach the selection) and
+    <code>test_a_failed_input_build_leaves_no_stale_stage_times</code> (a failed
+    build leaves nothing for a later pick) — were run against the pre-repair
+    source at <code>baf5f99bf021a8211d61546c7c2e081ad3b7c28f</code>: <code>3
+    failed, 3 passed</code>, <code>EXIT=1</code>. Without the change the fallback
+    reads the bare <code>timeout</code>, <code>stage_ms["records"]</code> stays
+    <code>None</code>, and the stash the third check reads does not exist, so no
+    check can hold. Because the working copy's <code>.git</code> is mounted read-only,
+    the pre-repair source is a <code>git archive</code> of that revision into a
+    scratch tree whose <code>conftest.py</code> strips the shared environment's
+    editable-install finder so the run resolves to base source (verified in the
+    log header: <code># module __file__
+    /tmp/base-tree-a-pick-names/reckon/crew/dispatch_picker.py</code>). Log
+    <code>logs/negative-control.pytest.log</code> under the run directory.
+  </p>
+</article>
+  </section>
+
 </main>
 </body>
 </html>
