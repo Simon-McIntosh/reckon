@@ -1,0 +1,69 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-13T02:20:08.916Z",
+  "dispatched_at": "2026-10-13T02:15:03Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:21",
+      "id": "wiring-1",
+      "reason": "the informed plan is written against an interface this plan removes, and the dependency \u00a74 rests on is invisible to any tool reading links rather than prose.",
+      "text": "the plan declares it informs `scoring-should-stop-a-promotion`, but that plan's \u00a76 gate-evidence states `select_profile_backend` \"must route through\" it as its first dispatch caller, and \u00a74 of this plan retires `select_profile_backend` with its tests; \u00a74 further applies the scoring plan's \u00a72g rule and \u00a76 caption rule with no declared dependency",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:156",
+      "id": "done_when-1",
+      "reason": "an implementable section with no measurable done-when cannot be dispatched or reviewed on a verdict.",
+      "text": "\u00a73 is declared `implementable` but states only a Measure; it has no done-when line, no declared negative control and no write paths, so a node dispatched to it has no gate to close on",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:45",
+      "id": "anchors_resolve-1",
+      "reason": "the underlying claim is true and the plan's reasoning does not rest on the line number, which is a pointer defect a reader can correct.",
+      "text": "the claim \"the codex dialect composes `codex exec` at `reckon/_backends.py:957`\" resolves to backpressure/retry code, not the codex dialect; the `exec` argv is composed at `reckon/_backends.py:1220`",
+      "type": "anchors_resolve",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:259",
+      "id": "reasoning-1",
+      "reason": "\u00a71 reads as a landed guard on the real path but runs on no production caller, so the plan must name the real caller (`missing_input_modalities` inside `_dispatch_composed_review`) or the guard runs nowhere it claims to protect.",
+      "text": "\u00a74 records that `select_profile_backend` \"has no caller\" and is retired, while \u00a71 (status done) reports its measure and falsifier entirely against `select_profile_backend`, confirmed: the only callers are in `tests/test_flight.py`",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "67f21f0353865700c285f97f6d844f07a50326a7bd72dfb18a7af144f26bc8a8",
+  "plan_slug": "a-review-can-see-the-figure",
+  "plan_version": 10,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261013T021422438582-plan-review-of-a-review-can-see-the-figure",
+  "reviewed_blob_sha": "07ef48dedfa16d186cc4a5c8d824e3b14572f11d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 `reckon/_backends.py:957` does not contain the codex `exec` composition the claim cites; that code is at `reckon/_backends.py:1220`.",
+    "done_when": "a finding \u2014 \u00a73 is declared `implementable` yet carries no done-when, no declared negative control and no write paths; \u00a76 and \u00a77 done-whens are measurable and do name controls.",
+    "evidence_paths": "pass \u2014 \u00a71/\u00a72 cite `docs/evidence/archive/a-review-can-see-the-figure-landed.html` and a figure under `docs/figures/`, all present; \u00a76/\u00a77 log under the run directory, which persists.",
+    "naming": "pass \u2014 no plan labels, ticket numbers or version tags reach code; section ids, followup ids and file/test names are structural or descriptive.",
+    "reasoning": "a finding \u2014 \u00a71's landed guard runs on `select_profile_backend`, which has no production caller and which \u00a74 retires, so the section's \"done\" measure sits on a path the plan itself deletes.",
+    "single_goal": "pass \u2014 \u00a76 and \u00a77 each name one deliverable; \u00a71 and \u00a72 each landed one half (\u00a72's title is stale but its content is one goal).",
+    "wiring": "a finding \u2014 the declared `plan-informs: scoring-should-stop-a-promotion` points at a plan whose \u00a76 is documented as the \"first dispatch caller\" of `select_profile_backend`, the exact function \u00a74 retires, and \u00a74 depends on the scoring plan's \u00a72g/\u00a76 with no declared dependency."
+  },
+  "section_digests": {
+    "_document": "d51b259c461b5f92cc14894e473d56efd58eafa44b714c5e625190578fcc9e85",
+    "s1": "6f91847c26df4249f7e99f6d661c548de475be73869ba4799469bc0c04801047",
+    "s2": "48353069f5981e05b9d1248e19c4f56817113396a3555a2fe6e05b67a505d3f7",
+    "s3": "f8f9ad248d1ff3713092ca3da6a8795cbcecd4726a79d20dc2f63f64ceff2d87",
+    "s4": "994ed10fbb9803a9ae4914f05275f2373d788b16292a7fefaa8350883803056a",
+    "s5": "52bd0da92f26e42df8184445e6ab07cae636d7072675b3a1900951957b3a077d",
+    "s6": "f83361bce1509531e044c0d04dcb2741858ca6c3639b292d47acd6df3a7b511a",
+    "s7": "e4673147c5a3a66171bb0892dbe6927ce54eabc205870310627b08054076101a"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T02:24:31.002488+00:00"
+}
