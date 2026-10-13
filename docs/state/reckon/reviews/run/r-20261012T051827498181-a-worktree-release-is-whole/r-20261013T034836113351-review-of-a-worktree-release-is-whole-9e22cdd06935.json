@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "f43cf0a8c8e86125ece11f4ef7c9afe7f717a0cb",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/promotion_release.py:407",
+    "reckon/crew/routing.py:1450",
+    "reckon/crew/routing.py:2232",
+    "reckon/crew/routing.py:2246",
+    "reckon/crew/routing.py:2937",
+    "reckon/crew/dispatch.py:1863",
+    "reckon/crew/obligations.py:559"
+  ],
+  "completed_at": "2026-10-13T04:06:24.389Z",
+  "dispatched_at": "2026-10-13T03:49:19Z",
+  "findings": [
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "2232",
+      "severity": "follow-on",
+      "text": "follow-on: garbage_collect calls `_release_worktree_whole` at routing.py:2232 and :2246 and ignores the returned `released` flag, so a withheld refusal there is still appended to `removed`; gc's candidate filter (routing.py:2133) deliberately admits registered worktrees under the runs root, and `_release_withhold_reason` refuses those as \"outside the managed worktree root\", so such a tree is reported removed while it is never moved \u2014 the refusal read as a completed removal that commit 9e22cdd06's own message says it prevents."
+    },
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "1154",
+      "severity": "follow-on",
+      "text": "follow-on: `_main_worktree` re-implements the main-checkout resolution owned by reckon/crew/node.py:1340 `repository_identity` (same `--path-format=absolute --git-common-dir` probe and `.git`-parent rule) instead of calling it, duplicating a capability the repository already owns."
+    },
+    {
+      "file": "docs/evidence/fragments/crew-runtime-positive-controls/a-worktree-release-is-whole.html",
+      "line": "22",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment records \"Gate at head d3e4b44f7: 7 passed in the release suite\" although it was edited after that revision and the node's final head is 9e22cdd06 with 10 release-suite cases, so the recorded gate is stale relative to the revision the fragment now describes."
+    }
+  ],
+  "head_log_revision": "d3e4b44f7229d52cf1e088c3a3a81829053d8d71",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "read commits ddd0008de and 9e22cdd06 against base 39b5e7122 commit by commit; both stay inside the declared scope and change only the three source/test files and the evidence fragment.",
+    "done_when": "the done_when names tests/test_a_worktree_release_is_whole.py; the manifest records that file at 10 passed EXIT=0 (gate-newfile.log) and the negative control at EXIT=1, and the gained commit adds the caller-enumerating test at tests/test_a_worktree_release_is_whole.py:392.",
+    "goal": "the node goal is that one helper owns every worktree removal, vacating the registered path in a single rename onto a same-filesystem trash directory, deregistering that one tree and deleting the copy with no deadline; the gained commits keep reckon/crew/routing.py:1229 `_release_worktree_whole` as that owner and add the refusal at routing.py:1185 for a path that is not a disposable linked worktree.",
+    "manifest": "read manifest.md; status complete at head 9e22cdd06, gates 10/3/27/8 passed EXIT=0, negative control EXIT=1, and evidence_inputs candidly records that the base arm imported head code through the shared editable install.",
+    "write_paths": "read the manifest's declared paths; every path in the gained diff \u2014 reckon/crew/routing.py, reckon/crew/promotion_release.py, tests/test_a_worktree_release_is_whole.py and docs/evidence/fragments/crew-runtime-positive-controls/a-worktree-release-is-whole.html \u2014 is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_worktree_release_is_whole.py:252 and :281 fail if the blanket prune or the missing linked-worktree guard is reinstated, as negative-control.log shows (3 failed EXIT=1) while gate-newfile.log stays at 10 passed.",
+    "evidence": "gate-newfile.log records 10 passed EXIT=0 at head 9e22cdd06 and negative-control.log records 3 failed 7 passed EXIT=1, but the only population arm (head-arm.log) ran at d3e4b44f7, so no population result covers the final revision.",
+    "fit": "reckon/crew/routing.py:1119-1194 names mechanism helpers (`_worktree_registrations`, `_release_withhold_reason`, `_worktree_admin_dir`) with no plan label, matching the module's surrounding style.",
+    "goal_fidelity": "reckon/crew/routing.py:1229 renames the tree aside, deletes its own administrative directory and the copy with no deadline, and reckon/crew/promotion_release.py:410 records worktree_withheld rather than a release when the path is not a disposable tree.",
+    "reuse": "reckon/crew/routing.py:1154 `_main_worktree` duplicates reckon/crew/node.py:1340 `repository_identity`, which already resolves a path to its main checkout through `--path-format=absolute --git-common-dir`.",
+    "scope_discipline": "every path in the gained diff is inside the declared write paths, and the out-of-fence caller-test edit of the earlier commits is left untouched by these two commits."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that one helper owns every worktree removal, vacating the registered path in a single rename onto a same-filesystem trash directory, deregistering that one tree and deleting the copy with no deadline; the gained commits keep reckon/crew/routing.py:1229 `_release_worktree_whole` as that owner and add the refusal at routing.py:1185 for a path that is not a disposable linked worktree.\nVERDICT done_when: the done_when names tests/test_a_worktree_release_is_whole.py; the manifest records that file at 10 passed EXIT=0 (gate-newfile.log) and the negative control at EXIT=1, and the gained commit adds the caller-enumerating test at tests/test_a_worktree_release_is_whole.py:392.\nVERDICT write_paths: read the manifest's declared paths; every path in the gained diff \u2014 reckon/crew/routing.py, reckon/crew/promotion_release.py, tests/test_a_worktree_release_is_whole.py and docs/evidence/fragments/crew-runtime-positive-controls/a-worktree-release-is-whole.html \u2014 is inside them.\nVERDICT manifest: read manifest.md; status complete at head 9e22cdd06, gates 10/3/27/8 passed EXIT=0, negative control EXIT=1, and evidence_inputs candidly records that the base arm imported head code through the shared editable install.\nVERDICT diff: read commits ddd0008de and 9e22cdd06 against base 39b5e7122 commit by commit; both stay inside the declared scope and change only the three source/test files and the evidence fragment.\nREVIEWED_BASE_SHA: 39b5e71221a549b522d0143ebcf3a19562d15eb0\nREVIEWED_HEAD_SHA: 9e22cdd069350cfed451d63c25aee379d484f6b9\nCALL_SITES: reckon/crew/promotion_release.py:407, reckon/crew/routing.py:1450, reckon/crew/routing.py:2232, reckon/crew/routing.py:2246, reckon/crew/routing.py:2937, reckon/crew/dispatch.py:1863, reckon/crew/obligations.py:559\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/routing.py:1229 renames the tree aside, deletes its own administrative directory and the copy with no deadline, and reckon/crew/promotion_release.py:410 records worktree_withheld rather than a release when the path is not a disposable tree.\nSCORE evidence: 15\nJUSTIFICATION evidence: gate-newfile.log records 10 passed EXIT=0 at head 9e22cdd06 and negative-control.log records 3 failed 7 passed EXIT=1, but the only population arm (head-arm.log) ran at d3e4b44f7, so no population result covers the final revision.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the gained diff is inside the declared write paths, and the out-of-fence caller-test edit of the earlier commits is left untouched by these two commits.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_worktree_release_is_whole.py:252 and :281 fail if the blanket prune or the missing linked-worktree guard is reinstated, as negative-control.log shows (3 failed EXIT=1) while gate-newfile.log stays at 10 passed.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/routing.py:1119-1194 names mechanism helpers (`_worktree_registrations`, `_release_withhold_reason`, `_worktree_admin_dir`) with no plan label, matching the module's surrounding style.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/routing.py:1154 `_main_worktree` duplicates reckon/crew/node.py:1340 `repository_identity`, which already resolves a path to its main checkout through `--path-format=absolute --git-common-dir`.\nFINDING reckon/crew/routing.py:2232 follow-on: garbage_collect calls `_release_worktree_whole` at routing.py:2232 and :2246 and ignores the returned `released` flag, so a withheld refusal there is still appended to `removed`; gc's candidate filter (routing.py:2133) deliberately admits registered worktrees under the runs root, and `_release_withhold_reason` refuses those as \"outside the managed worktree root\", so such a tree is reported removed while it is never moved \u2014 the refusal read as a completed removal that commit 9e22cdd06's own message says it prevents.\nFINDING reckon/crew/routing.py:1154 follow-on: `_main_worktree` re-implements the main-checkout resolution owned by reckon/crew/node.py:1340 `repository_identity` (same `--path-format=absolute --git-common-dir` probe and `.git`-parent rule) instead of calling it, duplicating a capability the repository already owns.\nFINDING docs/evidence/fragments/crew-runtime-positive-controls/a-worktree-release-is-whole.html:22 follow-on: the fragment records \"Gate at head d3e4b44f7: 7 passed in the release suite\" although it was edited after that revision and the node's final head is 9e22cdd06 with 10 release-suite cases, so the recorded gate is stale relative to the revision the fragment now describes.\n",
+  "review_run_id": "r-20261013T034836113351-review-of-a-worktree-release-is-whole-9e22cdd06935",
+  "reviewed_base_sha": "39b5e71221a549b522d0143ebcf3a19562d15eb0",
+  "reviewed_head_sha": "9e22cdd069350cfed451d63c25aee379d484f6b9",
+  "reviewed_run_id": "r-20261012T051827498181-a-worktree-release-is-whole",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T04:02:41.073163+00:00",
+  "total": 96
+}
