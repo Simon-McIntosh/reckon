@@ -1213,12 +1213,17 @@ def doctor():
 
     # ── MCP connections check ────────────────────────────────────────────────
     click.echo("\nMCP connections")
-    from reckon.mcp_census import census
+    from reckon import mcp_census
 
     now = datetime.now(UTC)
-    report = census(
+    # The two trees are read from the module at call time rather than through
+    # the function's default arguments, which bind once at import and would
+    # ignore a caller that redirects the census at its own logs.
+    report = mcp_census.census(
         window_start=_iso_instant(now.timestamp() - 7 * 24 * 3600),
         window_end=_iso_instant(now.timestamp()),
+        log_root=mcp_census.LOG_ROOT,
+        transcript_root=mcp_census.TRANSCRIPT_ROOT,
     )
     _echo_mcp_census(report)
 
