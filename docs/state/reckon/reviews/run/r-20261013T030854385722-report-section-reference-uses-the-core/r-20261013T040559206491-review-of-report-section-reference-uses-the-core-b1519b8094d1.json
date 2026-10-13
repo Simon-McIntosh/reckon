@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "a99e008e833645efa448b3bac4287a8eccfe8c79",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/reports.py:1487"
+  ],
+  "completed_at": "2026-10-13T04:15:48.313Z",
+  "dispatched_at": "2026-10-13T04:06:36Z",
+  "findings": [
+    {
+      "file": "tests/test_report_section_reference_uses_the_core.py",
+      "line": "36",
+      "severity": "follow-on",
+      "text": "test_composed_reference_carries_a_continuation_number asserts reports._PLAN_SECTION_REFERENCE.search(sample) over \"\u00a75.1\"/\"\u00a75-1\"/\"\u00a712.3.4\", but re.search with the bare literal \u00a7\\s*\\d also matches the leading \u00a75, so the assertion passes under the literal this change replaced and cannot redden on the regression it claims to pin; the continuation capability is truly guarded only by the census ids and tests/test_report_section_reference_uses_the_core.py:25."
+    }
+  ],
+  "head_log_revision": "b1519b8094d1913b0a81a667cd4de2d378f888d6",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read the single commit b1519b8094d1913b0a81a667cd4de2d378f888d6 against base a99e008e833645efa448b3bac4287a8eccfe8c79 commit by commit; it changes two files (+44/-4), both inside scope.",
+    "done_when": "the done_when names both census ids plus a new test showing the composed pattern matches every sample the literal matched, and no added importer failure; the manifest records the head gate 5 passed EXIT=0 (logs/head-gate.log) and the importer sweep head 23 PASS/0 FAIL (logs/importer-head.txt) vs base 22 PASS/1 FAIL (logs/importer-base2.txt); I reproduced the base defect here (both census ids FAIL on '\\u00a7\\\\s*\\\\d', EXIT=1) and re-ran the head gate in an overlay tree (5 passed, EXIT=0).",
+    "goal": "the node goal is that _PLAN_SECTION_REFERENCE in reckon/crew/reports.py composes the shared SECTION_NUMBER core; the landed commit sets _SECTION_REFERENCE_GRAMMAR = rf\"\u00a7\\s*{SECTION_NUMBER_PATTERN}\" at reckon/crew/reports.py:1324 and compiles it at :1325.",
+    "manifest": "read manifest.md; status complete at head b1519b8094d1913b0a81a667cd4de2d378f888d6, recording head gate 5 passed EXIT=0, negative control EXIT=1, importer sweep head 23 PASS/0 FAIL; baseline_suite and after_suite are empty, so the added-failure delta is derived from the reviewed run's arm logs logs/importer-head.txt and logs/importer-base2.txt.",
+    "write_paths": "read the manifest's declared paths; the single commit changes exactly reckon/crew/reports.py and tests/test_report_section_reference_uses_the_core.py, both inside the plan \u00a78 two declared write paths."
+  },
+  "justifications": {
+    "durability": "tests/test_report_section_reference_uses_the_core.py:25 reddens if the literal is reinstated, but the continuation assertion at :34-36 stays green under the reverted literal, so it does not guard the capability it names.",
+    "evidence": "the done_when gate is recorded in logs/head-gate.log (5 passed EXIT=0) and reproduced independently in my overlay run; the manifest's baseline_suite/after_suite are empty so the added-failure figure is read from logs/importer-head.txt and logs/importer-base2.txt.",
+    "fit": "reckon/crew/reports.py:1319-1325 names the helper _SECTION_REFERENCE_GRAMMAR and documents it by mechanism, matching the module's surrounding constant-and-comment style with no plan or ticket label.",
+    "goal_fidelity": "reckon/crew/reports.py:1324-1325 composes _PLAN_SECTION_REFERENCE from the shared core via _SECTION_REFERENCE_GRAMMAR, exactly the deliverable the goal names.",
+    "reuse": "the change extends the existing owner reckon/_plan_html.py:83 SECTION_NUMBER_PATTERN rather than forking it.",
+    "scope_discipline": "reckon/crew/reports.py and tests/test_report_section_reference_uses_the_core.py are the only two paths in the commit and both are inside the plan's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that _PLAN_SECTION_REFERENCE in reckon/crew/reports.py composes the shared SECTION_NUMBER core; the landed commit sets _SECTION_REFERENCE_GRAMMAR = rf\"\u00a7\\s*{SECTION_NUMBER_PATTERN}\" at reckon/crew/reports.py:1324 and compiles it at :1325, replacing the bare literal \u00a7\\s*\\d.\nVERDICT done_when: the done_when names both census ids plus a new test showing the composed pattern matches every sample the literal matched, and no added importer failure; the manifest records the head gate 5 passed EXIT=0 (logs/head-gate.log) and the importer sweep head 23 PASS/0 FAIL (logs/importer-head.txt) vs base 22 PASS/1 FAIL (logs/importer-base2.txt); I reproduced the base defect here (both census ids FAIL on reports.py pattern '\\u00a7\\\\s*\\\\d', EXIT=1) and re-ran the head gate in an overlay tree (5 passed, EXIT=0).\nVERDICT write_paths: read the manifest's declared paths; the single commit changes exactly reckon/crew/reports.py and tests/test_report_section_reference_uses_the_core.py, both inside the plan \u00a78 two declared write paths (the dispatch's fragment/figure paths were not written, and the done-when names no artifact).\nVERDICT manifest: read manifest.md; status complete at head b1519b8094d1913b0a81a667cd4de2d378f888d6, recording head gate 5 passed EXIT=0, negative control EXIT=1, importer sweep head 23 PASS/0 FAIL; baseline_suite and after_suite are empty, so the added-failure delta is derived from the reviewed run's arm logs logs/importer-head.txt and logs/importer-base2.txt (no added failure at head).\nVERDICT diff: read the single commit b1519b8094d1913b0a81a667cd4de2d378f888d6 against base a99e008e833645efa448b3bac4287a8eccfe8c79 commit by commit; it changes two files (+44/-4), both inside scope, and widens the finder to a strict superset of the literal.\nREVIEWED_BASE_SHA: a99e008e833645efa448b3bac4287a8eccfe8c79\nREVIEWED_HEAD_SHA: b1519b8094d1913b0a81a667cd4de2d378f888d6\nCALL_SITES: reckon/crew/reports.py:1487\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/reports.py:1324-1325 composes _PLAN_SECTION_REFERENCE from the shared core via _SECTION_REFERENCE_GRAMMAR, exactly the deliverable the goal names, and the pattern is a strict superset of the literal it replaced.\nSCORE evidence: 18\nJUSTIFICATION evidence: the done_when gate is recorded in logs/head-gate.log (5 passed EXIT=0) and reproduced independently in my overlay run; the manifest's baseline_suite/after_suite are empty so the added-failure figure is read from logs/importer-head.txt and logs/importer-base2.txt rather than from the manifest fields the done-when names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: reckon/crew/reports.py and tests/test_report_section_reference_uses_the_core.py are the only two paths in the commit and both are inside the plan's declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_report_section_reference_uses_the_core.py:25 reddens if the literal is reinstated (as logs/negative-control.log and my base reproduction show both census ids failing), but the continuation assertion at :34-36 stays green under the reverted literal, so it does not guard the capability it names.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/reports.py:1319-1325 names the helper _SECTION_REFERENCE_GRAMMAR and documents it by mechanism, matching the module's surrounding constant-and-comment style with no plan or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the existing owner reckon/_plan_html.py:83 SECTION_NUMBER_PATTERN rather than forking it, and no second path composes it under reckon/ for a plan-section reference.\nFINDING tests/test_report_section_reference_uses_the_core.py:36 follow-on: test_composed_reference_carries_a_continuation_number asserts reports._PLAN_SECTION_REFERENCE.search(sample) over \"\u00a75.1\"/\"\u00a75-1\"/\"\u00a712.3.4\", but re.search with the bare literal \u00a7\\s*\\d also matches the leading \u00a75, so the assertion passes under the very literal this change replaced and cannot redden on the regression it claims to pin; the continuation capability is only truly guarded by the census ids and tests/test_report_section_reference_uses_the_core.py:25.",
+  "review_run_id": "r-20261013T040559206491-review-of-report-section-reference-uses-the-core-b1519b8094d1",
+  "reviewed_base_sha": "a99e008e833645efa448b3bac4287a8eccfe8c79",
+  "reviewed_head_sha": "b1519b8094d1913b0a81a667cd4de2d378f888d6",
+  "reviewed_run_id": "r-20261013T030854385722-report-section-reference-uses-the-core",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T04:13:07.533638+00:00",
+  "total": 114
+}
