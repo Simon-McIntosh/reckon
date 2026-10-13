@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S26">
-<meta name="plan-version" content="12">
+<meta name="plan-version" content="13">
 <meta name="plan-modified" content="2026-10-13">
 </head>
 <body>
@@ -90,6 +90,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261013T082126520314-review-of-the-fingerprint-has-one-form-d71061622f2d" data-who="reckon-build" data-when="2026-10-13T08:45:05.514Z">
     <div class="r-comment-body"><p>independent review of r-20261013T050356104997-the-fingerprint-has-one-form over the commits gained since the prior review (2bb438fe..d7106162, the single commit d7106162 revising the _fingerprint_forms docstring and six cases in tests/test_the_fingerprint_has_one_form.py) scored goal_fidelity 18, evidence 8, scope_discipline 20, durability 16, fit 18, reuse 15, total 95; one blocking finding (manifest.md:16 after_suite cites head-arm.log as 444 passed EXIT=0 but head-arm.log carries only its three header lines, so the head arm's result is not recorded) and four follow-on findings; added_failure_count unmeasured because the head arm log is unreadable</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261013T050356104997-the-fingerprint-has-one-form" data-who="reckon-build" data-when="2026-10-13T09:29:54.984Z">
+    <div class="r-comment-body"><p>_fingerprint_forms returns the section-set and whole-document digests only; a review stored under the retired pre-collapse form no longer matches; collapse_section is refused as an unknown verb (removed from _OP_DISPATCH, the MCP op vocabulary and the reckon-edit op table) while the card-rendering helper stays for the test files that call it directly. Coverage of a carded plan is now judged by review_coverage over a review the dispatcher composes, and both surviving forms are restated from their own definitions rather than read back from the function under test. Both arms green: head 444 passed EXIT=0, base 438 passed EXIT=0, no added failure</p></div>
 </div>
 </section>
 </main>
