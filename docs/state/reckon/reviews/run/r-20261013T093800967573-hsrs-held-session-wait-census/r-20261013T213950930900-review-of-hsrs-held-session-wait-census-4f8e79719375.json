@@ -1,0 +1,61 @@
+{
+  "artifacts": [
+    "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/study/a-held-session-routes-to-a-serving-lane/hsrs-held-session-wait-census/report.html (reviewed deliverable, read-only; md5 e9c355ab6a43bb18862d0b323a21621f)",
+    "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/study/a-held-session-routes-to-a-serving-lane/hsrs-held-session-wait-census/census.py (cited script, copied to $TMPDIR and re-run; the report directory was not written; md5 24526553a31cdbdaa62f00123c834df5)",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T213950930900-review-of-hsrs-held-session-wait-census-4f8e79719375/claims-rerun.log (unpinned re-run: window 21:44, held 16 queued 5 launched 11, other-lane join 2 (room 1, no-other 1), no record 14, positive control found, EXIT=0)",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T213950930900-review-of-hsrs-held-session-wait-census-4f8e79719375/claims-rerun-pinned.log (clock pinned to 2026-10-13T21:06:14.521268+00:00: held 16, other-lane join 2, positive control found, EXIT=0)",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T213950930900-review-of-hsrs-held-session-wait-census-4f8e79719375/claims-rerun-census.json and claims-rerun-census-pinned.json (the two re-run censuses beside their logs)"
+  ],
+  "claim_lines": [
+    "CLAIM 1: differs: the report states 24 held dispatches (queued 9, launched 15) accruing 28091.2 s; a faithful re-run of census.py against the same absolute host stores ~38 min later shows 16 (queued 5, launched 11) accruing 26319.6 s - and pinning the clock to the report's own census instant 2026-10-13T21:06:14.521268+00:00 still shows 16 (hold 13711.1 s), so the drift is read-time deletion of the live pointers for held-then-launched runs, not the window; the census is a floor over surviving pointers, as the report's Coverage limits says",
+    "CLAIM 2: differs: the report states joined 3 (room 1, no-room 0, unproven 1, no-other 1), share_room 0.333 of joined (0.5 of rows with another serving lane), wait_room 670.1 s; the re-run shows joined 2 (room 1, no-room 0, unproven 0, no-other 1), share_room 0.5 of joined (1.0 of rows with another serving lane), wait_room 670.1 s - the room count, the no-room count and the 670.1 s room-subset wait reproduce exactly; the share differs only because one joined (unproven) row's live pointer is gone, shrinking the denominator from 3 to 2",
+    "CLAIM 3: reproduced: the re-run printed 'positive control pick line found: True at 2026-10-13T08:16:20.803637+00:00 outcome route source jev' and the codex relaunch record run_id r-20261013T082442944007-jccm-lines dispatched_at 2026-10-13T08:24:57Z, identical to the report, in both the unpinned and clock-pinned runs - the known jccm-lines hold matches and its hold-to-launch is ~8 min 22 s",
+    "CLAIM_SUMMARY: agrees: the report's summary line is 'held dispatches with a surviving pointer: 24 (queued now: 9, held-then-launched: 15)' with 'total wait accrued: 28091 s (468.2 min) over 24 rows'; the By-role table beneath it sums to held 24 (3 implement-exact + 9 implement-guided + 1 investigate-guided + 11 review-exact) and to 28091.2 s of wait (1581.5 + 11938.8 + 378.8 + 14192.1), so both quoted figures are exactly its table totals"
+  ],
+  "claim_summary": {
+    "detail": "The report's summary line is the Headline block: 'held dispatches with a surviving pointer: 24 (queued now: 9, held-then-launched: 15)' and 'total wait accrued: 28091 s (468.2 min) over 24 rows with a measured wait'. The table beneath it (By role and specification level) carries implement/exact 3 held 1581.5 s, implement/guided 9 held 11938.8 s, investigate/guided 1 held 378.8 s and review/exact 11 held 14192.1 s. Its held column sums to 3+9+1+11 = 24 and its wait column sums to 1581.5+11938.8+378.8+14192.1 = 28091.2 s, i.e. 28091 s rounded and 468.19 min, exactly the summary's two figures. Verified independently from the report-cited census.json (len(held) 24; grouped sums identical). So the summary agrees with its table.",
+    "verdict": "agrees"
+  },
+  "claim_summary_line": "CLAIM_SUMMARY: agrees: the summary line reads 'held dispatches with a surviving pointer: 24 (queued now: 9, held-then-launched: 15)' and 'total wait accrued: 28091 s (468.2 min) over 24 rows'; the By-role table beneath it sums to 24 held (3+9+1+11) and 28091.2 s (1581.5+11938.8+378.8+14192.1), so both quoted figures are the table totals",
+  "claims": [
+    {
+      "cites": "census.py (durable-store census -> census.json); census.log; report.html Headline and By role and specification level table",
+      "finding": "rank 1 (the headline held count): 24 dispatch-held runs with a surviving live pointer at its own census instant - 9 still queued and 15 held-then-launched - accruing 28091.2 s of measured wait over 24 rows",
+      "rank": 1,
+      "report_figure": "held 24 (queued 9, held-then-launched 15); total wait 28091.2 s over 24 rows",
+      "rerun_figure": "held 16 (queued 5, launched 11); total wait 26319.6 s over 16 rows. A faithful copy of census.py run against the same absolute host stores ~38 min after the census shows 16, not 24. The 12 rows the report counted but the re-run does not are held-then-launched dispatches whose live pointers have since been removed (the census reads live pointers, which are consumed when a run is promoted); 4 new held dispatches appeared whose queued_at falls inside the moving window. Pinning the clock to the report's own census instant (2026-10-13T21:06:14.521268+00:00) does not recover the 24: the same 16 rows remain, with total wait 13711.1 s (queued rows' wait collapses to their age at the pinned instant). The drift is therefore read-time deletion of live pointers, not the window bound. The census counts, in the report's own words, 'holds whose pointer survives', so its figures are a floor rather than a reproducible count; the report states this under Coverage limits.",
+      "verdict": "differs"
+    },
+    {
+      "cites": "census.py (other-lane join -> census.json other_lane_share); census.log; report.html 'Share of held exact or guided work with another lane having room'",
+      "finding": "rank 2 (the other-lane join and room share): of the held exact/guided dispatches joined to a picker-hold record, one had another lane with room, none had another lane without room, one was unproven and one had no other serving lane, so the share with another lane having room is 0.333 of the joined rows (0.5 of the rows that had another serving lane at all), and the wait accrued by that room subset is 670.1 s",
+      "rank": 2,
+      "report_figure": "joined 3 (room 1, no-room 0, unproven 1, no-other 1); no record 21; share_room 0.333 of joined (0.5 of rows with another lane); wait_room 670.1 s",
+      "rerun_figure": "joined 2 (room 1, no-room 0, unproven 0, no-other 1); no record 14; share_room 0.5 of joined (1.0 of rows with another serving lane); wait_room 670.1 s. The absolute facts reproduce exactly - one joined row had another lane with room, none had another lane without room, and the room-subset wait is 670.1 s in both the report and the re-run. The share differs because its denominator shrank: the one 'unproven' joined row was among the live-pointer rows no longer present at the later read, so joined falls from 3 to 2 and the share rises from 0.333 to 0.5. Compared against the report-cited census.json (other_lane_share room 1, no_room 0, unproven 1, no_other 1, share_room 0.333, wait_room 670.1) - the report's own recorded figure.",
+      "verdict": "differs"
+    },
+    {
+      "cites": "census.py (positive-control lookup -> census.json positive_control); census.log; report.html 'Positive control: the jccm-lines hold of 2026-10-13T08:16:20Z'",
+      "finding": "rank 3 (the positive control): the known jccm-lines hold of 2026-10-13T08:16:20Z is visible to the instrument - its pick-timings line is found by name at 2026-10-13T08:16:20.803637+00:00 with outcome route and decision source jev - and the hold ended when the node was relaunched on codex, run r-20261013T082442944007-jccm-lines dispatched 2026-10-13T08:24:57Z (the plan records 2026-10-13T08:24:42Z), a hold-to-launch of about 8 min 22 s",
+      "rank": 3,
+      "report_figure": "pick 2026-10-13T08:16:20.803637+00:00, outcome route, source jev; codex relaunch run r-20261013T082442944007-jccm-lines dispatched 2026-10-13T08:24:57Z; hold-to-launch ~8 min 22 s",
+      "rerun_figure": "identical in both the unpinned and the clock-pinned re-runs: census.py printed 'positive control pick line found: True at 2026-10-13T08:16:20.803637+00:00 outcome route source jev' and the codex relaunch record run_id r-20261013T082442944007-jccm-lines dispatched_at 2026-10-13T08:24:57Z, matching the report exactly. This is the instrument's positive control: it shows a known-present hold is seen, so an absence elsewhere (e.g. the no-record rows) is reliable rather than an empty-store artifact.",
+      "verdict": "reproduced"
+    }
+  ],
+  "completed_at": "2026-10-13T21:52:53.737Z",
+  "dimensions": null,
+  "dispatched_at": "2026-10-13T21:40:32Z",
+  "method": "The reviewed run is read-only: an investigate node under plan a-held-session-routes-to-a-serving-lane section 5 whose manifest records commits: none and changed_paths confined to its report directory (report.html, census.py, make_report.py, census.json, census.log, pick-thin.json, pick-full-dryrun.err), with no gate suite, so reviewed_base_sha == reviewed_head_sha == 4f8e79719375c9d74e2f55b662e5b8d1ae2611a0 and there is no diff to read. Its deliverable is report.html, whose every figure census.py states is read from durable stores (pick-timings.jsonl, the live run pointers, and the projects' run records). The report's three highest-ranked findings are its Headline count and total wait, its other-lane-join/room-share finding, and its positive control. census.py resolves its inputs by absolute path but writes census.json and census.log beside itself (HERE = the script's own directory), which is outside this review's write grant and is the reviewed run's own artifact, so running the command verbatim would clobber the reviewed evidence. Faithful copies of census.py were therefore run from this review node's scratch dir $TMPDIR/hsrs-review (and a clock-pinned copy under the same parent), reading the same absolute host stores the run read and writing to scratch; the reviewed artifacts were left untouched (md5 recorded after the re-run: report.html e9c355ab6a43bb18862d0b323a21621f, census.json dddc74a6964fa47d045074734e382957, census.py 24526553a31cdbdaa62f00123c834df5, make_report.py f6b002a028989c05a5fa6cd26903a20e). Interpreter: python3 (the scripts import only stdlib and read absolute paths). The run's summary line (the Headline block) was compared against the table beneath it (By role and specification level).",
+  "project": "reckon",
+  "report_path": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/study/a-held-session-routes-to-a-serving-lane/hsrs-held-session-wait-census/report.html",
+  "review_run_id": "r-20261013T213950930900-review-of-hsrs-held-session-wait-census-4f8e79719375",
+  "reviewed_base_sha": "4f8e79719375c9d74e2f55b662e5b8d1ae2611a0",
+  "reviewed_head_sha": "4f8e79719375c9d74e2f55b662e5b8d1ae2611a0",
+  "reviewed_run_id": "r-20261013T093800967573-hsrs-held-session-wait-census",
+  "rubric": "claims",
+  "status": "parsed",
+  "suite_delta_fields_omitted": "added_failure_count and added_failure_ids are intentionally absent: the reviewed run ran no gate suite (this review adds none).",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T21:49:00+00:00"
+}
