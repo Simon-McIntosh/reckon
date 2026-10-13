@@ -243,6 +243,11 @@ base revision rather than against the head with the change reverted.</p>
 </article>
   </section>
 
+  <section id="s18">
+    <h2>§18 — Jev is offered every model of every lane, read from the lanes</h2>
+    <p>Run <code>r-20261013T092654335934-jev-offered-every-model-of-a-lane</code> ran on codex:sol: the router re-launched the queued request there after it was withdrawn from the local queue. Commits <code>b23165ab5</code> (test) and <code>548865d2a</code> (<code>reckon/crew/picker/snapshot.py</code>), merged as <code>c76d61014</code> after §21 (<code>3483a1c20</code>). The worker found that a picker route dropped its model, which became §21, so §18 was held unmerged until §21 landed. Review 113, 0 added failures, after waiting 7.5 hours in the review queue. Population at the merge: the 39 test files importing the picker gave 329 passed and 1 error at the merge against 327 passed and 1 error at the base <code>da3f0ef61</code>. The error is <code>tests/conftest.py</code> collected as a test in both arms, and the 2 extra passes are the new tests. Logs are <code>~/.cache/reckon-suite-logs/population-{base,head}-lane-s18.log</code>. Focused gate at the merged head: 23 passed, EXIT=0, <code>merge-lane-s18-c76d61014.log</code>. With §18 and §21 both in, a Jev pick of <code>codex:astra</code> launches the codex lane with <code>gpt-6-astra</code>. The combined names are still declared, and §19 retires them. The review's one follow-on is an unread <code>model_key</code> write on each candidate, carried to §23.</p>
+  </section>
+
 </main>
 </body>
 </html>
