@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "5137df573788098212a212b5b766197e74c15714",
+  "base_log_revision_short": "5137df57",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_run_commands.py:crew_drain",
+    "reckon/crew/queue_admission.py:admit_until_stopped"
+  ],
+  "completed_at": "2026-10-13T08:01:42.620Z",
+  "dispatched_at": "2026-10-13T07:38:49Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "241",
+      "severity": "follow-on",
+      "text": "follow-on: _file_stamp duplicates the existing file_stamp at reckon/capabilities.py:1210 (a [mtime_ns, size] stamp of one path, None when absent) rather than extending it, so the two stat-based change detectors can drift; follow-on because the copy is small and both behave correctly."
+    }
+  ],
+  "head_log_revision": "b000cdc725fe43f539f66e6b88fe446be3288443",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against the base 5137df57: 02ff96009 adds _lane_gate_hold and the pre-release gate hold; e68332991 adds _retry_delay, _is_lane_hold and _retry_backoff_hold with the back-off branch; 2baab2b6a adds _file_stamp, _dependency_guard, _report_queued_failure and _stamp_failure and the one-time report; 1096ac7af and b000cdc72 record the fragment; nothing outside the three declared files is touched.",
+    "done_when": "the done-when names tests/tests/test_a_held_request_stays_queued.py; the manifest records the gate on the new file as 6 passed (gate-head-3.log, EXIT=0) and the importing arm tests/test_a_queued_run_is_admitted.py as 18 passed (gate-importing-head-3.log, EXIT=0), and the held-case negative control is negative-control.log (EXIT=1).",
+    "goal": "the node's goal is that admit_once leave a queued request untouched while the lane would still hold it, so a request the lane keeps is never withdrawn and re-queued; reckon/crew/queue_admission.py:189 (_lane_gate_hold, called at :553) asks the lane gate before the pointer is released, and :334 (_retry_backoff_hold, called at :562) leaves a request whose last attempt failed for a non-lane reason in place, both matching the goal.",
+    "manifest": "read; status complete; five commits 02ff96009, e68332991, 1096ac7af, 2baab2b6a, b000cdc72; the structured baseline_suite and after_suite fields are empty, so the added-failure count was derived from the ran arms' own gate logs, gate-importing-base.log (18 passed) and gate-importing-head-3.log (18 passed), giving 0 added.",
+    "write_paths": "the dispatch fenced reckon/crew/queue_admission.py, tests/test_a_held_request_stays_queued.py, the fragment docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-held-request-stays-queued.html and the figures directory; git diff --name-only 5137df57..b000cdc72 lists exactly those three files and nothing else, so the land sits inside the declared scope."
+  },
+  "justifications": {
+    "durability": "the assertions at tests/test_a_held_request_stays_queued.py:106-107 and :190-192 compare the pointer bytes and stream rows against snapshots taken before the pass rather than against a value the test supplied to the code, and negative-control.log shows them reddening (2 failed, EXIT=1) once the pre-release hold is removed, so the guard is exercised by reinstating the defect.",
+    "evidence": "the gate the done-when names ran (tests/test_a_held_request_stays_queued.py, gate-head-3.log, 6 passed, EXIT=0) and its assertions cover both the held-unchanged case (:106-107) and the launches-once-open case (:145-147), with the importing arm recorded at 18 passed.",
+    "fit": "the added helpers _lane_gate_hold, _retry_backoff_hold and _stamp_failure follow the module's private-underscore idiom and carry no plan, sprint or ticket identifier (reckon/crew/queue_admission.py:189, :334, :375).",
+    "goal_fidelity": "reckon/crew/queue_admission.py:553 holds a gate-refused request before the release, so a request the lane still holds keeps its run id and queued phase and the pane appends no transition, exactly the goal.",
+    "reuse": "_file_stamp at reckon/crew/queue_admission.py:241 re-implements the stat-based change stamp the repository already owns at reckon/capabilities.py:1210 (file_stamp) instead of calling it.",
+    "scope_discipline": "git diff --name-only 5137df57..b000cdc72 lists only reckon/crew/queue_admission.py, tests/test_a_held_request_stays_queued.py and the evidence fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 5137df573788098212a212b5b766197e74c15714\nreviewed_head_sha: b000cdc725fe43f539f66e6b88fe446be3288443\nVERDICT goal: the node's goal is that admit_once leave a queued request untouched while the lane would still hold it, so a request the lane keeps is never withdrawn and re-queued; reckon/crew/queue_admission.py:189 (_lane_gate_hold, called at :553) asks the lane gate before the pointer is released, and :334 (_retry_backoff_hold, called at :562) leaves a request whose last attempt failed for a non-lane reason in place, both matching the goal.\nVERDICT done_when: the done-when names tests/tests/test_a_held_request_stays_queued.py; the manifest records the gate on the new file as 6 passed (gate-head-3.log, EXIT=0) and the importing arm tests/test_a_queued_run_is_admitted.py as 18 passed (gate-importing-head-3.log, EXIT=0), and the held-case negative control is negative-control.log (EXIT=1).\nVERDICT write_paths: the dispatch fenced reckon/crew/queue_admission.py, tests/test_a_held_request_stays_queued.py, the fragment docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-held-request-stays-queued.html and the figures directory; git diff --name-only 5137df57..b000cdc72 lists exactly those three files and nothing else, so the land sits inside the declared scope.\nVERDICT manifest: read; status complete; five commits 02ff96009, e68332991, 1096ac7af, 2baab2b6a, b000cdc72; the structured baseline_suite and after_suite fields are empty, so the added-failure count was derived from the ran arms' own gate logs, gate-importing-base.log (18 passed) and gate-importing-head-3.log (18 passed), giving 0 added.\nVERDICT diff: read commit by commit against the base 5137df57: 02ff96009 adds _lane_gate_hold and the pre-release gate hold; e68332991 adds _retry_delay, _is_lane_hold and _retry_backoff_hold with the back-off branch; 2baab2b6a adds _file_stamp, _dependency_guard, _report_queued_failure and _stamp_failure and the one-time report; 1096ac7af and b000cdc72 record the fragment; nothing outside the three declared files is touched.\nCALL_SITES: reckon/crew_run_commands.py:crew_drain, reckon/crew/queue_admission.py:admit_until_stopped\nSCORE goal_fidelity: 18\nSCORE evidence: 16\nSCORE scope_discipline: 19\nSCORE durability: 18\nSCORE fit: 18\nSCORE reuse: 5\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:553 holds a gate-refused request before the release, so a request the lane still holds keeps its run id and queued phase and the pane appends no transition, exactly the goal.\nJUSTIFICATION evidence: the gate the done-when names ran (tests/test_a_held_request_stays_queued.py, gate-head-3.log, 6 passed, EXIT=0) and its assertions cover both the held-unchanged case (:106-107) and the launches-once-open case (:145-147), with the importing arm recorded at 18 passed.\nJUSTIFICATION scope_discipline: git diff --name-only 5137df57..b000cdc72 lists only reckon/crew/queue_admission.py, tests/test_a_held_request_stays_queued.py and the evidence fragment, all inside the declared write paths.\nJUSTIFICATION durability: the assertions at tests/test_a_held_request_stays_queued.py:106-107 and :190-192 compare the pointer bytes and stream rows against snapshots taken before the pass rather than against a value the test supplied to the code, and negative-control.log shows them reddening (2 failed, EXIT=1) once the pre-release hold is removed, so the guard is exercised by reinstating the defect.\nJUSTIFICATION fit: the added helpers _lane_gate_hold, _retry_backoff_hold and _stamp_failure follow the module's private-underscore idiom and carry no plan, sprint or ticket identifier (reckon/crew/queue_admission.py:189, :334, :375).\nJUSTIFICATION reuse: _file_stamp at reckon/crew/queue_admission.py:241 re-implements the stat-based change stamp the repository already owns at reckon/capabilities.py:1210 (file_stamp) instead of calling it.\nFINDING reckon/crew/queue_admission.py:241 follow-on: _file_stamp duplicates the existing file_stamp at reckon/capabilities.py:1210 (a [mtime_ns, size] stamp of one path, None when absent) rather than extending it, so the two stat-based change detectors can drift; follow-on because the copy is small and both behave correctly.\n",
+  "review_run_id": "r-20261013T073812461786-review-of-a-held-request-stays-queued-b000cdc725fe",
+  "reviewed_base_sha": "5137df573788098212a212b5b766197e74c15714",
+  "reviewed_head_sha": "b000cdc725fe43f539f66e6b88fe446be3288443",
+  "reviewed_run_id": "r-20261013T054419434294-a-held-request-stays-queued",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T07:57:55.229411+00:00",
+  "total": 94
+}
