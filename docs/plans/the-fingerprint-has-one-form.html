@@ -20,12 +20,12 @@
   <meta name="plan-tags" content="plans,reckon-tooling">
   <meta name="plan-informs" content="a-plan-is-done-when-every-section-is-ticked">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;the-fingerprint-has-one-form#s2&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;}">
   <title>The Fingerprint Has One Form | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S26">
-<meta name="plan-version" content="11">
+<meta name="plan-version" content="12">
 <meta name="plan-modified" content="2026-10-13">
 </head>
 <body>
@@ -56,7 +56,7 @@
     <p><strong>Done when</strong> the report under the run directory lists, per project, the count of reviews matching each form, the slugs that match only through the pre-collapse form, and the plans whose covered units shrink when that form is withheld, with the script that produced it. Two fixtures are the controls. A review of a collapsed plan, whose sections are not covered per unit, must be counted as pre-collapse-only and must lose coverage. A review stored under the current section-set form must be counted as neither. Collapse history does not decide the form a review matches: the pre-collapse form is the older definition that kept section declarations in the digest, so a review stored under that definition matches only it, whether or not its plan was ever collapsed. Write paths: the run's own report directory.</p>
 
     <h2 id="s3">§3 — Retire the pre-collapse form and the collapse op</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> <code>_fingerprint_forms</code> returns the section-set and whole-document forms only. The <code>collapse_section</code> op is removed from <code>_store.py</code>'s op table and from the op vocabulary the MCP server publishes. Plans already collapsed keep their cards, and the display path in <code>reckon/mcp_views.py</code> that reads landed cards is unchanged.</p>
     <p>This section runs only when §2's census shows that retiring the form uncovers no stored review, or uncovers a number the lead accepts in writing on this section.</p>
     <p><strong>Done when</strong> a test shows a plan whose collapsed card is unchanged keeps its stored review, and another shows <code>collapse_section</code> is refused as an unknown op. The test files importing <code>plan_review</code> show no added failure against base. The negative control restores the pre-collapse form, and the census's pre-collapse-only fixture must then read as covered again. The op's entry in <code>skills/reckon-edit/SKILL.md</code> is removed with it. Write paths: <code>reckon/crew/plan_review.py</code>, <code>reckon/_store.py</code>, <code>reckon/mcp.py</code>, <code>skills/reckon-edit/SKILL.md</code> and <code>tests/test_the_fingerprint_has_one_form.py</code>.</p>
@@ -89,7 +89,7 @@
     <div class="r-comment-body"><p>independent review of r-20261013T050356104997-the-fingerprint-has-one-form at head 2bb438fe0 scored goal_fidelity 19, evidence 15, scope_discipline 18, durability 15, fit 16, reuse 15, total 98; six follow-on findings (tests/test_the_fingerprint_has_one_form.py:97 and :86 non-independent assertions; the reviewed manifest.md:15 and :11 placeholders and the base arm's omitted importer; reckon/crew/plan_review.py:687 changelog prose; tests/test_plan_review_store.py:449 duplicated collapse flip); no blocking findings</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261013T082126520314-review-of-the-fingerprint-has-one-form-d71061622f2d" data-who="reckon-build" data-when="2026-10-13T08:45:05.514Z">
-    <div class="r-comment-body"><p>independent review of r-20261013T050356104997-the-fingerprint-has-one-form over the commits gained since the prior review (2bb438fe..d7106162, the single commit d7106162 revising the _fingerprint_forms docstring and six cases in tests/test_the_fingerprint_has_one_form.py) scored goal_fidelity 18, evidence 8, scope_discipline 20, durability 16, fit 18, reuse 15, total 95; one blocking finding (manifest.md:16 after_suite cites head-arm.log as 444 passed EXIT=0 but head-arm.log carries only its three header lines, so the head arm&#x27;s result is not recorded) and four follow-on findings; added_failure_count unmeasured because the head arm log is unreadable</p></div>
+    <div class="r-comment-body"><p>independent review of r-20261013T050356104997-the-fingerprint-has-one-form over the commits gained since the prior review (2bb438fe..d7106162, the single commit d7106162 revising the _fingerprint_forms docstring and six cases in tests/test_the_fingerprint_has_one_form.py) scored goal_fidelity 18, evidence 8, scope_discipline 20, durability 16, fit 18, reuse 15, total 95; one blocking finding (manifest.md:16 after_suite cites head-arm.log as 444 passed EXIT=0 but head-arm.log carries only its three header lines, so the head arm's result is not recorded) and four follow-on findings; added_failure_count unmeasured because the head arm log is unreadable</p></div>
 </div>
 </section>
 </main>
