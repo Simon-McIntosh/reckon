@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 14,
+  "call_sites": [
+    "reckon/crew/routing.py:229",
+    "reckon/crew/routing.py:3272",
+    "reckon/serve.py:2167",
+    "reckon/serve.py:3154",
+    "reckon/evidence.py:656",
+    "reckon/ledger.py:704",
+    "reckon/_store.py:676",
+    "reckon/_store.py:2175",
+    "reckon/doccheck.py:432",
+    "reckon/crew/plan_review.py:3076",
+    "reckon/roadmap.py:168",
+    "reckon/roadmap.py:1380",
+    "reckon/metadata_index.py:670",
+    "reckon/project_state.py:1212"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-13T01:33:13Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T013159188911-a-cold-read-parses-each-plan-once/manifest.md",
+      "line": "21",
+      "severity": "follow-on",
+      "text": "follow-on: the done_when requires the test files importing the three readers' modules to show no added failure against base, but only a focused 10/11-file gate ran against the manifest's own 217-file importer population, so the whole-population half of the measure is unmeasured; the manifest names this and defers it to a merge-verification node."
+    },
+    {
+      "file": "docs/evidence/fragments/a-read-answers-inside-its-deadline/a-cold-read-parses-each-plan-once.html",
+      "line": "18",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment states \"a cold roadmap read builds each plan file's soup 3 times at base and 1 time here; a cold discovery read builds it 2 times at base and 1 time here\" as measurements, but the run kept no log of the base arm's count \u2014 gate_base.log ran the 10-file focused gate with the count test excluded \u2014 so the base halves are a scratch-probe figure not recheckable from any artefact the run stored."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 14 production call site(s)",
+    "diff": "read commit by commit against f43062fc8; 92b46705c changes three functions in two source files and adds the test, 08c6cb0a9 adds the 21-line evidence fragment, and no other file changes.",
+    "done_when": "the source done_when names tests/test_a_cold_read_parses_each_plan_once.py counting one soup per plan file on a cold roadmap read (:143) and a cold discovery read (:156) with the three readers' outputs equal to a direct parse and no added failure over the importing test files; the manifest records head 189 passed / base 186 passed, both exit 0, and the negative control red, but the importing-files element is measured on a 10/11-file subset of the 217-file importer population (manifest follow_ons), so that half of the done_when is not fully measured.",
+    "goal": "the node goal is that within one read each plan file's soup is built once and shared by read_state_and_text_file, parse_plan and project state's _cached_plan_state through the file memo; reckon/_plan_html.py:1403 routes read_state_file through read_state_and_text_file, :2342 routes _parse_plan_uncached through it, and reckon/project_state.py:1185 routes _cached_plan_state through it, so all three derive from one parse.",
+    "manifest": "read; it declares status complete, records the base f43062fc8 and head 92b46705c commits plus the 08c6cb0a9 fragment, the base 186 / head 189 passed gate figures, the reader set, the negative_control_log path and its mutation, and names the importer-population shortfall under follow_ons.",
+    "write_paths": "the source FENCE-SCOPE names reckon/_plan_html.py, reckon/project_state.py, reckon/file_memo.py, reckon/_store.py, tests/test_a_cold_read_parses_each_plan_once.py, the evidence fragment under docs/evidence/fragments/a-read-answers-inside-its-deadline/a-cold-read-parses-each-plan-once.html and the figures dir; every path in the diff (reckon/_plan_html.py, reckon/project_state.py, tests/test_a_cold_read_parses_each_plan_once.py, the fragment) is inside that set, and file_memo.py and _store.py were permitted but not needed."
+  },
+  "justifications": {
+    "durability": "tests/test_a_cold_read_parses_each_plan_once.py:151 and :164 assert an independently counted soup count equals the literal 1 and fail at 2 under the declared mutation, as negative_control.log records (2 failed), so they redden if any reader re-forks its own parse.",
+    "evidence": "gate_head.log ends \"189 passed ... EXIT=0\" at rev 92b46705c and negative_control.log ends \"2 failed, 1 passed ... EXIT=1\", both recorded, but the done_when's \"importing test files show no added failure\" is measured only on a 10/11-file subset of the manifest's 217-file importer population.",
+    "fit": "the change adds no symbol and only mechanism comments at reckon/_plan_html.py:1401-1402 and :2341 and reckon/project_state.py:1184, following the module's existing memo idiom with no forbidden label.",
+    "goal_fidelity": "reckon/_plan_html.py:1403 and :2342 and reckon/project_state.py:1185 all call read_state_and_text_file, so a cold read builds each plan file's soup once and the three readers share it.",
+    "reuse": "no definition is added; each reader is routed onto read_state_and_text_file, the existing owner of the shared plan parse in reckon/_plan_html.py, and a repository search for a prior shared-parse owner found none other.",
+    "scope_discipline": "the diff touches only reckon/_plan_html.py, reckon/project_state.py, tests/test_a_cold_read_parses_each_plan_once.py and the fragment, all inside the declared write paths, and adds nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that within one read each plan file's soup is built once and shared by read_state_and_text_file, parse_plan and project state's _cached_plan_state through the file memo; reckon/_plan_html.py:1403 routes read_state_file through read_state_and_text_file, :2342 routes _parse_plan_uncached through it, and reckon/project_state.py:1185 routes _cached_plan_state through it, so all three derive from one parse.\nVERDICT done_when: the source done_when names tests/test_a_cold_read_parses_each_plan_once.py counting one soup per plan file on a cold roadmap read (:143) and a cold discovery read (:156) with the three readers' outputs equal to a direct parse and no added failure over the importing test files; the manifest records head 189 passed / base 186 passed, both exit 0, and the negative control red, but the importing-files element is measured on a 10/11-file subset of the 217-file importer population (manifest follow_ons), so that half of the done_when is not fully measured.\nVERDICT write_paths: the source FENCE-SCOPE names reckon/_plan_html.py, reckon/project_state.py, reckon/file_memo.py, reckon/_store.py, tests/test_a_cold_read_parses_each_plan_once.py, the evidence fragment under docs/evidence/fragments/a-read-answers-inside-its-deadline/a-cold-read-parses-each-plan-once.html and the figures dir; every path in the diff (reckon/_plan_html.py, reckon/project_state.py, tests/test_a_cold_read_parses_each_plan_once.py, the fragment) is inside that set, and file_memo.py and _store.py were permitted but not needed.\nVERDICT manifest: read; it declares status complete, records the base f43062fc8 and head 92b46705c commits plus the 08c6cb0a9 fragment, the base 186 / head 189 passed gate figures, the reader set, the negative_control_log path and its mutation, and names the importer-population shortfall under follow_ons.\nVERDICT diff: read commit by commit against f43062fc8; 92b46705c changes three functions in two source files and adds the test, 08c6cb0a9 adds the 21-line evidence fragment, and no other file changes.\nCALL_SITES: reckon/crew/routing.py:229, reckon/crew/routing.py:3272, reckon/serve.py:2167, reckon/serve.py:3154, reckon/evidence.py:656, reckon/ledger.py:704, reckon/_store.py:676, reckon/_store.py:2175, reckon/doccheck.py:432, reckon/crew/plan_review.py:3076, reckon/roadmap.py:168, reckon/roadmap.py:1380, reckon/metadata_index.py:670, reckon/project_state.py:1212\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/_plan_html.py:1403 and :2342 and reckon/project_state.py:1185 all call read_state_and_text_file, so a cold read builds each plan file's soup once and the three readers share it.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate_head.log ends \"189 passed ... EXIT=0\" at rev 92b46705c and negative_control.log ends \"2 failed, 1 passed ... EXIT=1\", both recorded, but the done_when's \"importing test files show no added failure\" is measured only on a 10/11-file subset of the manifest's 217-file importer population.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only reckon/_plan_html.py, reckon/project_state.py, tests/test_a_cold_read_parses_each_plan_once.py and the fragment, all inside the declared write paths, and adds nothing the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_cold_read_parses_each_plan_once.py:151 and :164 assert an independently counted soup count equals the literal 1 and fail at 2 under the declared mutation, as negative_control.log records (2 failed), so they redden if any reader re-forks its own parse.\nSCORE fit: 20\nJUSTIFICATION fit: the change adds no symbol and only mechanism comments at reckon/_plan_html.py:1401-1402 and :2341 and reckon/project_state.py:1184, following the module's existing memo idiom with no forbidden label.\nSCORE reuse: 20\nJUSTIFICATION reuse: no definition is added; each reader is routed onto read_state_and_text_file, the existing owner of the shared plan parse in reckon/_plan_html.py, and a repository search for a prior shared-parse owner found none other.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T013159188911-a-cold-read-parses-each-plan-once/manifest.md:21 follow-on: the done_when requires the test files importing the three readers' modules to show no added failure against base, but only a focused 10/11-file gate ran against the manifest's own 217-file importer population, so the whole-population half of the measure is unmeasured; the manifest names this and defers it to a merge-verification node.\nFINDING docs/evidence/fragments/a-read-answers-inside-its-deadline/a-cold-read-parses-each-plan-once.html:18 follow-on: the fragment states \"a cold roadmap read builds each plan file's soup 3 times at base and 1 time here; a cold discovery read builds it 2 times at base and 1 time here\" as measurements, but the run kept no log of the base arm's count \u2014 gate_base.log ran the 10-file focused gate with the count test excluded \u2014 so the base halves are a scratch-probe figure not recheckable from any artefact the run stored.",
+  "review_run_id": "legacy-47505c4d6aa0",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "f43062fc8bbedba891a3522e2ffce306ee31b86c",
+  "reviewed_head_sha": "08c6cb0a91970e46ec95c829e73458c27c33d481",
+  "reviewed_run_id": "r-20261013T013159188911-a-cold-read-parses-each-plan-once",
+  "reviewer_run_id": "r-20261013T020629288803-review-of-a-cold-read-parses-each-plan-once-08c6cb0a9197",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T02:19:24.325227+00:00",
+  "total": 115
+}

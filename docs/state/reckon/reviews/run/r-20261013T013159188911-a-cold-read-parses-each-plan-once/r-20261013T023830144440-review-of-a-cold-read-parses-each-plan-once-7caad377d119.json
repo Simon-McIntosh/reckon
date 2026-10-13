@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 10,
+  "call_sites": [
+    "reckon/project_state.py:1470",
+    "reckon/project_state.py:1213",
+    "reckon/project_state.py:1185",
+    "reckon/serve.py:1974",
+    "reckon/_store.py:703",
+    "reckon/_store.py:1492",
+    "reckon/mcp_views.py:1258",
+    "reckon/doccheck.py:594",
+    "reckon/resources.py:737",
+    "reckon/project_maintenance_commands.py:651"
+  ],
+  "completed_at": "2026-10-13T02:46:45.262Z",
+  "dispatched_at": "2026-10-13T02:39:05Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T013159188911-a-cold-read-parses-each-plan-once/manifest.md",
+      "line": "22",
+      "severity": "follow-on",
+      "text": "follow-on: the done_when requires the test files importing the three readers' modules to show no added failure against base, but the gate still measures a 10/11-file focused subset of the manifest's own 217-file importer population, so the whole-population half of the done_when remains unmeasured; the manifest defers it to a merge-verification node."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 10 production call site(s)",
+    "diff": "read commit by commit against 08c6cb0a9; the delta is one commit, 7caad377d, adding test_composing_the_project_state_reuses_the_shared_parse (24 lines) and one sentence to the fragment; no production source changes.",
+    "done_when": "the source done_when names a third case that composes the project state with compose_project_state and counts one soup per plan file it reads; tests/test_a_cold_read_parses_each_plan_once.py:184 asserts soups[text]==1 for every plan, the base arm records 2 builds (gate_base_counts.log:80) and head records 141 passed (gate_head.log), but the done_when's \"test files importing the three readers' modules show no added failure against base\" remains the manifest's 10/11-file subset of a 217-file population (manifest follow_ons).",
+    "goal": "the node goal is that within one read each plan file's soup is built once and shared by read_state_and_text_file, parse_plan and project state's _cached_plan_state through the file memo; this delta (7caad377d) adds a third parse-count case, tests/test_a_cold_read_parses_each_plan_once.py:169, exercising compose_project_state (reckon/project_state.py:1470) whose _plan_state_by_slug (reckon/project_state.py:1213) reaches _cached_plan_state (reckon/project_state.py:1185), which reads through the shared parse, so the new case measures the goal's project-state reader.",
+    "manifest": "read; it declares status complete, records base f43062fc8 / head 7caad377d, the 137/141 passed gate figures, the negative_control_log path (3 failed, 1 passed, EXIT=1), the base-arm counts log, and names the importer-population shortfall under follow_ons.",
+    "write_paths": "the source FENCE-SCOPE names reckon/_plan_html.py, reckon/project_state.py, reckon/file_memo.py, reckon/_store.py, tests/test_a_cold_read_parses_each_plan_once.py, the evidence fragment and the figures dir; the delta touches only tests/test_a_cold_read_parses_each_plan_once.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/a-cold-read-parses-each-plan-once.html, both inside that set."
+  },
+  "justifications": {
+    "durability": "tests/test_a_cold_read_parses_each_plan_once.py:185 asserts an externally-monkeypatched soup counter (line 38-42) equals 1 and reddens at 2 under the declared mutation, as negative_control.log records (3 failed), so it fails if the compose reader re-forks its own parse.",
+    "evidence": "gate_base_counts.log records 2 builds for the new case and gate_head.log records 141 passed exit 0, but the done_when's importer-population half is measured only on the 10/11-file subset the manifest names under follow_ons.",
+    "fit": "the case follows the module's fixture-and-count idiom (tests/test_a_cold_read_parses_each_plan_once.py:143-166) with a mechanism comment at :174-179 and no forbidden label, but it asserts only the count and leaves the composed state's own correctness to the parity case at :191.",
+    "goal_fidelity": "tests/test_a_cold_read_parses_each_plan_once.py:169-188 exercises compose_project_state and asserts each plan file's soup is built once, covering the project-state reader the \u00a711 done_when names.",
+    "reuse": "no definition is added; the case calls the existing compose_project_state (reckon/project_state.py:1470) and the existing shared parse, and a search over reckon/ found no other owner of a one-parse-per-plan capability.",
+    "scope_discipline": "the delta's two paths, tests/test_a_cold_read_parses_each_plan_once.py and the fragment, are both inside the source FENCE-SCOPE set, and nothing outside the goal is added."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that within one read each plan file's soup is built once and shared by read_state_and_text_file, parse_plan and project state's _cached_plan_state through the file memo; this delta (7caad377d) adds a third parse-count case, tests/test_a_cold_read_parses_each_plan_once.py:169, exercising compose_project_state (reckon/project_state.py:1470) whose _plan_state_by_slug (reckon/project_state.py:1213) reaches _cached_plan_state (reckon/project_state.py:1185), which reads through the shared parse, so the new case measures the goal's project-state reader.\nVERDICT done_when: the source done_when names a third case that composes the project state with compose_project_state and counts one soup per plan file it reads; tests/test_a_cold_read_parses_each_plan_once.py:184 asserts soups[text]==1 for every plan, the base arm records 2 builds (gate_base_counts.log:80) and head records 141 passed (gate_head.log), but the done_when's \"test files importing the three readers' modules show no added failure against base\" remains the manifest's 10/11-file subset of a 217-file population (manifest follow_ons).\nVERDICT write_paths: the source FENCE-SCOPE names reckon/_plan_html.py, reckon/project_state.py, reckon/file_memo.py, reckon/_store.py, tests/test_a_cold_read_parses_each_plan_once.py, the evidence fragment and the figures dir; the delta touches only tests/test_a_cold_read_parses_each_plan_once.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/a-cold-read-parses-each-plan-once.html, both inside that set.\nVERDICT manifest: read; it declares status complete, records base f43062fc8 / head 7caad377d, the 137/141 passed gate figures, the negative_control_log path (3 failed, 1 passed, EXIT=1), the base-arm counts log, and names the importer-population shortfall under follow_ons.\nVERDICT diff: read commit by commit against 08c6cb0a9; the delta is one commit, 7caad377d, adding test_composing_the_project_state_reuses_the_shared_parse (24 lines) and one sentence to the fragment; no production source changes.\nCALL_SITES: reckon/project_state.py:1470, reckon/project_state.py:1213, reckon/project_state.py:1185, reckon/serve.py:1974, reckon/_store.py:703, reckon/_store.py:1492, reckon/mcp_views.py:1258, reckon/doccheck.py:594, reckon/resources.py:737, reckon/project_maintenance_commands.py:651\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_a_cold_read_parses_each_plan_once.py:169-188 exercises compose_project_state and asserts each plan file's soup is built once, covering the project-state reader the \u00a711 done_when names.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate_base_counts.log records 2 builds for the new case and gate_head.log records 141 passed exit 0, but the done_when's importer-population half is measured only on the 10/11-file subset the manifest names under follow_ons.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the delta's two paths, tests/test_a_cold_read_parses_each_plan_once.py and the fragment, are both inside the source FENCE-SCOPE set, and nothing outside the goal is added.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_cold_read_parses_each_plan_once.py:185 asserts an externally-monkeypatched soup counter (line 38-42) equals 1 and reddens at 2 under the declared mutation, as negative_control.log records (3 failed), so it fails if the compose reader re-forks its own parse.\nSCORE fit: 16\nJUSTIFICATION fit: the case follows the module's fixture-and-count idiom (tests/test_a_cold_read_parses_each_plan_once.py:143-166) with a mechanism comment at :174-179 and no forbidden label, but it asserts only the count and leaves the composed state's own correctness to the parity case at :191.\nSCORE reuse: 20\nJUSTIFICATION reuse: no definition is added; the case calls the existing compose_project_state (reckon/project_state.py:1470) and the existing shared parse, and a search over reckon/ found no other owner of a one-parse-per-plan capability.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T013159188911-a-cold-read-parses-each-plan-once/manifest.md:22 follow-on: the done_when requires the test files importing the three readers' modules to show no added failure against base, but the gate still measures a 10/11-file focused subset of the manifest's own 217-file importer population, so the whole-population half of the done_when remains unmeasured; the manifest defers it to a merge-verification node.",
+  "review_run_id": "r-20261013T023830144440-review-of-a-cold-read-parses-each-plan-once-7caad377d119",
+  "reviewed_base_sha": "08c6cb0a91970e46ec95c829e73458c27c33d481",
+  "reviewed_head_sha": "7caad377d119804c352383f25d6294c05bf15fa2",
+  "reviewed_run_id": "r-20261013T013159188911-a-cold-read-parses-each-plan-once",
+  "reviewer_run_id": "r-20261013T023830144440-review-of-a-cold-read-parses-each-plan-once-7caad377d119",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T02:44:51.146426+00:00",
+  "total": 111
+}
