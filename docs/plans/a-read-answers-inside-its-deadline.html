@@ -25,7 +25,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="51">
+<meta name="plan-version" content="52">
 <meta name="plan-modified" content="2026-10-13">
 </head>
 <body>
@@ -297,6 +297,9 @@
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261013T023830144440-review-of-a-cold-read-parses-each-plan-once-7caad377d119" data-who="reckon-build" data-when="2026-10-13T02:46:45.262Z">
     <div class="r-comment-body"><p>review of r-20261013T013159188911-a-cold-read-parses-each-plan-once over the commits gained since 08c6cb0a9 (delta head 7caad377d) scored goal_fidelity 20, evidence 16, scope_discipline 20, durability 19, fit 16, reuse 20 (total 111), one follow-on finding: the done_when's importer-population half is still measured on a focused subset rather than the 217-file set.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261013T013159188911-a-cold-read-parses-each-plan-once" data-who="reckon-build" data-when="2026-10-13T02:36:47.019Z">
+    <div class="r-comment-body"><p>a-cold-read-parses-each-plan-once — the three plan readers (read_state_file, parse_plan via _parse_plan_uncached, project_state._cached_plan_state) derive from the shared read_state_and_text_file parse; a cold roadmap read builds each plan file&#x27;s soup 3 times at base and 1 time at head, a cold discovery read 2 times at base and 1 time at head; reading each plan through the shared parse and then composing the project state builds it 2 times at base and 1 time at head (tests/test_a_cold_read_parses_each_plan_once.py).</p></div>
 </div>
 </section>
 </main>
