@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed run's manifest records baseline_suite and after_suite as null (an implement node with a targeted gate, not an armed suite pair), so the added-failure count was not taken \u2014 a zero would assert a measurement never made.",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-13T03:42:27.407Z",
+  "dispatched_at": "2026-10-13T03:25:24Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T031008408412-harness-reference-states-its-rules/head-arm.log:1",
+      "cites": "new",
+      "class": "log_names_wrong_revision",
+      "id": "evidence-1",
+      "item": "evidence",
+      "text": "the head-arm log's revision header names the base a99e008e rather than the reviewed head 2fa63c253, so a reader comparing the log against the head reads a mismatch; the run itself is unambiguous (the two old anchors fail on the base reference and the log shows 13 passed, so the change was present), but the header should name the tree it measured."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "the landed change is confined to two test modules and a docs fragment; no production runtime code reaches it (reckon/crew/node.py:546 and reckon/crew/dispatch_watch.py:719 name the reference path only inside dispatch prose strings, which the change does not alter), so no production call site exists.",
+    "diff": "read commit by commit against base a99e008e; one commit 2fa63c253 over three files \u2014 the two test files re-point their anchors and the evidence fragment is added; the reference claude-code.md is untouched.",
+    "done_when": "the done_when names test_the_reference_states_the_cap_the_example_passes and the follower-expiry case of test_rule_is_asserted_in_both_references; I re-ran both files (13 passed, EXIT=0 \u2014 matching the reviewed manifest's own head-arm figure), the manifest quotes both sentences under evidence_inputs, and the declared mutation (negative-control.log) records 2 failed / 11 passed / EXIT=1 failing exactly those two ids.",
+    "goal": "the node's goal is to make skills/reckon-build/references/orchestrator-harness/claude-code.md and its two doc tests agree on the monitor cap and the follower-expiry rule; at head tests/test_monitor_invocation_docs.py:147 reads the cap sentence from normalised whitespace and tests/test_skill_session_ownership_rules.py:27 anchors the follower-expiry rule, and git diff a99e008e..2fa63c253 shows claude-code.md unchanged, so the two now agree by the guards moving to the sentences the reference carries.",
+    "manifest": "read; it records the head arm 13 passed EXIT=0 and the negative control 2 failed / 11 passed EXIT=1, and its changed_paths match the diff exactly.",
+    "write_paths": "the declared scope is five paths; git diff --name-only a99e008e..2fa63c253 lists three \u2014 tests/test_monitor_invocation_docs.py, tests/test_skill_session_ownership_rules.py and docs/evidence/fragments/the-suite-is-green-at-head/harness-reference-states-its-rules.html \u2014 every one inside the declaration, with nothing added outside it."
+  },
+  "justifications": {
+    "durability": "removing the two anchor sentences from a scratch copy of the reference reddens exactly test_the_reference_states_the_cap_the_example_passes and the follower-expiry case (negative-control.log EXIT=1); both assertions read the reference file rather than any value the test supplies, so neither can pass on a value that moves with the code under test.",
+    "evidence": "the gate names the two test files and its 13 passed/EXIT=0 result is recorded in the manifest and reproduced by me; the cap test's raw timeout_ms: 1800000 pin remains at tests/test_monitor_invocation_docs.py:148. Reduced by one for the head-arm.log header naming the base revision (FINDING).",
+    "fit": "the cap test adopts the same inline ' '.join(text.split()) idiom its siblings tests/test_monitor_invocation_docs.py:153,160 already use, and the RULES tuple keeps its anchor-per-reference shape; no plan, stage or ticket token enters the changed files.",
+    "goal_fidelity": "tests/test_monitor_invocation_docs.py:147 asserts the cap sentence the reference carries and tests/test_skill_session_ownership_rules.py:27 the follower-expiry sentence, so both guards now state the same rule as skills/reckon-build/references/orchestrator-harness/claude-code.md:168 and :253.",
+    "reuse": "the diff adds no function, class or module; it extends the two existing doc-guard mechanisms in place, so no capability is forked (searched tests/ and skills/ for another harness-reference prose guard; the RULES tuple and these tests are the only owners).",
+    "scope_discipline": "git diff --name-only a99e008e..2fa63c253 lists three paths, all inside the five declared write paths, and the reference is deliberately untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make skills/reckon-build/references/orchestrator-harness/claude-code.md and its two doc tests agree on the monitor cap and the follower-expiry rule; at head tests/test_monitor_invocation_docs.py:147 reads the cap sentence from normalised whitespace and tests/test_skill_session_ownership_rules.py:27 anchors the follower-expiry rule, and git diff a99e008e..2fa63c253 shows claude-code.md unchanged, so the two now agree by the guards moving to the sentences the reference carries.\nVERDICT done_when: the done_when names test_the_reference_states_the_cap_the_example_passes and the follower-expiry case of test_rule_is_asserted_in_both_references; I re-ran both files (13 passed, EXIT=0 \u2014 matching the reviewed manifest's own head-arm figure), the manifest quotes both sentences under evidence_inputs, and the declared mutation (negative-control.log) records 2 failed / 11 passed / EXIT=1 failing exactly those two ids.\nVERDICT write_paths: the declared scope is five paths; git diff --name-only a99e008e..2fa63c253 lists three \u2014 tests/test_monitor_invocation_docs.py, tests/test_skill_session_ownership_rules.py and docs/evidence/fragments/the-suite-is-green-at-head/harness-reference-states-its-rules.html \u2014 every one inside the declaration, with nothing added outside it.\nVERDICT manifest: read; it records the head arm 13 passed EXIT=0 and the negative control 2 failed / 11 passed EXIT=1, and its changed_paths match the diff exactly.\nVERDICT diff: read commit by commit against base a99e008e; one commit 2fa63c253 over three files \u2014 the two test files re-point their anchors and the evidence fragment is added; the reference claude-code.md is untouched.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_monitor_invocation_docs.py:147 asserts the cap sentence the reference carries and tests/test_skill_session_ownership_rules.py:27 the follower-expiry sentence, so both guards now state the same rule as skills/reckon-build/references/orchestrator-harness/claude-code.md:168 and :253.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate names the two test files and its 13 passed/EXIT=0 result is recorded in the manifest and reproduced by me; the cap test's raw timeout_ms: 1800000 pin remains at tests/test_monitor_invocation_docs.py:148. Reduced by one for the head-arm.log header naming the base revision (FINDING).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only a99e008e..2fa63c253 lists three paths, all inside the five declared write paths, and the reference is deliberately untouched.\nSCORE durability: 20\nJUSTIFICATION durability: removing the two anchor sentences from a scratch copy of the reference reddens exactly test_the_reference_states_the_cap_the_example_passes and the follower-expiry case (negative-control.log EXIT=1); both assertions read the reference file rather than any value the test supplies, so neither can pass on a value that moves with the code under test.\nSCORE fit: 19\nJUSTIFICATION fit: the cap test adopts the same inline ' '.join(text.split()) idiom its siblings tests/test_monitor_invocation_docs.py:153,160 already use, and the RULES tuple keeps its anchor-per-reference shape; no plan, stage or ticket token enters the changed files.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module; it extends the two existing doc-guard mechanisms in place, so no capability is forked (searched tests/ and skills/ for another harness-reference prose guard; the RULES tuple and these tests are the only owners).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T031008408412-harness-reference-states-its-rules/head-arm.log:1 follow-on: the head-arm log's revision header names the base a99e008e rather than the reviewed head 2fa63c253, so the log does not tie its 13-passed result to the change it measured.\n",
+  "review_run_id": "r-20261013T032448115412-review-of-harness-reference-states-its-rules-2fa63c253201",
+  "reviewed_base_sha": "a99e008e833645efa448b3bac4287a8eccfe8c79",
+  "reviewed_head_sha": "2fa63c253201097f4fd6487bc9fc812b34a73a45",
+  "reviewed_run_id": "r-20261013T031008408412-harness-reference-states-its-rules",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 20,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T03:35:38.361028+00:00",
+  "total": 116,
+  "treatment": {}
+}
