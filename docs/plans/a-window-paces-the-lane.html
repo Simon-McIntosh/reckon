@@ -26,7 +26,7 @@
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s6-the-probe-reader-and-the-undeclared-dialect&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="e302ad39,04a479ef,4ef8356f,e219aa99,b2594d65,bacd8e17,6a915fd7,4d043fd0,fd4a158f,95ba8ea7,cb69a87f,768a9285,e5cf008e,6001f577,e6dd0dc4,c011b6f9,82095575,87c98418,8e70585c,b7ba4786,3f0e9621,798f87f8,e37ac897,d34eaf27">
 <meta name="plan-impl" content="0.97">
-<meta name="plan-version" content="209">
+<meta name="plan-version" content="210">
 <meta name="plan-modified" content="2026-10-13">
 </head>
 <body>
@@ -2503,6 +2503,9 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-close-s13" data-who="" data-when="2026-10-13">
     <div class="r-comment-body"><p>Landed at <code>349a93925</code>. A grant on a group and scope with a lift in force clears it, with <code>replaced_by</code> on the cleared lift and <code>replaces</code> on the new one, so two lifts can no longer alternate on one scope. The two codex-sub lifts granted on 2026-10-13 predate this change and are both still in force; clearing the older one is the lead's call. <a href="/reckon/evidence/archive/a-window-paces-the-lane-landed.html#s13">Landing record</a>.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261013T175852299016-a-new-lift-replaces-the-standing-one" data-who="reckon-build" data-when="2026-10-13T18:21:07.338Z">
+    <div class="r-comment-body"><p>§13: a grant on a group and scope now replaces the lift already standing there — budget_lift.grant clears the prior in-force lift the way clear() does (cleared_by naming the granting user, replaced_by naming the new lift) and the new lift records replaces naming the one it cleared; a lift on another scope is untouched; head arm 178 passed / base arm 6 failed (all in the new test) / delta 0 added failures.</p></div>
 </div>
 </section>
 </main>
