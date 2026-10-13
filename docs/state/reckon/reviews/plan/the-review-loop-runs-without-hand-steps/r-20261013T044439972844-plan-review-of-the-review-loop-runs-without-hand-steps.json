@@ -1,0 +1,35 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-13T04:57:25.673Z",
+  "dispatched_at": "2026-10-13T04:45:11Z",
+  "findings": [],
+  "plan_fingerprint": "a40394b8362a16b144f99792634da92c56e5bda4155b48b47f81ed4a6d0a9e4e",
+  "plan_slug": "the-review-loop-runs-without-hand-steps",
+  "plan_version": 20,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261013T044439972844-plan-review-of-the-review-loop-runs-without-hand-steps",
+  "reviewed_blob_sha": "9925f55fa4eb35082f89311ede5b4b1319e4a4eb",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited symbol resolves: `store_review` (reckon/crew/review.py:2188), `RECOGNISED_REVIEW_STATUSES` (review.py:566), `audit_manifest` (reckon/crew/reports.py:2164); the cited run `r-20261013T035012337867 is on disk in the review store; the only cited path that does not exist yet (`tests/test_a_hand_written_review_record_is_refused.py`) is the node's own new deliverable, not a broken anchor. No hrefs in the changed units to resolve.",
+    "done_when": "pass \u2014 \u00a76's done-when is measurable (\"a test writes a review record with `status: complete` at a review run's write path and check-manifest refuses it with that status named\") and names a declared negative control (\"removes the audit-side call, and the hand-written case must then pass check-manifest\"), which can fail when the guard is absent.",
+    "evidence_paths": "pass \u2014 the gate is `tests/test_a_hand_written_review_record_is_refused.py` and the negative control is logged under the run directory (`/home/ITER/mcintos/.config/reckon/crew/runs/<run>/`), a durable path, not a scratchpad.",
+    "naming": "pass \u2014 \u00a76's proposed test name (`test_a_hand_written_review_record_is_refused`) and its mechanism words carry no plan labels, stage names, ticket numbers or version tags, and no changelog prose; the \u00a7-references in \u00a76's prose are section ids in a plan document, which the convention allows.",
+    "reasoning": "pass \u2014 all three checks hold. Root cause matches evidence; the mechanism produces the done-when; and it runs on the real path with the caller named.",
+    "single_goal": "pass \u2014 \u00a76 carries one deliverable: one re-validation check in `audit_manifest`, covered by one test file.",
+    "wiring": "pass \u2014 \u00a76 declares no depends-on/gates/informs (the plan carries none; it is `plan-standalone`) and is wired to work through the open followup `f-trlrwhs-hand-written-record`, whose prompt names the existing `#s6` section id; no dependency it needs is missing and no live node waits on it."
+  },
+  "section_digests": {
+    "_document": "ed77df720545db58e9f5ebfcc2f7b24b91b96749f125d5e50fbbe565b1b59c3b",
+    "s1": "b7ebfdcdef3107f4ef480a613b4d3b55cb9964d170f2548ecb6be8965ab463b9",
+    "s2": "74fb1d61377bd931eb999932aa253cc65d1f3653969c03869953c75b1b56e82d",
+    "s3": "ab808a9aeb65e6f2eadfe1b3e1e581bab52d4479e218f1e371479237ed14b2f6",
+    "s4": "d561a8d7966d17489b10d45ce36e858d97ad800d2c14b07109afb0c5e5cd836d",
+    "s5": "a648d01ef39ce3b5660767a866e72f3a179956db4c5c54cf330f7df1966d160c",
+    "s6": "b3ee7c999ad98e7b48899d85869a6818d2702eb5058b394035fb99253d119176"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T04:59:32.532197+00:00"
+}
