@@ -59,6 +59,7 @@ from typing import Any, TypedDict
 import yaml
 
 from reckon import doccheck, ledger
+from reckon._plan_html import SECTION_NUMBER_PATTERN
 from reckon.crew import review as review_module
 from reckon.crew.node import (
     NEEDS_HELP_FIELDS,
@@ -1315,10 +1316,13 @@ def _gate_command_prose(command: str) -> tuple[str, str] | None:
     return gate_command_prose(command)
 
 
-# A plan-section reference: the section sign followed by a section number. The
-# plan system's own labels, which never belong in production source because the
-# source must stand without the plan that motivated it.
-_PLAN_SECTION_REFERENCE = re.compile(r"§\s*\d")
+# A plan-section reference: the section sign followed by a section number,
+# composed from the shared section-number core so the report reads a section
+# finder exactly as every other reader spells one. The plan system's own labels
+# never belong in production source, because the source must stand without the
+# plan that motivated it.
+_SECTION_REFERENCE_GRAMMAR = rf"§\s*{SECTION_NUMBER_PATTERN}"
+_PLAN_SECTION_REFERENCE = re.compile(_SECTION_REFERENCE_GRAMMAR)
 
 _HUNK_HEADER = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@")
 
