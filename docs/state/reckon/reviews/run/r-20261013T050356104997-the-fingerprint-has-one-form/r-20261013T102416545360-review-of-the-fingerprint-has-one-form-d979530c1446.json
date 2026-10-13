@@ -1,0 +1,79 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/plan_review.py:839 review_coverage",
+    "reckon/crew/plan_review.py:2012 delivered_reports",
+    "reckon/_store.py:3279 _OP_DISPATCH",
+    "reckon/mcp.py:1266 _OP_VOCAB",
+    "reckon/routing.py:3258",
+    "reckon/_store.py:1244 _write_state_locked"
+  ],
+  "completed_at": "2026-10-13T10:49:49.870Z",
+  "dispatched_at": "2026-10-13T10:24:44Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T050356104997-the-fingerprint-has-one-form/manifest.md",
+      "line": "17",
+      "severity": "follow-on",
+      "text": "follow-on: the evidence_inputs prose names only three of the six changed paths outside the node's original declared scope, omitting tests/test_a_section_reviewed_as_authored_stays_reviewed.py, tests/test_edit_plan_collapse_section.py and tests/test_plan_review_store.py, so a scope audit reading that line sees an understated list."
+    },
+    {
+      "file": "tests/test_the_fingerprint_has_one_form.py",
+      "line": "175",
+      "severity": "follow-on",
+      "text": "follow-on: the assertion compares each record's plan_fingerprint with the fingerprint the test itself passed into _store_fingerprint_only_review, so the equality is a store round-trip and the assertion's real guard is that records is non-empty, not which form matched."
+    },
+    {
+      "file": "tests/test_skill_contracts.py",
+      "line": "793",
+      "severity": "follow-on",
+      "text": "follow-on: the comment still enumerates collapse_section as one of the three landing-beat write ops the skill names, now stale since the op is retired; the file was not updated and this change is what made the comment wrong."
+    },
+    {
+      "file": "reckon/_store.py",
+      "line": "912",
+      "severity": "follow-on",
+      "text": "follow-on: _collapse_authored_section still raises with the prefix collapse_section, an op no caller can issue now, so a reader is pointed at a retired verb."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commit by commit against f819399; the run's seven commits retire the form and op (e0c1b89ec), delete the unreachable collapse machinery and its stale docstring reference (a6ebe8f3d), and repair the tests that drove the retired op (c5d9b5190, d979530c1).",
+    "done_when": "the done-when names tests/test_the_fingerprint_has_one_form.py for a carded plan keeping its stored review and collapse_section being refused as an unknown op, no added failure over the plan_review importers, and a logged negative control; head-arm.log records 506 passed EXIT=0 at d979530c against base-arm.log 501 passed EXIT=0 at f819399, and negative-control-mutation.log records 2 failed EXIT=1.",
+    "goal": "the source node's goal is to retire the pre-collapse fingerprint form and the collapse_section op so _fingerprint_forms returns the section-set and whole-document forms only; reckon/crew/plan_review.py:678 returns exactly those two forms (a 2-tuple) and the op is gone from reckon/_store.py _OP_DISPATCH and reckon/mcp.py _OP_VOCAB.",
+    "manifest": "read at manifest.md; status complete, after_suite cites head-arm.log 506 passed EXIT=0 (the artefact now carries it), baseline_suite cites base-arm.log 501 passed EXIT=0, and the negative control is recorded, so the prior review's blocking finding is resolved.",
+    "write_paths": "the diff against f819399 touches 12 paths; reckon/crew/plan_review.py, reckon/_store.py, reckon/mcp.py, skills/reckon-edit/SKILL.md and tests/test_the_fingerprint_has_one_form.py are in the node's declared scope, and the six extra test files were each authorised by the resume advisories (resume-3 treat the two ancesed by resume-1 and four by resume-3), so the diff is inside the extended scope even though the plan node's write_paths were never widened."
+  },
+  "justifications": {
+    "durability": "tests/test_the_fingerprint_has_one_form.py:144 asserts the retired pre-collapse digest is not among the forms and :185 asserts a review stored under it no longer matches, and the declared negative control reddens both.",
+    "evidence": "the reviewed run's head-arm.log carries 506 passed EXIT=0 at d979530c and base-arm.log 501 passed EXIT=0 at f819399, so the added-failure count derived from them is 0, and negative-control-mutation.log records the restored form reddening two cases EXIT=1.",
+    "fit": "the new cases restate each form from its own definitions (tests/test_the_fingerprint_has_one_form.py:28,:140) and the plan_review.py:684 docstring states the mechanism rather than the retired behaviour.",
+    "goal_fidelity": "reckon/crew/plan_review.py:678 returns the section-set and whole-document pair and reckon/_store.py:3279 no longer dispatches collapse_section, so the retirement the goal names has landed.",
+    "reuse": "the change shrinks reckon/crew/plan_review.py:678 to the two surviving forms and deletes the unreachable collapse helpers, and the test restates forms from the owner primitives _digest and _section_digests rather than forking them.",
+    "scope_discipline": "every changed path was authorised, but six test files sit outside the dispatch's declared seven paths (widened only by resume advice) and manifest.md:17 names just three of the six, so an auditor reading that line sees an understated scope."
+  },
+  "project": "reckon",
+  "raw_text": "Reviewed base: f819399073304214e2eff14139a047fba0686f51\nreviewed_head_sha: d979530c1446dfc998a2301e8fa60c53f96f3c7c\nVERDICT goal: the source node's goal is to retire the pre-collapse fingerprint form and the collapse_section op so _fingerprint_forms returns the section-set and whole-document forms only; reckon/crew/plan_review.py:678 returns exactly those two forms (a 2-tuple) and the op is gone from reckon/_store.py _OP_DISPATCH and reckon/mcp.py _OP_VOCAB.\nVERDICT done_when: the done-when names tests/test_the_fingerprint_has_one_form.py for a carded plan keeping its stored review and collapse_section being refused as an unknown op, no added failure over the plan_review importers, and a logged negative control; head-arm.log records 506 passed EXIT=0 at d979530c against base-arm.log 501 passed EXIT=0 at f819399, and negative-control-mutation.log records 2 failed EXIT=1.\nVERDICT write_paths: the diff against f819399 touches 12 paths; reckon/crew/plan_review.py, reckon/_store.py, reckon/mcp.py, skills/reckon-edit/SKILL.md and tests/test_the_fingerprint_has_one_form.py are in the node's declared scope, and the six extra test files were each authorised by resume advice (three by resume-1, and four named for writing by resume-3), so the diff is inside the extended scope even though the plan node's write_paths were never widened.\nVERDICT manifest: read at manifest.md; status complete, after_suite cites head-arm.log 506 passed EXIT=0 (the artefact now carries it), baseline_suite cites base-arm.log 501 passed EXIT=0, and the negative control is recorded, so the prior review's blocking finding is resolved.\nVERDICT diff: read commit by commit against f819399; the run's seven commits retire the form and op (e0c1b89ec), delete the unreachable collapse machinery and its stale docstring reference (a6ebe8f3d), and repair the tests that drove the retired op (c5d9b5190, d979530c1).\nCALL_SITES: reckon/crew/plan_review.py:839 review_coverage, reckon/crew/plan_review.py:2012 delivered_reports, reckon/_store.py:3279 _OP_DISPATCH, reckon/mcp.py:1266 _OP_VOCAB, reckon/routing.py:3258, reckon/_store.py:1244 _write_state_locked\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:678 returns the section-set and whole-document pair and reckon/_store.py:3279 no longer dispatches collapse_section, so the retirement the goal names has landed.\nSCORE evidence: 18\nJUSTIFICATION evidence: the reviewed run's head-arm.log carries 506 passed EXIT=0 at d979530c and base-arm.log 501 passed EXIT=0 at f819399, so the added-failure count derived from them is 0, and negative-control-mutation.log records the restored form reddening two cases EXIT=1.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: every changed path was authorised, but six test files sit outside the dispatch's declared seven paths (widened only by resume advice) and manifest.md:17 names just three of the six, so an auditor reading that line sees an understated scope.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_the_fingerprint_has_one_form.py:144 asserts the retired pre-collapse digest is not among the forms and :185 asserts a review stored under it no longer matches, and the declared negative control reddens both.\nSCORE fit: 17\nJUSTIFICATION fit: the new cases restate each form from its own definitions (tests/test_the_fingerprint_has_one_form.py:28,:140) and the plan_review.py:684 docstring states the mechanism rather than the retired behaviour.\nSCORE reuse: 18\nJUSTIFICATION reuse: the change shrinks reckon/crew/plan_review.py:678 to the two surviving forms and deletes the unreachable collapse helpers, and the test restates forms from the owner primitives _digest and _section_digests rather than forking them.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T050356104997-the-fingerprint-has-one-form/manifest.md:17 follow-on: the evidence_inputs prose names only three of the six changed paths outside the node's original declared scope, omitting tests/test_a_section_reviewed_as_authored_stays_reviewed.py, tests/test_edit_plan_collapse_section.py and tests/test_plan_review_store.py, so a scope audit reading that line sees an understated list.\nFINDING tests/test_the_fingerprint_has_one_form.py:175 follow-on: the assertion compares each record's plan_fingerprint with the fingerprint the test itself passed into _store_fingerprint_only_review, so the equality is a store round-trip and the assertion's real guard is that records is non-empty, not which form matched.\nFINDING tests/test_skill_contracts.py:793 follow-on: the comment still enumerates collapse_section as one of the three landing-beat write ops the skill names, now stale since the op is retired; the file was not updated and this change is what made the comment wrong.\nFINDING reckon/_store.py:912 follow-on: _collapse_authored_section still raises with the prefix collapse_section, an op no caller can issue now, so a reader is pointed at a retired verb.\n",
+  "review_run_id": "r-20261013T102416545360-review-of-the-fingerprint-has-one-form-d979530c1446",
+  "reviewed_base_sha": "f819399073304214e2eff14139a047fba0686f51",
+  "reviewed_head_sha": "d979530c1446dfc998a2301e8fa60c53f96f3c7c",
+  "reviewed_run_id": "r-20261013T050356104997-the-fingerprint-has-one-form",
+  "reviewer_run_id": "r-20261013T102416545360-review-of-the-fingerprint-has-one-form-d979530c1446",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T10:46:20.317348+00:00",
+  "total": 105
+}
