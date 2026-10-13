@@ -25,7 +25,7 @@
   <title>A Review Gate Judges What It Covers | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="4">
 <meta name="plan-modified" content="2026-10-13">
 </head>
 <body>
@@ -185,6 +185,9 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-close-s7" data-who="reckon-build" data-when="2026-10-13T21:50:00Z">
     <div class="r-comment-body"><p>§7 landed. Of 102 plan-review gate refusals in the 14 days to 2026-10-13, 43 refused a covered, unchanged section and 12 a section changed only by an answered finding: 55 of 68 classified (81 %), at <code>review.plan_change_threshold</code> 0.30. 13 were uncovered and 34 unclassified. The median refusal-to-dispatch delay was 756 s, and the claims review reproduced the headline. That is the size of the problem §2 removes. <a href="/reckon/evidence/archive/a-review-gate-judges-what-it-covers-landed.html#s7">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261013T213152822433-review-of-rgjc-covered-refusal-census-bc66c63b6b89" data-who="reckon-build" data-when="2026-10-13T21:47:16.563Z">
+    <div class="r-comment-body"><p>Re-ran the two scripts the report cites (census.py then classify.py) from faithful copies against the same host records the run read, and checked its three highest-ranked claims. Claims 1 and 2 reproduce exactly: the headline classification (102 dispatch-shaped refusals -&gt; 43 covered-unchanged / 12 changed-answered-finding / 13 uncovered / 34 unclassified; 55 of 68 classified = 81 % covered) and the boundary sensitivity (43/7/18/34 at 0.05, exactly five movers, all uncovered -&gt; changed-answered-finding, none the other way, the same five named). Claim 3 differs: the median refusal-to-dispatch delay reads 51 episodes / 814.183 s here against the report&#x27;s 50 / 755.5895 s, with min 22.848 s and max 25445.917 s unchanged, because the episode join scans run ledgers and live pointers at read time and one further dispatched run for a node refused inside the window is now visible. The report&#x27;s summary line (430 waivers, 102 refusals) agrees with its tables (totals 430 and 102).</p></div>
 </div>
 </section>
 </main>

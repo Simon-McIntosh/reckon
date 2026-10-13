@@ -1,0 +1,61 @@
+{
+  "artifacts": [
+    "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/study/a-review-gate-judges-what-it-covers/rgjc-covered-refusal-census/report.html (reviewed deliverable, read-only)",
+    "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/study/a-review-gate-judges-what-it-covers/rgjc-covered-refusal-census/census.py and classify.py (cited scripts, copied to scratch and re-run; the report directory was not written)",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T213152822433-review-of-rgjc-covered-refusal-census-bc66c63b6b89/census-rerun.log (stage 1 re-run: 2,222 files, 301 hits, EXIT=0)",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T213152822433-review-of-rgjc-covered-refusal-census-bc66c63b6b89/classify-rerun.log (stage 2 re-run: classified 102, headline 43/12/13/34, sensitivity 43/7/18/34, episodes 51 median 814.183, movers 5, EXIT=0)",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T213152822433-review-of-rgjc-covered-refusal-census-bc66c63b6b89/negative-control.log (falsification: emptying census.json's refusals_raw makes classify.py print 'classified 0', so the 102 is read from input and not a constant)"
+  ],
+  "claim_lines": [
+    "CLAIM 1: reproduced: re-ran the cited stages from faithful copies of census.py then classify.py with python3 -I (the scripts write beside themselves, outside this review's write grant), reading the same absolute host records the run read; classify.py printed 'classified 102' with headline counts {'unclassified': 34, 'covered_unchanged': 43, 'changed_answered_finding': 12, 'uncovered': 13} - the report's 43/12/13/34 - and the per-project Counter matched the report's table row for row, so 55 of 68 classified (81 %) covered holds",
+    "CLAIM 2: reproduced: the same classify.py run printed sensitivity counts {'covered_unchanged': 43, 'changed_answered_finding': 7, 'uncovered': 18, 'unclassified': 34} at the 0.05 boundary and 'movers: 5', all five moving uncovered -> changed_answered_finding and none the other way (imas-codex ssfms-golden-harness s3 6 %, imas-standard-names cnr-registry-loader s2 8 %, reckon row-policy-holds-observer-context s2 18 %, reckon row-policy-holds-observer-context s2 6 %, reckon pick-stages-fit-the-bound s12 14 %), matching the report's sensitivity table exactly",
+    "CLAIM 3: differs: the report states 50 episodes and a 755.5895 s median delay; the re-run's classify.py printed 'episodes 51 median delay s 814.183' (min 22.848 s and max 25445.917 s unchanged). The extra episode comes from the episode join reading run ledgers and live pointers at read time - host state has advanced since the window closed - so the report's count and median no longer hold, though its min and max do and its classification is unaffected",
+    "CLAIM_SUMMARY: agrees: the report's summary line reads 'Over the window, 430 deduplicated dispatch commands carried --allow-unreviewed-plan, and 102 dispatch refusals of the plan-review gate are recorded.' Its refusal-classification table totals exactly 102 (43+12+13+34) and its per-project table totals the same 43/12/13/34, and its waiver table totals exactly 430 (247+64+48+27+18+14+9+2+1), so the summary's two figures are the two table totals"
+  ],
+  "claim_summary": {
+    "detail": "The report's summary line - the lead sentence of its Result section - reads: 'Over the window, 430 deduplicated dispatch commands carried --allow-unreviewed-plan, and 102 dispatch refusals of the plan-review gate are recorded.' The table beneath it (the refusal classification) totals exactly 102: 43 + 12 + 13 + 34, and its per-project breakdown sums to the same totals (43/12/13/34). The waiver table further down totals exactly 430: 247 + 64 + 48 + 27 + 18 + 14 + 9 + 2 + 1. Both figures the summary quotes are therefore the table totals, so the summary agrees with its tables. Note (not a summary-versus-table discrepancy): the 430 is a deduplication of raw waiver occurrences that the cited scripts do not compute - classify.py prints the raw count (574 at the run, 627 on this re-run), and the (date, project, node) dedup to 430 lives only in the report prose, so the 430 is not independently reproducible from the cited commands even though it is internally consistent with its own table.",
+    "verdict": "agrees"
+  },
+  "claim_summary_line": "CLAIM_SUMMARY: agrees: the report's summary line reads 'Over the window, 430 deduplicated dispatch commands carried --allow-unreviewed-plan, and 102 dispatch refusals of the plan-review gate are recorded'; its refusal table totals 102 (43+12+13+34, and its per-project rows sum to the same) and its waiver table totals 430 (247+64+48+27+18+14+9+2+1), so both quoted figures are the table totals",
+  "claims": [
+    {
+      "cites": "census.py (stage 1: transcript harvest -> census.json) and classify.py (stage 2: classification -> result.json); census.log and classify.log; report.html Result table",
+      "finding": "rank 1 (the headline Result): 102 dispatch-shaped refusals of the plan-review gate are recorded, classified 43 covered and unchanged / 12 changed only by an edit an answered finding asked for / 13 uncovered / 34 unclassified, so 55 of the 68 classified refusals (81 %) refused a node whose built section was covered",
+      "rank": 1,
+      "report_figure": "classified 102: covered_unchanged 43, changed_answered_finding 12, uncovered 13, unclassified 34; 55 of 68 classified = 81 % covered",
+      "rerun_figure": "identical: classified 102; headline counts {'covered_unchanged': 43, 'changed_answered_finding': 12, 'uncovered': 13, 'unclassified': 34}; per-project Counter identical to the report's table (reckon 18/4/4/15, imas-codex 7/4/7/6, power_convertor 6/1/0/0, imas-ambix 3/2/0/7, nova 3/0/1/4, imas-efit 3/0/1/0, RabbitPy 2/0/0/0, imas-ink 1/0/0/0, imas-standard-names 0/1/0/0, None 0/0/0/2)",
+      "verdict": "reproduced"
+    },
+    {
+      "cites": "classify.py (stage 2); classify.log; report.html sensitivity paragraph and movers table",
+      "finding": "rank 2 (the boundary sensitivity): reading the word-share boundary at 0.05 (an earlier pass) instead of the gate's own 0.30 gives 43 covered / 7 answered-finding / 18 uncovered / 34 unclassified, and exactly five refusals move between uncovered and changed-answered-finding, all from uncovered to answered-finding and none the other way",
+      "rank": 2,
+      "report_figure": "at 0.05: covered_unchanged 43, changed_answered_finding 7, uncovered 18, unclassified 34; movers 5, all uncovered -> changed_answered_finding",
+      "rerun_figure": "identical: sensitivity counts {'covered_unchanged': 43, 'changed_answered_finding': 7, 'uncovered': 18, 'unclassified': 34}; movers 5, movers_between_uncovered_and_answered_finding 5, none in the reverse direction; the same five and only five movers named, with the same project/node/section/share/record: imas-codex ssfms-golden-harness s3 6 %, imas-standard-names cnr-registry-loader s2 8 %, reckon row-policy-holds-observer-context s2 18 %, reckon row-policy-holds-observer-context s2 6 %, reckon pick-stages-fit-the-bound s12 14 %",
+      "verdict": "reproduced"
+    },
+    {
+      "cites": "classify.py (stage 2 episode join); classify.log; report.html median-delay section",
+      "finding": "rank 3 (the median refusal-to-dispatch delay): fifty (project, node) episodes begin with a refusal and are followed by a run record for the same node dispatched later, and the median delay is 756 s (12 min 36 s), the shortest 23 s and the longest 25,446 s",
+      "rank": 3,
+      "report_figure": "50 episodes, median 755.5895 s (756 s), min 22.848 s, max 25445.917 s",
+      "rerun_figure": "51 episodes, median 814.183 s, min 22.848 s (unchanged), max 25445.917 s (unchanged) - both figures moved because the episode join scans run ledgers and live pointers at read time and one further dispatched run for a node refused inside the window is now visible, adding one episode whose delay sits below the old median; the min and max are identical, so the addition is an interior episode, not a changed input. The classification itself (claim 1) is unchanged, so this is read-time drift in the join, not a defect in the classification",
+      "verdict": "differs"
+    }
+  ],
+  "completed_at": "2026-10-13T21:47:16.563Z",
+  "dimensions": null,
+  "dispatched_at": "2026-10-13T21:32:37Z",
+  "method": "The reviewed run is read-only: its manifest records commits: none and changed_paths confined to its report directory (report.html, census.py, classify.py, census.log, classify.log, figure.svg, flight-review-block.txt), with no gate suite, so reviewed_base_sha == reviewed_head_sha == bc66c63b6b891920d974ca0660987e345e02c3d1 and there is no diff to read. Its deliverable is report.html. Its three highest-ranked findings are the report's own headline claims, each cited to census.py (stage 1 transcript harvest -> census.json) and classify.py (stage 2 classification -> result.json): (1) the Result classification 102 refusals -> 43 covered and unchanged / 12 changed-answered-finding / 13 uncovered / 34 unclassified, 55 of 68 classified (81 %) covered; (2) the sensitivity that exactly five refusals move between uncovered and changed-answered-finding as the word-share boundary moves 0.05 -> 0.30; (3) the median refusal-to-dispatch delay over the joined episodes. Both scripts write their outputs beside themselves in the report directory, which is outside this review's write grant, so faithful copies were run from this node's scratch dir $TMPDIR/claims-rerun with the same absolute host inputs the run read (~/.claude/projects transcripts, <repo>/docs/state ledgers, ~/.config/reckon/crew/live pointers, ~/.config/reckon/crew/reviews store) and the reviewed run's artifacts were left untouched (their md5 sums recorded before the re-run: census.json fe9f2a1f4c812dda29030805ac2cf670, result.json 40ca159162d90a43ab6612864d89794f). Interpreter: python3 -I. Stage 1 reproduced its transcript counts exactly (2,222 files considered, 301 refusal-shaped results in window); the run-row count has grown from the run's 5,996/6,377 to 6,397 because committed ledgers and live pointers have accumulated since the window closed. The report's summary line (the lead sentence of the Result section) was compared against the tables beneath it.",
+  "project": "reckon",
+  "report_path": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/study/a-review-gate-judges-what-it-covers/rgjc-covered-refusal-census/report.html",
+  "review_run_id": "r-20261013T213152822433-review-of-rgjc-covered-refusal-census-bc66c63b6b89",
+  "reviewed_base_sha": "bc66c63b6b891920d974ca0660987e345e02c3d1",
+  "reviewed_head_sha": "bc66c63b6b891920d974ca0660987e345e02c3d1",
+  "reviewed_run_id": "r-20261013T090732844758-rgjc-covered-refusal-census",
+  "rubric": "claims",
+  "status": "parsed",
+  "suite_delta_fields_omitted": "added_failure_count and added_failure_ids are intentionally absent: the reviewed run ran no gate suite (this review adds none).",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T21:45:00+00:00"
+}
