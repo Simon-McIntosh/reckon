@@ -1,0 +1,48 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-13T03:54:30.477Z",
+  "dispatched_at": "2026-10-13T03:40:19Z",
+  "findings": [
+    {
+      "file": "tests/test_spa_owed_captures.py",
+      "line": "596",
+      "severity": "follow-on",
+      "text": "follow-on: _IMAGE_SUFFIXES duplicates the repository's image/figure-suffix capability already owned by reckon/path_classes.py:24 FIGURE_SUFFIXES (and repeated at reckon/metadata_index.py:74, reckon/serve.py:1268) without extending or referencing any of them, so a fifth suffix set can drift from the others; the set legitimately differs (images-only, no .pdf/.mp4), which is why this is a follow-on rather than a block."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_spa_owed_captures.py:633-647 fails under both regressions - reverting the forgery to refuse-every-read reddens it at the 'assert text.read_bytes() == b\"not an image\"' line and removing the image check reddens the pytest.raises at :641 - so the guard behaviour is pinned, though the exact teardown collision is reproduced only with a scratch plugin.",
+    "evidence": "the done_when's measure is the named test file and its result is recorded, not claimed - head_plain.log 8 passed EXIT=0 at head 243702994 against base_arm.log 7 passed EXIT=0, with base_repro.log quoting IMAGE_BYTES_OPENED on /proc/<pid>/environ; the collision arm needs a scratch pytest plugin that is not committed, which keeps this below full.",
+    "fit": "the module keeps the surrounding style of tests/test_spa_owed_captures.py:591-660, imports Callable from collections.abc, names the new test by mechanism, and carries no plan, ticket or version token.",
+    "goal_fidelity": "tests/test_spa_owed_captures.py:588-607 scopes the forgery to _IMAGE_SUFFIXES so a /proc/<pid>/environ read (suffix '') passes while a .png read raises IMAGE_BYTES_OPENED, which is the narrow the goal names.",
+    "reuse": "tests/test_spa_owed_captures.py:596 _IMAGE_SUFFIXES is a fifth image/figure-suffix set beside reckon/path_classes.py:24 FIGURE_SUFFIXES (also reckon/metadata_index.py:74, reckon/serve.py:1268), neither extending nor referencing the owner.",
+    "scope_discipline": "the diff touches only tests/test_spa_owed_captures.py and docs/evidence/fragments/the-suite-is-green-at-head/image-guard-catches-only-images.html, both inside the declared write paths, and no path outside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to narrow the capture test's image guard to image reads so a /proc environ read inside its window no longer trips it; tests/test_spa_owed_captures.py:588-607 now scopes the refusal to _IMAGE_SUFFIXES, so a non-image read passes and an image read still fires.\nVERDICT done_when: the done_when names tests/test_spa_owed_captures.py running with no teardown error and an image opened inside the window still tripping the guard; head_plain.log records 8 passed EXIT=0 and negative_control.log records the PNG open under the guard failing that id EXIT=1.\nVERDICT write_paths: read the manifest's declared paths (tests/test_spa_owed_captures.py, docs/evidence/fragments/the-suite-is-green-at-head/image-guard-catches-only-images.html, and a figures dir); the diff touches the first and the second and no path outside them.\nVERDICT manifest: read; it records the gate command and 8 passed EXIT=0 at head 243702994, the base reproduction (base_repro.log 1 passed 1 error EXIT=1) at 40186023d, the collision arm passing, and the negative control.\nVERDICT diff: read both commits (4fc92ea55 test, 243702994 landing fragment) against base 40186023d; the test replaces a refuse-all Path.read_bytes forgery with one scoped to image suffixes and adds a control test, and the fragment records the landing.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_spa_owed_captures.py:588-607 scopes the forgery to _IMAGE_SUFFIXES so a /proc/<pid>/environ read (suffix '') passes while a .png read raises IMAGE_BYTES_OPENED, which is the narrow the goal names.\nSCORE evidence: 18\nJUSTIFICATION evidence: the done_when's measure is the named test file and its result is recorded, not claimed - head_plain.log 8 passed EXIT=0 at head 243702994 against base_arm.log 7 passed EXIT=0, with base_repro.log quoting IMAGE_BYTES_OPENED on /proc/<pid>/environ; the collision arm needs a scratch pytest plugin that is not committed, which keeps this below full.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only tests/test_spa_owed_captures.py and docs/evidence/fragments/the-suite-is-green-at-head/image-guard-catches-only-images.html, both inside the declared write paths, and no path outside them.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_spa_owed_captures.py:633-647 fails under both regressions - reverting the forgery to refuse-every-read reddens it at the 'assert text.read_bytes() == b\"not an image\"' line and removing the image check reddens the pytest.raises at :641 - so the guard behaviour is pinned, though the exact teardown collision is reproduced only with a scratch plugin.\nSCORE fit: 18\nJUSTIFICATION fit: the module keeps the surrounding style of tests/test_spa_owed_captures.py:591-660, imports Callable from collections.abc, names the new test by mechanism, and carries no plan, ticket or version token.\nSCORE reuse: 10\nJUSTIFICATION reuse: tests/test_spa_owed_captures.py:596 _IMAGE_SUFFIXES is a fifth image/figure-suffix set beside reckon/path_classes.py:24 FIGURE_SUFFIXES (also reckon/metadata_index.py:74, reckon/serve.py:1268), neither extending nor referencing the owner.\nFINDING tests/test_spa_owed_captures.py:596 follow-on: _IMAGE_SUFFIXES duplicates the repository's image/figure-suffix capability already owned by reckon/path_classes.py:24 FIGURE_SUFFIXES (and repeated at reckon/metadata_index.py:74, reckon/serve.py:1268) without extending or referencing any of them, so a fifth suffix set can drift from the others; the set legitimately differs (images-only, no .pdf/.mp4), which is why this is a follow-on rather than a block.",
+  "review_run_id": "r-20261013T033938540940-review-of-image-guard-catches-only-images-243702994de7",
+  "reviewed_base_sha": "40186023d58ce16ae64eba11dd385db74698980c",
+  "reviewed_head_sha": "243702994de7fe25f864cb2721413c65f00f1d80",
+  "reviewed_run_id": "r-20261013T031830337717-image-guard-catches-only-images",
+  "reviewer": {
+    "backend": "clive",
+    "effort": null,
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261013T033938540940-review-of-image-guard-catches-only-images-243702994de7",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 10,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T03:47:00+00:00",
+  "total": 103
+}

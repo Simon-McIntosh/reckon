@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.98">
-<meta name="plan-version" content="286">
+<meta name="plan-version" content="287">
 <meta name="plan-modified" content="2026-10-13">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
@@ -1605,6 +1605,9 @@ reviewed worktree is untouched (git status --porcelain empty).</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261013T031408328042-census-test-reads-its-own-fixture" data-who="reckon-build" data-when="2026-10-13T03:38:26.899Z">
     <div class="r-comment-body"><p>The doctor now reads the MCP census log and transcript roots from the mcp_census module at call time rather than through import-time default arguments, so test_mcp_census.py::test_doctor_prints_the_census_figures points the census at its own temporary tree and derives every expected line from records it builds: 6 passed at head against 1 failed, 5 passed at base.</p></div>
+</div>
+<div class="r-comment" data-section="s14" data-id="c-run-r-20261013T033938540940-review-of-image-guard-catches-only-images-243702994de7" data-who="reckon-build" data-when="2026-10-13T03:54:30.477Z">
+    <div class="r-comment-body"><p>Reviewed r-20261013T031830337717-image-guard-catches-only-images at base 40186023d..head 243702994de7: the node narrowed tests/test_spa_owed_captures.py&#x27;s Path.read_bytes forgery to image suffixes so the per-test seat-record reap&#x27;s /proc/&lt;pid&gt;/environ read no longer trips IMAGE_BYTES_OPENED, and added a control test that opens a PNG under the guard. All six dimensions scored (goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 18, reuse 10). No blocking finding; one follow-on names the fifth image-suffix set.</p></div>
 </div>
 </section>
 </main>
