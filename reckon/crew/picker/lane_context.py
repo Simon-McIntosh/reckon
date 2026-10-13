@@ -25,7 +25,11 @@ would let the router weigh a lane it never heard from.
 
 from __future__ import annotations
 
+import contextvars
+import os
+import time
 from collections.abc import Mapping, Sequence
+from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from statistics import median
@@ -48,6 +52,102 @@ from reckon.crew.runs import list_live
 #: Sources a budget reading may carry that came from the ledger rather than a
 #: live account surface read, and so are subject to the shelf life.
 _LEDGER_SOURCES = frozenset({"ledger", "unattributed-ledger"})
+
+#: One JSON line per read the picker's state render makes, appended beside
+#: ``pick-timings.jsonl`` under the crew home while the counter is on. The render
+#: reads the published lane document, the live run pointers, the run-time profile
+#: cache and its own template; timing each of them individually is what names the
+#: read behind a slow render, which timing the composition alone cannot.
+STATE_READ_TIMINGS_LOG = "state-read-timings.jsonl"
+
+#: The counter is on unless this names a falsey value. Default-on is what lets a
+#: landed fleet record its reads without further wiring; the gate exists so a
+#: caller can render with the counter off and prove the prompt is unchanged.
+STATE_READ_TIMINGS_ENV = "RECKON_STATE_READ_TIMINGS"
+
+
+def state_read_timings_enabled() -> bool:
+    """Whether a state render records the times of the reads it makes."""
+
+    value = os.environ.get(STATE_READ_TIMINGS_ENV)
+    if value is None:
+        return True
+    return value.strip().lower() not in {"0", "false", "no", "off"}
+
+
+class _ReadTimings:
+    """One state render's read times, appended to the counter's log on exit."""
+
+    def __init__(self) -> None:
+        self.entries: list[dict[str, Any]] = []
+
+    def record(self, read: str, started: float) -> None:
+        from reckon.crew.picker import _milliseconds
+
+        self.entries.append(
+            {
+                "read": read,
+                "ms": _milliseconds(started),
+                "at": datetime.now(UTC).isoformat(timespec="milliseconds"),
+            }
+        )
+
+    def flush(self) -> None:
+        """Append every collected entry to the counter's log, best effort.
+
+        The append is the shared crew-home log writer, so the counter's log and
+        ``pick-timings.jsonl`` are written through one path; a render never fails
+        or stalls on its own record.
+        """
+
+        from reckon.crew.picker import _append_crew_log_line
+
+        for entry in self.entries:
+            _append_crew_log_line(STATE_READ_TIMINGS_LOG, entry)
+
+
+_READ_TIMINGS: contextvars.ContextVar[_ReadTimings | None] = contextvars.ContextVar(
+    "picker_state_read_timings", default=None
+)
+
+
+@contextmanager
+def timing_state_reads():
+    """Time each read a state render makes, one entry per read.
+
+    The recorder is installed for the duration of the block: every read the
+    wrapped region makes is timed once by name, and the entries are appended to
+    the counter's log beside ``pick-timings.jsonl``. A render that made no read
+    writes nothing, and a render that raises still records the reads it reached.
+    """
+
+    recorder = _ReadTimings()
+    token = _READ_TIMINGS.set(recorder)
+    try:
+        yield recorder
+    finally:
+        _READ_TIMINGS.reset(token)
+        recorder.flush()
+
+
+@contextmanager
+def timed_read(read: str):
+    """Time one read, appending one entry naming it; a no-op with no recorder.
+
+    The counter observes only: it neither changes a decision nor touches a
+    rendered prompt, so a read timed here yields exactly what it would untimed.
+    """
+
+    recorder = _READ_TIMINGS.get()
+    if recorder is None:
+        yield
+        return
+    started = time.perf_counter()
+    try:
+        yield
+    finally:
+        recorder.record(read, started)
+
 
 _NULL_RETURN_TIME: dict[str, Any] = {
     "p50_s": None,
@@ -530,7 +630,9 @@ def _expected_wait(
     """
     profiles = {}
     walls = []
-    for row in list_live():
+    with timed_read("list_live"):
+        live_rows = list_live()
+    for row in live_rows:
         agent = _as_mapping(row.get("agent"))
         if row.get("phase") not in {"starting", "working", "running"}:
             continue
@@ -571,7 +673,8 @@ def _expected_wait(
                 ]
                 profiles[owner] = {"groups": _group_rows(recent)}
             else:
-                profiles[owner] = _cached_run_time_profile(owner, now=now)
+                with timed_read("_cached_run_time_profile"):
+                    profiles[owner] = _cached_run_time_profile(owner, now=now)
         shape = _as_mapping(row.get("node"))
         node = SimpleNamespace(
             role=shape.get("role") or row.get("role"),
@@ -594,7 +697,8 @@ def local_lane(
 ) -> dict[str, Any]:
     """Return admission, typical wait and live load; unknown figures stay null."""
     moment = now if now is not None else datetime.now(UTC)
-    load = local_lane_load()
+    with timed_read("local_lane_load"):
+        load = local_lane_load()
     config = config or {}
     local_backend = config.get("local_backend")
     backend = config.get("backends", {}).get(local_backend, {})
@@ -683,7 +787,8 @@ def build(
             selected.append(row)
         profile = {"groups": _group_rows(selected)}
     elif project:
-        profile = _cached_run_time_profile(project, now=moment)
+        with timed_read("_cached_run_time_profile"):
+            profile = _cached_run_time_profile(project, now=moment)
     return {
         "return_times": return_times(
             profile,

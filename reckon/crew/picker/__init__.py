@@ -60,18 +60,17 @@ def _dispatch_bound_seconds() -> float:
     return float(dispatch.PICKER_DISPATCH_TIMEOUT_SECONDS)
 
 
-def _record_pick_timings(line: dict[str, Any], *, latency_ms: float) -> None:
-    """Append one timing line under the crew home, best effort and bounded.
+def _append_crew_log_line(name: str, row: Mapping[str, Any]) -> None:
+    """Append one JSON row to a named log under the crew home, best effort.
 
     A pick must never fail or stall because its own record could not be written,
     so every error is swallowed. One ``os.write`` on an ``O_APPEND`` descriptor
-    keeps a small line from interleaving with a concurrent pick's.
+    keeps a small row from interleaving with a concurrent writer's.
     """
     try:
-        line["within_bound"] = latency_ms <= _dispatch_bound_seconds() * 1000
-        path = crew_home() / PICK_TIMINGS_LOG
+        path = crew_home() / name
         path.parent.mkdir(parents=True, exist_ok=True)
-        data = (json.dumps(line, separators=(",", ":"), default=str) + "\n").encode()
+        data = (json.dumps(row, separators=(",", ":"), default=str) + "\n").encode()
         descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o644)
         try:
             os.write(descriptor, data)
@@ -79,6 +78,15 @@ def _record_pick_timings(line: dict[str, Any], *, latency_ms: float) -> None:
             os.close(descriptor)
     except Exception:  # noqa: BLE001 - a pick never fails on its own record
         return
+
+
+def _record_pick_timings(line: dict[str, Any], *, latency_ms: float) -> None:
+    """Append one timing line under the crew home, best effort and bounded."""
+    try:
+        line["within_bound"] = latency_ms <= _dispatch_bound_seconds() * 1000
+    except Exception:  # noqa: BLE001 - a pick never fails on its own record
+        return
+    _append_crew_log_line(PICK_TIMINGS_LOG, line)
 
 
 def _section_effort_hours(plan_path: Path, section: str) -> float | None:

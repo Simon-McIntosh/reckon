@@ -315,32 +315,50 @@ def build_questions(candidates: Sequence[Any]) -> dict[str, Any]:
     return {"glossary": _GLOSSARY, "criteria_entries": entries}
 
 
+def _render_state(name: str, context: Mapping[str, Any]) -> str:
+    """Build the lane context and render the state template.
+
+    The lane context is built here so every caller of the state render carries
+    the return-time and local-lane blocks without duplicating the derivation. A
+    caller that supplies no project gets null figures. The template load is
+    timed as one of the render's reads; the state mapping it renders is built
+    exactly as it would be untimed.
+    """
+
+    lane = lane_context.build(
+        node=context.get("node"),
+        candidates=context.get("candidates") or [],
+        project=context.get("project"),
+        records=context.get("records"),
+        budget_snapshot=context.get("budget_snapshot"),
+        config=context.get("config"),
+        now=context.get("now"),
+    )
+    state = build_state(
+        node=context["node"],
+        capability=context.get("capability"),
+        estimated_context=context.get("estimated_context"),
+        estimated_hours=context.get("estimated_hours"),
+        estimated_hours_source=context.get("estimated_hours_source"),
+        comment=context.get("comment"),
+        candidates=context.get("candidates") or [],
+        lane=lane,
+        attempts=context["attempts"] if context.get("attempts") is not None else 0,
+    )
+    with lane_context.timed_read("template_load"):
+        template = environment().get_template(name)
+    return template.render(state=state).strip()
+
+
 def render(name: str, **context: Any) -> str:
     if name == "state.jinja":
-        # The lane context is built here so every caller of the state render
-        # carries the return-time and local-lane blocks without duplicating the
-        # derivation. A caller that supplies no project gets null figures.
-        lane = lane_context.build(
-            node=context.get("node"),
-            candidates=context.get("candidates") or [],
-            project=context.get("project"),
-            records=context.get("records"),
-            budget_snapshot=context.get("budget_snapshot"),
-            config=context.get("config"),
-            now=context.get("now"),
-        )
-        state = build_state(
-            node=context["node"],
-            capability=context.get("capability"),
-            estimated_context=context.get("estimated_context"),
-            estimated_hours=context.get("estimated_hours"),
-            estimated_hours_source=context.get("estimated_hours_source"),
-            comment=context.get("comment"),
-            candidates=context.get("candidates") or [],
-            lane=lane,
-            attempts=context["attempts"] if context.get("attempts") is not None else 0,
-        )
-        return environment().get_template(name).render(state=state).strip()
+        # The state render's reads go to shared storage, so each is timed and
+        # appended beside pick-timings.jsonl; the counter changes no decision and
+        # no rendered prompt, so the render with it off is byte-identical.
+        if lane_context.state_read_timings_enabled():
+            with lane_context.timing_state_reads():
+                return _render_state(name, context)
+        return _render_state(name, context)
     if name == "questions.jinja":
         questions = build_questions(context.get("candidates") or [])
         return (
