@@ -263,6 +263,48 @@ base revision rather than against the head with the change reverted.</p>
     <p><strong>Coordinator's landing record.</strong> Run <code>r-20261013T192557486596-one-owner-resolves-repository-projects</code>, commits <code>ab7e65a12</code> and <code>e1c67e4a0</code>, merged as <code>2ebf63331</code>. Review 109. The review counted 6 added failures from the worker's arms, which had run the base and head concurrently, and the worker attributed them to that load. The coordinator re-measured. Run serially, the six passed at both base and merged head (<code>six-suspects-{base,head}-lane-s16.log</code>). Run as sequential population arms over the 302 test files importing any of the five modules, the base <code>fd7636f59</code> gave 2,979 passed and 10 failed, and the merged head gave 2,983 passed and 9 failed. Every head failure also fails at base, so 0 were added, and one base failure passes at head. Logs are <code>~/.cache/reckon-suite-logs/population-{base,head}-lane-s16.log</code>. Main moved by 12 run-record commits between the measured merge and the fast-forward, and the recomputed merge's <code>reckon/</code> and <code>tests/</code> trees are identical to the measured one. Focused gate at the merged head: <code>merge-lane-s16-2ebf63331.log</code>. The review's follow-ons are that two of the three negative-control cases fail with <code>AttributeError</code> rather than on the declared behaviour, and that the record names two scratch trees. Neither changes the result; the first is the same negative-control defect §22 and §24 already guard against.</p><section id="one-owner-resolves-repository-projects"></section>
   </section>
 
+  <section id="s26">
+    <h2>§26 — A picker hold is kept in the crew home, not in the project&#x27;s checkout</h2>
+    <p><strong>Coordinator's landing record.</strong> Run <code>r-20261013T223636737630-a-hold-is-kept-in-the-crew-home</code>, commit <code>e313cd4d2</code>, merged as <code>a24736e36</code>. Review 115, 0 added failures. Population at the merge: the 9 test files importing the hold code gave 58 passed at the merge and 55 at the base <code>adad3ede9</code>, with no failures in either arm, run sequentially. Logs are <code>~/.cache/reckon-suite-logs/population-{base,head}-lane-s26.log</code>, and the focused gate at the merged head is <code>merge-lane-s26-a24736e36.log</code>. From this merge on, new holds are written under the crew home. The untracked <code>docs/state/&lt;project&gt;/picker-holds*</code> files already in each checkout are still read, and are left for their owners to remove. The review's follow-on, a now-unused <code>docs</code> parameter on <code>record_picker_hold</code> with its two callers in <code>reckon/crew/dispatch.py</code>, is recorded on §22.</p><article class="landed-report" data-run-id="r-20261013T223636737630-a-hold-is-kept-in-the-crew-home" data-node="a-hold-is-kept-in-the-crew-home">
+  <p><strong>a-hold-is-kept-in-the-crew-home — a picker hold is kept in the crew home, not in the project's checkout</strong></p>
+  <p id="a-hold-is-kept-in-the-crew-home-change">
+    <strong>Change.</strong> <code>record_picker_hold</code> appends each Jev
+    hold to <code>&lt;crew home&gt;/picker-holds/&lt;project&gt;/picker-holds.jsonl</code>
+    instead of <code>docs/state/&lt;project&gt;/picker-holds.jsonl</code> inside
+    the project's own checkout, and an oversized request is written to the
+    <code>picker-holds/</code> directory beside that log
+    (<code>_write_hold_payload</code>). No file is created under the project's
+    docs directory. <code>_read_holds</code> reads the crew-home log and any
+    legacy docs-side log, and stamps each row with the directory it was read
+    from; <code>replay_hold</code> resolves a row's <code>payload_ref</code>
+    against that origin — an explicit <code>log_dir</code> first, then the
+    row's stamp — never against the current write location, so a legacy hold
+    still replays from its own directory after the move.
+  </p>
+  <p id="a-hold-is-kept-in-the-crew-home-measure">
+    <strong>Measure.</strong> Gate:
+    <code>tests/test_a_hold_is_kept_in_the_crew_home.py</code> plus every test
+    file importing <code>reckon/crew/picker/outcomes.py</code> (8 files), run in
+    place on the fleet allocation with the shared environment's
+    <code>.venv/bin/python -m pytest -p no:cacheprovider -n 10</code>. Head arm
+    at the change: 48 passed, <code>EXIT=0</code>. Base arm at the pre-repair
+    revision <code>6ab7c925a2d5aa50100801f26136144992797964</code> with the new
+    test added: 3 failed, 45 passed, <code>EXIT=1</code> — the three added checks
+    are the whole delta and no failure is added to the other files. Logs
+    <code>gate-head.log</code> and <code>negative-control-base.log</code> under
+    the run directory, each ending in an <code>EXIT=</code> line.
+  </p>
+  <p id="a-hold-is-kept-in-the-crew-home-negative-control">
+    <strong>Negative control.</strong> At the base revision the hold lands under
+    the project's docs directory, so the head test's assertion that the
+    crew-home log holds both rows reads <code>[] == ['small', 'large']</code> and
+    fails; the legacy-origin and merged-reader checks fail on the base
+    signature. The three added checks are the only failures the base arm
+    reports.
+  </p>
+</article>
+  </section>
+
 </main>
 </body>
 </html>
