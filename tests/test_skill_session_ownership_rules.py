@@ -24,7 +24,7 @@ RULES = (
     (
         "one follower per session, stopped before it is re-armed",
         "Re-arm is a stop and an arm",
-        "A monitor expires; the follower inside it does not",
+        "the expiry takes the wrapper rather than the process it started — the `crew follow` inside it keeps running",
     ),
     (
         "no backgrounded dispatch loop or wave script",

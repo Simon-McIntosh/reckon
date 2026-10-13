@@ -1,0 +1,19 @@
+<section data-reckon="evidence" data-node="harness-reference-states-its-rules">
+  <h3>The harness reference states the rules its tests guard</h3>
+  <p>Both rules the two doc tests guard are stated in
+  <code>skills/reckon-build/references/orchestrator-harness/claude-code.md</code>, so the
+  tests were re-pointed at the sentences that carry them rather than the reference being
+  reworded. The cap test now reads the sentence
+  <code>capped at 1,800,000 milliseconds &mdash; thirty minutes</code> from normalised
+  whitespace, because the reference hard-wraps its prose and splits the figure across a
+  line break; the example still pins <code>timeout_ms: 1800000</code> raw. The
+  follower-expiry anchor is now
+  <code>the expiry takes the wrapper rather than the process it started &mdash; the crew
+  follow inside it keeps running</code>, the reference's own statement that the monitor
+  expires while the follower does not. Head arm: <strong>13 passed, EXIT=0</strong>
+  (<code>head-arm.log</code>). The declared mutation &mdash; both sentences removed from a
+  scratch copy of the reference &mdash; gives <strong>2 failed, 11 passed, EXIT=1</strong>,
+  failing <code>test_the_reference_states_the_cap_the_example_passes</code> and the
+  follower-expiry case of <code>test_rule_is_asserted_in_both_references</code>
+  (<code>negative-control.log</code>).</p>
+</section>
