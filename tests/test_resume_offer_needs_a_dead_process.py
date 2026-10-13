@@ -10,11 +10,12 @@ a coordinator read ``ready to resume`` for a run whose process was alive
 (plan §1), which is the reading this file pins.
 
 Every row here is driven through the classifier and the published watch line:
-``classify_pointer`` composes the clause, ``_watch_snapshot`` reduces the
+``classify_pointer`` composes the verdict, ``_watch_snapshot`` reduces the
 pointer, ``_watch_transition`` builds the event the events log persists, and
-``format_watch_transition`` renders it through the ticker's own reason clause.
-The clause is asserted on the row the classifier composed and on the rendered
-line, because the pane is where a coordinator reads it.
+``format_watch_transition`` renders it through the ticker's own grid. The offer
+is a fact of the classifier's verdict (``recovery_classification`` and
+``recovery``) and no longer free text on the row, so the row is asserted on its
+fixed frame — the state word it moved into and the fleet counters after it.
 
 The condition is a file the run waits for, so the fixture proves the wait is
 met by its own path rather than by a probe stub: each case asserts the row into
@@ -32,6 +33,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import time
 from pathlib import Path
 
@@ -48,12 +50,11 @@ DECLARED_MUTATION = (
     "contain resume again and the assertion fails"
 )
 
-# The condition the parked runs declare, printed in the row's reason so the
-# pane can be asserted to carry the condition it is waiting on.
+# The condition the parked runs declare in their manifest.
 CONDITION = "scheduler job 42 has finished"
 
-# The pane these rows render at: the widened grid the workstation measures,
-# where the reason clause keeps its whole width.
+# The pane these rows render at: the widened grid the workstation measures, so
+# every fixed column and the trailing model cell hold their width.
 PANE_WIDTH = 208
 
 # The window these runs are judged against, in seconds. The rows are not
@@ -149,6 +150,13 @@ def _render_parked_row(pointer: dict, moment: float) -> tuple[dict, dict, str]:
     return row, snapshot, line
 
 
+def _counters(line: str) -> tuple[int, int, int, int]:
+    """The fleet counters the row carries, read off the rendered block."""
+    found = re.search(r"(\d+)w\s+(\d+)h\s+(\d+)d\s+(\d+)q", line)
+    assert found is not None, line
+    return tuple(int(group) for group in found.groups())
+
+
 def test_a_met_wait_beside_a_live_process_waits(tmp_path: Path) -> None:
     """The live worker: the condition is met and the run is still being written.
 
@@ -167,8 +175,8 @@ def test_a_met_wait_beside_a_live_process_waits(tmp_path: Path) -> None:
     assert snapshot["process_alive"] is True, snapshot["process_alive"]
     assert "resume" not in reason, reason
     assert "waiting" in reason, reason
-    assert "resume" not in line, line
-    assert CONDITION in line, line
+    assert "→ waiting" in line, line
+    assert _counters(line) == (0, 0, 0, 1), line
     assert row["recovery_classification"] == "waiting", row["recovery_classification"]
     assert row["recovery"] == "wait", row["recovery"]
     assert snapshot["state"] == "waiting", snapshot["state"]
@@ -191,7 +199,8 @@ def test_a_met_wait_beside_a_gone_process_offers_the_resume(tmp_path: Path) -> N
     assert row["process_alive"] is False, row["process_alive"]
     assert row["liveness_proven"] is True, row["liveness_proven"]
     assert "ready to resume" in row["fleet_verdict"]["detail"], row["fleet_verdict"]
-    assert "ready to resume" in line, line
+    assert "→ waiting" in line, line
+    assert _counters(line) == (0, 0, 0, 1), line
     assert row["recovery_classification"] == "ready", row["recovery_classification"]
     assert row["recovery"] == "resume", row["recovery"]
     assert snapshot["state"] == "waiting", snapshot["state"]
@@ -216,8 +225,8 @@ def test_a_met_wait_beside_an_unproven_process_waits(tmp_path: Path) -> None:
     assert "liveness unknown" in reason, reason
     assert "resume" not in reason, reason
     assert "waiting" in reason, reason
-    assert "resume" not in line, line
-    assert CONDITION in line, line
+    assert "→ waiting" in line, line
+    assert _counters(line) == (0, 0, 0, 1), line
     assert row["recovery_classification"] == "waiting", row["recovery_classification"]
     assert row["recovery"] == "wait", row["recovery"]
     assert snapshot["state"] == "waiting", snapshot["state"]

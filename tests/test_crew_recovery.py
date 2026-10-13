@@ -898,7 +898,9 @@ def test_observe_and_watch_render_failure_only_after_the_process_stops(
     ]
     assert "working" in rendered[0]
     assert "halted" in rendered[1]
-    assert "implementation and required evidence" in rendered[1]
+    # The row carries no free text: the reason a run stopped is read from the
+    # run, never cut to fit a line.
+    assert "implementation and required evidence" not in rendered[1]
     assert not untouched_home.exists()
 
 
@@ -1831,14 +1833,13 @@ def test_a_complete_needs_help_report_becomes_the_reason_with_a_question_marker(
         transition["detail"] == "the schema rejects an enum value the config file needs"
     )
 
-    # The glyph is derived at render time from the persisted fact. Rendered at
-    # the widened pane the workstation measures, where the reason keeps enough
-    # room for the clause in full.
+    # The row carries no free text: the needs-help reason is read from the run,
+    # never cut to fit a line, so the persisted detail does not reach the pane.
     line = recovery.format_watch_transition(
         transition, ticker=ticker_module.Ticker(width=208, color=False)
     )
-    assert "?" in line
-    assert "the schema rejects an enum value" in line
+    assert "halted" in line
+    assert "the schema rejects an enum value" not in line
 
 
 def test_blockers_without_a_needs_help_report_get_the_blocker_text_and_a_bang_marker(
@@ -1877,13 +1878,6 @@ def test_a_block_scalar_indicator_is_never_read_as_the_value(home) -> None:
 
     snapshot = recovery._watch_snapshot(record, moment=time.time(), stall_seconds=3600)
     assert snapshot["detail"] != "|"
-
-
-@pytest.mark.parametrize("bare", ["|", ">", '"', "'", "|-", ">+"])
-def test_single_clause_refuses_a_bare_punctuation_reason(bare) -> None:
-    # The refusal moved to the derive site (the renderer), where the clause is
-    # actually produced, so it lives beside the single_clause it guards.
-    assert ticker_module.single_clause(bare) == ""
 
 
 def test_a_block_scalar_blockers_value_is_parsed_from_its_indented_body() -> None:
@@ -2356,7 +2350,9 @@ def test_legacy_log_line_renders_and_new_line_renders_two_cells(home) -> None:
     assert "gpt-5.6-sol" not in legacy_line
     assert "medium" in legacy_line
     assert legacy_line.index(cut) < legacy_line.index("medium")
-    assert "the same focused pytest command failed twice" in legacy_line
+    # The row carries no free text, so the legacy pre-claused reason does not
+    # reach the pane.
+    assert "the same focused pytest command failed twice" not in legacy_line
 
     # A line in the new shape renders model and effort as two facts a reader
     # scans in two columns: the alias in the model cell and the whole effort
@@ -2386,39 +2382,38 @@ def test_legacy_log_line_renders_and_new_line_renders_two_cells(home) -> None:
 
 def test_one_stored_new_line_renders_differently_at_two_display_settings(home) -> None:
     # The re-renderable-history property: the same persisted facts redraw when
-    # the display rule changes, without the producer running again. A narrower
-    # grid gives the reason less room, so the stored line changes shape.
+    # the display rule changes, without the producer running again. The trailing
+    # cells are added only where the pane has room, so a grid too narrow for the
+    # lane's rate drops it and the stored line changes shape.
     transition = _fact_transition(home, "r-rerender", manifest_status="blocked")
     narrow = recovery.format_watch_transition(
         transition,
-        ticker=ticker_module.Ticker(width=146, color=False, model_aliases=()),
+        ticker=ticker_module.Ticker(width=110, color=False, model_aliases=()),
     )
     wide = recovery.format_watch_transition(
         transition,
         ticker=ticker_module.Ticker(width=180, color=False, model_aliases=()),
     )
     assert narrow != wide
-    assert "medium" in narrow
+    assert len(narrow) < len(wide)
+    # The narrow pane drops the trailing rate, model and effort cells; the wide
+    # pane carries them.
+    assert "medium" not in narrow
+    assert "dsv4-flash" not in narrow
     assert "medium" in wide
-    assert "dsv4-flash" in narrow
     assert "dsv4-flash" in wide
 
 
 def _spend_column(model_width: int) -> tuple[int, int]:
     """The (start, width) of the single measure cell on a plain rendered line.
 
-    ``model_width`` is the grid's own model cell width — read from the grid
-    under test — rather than the fixed ``MODEL`` default, so a grid declaring a
-    wider alias moves this column with the row it renders. A second measure cell
-    would be placed by the renderer after this one, taking the columns its own
-    width and its separating space spend.
+    The row reads time, stage, job, transition, then the measure cell: the
+    model and effort cells follow the counters, so they no longer precede this
+    column. ``model_width`` is retained for call-site symmetry with the grid but
+    places nothing, since the measure cell is fixed by the head cells alone.
     """
     prefix = (
         ticker_module.CLOCK
-        + ticker_module.GAP
-        + model_width
-        + ticker_module.GAP
-        + ticker_module.EFFORT
         + ticker_module.GAP
         + ticker_module.ROLE
         + ticker_module.GAP

@@ -1,14 +1,13 @@
 """The row's measure block carries the elapsed time and nothing a reader skips.
 
-Two cells used to sit beside the elapsed time. A generation rate is a reading
-about one model's throughput rather than about the run, so a row usually had
-none and rendered the absence marker in its place; the oldest age in each
+Two cells once sat beside the elapsed time. A generation rate is a reading
+about one model's throughput rather than about the run, so a reader took it
+from the lane's own document rather than off the row; the oldest age in each
 outstanding bucket is a fact about a backlog, which a reader goes to a surface
-for rather than reading off a line in a scrolling pane. This file holds the row
-to a single measure — how long the run has been going — rendered in hours and
-minutes rather than as a clock, so a reader compares spans instead of decoding
-timestamps. The columns those two cells spent are the recovered width asserted
-below, and the margin the clause gains is the same count.
+for rather than reading off a line in a scrolling pane. This file holds the
+measure block to the one figure the row keeps for itself — how long the run has
+been going — rendered in hours and minutes rather than as a clock, so a reader
+compares spans instead of decoding timestamps.
 """
 
 from __future__ import annotations
@@ -29,10 +28,6 @@ AGE_PATTERN = re.compile(r"[0-9]+m[whdW]\b")
 TRANSITION_COLUMN = (
     ticker_module.CLOCK
     + ticker_module.GAP
-    + ticker_module.MODEL
-    + ticker_module.GAP
-    + ticker_module.EFFORT
-    + ticker_module.GAP
     + ticker_module.ROLE
     + ticker_module.GAP
     + ticker_module.NODE
@@ -45,11 +40,6 @@ ELAPSED_COLUMN = (
     + ticker_module.SPEND_GAP
 )
 COUNTER_COLUMN = ELAPSED_COLUMN + ticker_module.SPEND + ticker_module.GAP
-REASON_COLUMN = COUNTER_COLUMN + ticker_module.STATS + ticker_module.GAP
-
-# The clause the blocked fixture renders, so the row's fixed columns can be
-# lifted clear of it.
-CLAUSE = "the gate refused and no receipt was written"
 
 
 def plain(line: str) -> str:
@@ -72,7 +62,6 @@ def _event(**overrides):
         "effort": "xhigh",
         "spend_wall_seconds": 3421.0,
         "spend_generation_rate": 38.0,
-        "detail": CLAUSE,
     }
     event.update(overrides)
     return event
@@ -86,12 +75,6 @@ def _classes() -> dict[str, dict]:
         "blocked": _event(to_state="blocked"),
         "unpromoted": _event(to_state="unpromoted"),
     }
-
-
-def fixed_columns(line: str) -> str:
-    """The row up to the clause, or the whole line when the class has none."""
-    text = plain(line).rstrip()
-    return text[: text.index(CLAUSE)].rstrip() if CLAUSE in text else text
 
 
 def elapsed_cell(line: str) -> str:
@@ -170,37 +153,3 @@ def test_elapsed_renders_hours_and_minutes_not_a_clock(grid, seconds, expected):
     assert cell.strip() == expected, (seconds, line)
     assert ":" not in cell, (seconds, line)
 
-
-def test_the_floor_is_the_fixed_grid_before_the_reason():
-    assert ticker_module.MIN_WIDTH == REASON_COLUMN
-
-
-def test_the_clause_starts_at_the_measured_column(grid):
-    """The clause begins where the recovered columns put it, not where they claim.
-
-    The base row's clause begins at column 126, which is the 120 fixed columns
-    plus the six the age cells took from the margin. This row's begins at
-    ``FIXED_BEFORE - RECOVERED_COLUMNS`` — the fixed columns, net of the state
-    cell and queued counter this revision widens, less the six the rate and age
-    cells spent — so the count is read off the row rather than taken from the
-    constant beside it.
-    """
-    at = plain(grid.render(_event(to_state="blocked"))).index("the gate refused")
-    assert at == REASON_COLUMN, at
-
-
-def test_the_clause_gains_the_recovered_columns(grid):
-    """The margin grew by the same count, and is still bounded there.
-
-    A clause exactly the size of the margin is printed whole and one column
-    more is elided, so the room claimed is the room: the pair is what says the
-    recovered columns reached the clause rather than stopping at the counters.
-    """
-    room = 180 - plain(grid.render(_event(to_state="blocked"))).index(
-        "the gate refused"
-    )
-    assert room == 180 - REASON_COLUMN, room
-    whole = grid.render(_event(to_state="blocked", detail=("x" * (room - 1)) + "z"))
-    elided = grid.render(_event(to_state="blocked", detail=("x" * room) + "z"))
-    assert whole.rstrip().endswith("x" * (room - 1) + "z"), whole
-    assert "…" in elided and not elided.rstrip().endswith("z"), elided
