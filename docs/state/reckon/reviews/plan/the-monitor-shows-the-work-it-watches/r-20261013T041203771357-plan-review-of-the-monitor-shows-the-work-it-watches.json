@@ -1,0 +1,60 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-13T04:26:47.794Z",
+  "dispatched_at": "2026-10-13T04:12:51Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-shows-the-work-it-watches.html:122",
+      "id": "done_when-1",
+      "reason": "without naming a keep-if-word guard or seeding a non-self-mapping word (e.g. `landed`) the done-when cannot show the guard fires, so the section's own measure misses the defect it exists to prevent.",
+      "text": "the deliverable requires \"keeping a state that is already one of the seven words\", but the only raw-state\u2192pane-word mapper, `_display_state` (reckon/crew/ticker.py:921), is not idempotent: its `PANE_STATES` frozensets for `halted`, `delivered`, `landed` and `dropped` do not contain their own names, so `_display_state(\"landed\")`, `(\"delivered\")`, `(\"halted\")` and `(\"dropped\")` all return \"\" (a blank left word), while it does keep `queued`/`working`/`waiting`. Test 1 checks only `working`, and test 2 seeds the VALUES of `PANE_STATES` (raw producer states such as `completed_unpromoted`), which never equal those four words, so a node that maps the seed with bare `_display_state` \u2014 the obvious reuse of \u00a75's own mapper \u2014 passes both tests and the negative control while violating the deliverable for four of the seven words.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-shows-the-work-it-watches.html:24",
+      "id": "wiring-1",
+      "reason": "\u00a75 is already declared `done`, so no dispatch can be mis-ordered today; the missing edge is bookkeeping that only matters if \u00a75 is reopened while \u00a76 builds.",
+      "text": "\u00a76 exists to map remembered states to \u00a75's pane words and reads `PANE_STATES`, which \u00a75 owns, yet `plan-section-depends-on` names no dependency for s6, unlike \u00a73\u2192\u00a75 and \u00a75\u2192\u00a72 which declare exactly this kind of ordering for a shared table and file.",
+      "type": "wiring",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-shows-the-work-it-watches.html:122",
+      "id": "reasoning-1",
+      "reason": "the deliverable's operative instruction (\"where it takes the memory in\") and the done-when scope the work to memory-seeded rows, so the node's implementation is unaffected even though the universal claim is false.",
+      "text": "the deliverable concludes \"...so every left word a row draws is one of the seven\", but the shipped renderer draws `new` as the left word on a run's first row (reckon/crew/ticker.py:2054), and \u00a75's own done-when asserts a first row \"starts with `new`\" \u2014 a word outside the seven \u2014 so the section's closing claim is falsified by the code and the plan it summarises.",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "c88e00668b491220dade08e3a4a3f3fabc29a96a299188d904c1530b044a026e",
+  "plan_slug": "the-monitor-shows-the-work-it-watches",
+  "plan_version": 31,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261013T041203771357-plan-review-of-the-monitor-shows-the-work-it-watches",
+  "reviewed_blob_sha": "7a194ebd7b44d0bb964d172855acd28c9cc6243b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_seed_ticker_memory` (reckon/crew_follow_commands.py:2118), `PANE_STATES` (reckon/crew/ticker.py:304), both files and the extensionless `/reckon/plans/a-follower-row-is-worth-a-wake` href resolve.",
+    "done_when": "a finding \u2014 \u00a76's done-when checks the \"keep a pane word\" clause only via `working`, a word the codebase's mapper happens to keep, so a bare-mapper implementation passes all three checks while blanking four of the seven words.",
+    "evidence_paths": "pass \u2014 \u00a76's negative control is logged under the run directory, the same durable path \u00a72-\u00a75 use, not a session or node-local scratch.",
+    "naming": "pass \u2014 \u00a76 introduces no plan labels, ticket numbers or version tags; the new test file name names the behaviour, not a stage.",
+    "reasoning": "a finding \u2014 the stated root cause (memory seeded unmapped) matches the shipped code, but the deliverable's universal \"every left word a row draws is one of the seven\" is falsified by the first-row `new` word the same plan's \u00a75 defines.",
+    "single_goal": "pass \u2014 \u00a76 names one deliverable: map a remembered state to its pane word at intake.",
+    "wiring": "a finding \u2014 \u00a76 consumes \u00a75's seven-word table and writes ticker.py, but `plan-section-depends-on` (line 24) omits s6."
+  },
+  "section_digests": {
+    "_document": "c1eb903e7dd84bfb47a2336b2441274de6aba81f4b17044796ebfb27ce8ff1ce",
+    "s1": "52c4b79a6da0bc1e71b00748d6314e8a255bd5fa91b6acae30f6943e3c16cee5",
+    "s2": "eeca9b70e096de79d92846f4178d8f31832962cb9c7c73d122ac2a9e06546f32",
+    "s3": "a37e4f17cfa5318f2229db2eabe7a7b80adf7bb6fcb474e3d262981478abba8e",
+    "s4": "fb6bae83cab6ff2e0a33bf64f8a01d35db72cb3113a73e4659d22617724629c9",
+    "s5": "349ee19ab8c71fbc5e62c4cfa2fd4c32d34af2e2f3e9ced2db0580bfd0e74815",
+    "s6": "36425c6c8576837be18c552489753a61d12adf99fbc1dc1b02def3ac9923b614"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-13T04:31:14.389192+00:00"
+}
