@@ -575,25 +575,50 @@ class BudgetHold(CrewError):
         )
 
 
+def _context_refusal_recommendation(verdict: Mapping[str, Any]) -> str:
+    """Return the split-or-reroute remedy a context refusal carries.
+
+    The routing verdict builds this recommendation itself; reading it back keeps
+    the message and the structured payload the same sentence. A verdict that
+    arrives without one still gets the remedy, from the same estimate, so the
+    constructor stays total for callers that build the fields by hand.
+    """
+    recommendation = verdict.get("recommendation")
+    if recommendation:
+        return str(recommendation)
+    return format_refusal(
+        "D08",
+        "split the node or route it to a backend with at least "
+        f"{verdict['estimated_tokens']} usable input tokens",
+    )
+
+
 class CompetenceLimit(CrewError):
     """A node must be split before this worker configuration can run it."""
 
     def __init__(self, verdict: Mapping[str, Any]) -> None:
         # The verdict is preserved exactly as built, reason included: a real
         # refusal and the dry run that previewed it must be the same payload,
-        # or the preview answers a question the dispatch does not. The remedy
-        # stays reachable through the verdict's recommendation field and this
-        # exception's message, which both carry it in either refusal shape.
+        # or the preview answers a question the dispatch does not. The message
+        # names the measure that actually refused the node: a context window is
+        # a token budget, and rendering it as neutral-hour fields states a
+        # horizon nobody measured and sends the reader to the wrong remedy.
         self.verdict = dict(verdict)
-        super().__init__(
-            format_refusal(
-                "D08",
+        if str(verdict.get("reason") or "") == "context-window-exceeded":
+            detail = (
+                f"node context estimate {verdict['estimated_tokens']} usable input "
+                f"tokens exceeds the {verdict['window_tokens']} token window by "
+                f"{verdict['shortfall_tokens']} tokens; "
+                f"{_context_refusal_recommendation(verdict)}"
+            )
+        else:
+            detail = (
                 f"node estimate {verdict['estimated_hours']} worker-hours exceeds "
                 f"the {verdict['competence_horizon_hours']} worker-hour competence "
                 f"horizon after speed adjustment; split into nodes no larger than "
-                f"{verdict['target_size_hours']} worker-hours",
+                f"{verdict['target_size_hours']} worker-hours"
             )
-        )
+        super().__init__(format_refusal("D08", detail))
 
 
 class PlanVisibilityError(CrewError):
