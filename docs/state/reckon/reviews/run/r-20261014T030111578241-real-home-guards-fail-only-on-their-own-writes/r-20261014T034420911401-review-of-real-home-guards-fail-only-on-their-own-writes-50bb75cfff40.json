@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite or after_suite field, so the added-failure count was not taken",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-14T03:55:37.264Z",
+  "dispatched_at": "2026-10-14T03:44:59Z",
+  "findings": [
+    {
+      "file": "docs/plans/the-suite-tests-behaviour.html",
+      "line": "149",
+      "severity": "blocking",
+      "text": "the done-when requires both arms logged under the run directory with the real crew/live entry count recorded before and after each arm; the run directory holds no base-arm log for the migrated modules and records no crew/live entry count, so the defect this node repairs was never reproduced at base here."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T030111578241-real-home-guards-fail-only-on-their-own-writes/gate_test_real_home_traces.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "the gate log names the command and EXIT=0 but no revision, so the done-when's requirement that the gate be logged with its revision is unmet and the count cannot be tied to a commit."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T030111578241-real-home-guards-fail-only-on-their-own-writes/base_refused_one.log",
+      "line": "4",
+      "severity": "follow-on",
+      "text": "the base-arm log records EXIT=0 on a run that reported \"1 failed\", so its EXIT sentinel does not reflect the run's outcome and cannot support an added-failure comparison."
+    },
+    {
+      "file": "tests/real_home_traces.py",
+      "line": "22",
+      "severity": "follow-on",
+      "text": "the new module adds two ruff findings (UP035 at :22, W292 at :59) even though 213100f39 is titled as formatting it, so the file is not at the repository's stated ruff target."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against 1a4633e8; the six commits touch only the declared tests and one evidence fragment, adding a 59-line helper and rewriting fourteen guards onto it.",
+    "done_when": "the done-when requires tests/test_real_home_traces.py green with its revision and EXIT=0, the census logged, both arms logged with the real crew/live entry count before and after each arm, and two negative controls; the gate, census and controls are present but the base arm and the crew/live entry counts are absent.",
+    "goal": "the node's goal is that every real-home write guard in the suite fails only on a trace its own test wrote; the diff migrates twelve modules onto tests/real_home_traces.py:39 but the census lists fifteen further unfiltered guards outside the granted write paths, so \"every\" is not reached.",
+    "manifest": "read; it reports status complete, the six commits, each migrated module's head-arm count and the single pre-existing failure, but carries no baseline_suite or after_suite field.",
+    "write_paths": "read the manifest's declared paths; git diff --name-only 1a4633e8..50bb75cff lists fifteen files, every one inside them, with nothing touched outside."
+  },
+  "justifications": {
+    "durability": "tests/test_real_home_traces.py:42 reddens when the helper reverts to whole-root reporting (negative_control_1.log), but no test reddens if a migrated guard such as tests/test_lanes_view_is_live.py:179 reverts to its unfiltered shape.",
+    "evidence": "tests/test_real_home_traces.py passes 3/3 EXIT=0 (gate_test_real_home_traces.log) and the census is logged, but the done-when's base arm and crew/live entry counts were never taken.",
+    "fit": "tests/real_home_traces.py:22 imports Iterable and Sequence from typing (UP035) and :59 carries no trailing newline (W292), both ruff findings a file this change adds.",
+    "goal_fidelity": "the migration covers the twelve granted modules (imported at tests/test_no_member_dispatch_runs_alone.py:15 and its siblings), yet the census's fifteen further unfiltered guards still fail on a peer's write, so the goal's \"every\" is unmet.",
+    "reuse": "tests/real_home_traces.py:39 traces_naming is the one owner, and tests/test_follow_lifetime.py:267 plus the four dispatch modules' fixture_pointers now delegate to it, replacing six bodies.",
+    "scope_discipline": "all fifteen paths in git diff --name-only 1a4633e8..50bb75cff sit inside the manifest's declared write paths, the evidence fragment included."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that every real-home write guard in the suite fails only on a trace its own test wrote; the diff migrates twelve modules onto tests/real_home_traces.py:39 but the census lists fifteen further unfiltered guards outside the granted write paths, so \"every\" is not reached.\nVERDICT done_when: the done-when requires tests/test_real_home_traces.py green with its revision and EXIT=0, the census logged, both arms logged with the real crew/live entry count before and after each arm, and two negative controls; the gate, census and controls are present but the base arm and the crew/live entry counts are absent.\nVERDICT write_paths: read the manifest's declared paths; git diff --name-only 1a4633e8..50bb75cff lists fifteen files, every one inside them, with nothing touched outside.\nVERDICT manifest: read; it reports status complete, the six commits, each migrated module's head-arm count and the single pre-existing failure, but carries no baseline_suite or after_suite field.\nVERDICT diff: read commit by commit against 1a4633e8; the six commits touch only the declared tests and one evidence fragment, adding a 59-line helper and rewriting fourteen guards onto it.\nCALL_SITES: none\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: the migration covers the twelve granted modules (imported at tests/test_no_member_dispatch_runs_alone.py:15 and its siblings), yet the census's fifteen further unfiltered guards still fail on a peer's write, so the goal's \"every\" is unmet.\nSCORE evidence: 11\nJUSTIFICATION evidence: tests/test_real_home_traces.py passes 3/3 EXIT=0 (gate_test_real_home_traces.log) and the census is logged, but the done-when's base arm and crew/live entry counts were never taken.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all fifteen paths in git diff --name-only 1a4633e8..50bb75cff sit inside the manifest's declared write paths, the evidence fragment included.\nSCORE durability: 12\nJUSTIFICATION durability: tests/test_real_home_traces.py:42 reddens when the helper reverts to whole-root reporting (negative_control_1.log), but no test reddens if a migrated guard such as tests/test_lanes_view_is_live.py:179 reverts to its unfiltered shape.\nSCORE fit: 13\nJUSTIFICATION fit: tests/real_home_traces.py:22 imports Iterable and Sequence from typing (UP035) and :59 carries no trailing newline (W292), both ruff findings a file this change adds.\nSCORE reuse: 20\nJUSTIFICATION reuse: tests/real_home_traces.py:39 traces_naming is the one owner, and tests/test_follow_lifetime.py:267 plus the four dispatch modules' fixture_pointers now delegate to it, replacing six bodies.\nFINDING docs/plans/the-suite-tests-behaviour.html:149 blocking: the done-when requires both arms logged under the run directory with the real crew/live entry count recorded before and after each arm; the run directory holds no base-arm log for the migrated modules and records no crew/live entry count, so the defect this node repairs was never reproduced at base here.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T030111578241-real-home-guards-fail-only-on-their-own-writes/gate_test_real_home_traces.log:1 follow-on: the gate log names the command and EXIT=0 but no revision, so the done-when's requirement that the gate be logged with its revision is unmet and the count cannot be tied to a commit.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T030111578241-real-home-guards-fail-only-on-their-own-writes/base_refused_one.log:4 follow-on: the base-arm log records EXIT=0 on a run that reported \"1 failed\", so its EXIT sentinel does not reflect the run's outcome and cannot support an added-failure comparison.\nFINDING tests/real_home_traces.py:22 follow-on: the new module adds two ruff findings (UP035 at :22, W292 at :59) even though 213100f39 is titled as formatting it, so the file is not at the repository's stated ruff target.\n",
+  "review_run_id": "r-20261014T034420911401-review-of-real-home-guards-fail-only-on-their-own-writes-50bb75cfff40",
+  "reviewed_base_sha": "1a4633e8eea8d66e7cf0101ba1e8447f05cc800b",
+  "reviewed_head_sha": "50bb75cfff400210dd9295e6ef9e280ded9d5abe",
+  "reviewed_run_id": "r-20261014T030111578241-real-home-guards-fail-only-on-their-own-writes",
+  "scores": {
+    "durability": 12,
+    "evidence": 11,
+    "fit": 13,
+    "goal_fidelity": 15,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T03:52:28.339241+00:00",
+  "total": 91
+}
