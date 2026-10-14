@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="81">
+<meta name="plan-version" content="82">
 <meta name="plan-modified" content="2026-10-14">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -479,6 +479,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s16" data-id="c-run-r-20261014T113151219990-review-of-the-pane-draws-no-round-trip-85282f1c9188" data-who="reckon-build" data-when="2026-10-14T12:00:55.023Z">
     <div class="r-comment-body"><p>review of r-20261014T100611529003-the-pane-draws-no-round-trip at base c49f8921b4e0e3989f913132736edb0a1d307396..head 85282f1c918863a4b33d9b0f3d0440e0868a4058; stored a parsed record scoring all 6 dimensions (goal_fidelity 18, evidence 13, scope_discipline 19, durability 16, fit 18, reuse 18; total 102) with one follow-on finding — the departure hold's relocation in 2f61639ce leaves the show_observer branch (reckon/crew/ticker.py:1639) outside the hold; the fix otherwise repairs the prior review's blocking ordering defect and the added test test_a_terminal_echo_the_pane_withholds_stays_hidden guards it.</p></div>
+</div>
+<div class="r-comment" data-section="s16" data-id="c-run-r-20261014T100611529003-the-pane-draws-no-round-trip" data-who="reckon-build" data-when="2026-10-14T11:31:04.664Z">
+    <div class="r-comment-body"><p>RowPolicy in reckon/crew/ticker.py holds a row that takes a run away from the word the pane last showed for it and drops it with the return when the run comes back to that word inside the settle window, so the round trip queued -&gt; withdrawn -&gt; dispatched -&gt; queued draws no row; a departure that does not return is delivered when the window passes. The hold is applied only where the policy has already decided the pane would draw the row, after the observer hold, so it can subtract a row and never make a withheld one visible; a row that asks the coordinator for something is never held.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261013T050357966649-remembered-states-are-pane-words" data-who="reckon-build" data-when="2026-10-13T06:17:20.716Z">
     <div class="r-comment-body"><p>remembered states are mapped to pane words where the grid takes its memory in (ticker._remembered_word applied in _seed_ticker_memory); a run remembered as completed_unpromoted now draws `delivered` on the left, every internal state draws its pane word, and the reloaded-pane test now expects the pane word (halted) rather than the raw producer state</p></div>
