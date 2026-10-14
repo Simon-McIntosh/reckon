@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: baseline_suite base-importer.log (revision 28646f522, 381 passed) prints no FAILED or ERROR line, and after_suite head-importer.log (rev 2a54de457 tree, 385 passed) prints none either, so the node-id set difference (head minus base) is empty and the head adds no failing test. The naming and recorder checks the node adds fail only at the base source, which negative-control.log records (7 failed EXIT=1), so the instrument is non-vacuous. The reviewed manifest's baseline_suite/after_suite fields name no log_path, so a read-time annotation would report the count unmeasured; the count here is taken from the two logs the manifest names under test_logs.",
+  "backend": "local",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch.py:808",
+    "reckon/crew/dispatch.py:872",
+    "reckon/crew/dispatch.py:1172",
+    "reckon/crew_dispatch_commands.py:1380",
+    "reckon/crew/dispatch_picker.py:441"
+  ],
+  "completed_at": "2026-10-14T01:41:09.769Z",
+  "dispatched_at": "2026-10-14T01:29:54Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/lane-and-model-routing/a-pick-names-the-step-it-expired-in.html",
+      "line": "79",
+      "severity": "follow-on",
+      "text": "follow-on: the negative-control paragraph states the head-tests-at-base run as \"6 failed, 21 passed\" while the log it cites (negative-control.log) records \"7 failed, 20 passed / EXIT=1\"; the fragment under-reports one failure and one pass against its own receipt."
+    },
+    {
+      "file": "reckon/crew/dispatch_picker.py",
+      "line": "332",
+      "severity": "follow-on",
+      "text": "follow-on: the comment \"so all five stages are recorded\" is stale \u2014 PICK_STAGES now holds four names after the \"jev\" entry was removed \u2014 so it contradicts the code beside it; the same \"all five stages\" wording persists at dispatch_picker.py:60 and tests/test_a_pick_names_its_slow_stage.py:80."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T003640772843-a-pick-names-the-step-it-expired-in/manifest.md",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: after_suite records revision 8123bc52e while the head-importer.log it cites declares \"rev 2a54de457 (uncommitted: docs= removal in flight)\", so the recorded revision is not the one the log names and the arm's revision cannot be checked against the promoted head."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read the four commits against base 28646f522f5394a93e92edc90764628e8a21fd0d \u2014 9f310d8a0 adds the per-step marking and _step_label, 2a54de457 adds the landing fragment, 8123bc52e drops the recorder's docs parameter with its three callers, 7498865e1 corrects the fragment's hold-recorder paragraph; 11 files, all inside the declared scope.",
+    "done_when": "the done-when names the pick:state-render and pick:jev naming checks, the stubbed estimate and Jev arms, the dispatch_picker docstring describing the named step, the docs-free recorder with its two dispatch callers and the test asserting both, and the base/head importer arms run one after the other and logged; all are present in tests/test_a_pick_names_its_slow_stage.py, tests/test_picker_in_dispatch.py and tests/test_picker_pick_within_bound.py, and the manifest records the base arm 381 passed and the head arm 385 passed, EXIT=0 both, in base-importer.log and head-importer.log.",
+    "goal": "the node's goal is to name, in pick()'s own step vocabulary, the step of pick() a dispatch deadline expires in; reckon/crew/picker/__init__.py:32 _step_label derives the emitted name from a step's own timing key, pick() marks the step it is inside in the sink it is handed, and reckon/crew/dispatch_picker.py:474 reads that sink to build `timeout in pick:<step>`, so a pick that expires inside the state render reads `timeout in pick:state-render` rather than the bare `timeout`.",
+    "manifest": "read; it records the four commits, the changed paths, the base 381 / head 385 arms with their logs, the negative-control log and note, and blockers naming the scratch-tree base arm and the harness-scratch deletion; its after_suite revision (8123bc52e) is not the revision its head-importer.log header names (2a54de457, uncommitted docs removal in flight).",
+    "write_paths": "the node's fence lists reckon/crew/dispatch.py, reckon/crew/dispatch_picker.py, reckon/crew/picker/__init__.py, reckon/crew/picker/outcomes.py, the three test files and the evidence fragment/dir; a resume advice extended the fence to tests/test_a_hold_is_kept_in_the_crew_home.py, tests/test_picker_outcomes.py and tests/test_hold_records_its_state.py, and every path in the diff is inside the original or extended scope."
+  },
+  "justifications": {
+    "durability": "tests/test_a_pick_names_its_slow_stage.py asserts fallback_reason == \"timeout in pick:state-render\" and == \"timeout in pick:jev\" against independent literals, and negative-control.log records them failing at the base source (KeyError: 'backends'), so reinstating the unmarked pick reddens them.",
+    "evidence": "the naming checks in tests/test_a_pick_names_its_slow_stage.py and the arm logs base-importer.log (381 passed) and head-importer.log (385 passed) assert the done-when, but the fragment's negative-control count at docs/evidence/fragments/lane-and-model-routing/a-pick-names-the-step-it-expired-in.html:79 states 6 failed where negative-control.log records 7, and after_suite names a revision its log header does not.",
+    "fit": "the new helper and closures follow the module's docstring-and-type-hint idiom and carry no plan label, but the comment at reckon/crew/dispatch_picker.py:332 still reads \"all five stages\" after PICK_STAGES dropped to four entries.",
+    "goal_fidelity": "reckon/crew/picker/__init__.py:32 _step_label plus the mark/unmark pair in pick() and reckon/crew/dispatch_picker.py:474 build `timeout in pick:<step>` from pick()'s own timing keys, which is what the goal states.",
+    "reuse": "a capability search over reckon/ for a step-name deriver found no owner (the only replace(\"_\",\"-\") sites are unrelated to pick stages), and the change removes the duplicated \"jev\" step list rather than adding a second vocabulary.",
+    "scope_discipline": "every changed path is inside the declared write paths or the resume-granted extension covering tests/test_picker_outcomes.py, tests/test_a_hold_is_kept_in_the_crew_home.py and tests/test_hold_records_its_state.py."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to name, in pick()'s own step vocabulary, the step of pick() a dispatch deadline expires in; reckon/crew/picker/__init__.py:32 _step_label derives the emitted name from a step's own timing key, pick() marks the step it is inside in the sink it is handed, and reckon/crew/dispatch_picker.py:474 reads that sink to build `timeout in pick:<step>`, so a pick that expires inside the state render reads `timeout in pick:state-render` rather than the bare `timeout`.\nVERDICT done_when: the done-when names the pick:state-render and pick:jev naming checks, the stubbed estimate and Jev arms, the dispatch_picker docstring describing the named step, the docs-free recorder with its two dispatch callers and the test asserting both, and the base/head importer arms run one after the other and logged; all are present in tests/test_a_pick_names_its_slow_stage.py, tests/test_picker_in_dispatch.py and tests/test_picker_pick_within_bound.py, and the manifest records the base arm 381 passed and the head arm 385 passed, EXIT=0 both, in base-importer.log and head-importer.log.\nVERDICT write_paths: the node's fence lists reckon/crew/dispatch.py, reckon/crew/dispatch_picker.py, reckon/crew/picker/__init__.py, reckon/crew/picker/outcomes.py, the three test files and the evidence fragment/dir; a resume advice extended the fence to tests/test_a_hold_is_kept_in_the_crew_home.py, tests/test_picker_outcomes.py and tests/test_hold_records_its_state.py, and every path in the diff is inside the original or extended scope.\nVERDICT manifest: read; it records the four commits, the changed paths, the base 381 / head 385 arms with their logs, the negative-control log and note, and blockers naming the scratch-tree base arm and the harness-scratch deletion; its after_suite revision (8123bc52e) is not the revision its head-importer.log header names (2a54de457, uncommitted docs removal in flight).\nVERDICT diff: read the four commits against base 28646f522f5394a93e92edc90764628e8a21fd0d \u2014 9f310d8a0 adds the per-step marking and _step_label, 2a54de457 adds the landing fragment, 8123bc52e drops the recorder's docs parameter with its three callers, 7498865e1 corrects the fragment's hold-recorder paragraph; 11 files, all inside the declared scope.\nCALL_SITES: reckon/crew/dispatch.py:808, reckon/crew/dispatch.py:872, reckon/crew/dispatch.py:1172, reckon/crew_dispatch_commands.py:1380, reckon/crew/dispatch_picker.py:441\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/picker/__init__.py:32 _step_label plus the mark/unmark pair in pick() and reckon/crew/dispatch_picker.py:474 build `timeout in pick:<step>` from pick()'s own timing keys, which is what the goal states.\nSCORE evidence: 15\nJUSTIFICATION evidence: the naming checks in tests/test_a_pick_names_its_slow_stage.py and the arm logs base-importer.log (381 passed) and head-importer.log (385 passed) assert the done-when, but the fragment's negative-control count at docs/evidence/fragments/lane-and-model-routing/a-pick-names-the-step-it-expired-in.html:79 states 6 failed where negative-control.log records 7, and after_suite names a revision its log header does not.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every changed path is inside the declared write paths or the resume-granted extension covering tests/test_picker_outcomes.py, tests/test_a_hold_is_kept_in_the_crew_home.py and tests/test_hold_records_its_state.py.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_pick_names_its_slow_stage.py asserts fallback_reason == \"timeout in pick:state-render\" and == \"timeout in pick:jev\" against independent literals, and negative-control.log records them failing at the base source (KeyError: 'backends'), so reinstating the unmarked pick reddens them.\nSCORE fit: 16\nJUSTIFICATION fit: the new helper and closures follow the module's docstring-and-type-hint idiom and carry no plan label, but the comment at reckon/crew/dispatch_picker.py:332 still reads \"all five stages\" after PICK_STAGES dropped to four entries.\nSCORE reuse: 20\nJUSTIFICATION reuse: a capability search over reckon/ for a step-name deriver found no owner (the only replace(\"_\",\"-\") sites are unrelated to pick stages), and the change removes the duplicated \"jev\" step list rather than adding a second vocabulary.\nFINDING docs/evidence/fragments/lane-and-model-routing/a-pick-names-the-step-it-expired-in.html:79 follow-on: the negative-control paragraph states the head-tests-at-base run as \"6 failed, 21 passed\" while the log it cites (negative-control.log) records \"7 failed, 20 passed / EXIT=1\"; the fragment under-reports one failure and one pass against its own receipt.\nFINDING reckon/crew/dispatch_picker.py:332 follow-on: the comment \"so all five stages are recorded\" is stale \u2014 PICK_STAGES now holds four names after the \"jev\" entry was removed \u2014 so it contradicts the code beside it; the same \"all five stages\" wording persists at dispatch_picker.py:60 and tests/test_a_pick_names_its_slow_stage.py:80.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T003640772843-a-pick-names-the-step-it-expired-in/manifest.md:1 follow-on: after_suite records revision 8123bc52e while the head-importer.log it cites declares \"rev 2a54de457 (uncommitted: docs= removal in flight)\", so the recorded revision is not the one the log names and the arm's revision cannot be checked against the promoted head.\nBASE_REVISION: 28646f522f5394a93e92edc90764628e8a21fd0d\nREVISION: 7498865e1ea4e18a9eb8432a24e7daac645b29d1",
+  "review_run_id": "r-20261014T012920675502-review-of-a-pick-names-the-step-it-expired-in-7498865e1ea4",
+  "reviewed_base_sha": "28646f522f5394a93e92edc90764628e8a21fd0d",
+  "reviewed_head_sha": "7498865e1ea4e18a9eb8432a24e7daac645b29d1",
+  "reviewed_run_id": "r-20261014T003640772843-a-pick-names-the-step-it-expired-in",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T01:37:00.691259+00:00",
+  "total": 107
+}
