@@ -65,13 +65,16 @@ from pathlib import Path
 
 import pytest
 
-from reckon import cli, crew_follow_commands
+from reckon import cli
 from reckon.crew import runs
+from tests.test_a_reload_waits_for_a_clean_tree import (
+    commit_the_source_change,
+    scratch_checkout,
+)
 
 pytestmark = pytest.mark.xdist_group("follower_source")
 
 REPO_ROOT = Path(cli.__file__).resolve().parents[1]
-FOLLOWER_SOURCE = Path(crew_follow_commands.__file__).resolve()
 
 # A project name this workstation does not use, so the real follower directory
 # for it is absent and the untouched assertion is a control rather than a
@@ -109,7 +112,10 @@ POLL_SECONDS = 0.05
 # every fifty passes still fails it.
 OWNER_CHECK_SECONDS = 0.1
 OWNER_CHECK_PASSES = int(EXIT_WITHIN_SECONDS / OWNER_CHECK_SECONDS)
-RELOAD_WITHIN_SECONDS = 8.0
+# The reload replaces the image only after proving the replacement imports —
+# every module of the package, in a cold interpreter — which costs seconds, so
+# the bound waits past that proof rather than past the change alone.
+RELOAD_WITHIN_SECONDS = 25.0
 # The reloader polls its source stamp at most once per
 # ``runs.FOLLOWER_FRESHNESS_SECONDS``. A stopped follower must be held still for
 # longer than that before it is resumed, so the first pass after it resumes can
@@ -145,12 +151,25 @@ RELOAD_LAUNCHER_MARKER = "sys.path.insert"
 # reader that imports it mid-window is unaffected.
 _SOURCE_CHANGE_BYTES = b"\n# follower reload probe\n"
 
-# The cases that force a source change edit one file on disk, and each restores
-# what it read before editing. Two of them running at once can therefore capture
-# and write back each other's edit, leaving the append behind in the tree and
-# comparing against a baseline neither of them set. One worker owns the group, so
-# the cases that touch the source run one at a time.
+# Each case that forces a reload runs a follower through an image replacement,
+# which is timing-sensitive and loads the node. The group keeps those cases apart
+# across every module that names it, so no two of them reload at once.
 SOURCE_CHANGE_GROUP = "follower-source-change"
+
+
+@pytest.fixture()
+def source_tree(tmp_path) -> Path:
+    """A committed checkout of the follower's source, changeable per case.
+
+    A case that forces a reload runs the follower with this checkout on its
+    import path and commits the change it makes, so the tree stays clean against
+    ``HEAD`` and the reload is not held back by the guard that defers onto a
+    modified tree. Editing the package this test process imports would hold it
+    back instead.
+    """
+    root, _package = scratch_checkout(tmp_path)
+    return root
+
 
 # The stub process stands for one arming session. It starts one follower and
 # then waits to be killed, so the follower's owner is a real parent the test can
@@ -265,18 +284,28 @@ def _tree(root: Path) -> set[str]:
     return {str(path.relative_to(root)) for path in root.rglob("*")}
 
 
-def _stub_env(home: Path) -> dict[str, str]:
-    environment = {**os.environ, "PYTHONPATH": str(REPO_ROOT)}
+def _stub_env(home: Path, source_root: Path = REPO_ROOT) -> dict[str, str]:
+    """The environment a stub and its follower share.
+
+    ``source_root`` is the checkout the follower imports: this working tree by
+    default, or a case's own committed copy when it forces a reload by changing
+    the source.
+    """
+    environment = {**os.environ, "PYTHONPATH": str(source_root)}
     environment.pop(OWNER_ENV, None)
     environment["RECKON_HOME"] = str(home)
     environment["FOLLOWER_TEST_PROJECT"] = PROJECT
     environment["FOLLOWER_TEST_SESSION"] = SESSION
-    environment["FOLLOWER_TEST_ROOT"] = str(REPO_ROOT)
+    environment["FOLLOWER_TEST_ROOT"] = str(source_root)
     return environment
 
 
 def _start_stub(
-    home: Path, workdir: Path, tag: str, pass_log: Path | None = None
+    home: Path,
+    workdir: Path,
+    tag: str,
+    pass_log: Path | None = None,
+    source_root: Path = REPO_ROOT,
 ) -> tuple[subprocess.Popen, Path]:
     """Start an owner stub, which arms one follower and waits to be killed.
 
@@ -290,7 +319,7 @@ def _start_stub(
     wall-clock bound that a loaded node stretches past.
     """
     pid_path = workdir / f"{tag}.pid"
-    environment = _stub_env(home)
+    environment = _stub_env(home, source_root)
     if pass_log is not None:
         environment["FOLLOWER_TEST_PASS_LOG"] = str(pass_log)
     process = subprocess.Popen(
@@ -298,7 +327,7 @@ def _start_stub(
             sys.executable,
             "-c",
             _STUB,
-            str(REPO_ROOT),
+            str(source_root),
             str(workdir / f"{tag}.stdout"),
             str(workdir / f"{tag}.stderr"),
             str(pid_path),
@@ -312,7 +341,12 @@ def _start_stub(
 
 
 def _start_subreaper_stub(
-    home: Path, workdir: Path, tag: str, *, owner_env: str | None = None
+    home: Path,
+    workdir: Path,
+    tag: str,
+    *,
+    owner_env: str | None = None,
+    source_root: Path = REPO_ROOT,
 ) -> tuple[subprocess.Popen, Path, Path]:
     """Start an owner stub whose own parent outlives it.
 
@@ -326,7 +360,7 @@ def _start_subreaper_stub(
     """
     stub_pid_path = workdir / f"{tag}.stub.pid"
     pid_path = workdir / f"{tag}.pid"
-    environment = _stub_env(home)
+    environment = _stub_env(home, source_root)
     environment["FOLLOWER_TEST_PROJECT"] = PROJECT
     if owner_env is not None:
         environment["FOLLOWER_TEST_OWNER"] = owner_env
@@ -337,7 +371,7 @@ def _start_subreaper_stub(
             _SUBREAPER,
             str(stub_pid_path),
             _STUB,
-            str(REPO_ROOT),
+            str(source_root),
             str(workdir / f"{tag}.stdout"),
             str(workdir / f"{tag}.stderr"),
             str(pid_path),
@@ -386,9 +420,16 @@ def _wait_until_gone(pid: int, *, tag: str) -> None:
     pytest.fail(f"{tag}: the process was still alive after it was killed")
 
 
-def _arm(home: Path, owner: tuple[int, str] | None) -> subprocess.Popen:
-    """Start a follower armed with an explicit owner identity."""
-    environment = _stub_env(home)
+def _arm(
+    home: Path, owner: tuple[int, str] | None, source_root: Path = REPO_ROOT
+) -> subprocess.Popen:
+    """Start a follower armed with an explicit owner identity.
+
+    The follower runs from the checkout its environment names on ``PYTHONPATH``,
+    so a case that forces a reload by changing the source commits that change in
+    its own copy and arms the follower against it.
+    """
+    environment = _stub_env(home, source_root)
     if owner is not None:
         environment[OWNER_ENV] = runs._format_follower_owner(owner)
     return subprocess.Popen(
@@ -407,7 +448,7 @@ def _arm(home: Path, owner: tuple[int, str] | None) -> subprocess.Popen:
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
-        cwd=REPO_ROOT,
+        cwd=source_root,
         env=environment,
     )
 
@@ -669,15 +710,13 @@ def _wait_until_looping(home: Path, pid: int, *, tag: str) -> None:
 
 @contextlib.contextmanager
 def _source_mutation_window():
-    """Hold the one window in which a case may edit the source the follower stamps.
+    """Hold the one window in which a case may force a follower to reload.
 
-    The stamp is computed over the imported package, so every case that forces a
-    reload edits a path all pytest workers share. Two of them editing at once can
-    read each other's append as their own baseline and write it back after their
-    restore, which leaves the change in the tree and has the follower compared
-    against a stamp neither case set. The distributor does not keep these cases
-    apart on its own — spreading by load is its default — so the window is held
-    under an exclusive lock instead.
+    Forcing a reload is timing-sensitive and loads the node: the follower is
+    observed across its replacement image and the wait is bounded, so two cases
+    reloading at once can starve each other's bound on a busy machine. The
+    distributor does not keep them apart on its own — spreading by load is its
+    default — so the window is held under an exclusive lock instead.
     """
     lock_path = Path(tempfile.gettempdir()) / "reckon-follower-source-change.lock"
     with lock_path.open("a+") as handle:
@@ -688,28 +727,26 @@ def _source_mutation_window():
             fcntl.flock(handle, fcntl.LOCK_UN)
 
 
-def _force_source_change() -> tuple[bytes, int, int]:
-    """Advance the follower's source stamp with a real content change.
+def _force_source_change(source_root: Path) -> None:
+    """Advance the follower's source stamp with a real change, then commit it.
 
     The stamp covers each source file's size and its mtime together, and an edit
     advances both, which is the change the follower exists to notice. The appended
     line is a comment, and every prefix of it, so the module parses while the
     change is in place. A change made before the follower has fixed its baseline
     is captured as the baseline and never seen at all, so the caller waits for
-    ``_wait_until_looping`` first. What to restore is handed back with it.
+    ``_wait_until_looping`` first.
+
+    The change is committed in the case's own checkout, so the tree stays clean
+    against ``HEAD`` and the reload is not held back by the guard that defers
+    onto a modified tree; the content stamp moves all the same.
     """
-    stat = FOLLOWER_SOURCE.stat()
-    original = FOLLOWER_SOURCE.read_bytes()
-    with FOLLOWER_SOURCE.open("ab") as handle:
-        handle.write(_SOURCE_CHANGE_BYTES)
-    return original, stat.st_atime_ns, stat.st_mtime_ns
-
-
-def _restore_source_bytes(restore: tuple[bytes, int, int]) -> None:
-    """Put the source back byte for byte, and its timestamps back with it."""
-    original, atime_ns, mtime_ns = restore
-    FOLLOWER_SOURCE.write_bytes(original)
-    os.utime(FOLLOWER_SOURCE, ns=(atime_ns, mtime_ns))
+    commit_the_source_change(
+        source_root,
+        source_root / "reckon",
+        "crew_follow_commands.py",
+        _SOURCE_CHANGE_BYTES,
+    )
 
 
 def test_a_read_only_follower_leaves_when_its_own_owner_dies(home) -> None:
@@ -791,7 +828,9 @@ def test_a_read_only_follower_leaves_when_its_own_owner_dies(home) -> None:
 
 
 @pytest.mark.xdist_group(SOURCE_CHANGE_GROUP)
-def test_a_reloaded_follower_still_leaves_when_the_original_owner_dies(home) -> None:
+def test_a_reloaded_follower_still_leaves_when_the_original_owner_dies(
+    home, source_tree
+) -> None:
     """A follower that replaced its image still exits after the owner dies.
 
     The owner is fixed at the first arming and carried to the replacement image
@@ -814,10 +853,9 @@ def test_a_reloaded_follower_still_leaves_when_the_original_owner_dies(home) -> 
 
     owner: subprocess.Popen | None = None
     follower_pid: int | None = None
-    restore: tuple[bytes, int, int] | None = None
     with _source_mutation_window():
         try:
-            owner, pid_path = _start_stub(home, home, "reload")
+            owner, pid_path = _start_stub(home, home, "reload", source_root=source_tree)
             follower_pid = _follower_pid(pid_path, owner, "reload")
             _wait_until_holder(
                 follower_pid,
@@ -827,7 +865,7 @@ def test_a_reloaded_follower_still_leaves_when_the_original_owner_dies(home) -> 
 
             _wait_until_looping(home, follower_pid, tag="reload")
 
-            restore = _force_source_change()
+            _force_source_change(source_tree)
             _observe_reload(follower_pid, tag="reload")
 
             _kill_and_reap(owner)
@@ -839,8 +877,6 @@ def test_a_reloaded_follower_still_leaves_when_the_original_owner_dies(home) -> 
                 with contextlib.suppress(ProcessLookupError):
                     os.kill(follower_pid, 9)
             _kill(owner)
-            if restore is not None:
-                _restore_source_bytes(restore)
 
     assert _tree(real_dir) == before == set(), (
         "a follower pointed at a temporary home must leave the real follower "
@@ -850,7 +886,9 @@ def test_a_reloaded_follower_still_leaves_when_the_original_owner_dies(home) -> 
 
 
 @pytest.mark.xdist_group(SOURCE_CHANGE_GROUP)
-def test_a_reload_under_a_live_subreaper_keeps_the_dead_owner(home) -> None:
+def test_a_reload_under_a_live_subreaper_keeps_the_dead_owner(
+    home, source_tree
+) -> None:
     """A follower re-parented to a live process still leaves on its dead owner.
 
     This is the case that sees the carried owner. The follower is armed with an
@@ -886,7 +924,6 @@ def test_a_reload_under_a_live_subreaper_keeps_the_dead_owner(home) -> None:
     follower_pid: int | None = None
     stub_pid: int | None = None
     owner: subprocess.Popen | None = None
-    restore: tuple[bytes, int, int] | None = None
     with _source_mutation_window():
         try:
             owner = _start_owner_process()
@@ -896,6 +933,7 @@ def test_a_reload_under_a_live_subreaper_keeps_the_dead_owner(home) -> None:
                 home,
                 "orphan",
                 owner_env=runs._format_follower_owner(owner_identity),
+                source_root=source_tree,
             )
             follower_pid = _follower_pid(pid_path, subreaper, "orphan")
             _wait_until_holder(
@@ -918,7 +956,7 @@ def test_a_reload_under_a_live_subreaper_keeps_the_dead_owner(home) -> None:
                 f"resumed; its parent is {adopted_by!r}, not {subreaper.pid}"
             )
 
-            restore = _force_source_change()
+            _force_source_change(source_tree)
             # Kept as a fixed dwell, its bound not relaxable: the follower's
             # reload check is rate-limited to one poll per
             # ``runs.FOLLOWER_FRESHNESS_SECONDS``. The change must be older
@@ -949,8 +987,6 @@ def test_a_reload_under_a_live_subreaper_keeps_the_dead_owner(home) -> None:
                     os.kill(stub_pid, 9)
             _kill(subreaper)
             _kill(owner)
-            if restore is not None:
-                _restore_source_bytes(restore)
 
     assert _tree(real_dir) == before == set(), (
         "a follower pointed at a temporary home must leave the real follower "

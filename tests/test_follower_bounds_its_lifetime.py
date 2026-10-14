@@ -57,6 +57,10 @@ from click.testing import CliRunner
 import reckon.crew.dispatch_watch as dispatch_watch_module
 from reckon import cli, crew, crew_dispatch_commands, crew_follow_commands
 from reckon.crew import runs
+from tests.test_a_reload_waits_for_a_clean_tree import (
+    commit_the_source_change,
+    scratch_checkout,
+)
 
 # ``reckon.crew`` re-exports a function named ``dispatch``, so the module a test
 # patches is resolved through ``importlib`` rather than the package attribute.
@@ -70,7 +74,21 @@ pytestmark = [
 ]
 
 REPO_ROOT = Path(cli.__file__).resolve().parents[1]
-FOLLOWER_SOURCE = Path(crew_follow_commands.__file__).resolve()
+
+
+@pytest.fixture()
+def source_tree(tmp_path) -> Path:
+    """A committed checkout of the follower's source, changeable per case.
+
+    A case that forces a reload runs the follower with this checkout on its
+    import path and commits the change it makes, so the tree stays clean against
+    ``HEAD`` and the reload is not held back by the guard that defers onto a
+    modified tree. Editing the package this process imports would hold it back.
+    """
+    root, _package = scratch_checkout(tmp_path)
+    return root
+
+
 PROJECT = "proj"
 # Distinctive on purpose: the shared-home check looks for these tokens, so an id
 # short enough to appear inside a stranger's pointer would report a false hit.
@@ -85,7 +103,10 @@ LIFETIME = "6s"
 ONE_POLL_INTERVAL_SLACK = 1.0
 POLL_SECONDS = 0.05
 ARM_WITHIN_SECONDS = 30.0
-RELOAD_WITHIN_SECONDS = 10.0
+# The reload replaces the image only after proving the replacement imports —
+# every module of the package, in a cold interpreter — which costs seconds, so
+# the bound waits past that proof rather than past the change alone.
+RELOAD_WITHIN_SECONDS = 25.0
 # The injected clock of the carried-deadline case: one fixed step per read, so
 # every interval it measures is a count of the follower's own clock reads. The
 # replacement's setup is priced on that clock at a known interval, deliberately
@@ -113,10 +134,9 @@ RELOAD_LAUNCHER_MARKER = "sys.path.insert"
 # prefix is also a comment, so the module parses with the change in place.
 _SOURCE_CHANGE_BYTES = b"\n# follower reload probe\n"
 
-# The cases that force a source change edit one file on disk, and each restores
-# what it read before editing. Two of them running at once can capture and write
-# back each other's edit, leaving the append behind in the tree. One worker owns
-# the group across every module that touches the source.
+# Each case that forces a reload runs a follower through an image replacement,
+# which is timing-sensitive and loads the node. The group keeps those cases apart
+# across every module that names it, so no two of them reload at once.
 SOURCE_CHANGE_GROUP = "follower-source-change"
 
 
@@ -288,26 +308,38 @@ def _clean_environ(monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv(key, raising=False)
 
 
-def _follower_env(home: Path, **extra: str) -> dict[str, str]:
+def _follower_env(
+    home: Path, source_root: Path = REPO_ROOT, **extra: str
+) -> dict[str, str]:
     """An environment carrying only what this test sets deliberately.
 
     A worker whose own session runs under ``crew follow`` exports RECKON_
     variables describing *that* session, and inherited unchanged they make the
     follower this test arms believe it belongs to someone else's session. Every
     other RECKON_ variable is dropped, so the arming under measure is the one
-    this file describes.
+    this file describes. ``source_root`` is the checkout the follower imports:
+    this working tree by default, or a case's own committed copy when it forces
+    a reload by changing the source.
     """
     env = {
         key: value for key, value in os.environ.items() if not key.startswith("RECKON_")
     }
     env["RECKON_HOME"] = str(home)
-    env["PYTHONPATH"] = str(REPO_ROOT)
+    env["PYTHONPATH"] = str(source_root)
     env.update(extra)
     return env
 
 
 def _arm(home: Path, *args: str, env: dict[str, str] | None = None) -> subprocess.Popen:
-    """Start the real follower command against the temporary config home."""
+    """Start the real follower command against the temporary config home.
+
+    The follower runs from the checkout its environment names on ``PYTHONPATH``.
+    ``python -c`` puts the working directory first on ``sys.path``, so arming it
+    from this working tree would import the package here instead of the case's
+    own copy, and a change a case committed to that copy would never move the
+    stamp.
+    """
+    environment = env if env is not None else _follower_env(home)
     return subprocess.Popen(
         [
             sys.executable,
@@ -325,7 +357,8 @@ def _arm(home: Path, *args: str, env: dict[str, str] | None = None) -> subproces
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
-        env=env if env is not None else _follower_env(home),
+        cwd=Path(environment["PYTHONPATH"]),
+        env=environment,
     )
 
 
@@ -410,7 +443,15 @@ def _wait_until_reloaded(process: subprocess.Popen) -> None:
 
 @contextlib.contextmanager
 def _source_mutation_window():
-    """Hold the one window in which a case may edit the source the follower stamps."""
+    """Hold the one window in which a case forces its follower to reload.
+
+    A reload replaces the follower's process image and is observed across its
+    replacement, so two of these cases running at once on a loaded node can
+    starve each other's timing bound. The group name keeps them apart across the
+    sibling files that force a reload, and the window serialises them under an
+    exclusive lock rather than leaving the spread to the distributor, which
+    keeps them apart by load alone.
+    """
     lock_path = Path(tempfile.gettempdir()) / "reckon-follower-source-change.lock"
     with lock_path.open("a+") as handle:
         fcntl.flock(handle, fcntl.LOCK_EX)
@@ -420,20 +461,20 @@ def _source_mutation_window():
             fcntl.flock(handle, fcntl.LOCK_UN)
 
 
-def _force_source_change() -> tuple[bytes, int, int]:
-    """Advance the follower's source stamp with a real content change."""
-    stat = FOLLOWER_SOURCE.stat()
-    original = FOLLOWER_SOURCE.read_bytes()
-    with FOLLOWER_SOURCE.open("ab") as handle:
-        handle.write(_SOURCE_CHANGE_BYTES)
-    return original, stat.st_atime_ns, stat.st_mtime_ns
+def _force_source_change(source_root: Path) -> None:
+    """Advance the follower's source stamp with a real change, then commit it.
 
-
-def _restore_source_bytes(restore: tuple[bytes, int, int]) -> None:
-    """Put the source back byte for byte, and its timestamps back with it."""
-    original, atime_ns, mtime_ns = restore
-    FOLLOWER_SOURCE.write_bytes(original)
-    os.utime(FOLLOWER_SOURCE, ns=(atime_ns, mtime_ns))
+    The change is committed in the case's own checkout, so the tree stays clean
+    against ``HEAD`` and the reload the change is meant to trigger is not held
+    back by the guard that defers onto a modified tree; the content stamp moves
+    all the same.
+    """
+    commit_the_source_change(
+        source_root,
+        source_root / "reckon",
+        "crew_follow_commands.py",
+        _SOURCE_CHANGE_BYTES,
+    )
 
 
 def test_a_reload_does_not_restart_the_lifetime(home, monkeypatch) -> None:
@@ -625,7 +666,9 @@ def _wait_for_more_children(
 
 
 @pytest.mark.xdist_group(SOURCE_CHANGE_GROUP)
-def test_no_child_of_an_armed_follower_carries_the_hand_off_variables(home) -> None:
+def test_no_child_of_an_armed_follower_carries_the_hand_off_variables(
+    home, source_tree
+) -> None:
     """The checkpoint and the arming variable reach no child of the follower.
 
     Both are hand-offs to one process and both were placed in ``os.environ``,
@@ -638,13 +681,12 @@ def test_no_child_of_an_armed_follower_carries_the_hand_off_variables(home) -> N
     """
     dump = home / "child-environment.txt"
     _write_parked_run(home, dump)
-    restore = None
     with _source_mutation_window():
         process = _arm(
             home,
             "--lifetime",
             CHILD_LIFETIME,
-            env=_follower_env(home, RECKON_WATCH_ARMING="off"),
+            env=_follower_env(home, source_tree, RECKON_WATCH_ARMING="off"),
         )
         try:
             _wait_until_armed(process)
@@ -666,7 +708,7 @@ def test_no_child_of_an_armed_follower_carries_the_hand_off_variables(home) -> N
             )
 
             _wait_until_looping(home, process.pid)
-            restore = _force_source_change()
+            _force_source_change(source_tree)
             _wait_until_reloaded(process)
             # The replacement image runs the sweep on its first wait pass, so
             # this half waits for a line the replacement itself wrote: a dump
@@ -685,8 +727,6 @@ def test_no_child_of_an_armed_follower_carries_the_hand_off_variables(home) -> N
         finally:
             if process.poll() is None:
                 _kill(process)
-            if restore is not None:
-                _restore_source_bytes(restore)
 
     assert process.returncode == 0, (
         f"a lifetime exit is the follower ending by itself, so it exits zero; "
