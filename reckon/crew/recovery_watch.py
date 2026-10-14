@@ -2178,6 +2178,99 @@ def _sweep_lift_rows(
         return seen
 
 
+def _iter_stream_lines_backwards(
+    path: Path, *, chunk: int = 64 * 1024
+) -> Iterator[str]:
+    """Yield a stream file's lines from its last to its first.
+
+    A producer's first poll after a reload is the one reader with no memory of
+    what the stream already published, and the stream is unbounded, so the read
+    is taken from the end in fixed-size chunks rather than by loading the whole
+    file: the caller stops as soon as it holds what it needs. A file whose last
+    line is not yet terminated still yields that line first, and a file that
+    cannot be read yields nothing.
+    """
+    try:
+        size = path.stat().st_size
+    except OSError:
+        return
+    if size <= 0:
+        return
+    try:
+        with path.open("rb") as stream:
+            end = size
+            held = b""
+            while end > 0:
+                start = max(0, end - chunk)
+                stream.seek(start)
+                block = stream.read(end - start)
+                end = start
+                parts = (block + held).split(b"\n")
+                held = parts[0]
+                for segment in reversed(parts[1:]):
+                    if segment.strip():
+                        yield segment.decode("utf-8", "replace")
+            if held.strip():
+                yield held.decode("utf-8", "replace")
+    except OSError:
+        return
+
+
+def _earliest_created(created: Iterable[str]) -> datetime | None:
+    """The earliest parseable creation instant among live runs, or None."""
+    stamps = [parse_utc(value) for value in created]
+    present = [stamp for stamp in stamps if stamp is not None]
+    return min(present) if present else None
+
+
+def _seed_first_poll_states(
+    project: str, live_created: Mapping[str, str]
+) -> dict[str, str]:
+    """The state the stream last published for each live run, read from its end.
+
+    The producer that holds the seat appends its own rows, so a replacement
+    starting over a stream its predecessor wrote has no memory of what was
+    published: a run whose state moved while the seat was down would then read
+    as inventory and draw a baseline, and a baseline is not the news a session
+    wakes on. The state to continue from is the last one the stream carries for
+    each live run.
+
+    The read walks the stream backwards so a long history costs only the tail
+    that names a live run, and stops as soon as every live run is found or the
+    rows it reaches predate the earliest ``created_at`` among the live runs it
+    has not found: no run is published before it is created, so nothing older
+    can name one still outstanding. A row that cannot be read is skipped rather
+    than ending the read, because a tail torn by the producer's own write is not
+    worth the memory this read is reconstructing.
+    """
+    found: dict[str, str] = {}
+    outstanding = {
+        run_id: str(created) for run_id, created in live_created.items() if run_id
+    }
+    if not outstanding:
+        return found
+    for line in _iter_stream_lines_backwards(runs.watch_stream_path(project)):
+        try:
+            row = json.loads(line)
+        except (TypeError, ValueError):
+            continue
+        if not isinstance(row, Mapping):
+            continue
+        run_id = str(row.get("run_id") or "")
+        if run_id in outstanding:
+            outstanding.pop(run_id)
+            state = row.get("to_state")
+            if state:
+                found[run_id] = str(state)
+            if not outstanding:
+                break
+        reached = parse_utc(row.get("observed_at"))
+        earliest = _earliest_created(outstanding.values())
+        if reached is not None and earliest is not None and reached < earliest:
+            break
+    return found
+
+
 def watch_ticker(
     project: str,
     *,
@@ -2196,6 +2289,19 @@ def watch_ticker(
     """
     _refuse_unresolvable_watch(project)
     stall_seconds = parse_duration(stall_window)
+    # The state each live run's predecessor last published, read before the seat
+    # is taken: taking it writes this producer's own baseline rows over the
+    # stream's tail, so a run that moved while the seat was down would read back
+    # as unchanged and be announced as inventory instead of as the transition
+    # that wakes its dispatching session.
+    published_states = _seed_first_poll_states(
+        project,
+        {
+            str(record.get("run_id") or ""): str(record.get("created_at") or "")
+            for record in runs._list_live_records(project=project)
+            if record.get("run_id")
+        },
+    )
     known: dict[str, dict[str, Any]] = {}
     fleet_seen = False
     # Rate standings move on their own cadence, so one resolution serves the
@@ -2344,12 +2450,24 @@ def watch_ticker(
                 fleet_seen = True
                 known = {run_id: dict(snapshot) for run_id, snapshot in current.items()}
                 for snapshot in current.values():
+                    run_id = str(snapshot.get("run_id") or "")
+                    state = str(snapshot["state"])
+                    published = published_states.get(run_id)
+                    # A run the stream named at another state moved while the
+                    # seat was down, so the row is the news a session wakes on;
+                    # a run the stream never named, or that stands where it last
+                    # did, is inventory and reads as a baseline, exactly as it
+                    # did before the replacement learned the stream's memory.
                     yield _watch_transition(
                         project,
-                        kind="baseline",
+                        kind=(
+                            "transition"
+                            if published is not None and published != state
+                            else "baseline"
+                        ),
                         snapshot=snapshot,
-                        previous=None,
-                        current=str(snapshot["state"]),
+                        previous=published if published != state else None,
+                        current=state,
                         counts=counts,
                         spend_runs=pointers,
                         rate_statuses=rate_statuses,
