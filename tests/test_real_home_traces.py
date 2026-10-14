@@ -62,3 +62,23 @@ def test_an_entry_carrying_the_test_needle_is_reported(tmp_path: Path) -> None:
 
     assert hits, "a file carrying the test's own session went unreported"
     assert NEEDLES[1] in Path(hits[0]).read_text()
+
+
+def test_a_subtree_naming_one_file_is_searched_at_the_root(tmp_path: Path) -> None:
+    """A subtree may name a single file, so a guard can point at that file.
+
+    Some writers touch one file directly under the home rather than a directory
+    tree -- the budget-lift store keeps its single ``budget-lifts.json`` at the
+    home's root -- so a guard against such a leak searches that file instead of
+    walking every directory the home holds. The file is a hit only when its own
+    name or its text carries a needle.
+    """
+    root = tmp_path / "home"
+    root.mkdir()
+    target = root / "budget-lifts.json"
+    target.write_text(f'{{"group": "{NEEDLES[0]}"}}')
+
+    assert traces_naming(root, (target.name,), NEEDLES) == [str(target)]
+
+    target.write_text('{"group": "some-peer"}')
+    assert traces_naming(root, (target.name,), NEEDLES) == []

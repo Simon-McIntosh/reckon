@@ -44,13 +44,16 @@ _REAL_STATE_ROOT = _real_state_root()
 def _real_state_traces() -> list[str]:
     """This suite's own traces in the real state root, if any.
 
-    Every case mounts the ``proj`` project under a temporary state root, so a
-    leak would write ``proj``'s state there. Searching for that project name
-    and the resolved root's path, rather than comparing every file's path and
-    size, is what keeps a peer session -- which rewrites the real state
-    directory constantly -- from failing this guard.
+    Every case mounts the ``decision-append-fixture`` project under a temporary
+    state root, so a leak would write that project's state there. Searching for
+    that project name and the resolved root's path, rather than comparing every
+    file's path and size, is what keeps a peer session -- which rewrites the
+    real state directory constantly -- from failing this guard. The project
+    name is this suite's own, so a peer's project is never a hit.
     """
-    return traces_naming(_REAL_STATE_ROOT, (".",), ("proj", str(_REAL_STATE_ROOT)))
+    return traces_naming(
+        _REAL_STATE_ROOT, (".",), ("decision-append-fixture", str(_REAL_STATE_ROOT))
+    )
 
 
 @pytest.fixture(autouse=True)
@@ -65,8 +68,8 @@ def _real_state_untouched():
 
 @pytest.fixture()
 def setup(tmp_path, monkeypatch):
-    """Hermetic temp docs dir + mounts + state root. Returns (docs, state, proj)."""
-    project = "proj"
+    """Hermetic temp docs dir + mounts + account for this suite's own project."""
+    project = "decision-append-fixture"
     docs_dir = tmp_path / "docs"
     docs_dir.mkdir()
     state_root = tmp_path / "state"
@@ -100,7 +103,7 @@ def _make_plan(docs_dir: Path, slug: str, state: dict) -> Path:
         "<!doctype html>\n"
         '<html lang="en">\n<head>'
         '<meta charset="utf-8">'
-        '<meta name="docs-project" content="proj">'
+        '<meta name="docs-project" content="decision-append-fixture">'
         f"<title>{slug}</title></head>\n"
         '<body><main class="plan-doc"></main></body>\n</html>\n'
     )

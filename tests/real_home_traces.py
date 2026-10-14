@@ -47,10 +47,19 @@ def traces_naming(
     wanted = [needle for needle in needles if needle]
     hits: list[str] = []
     for subtree in subtrees:
-        directory = root / subtree
-        if not directory.is_dir():
+        target = root / subtree
+        if target.is_file():
+            # A subtree may name a single file a writer touches directly, such
+            # as the home's own budget-lifts.json, so a guard against a leaked
+            # write can point at that file without walking the whole tree.
+            if any(needle in target.name for needle in wanted) or any(
+                needle in _read_text(target) for needle in wanted
+            ):
+                hits.append(str(target))
             continue
-        for path in directory.rglob("*"):
+        if not target.is_dir():
+            continue
+        for path in target.rglob("*"):
             if not path.is_file():
                 continue
             named = any(needle in path.name for needle in wanted)

@@ -35,6 +35,7 @@ from reckon import cli as cli_module
 from reckon import crew_dispatch_commands
 from reckon.crew.dispatch import _directory_claim_overlaps
 from reckon.crew.runs import _write_json, pointer_path
+from tests.real_home_traces import traces_naming
 
 PROJECT = "directory-claim-fixture"
 NODE_ID = "directory-claim-asks-first"
@@ -113,15 +114,7 @@ def real_live_directory_is_not_a_fixture_target() -> Any:
     """No case may write this fixture's pointer into the real crew home."""
 
     def fixture_pointers() -> list[str]:
-        found = []
-        for path in REAL_LIVE.glob("*.json"):
-            try:
-                text = path.read_text(encoding="utf-8")
-            except OSError:
-                continue
-            if PROJECT in text or CLAIMANT_RUN in text:
-                found.append(path.name)
-        return found
+        return traces_naming(REAL_LIVE.parent, ("live",), (PROJECT, CLAIMANT_RUN))
 
     assert fixture_pointers() == []
     yield

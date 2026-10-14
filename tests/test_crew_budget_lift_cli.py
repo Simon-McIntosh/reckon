@@ -27,8 +27,9 @@ from reckon import _store
 from reckon.cli import main as cli_main
 from reckon.crew import budget_lift as bl
 from reckon.crew import paid_lanes
+from tests.real_home_traces import traces_naming
 
-GROUP = "codex-sub"
+GROUP = "lift-guard-fixture"
 BACKEND = "codex"
 WEEK_HOURS = bl.CLOCK_HOURS[bl.SEVEN_DAY]
 
@@ -75,12 +76,16 @@ def _document(*, week_reset: datetime, five_reset: datetime, observed: datetime)
 
 @pytest.fixture(autouse=True)
 def _real_lifts_untouched():
-    """Prove the workstation's own lift record is untouched by any test here."""
-    real = Path.home() / ".config" / "reckon" / bl.LIFTS_LEAF
-    before = real.read_bytes() if real.exists() else None
+    """Prove the workstation's own lift record is untouched by any test here.
+
+    Only the group this suite keys its grants by is searched for, so a peer's
+    own lift -- keyed by a group this file never uses -- is never a hit.
+    """
+    home = Path.home() / ".config" / "reckon"
+    before = traces_naming(home, (bl.LIFTS_LEAF,), (GROUP,))
     yield
-    after = real.read_bytes() if real.exists() else None
-    assert after == before, "a test wrote the live budget-lifts.json"
+    after = traces_naming(home, (bl.LIFTS_LEAF,), (GROUP,))
+    assert after == before, f"a test wrote the live budget-lifts.json: {after}"
 
 
 class _Fleet:

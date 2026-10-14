@@ -38,9 +38,10 @@ from reckon.crew.dispatch_admission import _refuse_against_the_bookend_reserve
 from reckon.crew.node import CrewError
 from reckon.crew.routing import _budget_verdict
 from reckon.crew.window_reading import WindowFigure, WindowReading
+from tests.real_home_traces import traces_naming
 
 WEEK_HOURS = bl.CLOCK_HOURS[bl.SEVEN_DAY]
-GROUP = "codex-sub"
+GROUP = "lift-guard-fixture"
 LANE = "codex"
 NOW = datetime(2026, 10, 8, 3, 12, tzinfo=UTC)
 ENV = {"USER": "lead"}
@@ -139,14 +140,20 @@ def _grant(config: dict, *, readings: list[dict], **kwargs) -> dict:
 
 @pytest.fixture()
 def guarded_home(tmp_path, monkeypatch):
-    """Point the config home at a throwaway tree, watching the real one."""
-    real = Path.home() / ".config" / "reckon" / bl.LIFTS_LEAF
-    before = real.read_bytes() if real.exists() else None
+    """Point the config home at a throwaway tree, watching the real one.
+
+    Only the group this suite keys its grants by is searched for, so a peer's
+    own lift -- keyed by a group this file never uses -- is never a hit.
+    """
+    home = Path.home() / ".config" / "reckon"
+    before = traces_naming(home, (bl.LIFTS_LEAF,), (GROUP,))
     monkeypatch.setenv("RECKON_HOME", str(tmp_path))
     monkeypatch.delenv(bl.RUN_ID_ENV, raising=False)
     yield tmp_path
-    after = real.read_bytes() if real.exists() else None
-    assert after == before, "a case wrote the workstation's budget-lifts.json"
+    after = traces_naming(home, (bl.LIFTS_LEAF,), (GROUP,))
+    assert after == before, (
+        f"a case wrote the workstation's budget-lifts.json: {after}"
+    )
 
 
 # ── The bookend refusal ─────────────────────────────────────────────────────
