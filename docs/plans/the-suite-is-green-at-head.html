@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.98">
-<meta name="plan-version" content="356">
+<meta name="plan-version" content="357">
 <meta name="plan-modified" content="2026-10-14">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
@@ -1720,6 +1720,9 @@ reviewed worktree is untouched (git status --porcelain empty).</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261014T100305413110-routing-fits-a-worker-window" data-who="reckon-build" data-when="2026-10-14T12:33:55.038Z">
     <div class="r-comment-body"><p>Moved the gc/scratch family into reckon/crew/gc.py (13413 estimated tokens) and the process-signalling family into reckon/crew/process_signal.py (5731), leaving reckon/crew/routing.py at 41308; all three are under the 50000 worker-window bound. check_pure_move exits 0 with an empty problems list, the window test names none of the three and passes, the negative control still makes it name routing.py and fail, and the in-scope tests pass. Two tests whose patches the split stopped intercepting now name the module that reads the symbol: test_recycled_pid_is_refused_before_signalling patches process_signal in place of the crew package, and test_a_worktree_vanishing_before_its_pin_does_not_stop_the_sweep patches gc in place of routing. No case was deleted and no assertion weakened.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-close-s6" data-who="reckon-build" data-when="2026-10-14T13:05:00Z">
+    <div class="r-comment-body"><p>§6 landed, and the worker-window test is green on main again. <code>routing.py</code> is split by pure moves into <code>gc.py</code> and <code>process_signal.py</code>, with re-exports and a stated import order, and drops from about 59,700 to 41,308 estimated tokens. Merged <code>f99974613</code> as <code>c54ad1169</code>; the gate replayed green there, and all three modules import from the merged checkout. Review: 111. Lesson recorded for future splits: scope the test files by every name the moved code reads, not just the names that moved. <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed.html#s6-routing-split">evidence</a></p></div>
 </div>
 </section>
 </main>
