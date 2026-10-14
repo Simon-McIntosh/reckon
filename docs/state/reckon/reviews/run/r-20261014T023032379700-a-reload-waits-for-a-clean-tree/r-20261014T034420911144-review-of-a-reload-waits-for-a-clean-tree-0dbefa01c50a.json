@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate arms it names: baseline importer_population_base.log (rev c4dc0fa7c, 6 importer files, 2 failed pre-existing) against the final head arm reload_cases_head-2.log (rev 0dbefa01c, the 4 changed reload files, 13 passed, EXIT=0); the manifest carries no baseline_suite/after_suite pair, so these named arms stand in.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:473",
+    "reckon/crew_follow_commands.py:2607",
+    "reckon/crew_follow_commands.py:2953"
+  ],
+  "completed_at": "2026-10-14T03:56:32.423Z",
+  "dispatched_at": "2026-10-14T03:45:00Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-reload-waits-for-a-clean-tree.html",
+      "line": "8",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment states the six added failures \"are all in files outside this node's write scope and are reported under follow-ons\" and cites \"8 failed / 16 passed at head\", but commits 0cd56aa78 and 0dbefa01c fixed all six under the widened scope (reload_cases_head-2.log, 13 passed, EXIT=0), so the plan's evidence fragment understates the landing and was never updated after the resume."
+    },
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": "165",
+      "severity": "follow-on",
+      "text": "follow-on: `_tracked_reckon_tree_is_dirty` re-rolls a git porcelain dirty-read the repository already performs at reckon/crew/node.py:1409, reckon/crew/routing.py:1484 and reckon/hooks/worker_stop.py:190, and no shared owner exists, so a later change to the dirty-read convention must be made in several places."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T023032379700-a-reload-waits-for-a-clean-tree/logs/head_gate.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the gate log's own header names rev=c4dc0fa7c while the command it records runs tests/test_a_reload_waits_for_a_clean_tree.py, a module that exists only from f3bf810ae onward, so the log's revision line mislabels the revision the gate actually measured."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against c4dc0fa7c \u2014 f3bf810ae adds the git-dirty gate and the every-module import proof plus the new test module, 582d6ecaa adds the evidence fragment, 0cd56aa78 reroutes the four reload cases onto a committed scratch checkout and widens their timing bounds past the import proof, 0dbefa01c shares the scratch-checkout helpers; production change is confined to reckon/crew_follow_commands.py.",
+    "done_when": "the done_when names the three cases \u2014 a tracked file modified against HEAD defers while the pane keeps delivering, a module raising NameError at import defers, and a committed clean tree reloads \u2014 plus the still-passing syntax deferral and a logged negative control; the manifest records the gate \"3 passed, EXIT=0\" (head_gate.log) and the control \"2 failed, 1 passed, EXIT=1\" (negative_control.log), and the three cases are present at tests/test_a_reload_waits_for_a_clean_tree.py:322, :361 and :396.",
+    "goal": "the node's goal is to defer a follower or producer reload while any tracked reckon file differs from HEAD or any module the process loads fails to import, keeping the running image; reckon/crew_follow_commands.py:347 defers on `_tracked_reckon_tree_is_dirty` (:165) and :354 on the widened `_replacement_imports` proof (:210), which is exactly that deliverable.",
+    "manifest": "read; status complete, commits f3bf810ae/582d6ecaa/0cd56aa78/0dbefa01c, changed_paths match the seven-path diff, the head arm \"13 passed, EXIT=0\" (reload_cases_head-2.log) and the negative control are recorded, and its follow_ons already name the tight producer bound; it carries no baseline_suite/after_suite keys, so the added-failure figure is derived from the importer-population arms it names rather than the field the pipeline reads.",
+    "write_paths": "the node was fenced to reckon/crew_follow_commands.py, tests/test_a_reload_waits_for_a_clean_tree.py, the evidence fragment and the figures dir; the diff touches those three and four reload test files (test_follow_lifetime_survives_reload.py, test_follower_bounds_its_lifetime.py, test_follower_checks_its_owner.py, test_producer_survives_its_reload.py) that the coordinator granted by an explicit widen, recorded in status-repair.json (\"the coordinator is granting those files and resuming\")."
+  },
+  "justifications": {
+    "durability": "tests/test_a_reload_waits_for_a_clean_tree.py:337 asserts RELOAD_LAUNCHER_MARKER is absent from the producer's cmdline after a dirty edit, which reddens whenever the dirty-tree guard stops deferring (the negative control shows exactly that failure).",
+    "evidence": "the gate tests/test_a_reload_waits_for_a_clean_tree.py measures the three done_when cases and its \"3 passed\" result is recorded in head_gate.log, but the manifest carries no baseline_suite/after_suite pair, so the no-added-failure clause rests on the importer-population arms (importer_population_base.log, reload_cases_head-2.log) rather than the field the review pipeline reads.",
+    "fit": "the new helper and probe follow the surrounding style of reckon/crew_follow_commands.py:158-210, and the cross-module helper import at tests/test_follow_lifetime_survives_reload.py:41 matches the established `from tests.` idiom.",
+    "goal_fidelity": "reckon/crew_follow_commands.py:347 defers the reload on `_tracked_reckon_tree_is_dirty` and :354 on `_replacement_imports`, which are the goal's two conditions, each holding the running image until the tree is clean and importable.",
+    "reuse": "no shared owner of a dirty-tree read exists to extend, but the same porcelain read is re-rolled at reckon/crew/node.py:1409, reckon/crew/routing.py:1484 and reckon/hooks/worker_stop.py:190 (FINDING names the closest).",
+    "scope_discipline": "every path in the seven-file diff is either declared in the manifest's changed_paths or one of the four test files the coordinator's widen granted in status-repair.json, and nothing outside the change's purpose is carried."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to defer a follower or producer reload while any tracked reckon file differs from HEAD or any module the process loads fails to import, keeping the running image; reckon/crew_follow_commands.py:347 defers on `_tracked_reckon_tree_is_dirty` (:165) and :354 on the widened `_replacement_imports` proof (:210), which is exactly that deliverable.\nVERDICT done_when: the done_when names the three cases \u2014 a tracked file modified against HEAD defers while the pane keeps delivering, a module raising NameError at import defers, and a committed clean tree reloads \u2014 plus the still-passing syntax deferral and a logged negative control; the manifest records the gate \"3 passed, EXIT=0\" (head_gate.log) and the control \"2 failed, 1 passed, EXIT=1\" (negative_control.log), and the three cases are present at tests/test_a_reload_waits_for_a_clean_tree.py:322, :361 and :396.\nVERDICT write_paths: the node was fenced to reckon/crew_follow_commands.py, tests/test_a_reload_waits_for_a_clean_tree.py, the evidence fragment and the figures dir; the diff touches those three and four reload test files (test_follow_lifetime_survives_reload.py, test_follower_bounds_its_lifetime.py, test_follower_checks_its_owner.py, test_producer_survives_its_reload.py) that the coordinator granted by an explicit widen, recorded in status-repair.json (\"the coordinator is granting those files and resuming\").\nVERDICT manifest: read; status complete, commits f3bf810ae/582d6ecaa/0cd56aa78/0dbefa01c, changed_paths match the seven-path diff, the head arm \"13 passed, EXIT=0\" (reload_cases_head-2.log) and the negative control are recorded, and its follow_ons already name the tight producer bound; it carries no baseline_suite/after_suite keys, so the added-failure figure is derived from the importer-population arms it names rather than the field the pipeline reads.\nVERDICT diff: read commit by commit against c4dc0fa7c \u2014 f3bf810ae adds the git-dirty gate and the every-module import proof plus the new test module, 582d6ecaa adds the evidence fragment, 0cd56aa78 reroutes the four reload cases onto a committed scratch checkout and widens their timing bounds past the import proof, 0dbefa01c shares the scratch-checkout helpers; production change is confined to reckon/crew_follow_commands.py.\nCALL_SITES: reckon/crew_follow_commands.py:473, reckon/crew_follow_commands.py:2607, reckon/crew_follow_commands.py:2953\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_follow_commands.py:347 defers the reload on `_tracked_reckon_tree_is_dirty` and :354 on `_replacement_imports`, which are the goal's two conditions, each holding the running image until the tree is clean and importable.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate tests/test_a_reload_waits_for_a_clean_tree.py measures the three done_when cases and its \"3 passed\" result is recorded in head_gate.log, but the manifest carries no baseline_suite/after_suite pair, so the no-added-failure clause rests on the importer-population arms (importer_population_base.log, reload_cases_head-2.log) rather than the field the review pipeline reads.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every path in the seven-file diff is either declared in the manifest's changed_paths or one of the four test files the coordinator's widen granted in status-repair.json, and nothing outside the change's purpose is carried.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_reload_waits_for_a_clean_tree.py:337 asserts RELOAD_LAUNCHER_MARKER is absent from the producer's cmdline after a dirty edit, which reddens whenever the dirty-tree guard stops deferring (the negative control shows exactly that failure).\nSCORE fit: 18\nJUSTIFICATION fit: the new helper and probe follow the surrounding style of reckon/crew_follow_commands.py:158-210, and the cross-module helper import at tests/test_follow_lifetime_survives_reload.py:41 matches the established `from tests.` idiom.\nSCORE reuse: 17\nJUSTIFICATION reuse: no shared owner of a dirty-tree read exists to extend, but the same porcelain read is re-rolled at reckon/crew/node.py:1409, reckon/crew/routing.py:1484 and reckon/hooks/worker_stop.py:190 (FINDING names the closest).\nFINDING docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-reload-waits-for-a-clean-tree.html:8 follow-on: the fragment states the six added failures \"are all in files outside this node's write scope and are reported under follow-ons\" and cites \"8 failed / 16 passed at head\", but commits 0cd56aa78 and 0dbefa01c fixed all six under the widened scope (reload_cases_head-2.log, 13 passed, EXIT=0), so the plan's evidence fragment understates the landing and was never updated after the resume.\nFINDING reckon/crew_follow_commands.py:165 follow-on: `_tracked_reckon_tree_is_dirty` re-rolls a git porcelain dirty-read the repository already performs at reckon/crew/node.py:1409, reckon/crew/routing.py:1484 and reckon/hooks/worker_stop.py:190, and no shared owner exists, so a later change to the dirty-read convention must be made in several places.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T023032379700-a-reload-waits-for-a-clean-tree/logs/head_gate.log:1 follow-on: the gate log's own header names rev=c4dc0fa7c while the command it records runs tests/test_a_reload_waits_for_a_clean_tree.py, a module that exists only from f3bf810ae onward, so the log's revision line mislabels the revision the gate actually measured.",
+  "review_run_id": "r-20261014T034420911144-review-of-a-reload-waits-for-a-clean-tree-0dbefa01c50a",
+  "reviewed_base_sha": "c4dc0fa7ca7330c4f82bba7ebd88fdbb1a47451a",
+  "reviewed_head_sha": "0dbefa01c50a208d0568d15d3c3d944b7dde380f",
+  "reviewed_run_id": "r-20261014T023032379700-a-reload-waits-for-a-clean-tree",
+  "reviewer": "review-of-a-reload-waits-for-a-clean-tree-0dbefa01c50a",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T03:52:44.818563+00:00",
+  "total": 106
+}
