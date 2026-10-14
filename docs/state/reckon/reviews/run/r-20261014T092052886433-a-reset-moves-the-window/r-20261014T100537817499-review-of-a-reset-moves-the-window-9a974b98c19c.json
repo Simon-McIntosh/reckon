@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/lift_watch.py:127 lift_watch.sweep",
+    "reckon/crew/recovery_watch.py:2175 _sweep_lift_rows",
+    "reckon/budget.py:2606 _lift_resolved_config",
+    "reckon/budget.py:2877 _other_session_lift",
+    "reckon/crew/budget_group.py:185 effective_block",
+    "reckon/crew/routing.py:381 _config_with_effective_budget"
+  ],
+  "completed_at": "2026-10-14T10:25:58.659Z",
+  "dispatched_at": "2026-10-14T10:06:16Z",
+  "findings": [
+    {
+      "file": "tests/test_pace_reads_the_lift.py",
+      "line": "227",
+      "severity": "follow-on",
+      "text": "follow-on: the assertion was changed from held-is-True to held-is-False, which the granted scope extension did not instruct and which no longer distinguishes the reviewed head from base, though the lift-ended half at :224 still does."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commit by commit against base a032162fd; 01b70bd09 replaces the measured-jitter stamp signal with the half-window rule and removes _provider_jitter and STAMP_RESOLUTION_SECONDS from reckon/crew/budget_lift.py, and 9a974b98c moves six out-of-scope fixtures' staged stamps by a full clock window, changing no file under reckon/.",
+    "done_when": "the done_when asks for a temp-home seven_day lift recorded at resets_at 2026-10-20T04:58:15 driven one reading per poll through end_cause and lift_watch.sweep on 04:59:38, a full-window move to end it, five_hour drift and move arms, the real budget-lifts.json and watch stream byte-identical, removal of _provider_jitter and its two tests, and an importer-population gate with no added failure; tests/test_a_reset_moves_the_window.py:120, :141, :162, :195, :216, :235 and :254 carry all of those arms and the byte-identical fixture is at :78, and the gate ran exactly the files importing budget_lift or lift_watch.",
+    "goal": "the node's goal is to end a reset-anchored lift only when the newest reading's stamp moved at least half the clock's window; reckon/crew/budget_lift.py:837 _stamp_moved_past_half_window does exactly that, reading the half-window span from CLOCK_HOURS at :856, and the measured-jitter signal it replaces is gone.",
+    "manifest": "read r-20261014T092052886433-a-reset-moves-the-window/manifest.md; it reports status complete, gate-head.log 185 passed EXIT=0, gate-base.log 180 passed EXIT=0, gate-negative-control.log 4 failed 3 passed EXIT=1, names the scope extension, and itself flags the tests/test_pace_reads_the_lift.py assertion change under evidence_inputs.",
+    "write_paths": "the source node declared reckon/crew/budget_lift.py, tests/test_a_lift_survives_reset_jitter.py, tests/test_a_reset_moves_the_window.py, docs/evidence/fragments/a-window-paces-the-lane/a-reset-moves-the-window.html and docs/figures/a-window-paces-the-lane/a-reset-moves-the-window; the diff also changes tests/test_a_lift_reaches_every_budget_row.py, tests/test_budget_lift.py, tests/test_follower_names_a_lift.py, tests/test_pace_reads_the_lift.py and tests/test_reserves_read_the_lift.py, which the run records as a coordinator-granted mid-run scope extension in resume-1-advice.txt."
+  },
+  "justifications": {
+    "durability": "gate-negative-control.log restores the measured-jitter module and reads 4 failed 3 passed EXIT=1, with tests/test_a_reset_moves_the_window.py:120, :141, :162 and :216 reddening on the reinstated regression.",
+    "evidence": "the head gate runs exactly the 14 files importing budget_lift or lift_watch (185 passed EXIT=0) against the 13-file base arm (180 passed EXIT=0) in gate-head.log and gate-base.log, and the counts reconcile with the 7 added and 2 removed tests.",
+    "fit": "_stamp_moved_past_half_window follows the module's own signal-helper idiom and the test file's prose docstring, and it introduces no plan, ticket or version label.",
+    "goal_fidelity": "reckon/crew/budget_lift.py:856 computes half_window from CLOCK_HOURS and :857 fires only on moved >= half_window, which is the plan's 2.5-hour and 3.5-day spans.",
+    "reuse": "the new helper extends the CLOCK_HOURS owner already in reckon/crew/budget_lift.py rather than restating window lengths, and the search over reckon/ for another half-window or clock-span comparison found none.",
+    "scope_discipline": "the diff reaches five test files outside the declared write paths, excused by a coordinator scope extension recorded in resume-1-advice.txt, and tests/test_pace_reads_the_lift.py:227 carries a change that extension did not instruct."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to end a reset-anchored lift only when the newest reading's stamp moved at least half the clock's window; reckon/crew/budget_lift.py:837 _stamp_moved_past_half_window does exactly that, reading the half-window span from CLOCK_HOURS at :856, and the measured-jitter signal it replaces is gone.\nVERDICT done_when: the done_when asks for a temp-home seven_day lift recorded at resets_at 2026-10-20T04:58:15 driven one reading per poll through end_cause and lift_watch.sweep on 04:59:38, a full-window move to end it, five_hour drift and move arms, the real budget-lifts.json and watch stream byte-identical, removal of _provider_jitter and its two tests, and an importer-population gate with no added failure; tests/test_a_reset_moves_the_window.py:120, :141, :162, :195, :216, :235 and :254 carry all of those arms and the byte-identical fixture is at :78, and the gate ran exactly the files importing budget_lift or lift_watch.\nVERDICT write_paths: the source node declared reckon/crew/budget_lift.py, tests/test_a_lift_survives_reset_jitter.py, tests/test_a_reset_moves_the_window.py, docs/evidence/fragments/a-window-paces-the-lane/a-reset-moves-the-window.html and docs/figures/a-window-paces-the-lane/a-reset-moves-the-window; the diff also changes tests/test_a_lift_reaches_every_budget_row.py, tests/test_budget_lift.py, tests/test_follower_names_a_lift.py, tests/test_pace_reads_the_lift.py and tests/test_reserves_read_the_lift.py, which the run records as a coordinator-granted mid-run scope extension in resume-1-advice.txt.\nVERDICT manifest: read r-20261014T092052886433-a-reset-moves-the-window/manifest.md; it reports status complete, gate-head.log 185 passed EXIT=0, gate-base.log 180 passed EXIT=0, gate-negative-control.log 4 failed 3 passed EXIT=1, names the scope extension, and itself flags the tests/test_pace_reads_the_lift.py assertion change under evidence_inputs.\nVERDICT diff: read commit by commit against base a032162fd; 01b70bd09 replaces the measured-jitter stamp signal with the half-window rule and removes _provider_jitter and STAMP_RESOLUTION_SECONDS from reckon/crew/budget_lift.py, and 9a974b98c moves six out-of-scope fixtures' staged stamps by a full clock window, changing no file under reckon/.\nCALL_SITES: reckon/crew/lift_watch.py:127 lift_watch.sweep, reckon/crew/recovery_watch.py:2175 _sweep_lift_rows, reckon/budget.py:2606 _lift_resolved_config, reckon/budget.py:2877 _other_session_lift, reckon/crew/budget_group.py:185 effective_block, reckon/crew/routing.py:381 _config_with_effective_budget\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/budget_lift.py:856 computes half_window from CLOCK_HOURS and :857 fires only on moved >= half_window, which is the plan's 2.5-hour and 3.5-day spans.\nSCORE evidence: 19\nJUSTIFICATION evidence: the head gate runs exactly the 14 files importing budget_lift or lift_watch (185 passed EXIT=0) against the 13-file base arm (180 passed EXIT=0) in gate-head.log and gate-base.log, and the counts reconcile with the 7 added and 2 removed tests.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: the diff reaches five test files outside the declared write paths, excused by a coordinator scope extension recorded in resume-1-advice.txt, and tests/test_pace_reads_the_lift.py:227 carries a change that extension did not instruct.\nSCORE durability: 19\nJUSTIFICATION durability: gate-negative-control.log restores the measured-jitter module and reads 4 failed 3 passed EXIT=1, with tests/test_a_reset_moves_the_window.py:120, :141, :162 and :216 reddening on the reinstated regression.\nSCORE fit: 19\nJUSTIFICATION fit: _stamp_moved_past_half_window follows the module's own signal-helper idiom and the test file's prose docstring, and it introduces no plan, ticket or version label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the new helper extends the CLOCK_HOURS owner already in reckon/crew/budget_lift.py rather than restating window lengths, and the search over reckon/ for another half-window or clock-span comparison found none.\nFINDING tests/test_pace_reads_the_lift.py:227 follow-on: the assertion was changed from held-is-True to held-is-False, which the granted scope extension did not instruct and which no longer distinguishes the reviewed head from base, though the lift-ended half at :224 still does.",
+  "review_run_id": "r-20261014T100537817499-review-of-a-reset-moves-the-window-9a974b98c19c",
+  "reviewed_base_sha": "a032162fd36218e7ea5d1b6e699c5459e5e6add0",
+  "reviewed_head_sha": "9a974b98c19c7033de91508927bf9e7be395419f",
+  "reviewed_run_id": "r-20261014T092052886433-a-reset-moves-the-window",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T10:21:11.658290+00:00",
+  "total": 111
+}
