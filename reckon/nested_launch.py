@@ -39,7 +39,12 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 
 from reckon.host import HostFacts, host_facts
-from reckon.shim_lookup import deeper, depth_refusal, real_executable
+from reckon.shim_lookup import (
+    caller_environment,
+    deeper,
+    depth_refusal,
+    real_executable,
+)
 
 # The status a refusal exits with. Distinct from the codes used by the real
 # scheduler tools so a caller can tell a refusal from a launch failure.
@@ -190,7 +195,7 @@ def main(
     replaces this process with the real binary. The return is for the refusal
     and the missing-binary cases only; a forwarded launch does not come back.
     """
-    env = os.environ if environ is None else environ
+    env = caller_environment(os.environ if environ is None else environ)
     refusal = depth_refusal(tool, env)
     if refusal is not None:
         print(refusal, file=sys.stderr)

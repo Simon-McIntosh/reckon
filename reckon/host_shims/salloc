@@ -35,8 +35,31 @@ if [ -z "$interpreter" ]; then
   exit 127
 fi
 
-PYTHONPATH="$repo_root${PYTHONPATH:+:$PYTHONPATH}" \
-  exec "$interpreter" -c '
+# Only reckon's import root is on the interpreter's PYTHONPATH, and the user
+# site (-s) and working directory (-P) are dropped: a job that ran `module
+# load` puts another Python's site-packages on PYTHONPATH, and left ahead of
+# reckon's own packages a 3.11 copy of a dependency shadows the one reckon
+# needs, breaking the import before the scheduler command is reached. The
+# caller's interpreter-path variables are parked under RECKON_SHIM_CALLER_*
+# here: shim_lookup's caller_environment hands them back to the scheduler
+# command the shim runs, so they never reach this interpreter and nothing on
+# the caller's path can shadow reckon's packages.
+if [ "${PYTHONPATH+set}" = set ]; then
+  RECKON_SHIM_CALLER_PYTHONPATH=$PYTHONPATH
+  export RECKON_SHIM_CALLER_PYTHONPATH
+fi
+if [ "${PYTHONHOME+set}" = set ]; then
+  RECKON_SHIM_CALLER_PYTHONHOME=$PYTHONHOME
+  export RECKON_SHIM_CALLER_PYTHONHOME
+fi
+if [ "${PYTHONSTARTUP+set}" = set ]; then
+  RECKON_SHIM_CALLER_PYTHONSTARTUP=$PYTHONSTARTUP
+  export RECKON_SHIM_CALLER_PYTHONSTARTUP
+fi
+unset PYTHONPATH PYTHONHOME PYTHONSTARTUP
+
+PYTHONPATH="$repo_root" \
+  exec "$interpreter" -P -s -c '
 import sys
 
 from reckon.nested_launch import main

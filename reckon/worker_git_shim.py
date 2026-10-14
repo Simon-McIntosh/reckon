@@ -76,7 +76,12 @@ import tempfile
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 
-from reckon.shim_lookup import deeper, depth_refusal, real_executable
+from reckon.shim_lookup import (
+    caller_environment,
+    deeper,
+    depth_refusal,
+    real_executable,
+)
 
 # The environment key dispatch exports into every worker. Its presence marks
 # the caller as a run-scoped worker rather than a coordinator.
@@ -750,7 +755,7 @@ def main(
     has an index to isolate, which runs git as a child: the return is for the
     refusal, the missing-binary and the isolated-child cases.
     """
-    env = os.environ if environ is None else environ
+    env = caller_environment(os.environ if environ is None else environ)
     refusal = depth_refusal("git", env)
     if refusal is not None:
         print(refusal, file=sys.stderr)

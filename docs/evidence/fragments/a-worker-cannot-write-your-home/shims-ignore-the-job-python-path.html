@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-worker-cannot-write-your-home">
+  <meta name="plan-evidence-for" content="a-worker-cannot-write-your-home">
+  <title>A shim ignores the job's Python path | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>A shim ignores the job's Python path</h1>
+    </header>
+
+    <section id="shims-ignore-the-job-python-path-landing">
+      <p>The four shims — <code>reckon/worker_shims/git</code> and <code>reckon/host_shims/salloc</code>, <code>sbatch</code>, <code>srun</code> — start reckon's interpreter with only reckon's import root on its path: they set <code>PYTHONPATH="$repo_root"</code>, add <code>-s</code> to drop the user site, and unset <code>PYTHONPATH</code>, <code>PYTHONHOME</code> and <code>PYTHONSTARTUP</code> so a job that ran <code>module load</code> cannot shadow reckon's dependencies. The caller's interpreter-path variables are parked under <code>RECKON_SHIM_CALLER_*</code> and restored by <code>caller_environment</code>, a single definition that lives with the shim lookup helper in <code>reckon/shim_lookup.py</code> and is imported from there by <code>reckon/worker_git_shim.py</code> and <code>reckon/nested_launch.py</code>, so the git or scheduler command a shim runs still receives the caller's environment unchanged, <code>PYTHONPATH</code> included. The bootstrap puts nothing of the caller's on the shim interpreter's path, so a <code>sitecustomize</code> the job's <code>PYTHONPATH</code> carries is never imported: a startup hook that raises on import cannot stop a shim before git or the scheduler is reached.</p>
+      <p>Measured by <code>tests/test_a_shim_ignores_the_job_python_path.py</code>: with <code>PYTHONPATH</code> and <code>PYTHONHOME</code> naming a temporary directory whose <code>typing_extensions.py</code> raises on import, a git command through the worker shim succeeds, each host shim reaches its main, and the program each shim runs sees the caller's <code>PYTHONPATH</code> and <code>PYTHONHOME</code> unchanged. A further case names a directory whose <code>sitecustomize.py</code> raises: git still succeeds and each host shim still reaches its main. 5 passed. The declared negative control — restoring the appended caller <code>PYTHONPATH</code> and the bootstrap's <code>sitecustomize</code> import in the shims — makes the same test fail with the import error on 4 of its 5 cases, the sitecustomize case among them.</p>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,10 +1,11 @@
 """The srun/sbatch/salloc shims refuse an implicit nested launch.
 
-Every case drives the real shim executable, with the fixture facts injected by
-a ``sitecustomize`` the test writes into a temporary directory, so no test
-reads the real ``/proc``. The shim directory is put on the fixture ``PATH`` and
-a fake real binary records the argv it was handed, which is how the exec paths
-are told from the refusal path.
+Every case drives the real shim executable, with the fixture facts installed by
+a preamble the test hands the shim through a wrapper interpreter it names with
+``RECKON_SHIM_PYTHON``, so no test reads the real ``/proc`` and no production
+import path is widened for the test. The shim directory is put on the fixture
+``PATH`` and a fake real binary records the argv it was handed, which is how the
+exec paths are told from the refusal path.
 
 The mutations this file declares — remove the in-allocation check, and drop the
 shim-directory filter from the lookup that finds the real binary — are loaded
@@ -34,15 +35,14 @@ TOOLS = ("srun", "sbatch", "salloc")
 # itself and never returns; the bound is what turns the second into a report.
 SELF_EXEC_BOUND_SECONDS = 20
 
-# The fact injection: install the fixture facts before the shim calls main, and
-# pop its own markers so the fake binary the shim execs into never sees them.
+# The fact injection: install the fixture facts before the shim calls main.
 # ``NESTED_LAUNCH_TEST_MODULE`` swaps in the mutant for the mutation check.
 _INJECTION = '''"""Test-only: install fixture host facts into reckon.nested_launch."""
 import os
 import sys
 
-_marker = os.environ.pop("NESTED_LAUNCH_TEST_FACTS", None)
-_module_path = os.environ.pop("NESTED_LAUNCH_TEST_MODULE", None)
+_marker = os.environ.get("NESTED_LAUNCH_TEST_FACTS")
+_module_path = os.environ.get("NESTED_LAUNCH_TEST_MODULE")
 if _marker is not None:
     if _module_path:
         import importlib.util
@@ -53,8 +53,7 @@ if _marker is not None:
         _module = importlib.util.module_from_spec(_spec)
         sys.modules["reckon.nested_launch"] = _module
         _spec.loader.exec_module(_module)
-    else:
-        import reckon.nested_launch as _module
+    import reckon.nested_launch as _module
 
     from reckon.host import HostFacts
 
@@ -71,6 +70,23 @@ if _marker is not None:
         sources={},
     )
 '''
+
+# A test-controlled stand-in for the interpreter a shim starts. The shim runs
+# its resolved interpreter as ``<interp> -P -s -c <bootstrap> <tool> <argv...>``;
+# this wrapper keeps that argv and runs the same program under the real Python,
+# with the fixture preamble run first. The fixture therefore reaches the shim
+# without any production import path being widened for it: the shim's own
+# interpreter still loads reckon from its import root alone.
+_WRAPPER = """#!/bin/sh
+set -eu
+real=$NESTED_LAUNCH_TEST_PYTHON
+preamble=$NESTED_LAUNCH_TEST_PREAMBLE
+bootstrap=$4
+shift 4
+exec "$real" -P -s -c "$(cat "$preamble")
+
+$bootstrap" "$@"
+"""
 
 # A fake real scheduler tool: append its full path then its argv, one per line,
 # each invocation terminated by ``---``. The full path is recorded so a case
@@ -122,25 +138,30 @@ def mutation_names() -> tuple[str, ...]:
 
 @dataclasses.dataclass
 class Fixture:
-    """A fake real scheduler tool, the fact injection, and the argv record."""
+    """A fake real scheduler tool, the wrapper interpreter, and the argv record."""
 
     fake_bin: Path
-    injection: Path
+    wrapper: Path
+    preamble: Path
     record: Path
 
 
 def make_fixture(root: Path) -> Fixture:
     fake_bin = root / "fake-real"
     fake_bin.mkdir(parents=True, exist_ok=True)
-    injection = root / "injection"
-    injection.mkdir(parents=True, exist_ok=True)
     record = root / "argv-record.txt"
+    preamble = root / "fixture-preamble.py"
+    preamble.write_text(_INJECTION, encoding="utf-8")
+    wrapper = root / "shim-python"
+    wrapper.write_text(_WRAPPER, encoding="utf-8")
+    wrapper.chmod(0o755)
     for tool in TOOLS:
         path = fake_bin / tool
         path.write_text(_FAKE, encoding="utf-8")
         path.chmod(0o755)
-    (injection / "sitecustomize.py").write_text(_INJECTION, encoding="utf-8")
-    return Fixture(fake_bin=fake_bin, injection=injection, record=record)
+    return Fixture(
+        fake_bin=fake_bin, wrapper=wrapper, preamble=preamble, record=record
+    )
 
 
 def launch_env(
@@ -155,12 +176,18 @@ def launch_env(
     env["PATH"] = os.pathsep.join(
         [str(fixture.fake_bin), str(SHIM_DIR), env.get("PATH", "")]
     )
-    env["PYTHONPATH"] = os.pathsep.join([str(fixture.injection), str(REPO_ROOT)])
+    # The shim sets the interpreter's PYTHONPATH to its own import root, so the
+    # fixture reaches it only through the wrapper below, never through a path
+    # the shim would read. REPO_ROOT here serves the direct-probe case.
+    env["PYTHONPATH"] = str(REPO_ROOT)
     env["NESTED_LAUNCH_TEST_FACTS"] = "inside" if inside else "outside"
     env["FAKE_LAUNCH_RECORD"] = str(fixture.record)
-    # The shim resolves its own interpreter; hand it the one running pytest so
-    # the shim need not fall back to a repository .venv the tree may not have.
-    env["RECKON_SHIM_PYTHON"] = sys.executable
+    # The shim resolves its own interpreter; hand it a wrapper that installs the
+    # fixture and then runs the shim's bootstrap under the interpreter running
+    # pytest, so the shim need not fall back to a repository .venv.
+    env["RECKON_SHIM_PYTHON"] = str(fixture.wrapper)
+    env["NESTED_LAUNCH_TEST_PYTHON"] = sys.executable
+    env["NESTED_LAUNCH_TEST_PREAMBLE"] = str(fixture.preamble)
     if override is not None:
         env["NESTED_LAUNCH_TEST_MODULE"] = str(override)
     if extra:
@@ -224,7 +251,7 @@ def test_the_three_shims_are_executable() -> None:
 
 
 def test_the_fixture_install_is_live(tmp_path: Path) -> None:
-    """The injection replaces host_facts, so the module reads no real /proc."""
+    """The preamble replaces host_facts, so the module reads no real /proc."""
     fixture = make_fixture(tmp_path)
     env = launch_env(fixture, inside=True)
     probe = (
@@ -232,8 +259,9 @@ def test_the_fixture_install_is_live(tmp_path: Path) -> None:
         "f = m.host_facts(); "
         "print(int(f.in_allocation), f.job_id, f.node)"
     )
+    program = fixture.preamble.read_text(encoding="utf-8") + "\n" + probe
     result = subprocess.run(
-        [str(PYTHON), "-c", probe],
+        [str(PYTHON), "-c", program],
         env=env,
         capture_output=True,
         text=True,
