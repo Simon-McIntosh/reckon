@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite and after_suite fields: the base arm f255954 names 13 failure ids and the head arm 7ebf0de29 names the identical 13 ids, so the node-id set difference (head minus base) is empty and the change adds no failing test. The head-arm gate.log the manifest cites is a partial capture with no summary or EXIT line, so the count of 140 passed is corroborated only by the after_suite field and the run stream (13 failed, 140 passed, EXIT=1); the base-gate.log does carry its summary line.",
+  "backend": "local",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:2577"
+  ],
+  "completed_at": "2026-10-14T02:05:24.752Z",
+  "dispatched_at": "2026-10-14T01:56:57Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T222214371236-stale-producer-remedy-runs-from-here/gate.log",
+      "line": "4",
+      "severity": "blocking",
+      "text": "blocking: the head-arm gate.log the done_when names is a partial capture (1418 bytes, ends at 47% progress) with no pytest summary and no EXIT= line, so the manifest's after_suite completed:true / failure_count 13 is not verifiable from the log it cites; a promotion guard reading that log finds no readable head arm."
+    },
+    {
+      "file": "tests/test_stale_producer_remedy_runs_from_here.py",
+      "line": "207",
+      "severity": "follow-on",
+      "text": "follow-on: assert event[\"remedy\"] == expected compares the event's remedy to a direct call of runs.watch_cycle_line(PROJECT), the same owner the production code at crew_follow_commands.py:1504 calls, so the two sides move together and the assertion holds whatever that function returns; the branch-selection asserts on the surrounding lines (:206-210) are independent and carry the real guard."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit 7ebf0de29 against base f255954bb4d650ac247f5c91db82768cb128c4ac; one commit, two files (+266/-4), _producer_seat_host added at crew_follow_commands.py:1455 and the foreign/local branch at :1489, the rest of the change is the new 217-line test file.",
+    "done_when": "the done-when names a new tests/test_stale_producer_remedy_runs_from_here.py covering the foreign-host event (names host, says reload, prints no refused command) and the unchanged local-host event, plus no failure beyond base in tests/test_follow*.py recorded in a gate.log; the manifest records 13 failed/140 passed on the gate, but the gate.log it names is truncated and carries no summary, so the head-arm result is not readable from its own log.",
+    "goal": "the goal is to make the stale-producer notice name a remedy its reader's host can run; reckon/crew_follow_commands.py:1484 reads the seat host via runs._seat_host/_seat_names_a_foreign_host and the branch at :1489 keeps the cycle pair for a local seat and, for a foreign seat, names the host and says the producer reloads itself.",
+    "manifest": "read; it is at the predecessor run path r-20261013T215849968656 (the live pointer's manifest_path) and records status complete, commit 7ebf0de29, the negative-control log/note, and baseline_suite/after_suite with exit_status 1, completed true, failure_count 13 each and the same 13 failure ids; its after_suite log_path points at a gate.log that does not contain the summary it reports.",
+    "write_paths": "the declared fence is reckon/crew_follow_commands.py and tests/test_stale_producer_remedy_runs_from_here.py; the single commit touches exactly those two files and nothing else."
+  },
+  "justifications": {
+    "durability": "negative-control.log records test_a_foreign_seat_names_the_host_and_the_producers_self_reload failing (EXIT=1) when the foreign branch is removed, so that guard is real, but tests/test_stale_producer_remedy_runs_from_here.py:207 compares the event remedy to a direct call of the same runs.watch_cycle_line owner the code calls.",
+    "evidence": "the done-when names a gate.log in the run directory, but /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T222214371236-stale-producer-remedy-runs-from-here/gate.log is a 4-line partial capture ending at 47% with no summary or EXIT line, so the recorded 13/140 is only in after_suite JSON and the stream, not in its own named receipt.",
+    "fit": "the added helper and branch at reckon/crew_follow_commands.py:1455 and :1489 follow the module's docstring-and-type-hint idiom and introduce no plan label or banned name.",
+    "goal_fidelity": "reckon/crew_follow_commands.py:1489 branches on runs._seat_names_a_foreign_host and the foreign line at :1497 names the host and its self-reload with no unwatch command, which is what the goal states.",
+    "reuse": "_producer_seat_host wraps the existing owners reckon/crew/watch_unit.py:55 _seat_host and :60 _seat_names_a_foreign_host (re-exported by reckon/crew/runs.py:3094) rather than re-implementing host classification.",
+    "scope_discipline": "git show --stat of 7ebf0de29 lists only reckon/crew_follow_commands.py and tests/test_stale_producer_remedy_runs_from_here.py, the two declared write paths."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to make the stale-producer notice name a remedy its reader's host can run; reckon/crew_follow_commands.py:1484 reads the seat host via runs._seat_host/_seat_names_a_foreign_host and the branch at :1489 keeps the cycle pair for a local seat and, for a foreign seat, names the host and says the producer reloads itself.\nVERDICT done_when: the done-when names a new tests/test_stale_producer_remedy_runs_from_here.py covering the foreign-host event (names host, says reload, prints no refused command) and the unchanged local-host event, plus no failure beyond base in tests/test_follow*.py recorded in a gate.log; the manifest records 13 failed/140 passed on the gate, but the gate.log it names is truncated and carries no summary, so the head-arm result is not readable from its own log.\nVERDICT write_paths: the declared fence is reckon/crew_follow_commands.py and tests/test_stale_producer_remedy_runs_from_here.py; the single commit touches exactly those two files and nothing else.\nVERDICT manifest: read; it is at the predecessor run path r-20261013T215849968656 (the live pointer's manifest_path) and records status complete, commit 7ebf0de29, the negative-control log/note, and baseline_suite/after_suite with exit_status 1, completed true, failure_count 13 each and the same 13 failure ids; its after_suite log_path points at a gate.log that does not contain the summary it reports.\nVERDICT diff: read commit 7ebf0de29 against base f255954bb4d650ac247f5c91db82768cb128c4ac; one commit, two files (+266/-4), _producer_seat_host added at crew_follow_commands.py:1455 and the foreign/local branch at :1489, the rest of the change is the new 217-line test file.\nCALL_SITES: reckon/crew_follow_commands.py:2577\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_follow_commands.py:1489 branches on runs._seat_names_a_foreign_host and the foreign line at :1497 names the host and its self-reload with no unwatch command, which is what the goal states.\nSCORE evidence: 9\nJUSTIFICATION evidence: the done-when names a gate.log in the run directory, but /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T222214371236-stale-producer-remedy-runs-from-here/gate.log is a 4-line partial capture ending at 47% with no summary or EXIT line, so the recorded 13/140 is only in after_suite JSON and the stream, not in its own named receipt.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat of 7ebf0de29 lists only reckon/crew_follow_commands.py and tests/test_stale_producer_remedy_runs_from_here.py, the two declared write paths.\nSCORE durability: 15\nJUSTIFICATION durability: negative-control.log records test_a_foreign_seat_names_the_host_and_the_producers_self_reload failing (EXIT=1) when the foreign branch is removed, so that guard is real, but tests/test_stale_producer_remedy_runs_from_here.py:207 compares the event remedy to a direct call of the same runs.watch_cycle_line owner the code calls.\nSCORE fit: 18\nJUSTIFICATION fit: the added helper and branch at reckon/crew_follow_commands.py:1455 and :1489 follow the module's docstring-and-type-hint idiom and introduce no plan label or banned name.\nSCORE reuse: 20\nJUSTIFICATION reuse: _producer_seat_host wraps the existing owners reckon/crew/watch_unit.py:55 _seat_host and :60 _seat_names_a_foreign_host (re-exported by reckon/crew/runs.py:3094) rather than re-implementing host classification.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T222214371236-stale-producer-remedy-runs-from-here/gate.log:4 blocking: the head-arm gate.log the done_when names is a partial capture (1418 bytes, ends at 47% progress) with no pytest summary and no EXIT= line, so the manifest's after_suite completed:true / failure_count 13 is not verifiable from the log it cites; a promotion guard reading that log finds no readable head arm.\nFINDING tests/test_stale_producer_remedy_runs_from_here.py:207 follow-on: assert event[\"remedy\"] == expected compares the event's remedy to a direct call of runs.watch_cycle_line(PROJECT), the same owner the production code at crew_follow_commands.py:1504 calls, so the two sides move together and the assertion holds whatever that function returns; the branch-selection asserts on the surrounding lines (:206-210) are independent and carry the real guard.\nBASE_REVISION: f255954bb4d650ac247f5c91db82768cb128c4ac\nREVISION: 7ebf0de29d368dcd14642d52c36a6217cb232844",
+  "review_run_id": "r-20261014T015605522579-review-of-stale-producer-remedy-runs-from-here-7ebf0de29d36",
+  "reviewed_base_sha": "f255954bb4d650ac247f5c91db82768cb128c4ac",
+  "reviewed_head_sha": "7ebf0de29d368dcd14642d52c36a6217cb232844",
+  "reviewed_run_id": "r-20261013T222214371236-stale-producer-remedy-runs-from-here",
+  "scores": {
+    "durability": 15,
+    "evidence": 9,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T02:01:30.650346+00:00",
+  "total": 101
+}
