@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-north-star" content="unattended-execution">
 <meta name="plan-impl" content="0.8823529411764706">
-<meta name="plan-version" content="160">
+<meta name="plan-version" content="161">
 <meta name="plan-modified" content="2026-10-14">
 </head>
 <body>
@@ -477,6 +477,9 @@
 </div>
 <div class="r-comment" data-section="s23" data-id="c-close-s23" data-who="" data-when="2026-10-14">
     <div class="r-comment-body"><p>Landed at <code>72bd31bb8</code> (review 111, 0 added failures on the coordinator's sequential arms). <code>--model</code> and a picker route narrow a model through one function beside <code>resolve_name</code>, and §18's unread <code>model_key</code> write is gone. <a href="/reckon/evidence/archive/lane-and-model-routing-landed.html#s23">Landing record</a>.</p></div>
+</div>
+<div class="r-comment" data-section="s23" data-id="c-run-r-20261013T233548277609-one-function-narrows-a-model" data-who="reckon-build" data-when="2026-10-14T00:25:21.377Z">
+    <div class="r-comment-body"><p>Ledger now owns the one model-to-backend narrowing (backend_serving_model beside resolve_name); --model and the picker route both call it and refuse an undeclared pair identically, the picker snapshot&#x27;s unread model_key write is removed, and the argv test builds its launch plan from the resolved backend. New tests: the catalogue-only alias astra-legacy resolves to codex-astra on both routes (refused on the picker route at base), identical refusal text on both routes, and both callers reach the shared resolver (spy). Base arm 8 failed / 2810 passed; head arm 0 added failures.</p></div>
 </div>
 <div class="r-comment" data-section="s14" data-id="c-run-r-20261013T185222400195-review-of-out-of-lane-model-refused-by-name-44931e2d05c5" data-who="reckon-build" data-when="2026-10-13T19:12:38.319Z">
     <div class="r-comment-body"><p>review of r-20261013T180426574495-out-of-lane-model-refused-by-name at head 44931e2d0 scored all six dimensions (goal_fidelity 19, evidence 19, scope_discipline 20, durability 18, fit 18, reuse 20; total 114) with one follow-on finding on an ambiguous-model edge; verdicts recorded for goal, done_when, write_paths, manifest and diff.</p></div>
