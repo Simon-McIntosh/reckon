@@ -1,0 +1,56 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-14T01:04:12.882Z",
+  "dispatched_at": "2026-10-14T00:58:15Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-held-dispatch-waits-its-fair-turn.html:135",
+      "id": "done_when-1",
+      "reason": "the third control is spelled out immediately with its expected failure (\"holds regardless of age... The release case must then fail\"), so the enumerated list, not the count, is what a builder implements, and no case loses its falsifier.",
+      "text": "the deliverable says \"There are two negative controls\", then enumerates three (\"Counting queued pointers as claims again...\", \"Removing the admission pre-check...\", \"A third control removes the starvation bound\"), so the stated count disagrees with the controls the done-when actually needs",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "42c7e7599f825e2339a056bab39cceb178eabc634d18ee654a191090bd36c6d0",
+  "plan_slug": "a-held-dispatch-waits-its-fair-turn",
+  "plan_version": 95,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261014T005741013717-plan-review-of-a-held-dispatch-waits-its-fair-turn",
+  "reviewed_blob_sha": "f0df76c5ad66cd5aa6a1e0639bd975a634921e8f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every anchor \u00a718 names resolves in the tree at the reviewed revision: reckon/crew/node.py (claim_disposition at 1450), reckon/crew/dispatch_claims.py (_repository_scope_claims at 222), reckon/crew/runs.py (_live_scope_claims at 856), reckon/crew/queue_order.py (STARVATION_AGE_SECONDS = 30*60 at 13), reckon/crew/queue_admission.py (admit_once at 525, _require_launched_record at 514), tests/test_a_node_is_queued_once.py::test_a_different_node_over_a_claimed_path_is_still_refused (307), and reckon/crew_follow_commands.py.",
+    "done_when": "a finding \u2014 the deliverable states \"There are two negative controls\" and then names three, the third being the only control that can falsify the starvation-release case.",
+    "evidence_paths": "pass \u2014 both controls are logged \"under the run directory\", the durable per-run path every other section of this plan uses, not a node-local or scratch path.",
+    "naming": "pass \u2014 the new symbols the section implies are mechanism names (STARVATION_AGE_SECONDS reused, tests/test_overlapping_queued_requests_launch_in_turn.py), with no plan label, stage name or ticket number.",
+    "reasoning": "pass \u2014 the stated root cause matches the code (claim_disposition returns binding=True for a pid-less pointer at node.py:1480-1489 and _repository_scope_claims applies claim.binding with no phase filter at dispatch_claims.py:249/1055), each mechanism produces its done-when, and both run on the real path with the caller named (claim_disposition's two production readers are exactly _repository_scope_claims and _live_scope_claims; the pre-check sits in admit_once before the release at queue_admission.py:596).",
+    "single_goal": "pass \u2014 the two mechanisms are one contract, not two deliverables: neither works alone (a claim-only change lets overlapping queued requests race, a pre-check-only change still deadlocks on the binding claim), and one gate covers both controls.",
+    "wiring": "pass \u2014 \u00a718 now declares its ordering inline (\"This section runs after \u00a714, which has landed\") and names the shared writer it must not run beside (\u00a715 on queue_admission.py), matching the convention every other shared-file section in this plan uses; \u00a714's declaration is done, so the supersede it declares is against landed work it can order against."
+  },
+  "section_digests": {
+    "_document": "5e14043a491f99858173e3b893442375f85c205295e44c4f706b9faca823dba4",
+    "s1": "e09f72c38fa12dd06b1fede9137b6a8731c7f42dad95ea4d7873e48b6bcebc93",
+    "s10": "769f35c4ff338677b1083340b990086682e629701a25af49a8b6e2d3b8a175a4",
+    "s11": "3aafc106945bdc346a0f808fc26c7fc8e028b922103641455da38536ae24c036",
+    "s12": "f72ab709e3a40644be43c6e558b558089f939e3368a20a2b34321a9043c80c88",
+    "s13": "1f1792d925edd6b7c0b33bd02bebc3db1f499f9d5e1505b3ba04b305d9ed7f64",
+    "s14": "a86f35810a5d1446f8cf9294a46f7a7a393c1452cc3080ef8b9e51cf83670acf",
+    "s15": "694218fb467e061648aac13eed1a446529dbff08aca86ecfdb24792eb5b2820e",
+    "s16": "5d0a87ee69959477d707fb8d7b442b283f6ae0e7bc896382dd4c65c7e3efb9b8",
+    "s17": "d3bfb51ccfbe6c602a6a11cd9d7e433d1385fd2b90b604f2eb307029dc97f703",
+    "s18": "da416d600e804b74a009d76d3b95e20baecaef571799c67d45d69b6afea448d0",
+    "s2": "c37ed4ecb2dad1331b0b031fb8351608243790308312236d375bede3594285b7",
+    "s3": "ef687123318fac196bded366330cf2e92b586c4991b5c1cc8670f228182f916c",
+    "s4": "e6a41eadc72e4752cc0ebe35a14a9bce3f28bc1061ec677e8f779fa09d8c037c",
+    "s5": "4b674f96924c3dbfde217945d16c606df376d034dc060f02360a4336412e74f8",
+    "s6": "9e35fc2341a06de64fed9ff7f176a0e83b22c1482c1b5a04a5539b6e4c07aab4",
+    "s7": "764a72dad2d59bddd4d3b1209f07c0c210ff6c46cd14147d4bcc7ffe9fa9426d",
+    "s8": "1b92313fdf672f4b813b45aa8e26f1304ca363cdc5a4d1752238f794a2019e27",
+    "s9": "ef8f75976cf8d243089cb5955b0e084cf6e2c6bcd478f9e56b8e8654080c6ad6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T01:05:07.575368+00:00"
+}
