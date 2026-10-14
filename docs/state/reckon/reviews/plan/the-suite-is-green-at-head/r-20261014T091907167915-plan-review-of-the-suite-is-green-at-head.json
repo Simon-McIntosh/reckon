@@ -1,0 +1,92 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-14T09:31:23.902Z",
+  "dispatched_at": "2026-10-14T09:19:46Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-suite-is-green-at-head.html:651",
+      "id": "reasoning-1",
+      "reason": "a node implementing the rule literally repoints only patches of moved names, leaves the routing.os/routing.shutil patch targets in place, and the gate then goes red on those files with the plan giving no instruction for them; the rule must be rekeyed on the module the moved function reads a name from, not on whether the name moved.",
+      "text": "the deliverable says \"Some tests read routing.py's source text or patch a moved name on routing. Each such test is repointed to the module that now defines the name\", but the process-signalling and gc code that moves is intercepted by tests patching names that do NOT move: tests/test_every_signal_leaves_a_sender_record.py:76,78,118,119,173,174 patch routing.os.kill/killpg, tests/test_unwatch_leaves_a_sender_record.py:136 patches routing.os.killpg, tests/test_worker_signal_reach.py:20-22,59 patch routing.os.getpgid/killpg/kill, and tests/test_gc_sweeps_orphan_scratch.py:89 patches routing.shutil.rmtree (with wraps=routing.shutil.rmtree). After gc.py/process_signal.py are created with their own `import os`/`import shutil`, the moved bodies read their own module's bindings, so patching routing.os/routing.shutil no longer intercepts them \u2014 the calls proceed to real os.kill/killpg/shutil.rmtree, which is exactly what those tests arm the patch to prevent (test_every_signal_leaves_a_sender_record.py's own docstring: \"The signal is not delivered \u2014 both os.kill and os.killpg are recorded instead \u2014 so the child survives to be inspected\")",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-suite-is-green-at-head.html:651",
+      "id": "reasoning-2",
+      "reason": "the conclusion the figures support still holds with margin (routing.py's remainder measures 42,653 tokens, under the 50,000 bound and near the stated ~44,000), so no node's path changes; the figures are understated but not decision-bearing.",
+      "text": "the two family token figures do not reproduce under the repository's own instrument: summing the source of the twelve named gc statements gives 40,402 bytes (39.5 KB, ~11,544 tokens) against the stated \"about 38.7 KB\", and the thirteen named process-signalling statements give 19,122 bytes (18.7 KB, ~5,464 tokens) against the stated \"about 16.6 KB\"; combined 59,524 bytes = ~17,007 tokens against the stated \"about 15,800\", and the plan's figures are floors because the gc list additionally carries \"the constants only they use\", which the plan does not count",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "d9a44a1c2523cccadabf7c7e5ffd1d5fe06a254a1aafb438d6993937a2a64669",
+  "plan_slug": "the-suite-is-green-at-head",
+  "plan_version": 347,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-14T09:33:19.306661+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "",
+      "when": "2026-10-14T09:33:35.849042+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-14T09:33:19.306661+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-14T09:33:35.849042+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-suite-is-green-at-head.v347.json",
+  "review_run_id": "r-20261014T091907167915-plan-review-of-the-suite-is-green-at-head",
+  "reviewed_blob_sha": "65e8c05a1baab771a79227e550bdaf9bfa2b8e60",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 reckoned against the tree at a539211d: routing.py is 208,807 bytes and `_tokens_for_bytes` returns 59,660 for it, matching the \"Recounted on 2026-10-14\" line exactly; 784d580de resolves and does cross the bound (its parent is 174,608 B = 49,888 tokens, under; 784d580de is 176,890 B = 50,540 tokens, over); 2e44591a1 and c0390eb72 both resolve, c0390eb72 being the merge of a-run-has-one-live-writer \u00a72 (\"A worker never outlives its supervisor\") and adding 328 lines to routing.py; both linked plans exist under docs/plans/; every function, class and constant named in the split (including SENDER_RECORD_NAME, _RUN_WORKER_RECORD, RUN_ID_ENV and _clear_run_lock) resolves in routing.py.",
+    "done_when": "pass \u2014 the done-when is measurable (scripts/check_pure_move.py exits 0 with all three modules under the 50,000-token bound, and the window test names none of the three) and names a real negative control (append the moved families back and the window test must then name routing.py).",
+    "evidence_paths": "pass \u2014 the pure-move receipt, the fresh-interpreter import logs and the window-test run are each logged \"under the run directory\", a durable path under the crew runs root, not a session scratchpad or node-local temp.",
+    "naming": "pass \u2014 the moved symbols are named by mechanism (signal_worker, garbage_collect_scratch, _running_descendants); the only plan/section tokens are cross-plan references in the prose (\"\u00a716\", \"live-writer \u00a72\", the two plan slugs), which the plan HTML owns and does not carry into code.",
+    "reasoning": "a finding \u2014 the test-repoint rule is keyed on a patched *moved* name, so it does not reach the tests that intercept the moved signal and gc code by patching routing's module attributes (routing.os, routing.shutil), which stay bound on routing.",
+    "single_goal": "pass \u2014 the section carries one deliverable: bring reckon/crew/routing.py under the worker-window bound by splitting it.",
+    "wiring": "pass \u2014 \u00a76 declares no depends-on/gates/informs links and both runs it says it waited on (a-worktree-release-is-whole at 2e44591a1, a-run-has-one-live-writer \u00a72 at c0390eb72) have merged, so no ordering relationship it needs is missing or misdirected."
+  },
+  "section_digests": {
+    "_document": "83bc4eebbeaf35e1f8769b1cefa72ecf8466fb0d23d3dd350bf2e642790b97e5",
+    "s1": "93d7e8eb3f04bb8d9aad0f5ac7d68a9d009b7fe7feaa6f4932738242154d8d4d",
+    "s10": "9633fb928a6c720c8fae74ed3da0a5f7ed555c4230f29ebf2ee89e5432566bb1",
+    "s11": "3e9c94371cc0b22adeb21c71a08fdd16433d8b4c1a22e73cd63d1171332089ba",
+    "s12": "dd8650523d29d87e6fa41408db7d0440cf17dfbd57f0ab6da0d5fcd223692d95",
+    "s13": "7b00f23667f49ba7de16f8823860c86ad35a562eebddf434fd1a6b9f1f5e9993",
+    "s14": "1469c86b5327d2429ce07b9ddd2fbca586d8831acb94119f8a187e315f48dcf7",
+    "s15": "f84dc4d4bef37307ff05d71bd4f7071e9208e789832e7cb00be82c37bcfde97e",
+    "s16": "4ab9d42bd2e71d070a1cc5393ebea66e1ec71d06dad51f1a82505c91ce309234",
+    "s2": "d8e1d44eab3d041cfa8f08f045885bcf9a783d27f0cb613fe7de2c0476c13887",
+    "s3": "d6efa514940aeb662c9b7fdee7f663c86e4da2526ec9a01c6977f967e30d886a",
+    "s4": "e7003c1b5457d6229da28b7d90f825f0e3ef67be2a012291c12a2daf14bf2273",
+    "s5": "934ff53a2b41de523672b7760ab4bbe2e8be5d3da6b580c600383ac0217825a2",
+    "s6": "bdcaa94158c81b1332babf08358a8c86e3310365bd62ae1ecfc50621e31c24cb",
+    "s7": "655ef45aae9c9f31c0c67cb28422cff4a16611cfce488326c298768a23f58efd",
+    "s8": "c78e67e053ac3d61a73df4b965e8209a12ca4d9b745535a102b0b0040cce3adc",
+    "s9": "f4ef4f0dc18779331d3654037d55a7dd1c27d3769bfbfe753867fccbb53f9a28"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T09:31:28.949438+00:00"
+}
