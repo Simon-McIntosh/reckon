@@ -1,0 +1,37 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-14T02:57:50.160Z",
+  "dispatched_at": "2026-10-14T02:51:56Z",
+  "findings": [],
+  "plan_fingerprint": "848bdb1375de25f09f09dc91ef51c51e3e7f34e0d0b82951f0b81176f4e24dc5",
+  "plan_slug": "the-suite-tests-behaviour",
+  "plan_version": 44,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261014T025107225922-plan-review-of-the-suite-tests-behaviour",
+  "reviewed_blob_sha": "3273f5a8d2a01e6393b15b14ec44421d1ebcf4aa",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `tests/test_watch_arming_isolation.py`, `tests/test_member_registration_commits.py`, `tests/test_impl_is_computed.py`, `tests/test_rollup_isolates_a_project.py`, `tests/test_append_decision_keeps_its_question.py`, `tests/test_lanes_view_is_live.py`, `tests/test_follow_lifetime.py`, the four `fixture_pointers` modules and `tests/test_no_member_dispatch_runs_alone.py::test_two_unnamed_reviews_launch_with_disposable_members` all exist, commit `64f44fdbe` resolves, and the the-suite-is-green-at-head hrefs carry their `.html` extension.",
+    "done_when": "pass \u2014 \u00a78's done-when is measurable and names two executed negative controls: reverting the helper to whole-root equality makes the foreign-entry case fail, and pointing the migrated `tests/test_no_member_dispatch_runs_alone.py` guard at the test's own temporary home makes it fail naming a pointer the test wrote, each with the runner's own `FAILED` line and a non-zero `EXIT`.",
+    "evidence_paths": "pass \u2014 every gate in \u00a78 (the unit test, the census, the base and head arms, both negative controls) is logged under the run directory, a durable path, not a session scratchpad or node-local temporary directory.",
+    "naming": "pass \u2014 \u00a78 introduces `tests/real_home_traces.py` and `tests/test_real_home_traces.py`, which carry no plan label, stage name, ticket number or version tag, and its prose stays on mechanism.",
+    "reasoning": "pass \u2014 \u00a78's stated root cause matches its cited evidence (each of the six modules compares a whole shared tree before and after: `test_watch_arming_isolation.py:300-308` compares real `crew/watch`, `test_impl_is_computed.py:16-27,70-87` compares real-home names and mtimes, `test_rollup_isolates_a_project.py:84-90,154-168` the same with `crew` excluded, `test_append_decision_keeps_its_question.py:47-57` real-`state/` path and size, `test_lanes_view_is_live.py:169-186` the real lane-probe cache tree, `test_member_registration_commits.py:320-325` roster bytes plus `git status --porcelain -- docs/state` plus real-home names, and `_live_view` at `test_no_member_dispatch_runs_alone.py:133-150` the real `crew/live` listing and `docs/state/*/crew.json` bytes); the mechanism (one needle-filtered helper imported by each module, guarded fixtures running as autouse callers) is capable of producing the done-when; and the helper at `tests/real_home_traces.py` is reached on the real code path, importable by sibling modules as `tests.real_home_traces` because `tests/__init__.py` exists and the harness is already imported the same way (`tests/spa_containment_harness.py:10`).",
+    "single_goal": "pass \u2014 \u00a78 carries one deliverable (one needle-filtered trace helper plus every unfiltered guard moved onto it and a census of the remaining ones), reviewable on the tests/test_real_home_traces.py verdict.",
+    "wiring": "pass \u2014 \u00a78 declares no depends-on/gates and needs none: its write paths (the six nested-guard modules, `tests/test_no_member_dispatch_runs_alone.py`, `tests/test_follow_lifetime.py`, the four `fixture_pointers` modules, and the two new files) do not overlap \u00a77's `tests/conftest.py` (explicitly carved out at line 149) or \u00a72's harness files, and followup f-tstb-004 gives \u00a78 its own dispatch path, so the section is correctly independent."
+  },
+  "section_digests": {
+    "_document": "19b09db50597fc3f9d629799b2e2e09e64a592513cb902fd6bd0c0984acbcda3",
+    "s1": "1d6184c53af837617ac7ee370d7b6d622f0b187f5ac5e8f8d90a1dda6a98b5b2",
+    "s2": "0a2190864603950ade3af9b2de4b53b463e747cc8dc4c1f6e9175cdd5a4ee623",
+    "s3": "b54ea6f02bf0468b0b6f22c4317ef1f30b269045ffcaa9c19ae6abd2d175e96b",
+    "s4": "0bbb53f80bd6f9eb08c166f5e54fdde7bd5678c29b455fd39e15555bcbc17e35",
+    "s5": "ab2721f7547c999de436c1bb3551c6fe1aff3bbe51e9d92c2f44f5f91ce4123d",
+    "s6": "2ab2547ce36adce1b8926643bbc4604f1d6d1695d52434c1e8849e50f80c4b9d",
+    "s7": "6923b90ad2de1d3c7d21b7d4aa204ae8d2b445425f13415254e324f7452ce801",
+    "s8": "62593f92e5fae32f09b44fa99f06a95716d5b469914f43bc6d0a97c03d6c2831"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T02:59:41.721603+00:00"
+}
