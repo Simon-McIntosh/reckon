@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite and after_suite records in manifest.md -- base arm revision 197b54c81 resolved to /tmp/reckon-crew-scratch/r-20261014T102752892402-one-check-trusts-a-moved-checkout/base-checkout/reckon/__init__.py, 50 passed EXIT=0; head arm revision 417202f62 50 passed EXIT=0 -- so no failure at head is absent at base.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/mcp.py:294 _stale_code_response",
+    "reckon/crew_follow_commands.py:259 _FollowerReloader._replacement_imports",
+    "reckon/crew_follow_commands.py:300 _FollowerReloader.poll"
+  ],
+  "completed_at": "2026-10-14T12:37:22.139Z",
+  "dispatched_at": "2026-10-14T12:22:47Z",
+  "findings": [
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": "172",
+      "severity": "follow-on",
+      "text": "follow-on: commit 7a9ea0aea, titled a formatting revert, also rewrote this comment, replacing the accurate \"the MCP's stale-code probe cannot disagree about what a loadable checkout is. The definition lives here because a reload proof spliced into this module at run time must be the one the follower itself runs\" with the vaguer \"and the following process's own use of it cannot disagree about what a loadable checkout is\", dropping the reference to the MCP (the second reader this node shares the check with) and folding a content change into a style-scoped commit."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T102752892402-one-check-trusts-a-moved-checkout/base-focused.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the file holds a superseded first arm whose module_under_test.__file__ resolved to the worktree (/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/f653840f-3ca8-4792-819c-9ee9708bdbac/one-check-trusts-a-moved-checkout/reckon/__init__.py) although its header names tree:/tmp/reckon-crew-scratch/.../base-checkout, and it prints EXIT=0 like the corrected arm that follows, so a reader who takes the log's header for its provenance reads a contaminated base measurement; the manifest's measurement_module field discloses the correct resolution but the log itself is not self-labelling."
+    },
+    {
+      "file": "docs/evidence/fragments/an-mcp-failure-names-its-cause/one-check-trusts-a-moved-checkout.html",
+      "line": "13",
+      "severity": "follow-on",
+      "text": "follow-on: ba988eeda updated the plan-commits meta to add 7a9ea0aea,417202f62 but omits the landing-record commit d27efabef and ba988eeda itself, so the record of which commits this evidence covers is incomplete."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commits 7a9ea0aea (formatting revert), 417202f62 (docstring and tautological-assertion removal) and ba988eeda (fragment) against base d27efabef; four files, +72/-27, all inside the declared scope.",
+    "done_when": "section 15 requires a dirty moved checkout to keep the original failure and a clean importable one to answer stale_server_code, the follower/mcp reload tests still passing, one import-probe definition, and base/head arms logged with no head-only failure; the manifest now records baseline_suite (197b54c81, 50 passed, EXIT=0) and after_suite (417202f62, 50 passed, EXIT=0), the node test (3 passed) and a negative control (EXIT=1).",
+    "goal": "the node's goal is one shared check of whether a moved checkout can be trusted; the gained commits preserve it -- reckon/mcp.py:294, reckon/crew_follow_commands.py:259 and :300 all call into reckon/checkout_trust.py:125 moved_checkout_is_trustworthy -- and correct docs that misdescribed where the shared probe lives.",
+    "manifest": "read r-20261014T102752892402-one-check-trusts-a-moved-checkout/manifest.md; status complete, commits through ba988eeda, gate \"50 passed EXIT=0 at head\", and baseline_suite/after_suite are now populated, so the prior review's null-suite finding is fixed.",
+    "write_paths": "read the manifest's declared set (reckon/mcp.py, reckon/crew_follow_commands.py, reckon/checkout_trust.py, tests/test_one_check_trusts_a_moved_checkout.py, the fragment, a figure directory); the gained diff touches crew_follow_commands.py, checkout_trust.py, the test file and the fragment, all inside it, though 7a9ea0aea's comment rewrite is content the goal does not imply."
+  },
+  "justifications": {
+    "durability": "the gained commits remove the tautological assertion the prior review named and add no new guard; the behavioral guards remain -- tests/test_one_check_trusts_a_moved_checkout.py:209 and :230 redden under the declared mutation (negative-control.log EXIT=1) and :251's filesystem search fails if a second probe appears.",
+    "evidence": "the manifest's baseline_suite (197b54c81, 50 passed EXIT=0) and after_suite (417202f62, 50 passed EXIT=0) are recorded and their logs exist, but base-focused.log still holds a superseded first arm whose module resolved to the worktree ahead of the corrected base arm.",
+    "fit": "no plan, version, ticket or author label is introduced and each gained commit carries a conventional subject and a body, though the replacement wording at reckon/crew_follow_commands.py:173 is less clear than the text it replaced.",
+    "goal_fidelity": "reckon/checkout_trust.py:125 moved_checkout_is_trustworthy holds the one two-condition check and both readers still call it at reckon/mcp.py:294 and reckon/crew_follow_commands.py:259/:300, so the MCP and the follower cannot disagree about a moved tree.",
+    "reuse": "the gained commits add no definition; reckon/checkout_trust.py:125 remains the single owner and the probe text has one definition at reckon/crew_follow_commands.py:190, confirmed by the test's own filesystem search.",
+    "scope_discipline": "every gained path is inside the declared write paths, but commit 7a9ea0aea is titled a formatting revert yet also rewrites the comment at reckon/crew_follow_commands.py:172, a content change the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is one shared check of whether a moved checkout can be trusted; the gained commits preserve it -- reckon/mcp.py:294, reckon/crew_follow_commands.py:259 and :300 all call into reckon/checkout_trust.py:125 moved_checkout_is_trustworthy -- and correct docs that misdescribed where the shared probe lives.\nVERDICT done_when: section 15 requires a dirty moved checkout to keep the original failure and a clean importable one to answer stale_server_code, the follower/mcp reload tests still passing, one import-probe definition, and base/head arms logged with no head-only failure; the manifest now records baseline_suite (197b54c81, 50 passed, EXIT=0) and after_suite (417202f62, 50 passed, EXIT=0), the node test (3 passed) and a negative control (EXIT=1).\nVERDICT write_paths: read the manifest's declared set (reckon/mcp.py, reckon/crew_follow_commands.py, reckon/checkout_trust.py, tests/test_one_check_trusts_a_moved_checkout.py, the fragment, a figure directory); the gained diff touches crew_follow_commands.py, checkout_trust.py, the test file and the fragment, all inside it, though 7a9ea0aea's comment rewrite is content the goal does not imply.\nVERDICT manifest: read r-20261014T102752892402-one-check-trusts-a-moved-checkout/manifest.md; status complete, commits through ba988eeda, gate \"50 passed EXIT=0 at head\", and baseline_suite/after_suite are now populated, so the prior review's null-suite finding is fixed.\nVERDICT diff: read commits 7a9ea0aea (formatting revert), 417202f62 (docstring and tautological-assertion removal) and ba988eeda (fragment) against base d27efabef; four files, +72/-27, all inside the declared scope.\nCALL_SITES: reckon/mcp.py:294 _stale_code_response, reckon/crew_follow_commands.py:259 _FollowerReloader._replacement_imports, reckon/crew_follow_commands.py:300 _FollowerReloader.poll\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/checkout_trust.py:125 moved_checkout_is_trustworthy holds the one two-condition check and both readers still call it at reckon/mcp.py:294 and reckon/crew_follow_commands.py:259/:300, so the MCP and the follower cannot disagree about a moved tree.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest's baseline_suite (197b54c81, 50 passed EXIT=0) and after_suite (417202f62, 50 passed EXIT=0) are recorded and their logs exist, but base-focused.log still holds a superseded first arm whose module resolved to the worktree ahead of the corrected base arm.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: every gained path is inside the declared write paths, but commit 7a9ea0aea is titled a formatting revert yet also rewrites the comment at reckon/crew_follow_commands.py:172, a content change the goal does not imply.\nSCORE durability: 17\nJUSTIFICATION durability: the gained commits remove the tautological assertion the prior review named and add no new guard; the behavioral guards remain -- tests/test_one_check_trusts_a_moved_checkout.py:209 and :230 redden under the declared mutation (negative-control.log EXIT=1) and :251's filesystem search fails if a second probe appears.\nSCORE fit: 17\nJUSTIFICATION fit: no plan, version, ticket or author label is introduced and each gained commit carries a conventional subject and a body, though the replacement wording at reckon/crew_follow_commands.py:173 is less clear than the text it replaced.\nSCORE reuse: 20\nJUSTIFICATION reuse: the gained commits add no definition; reckon/checkout_trust.py:125 remains the single owner and the probe text has one definition at reckon/crew_follow_commands.py:190, confirmed by the test's own filesystem search.\nFINDING reckon/crew_follow_commands.py:172 follow-on: commit 7a9ea0aea, titled a formatting revert, also rewrote this comment, replacing the accurate \"the MCP's stale-code probe cannot disagree about what a loadable checkout is. The definition lives here because a reload proof spliced into this module at run time must be the one the follower itself runs\" with the vaguer \"and the following process's own use of it cannot disagree about what a loadable checkout is\", dropping the reference to the MCP (the second reader this node shares the check with) and folding a content change into a style-scoped commit.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T102752892402-one-check-trusts-a-moved-checkout/base-focused.log:1 follow-on: the file holds a superseded first arm whose module_under_test.__file__ resolved to the worktree (/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/f653840f-3ca8-4792-819c-9ee9708bdbac/one-check-trusts-a-moved-checkout/reckon/__init__.py) although its header names tree:/tmp/reckon-crew-scratch/.../base-checkout, and it prints EXIT=0 like the corrected arm that follows, so a reader who takes the log's header for its provenance reads a contaminated base measurement; the manifest's measurement_module field discloses the correct resolution but the log itself is not self-labelling.\nFINDING docs/evidence/fragments/an-mcp-failure-names-its-cause/one-check-trusts-a-moved-checkout.html:13 follow-on: ba988eeda updated the plan-commits meta to add 7a9ea0aea,417202f62 but omits the landing-record commit d27efabef and ba988eeda itself, so the record of which commits this evidence covers is incomplete.",
+  "review_run_id": "r-20261014T122220940331-review-of-one-check-trusts-a-moved-checkout-ba988eeda258",
+  "reviewed_base_sha": "d27efabefe546d9c10e391725194f11bc06cfe33",
+  "reviewed_head_sha": "ba988eeda2586181791c52d7c6b3dd6f110b786a",
+  "reviewed_run_id": "r-20261014T102752892402-one-check-trusts-a-moved-checkout",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T12:31:42.717488+00:00",
+  "total": 104
+}
