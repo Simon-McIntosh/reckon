@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "38cba50acc33430f25deb2a08c42856424f620fb",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/cli.py:338 _follow_watch_lines",
+    "reckon/crew_follow_commands.py:1259 follower_row_path(lift_groups=...)",
+    "reckon/crew_follow_commands.py:1804 _follow_resume_plan",
+    "reckon/crew_follow_commands.py:1829 path.reseed(recorded",
+    "lift_groups=carried_lifts)",
+    "reckon/crew_follow_commands.py:1847 seed_lift_groups(history)",
+    "reckon/crew_follow_commands.py:1895 seed_lift_groups(read_history)"
+  ],
+  "completed_at": "2026-10-14T09:50:35.033Z",
+  "dispatched_at": "2026-10-14T09:36:58Z",
+  "findings": [
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": "1847",
+      "severity": "follow-on",
+      "text": "follow-on: the reload arm's stored-history lift fallback is reached by no test - a reload carrying no groups in its checkpoint but a grant in stored history would redraw the stand if this seeding regressed, and the only empty-carry case (test_a_reload_carrying_no_groups_draws_the_baseline) pins empty history, so it cannot detect it."
+    }
+  ],
+  "head_log_revision": "55b03c078875b50d5daee093e0c8e8c71ac89d8e",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "read 55b03c078 against base 628006ff; it rewrites the test file to drive both arming arms through cli._follow_watch_lines and folds the previously self-referential group assertion at tests/test_a_standing_lift_survives_a_follower_reload.py:139 into a stored-rows check.",
+    "done_when": "the done_when asks the new measure file to drive the in-place reload and the re-arm through the follower, and the run records gate-new-file.log 9 passed EXIT=0 and the head arm gate-head-confirm.log 136 passed EXIT=0; I re-ran the measure file at the reviewed head for 9 passed EXIT=0.",
+    "goal": "the node's goal is to carry a pane's memory of the drawn lift groups across the follower's own in-place reload and its re-arm; reckon/crew_follow_commands.py:1829 reseeds the row path from the carried groups and :1895 restores them from stored history, and the delta now drives both through the follower's own generator.",
+    "manifest": "read r-20261014T080029971139/manifest.md; it records 9/9 for the measure file, head arm 136 passed, base arm 127 passed (delta zero), and names gate-head-confirm.log, gate-base.log, gate-new-file.log and negative-control.log.",
+    "write_paths": "read the source node's declared paths; the revision 55b03c078 touches only tests/test_a_standing_lift_survives_a_follower_reload.py and the declared evidence fragment, both inside them."
+  },
+  "justifications": {
+    "durability": "negative-control.log shows each carrier dropped alone turns exactly its own case red (reckon/crew_follow_commands.py:1829 and :1895), each with its no-memory companion still drawing the row, closing the prior untested re-arm wiring.",
+    "evidence": "the reviewed manifest records gate-head-confirm.log 136 passed EXIT=0 and gate-new-file.log 9 passed EXIT=0, and I re-ran the measure file at the reviewed head for 9 passed EXIT=0.",
+    "fit": "the helper at tests/test_a_standing_lift_survives_a_follower_reload.py:230 _drive_arm follows the file's existing drives-the-generator idiom and carries no plan or ticket label.",
+    "goal_fidelity": "reckon/crew_follow_commands.py:1829 and :1895 are the two carriers the goal names, and the delta's tests now exercise both through the real generator.",
+    "reuse": "no production definition is added; the delta's test-local drivers call the existing seams cli._follow_watch_lines and follow_checkpoint.*, the idiom other follower tests already use.",
+    "scope_discipline": "the revision 55b03c078 touches only tests/test_a_standing_lift_survives_a_follower_reload.py and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-standing-lift-survives-a-follower-reload.html, both declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to carry a pane's memory of the drawn lift groups across the follower's own in-place reload and its re-arm; reckon/crew_follow_commands.py:1829 reseeds the row path from the carried groups and :1895 restores them from stored history, and the delta now drives both through the follower's own generator.\nVERDICT done_when: the done_when asks the new measure file to drive the in-place reload and the re-arm through the follower, and the run records gate-new-file.log 9 passed EXIT=0 and the head arm gate-head-confirm.log 136 passed EXIT=0; I re-ran the measure file at the reviewed head for 9 passed EXIT=0.\nVERDICT write_paths: read the source node's declared paths; the revision 55b03c078 touches only tests/test_a_standing_lift_survives_a_follower_reload.py and the declared evidence fragment, both inside them.\nVERDICT manifest: read r-20261014T080029971139/manifest.md; it records 9/9 for the measure file, head arm 136 passed, base arm 127 passed (delta zero), and names gate-head-confirm.log, gate-base.log, gate-new-file.log and negative-control.log.\nVERDICT diff: read 55b03c078 against base 628006ff; it rewrites the test file to drive both arming arms through cli._follow_watch_lines and folds the previously self-referential group assertion at tests/test_a_standing_lift_survives_a_follower_reload.py:139 into a stored-rows check.\nCALL_SITES: reckon/cli.py:338 _follow_watch_lines, reckon/crew_follow_commands.py:1259 follower_row_path(lift_groups=...), reckon/crew_follow_commands.py:1804 _follow_resume_plan, reckon/crew_follow_commands.py:1829 path.reseed(recorded, lift_groups=carried_lifts), reckon/crew_follow_commands.py:1847 seed_lift_groups(history), reckon/crew_follow_commands.py:1895 seed_lift_groups(read_history)\nREVIEWED_BASE_SHA: 628006ff644c6b77ee9c8696fc83892d1e0c7846\nREVIEWED_HEAD_SHA: 55b03c078875b50d5daee093e0c8e8c71ac89d8e\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_follow_commands.py:1829 and :1895 are the two carriers the goal names, and the delta's tests now exercise both through the real generator.\nSCORE evidence: 18\nJUSTIFICATION evidence: the reviewed manifest records gate-head-confirm.log 136 passed EXIT=0 and gate-new-file.log 9 passed EXIT=0, and I re-ran the measure file at the reviewed head for 9 passed EXIT=0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the revision 55b03c078 touches only tests/test_a_standing_lift_survives_a_follower_reload.py and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-standing-lift-survives-a-follower-reload.html, both declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: negative-control.log shows each carrier dropped alone turns exactly its own case red (reckon/crew_follow_commands.py:1829 and :1895), each with its no-memory companion still drawing the row, closing the prior untested re-arm wiring.\nSCORE fit: 19\nJUSTIFICATION fit: the helper at tests/test_a_standing_lift_survives_a_follower_reload.py:230 _drive_arm follows the file's existing drives-the-generator idiom and carries no plan or ticket label.\nSCORE reuse: 19\nJUSTIFICATION reuse: no production definition is added; the delta's test-local drivers call the existing seams cli._follow_watch_lines and follow_checkpoint.*, the idiom other follower tests already use.\nFINDING reckon/crew_follow_commands.py:1847 follow-on: the reload arm's stored-history lift fallback is reached by no test - a reload carrying no groups in its checkpoint but a grant in stored history would redraw the stand if this seeding regressed, and the only empty-carry case (test_a_reload_carrying_no_groups_draws_the_baseline) pins empty history, so it cannot detect it.",
+  "review_run_id": "r-20261014T093629543487-review-of-a-standing-lift-survives-a-follower-reload-55b03c078875",
+  "reviewed_base_sha": "628006ff644c6b77ee9c8696fc83892d1e0c7846",
+  "reviewed_head_sha": "55b03c078875b50d5daee093e0c8e8c71ac89d8e",
+  "reviewed_run_id": "r-20261014T080548832882-a-standing-lift-survives-a-follower-reload",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T09:47:47.776053+00:00",
+  "total": 114
+}
