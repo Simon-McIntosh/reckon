@@ -15,6 +15,7 @@ from click.testing import CliRunner
 import reckon.crew.dispatch_picker as dispatch_picker_module
 from reckon import cli, crew_dispatch_commands, ledger
 from reckon.crew import picker
+from reckon.crew.node import TaskNode
 from reckon.crew.picker import Candidate
 
 dispatch = importlib.import_module("reckon.crew.dispatch")
@@ -89,6 +90,51 @@ def selection(action: str = "route", backend: str | None = "beta", **extra):
         "excluded": [],
     } | extra
     return SimpleNamespace(as_dict=lambda: fields)
+
+
+def _candidate() -> Candidate:
+    return Candidate(
+        backend="beta",
+        family="test",
+        model="beta-model",
+        effort="medium",
+        local=False,
+        availability="served",
+        utilisation_pct=20,
+        burn_multiple=1,
+        pace_allowance=50,
+        resets_at=None,
+        worker_slots=None,
+        congestion=None,
+        outcomes={},
+    )
+
+
+def _fast_pick_collaborators(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Replace every pick step before the one under test with a cheap stand-in."""
+    monkeypatch.setattr(
+        picker, "_declared_difficulty", lambda *_a, **_k: (None, None, None)
+    )
+    monkeypatch.setattr(picker.snapshot, "candidates", lambda *_a, **_k: [_candidate()])
+
+    def render(name: str, **_kwargs) -> str:
+        if name == "questions.jinja":
+            return json.dumps({"route": {"criteria": {"hold": {}}}})
+        return json.dumps({"note": "state"})
+
+    monkeypatch.setattr(picker.prompts, "render", render)
+
+
+def _node() -> TaskNode:
+    return TaskNode(
+        id="pick",
+        plan="",
+        role="implement",
+        spec_level="guided",
+        goal="g",
+        done_when="done",
+        time_budget="60m",
+    )
 
 
 def invoke(
@@ -188,23 +234,58 @@ def test_dispatch_survives_a_raising_picker(repo, monkeypatch):
 
 
 def test_dispatch_survives_a_picker_past_the_bound(repo, monkeypatch):
-    monkeypatch.setattr(dispatch_picker_module, "PICKER_DISPATCH_TIMEOUT_SECONDS", 0.02)
-    monkeypatch.setattr(picker, "pick", lambda *_a, **_k: time.sleep(0.2))
-    started = time.monotonic()
-    direct = dispatch.dispatch_picker_selection(
-        node=SimpleNamespace(), config=CONFIG, project="proj", repo=repo
+    """A pick past the bound names the step it was inside, estimate or Jev.
+
+    The context estimate and the Jev client are stubbed rather than the pick, so
+    the real pick runs and marks its own step. With the estimate slower than the
+    deadline the fallback names the dispatcher's estimate stage; with the
+    estimate fast and the Jev call slow it names the pick's own Jev step.
+    """
+    from reckon.crew.picker import snapshot as picker_snapshot
+
+    monkeypatch.setattr(dispatch_picker_module, "PICKER_DISPATCH_TIMEOUT_SECONDS", 0.1)
+    _fast_pick_collaborators(monkeypatch)
+    node = _node()
+    calls = {
+        "node": node,
+        "config": CONFIG,
+        "project": "proj",
+        "repo": repo,
+        # An authority handed in skips the dispatcher's own resolution, so the
+        # ask reaches the estimate within the short bound rather than spending
+        # it resolving.
+        "authority": {},
+        "records": [],
+        "verdict_inputs": {},
+        "budget_snapshot": {},
+    }
+
+    def slow_estimate(*_args, **_kwargs):
+        time.sleep(0.5)
+        return 0
+
+    monkeypatch.setattr(picker_snapshot, "estimated_context_tokens", slow_estimate)
+    estimate_arm = dispatch.dispatch_picker_selection(**calls)
+    assert estimate_arm["fallback_reason"] == "timeout in context-estimate"
+
+    monkeypatch.setattr(
+        picker_snapshot, "estimated_context_tokens", lambda *_a, **_k: 0
     )
-    assert time.monotonic() - started < 0.2
-    assert direct["fallback_reason"] == "timeout"
+
+    def slow_client(*_args, **_kwargs):
+        time.sleep(0.5)
+        return {}
+
+    monkeypatch.setattr(picker.client, "ask", slow_client)
+    started = time.monotonic()
+    jev_arm = dispatch.dispatch_picker_selection(**calls)
+    assert time.monotonic() - started < 0.5
+    assert jev_arm["fallback_reason"] == "timeout in pick:jev"
+
+    # The dispatch itself survives the pick that ran past its bound.
     result, payload = invoke(repo)
     assert result.exit_code == 0, result.output
     assert payload["backend"] == "alpha"
-    # The dispatcher measures a real node's context here, so this pick's budget
-    # is spent in that estimate rather than in the picker call the bound also
-    # caps; the fallback names the stage it was inside, not the bare reading.
-    assert (
-        payload["picker_selection"]["fallback_reason"] == "timeout in context-estimate"
-    )
 
 
 def test_picker_route_uses_selected_backend(repo, monkeypatch):

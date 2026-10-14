@@ -12,10 +12,10 @@ lane is and a narrowed answer is wrong rather than fast.
 from __future__ import annotations
 
 import importlib
+import json
 import time
 from datetime import UTC, datetime
 from pathlib import Path
-from types import SimpleNamespace
 
 import reckon.crew.dispatch_picker as dispatch_picker_module
 
@@ -24,7 +24,7 @@ import reckon.crew.dispatch_picker as dispatch_picker_module
 dispatch = importlib.import_module("reckon.crew.dispatch")
 picker = importlib.import_module("reckon.crew.picker")
 from reckon.crew.node import TaskNode
-from reckon.crew.picker import lane_context, snapshot
+from reckon.crew.picker import Candidate, lane_context, snapshot
 from reckon.crew.picker.types import PickRequest
 
 
@@ -149,37 +149,70 @@ def test_expected_wait_counts_a_foreign_projects_live_worker(monkeypatch):
     assert wait == 420.0
 
 
+def _candidate() -> Candidate:
+    return Candidate(
+        backend="beta",
+        family="test",
+        model="beta-model",
+        effort="medium",
+        local=False,
+        availability="served",
+        utilisation_pct=20,
+        burn_multiple=1,
+        pace_allowance=5,
+        resets_at=None,
+        worker_slots=None,
+        congestion=None,
+        outcomes={},
+    )
+
+
 def test_slow_client_still_times_out_as_a_recorded_fallback(monkeypatch):
-    """A Jev client slower than the bound yields a fallback, never a refusal."""
+    """A Jev client slower than the bound yields a fallback, never a refusal.
+
+    The client -- not the pick -- is what outlasts the bound, so the real pick
+    runs and marks the step it is inside. The fallback names that step in
+    pick()'s own vocabulary rather than reading the bare timeout the whole call
+    used to record.
+    """
+    from reckon.crew.picker import prompts
+    from reckon.crew.picker import snapshot as picker_snapshot
 
     monkeypatch.setattr(dispatch_picker_module, "PICKER_DISPATCH_TIMEOUT_SECONDS", 0.05)
+    monkeypatch.setattr(
+        picker_snapshot, "estimated_context_tokens", lambda *_a, **_k: 0
+    )
+    monkeypatch.setattr(
+        picker, "_declared_difficulty", lambda *_a, **_k: (None, None, None)
+    )
+    monkeypatch.setattr(snapshot, "candidates", lambda *_a, **_k: [_candidate()])
 
-    def slow_pick(
-        request,
-        config,
-        *,
-        repo,
-        cached_only=False,
-        records=None,
-        verdict_inputs=None,
-        budget_snapshot=None,
-    ):
+    def render(name: str, **_kwargs) -> str:
+        if name == "questions.jinja":
+            return json.dumps({"route": {"criteria": {"hold": {}}}})
+        return json.dumps({"note": "state"})
+
+    monkeypatch.setattr(prompts, "render", render)
+
+    def slow_client(*_args, **_kwargs):
         time.sleep(0.4)
         raise AssertionError("the bound should have returned before the client did")
 
-    monkeypatch.setattr(picker, "pick", slow_pick)
+    monkeypatch.setattr(picker.client, "ask", slow_client)
     started = time.monotonic()
     result = dispatch.dispatch_picker_selection(
-        node=SimpleNamespace(),
+        node=_node(),
         config={},
         project="proj",
         repo=Path("/tmp"),
+        records=[],
+        verdict_inputs={},
+        budget_snapshot={},
     )
     assert time.monotonic() - started < 0.4
     assert result["action"] == "fallback"
-    # The estimate finishes well inside the bound here, so the stage the ask is
-    # inside when it expires is the picker call itself, which is recorded as a
-    # time but not named: the fallback keeps the bare reading, and the estimate's
-    # own time beside it shows the expiry was not taken by the estimate.
-    assert result["fallback_reason"] == "timeout"
+    # The estimate finishes well inside the bound here, so the step the pick is
+    # inside when it expires is the Jev call, named in pick()'s own vocabulary;
+    # the estimate's own time beside it shows the expiry was not taken by it.
+    assert result["fallback_reason"] == "timeout in pick:jev"
     assert result["stage_ms"]["context-estimate"] is not None

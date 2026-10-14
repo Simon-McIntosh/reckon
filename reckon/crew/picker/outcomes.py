@@ -227,7 +227,6 @@ def _row_log_dir(record: Mapping[str, Any], project: str) -> Path:
 def record_picker_hold(
     *,
     project: str,
-    docs: Path,
     node: str,
     plan: str,
     selection: Mapping[str, Any],
@@ -235,6 +234,7 @@ def record_picker_hold(
     run_id: str = "",
     queued: bool = False,
     now: datetime | None = None,
+    **_legacy: Any,
 ) -> dict[str, Any]:
     """Append one run-free hold with an exclusive lock and durable flush.
 
@@ -242,6 +242,9 @@ def record_picker_hold(
     the run it became: ``run_id`` names that run and ``queued`` is set when the
     request was queued rather than launched, so the outcome history shows Jev's
     answer and where it landed instead of a bare hold that never moved.
+
+    A hold is written under the crew home, so no ``docs`` argument is taken; a
+    caller that still passes one has it accepted and ignored.
     """
     path = _hold_path(project)
     path.parent.mkdir(parents=True, exist_ok=True)
