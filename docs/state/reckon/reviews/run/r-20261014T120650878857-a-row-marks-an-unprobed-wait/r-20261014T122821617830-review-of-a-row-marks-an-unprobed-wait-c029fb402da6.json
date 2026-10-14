@@ -1,0 +1,52 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured: tests-base.log records 419 passed EXIT=0 (0 failing ids) and tests-head.log records 423 passed EXIT=0 (0 failing ids), so head carries no failure absent at base.",
+  "base_log_revision": "6379c2fd4c865abff6faa9a06120f6415fe5e7cd",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:2086 Ticker.render",
+    "reckon/crew_follow_commands.py:2286 Ticker construction feeding the watch render"
+  ],
+  "completed_at": "2026-10-14T12:38:01.776Z",
+  "dispatched_at": "2026-10-14T12:28:48Z",
+  "findings": [],
+  "head_log_revision": "6379c2fd4c865abff6faa9a06120f6415fe5e7cd",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s): reckon/crew/recovery_watch.py:2086 renders the row through Ticker.render, and reckon/crew_follow_commands.py:2286 constructs the Ticker fed to it.",
+    "diff": "read both commits against base 6379c2fd4; reckon/crew/ticker.py +32/-1 (UNPROBED_WAIT_MARKER, unprobed_wait, and to_cell built from the destination word plus the marker), the new 4-test file and the 4-line evidence fragment; three files, all inside the declared scope.",
+    "done_when": "plan section 22's done_when names tests/test_a_row_marks_an_unprobed_wait.py rendering two rows (the unprobed shows waiting?, the probed shows waiting, both the same width with every later cell on the same column, a no-wait row unmarked) plus a base arm and a head arm whose only difference is the node's change; the manifest records 419 passed base and 423 passed head, EXIT=0 both, and the file 4/4.",
+    "goal": "the node's goal is to mark a row whose declared wait no probe has run for with `?` after its state word; reckon/crew/ticker.py:1899 unprobed_wait is declares_a_wait(event) with wait_condition_state absent, and ticker.py:2192 appends UNPROBED_WAIT_MARKER to the displayed destination word, so exactly the unprobed wait is marked and a probed or ordinary row is not.",
+    "manifest": "read r-20261014T120650878857-a-row-marks-an-unprobed-wait/manifest.md; status complete, commits 6643456b7 and c029fb402, gate 419/423 both EXIT=0, negative control 2 failed EXIT=1, changed_paths matching the diff.",
+    "write_paths": "the node declared reckon/crew/ticker.py, tests/test_a_row_marks_an_unprobed_wait.py, a docs/evidence fragment and a docs/figures directory; the diff changes ticker.py, the test file and the fragment, every path inside the declared set (the figure directory is unused)."
+  },
+  "justifications": {
+    "durability": "the negative control removing the marker (negative-control.log, F..F, 2 failed EXIT=1) shows tests/test_a_row_marks_an_unprobed_wait.py:56 reddens when to_cell loses the marker, and each assertion compares rendered text to a literal glyph rather than a value the test handed in.",
+    "evidence": "the manifest records tests-base.log at 419 passed EXIT=0 and tests-head.log at 423 passed EXIT=0, and tests/test_a_row_marks_an_unprobed_wait.py asserts each clause the done_when names, giving added_failure_count 0.",
+    "fit": "reckon/crew/ticker.py:1899 unprobed_wait sits beside the declares_a_wait it composes (ticker.py:1875) and the constant and comments carry no plan, ticket, version or author label, matching the module's heavy-comment idiom.",
+    "goal_fidelity": "reckon/crew/ticker.py:2192 sets to_cell = to_state + (UNPROBED_WAIT_MARKER if unprobed_wait(event) else \"\"), marking the displayed destination word only when ticker.py:1899 finds the declaration with the probe's verdict absent.",
+    "reuse": "unprobed_wait composes the existing declares_a_wait (ticker.py:1875) rather than re-deriving the declaration, and a capability search over reckon/crew found no unprobed-wait or row-marker owner to fork (DIM_MARKER ticker.py:103 and ROLE_UNKNOWN ticker.py:342 are different capabilities).",
+    "scope_discipline": "every path in the diff (reckon/crew/ticker.py, tests/test_a_row_marks_an_unprobed_wait.py, the evidence fragment) is inside the write paths the manifest declares."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to mark a row whose declared wait no probe has run for with `?` after its state word; reckon/crew/ticker.py:1899 unprobed_wait is declares_a_wait(event) with wait_condition_state absent, and ticker.py:2192 appends UNPROBED_WAIT_MARKER to the displayed destination word, so exactly the unprobed wait is marked and a probed or ordinary row is not.\nVERDICT done_when: plan section 22's done_when names tests/test_a_row_marks_an_unprobed_wait.py rendering two rows (the unprobed shows waiting?, the probed shows waiting, both the same width with every later cell on the same column, a no-wait row unmarked) plus a base arm and a head arm whose only difference is the node's change; the manifest records 419 passed base and 423 passed head, EXIT=0 both, and the file 4/4.\nVERDICT write_paths: the node declared reckon/crew/ticker.py, tests/test_a_row_marks_an_unprobed_wait.py, a docs/evidence fragment and a docs/figures directory; the diff changes ticker.py, the test file and the fragment, every path inside the declared set (the figure directory is unused).\nVERDICT manifest: read r-20261014T120650878857-a-row-marks-an-unprobed-wait/manifest.md; status complete, commits 6643456b7 and c029fb402, gate 419/423 both EXIT=0, negative control 2 failed EXIT=1, changed_paths matching the diff.\nVERDICT diff: read both commits against base 6379c2fd4; reckon/crew/ticker.py +32/-1 (UNPROBED_WAIT_MARKER, unprobed_wait, and to_cell built from the destination word plus the marker), the new 4-test file and the 4-line evidence fragment; three files, all inside the declared scope.\nCALL_SITES: reckon/crew/recovery_watch.py:2086 (Ticker.render), reckon/crew_follow_commands.py:2286 (constructs the Ticker fed to it)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/ticker.py:2192 sets to_cell = to_state + (UNPROBED_WAIT_MARKER if unprobed_wait(event) else \"\"), marking the displayed destination word only when ticker.py:1899 finds the declaration with the probe's verdict absent.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest records tests-base.log at 419 passed EXIT=0 and tests-head.log at 423 passed EXIT=0, and tests/test_a_row_marks_an_unprobed_wait.py asserts each clause the done_when names, giving added_failure_count 0.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff (reckon/crew/ticker.py, tests/test_a_row_marks_an_unprobed_wait.py, the evidence fragment) is inside the write paths the manifest declares.\nSCORE durability: 19\nJUSTIFICATION durability: the negative control removing the marker (negative-control.log, F..F, 2 failed EXIT=1) shows tests/test_a_row_marks_an_unprobed_wait.py:56 reddens when to_cell loses the marker, and each assertion compares rendered text to a literal glyph rather than a value the test handed in.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/ticker.py:1899 unprobed_wait sits beside the declares_a_wait it composes (ticker.py:1875) and the constant and comments carry no plan, ticket, version or author label, matching the module's heavy-comment idiom.\nSCORE reuse: 20\nJUSTIFICATION reuse: unprobed_wait composes the existing declares_a_wait (ticker.py:1875) rather than re-deriving the declaration, and a capability search over reckon/crew found no unprobed-wait or row-marker owner to fork (DIM_MARKER ticker.py:103 and ROLE_UNKNOWN ticker.py:342 are different capabilities).",
+  "review_run_id": "r-20261014T122821617830-review-of-a-row-marks-an-unprobed-wait-c029fb402da6",
+  "reviewed_base_sha": "6379c2fd4c865abff6faa9a06120f6415fe5e7cd",
+  "reviewed_head_sha": "c029fb402da67776e5ddcca92148efefae3be174",
+  "reviewed_run_id": "r-20261014T120650878857-a-row-marks-an-unprobed-wait",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T12:34:39.314153+00:00",
+  "total": 113
+}

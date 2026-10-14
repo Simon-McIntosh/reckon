@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="84">
+<meta name="plan-version" content="86">
 <meta name="plan-modified" content="2026-10-14">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -557,6 +557,12 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s22" data-id="c-close-s22" data-who="reckon-build" data-when="2026-10-14T12:45:00Z">
     <div class="r-comment-body"><p>§22 landed: a row whose declared wait has never been probed reads <code>waiting?</code>, so it no longer looks like a wait whose condition is being tested. Merged as <code>53dea2d78</code>, reviewed at 113/120. <a href="/reckon/evidence/archive/the-monitor-shows-the-work-it-watches-landed.html#s22">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s22" data-id="c-run-r-20261014T120650878857-a-row-marks-an-unprobed-wait" data-who="reckon-build" data-when="2026-10-14T12:26:22.941Z">
+    <div class="r-comment-body"><p>A row whose event declares an external wait no probe has read (declares_a_wait with wait_condition_state absent) now draws `?` after its destination word inside the fixed ten-column state cell, so marked and unmarked rows are the same width with every later cell on the same column; the ticker-importing gate is 423 passed at head vs 419 at base, EXIT=0 both arms, no failure at head absent at base, and the negative control (marker removed) fails the first case (EXIT=1).</p></div>
+</div>
+<div class="r-comment" data-section="s22" data-id="c-run-r-20261014T122821617830-review-of-a-row-marks-an-unprobed-wait-c029fb402da6" data-who="reckon-build" data-when="2026-10-14T12:38:01.776Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261014T120650878857-a-row-marks-an-unprobed-wait at head c029fb402da67776e5ddcca92148efefae3be174 (base 6379c2fd4c865abff6faa9a06120f6415fe5e7cd): the marker lands inside reckon/crew/ticker.py:2192 and is reached through recovery_watch.py:2086; scores goal_fidelity 19, evidence 18, scope_discipline 19, durability 19, fit 18, reuse 20 (total 113); no findings, so the node is promotable.</p></div>
 </div>
 </section>
 </main>
