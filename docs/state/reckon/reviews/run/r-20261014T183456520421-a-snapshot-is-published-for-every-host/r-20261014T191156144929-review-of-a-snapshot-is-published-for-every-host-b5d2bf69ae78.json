@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite (40c8f4bb5, gate-base.log, EXIT=1) fails 3 hook-installer/interpreter tests (the three ids recorded in the reviewed manifest's baseline_suite.failure_ids); after_suite (b5d2bf69a, gate-head.log, EXIT=0) fails none. Head failures absent at base: none - added_failure_count 0, no added ids. The 3 base-only failures are outside this node's scope (hook-installer interpreter resolution in a bare scratch copy of the tree) and are named in the reviewed manifest's follow_ons.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/runs.py:2159",
+    "reckon/crew/runs.py:2796",
+    "reckon/crew/watch_unit.py:169",
+    "reckon/crew/session_host.py:418",
+    "reckon/crew/dispatch_watch.py:713",
+    "reckon/crew/recovery_watch.py:2557"
+  ],
+  "completed_at": "2026-10-14T19:26:54.918Z",
+  "dispatched_at": "2026-10-14T19:12:23Z",
+  "findings": [
+    {
+      "file": "reckon/crew/follower_registration.py",
+      "line": "491",
+      "severity": "follow-on",
+      "text": "follow-on: registration_names_a_foreign_host duplicates watch_unit._seat_names_a_foreign_host (and follower_registration_host at :482 duplicates watch_unit._seat_host), an owner already importable through this module's own deferred .watch_unit import at :758 and asserted equal by the node's own test at tests/test_a_snapshot_is_published_for_every_host.py:271; harmless at runtime, but it is a second copy of the foreign-host judgement to keep in step with the seat's."
+    },
+    {
+      "file": "reckon/crew/follower_registration.py",
+      "line": "577",
+      "severity": "follow-on",
+      "text": "follow-on: the foreign liveness fact is the follower's advisory lock, which the test fixture holds in-process, so the gate proves the decision logic but not that flock is observable from the producer's host across the shared home; seat liveness already reads this lock cross-host via project_watch_visibility, so the assumption is consistent with the codebase, but no added test could show it if it failed in production."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commit by commit against base 40c8f4bb5; 49b91a283 adds the host field and the foreign liveness branch to reckon/crew/follower_registration.py plus the 322-line test module, and b5d2bf69a adds the 42-line evidence fragment; no production module outside the declared write paths is touched.",
+    "done_when": "the done_when names tests/test_a_snapshot_is_published_for_every_host.py, a two-host fixture, the review reflex, the recorded host spelled as runs._seat_host, a released foreign registration reading gone, the six-reader manifest, and base/head gates; the manifest records head 253 passed EXIT=0 (gate-head.log) and base 3 failed/245 passed EXIT=1 (gate-base.log), the negative control fails 3 of 5 (negative-control-local-process-table.log), ruff adds no findings (ruff.log/ruff-base.log), and evidence_inputs names all six readers before/after, so the gate asserts the done_when's measure.",
+    "goal": "the node's goal is to judge a follower registration made on another host by a fact that host can supply instead of this host's process table; reckon/crew/follower_registration.py:491 registration_names_a_foreign_host and the foreign branch at :532-580 leave a foreign registration's pids unknown and read the would-be local probes as unknown, so the goal is met at :577.",
+    "manifest": "read; it records status complete, both gate arms with their results, the negative control's declared and observed mutation, the six-reader evidence_inputs; its changed_paths match the diff and its follow_ons name the three base-arm hook-installer failures as out of scope.",
+    "write_paths": "the manifest declares six paths (follower_registration.py, obligation_snapshot.py, coordinator_obligations.py, tests/test_a_snapshot_is_published_for_every_host.py, the evidence fragment and its figures dir); git diff --name-only 40c8f4bb5..b5d2bf69a lists exactly reckon/crew/follower_registration.py, tests/test_a_snapshot_is_published_for_every_host.py and docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/a-snapshot-is-published-for-every-host.html, all inside the declaration and nothing outside it."
+  },
+  "justifications": {
+    "durability": "tests/test_a_snapshot_is_published_for_every_host.py drives the real producer sweep and hook output and reddens (3 of 5) when the foreign decision is reverted, as negative-control-local-process-table.log records; the cross-host lock fact itself is held in-process, so the lock's observability across hosts is assumed, not shown.",
+    "evidence": "gate-head.log ends \"253 passed in 420.12s ... EXIT=0\" and gate-base.log \"3 failed, 245 passed ... EXIT=1\", and negative-control-local-process-table.log records 3 of 5 failing under the declared mutation, reproducing the done_when.",
+    "fit": "the foreign branch returns None for unknown and follows watch_observer_alive's unknown-not-dead shape (reckon/crew/runs.py:2710), and no plan or ticket token enters the added names or comments.",
+    "goal_fidelity": "reckon/crew/follower_registration.py:532-580 leaves a foreign registration's pid probes unknown and reads its liveness from the host-independent advisory lock, the host-supplied fact the goal names.",
+    "reuse": "reckon/crew/follower_registration.py:482-499 re-implement watch_unit._seat_host and watch_unit._seat_names_a_foreign_host, which runs.py already re-exports, without extending that owner.",
+    "scope_discipline": "git diff --name-only 40c8f4bb5..b5d2bf69a lists only reckon/crew/follower_registration.py, the new test module and the evidence fragment, every path inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to judge a follower registration made on another host by a fact that host can supply instead of this host's process table; reckon/crew/follower_registration.py:491 registration_names_a_foreign_host and the foreign branch at :532-580 leave a foreign registration's pids unknown and read the would-be local probes as unknown, so the goal is met at :577.\nVERDICT done_when: the done_when names tests/test_a_snapshot_is_published_for_every_host.py, a two-host fixture, the review reflex, the recorded host spelled as runs._seat_host, a released foreign registration reading gone, the six-reader manifest, and base/head gates; the manifest records head 253 passed EXIT=0 (gate-head.log) and base 3 failed/245 passed EXIT=1 (gate-base.log), the negative control fails 3 of 5 (negative-control-local-process-table.log), ruff adds no findings (ruff.log/ruff-base.log), and evidence_inputs names all six readers before/after, so the gate asserts the done_when's measure.\nVERDICT write_paths: the manifest declares six paths (follower_registration.py, obligation_snapshot.py, coordinator_obligations.py, tests/test_a_snapshot_is_published_for_every_host.py, the evidence fragment and its figures dir); git diff --name-only 40c8f4bb5..b5d2bf69a lists exactly reckon/crew/follower_registration.py, tests/test_a_snapshot_is_published_for_every_host.py and docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/a-snapshot-is-published-for-every-host.html, all inside the declaration and nothing outside it.\nVERDICT manifest: read; it records status complete, both gate arms with their results, the negative control's declared and observed mutation, the six-reader evidence_inputs; its changed_paths match the diff and its follow_ons name the three base-arm hook-installer failures as out of scope.\nVERDICT diff: read commit by commit against base 40c8f4bb5; 49b91a283 adds the host field and the foreign liveness branch to reckon/crew/follower_registration.py plus the 322-line test module, and b5d2bf69a adds the 42-line evidence fragment; no production module outside the declared write paths is touched.\nCALL_SITES: reckon/crew/runs.py:2159, reckon/crew/runs.py:2796, reckon/crew/watch_unit.py:169, reckon/crew/session_host.py:418, reckon/crew/dispatch_watch.py:713, reckon/crew/recovery_watch.py:2557\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/follower_registration.py:532-580 leaves a foreign registration's pid probes unknown and reads its liveness from the host-independent advisory lock, the host-supplied fact the goal names.\nSCORE evidence: 19\nJUSTIFICATION evidence: gate-head.log ends \"253 passed in 420.12s ... EXIT=0\" and gate-base.log \"3 failed, 245 passed ... EXIT=1\", and negative-control-local-process-table.log records 3 of 5 failing under the declared mutation, reproducing the done_when.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 40c8f4bb5..b5d2bf69a lists only reckon/crew/follower_registration.py, the new test module and the evidence fragment, every path inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_snapshot_is_published_for_every_host.py drives the real producer sweep and hook output and reddens (3 of 5) when the foreign decision is reverted, as negative-control-local-process-table.log records; the cross-host lock fact itself is held in-process, so the lock's observability across hosts is assumed, not shown.\nSCORE fit: 19\nJUSTIFICATION fit: the foreign branch returns None for unknown and follows watch_observer_alive's unknown-not-dead shape (reckon/crew/runs.py:2710), and no plan or ticket token enters the added names or comments.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/follower_registration.py:482-499 re-implement watch_unit._seat_host and watch_unit._seat_names_a_foreign_host, which runs.py already re-exports, without extending that owner.\nFINDING reckon/crew/follower_registration.py:491 follow-on: registration_names_a_foreign_host duplicates watch_unit._seat_names_a_foreign_host (and follower_registration_host at :482 duplicates watch_unit._seat_host), an owner already importable through this module's own deferred .watch_unit import at :758 and asserted equal by the node's own test at tests/test_a_snapshot_is_published_for_every_host.py:271; harmless at runtime, but it is a second copy of the foreign-host judgement to keep in step with the seat's.\nFINDING reckon/crew/follower_registration.py:577 follow-on: the foreign liveness fact is the follower's advisory lock, which the test fixture holds in-process, so the gate proves the decision logic but not that flock is observable from the producer's host across the shared home; seat liveness already reads this lock cross-host via project_watch_visibility, so the assumption is consistent with the codebase, but no added test could show it if it failed in production.",
+  "review_run_id": "r-20261014T191156144929-review-of-a-snapshot-is-published-for-every-host-b5d2bf69ae78",
+  "reviewed_base_sha": "40c8f4bb5fa917d9f0eb161b178226f7026c2177",
+  "reviewed_head_sha": "b5d2bf69ae7810ab29dd5f7560e9782aa063540d",
+  "reviewed_run_id": "r-20261014T183456520421-a-snapshot-is-published-for-every-host",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T19:23:54.021985+00:00",
+  "total": 102
+}
