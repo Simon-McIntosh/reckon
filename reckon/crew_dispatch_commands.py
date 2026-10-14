@@ -948,6 +948,16 @@ def crew_preflight(
     help="Exclusive write path; repeat for each.",
 )
 @click.option(
+    "--image",
+    "image_paths",
+    multiple=True,
+    metavar="PATH",
+    help=(
+        "Figure handed to the worker's harness on the command line; repeat for "
+        "each. A lane whose dialect carries no image flag refuses the run by name."
+    ),
+)
+@click.option(
     "--peer",
     "peers",
     multiple=True,
@@ -1110,6 +1120,7 @@ def crew_dispatch(
     goal,
     done_when,
     write_paths,
+    image_paths,
     peers,
     required_decisions,
     locked_decisions,
@@ -1245,6 +1256,7 @@ def crew_dispatch(
         manifest_path=manifest,
         requires_decisions=list(required_decisions),
         peer_scopes=_peer_scopes(peers),
+        images=list(image_paths),
     )
 
     override_resolution: dict = {}

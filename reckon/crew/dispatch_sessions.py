@@ -1150,6 +1150,7 @@ def resume_plan(
                 or (),
             ),
             resume_session=session_id or None,
+            images=(record.get("node") or {}).get("images") or (),
             fence=FENCE_WORKERS,
             fence_config=config,
         )
@@ -1232,6 +1233,7 @@ def _recorded_task_node(record: Mapping[str, Any]) -> TaskNode:
         negative_control=str(data.get("negative_control") or ""),
         estimated_hours=data.get("estimated_hours"),
         requires_decisions=[str(key) for key in data.get("requires_decisions") or ()],
+        images=[str(path) for path in data.get("images") or ()],
     )
 
 
@@ -1584,6 +1586,7 @@ def change_lane(
                 ),
                 final_message_path=str(final_path),
                 resume_session=session_id if continued else None,
+                images=(record.get("node") or {}).get("images") or (),
                 fence=FENCE_WORKERS,
                 fence_config=config,
             )
