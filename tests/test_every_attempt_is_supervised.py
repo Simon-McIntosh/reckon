@@ -16,9 +16,9 @@ import pytest
 from click.testing import CliRunner
 
 import reckon.crew.dispatch_sessions as dispatch_sessions_module
-from reckon import _backends, crew, crew_dispatch_commands
+from reckon import _backends, crew_dispatch_commands
 from reckon import cli as cli_module
-from reckon.crew import recovery, runs
+from reckon.crew import recovery, resumption, runs
 
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
 
@@ -201,7 +201,9 @@ def test_crew_resume_keeps_the_harness_behind_a_supervisor(
     monkeypatch.setenv("RECKON_HOME", str(config_home))
     run_id, directory, _manifest = _resumable_run(tmp_path, dialect)
     plan = _sleeping_plan(Path(runs.read_pointer(run_id)["worktree"]), dialect)
-    monkeypatch.setattr(crew, "resume_plan", lambda *args, **kwargs: plan)
+    # The resume command reaches the launch through resumption._resume, which
+    # composes the plan from its own module.
+    monkeypatch.setattr(resumption, "resume_plan", lambda *args, **kwargs: plan)
     monkeypatch.setattr(
         crew_dispatch_commands,
         "_resolved_flight",
@@ -245,7 +247,9 @@ def test_a_killed_resumed_worker_leaves_its_attempt_exit_record(
     monkeypatch.setenv("RECKON_HOME", str(config_home))
     run_id, directory, _manifest = _resumable_run(tmp_path, "codex")
     plan = _sleeping_plan(Path(runs.read_pointer(run_id)["worktree"]), "codex")
-    monkeypatch.setattr(crew, "resume_plan", lambda *args, **kwargs: plan)
+    # The resume command reaches the launch through resumption._resume, which
+    # composes the plan from its own module.
+    monkeypatch.setattr(resumption, "resume_plan", lambda *args, **kwargs: plan)
     monkeypatch.setattr(
         crew_dispatch_commands,
         "_resolved_flight",
