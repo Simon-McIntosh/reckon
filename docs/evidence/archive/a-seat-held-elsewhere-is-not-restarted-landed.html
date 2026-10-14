@@ -45,6 +45,11 @@
     <p>Correction to the §4 entry above: the gate ran 30 importing test files, not 31. That is the count of distinct test paths in the gate command recorded at the head of <code>gate-head-2.log</code> in the run directory. The result is unchanged: 253 passed, exit 0.</p>
   </section>
 
+  <section id="s7">
+    <h2>§7 — a worker writing its first status on another host is not drawn halted</h2>
+    <p><code>_orientation_write_of_a_run_in_motion</code> in <code>reckon/crew/recovery_liveness.py</code> no longer returns early for a pointer whose liveness is unknown. Such a run, launched on another host, is judged by a new <code>_newest_stream_in_motion</code>. A newest stream that carries an assistant turn and was written within the existing <code>LOG_STALE_AFTER_SECONDS</code> bound keeps the run's classification instead of <code>unwritten</code>. A proven-dead process still reads <code>unwritten</code>, and a proven-live one is decided as before.</p><p>Run <code>r-20261014T193849800642-a-worker-on-another-host-is-not-unwritten</code>, admitted from queued request <code>r-20261014T193037739274</code>. Commit <code>b4285d4f5</code>, merged into main as <code>45b962dd6</code>. New test file: 4 passed. Gate: 19 importing test files, 177 passed at base and 181 at head, no failure at head absent at base. The negative control restores the early return, and the foreign case reads <code>unwritten</code>. Review <code>r-20261014T200353727888</code>: 115/120, nothing blocking.</p><p>Follow-ons not built here: the manifest's test timings do not match the cited logs, though the counts and exits do. <code>_newest_stream_in_motion</code>'s <code>now_seconds</code> is not passed through from the classifier, which is latent while every caller uses the real clock. And the shorter window before a foreign run's first stream record, gated at <code>recovery_classification.py</code>, was left out by design.</p>
+  </section>
+
 </main>
 </body>
 </html>
