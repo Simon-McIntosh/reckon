@@ -1,0 +1,72 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-14T00:55:31.045Z",
+  "dispatched_at": "2026-10-14T00:46:41Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-held-dispatch-waits-its-fair-turn.html:135",
+      "id": "reasoning-1",
+      "reason": "as written, done-when case 4 asserts a release the mechanism cannot produce for a same-session pair, so a builder testing the case as worded gets a failing gate and either widens the mechanism (moving the pre-check above the allowance check) or drops a requirement the section states.",
+      "text": "the added paragraph bounds the overlap hold by STARVATION_AGE_SECONDS and motivates it with \"The earlier request may itself be held without end, for example when its session is never granted a slot\", but when the two overlapping requests sit in that same slot-less session the later one is held by the session-allowance check in admit_once (reckon/crew/queue_admission.py:571, `if allowance is not None and allowance <= 0: result[\"held\"].append(...); continue`), which runs before the pre-check, so the pre-check never sees it and the escape never fires; the hold is then unbounded, which is the exact pathology the cited \u00a74 measurement (c-s4-head-of-queue-starved) records",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-held-dispatch-waits-its-fair-turn.html:135",
+      "id": "done_when-1",
+      "reason": "without an arm that removes the escape and requires the later request to stay queued, the section cannot demonstrate the guard it adds, which is how a guard that never fires ships.",
+      "text": "the release-at-starvation-age case declares no control, and neither declared control can falsify it: removing the admission pre-check makes the later request reach the launch path and launch anyway (the earlier request is a queued pointer, which under mechanism 1 no longer binds), and re-counting queued pointers as binding likewise leaves the later request launching, so the case passes in both arms and the escape's firing is never shown load-bearing",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-held-dispatch-waits-its-fair-turn.html:135",
+      "id": "wiring-1",
+      "reason": "the ordering exists in one direction only; \u00a715 built first recreates the admission loop \u00a718 then rewrites, and the plan's own convention is that the later section states its predecessors.",
+      "text": "\u00a718 states \"This section runs after \u00a714 ... and before \u00a715, which also writes queue_admission.py\", but \u00a715's own text declares \"runs after \u00a79, \u00a710, \u00a711 and \u00a714, which also write these files\" and does not name \u00a718, and \u00a715 is implementable now, so a coordinator dispatching \u00a715 has no signal that \u00a718 must precede it",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "25cbf581ff6c9298579698ece496f837f3c87d3c19f1cfa0847e5c4223e5b268",
+  "plan_slug": "a-held-dispatch-waits-its-fair-turn",
+  "plan_version": 94,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261014T004606850752-plan-review-of-a-held-dispatch-waits-its-fair-turn",
+  "reviewed_blob_sha": "d5bbd5994e2e67af1414b0504f4401f2484f7447",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 claim_disposition (reckon/crew/node.py:1450), _repository_scope_claims (reckon/crew/dispatch_claims.py:222), _live_scope_claims (reckon/crew/runs.py:856), _require_launched_record (reckon/crew/queue_admission.py:514) and STARVATION_AGE_SECONDS = 30 * 60 (reckon/crew/queue_order.py:13) all resolve, the superseded test exists at tests/test_a_node_is_queued_once.py:307 with exactly the shape \u00a718 describes, and every extensionless href resolves with .html appended (each anchor checked against docs/evidence/archive/a-held-dispatch-waits-its-fair-turn-landed.html).",
+    "done_when": "a finding \u2014 the starvation-release case added on line 135 names no control, and neither of the two declared controls can falsify it, so no arm shows the release guard firing.",
+    "evidence_paths": "pass \u2014 both negative-control logs sit under the run directory and no gate, base arm or evidence path named on line 135 is a session scratchpad or a node-local temporary.",
+    "naming": "pass \u2014 the changed text adds no plan label, stage name, ticket number or changelog prose; it names real symbols (STARVATION_AGE_SECONDS, claim_disposition, admit_once) and states the mechanism.",
+    "reasoning": "a finding \u2014 the starvation bound added on line 135 cannot bound the hold in the same-session case the same sentence raises as its motivation, because the session-allowance hold fires before the pre-check.",
+    "single_goal": "pass \u2014 the two mechanisms are one contract (a queued claim refuses no launch, and rank order among overlapping queued requests is kept), each with its own control; splitting would cost a node and a review for one invariant.",
+    "wiring": "a finding \u2014 \u00a718 declares it runs before \u00a715 (line 135), but \u00a715's own ordering list names \u00a79, \u00a710, \u00a711 and \u00a714 and omits \u00a718, while both write reckon/crew/queue_admission.py and \u00a715 is implementable now."
+  },
+  "section_digests": {
+    "_document": "5e14043a491f99858173e3b893442375f85c205295e44c4f706b9faca823dba4",
+    "s1": "e09f72c38fa12dd06b1fede9137b6a8731c7f42dad95ea4d7873e48b6bcebc93",
+    "s10": "769f35c4ff338677b1083340b990086682e629701a25af49a8b6e2d3b8a175a4",
+    "s11": "3aafc106945bdc346a0f808fc26c7fc8e028b922103641455da38536ae24c036",
+    "s12": "f72ab709e3a40644be43c6e558b558089f939e3368a20a2b34321a9043c80c88",
+    "s13": "1f1792d925edd6b7c0b33bd02bebc3db1f499f9d5e1505b3ba04b305d9ed7f64",
+    "s14": "a86f35810a5d1446f8cf9294a46f7a7a393c1452cc3080ef8b9e51cf83670acf",
+    "s15": "694218fb467e061648aac13eed1a446529dbff08aca86ecfdb24792eb5b2820e",
+    "s16": "5d0a87ee69959477d707fb8d7b442b283f6ae0e7bc896382dd4c65c7e3efb9b8",
+    "s17": "d3bfb51ccfbe6c602a6a11cd9d7e433d1385fd2b90b604f2eb307029dc97f703",
+    "s18": "9405cec95380e0121c4a79b5e36566a20f71b6a6438b6b92138cdc4c666d2ad4",
+    "s2": "c37ed4ecb2dad1331b0b031fb8351608243790308312236d375bede3594285b7",
+    "s3": "ef687123318fac196bded366330cf2e92b586c4991b5c1cc8670f228182f916c",
+    "s4": "e6a41eadc72e4752cc0ebe35a14a9bce3f28bc1061ec677e8f779fa09d8c037c",
+    "s5": "4b674f96924c3dbfde217945d16c606df376d034dc060f02360a4336412e74f8",
+    "s6": "9e35fc2341a06de64fed9ff7f176a0e83b22c1482c1b5a04a5539b6e4c07aab4",
+    "s7": "764a72dad2d59bddd4d3b1209f07c0c210ff6c46cd14147d4bcc7ffe9fa9426d",
+    "s8": "1b92313fdf672f4b813b45aa8e26f1304ca363cdc5a4d1752238f794a2019e27",
+    "s9": "ef8f75976cf8d243089cb5955b0e084cf6e2c6bcd478f9e56b8e8654080c6ad6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T00:55:33.750414+00:00"
+}
