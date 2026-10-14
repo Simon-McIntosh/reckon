@@ -80,7 +80,7 @@ def _transition(run_id: str, *, session: str, state: str, previous: str) -> dict
     }
 
 
-def _arm(*, lifetime: float = 0.75) -> list[dict]:
+def _arm(*, lifetime: float = 0.75, **kwargs) -> list[dict]:
     """Run one arming to its own lifetime and collect the fleet rows it drew."""
     generator = cli._follow_watch_lines(
         PROJECT,
@@ -88,6 +88,7 @@ def _arm(*, lifetime: float = 0.75) -> list[dict]:
         poll_interval=0.001,
         sweep=None,
         lifetime=lifetime,
+        **kwargs,
     )
     return [event for event in generator if event.get("event") in _FLEET_EVENTS]
 
@@ -154,11 +155,14 @@ def test_a_replaced_stream_does_not_continue(tmp_path) -> None:
 def test_an_arm_with_no_checkpoint_replays_no_transitions_and_no_peer_rows(
     home,
 ) -> None:
-    """A first arm emits state and never the stream's history.
+    """A first arm emits no history, and delivers what the stream gains after.
 
-    With no place to resume from, the arming derives the fleet as it stands: the
-    rows it draws carry no row for a session it was not asked to follow, and it
-    does not walk the stream's earlier transitions as though they were news.
+    With no place to resume from, the arming derives the fleet as it stands: it
+    draws no row for a session it was not asked to follow, and it does not walk
+    the stream's earlier transitions as though they were news. A run that moves
+    after the arming is the news the pane carries, so the claim is held to that
+    too — an arm that emitted nothing at all satisfies the absences below
+    vacuously, which is why the delivery is asserted first.
     """
     _write_pointer(home, RUN_MINE, session=SESSION, node="node-mine")
     _write_pointer(home, RUN_OTHER, session=OTHER_SESSION, node="node-other")
@@ -187,35 +191,45 @@ def test_an_arm_with_no_checkpoint_replays_no_transitions_and_no_peer_rows(
         )
         crew.list_live(project=PROJECT)
         assert not follow_checkpoint.exists(PROJECT, SESSION)
-        # The fleet as it stands, read the way the arming itself reads it. The
-        # row the arm delivers must be this run's reading and nothing else.
-        expected_state = next(
-            str(row.get("to_state") or "")
-            for row in runs.watch_stream_cursor(PROJECT)["baseline"]
-            if row.get("run_id") == RUN_MINE
-        )
 
-        emitted = _arm()
+        appended: list[bool] = []
+
+        def _append_once(_state) -> None:
+            # The run moves once, after the arming is placed: this is the news
+            # a first arm does carry, and the row the absences below are
+            # measured against.
+            if appended:
+                return
+            appended.append(True)
+            runs._append_watch_lines(
+                stream_path,
+                [
+                    _transition(
+                        RUN_MINE, session=SESSION, state="blocked", previous="working"
+                    )
+                ],
+            )
+
+        emitted = _arm(on_poll=_append_once)
 
     # The count comes first: the shape checks below are ``all(...)`` over the
     # delivered rows, and an empty list satisfies every one of them, so without
-    # this a follower that suppressed its baseline would pass vacuously.
+    # this a follower that emitted nothing would pass vacuously.
     assert len(emitted) == 1, (
-        f"a first arm emits exactly the one baseline row its own run owns; "
+        f"a first arm emits the one row its own run moved into after the arm; "
         f"got {emitted!r}"
     )
-    (baseline,) = emitted
-    assert baseline.get("event") == "baseline", baseline
-    assert baseline.get("run_id") == RUN_MINE, baseline
-    assert baseline.get("session") == SESSION, baseline
-    assert baseline.get("from_state") is None, (
-        f"a baseline row carries no previous state; got {baseline!r}"
+    (row,) = emitted
+    assert row.get("run_id") == RUN_MINE, row
+    assert row.get("session") == SESSION, row
+    assert row.get("to_state") == "blocked", row
+    assert row.get("from_state") == "working", (
+        f"the delivered row is the move the run made after the arm, not the "
+        f"start already in the stream when it armed; got {row!r}"
     )
-    assert baseline.get("to_state") == expected_state, (
-        f"the baseline must carry the fleet's own reading for its run; got {baseline!r}"
-    )
-    assert all(event.get("event") != "transition" for event in emitted), (
-        f"an arm with no place must not replay the stream's transitions; got {emitted!r}"
+    assert row.get("event") != "baseline", (
+        f"a first arm derives no baseline for this pane: a run standing when it "
+        f"arms is inventory, not news; got {row!r}"
     )
     assert all(str(event.get("session") or "") != OTHER_SESSION for event in emitted), (
         f"no row for a session this arm was not asked to follow; got {emitted!r}"

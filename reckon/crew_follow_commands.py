@@ -928,6 +928,12 @@ def follower_row_path(
         # context, and a live follower shows nothing between a run's launch and
         # its end — the silence this pane's second reader cannot read.
         own_session=session,
+        # The sessions this pane was asked to observe. Observing a session is a
+        # request to see its rows, so the policy must know which sessions those
+        # are; without this the observed session's rows are held back as observer
+        # context and an observing follower shows nothing of the session it was
+        # armed to watch.
+        observed_sessions=observed_sessions,
     )
 
 

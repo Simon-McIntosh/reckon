@@ -42,16 +42,29 @@ class _Clock:
         self._t += seconds
 
 
-def _line(run_id: str, to_state: str, *, session: str = "s1") -> str:
-    """One durable stream line carrying a single transition record."""
+Follower_session = "s1"
+
+
+def _line(run_id: str) -> str:
+    """One durable stream line carrying the follower's own run start.
+
+    The pane's own session reaches its line on the ``dispatched -> working``
+    start. A bare re-announcement of a state asks the reader for nothing and is
+    held back as observer context, so a case that wants the pane to receive a
+    row feeds the launch's own start rather than a state word alone.
+    """
     return (
         json.dumps(
             {
                 "run_id": run_id,
-                "to_state": to_state,
-                "session": session,
+                "from_state": "dispatched",
+                "to_state": "working",
+                "session": Follower_session,
                 "node": "n1",
                 "event": "transition",
+                "working": 1,
+                "blocked": 0,
+                "unpromoted": 0,
             }
         )
         + "\n"
@@ -151,6 +164,7 @@ class _Follower:
         def reader() -> None:
             for event in cli._follow_watch_lines(
                 self.project,
+                session=Follower_session,
                 poll_interval=self.POLL,
                 sleeper=self._sleeper,
                 stop=self.stop,
@@ -217,14 +231,12 @@ def test_line_traffic_does_not_starve_but_does_not_repeat(
     """A stream that emits lines continuously still sweeps on the cadence: the
     line traffic neither starves the sweep nor multiplies it."""
     follower = _Follower(tmp_path, monkeypatch, sweep=None).start()
-    follower.append(
-        _line("r1", "working"), _line("r2", "working"), _line("r3", "working")
-    )
+    follower.append(_line("r1"), _line("r2"), _line("r3"))
     assert follower.wait_emissions(3) == 3
     assert follower.sweep_moments == [0.0], "a busy stream does not sweep more"
 
     for step in (1, 2):
-        follower.append(_line(f"r{step + 3}", "working"))
+        follower.append(_line(f"r{step + 3}"))
         follower.clock.advance(follower.CADENCE)
         assert follower.wait_sweeps(step + 1) == step + 1
     assert follower.wait_emissions(5) == 5, "the line traffic still reached the pane"
@@ -243,7 +255,7 @@ def test_the_rate_guard_holds_across_many_calls_in_one_interval(
     follower = _Follower(tmp_path, monkeypatch, sweep=None).start()
     assert follower.wait_sweeps(1) == 1
 
-    follower.append(*[_line("r1", f"step{i}") for i in range(6)])
+    follower.append(*[_line(f"r{i}") for i in range(6)])
     assert follower.wait_emissions(6) == 6
     follower.clock.advance(follower.CADENCE / 2)
     assert follower.sweep_moments == [0.0], (
@@ -271,7 +283,7 @@ def test_a_raising_sweep_does_not_end_the_follower(tmp_path, monkeypatch) -> Non
     assert follower.wait_sweeps(1) == 1
     assert raised == [True], "the first sweep attempt raised"
 
-    follower.append(_line("r1", "working"))
+    follower.append(_line("r1"))
     follower.clock.advance(follower.CADENCE)
     assert follower.wait_sweeps(2) == 2, "the cadence still runs after a raise"
     assert follower.wait_emissions(1) == 1, "a raising sweep must not kill the pane"
@@ -294,20 +306,19 @@ def test_pane_output_is_unchanged_by_the_sweep(tmp_path, monkeypatch) -> None:
     sweep running: a sweep emits nothing of its own onto the transition
     stream."""
     lines = [
-        _line("r1", "working"),
-        _line("r2", "blocked"),
-        _line("r1", "blocked"),
-        _line("r1", "blocked"),
+        _line("r1"),
+        _line("r2"),
+        _line("r1"),
         "",
     ]
     follower = _Follower(
         tmp_path, monkeypatch, sweep=lambda project: {"resumed": [], "skipped": []}
     ).start()
     follower.append(*lines)
-    assert follower.wait_emissions(3) == 3
+    assert follower.wait_emissions(2) == 2
     follower.stop_and_join()
 
-    expected = _expected_emissions(lines)
+    expected = _expected_emissions(lines, session=Follower_session)
     assert expected == follower.emitted, "the sweep changed the transition stream"
     rendered_expected = [recovery.format_watch_transition(event) for event in expected]
     rendered_actual = [
