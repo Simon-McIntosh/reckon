@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "local",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch.py:808",
+    "reckon/crew_dispatch_commands.py:1380",
+    "reckon/crew/dispatch_picker.py:539"
+  ],
+  "completed_at": "2026-10-14T01:55:38.892Z",
+  "dispatched_at": "2026-10-14T01:45:45Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T003640772843-a-pick-names-the-step-it-expired-in/manifest.md",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: after_suite records revision 8123bc52e while the head-importer.log it cites declares rev 2a54de457 (uncommitted docs removal in flight), so the recorded revision is not the one the log names; the prior review raised this and a47a6d2be does not repair it."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T003640772843-a-pick-names-the-step-it-expired-in/manifest.md",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest's baseline_suite and after_suite name no log_path, so a standard reader re-derives the added-failure count from the manifest and reports it unmeasured (None) though test_logs names both arms and both are readable; the count is only measured if a reader falls back to test_logs, which the annotation does not do."
+    },
+    {
+      "file": "docs/evidence/fragments/lane-and-model-routing/a-pick-names-the-step-it-expired-in.html",
+      "line": "82",
+      "severity": "follow-on",
+      "text": "follow-on: the code span naming the seventh failing test includes the sentence comma inside it (test_comment_reaches_the_picker_verbatim,), so the identifier it renders is one character longer than the test id the log prints."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read a47a6d2be against base 7498865e1e; it corrects the fragment's negative-control count to negative-control.log's own 7 failed, 20 passed and names the seventh noise failure, and rewords three \"all five stages\" comments to \"every dispatcher stage\" at reckon/crew/dispatch_picker.py:60, :332 and tests/test_a_pick_names_its_slow_stage.py:80; three files, no assertion and no behaviour changed.",
+    "done_when": "the done-when's checks are the naming and recorder checks in tests/test_a_pick_names_its_slow_stage.py; this delta adds none of them and only corrects the comments and prose around them, and the manifest records the base arm 381 passed and the head arm 385 passed, EXIT=0 both, in base-importer.log and head-importer.log.",
+    "goal": "the source node's goal is to name, in pick()'s own step vocabulary, the step of pick() that a dispatcher deadline expires in; this delta (a47a6d2be) is the node's answer to its review's follow-ons and changes no behaviour, leaving reckon/crew/dispatch_picker.py:50-55 PICK_STAGES (records, verdict-inputs, budget-snapshot, context-estimate) and the pick:state-render / pick:jev naming intact.",
+    "manifest": "read; it records the five landed revisions, the changed paths, the base 381 / head 385 arms with their logs and the corrected negative-control figures, but its after_suite revision (8123bc52e) is still not the revision its head-importer.log header names (2a54de457, uncommitted docs removal in flight), a mismatch the prior review raised and this delta does not repair.",
+    "write_paths": "the source node's fence is reckon/crew/dispatch_picker.py, reckon/crew/picker/__init__.py, reckon/crew/picker/outcomes.py, reckon/crew/dispatch.py, three test files and the evidence fragment; this delta touches only reckon/crew/dispatch_picker.py, tests/test_a_pick_names_its_slow_stage.py and docs/evidence/fragments/lane-and-model-routing/a-pick-names-the-step-it-expired-in.html, all inside that scope."
+  },
+  "justifications": {
+    "durability": "the delta adds no assertion, only comment and prose edits, so the dispatcher-stage times it now describes are pinned by tests/test_a_pick_names_its_slow_stage.py:106-108 iterating PICK_STAGES, not by anything added here.",
+    "evidence": "the corrected count at docs/evidence/fragments/lane-and-model-routing/a-pick-names-the-step-it-expired-in.html:79 matches negative-control.log's own 7 failed, 20 passed, EXIT=1, and the seventh id at :82 matches the log's FAILED list.",
+    "fit": "the reworded comments at reckon/crew/dispatch_picker.py:60 and :332 name the mechanism with no plan label or version, following the module's surrounding comment idiom.",
+    "goal_fidelity": "reckon/crew/dispatch_picker.py:50-55 PICK_STAGES holds four names and the delta's comments now read \"every one of the dispatcher's stages\", matching the code the node's goal names.",
+    "reuse": "the delta adds no definition or capability; a search of reckon/ for the dispatcher-stage list found PICK_STAGES already its single owner, which this change does not fork.",
+    "scope_discipline": "every path in a47a6d2be (reckon/crew/dispatch_picker.py, tests/test_a_pick_names_its_slow_stage.py, the evidence fragment) is inside the source node's declared write paths."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is to name, in pick()'s own step vocabulary, the step of pick() that a dispatcher deadline expires in; this delta (a47a6d2be) is the node's answer to its review's follow-ons and changes no behaviour, leaving reckon/crew/dispatch_picker.py:50-55 PICK_STAGES (records, verdict-inputs, budget-snapshot, context-estimate) and the pick:state-render / pick:jev naming intact.\nVERDICT done_when: the done-when's checks are the naming and recorder checks in tests/test_a_pick_names_its_slow_stage.py; this delta adds none of them and only corrects the comments and prose around them, and the manifest records the base arm 381 passed and the head arm 385 passed, EXIT=0 both, in base-importer.log and head-importer.log.\nVERDICT write_paths: the source node's fence is reckon/crew/dispatch_picker.py, reckon/crew/picker/__init__.py, reckon/crew/picker/outcomes.py, reckon/crew/dispatch.py, three test files and the evidence fragment; this delta touches only reckon/crew/dispatch_picker.py, tests/test_a_pick_names_its_slow_stage.py and docs/evidence/fragments/lane-and-model-routing/a-pick-names-the-step-it-expired-in.html, all inside that scope.\nVERDICT manifest: read; it records the five landed revisions, the changed paths, the base 381 / head 385 arms with their logs and the corrected negative-control figures, but its after_suite revision (8123bc52e) is still not the revision its head-importer.log header names (2a54de457, uncommitted docs removal in flight), a mismatch the prior review raised and this delta does not repair.\nVERDICT diff: read a47a6d2be against base 7498865e1e; it corrects the fragment's negative-control count to negative-control.log's own 7 failed, 20 passed and names the seventh noise failure, and rewords three \"all five stages\" comments to \"every dispatcher stage\" at reckon/crew/dispatch_picker.py:60, :332 and tests/test_a_pick_names_its_slow_stage.py:80; three files, no assertion and no behaviour changed.\nCALL_SITES: reckon/crew/dispatch.py:808, reckon/crew_dispatch_commands.py:1380, reckon/crew/dispatch_picker.py:539\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_picker.py:50-55 PICK_STAGES holds four names and the delta's comments now read \"every one of the dispatcher's stages\", matching the code the node's goal names.\nSCORE evidence: 17\nJUSTIFICATION evidence: the corrected count at docs/evidence/fragments/lane-and-model-routing/a-pick-names-the-step-it-expired-in.html:79 matches negative-control.log's own 7 failed, 20 passed, EXIT=1, and the seventh id at :82 matches the log's FAILED list.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in a47a6d2be (reckon/crew/dispatch_picker.py, tests/test_a_pick_names_its_slow_stage.py, the evidence fragment) is inside the source node's declared write paths.\nSCORE durability: 15\nJUSTIFICATION durability: the delta adds no assertion, only comment and prose edits, so the dispatcher-stage times it now describes are pinned by tests/test_a_pick_names_its_slow_stage.py:106-108 iterating PICK_STAGES, not by anything added here.\nSCORE fit: 19\nJUSTIFICATION fit: the reworded comments at reckon/crew/dispatch_picker.py:60 and :332 name the mechanism with no plan label or version, following the module's surrounding comment idiom.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta adds no definition or capability; a search of reckon/ for the dispatcher-stage list found PICK_STAGES already its single owner, which this change does not fork.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T003640772843-a-pick-names-the-step-it-expired-in/manifest.md:1 follow-on: after_suite records revision 8123bc52e while the head-importer.log it cites declares rev 2a54de457 (uncommitted docs removal in flight), so the recorded revision is not the one the log names; the prior review raised this and a47a6d2be does not repair it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T003640772843-a-pick-names-the-step-it-expired-in/manifest.md:1 follow-on: the manifest's baseline_suite and after_suite name no log_path, so a standard reader re-derives the added-failure count from the manifest and reports it unmeasured (None) though test_logs names both arms and both are readable; the count is only measured if a reader falls back to test_logs, which the annotation does not do.\nFINDING docs/evidence/fragments/lane-and-model-routing/a-pick-names-the-step-it-expired-in.html:82 follow-on: the code span naming the seventh failing test includes the sentence comma inside it (test_comment_reaches_the_picker_verbatim,), so the identifier it renders is one character longer than the test id the log prints.",
+  "review_run_id": "r-20261014T014507562897-review-of-a-pick-names-the-step-it-expired-in-a47a6d2bee12",
+  "reviewed_base_sha": "7498865e1ea4e18a9eb8432a24e7daac645b29d1",
+  "reviewed_head_sha": "a47a6d2bee1266ac138d630300eed37507d22a2a",
+  "reviewed_run_id": "r-20261014T003640772843-a-pick-names-the-step-it-expired-in",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T01:52:11.221772+00:00",
+  "total": 109
+}
