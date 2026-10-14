@@ -5,7 +5,8 @@ they all write the session's one pane. Every project's producer sweeps the whole
 workstation lift document into its own event stream, so the same grant reaches
 the pane once per project followed. Each follower kept its own memory of the
 lifts it had drawn, so a pane following three projects drew one grant three
-times — the noise a lead read on 2026-10-14, at 18:29:46Z.
+times: one workstation lift is written into every project's stream, and a pane
+following several projects drew it once per project.
 
 These drive the follower's own row path — the same object the follower feeds —
 with the lift rows built by ``lift_watch``, and count the rows the pane prints.
