@@ -26,6 +26,7 @@ from click.testing import CliRunner
 from reckon import _store, calibration, capabilities, crew, flight, ledger
 from reckon.cli import main as cli_main
 from reckon.crew import review as review_module
+from tests.real_home_traces import traces_naming
 
 CONFIG = {
     "default_backend": "alpha",
@@ -3145,11 +3146,24 @@ def _real_store_path() -> Path:
     return config_home / "crew" / "run_store.db"
 
 
+def _real_store_traces(*run_ids: str) -> list[str]:
+    """Any trace of these run ids in the real crew store's file, if any.
+
+    The store a test writes is a shadow beside the committed ledger, resolved
+    under the temporary config home; the real one is read only to prove nothing
+    naming this test's runs landed in it. Searching the store's bytes for those
+    run ids, rather than comparing the file's mere existence before and after,
+    is what a peer promotion rewriting the real store cannot fail: a peer's row
+    names the peer's runs, so it is no hit. The store is a single file, read
+    directly; the real home's directory trees are not walked.
+    """
+    store = _real_store_path()
+    return traces_naming(store.parent, (store.name,), run_ids)
+
+
 def test_append_run_writes_the_shadow_store_beside_the_file(home, repo) -> None:
     from reckon import run_store
 
-    real_store = _real_store_path()
-    was_present = real_store.exists()
     record = ledger.build_record(
         run_id="r-store-echo",
         plan="plan-a",
@@ -3198,7 +3212,8 @@ def test_append_run_writes_the_shadow_store_beside_the_file(home, repo) -> None:
     assert "run_id" not in detail
     assert {"member", "node", "project", "gate", "completed_at"}.isdisjoint(detail)
     # The real crew config home was not written to.
-    assert real_store.exists() == was_present
+    # The real crew store carries no row for the run this test wrote.
+    assert _real_store_traces("r-store-echo") == []
 
 
 def test_a_raising_store_write_is_recorded_and_never_propagated(
@@ -3207,8 +3222,6 @@ def test_a_raising_store_write_is_recorded_and_never_propagated(
     from reckon import run_store
 
     record = ledger.build_record(run_id="r-store-fail", plan="plan-a", gate="passed")
-    real_store = _real_store_path()
-    was_present = real_store.exists()
 
     def broken_append(_project: str, _record_entry: dict) -> None:
         raise RuntimeError("injected store failure")
@@ -3221,7 +3234,8 @@ def test_a_raising_store_write_is_recorded_and_never_propagated(
     assert "RuntimeError" in result["store"]["error"]
     # The committed file row landed regardless of the shadow failure.
     assert [entry["run_id"] for entry in ledger.runs(PROJECT, repo)] == ["r-store-fail"]
-    assert real_store.exists() == was_present
+    # The real crew store carries no row for the run this test wrote.
+    assert _real_store_traces("r-store-fail") == []
 
 
 def test_a_successful_index_write_follows_the_file_and_is_reported(
@@ -3230,8 +3244,6 @@ def test_a_successful_index_write_follows_the_file_and_is_reported(
     from reckon import run_store
 
     record = ledger.build_record(run_id="r-store-ok", plan="plan-a", gate="passed")
-    real_store = _real_store_path()
-    was_present = real_store.exists()
     append = run_store.append
     attempts = []
 
@@ -3250,7 +3262,8 @@ def test_a_successful_index_write_follows_the_file_and_is_reported(
     assert "store_write" not in stored
     assert attempts == [record["run_id"]]
     assert ledger.index_lag(PROJECT, repo) == 0
-    assert real_store.exists() == was_present
+    # The real crew store carries no row for the run this test wrote.
+    assert _real_store_traces("r-store-ok") == []
 
 
 def test_failed_index_writes_leave_files_and_visible_lag(
@@ -3349,8 +3362,6 @@ def test_the_store_is_created_from_empty_and_counts_its_rows_as_a_number(
     """
     from reckon import run_store
 
-    real_store = _real_store_path()
-    was_present = real_store.exists()
     store_file = run_store.store_path()
     assert not store_file.exists()
 
@@ -3375,8 +3386,8 @@ def test_the_store_is_created_from_empty_and_counts_its_rows_as_a_number(
         "r-from-empty-1",
         "r-from-empty-2",
     ]
-    # The real crew config home was not written to.
-    assert real_store.exists() == was_present
+    # The real crew store carries no row for the run this test wrote.
+    assert _real_store_traces("r-from-empty-") == []
 
 
 def test_tearing_the_store_down_leaves_the_committed_file_byte_identical(
@@ -3385,8 +3396,6 @@ def test_tearing_the_store_down_leaves_the_committed_file_byte_identical(
     """Deleting the index preserves every authoritative run file and its readers."""
     from reckon import run_store
 
-    real_store = _real_store_path()
-    was_present = real_store.exists()
     store_file = run_store.store_path()
     aggregate = ledger.ledger_path(PROJECT, repo)
 
@@ -3423,4 +3432,5 @@ def test_tearing_the_store_down_leaves_the_committed_file_byte_identical(
         "r-teardown-2",
         "r-teardown-3",
     ]
-    assert real_store.exists() == was_present
+    # The real crew store carries no row for the run this test wrote.
+    assert _real_store_traces("r-teardown-") == []

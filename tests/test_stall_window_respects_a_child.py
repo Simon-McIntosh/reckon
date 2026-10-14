@@ -39,6 +39,7 @@ from typing import Any, Callable, Iterator, Sequence
 import pytest
 
 from reckon.crew import recovery, runs
+from tests.real_home_traces import traces_naming
 
 HOST = socket.gethostname()
 
@@ -84,16 +85,22 @@ SUPERVISED_RUN_ID = "r-behind-a-supervisor"
 IN_PROGRESS_MANIFEST = "node: {run_id}\nstatus: in-progress\n"
 
 
-def _home_fingerprint(home: Path) -> list[tuple[str, int]]:
-    """The real config home's own entries, by name and mtime.
+NEEDLE_RUN_IDS = (CHILD_RUN_ID, ALONE_RUN_ID, SUPERVISED_RUN_ID)
 
-    One directory level only: the point is to catch a write that landed in the
-    reader's own home, and a recursive walk of a live fleet's home on GPFS is
-    the crawl this check must not itself become.
+
+def _real_home_traces(real_home: Path) -> list[str]:
+    """This module's own traces in the shared crew home, if any.
+
+    Searching for the run ids this module mints, rather than comparing the real
+    home's top-level names and mtimes, is what keeps a peer session -- which
+    churns the real crew tree continuously -- from failing this guard for a
+    write this test did not make. A leaked pointer or watch registration lands
+    under the shared home's ``live/`` or ``watch/`` tree naming one of these run
+    ids; a peer's own entry names the peer, so it is no hit. The rest of the
+    home -- ``runs/``, ``reports/``, ``reviews/`` -- holds hundreds of thousands
+    of durable files on a busy workstation, so it is not walked.
     """
-    if not home.is_dir():
-        return []
-    return sorted((entry.name, entry.stat().st_mtime_ns) for entry in home.iterdir())
+    return traces_naming(real_home, ("crew/live", "crew/watch"), NEEDLE_RUN_IDS)
 
 
 @pytest.fixture(autouse=True)
@@ -106,11 +113,11 @@ def isolated_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[N
     and the same home is re-read after the case ends.
     """
     real_home = Path(os.path.expanduser("~")) / ".config" / "reckon"
-    before = _home_fingerprint(real_home)
+    before = _real_home_traces(real_home)
     monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
     assert runs.crew_home().is_relative_to(tmp_path)
     yield
-    assert _home_fingerprint(real_home) == before
+    assert _real_home_traces(real_home) == before
 
 
 class _PublishedNothing(AssertionError):
