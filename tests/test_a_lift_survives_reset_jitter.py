@@ -1,17 +1,16 @@
-"""A reset-anchored lift is not ended by a second of provider stamp jitter.
+"""A reset-anchored lift ends only on a stamp that moved a window, not a little.
 
 A provider publishes a stale reset stamp a second off the one it published a
 moment earlier, and the exact-equality test an earlier resolver used read that
-wobble as a rollover, so a lift ended the instant it was granted. These tests
-pin the behaviour the jitter tolerance must show against every case:
+wobble as a rollover, so a lift ended the instant it was granted. The stamp
+signal now fires only on a move of at least half the clock's window, the span a
+genuine rollover carries. These tests pin the behaviour that signal must show
+against every case:
 
 * a stamp that differs from the recorded one by one second leaves the lift in
   force;
 * a stamp a full window later ends it, cause ``reset``;
-* the two utilisation signals end it exactly as they always did;
-* the tolerance itself is measured from the stored readings, so a history that
-  shows a three-second wobble tolerates a two-second move the second-resolution
-  floor alone would not.
+* the two utilisation signals end it exactly as they always did.
 
 Each test points the config home at a temporary directory and asserts the live
 workstation's ``budget-lifts.json`` is untouched afterwards, because a test that
@@ -154,47 +153,4 @@ def test_a_fall_between_two_readings_still_ends_the_lift():
     assert (
         bl.end_cause(lift, readings=history, now=NOW, bound=bl.ceilings(config))
         == bl.END_RESET
-    )
-
-
-def test_the_tolerance_is_measured_from_the_stored_readings():
-    """A two-second move survives once the history shows a three-second wobble.
-
-    With no history the move is judged against the second the stamps can differ
-    by, so it ends the lift; with a history whose stamps span three seconds the
-    measured jitter is three seconds and the same move leaves it in force. The
-    two arms are the same lift and the same reading, so the reading alone cannot
-    account for the difference.
-    """
-    config = _config()
-    recorded = _week_reset()
-    lift = _grant(config, reading=_reading(week_resets_at=recorded))
-    two_seconds_on = _reading(week_resets_at=recorded + timedelta(seconds=2))
-
-    alone = bl.end_cause(
-        lift, readings=[two_seconds_on], now=NOW, bound=bl.ceilings(config)
-    )
-    assert alone == bl.END_RESET
-
-    history = [
-        _reading(week_resets_at=recorded - timedelta(seconds=3)),
-        two_seconds_on,
-    ]
-    assert (
-        bl.end_cause(lift, readings=history, now=NOW, bound=bl.ceilings(config)) is None
-    )
-
-
-def test_the_provider_jitter_is_the_spread_of_the_stamp_history():
-    """The measured figure is the spread, floored at the stamp resolution."""
-    recorded = _week_reset()
-    assert bl._provider_jitter(recorded, [], clock=bl.SEVEN_DAY) == pytest.approx(
-        bl.STAMP_RESOLUTION_SECONDS
-    )
-    history = [
-        (0.21, recorded - timedelta(seconds=3)),
-        (0.21, recorded + timedelta(seconds=1)),
-    ]
-    assert bl._provider_jitter(recorded, history, clock=bl.SEVEN_DAY) == pytest.approx(
-        4.0
     )
