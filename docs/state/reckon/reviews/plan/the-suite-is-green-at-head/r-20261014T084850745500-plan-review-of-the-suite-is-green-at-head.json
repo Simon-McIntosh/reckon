@@ -1,0 +1,92 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-14T08:59:17.597Z",
+  "dispatched_at": "2026-10-14T08:49:45Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-suite-is-green-at-head.html:651",
+      "id": "anchors_resolve-1",
+      "reason": "it is context describing what grew the file, no node acts on it, and it does not change any deliverable or gate.",
+      "text": "\"the growth came from gc sweeps, the worktree-release work, a-held \u00a716 and a-run-has-one-live-writer \u00a72\" abbreviates a plan to \"a-held\", which four distinct plans match (`a-held-blocker-clears-on-its-probe`, `a-held-dispatch-waits-its-fair-turn`, `a-held-session-routes-to-a-serving-lane`, and this plan's own sibling), so the reader cannot tell which \u00a716 is meant",
+      "type": "anchors_resolve",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/the-suite-is-green-at-head.html:651",
+      "id": "reasoning-1",
+      "reason": "a node taking the enumerated bullet as the authoritative list moves twelve names instead of fourteen, leaving `_write_sender_record` and `_running_descendants` in `routing.py`, which re-inflates the file toward the 50,000-token bound the section exists to clear and wastes a run on a done-when that then finds `estimated_tokens` still over.",
+      "text": "the process-signalling bullet enumerates the family as \"`signal_worker`, `_signal_one`, `_signal_process_group`, `_run_process_pids`, `_processes_owning_run`, `_process_environment`, `_start_tick`, `_worker_record`, `_recorded_worker_pid`, `_run_launch_floor`, `_root_names_the_recorded_process`, `RUN_ID_ENV`, and the constants only this family reads, `SENDER_RECORD_NAME` and `_RUN_WORKER_RECORD`\", but the import-edges paragraph then says \"`_write_sender_record` and `_running_descendants` move with the process-signalling family\" \u2014 two functions absent from the enumeration, and neither appears anywhere else in the section's name list (both are real family members: `_write_sender_record` at `routing.py:3197` is called only from `_signal_one`/`_signal_process_group`, `_running_descendants` at `routing.py:3356` only from `_run_process_pids`)",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "b23ada44438721243a6002d8dd697ff922b18dd8511877cd7aa7d0a4e95e5a2e",
+  "plan_slug": "the-suite-is-green-at-head",
+  "plan_version": 343,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-14T09:00:51.329524+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "anchors_resolve-1",
+      "reason": "",
+      "when": "2026-10-14T09:01:07.369931+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-14T09:01:07.369931+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-14T09:00:51.329524+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-suite-is-green-at-head.v343.json",
+  "review_run_id": "r-20261014T084850745500-plan-review-of-the-suite-is-green-at-head",
+  "reviewed_blob_sha": "82de91cb6b9af17652c977401f7d3a1817b8de03",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 `784d580de`, `2e44591a1`, `c0390eb72` and the `a-run-has-one-live-writer` link all resolve, but \"a-held \u00a716\" names no single plan.",
+    "done_when": "pass \u2014 the done-when runs `scripts/check_pure_move.py`, which exists and accepts `--base`/`--module`/repeatable `--into` and reports lost/duplicated/new statements plus per-module `estimated_tokens`; its negative control (append the two families back and require the window test to name `routing.py`) can fail.",
+    "evidence_paths": "pass \u2014 the pure-move receipt and the window-test/negative-control results are logged \"under the run directory\", a durable path.",
+    "naming": "pass \u2014 \u00a76 introduces no plan labels, stage names or ticket numbers into code and states each symbol by what it does.",
+    "reasoning": "a finding \u2014 the process-signalling family's name list contradicts itself between the bullet and the import-edges prose.",
+    "single_goal": "pass \u2014 one deliverable, move two named families out of `routing.py` so it fits the worker window.",
+    "wiring": "pass \u2014 \u00a76 declares no depends-on and its two external waits (`a-worktree-release-is-whole` at `2e44591a1`, live-writer \u00a72 at `c0390eb72`) are recorded merged, consistent with the plan-level `plan-standalone` claim about evidence and gating."
+  },
+  "section_digests": {
+    "_document": "83bc4eebbeaf35e1f8769b1cefa72ecf8466fb0d23d3dd350bf2e642790b97e5",
+    "s1": "93d7e8eb3f04bb8d9aad0f5ac7d68a9d009b7fe7feaa6f4932738242154d8d4d",
+    "s10": "9633fb928a6c720c8fae74ed3da0a5f7ed555c4230f29ebf2ee89e5432566bb1",
+    "s11": "3e9c94371cc0b22adeb21c71a08fdd16433d8b4c1a22e73cd63d1171332089ba",
+    "s12": "dd8650523d29d87e6fa41408db7d0440cf17dfbd57f0ab6da0d5fcd223692d95",
+    "s13": "7b00f23667f49ba7de16f8823860c86ad35a562eebddf434fd1a6b9f1f5e9993",
+    "s14": "1469c86b5327d2429ce07b9ddd2fbca586d8831acb94119f8a187e315f48dcf7",
+    "s15": "f84dc4d4bef37307ff05d71bd4f7071e9208e789832e7cb00be82c37bcfde97e",
+    "s16": "4ab9d42bd2e71d070a1cc5393ebea66e1ec71d06dad51f1a82505c91ce309234",
+    "s2": "d8e1d44eab3d041cfa8f08f045885bcf9a783d27f0cb613fe7de2c0476c13887",
+    "s3": "d6efa514940aeb662c9b7fdee7f663c86e4da2526ec9a01c6977f967e30d886a",
+    "s4": "e7003c1b5457d6229da28b7d90f825f0e3ef67be2a012291c12a2daf14bf2273",
+    "s5": "934ff53a2b41de523672b7760ab4bbe2e8be5d3da6b580c600383ac0217825a2",
+    "s6": "a26f6aff1070992d41ac2b7fd516403d688354c74b60678a5791dcb931dcb981",
+    "s7": "655ef45aae9c9f31c0c67cb28422cff4a16611cfce488326c298768a23f58efd",
+    "s8": "c78e67e053ac3d61a73df4b965e8209a12ca4d9b745535a102b0b0040cce3adc",
+    "s9": "f4ef4f0dc18779331d3654037d55a7dd1c27d3769bfbfe753867fccbb53f9a28"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T08:59:24.644016+00:00"
+}
