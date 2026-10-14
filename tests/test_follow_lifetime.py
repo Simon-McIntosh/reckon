@@ -38,6 +38,7 @@ import pytest
 
 from reckon import cli, crew
 from reckon.crew import runs
+from tests.real_home_traces import traces_naming
 
 REPO_ROOT = Path(cli.__file__).resolve().parents[1]
 PROJECT = "proj"
@@ -257,34 +258,13 @@ def _own_traces(root: Path, *needles: str) -> list[str]:
     """Files under ``root`` whose name or content carries any of ``needles``.
 
     A follower pointed at a temporary home must leave the shared home with
-    nothing that names this test. Both a path's own name and its text are read,
-    so a pointer filed under the run id and a registration whose body records
-    the session are each caught. Reading for these tokens rather than comparing
-    the directory against an earlier snapshot is the whole point: the crew home
-    is shared with every other session on the workstation, so a peer filing its
-    own pointer between two readings moves the tree without anything being
-    wrong, and tree equality reported exactly that as a failure.
+    nothing that names this test. Reading for these tokens rather than
+    comparing the directory against an earlier snapshot is the whole point: the
+    crew home is shared with every other session on the workstation, so a peer
+    filing its own pointer between two readings moves the tree without anything
+    being wrong, and tree equality reported exactly that as a failure.
     """
-    hits: list[str] = []
-    for name in TRACE_DIRS:
-        directory = root / name
-        if not directory.is_dir():
-            continue
-        for path in directory.rglob("*"):
-            if not path.is_file():
-                continue
-            named = any(needle in path.name for needle in needles)
-            text = "" if named else _read_text(path)
-            if named or any(needle in text for needle in needles):
-                hits.append(str(path))
-    return hits
-
-
-def _read_text(path: Path) -> str:
-    try:
-        return path.read_text(errors="replace")
-    except OSError:
-        return ""
+    return traces_naming(root, TRACE_DIRS, needles)
 
 
 def _assert_no_own_traces(root: Path, session: str, run_id: str) -> None:

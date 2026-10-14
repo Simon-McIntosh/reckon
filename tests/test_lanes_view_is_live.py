@@ -20,6 +20,7 @@ import pytest
 
 from reckon import _backends, _store, mcp_views
 from reckon.crew import resumption, staleness
+from tests.real_home_traces import traces_naming
 
 SHORT_WINDOW_MINUTES = 5 * 60
 LONG_WINDOW_MINUTES = 7 * 24 * 60
@@ -134,35 +135,28 @@ def _real_config_home() -> Path:
 _REAL_CONFIG_HOME = _real_config_home()
 
 
-def _inventory(root: Path) -> list[tuple[str, int, int]]:
-    """The composition-writable tree under ``root``, walked whole.
+# Identifiers this suite mints: the backends and sessions it composes reads
+# for, which a leaked write would key a probe-cache entry by. A peer session's
+# own backends are named differently, so a constant match cancels between the
+# two readings and only a write carrying one of these is reported.
+_LANE_NEEDLES = (
+    "shared-session",
+    "separate-session",
+    "plain-session",
+    "shared",
+    "separate",
+    "plain",
+)
 
-    One tree is inventoried -- the lane-probe cache's, named by the writer that
-    composes it -- and a tree that does not exist yet contributes nothing, so a
-    write that creates it is caught as a mismatch as well as a modified file
-    inside one that already exists.  The rest of the configuration home is
-    deliberately out of scope: a tree nothing writes would be a tripwire that
-    cannot fire, and a fleet dispatch creates and removes run directories and
-    live pointers every few seconds, so an inventory reaching ``crew/runs`` or
-    ``crew/live`` would report a peer's dispatch as this test's write.
+
+def _probe_cache_subtree() -> str:
+    """The lane-probe cache's subtree, named by the writer that composes it.
+
+    The path is derived from the production builder rather than written down
+    here, so the search stays pointed at the tree a lanes read actually writes.
     """
-    findings: list[tuple[str, int, int]] = []
-    tree = _probe_cache_tree(root)
-    if not tree.exists():
-        return findings
-    for path in sorted(tree.rglob("*")):
-        try:
-            path_stat = path.stat()
-        except OSError:
-            continue
-        findings.append(
-            (
-                str(path.relative_to(root)),
-                path_stat.st_size,
-                int(path_stat.st_mtime),
-            )
-        )
-    return findings
+    tree = _probe_cache_tree(_REAL_CONFIG_HOME)
+    return str(tree.relative_to(_REAL_CONFIG_HOME))
 
 
 @pytest.fixture(autouse=True)
@@ -172,17 +166,19 @@ def real_config_home_is_untouched(isolated_reckon_home: Path) -> None:
     Pointing ``RECKON_HOME`` at a temporary tree proves an isolated read.  The
     write is the direction that can make another session wrong, so the real
     home's composition-writable tree -- the lane-probe cache's, named by the
-    production writer that composes it -- is inventoried before and after every
-    case and must come back identical: an isolated read does not prove an
-    isolated write.  Only that tree is walked: a fleet dispatch churns run
-    directories and live pointers constantly, so inventorying the whole home
-    would fail on a peer's dispatch, which no composition writes, and accuse
-    this test's own code of it.
+    production writer that composes it -- is searched before and after every
+    case for this suite's own backend and session names: an isolated read does
+    not prove an isolated write.  Only that tree is walked, and only for these
+    needles: a fleet dispatch churns run directories and live pointers
+    constantly, and any session's lanes read rewrites the cache, so a listing
+    of the tree would fail on a peer's write and accuse this test's own code of
+    it.
     """
     assert _store._config_home() == isolated_reckon_home.resolve()
-    before = _inventory(_REAL_CONFIG_HOME)
+    subtree = _probe_cache_subtree()
+    before = traces_naming(_REAL_CONFIG_HOME, (subtree,), _LANE_NEEDLES)
     yield
-    assert _inventory(_REAL_CONFIG_HOME) == before, (
+    assert traces_naming(_REAL_CONFIG_HOME, (subtree,), _LANE_NEEDLES) == before, (
         "a lanes-view case wrote into the real configuration home "
         f"{_REAL_CONFIG_HOME} rather than its temporary one"
     )

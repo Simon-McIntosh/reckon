@@ -25,6 +25,7 @@ from bs4 import BeautifulSoup
 import reckon._store as _store_module
 import reckon.mcp as mcp_module
 from tests.mcp_family_reload import reload_mcp_family
+from tests.real_home_traces import traces_naming
 
 
 def _real_state_root() -> Path:
@@ -40,21 +41,23 @@ def _real_state_root() -> Path:
 _REAL_STATE_ROOT = _real_state_root()
 
 
-def _fingerprint(root: Path) -> list[tuple[str, int]]:
-    if not root.exists():
-        return []
-    return [
-        (str(p.relative_to(root)), p.stat().st_size)
-        for p in sorted(root.rglob("*"))
-        if p.is_file()
-    ]
+def _real_state_traces() -> list[str]:
+    """This suite's own traces in the real state root, if any.
+
+    Every case mounts the ``proj`` project under a temporary state root, so a
+    leak would write ``proj``'s state there. Searching for that project name
+    and the resolved root's path, rather than comparing every file's path and
+    size, is what keeps a peer session -- which rewrites the real state
+    directory constantly -- from failing this guard.
+    """
+    return traces_naming(_REAL_STATE_ROOT, (".",), ("proj", str(_REAL_STATE_ROOT)))
 
 
 @pytest.fixture(autouse=True)
 def _real_state_untouched():
-    before = _fingerprint(_REAL_STATE_ROOT)
+    before = _real_state_traces()
     yield
-    assert _fingerprint(_REAL_STATE_ROOT) == before, (
+    assert _real_state_traces() == before, (
         "a decision test wrote into the real state directory "
         f"{_REAL_STATE_ROOT} rather than its temporary one"
     )

@@ -12,6 +12,7 @@ import reckon.mcp as mcp_module
 import reckon.serve as serve_module
 from reckon._plan_html import parse_meta, parse_plan, read_state
 from tests.mcp_family_reload import reload_mcp_family
+from tests.real_home_traces import traces_naming
 
 REAL_CONFIG_HOME = Path.home() / ".config" / "reckon"
 
@@ -20,12 +21,17 @@ IMPLEMENTABLE_6H = {"id": "second", "effort_hours": 6, "status": "implementable"
 IMPLEMENTABLE_10H = {"id": "third", "effort_hours": 10, "status": "implementable"}
 
 
-def _config_home_entries() -> list[tuple[str, int]]:
-    if not REAL_CONFIG_HOME.is_dir():
-        return []
-    return sorted(
-        (entry.name, entry.stat().st_mtime_ns) for entry in REAL_CONFIG_HOME.iterdir()
-    )
+def _real_home_traces(needles: tuple[str, ...]) -> list[str]:
+    """This test's own traces in the real home's project store, if any.
+
+    The project is mounted under a temporary home, so a leak would write the
+    mounted project's ``sample`` state into the real home's ``state`` tree.
+    Searching for the temporary path and the project name, rather than
+    comparing the home's top-level names and mtimes, is what keeps a peer
+    session -- which churns the real ``crew/`` tree continuously -- from
+    failing this guard.
+    """
+    return traces_naming(REAL_CONFIG_HOME, ("state",), needles)
 
 
 def _records_html(records: list[dict], stored_impl: str | None = None) -> str:
@@ -67,7 +73,8 @@ def _write_plan(docs: Path, slug: str, html: str) -> Path:
 @pytest.fixture()
 def project(tmp_path, monkeypatch):
     """A mounted project under a temporary config home, with the real one guarded."""
-    before = _config_home_entries()
+    needles = (str(tmp_path), "sample")
+    before = _real_home_traces(needles)
     home = tmp_path / "config"
     (home / "state").mkdir(parents=True)
     docs = tmp_path / "repo" / "docs"
@@ -84,7 +91,7 @@ def project(tmp_path, monkeypatch):
     reload_mcp_family()
     yield "sample", docs
     assert store_module._config_home() == home
-    assert _config_home_entries() == before
+    assert _real_home_traces(needles) == before
 
 
 def test_state_read_derives_impl_from_records_over_the_stored_meta(tmp_path):
