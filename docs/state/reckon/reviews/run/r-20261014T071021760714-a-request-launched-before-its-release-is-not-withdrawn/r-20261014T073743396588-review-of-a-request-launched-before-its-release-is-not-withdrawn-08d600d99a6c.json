@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_follower_freshness.py::test_failed_reexec_reports_once_and_keeps_the_registration"
+  ],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:2355",
+    "reckon/crew/runs.py:2017"
+  ],
+  "completed_at": "2026-10-14T07:50:26.775Z",
+  "dispatched_at": "2026-10-14T07:38:11Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/crew-observability-truth/a-request-launched-before-its-release-is-not-withdrawn.html",
+      "line": 11,
+      "severity": "follow-on",
+      "text": "the fragment asserts 'Every head failure is also a base failure' and the manifest's landing line says 'zero added failures', but the head arm's tests/test_follower_freshness.py::test_failed_reexec_reports_once_and_keeps_the_registration is absent from the base arm's failure ids, so the recorded evidence does not show the done_when's 'no failure at head that is absent at base' (added_failure_count=1). The failing test exercises the follower reload path and not the fleet fold, so the divergence is a flaky follower-surface case rather than a regression from this change, and it is already named under the node's follow_ons."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read both commits against base f45805f334; ea5d5f0 changes reckon/crew/recovery_watch.py:1562 and adds the 182-line test, 08d600d adds the 14-line evidence fragment.",
+    "done_when": "the done_when names tests/test_a_request_launched_before_its_release_is_not_withdrawn.py driving four observations plus a base/head importer gate; the manifest records head 3 failed/377 passed and base 10 failed/370 passed, but the head failure set is not a subset of base's (added_failure_count=1).",
+    "goal": "the node's goal is to let a vanished queued request leave silently while any live run names it in admitted_from; reckon/crew/recovery_watch.py:1562 now builds continued from current.values() so every live run's admitted_from counts.",
+    "manifest": "read in full; it records status complete, both commits, the gate result and a negative control, but its landing line claims 'zero added failures' while its own after_suite carries one id absent from baseline_suite.",
+    "write_paths": "the declared paths are reckon/crew/recovery_watch.py, tests/test_a_request_launched_before_its_release_is_not_withdrawn.py, the evidence fragment and a figures dir; every path the diff touches is inside them."
+  },
+  "justifications": {
+    "durability": "the negative-control log shows reverting the fold to arriving-only runs reddens tests/test_a_request_launched_before_its_release_is_not_withdrawn.py::test_a_launch_naming_its_request_from_an_earlier_observation_leaves_it_silent at observation 4.",
+    "evidence": "the manifest's after_suite lists tests/test_follower_freshness.py::test_failed_reexec_reports_once_and_keeps_the_registration, which baseline_suite does not, so the recorded gate shows one failure at head absent at base (added_failure_count=1).",
+    "fit": "the added comment and docstring at reckon/crew/recovery_watch.py:1561-1570 explain the admission ordering in the module's existing style, and no introduced name violates the naming rules.",
+    "goal_fidelity": "reckon/crew/recovery_watch.py:1561-1562 reads admitted_from from every live run, exactly the goal's 'while any live run names it in admitted_from'.",
+    "reuse": "the change extends the existing owner fleet_transitions in place; a search over reckon/crew for admitted_from found only dispatch.py (producer) and ticker.py (consumer), no second continuation owner.",
+    "scope_discipline": "the diff touches only reckon/crew/recovery_watch.py, tests/test_a_request_launched_before_its_release_is_not_withdrawn.py and the declared fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to let a vanished queued request leave silently while any live run names it in admitted_from; reckon/crew/recovery_watch.py:1562 now builds continued from current.values() so every live run's admitted_from counts.\nVERDICT done_when: the done_when names tests/test_a_request_launched_before_its_release_is_not_withdrawn.py driving four observations plus a base/head importer gate; the manifest records head 3 failed/377 passed and base 10 failed/370 passed, but the head failure set is not a subset of base's (added_failure_count=1).\nVERDICT write_paths: the declared paths are reckon/crew/recovery_watch.py, tests/test_a_request_launched_before_its_release_is_not_withdrawn.py, the evidence fragment and a figures dir; every path the diff touches is inside them.\nVERDICT manifest: read in full; it records status complete, both commits, the gate result and a negative control, but its landing line claims 'zero added failures' while its own after_suite carries one id absent from baseline_suite.\nVERDICT diff: read both commits against base f45805f334; ea5d5f0 changes reckon/crew/recovery_watch.py:1562 and adds the 182-line test, 08d600d adds the 14-line evidence fragment.\nCALL_SITES: reckon/crew/recovery_watch.py:2355, reckon/crew/runs.py:2017\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_watch.py:1561-1562 reads admitted_from from every live run, exactly the goal.\nSCORE evidence: 11\nJUSTIFICATION evidence: the manifest's after_suite lists tests/test_follower_freshness.py::test_failed_reexec_reports_once_and_keeps_the_registration, which baseline_suite does not, so the recorded gate shows one failure at head absent at base.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches only reckon/crew/recovery_watch.py, tests/test_a_request_launched_before_its_release_is_not_withdrawn.py and the declared fragment.\nSCORE durability: 19\nJUSTIFICATION durability: the negative-control log shows reverting the fold to arriving-only runs reddens tests/test_a_request_launched_before_its_release_is_not_withdrawn.py::test_a_launch_naming_its_request_from_an_earlier_observation_leaves_it_silent at observation 4.\nSCORE fit: 18\nJUSTIFICATION fit: the added comment and docstring at reckon/crew/recovery_watch.py:1561-1570 explain the admission ordering in the module's existing style.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the existing owner fleet_transitions in place; a search over reckon/crew for admitted_from found only dispatch.py (producer) and ticker.py (consumer), no second continuation owner.\nFINDING docs/evidence/fragments/crew-observability-truth/a-request-launched-before-its-release-is-not-withdrawn.html:11 follow-on: the fragment asserts 'Every head failure is also a base failure' but the head arm's test_failed_reexec_reports_once_and_keeps_the_registration is absent from the base arm's failure ids (added_failure_count=1); the divergent case is on the follower surface, not the fleet fold, so it is a flaky out-of-scope case rather than a regression and is already named in follow_ons.\n",
+  "review_run_id": "r-20261014T073743396588-review-of-a-request-launched-before-its-release-is-not-withdrawn-08d600d99a6c",
+  "reviewed_base_sha": "f45805f334c37934ba80ace3d78deb0e83521144",
+  "reviewed_head_sha": "08d600d99a6ce12a7b3d50f295a4d800e1f6217e",
+  "reviewed_rubric": "code",
+  "reviewed_run_id": "r-20261014T071021760714-a-request-launched-before-its-release-is-not-withdrawn",
+  "scores": {
+    "durability": 19,
+    "evidence": 11,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T07:41:00Z",
+  "total": 106
+}
