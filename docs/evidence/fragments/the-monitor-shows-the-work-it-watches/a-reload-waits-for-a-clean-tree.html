@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s18">
+  <meta name="plan-recorded-at" content="2026-10-14">
+  <title>A reload waits for a clean, importable tree | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-reload-waits-for-a-clean-tree-landing" data-node="a-reload-waits-for-a-clean-tree" data-reckon="landed" data-when="2026-10-14">
+  <h2>A reload waits for a clean, importable tree</h2>
+  <p id="a-reload-waits-for-a-clean-tree-landing-text">landing: <code>_tracked_reckon_tree_is_dirty</code> in <code>reckon/crew_follow_commands.py</code> asks git (<code>status --porcelain --untracked-files=no -- reckon</code>) whether any tracked file under <code>reckon/</code> differs from <code>HEAD</code>, and <code>_FollowerReloader.poll</code> defers the reload while it does; a tree git cannot read (no repository, no git on PATH) is reported clean, so a follower outside a checkout keeps its old behaviour and the import proof still guards the replacement. <code>_FOLLOWER_RELOAD_PROBE</code> now imports every module in the package through <code>importlib</code> rather than three fixed entry points, so a <code>NameError</code> anywhere defers the reload, not only at the entry point. A deferral keeps the running image, prints the dim deferred line once, and re-reads the tree on each cadence, because committing an edit cleans the tree without moving the content stamp &mdash; re-reading the stamp alone would hold the reload forever. Measure: <code>tests/test_a_reload_waits_for_a_clean_tree.py</code> 3 passed EXIT=0 (a modified tracked file defers while the pane keeps rendering a new run; a module raising <code>NameError</code> at import defers; committing the edit releases the reload). Negative control &mdash; the dirty-tree check removed, <code>dirty, detail = False, ""</code> &mdash; 2 failed, 1 passed, EXIT=1, failing the modified-file and commit-releases arms the head arm passes. Importer population over the six affected files: 8 failed / 16 passed at head against 2 failed / 22 passed at base, the 2 pre-existing and the same ids; the 6 added failures are all in files outside this node's write scope and are reported under follow-ons.</p>
+</article>
+</body>
+</html>
