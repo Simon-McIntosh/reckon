@@ -17,7 +17,7 @@ import contextlib
 import copy
 import fcntl
 import time
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from contextlib import contextmanager, nullcontext
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -222,6 +222,74 @@ def _retry_delay(attempts: int) -> timedelta:
     """The bounded wait before a request that just failed may be retried."""
     seconds = ADMISSION_RETRY_BACKOFF_SECONDS * (2 ** max(attempts - 1, 0))
     return timedelta(seconds=min(seconds, ADMISSION_RETRY_BACKOFF_CAP_SECONDS))
+
+
+def _resolved_request_claims(
+    pointer: Mapping[str, Any],
+) -> list[tuple[Path | None, Path]]:
+    """A queued request's write paths, resolved as the dispatch scope check does.
+
+    The resolution itself lives in ``dispatch_claims._pointer_scope_entries``, so
+    the pre-check and the claim check cannot drift: each declared path becomes a
+    ``(repository, absolute path)`` pair, and a pair in another repository never
+    overlaps however its relative spelling reads. Comparing bare
+    repository-relative paths instead would hold two requests in different
+    repositories — both declaring, say, ``pyproject.toml`` — behind each other
+    for the starvation age with no overlap at all.
+    """
+    from reckon.crew.dispatch_claims import _pointer_scope_entries
+
+    return [
+        (repository, absolute)
+        for repository, _path, absolute, _declared, _derived_from in (
+            _pointer_scope_entries(pointer)
+        )
+    ]
+
+
+def _queued_requests_overlap(
+    first: Mapping[str, Any], second: Mapping[str, Any]
+) -> bool:
+    """Whether two queued requests name a write path in one repository.
+
+    The comparison is the dispatch scope check's own: same repository, and paths
+    that overlap by component containment. A pair in different repositories never
+    overlaps, however their relative spellings read.
+    """
+    first_claims = _resolved_request_claims(first)
+    if not first_claims:
+        return False
+    return any(
+        repository == other_repository
+        and runs._scopes_overlap(absolute.as_posix(), other_absolute.as_posix())
+        for repository, absolute in first_claims
+        for other_repository, other_absolute in _resolved_request_claims(second)
+    )
+
+
+def _earlier_overlapping_request(
+    pointer: Mapping[str, Any],
+    earlier: Sequence[Mapping[str, Any]],
+    *,
+    moment: datetime,
+) -> Mapping[str, Any] | None:
+    """An earlier-ranked queued request whose write paths overlap this one.
+
+    The head of the queue has no earlier-ranked request, so it is never held
+    this way. Once this request has waited longer than the starvation age the
+    pre-check stops holding it and it may launch ahead under the ordinary claim
+    rules, so a later request is never held without end behind an earlier one
+    whose own session is never granted a slot.
+    """
+    queued_at = parse_utc(pointer.get("queued_at"))
+    if queued_at is not None and (
+        (moment - queued_at).total_seconds() > queue_order.STARVATION_AGE_SECONDS
+    ):
+        return None
+    for candidate in earlier:
+        if _queued_requests_overlap(pointer, candidate):
+            return candidate
+    return None
 
 
 def _failure_text(failure: Any) -> str:
@@ -563,7 +631,7 @@ def admit_once(
             ]
         order = queue_order.admission_order(queued, live, now=moment)
         remaining: dict[str, float | None] = {}
-        for pointer in order:
+        for index, pointer in enumerate(order):
             session = str(pointer["session"])
             if session not in remaining:
                 remaining[session] = _session_allowance(pointer, config_for=config_for)
@@ -590,6 +658,21 @@ def admit_once(
                 result["held"].append(str(pointer["run_id"]))
                 result.setdefault("hold_detail", {})[str(pointer["run_id"])] = (
                     backoff_hold
+                )
+                continue
+            overlap = _earlier_overlapping_request(
+                pointer, order[:index], moment=moment
+            )
+            if overlap is not None:
+                # An earlier-ranked queued request names a path this one also
+                # names, so this launch would be refused against a claim that
+                # fences nothing while both wait. It is left exactly as it is —
+                # queued, with no failure recorded — and the head of the queue,
+                # which has no earlier overlap, is never held this way.
+                result["held"].append(str(pointer["run_id"]))
+                result.setdefault("hold_detail", {})[str(pointer["run_id"])] = (
+                    f"held behind earlier queued request "
+                    f"{str(overlap.get('run_id') or 'unknown')!r} over a shared path"
                 )
                 continue
             snapshot = copy.deepcopy(dict(pointer))

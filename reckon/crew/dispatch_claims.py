@@ -219,6 +219,51 @@ def _resolved_scope_entries(
     return entries
 
 
+def _pointer_scope_entries(
+    pointer: Mapping[str, Any],
+    *,
+    repository_projects: Mapping[Path, tuple[str, ...]] | None = None,
+) -> list[tuple[Path | None, str, Path, str, str | None]]:
+    """The write paths one live pointer declares, resolved to their owning scope.
+
+    Every reader of a pointer's claims resolves them here, so the claim registry
+    and the admission pre-check agree on what an overlap is. The base repository
+    comes from the checkout the worker writes in: ``repo`` is resolved from the
+    run's project mount, so a run carrying one project's plan into another
+    project's checkout records a ``repo`` holding none of its declared paths —
+    and the paths then resolve into a repository that no other claim on the same
+    file can intersect.
+    """
+    node = pointer.get("node")
+    if not isinstance(node, Mapping):
+        return []
+    pointer_repo_value = str(pointer.get("repo") or "")
+    if not pointer_repo_value:
+        return []
+    if repository_projects is None:
+        repository_projects = mounted_repository_projects()
+    pointer_repo = (
+        claim_repository(pointer) or Path(pointer_repo_value).expanduser().resolve()
+    )
+    authority = pointer.get("authority")
+    authority = authority if isinstance(authority, Mapping) else {}
+    authority_roots = {
+        Path(str(root)).expanduser().resolve()
+        for root in authority.get("repositories") or ()
+    }
+    roots = {*repository_projects, *authority_roots, pointer_repo}
+    write = authority.get("write")
+    write = write if isinstance(write, Mapping) else {}
+    preferred_projects = tuple(str(item) for item in write.get("projects") or ())
+    return _resolved_scope_entries(
+        node.get("write_paths") or (),
+        base_repository=pointer_repo,
+        repositories=roots,
+        project=str(pointer.get("project") or ""),
+        preferred_projects=preferred_projects,
+    )
+
+
 def _repository_scope_claims(
     *, exclude_run_ids: Iterable[str] = ()
 ) -> list[_RepositoryScopeClaim]:
@@ -238,26 +283,8 @@ def _repository_scope_claims(
         pointer_repo_value = str(pointer.get("repo") or "")
         if not pointer_repo_value:
             continue
-        # The claim's repository comes from the checkout the worker writes in.
-        # ``repo`` is resolved from the run's PROJECT mount, so a run carrying
-        # one project's plan into another project's checkout records a ``repo``
-        # holding none of its declared paths — and the paths then resolve into a
-        # repository that no other claim on the same file can intersect.
-        pointer_repo = (
-            claim_repository(pointer) or Path(pointer_repo_value).expanduser().resolve()
-        )
         disposition = claim_disposition(pointer)
         project = str(pointer.get("project") or "")
-        authority = pointer.get("authority")
-        authority = authority if isinstance(authority, Mapping) else {}
-        authority_roots = {
-            Path(str(root)).expanduser().resolve()
-            for root in authority.get("repositories") or ()
-        }
-        roots = {*repository_projects, *authority_roots, pointer_repo}
-        write = authority.get("write")
-        write = write if isinstance(write, Mapping) else {}
-        preferred_projects = tuple(str(item) for item in write.get("projects") or ())
         node = pointer.get("node")
         if not isinstance(node, Mapping):
             continue
@@ -269,13 +296,7 @@ def _repository_scope_claims(
             absolute,
             declared,
             derived_from,
-        ) in _resolved_scope_entries(
-            node.get("write_paths") or (),
-            base_repository=pointer_repo,
-            repositories=roots,
-            project=project,
-            preferred_projects=preferred_projects,
-        ):
+        ) in _pointer_scope_entries(pointer, repository_projects=repository_projects):
             claims.append(
                 _RepositoryScopeClaim(
                     project=project,
