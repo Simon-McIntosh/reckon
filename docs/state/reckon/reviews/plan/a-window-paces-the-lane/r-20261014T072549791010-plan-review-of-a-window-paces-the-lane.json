@@ -1,0 +1,64 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-14T07:40:37.895Z",
+  "dispatched_at": "2026-10-14T07:33:32Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-window-paces-the-lane.html#s16",
+      "id": "reasoning-1",
+      "reason": "without naming where the watch path gets a second reading (or extending `published_readings`/the sweep's resolver, and extending the write paths and done-when to prove it through the default resolver), the node lands a two-reading rule that never fires on the caller it targets and the flapping \u00a716 exists to stop persists.",
+      "text": "the deliverable grounds no source for the second of the two consecutive readings on the watch path: `lift_watch.sweep` reads the group's readings through `_default_readings` \u2192 `published_readings`, which returns a single-element list (budget_lift.py:219, `return [payload]`), while the two-reading history builder (`_lift_history`, reckon/budget.py:2640) lives on the pace path that \u00a716 does not name; and `end_cause` is a stateless recompute (budget_lift.py:721) that retains no prior reading, so \"a single reading \u2026 followed by one that does not\" is unobservable as written, and the fix would be inert on the watch stream its own \"Why\" cites",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-window-paces-the-lane.html#s16",
+      "id": "done_when-1",
+      "reason": "a test that writes the live lift document or stream reports on the machine rather than the code and can corrupt a peer session's view of what is lifted, and the plan already established the isolation assertion in \u00a713 that \u00a716 omits.",
+      "text": "\u00a716's done-when has the test call `grant` and `lift_watch.sweep` without stating that the config home and watch stream are redirected to a temporary directory, unlike \u00a713 whose done-when guards exactly this because both writers default to the live `<config-home>/budget-lifts.json` and the real watch stream",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "4e14f5b4eb25e4c5d0accda8aeea052602c1a227c693c54c9391e6a853b8e8e1",
+  "plan_slug": "a-window-paces-the-lane",
+  "plan_version": 215,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261014T072549791010-plan-review-of-a-window-paces-the-lane",
+  "reviewed_blob_sha": "a9b64335ba2b54d3d8053b0c056f15b5132d5099",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/budget_lift.py`, `reckon/crew/lift_watch.py`, `lift_watch.sweep`, `_reset_observed` and `end_cause` all resolve in the tree (budget_lift.py:721, :802; lift_watch.py:65); the cited `tests/test_a_reset_needs_a_second_reading.py` is the node's own deliverable and need not exist yet.",
+    "done_when": "a finding \u2014 \u00a716's done-when declares a negative control, but it does not state that the test isolates the config home and stream that `grant` and `lift_watch.sweep` write, where \u00a713's done-when (same plan, `budget_lift.grant` and `lift_watch.sweep` are the same writers) explicitly points the config home at a temporary directory and asserts the real `budget-lifts.json` is byte-identical before and after.",
+    "evidence_paths": "pass \u2014 the negative control is logged under the run directory, a durable path a later reader can open; no scratchpad or node-local temporary path is named.",
+    "naming": "pass \u2014 no plan labels, ticket numbers or version tags reach a symbol or comment; the new test file is named by its mechanism (`test_a_reset_needs_a_second_reading.py`), and `reset`/`end_cause`/`_reset_observed` name mechanisms.",
+    "reasoning": "a finding \u2014 \u00a716's mechanism requires \"two consecutive readings with distinct `observed_at` both show\" the reset, but the caller the section names, `lift_watch.sweep`, resolves its readings through `_default_readings` \u2192 `budget_lift.published_readings`, which returns exactly one reading (budget_lift.py:219), so the two-reading rule can never fire on the watch path where the cited incident occurred.",
+    "single_goal": "pass \u2014 \u00a716 carries one deliverable: a reset-anchored lift ends only on a confirmed reset and stays ended. The two clauses (confirm on two readings; record the end so a later reading cannot return the lift) are one goal, not two.",
+    "wiring": "pass \u2014 `_document` declares `plan-informs background-agent-fitness-and-dispatch-scope` and lists `s16: implementable` in `plan-section-declarations`, matching the section's own `data-status=\"implementable\"`; \u00a716's stated prerequisites (\u00a712, \u00a714, \u00a715) are all `done`, so no dependency it needs is missing."
+  },
+  "section_digests": {
+    "_document": "fda3b02b7cdf1aaf51dcc28b302e76dbfa5532ff457c61b6cacd4458d68c0b30",
+    "s1": "fd232b0e9e301983eea254fa355a00f9cfdad5e4ba397415c196946997e8b78a",
+    "s10": "cff30d466dd7580b4623ab4ba85a967692183d1c1fbf0a887b817140c3fe2bf9",
+    "s11": "4f344761a1c7f9eeda684c28b5399f6cc6c50a6961808244c50f4f385a8dfb83",
+    "s12": "d332f915a715e0ce7c1efdd5027285714154977800a9ec70d7b055bf5762609f",
+    "s13": "627916281462553dd6f077d4f3ad0d176f2e5177a66b12b43e0c6d7b6788b3d7",
+    "s14": "5c54d28fac7106fc49f1eb45cc396fb761556bbd5ae16f469c6cf14cdd342fc8",
+    "s15": "5acca22c78776d5b829195bb01b2c5d660f4787c61cd3b04e511e66046bc7cf0",
+    "s16": "cb976662d3f6a9fd1e1bb80c29968daa0779c6c094f42d92ac2b4dd8f7b16836",
+    "s2": "0c4f642bff7cb6b87908ea9e036cb3161c15e31cb3285273e06bb2ac1f5c368c",
+    "s3": "ae3d7625321a46e7fa6a9ee3bac0272ee77d236811612140ef03b79670883261",
+    "s4": "8f3ac850d09e4745435c5274237c26be090ce2db03ac422e941c3329841d8563",
+    "s5": "3bc104a16d90fb6279e9ab8c70555e1041253ad31f6376c64b455da33489c6b0",
+    "s5b": "1be686d2a1165f13c4f4e81a29ca56c362c3b069dfc80759cf370cca59440d41",
+    "s6": "8e4ab80a317b73fb60010fe92858cbe3b073511ce10c4547c6eb8952a89829f0",
+    "s6-the-probe-reader-and-the-undeclared-dialect": "c463be6993bc79b07591a01d9e1a1d92d699a48d4c322b2cc395a0e78a2d097d",
+    "s7": "39b7111a3bfa256531f953bd33de123967e24fa4ffc75e6d1cbeca26a45c565d",
+    "s8": "9d68431496117798ca30bbebd6828adc5853e02df969ac62de3bb2dcd41512a4",
+    "s9": "5f72c27f2288b837b6513304ec92d0bf2e8950d169b0389c4c3ffeba27c23b6b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T07:41:54.065991+00:00"
+}
