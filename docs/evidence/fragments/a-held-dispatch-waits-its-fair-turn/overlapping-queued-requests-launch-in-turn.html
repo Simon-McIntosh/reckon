@@ -1,0 +1,66 @@
+<section id="overlapping-queued-requests-launch-in-turn" class="evidence-fragment">
+  <h2>§18 — Overlapping queued requests launch in turn</h2>
+  <p>
+    Two queued requests naming one write path refused each other's launch on
+    every admission pass. <code>claim_disposition</code> read a pointer with no
+    worker process as "not yet spawned" and kept the claim held, so an earlier
+    queued request blocked a later one exactly as a running worker would. A
+    queued request holds no worker and no worktree, so
+    <code>claim_disposition</code> now returns a non-binding disposition for a
+    pointer in the <code>queued</code> phase, keyed on the phase rather than on
+    the missing pid. A <code>starting</code> run — pid-less between its pointer
+    write and its worker spawn — keeps binding, because the rule reads the
+    phase and not the absence of a pid. Its two readers stay in step for free:
+    the dispatch scope check (<code>_repository_scope_claims</code>) and the
+    <code>crew scopes</code> view (<code>_live_scope_claims</code>) both call
+    <code>claim_disposition</code>, so a queued claim refuses nothing and the
+    registry reports the same verdict the enforcer applies.
+  </p>
+  <p>
+    On top of that the admission pass keeps rank order among overlapping
+    requests. Before <code>admit_once</code> releases a request it looks, through
+    <code>_earlier_overlapping_request</code>, for an earlier-ranked queued
+    request whose write paths overlap. If one exists it leaves the request
+    queued with no failure recorded, exactly as a lane-gate hold does, and the
+    pass does the check itself rather than inferring the overlap from a queued
+    record returned by <code>dispatch</code>. The head of the queue has no
+    earlier-ranked request and is never held this way. The hold is bounded by
+    the queue's existing <code>STARVATION_AGE_SECONDS</code>, so a request is
+    never held without end behind an earlier one whose own session is never
+    granted a slot: once it has waited past the age the pre-check releases it and
+    it may launch ahead under the ordinary claim rules. When both requests sit
+    in one slot-less session, the existing session-allowance hold takes both
+    before the pre-check runs. Once a request launches, its claim binds as any
+    running worker's does; a later overlapping request whose launch is refused
+    on it goes back to the queue with the conflict recorded, keeping its run id
+    and place.
+  </p>
+  <p id="overlapping-queued-requests-launch-in-turn-measure">
+    Measure: the focused gate
+    <code>python -m pytest -q tests/test_overlapping_queued_requests_launch_in_turn.py tests/test_a_node_is_queued_once.py</code>
+    reports <strong>18 passed</strong> with <code>EXIT=0</code> at the head
+    revision, covering the seven section cases (earlier launches and the later
+    stays queued; the later waits behind an earlier whose session has no slot;
+    the later launches once the earlier is promoted and its back-off has
+    expired; the starvation age releases the later; a new dispatch over only a
+    queued claim queues then launches, and is refused <code>queue-full</code> at
+    the session cap; a working or <code>starting</code> claim still refuses with
+    <code>scope-conflict</code>; the <code>crew scopes</code> view reports a
+    queued claim non-binding and a <code>starting</code> one binding). The
+    superseded case
+    <code>test_a_different_node_over_a_queued_path_launches</code> in
+    <code>tests/test_a_node_is_queued_once.py</code> now expects the dispatch to
+    launch with the queued request left live, and a companion case keeps the
+    working-run refusal.
+  </p>
+  <p id="overlapping-queued-requests-launch-in-turn-controls">
+    Three negative controls, each logged under the run directory with its own
+    <code>EXIT=1</code> line and the failure id it names. Counting queued
+    pointers as claims again in <code>claim_disposition</code> fails both the
+    earlier-launches case and the <code>crew scopes</code> case
+    (<code>2 failed</code>). Removing the admission pre-check fails the
+    later-waits case (<code>1 failed</code>). Removing the starvation bound so
+    the pre-check holds regardless of age fails the release case
+    (<code>1 failed</code>).
+  </p>
+</section>
