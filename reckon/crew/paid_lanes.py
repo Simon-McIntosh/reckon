@@ -873,6 +873,114 @@ def _wallet_map(
     return wallets
 
 
+@dataclass(frozen=True)
+class RolloutEvent:
+    """One rollout file's newest rate-limit reading, dated by its own event.
+
+    A client interleaves a ``session_meta`` record naming its session with the
+    provider's ``rate_limits`` objects, and each such object carries the record's
+    own timestamp.  The reading is the newest of those objects, and the stamp is
+    the instant the provider reported it rather than any later stamp on the run
+    record that named the session.
+    """
+
+    session_id: str
+    observed_at: datetime
+    rate_limits: Mapping[str, Any]
+
+
+def _read_rollout_event(path: Path) -> RolloutEvent | None:
+    """The newest ``rate_limits`` event in one rollout file, with its own stamp.
+
+    The session id is taken from the file's ``session_meta`` record, because that
+    is where the file names the run it belongs to.  A file with no dated
+    rate-limit event resolves nothing rather than borrowing a stamp from
+    elsewhere.
+    """
+    from reckon import budget
+
+    latest: tuple[datetime, Mapping[str, Any]] | None = None
+    session_id = ""
+    try:
+        with path.open("rb") as stream:
+            first = stream.readline()
+            size = stream.seek(0, os.SEEK_END)
+            stream.seek(max(0, size - ROLLOUT_TAIL_BYTES))
+            tail = stream.read().decode("utf-8", errors="ignore")
+        lines = [first.decode("utf-8", errors="ignore"), *tail.splitlines()]
+        for line in lines:
+            try:
+                record = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if not isinstance(record, Mapping):
+                continue
+            payload = record.get("payload")
+            if record.get("type") == "session_meta" and isinstance(payload, Mapping):
+                session_id = str(payload.get("session_id") or payload.get("id") or "")
+            if not isinstance(payload, Mapping):
+                continue
+            limits = payload.get("rate_limits")
+            stamp = budget._parse_stamp(record.get("timestamp"))
+            if (
+                isinstance(limits, Mapping)
+                and stamp is not None
+                and (latest is None or stamp > latest[0])
+            ):
+                latest = (stamp, limits)
+    except (OSError, UnicodeError):
+        return None
+    if latest is None:
+        return None
+    observed, limits = latest
+    return RolloutEvent(session_id=session_id, observed_at=observed, rate_limits=limits)
+
+
+def _session_rollout_paths(session_id: str, run_id: str | None) -> list[Path]:
+    """Every rollout file one session may occupy, across the homes it can hold.
+
+    A live run's rollout is written under its own harness home, while a session
+    the operator drove directly lives in the client sessions home, so both are
+    searched and the newest event across them wins.
+    """
+    from reckon.crew import rollout as rollout_module
+    from reckon.crew import runs as crew_runs
+
+    pattern = f"*/*/*/rollout-*-{session_id}.jsonl"
+    isolated = os.environ.get(RECKON_HOME_ENV)
+    sessions_root = (
+        Path(isolated) / "codex-home" / "sessions"
+        if isolated
+        else rollout_module.CLIENT_SESSIONS_DIR
+    )
+    paths = list(sessions_root.glob(pattern)) if sessions_root.is_dir() else []
+    if run_id:
+        run_sessions = crew_runs.runs_dir() / run_id / "codex-home" / "sessions"
+        if run_sessions.is_dir():
+            paths.extend(run_sessions.glob(pattern))
+    return paths
+
+
+def read_session_rollout_event(
+    session_id: str, *, run_id: str | None = None
+) -> RolloutEvent | None:
+    """The newest event-dated rate-limit reading for one session's rollout.
+
+    This is the one reader of rollout files: the account scan and the pace path
+    both resolve a rollout figure through it, so neither dates a figure by any
+    stamp but the event's own.  The newest dated event across the session's files
+    is returned, or ``None`` when the session has no rollout carrying one.
+    """
+    newest: RolloutEvent | None = None
+    for path in _session_rollout_paths(session_id, run_id):
+        event = _read_rollout_event(path)
+        if event is None:
+            continue
+        if newest is None or event.observed_at > newest.observed_at:
+            newest = event
+    return newest
+
+
 def _codex_rollout_candidates(
     accounts: set[str],
     *,
@@ -916,44 +1024,12 @@ def _codex_rollout_candidates(
                 continue
         except OSError:
             continue
-        latest: tuple[datetime, Mapping[str, Any]] | None = None
-        session_id = ""
-        try:
-            with path.open("rb") as stream:
-                first = stream.readline()
-                size = stream.seek(0, os.SEEK_END)
-                stream.seek(max(0, size - ROLLOUT_TAIL_BYTES))
-                tail = stream.read().decode("utf-8", errors="ignore")
-            lines = [first.decode("utf-8", errors="ignore"), *tail.splitlines()]
-            for line in lines:
-                try:
-                    record = json.loads(line)
-                except json.JSONDecodeError:
-                    continue
-                if not isinstance(record, Mapping):
-                    continue
-                payload = record.get("payload")
-                if record.get("type") == "session_meta" and isinstance(
-                    payload, Mapping
-                ):
-                    session_id = str(
-                        payload.get("session_id") or payload.get("id") or ""
-                    )
-                if not isinstance(payload, Mapping):
-                    continue
-                limits = payload.get("rate_limits")
-                stamp = budget._parse_stamp(record.get("timestamp"))
-                if (
-                    isinstance(limits, Mapping)
-                    and stamp is not None
-                    and (latest is None or stamp > latest[0])
-                ):
-                    latest = (stamp, limits)
-        except (OSError, UnicodeError):
+        event = _read_rollout_event(path)
+        if event is None:
             continue
-        if latest is None:
-            continue
-        observed, limits = latest
+        observed = event.observed_at
+        limits = event.rate_limits
+        session_id = event.session_id
         account = str(limits.get("limit_id") or "").strip()
         profile = session_backends.get(session_id, "")
         # Configured profiles share the provider's account window when the

@@ -30,8 +30,8 @@ from reckon import budget, ledger, mcp_views
 from reckon.cli import main as cli_main
 from reckon.crew import bar as bar_module
 from reckon.crew import pace as pace_module
+from reckon.crew import paid_lanes, window_reading
 from reckon.crew import rollout as rollout_module
-from reckon.crew import window_reading
 
 # A fixed instant, so every age and every reset stamp is arithmetic rather than
 # a stroke of the clock. A test that read the wall clock here would pass on the
@@ -1204,14 +1204,36 @@ def _quota(window_minutes: int, used_percent: float) -> object:
     )
 
 
+def _rollout_event(observed_at: datetime, *windows: tuple[int, float]) -> object:
+    """A rollout's newest rate-limit reading, dated by the event that carried it.
+
+    Built as the real event type the event-dated reader returns, so the reader
+    seam carries the provider's own stamp rather than the run record's later one.
+    The windows are offered primary-then-secondary, as the provider spells them.
+    """
+    names = ("primary", "secondary")
+    rate_limits = {
+        name: {
+            "window_minutes": minutes,
+            "used_percent": used_percent,
+            "resets_at": _reset_in(100.0),
+        }
+        for name, (minutes, used_percent) in zip(names, windows, strict=False)
+    }
+    return paid_lanes.RolloutEvent(
+        session_id="", observed_at=observed_at, rate_limits=rate_limits
+    )
+
+
 def test_a_live_session_is_read_for_the_rollout_receipt_of_its_own_run() -> None:
-    """The session's rollout is the third home, and it competes on its stamp.
+    """The session's rollout is the third home, and it competes on its event stamp.
 
     An in-flight run carries no lane receipt, so before this the source had only
     an older run's committed row to report while the newer session's own rollout
     held both clocks. The reader is injected through the same one-argument seam
-    the lanes view injects, so the assertion covers the wiring rather than
-    whichever rollout this machine happens to have.
+    the production reader fills, so the assertion covers the wiring rather than
+    whichever rollout this machine happens to have -- and the reading is dated by
+    the rate-limit event's own stamp, never the run record's later one.
     """
     rows = [
         _receipt_record(
@@ -1230,10 +1252,11 @@ def test_a_live_session_is_read_for_the_rollout_receipt_of_its_own_run() -> None
         )
     ]
     asked: list[str] = []
+    event_stamp = NOW - timedelta(minutes=20)
 
     def reader(session_id: str) -> object:
         asked.append(session_id)
-        return _rollout_receipt({300: _quota(300, 11.0), 10080: _quota(10080, 17.0)})
+        return _rollout_event(event_stamp, (300, 11.0), (10080, 17.0))
 
     windows = budget.recorded_windows(
         "demo", CONFIG, now=NOW, records=rows, pointers=pointers, rollouts=reader
@@ -1245,27 +1268,23 @@ def test_a_live_session_is_read_for_the_rollout_receipt_of_its_own_run() -> None
     reading = windows["sol-a"]
     assert reading.figure("five_hour").utilisation == pytest.approx(0.11)
     assert reading.figure("seven_day").utilisation == pytest.approx(0.17)
-    assert reading.observed_at == NOW - timedelta(minutes=1)
+    assert reading.observed_at == event_stamp, (
+        "the reading is dated by its rollout event, not the run record's stamp"
+    )
 
 
-@pytest.mark.parametrize(
-    "marker",
-    [
-        rollout_module.Unmeasured.NO_RATE_LIMITS,
-        rollout_module.Unmeasured.MISSING_ROLLOUT,
-    ],
-)
+@pytest.mark.parametrize("case", ["absent", "unmeasured"])
 def test_an_unmeasured_or_absent_rollout_leaves_the_committed_row_as_the_reading(
-    marker: object,
+    case: str,
 ) -> None:
-    """A rollout that resolved nothing contributes no candidate at all.
+    """A rollout that resolved no dated event contributes no candidate at all.
 
-    The production reader answers every gap with an explicit marker rather than
-    raising, so a receipt that is unmeasured or a session whose rollout was never
-    written must resolve no clock: otherwise the group reports an invented
-    position, or drops to unknown while a perfectly good committed row sat
-    unread. Both markers are exercised, because an absent rollout and an
-    unreadable one reach the source by different paths.
+    The production reader answers a session it cannot place with ``None`` rather
+    than raising, and an event whose rate-limit object carries no window resolves
+    no clock either, so both must leave the committed row to speak: otherwise the
+    group reports an invented position, or drops to unknown while a perfectly good
+    committed row sat unread. Both paths are exercised, because a missing rollout
+    and an undated one reach the source differently.
     """
     rows = [
         _receipt_record(
@@ -1285,7 +1304,9 @@ def test_an_unmeasured_or_absent_rollout_leaves_the_committed_row_as_the_reading
     ]
 
     def reader(session_id: str) -> object:
-        return _rollout_receipt(marker)
+        if case == "absent":
+            return None
+        return _rollout_event(NOW - timedelta(minutes=20))
 
     windows = budget.recorded_windows(
         "demo", CONFIG, now=NOW, records=rows, pointers=pointers, rollouts=reader
@@ -1354,12 +1375,11 @@ def test_the_uninjected_reader_is_the_production_rollout_reader(
 ) -> None:
     """With no reader injected, the branch that runs is the production one.
 
-    Every other case here supplies ``rollouts=``, so all the module-level reader
-    this delegates to was never exercised: replacing that reader with an
-    unmeasured answer left the whole file green. This case calls with no
-    injection at all and patches the rollout module's own reader, so the
-    assertion fails unless the uninjected path reaches it, and its answer is
-    what the group reports.
+    Every other case here supplies ``rollouts=``, so the production reader this
+    delegates to was never exercised: replacing it with an unmeasured answer left
+    the whole file green. This case calls with no injection at all and patches the
+    lanes-side event reader, so the assertion fails unless the uninjected path
+    reaches it, and its answer is what the group reports.
     """
     rows = [
         _receipt_record(
@@ -1378,24 +1398,25 @@ def test_the_uninjected_reader_is_the_production_rollout_reader(
         )
     ]
     asked: list[str] = []
+    event_stamp = NOW - timedelta(minutes=20)
 
-    def production(session_id: str) -> object:
+    def production(session_id: str, *, run_id: str | None = None) -> object:
         asked.append(session_id)
-        return _rollout_receipt({300: _quota(300, 11.0), 10080: _quota(10080, 17.0)})
+        return _rollout_event(event_stamp, (300, 11.0), (10080, 17.0))
 
-    monkeypatch.setattr(rollout_module, "read_rollout_receipt", production)
+    monkeypatch.setattr(paid_lanes, "read_session_rollout_event", production)
 
     windows = budget.recorded_windows(
         "demo", CONFIG, now=NOW, records=rows, pointers=pointers
     )
 
     assert asked == ["sess-production"], (
-        "the uninjected path must reach the module-level rollout reader"
+        "the uninjected path must reach the production rollout event reader"
     )
     reading = windows["sol-a"]
     assert reading.figure("five_hour").utilisation == pytest.approx(0.11)
     assert reading.figure("seven_day").utilisation == pytest.approx(0.17)
-    assert reading.observed_at == NOW - timedelta(minutes=1)
+    assert reading.observed_at == event_stamp
 
 
 def test_one_stamp_reader_dates_a_record_for_both_surfaces() -> None:
@@ -1478,7 +1499,7 @@ def test_a_wholly_chosen_reading_leaves_the_other_clock_unknown() -> None:
     ]
 
     def reader(session_id: str) -> object:
-        return _rollout_receipt({10080: _quota(10080, 88.0)})
+        return _rollout_event(NOW - timedelta(minutes=20), (10080, 88.0))
 
     windows = budget.recorded_windows(
         "demo", CONFIG, now=NOW, records=rows, pointers=pointers, rollouts=reader
@@ -1488,4 +1509,4 @@ def test_a_wholly_chosen_reading_leaves_the_other_clock_unknown() -> None:
     assert reading.figure("seven_day").utilisation == pytest.approx(0.88)
     assert reading.figure("five_hour") is None
     assert reading.known, "the week resolved, so the reading is not wholly unknown"
-    assert reading.observed_at == NOW - timedelta(minutes=1)
+    assert reading.observed_at == NOW - timedelta(minutes=20)
