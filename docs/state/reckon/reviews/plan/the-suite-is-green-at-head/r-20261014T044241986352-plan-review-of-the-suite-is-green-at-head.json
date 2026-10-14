@@ -1,0 +1,92 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-14T04:58:13.740Z",
+  "dispatched_at": "2026-10-14T04:43:18Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-suite-is-green-at-head.html:687",
+      "id": "reasoning-1",
+      "reason": "a node applies both exemptions, reruns the family, and finds those two ids still red with no stated mechanism for delivering an own-session baseline, so \u00a715's done-when (\"the thirteen ids pass alone\") is unreachable as written.",
+      "text": "\u00a715's two exemptions leave two of the thirteen ids red: `tests/test_follower_survives_a_config_change.py::test_a_follower_defers_one_tick_and_keeps_delivering_across_a_config_error` and `tests/test_follower_survives_a_host_change.py::test_an_arm_with_no_checkpoint_replays_no_transitions_and_no_peer_rows` each fail because the pane withholds the run's own baseline row (kind `(None, \"working\")`) \u2014 measured here: `RowPolicy(own_session=\"s-mine\").feed({...from_state: None, to_state: \"working\", session: \"s-mine\"})` returns `[]` \u2014 while exemption A requires kind `(\"starting\"|\"dispatched\",\"working\")` and exemption B is keyed on the session being *observed*, so neither reaches an own-session baseline; the plan's own \"The own session's other rows stay as they are\" then leaves it withheld. The plan also mis-describes these tests as feeding rows \"each with a session and a from_state\", but their failing row is a baseline with `from_state = None`.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-suite-is-green-at-head.html:687",
+      "id": "reasoning-2",
+      "reason": "a node reading the closing sentence literally would not deliver an observed session's no-`from_state` row, which the earlier sentence and exemption B's stated scope require, so the instruction must be reworded to name the start exemption as the one not widened on `from_state`.",
+      "text": "\u00a715 contradicts itself on rows lacking a `from_state`: the deliverable first says `RowPolicy` \"exempts an observed session's rows from the observer-context hold whatever their kind, including `working` rows with no `from_state`\", then closes \"No exemption is widened for rows without a `from_state`\".",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "4db34e752839bfbfc6f08d7eeff46a59b6039e5c353186f15e80e27533c8d3d7",
+  "plan_slug": "the-suite-is-green-at-head",
+  "plan_version": 325,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-14T05:00:12.884522+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "",
+      "when": "2026-10-14T05:00:26.352626+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-14T05:00:12.884522+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-14T05:00:26.352626+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-suite-is-green-at-head.v325.json",
+  "review_run_id": "r-20261014T044241986352-plan-review-of-the-suite-is-green-at-head",
+  "reviewed_blob_sha": "2872b398b09d8587ce7d3fa0f619966c80258b41",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the investigation href, the follower-family report path, commit 089cd7741 and every file, test id and symbol (\u00a715's START_KIND, follower_row_path, RowPolicy.feed, PaneRowPath, SETTLE_WINDOW, and each write path) resolve.",
+    "done_when": "pass \u2014 \u00a715's done-when is measurable (the thirteen ids pass alone; two named pins still pass; no added failures against base) and it declares two negative controls, one per exemption, both logged under the run directory.",
+    "evidence_paths": "pass \u2014 the cited report lives at ~/.config/reckon/crew/reports/reckon/the-suite-is-green-at-head/follower-family-shared-cause/report.md and both negative controls are stated to be logged under the run directory, not a scratch pad.",
+    "naming": "pass \u2014 \u00a715 introduces no plan labels, ticket numbers or version tags into symbols or comments; the commit shas it cites are evidence anchors, not code names.",
+    "reasoning": "a finding \u2014 \u00a715's root cause matches its evidence (089cd7741's observer hold; parent green, commit red), but the two stated exemptions cannot produce \u00a715's own done-when: two of the thirteen ids fail on an own-session BASELINE row (kind `(None, \"working\")`) that neither exemption reaches.",
+    "single_goal": "pass \u2014 \u00a715 carries one goal (the follower-family tests feed the rows a pane receives), though it bundles threading, a start-kind widening and fixture re-anchoring as one deliverable.",
+    "wiring": "pass \u2014 \u00a715 is a flat repair section with no declared depends-on/informs/gates, and no relationship in the plan points at a wrong node; the plan declares no wiring relationships anywhere, so nothing is mis-wired."
+  },
+  "section_digests": {
+    "_document": "83bc4eebbeaf35e1f8769b1cefa72ecf8466fb0d23d3dd350bf2e642790b97e5",
+    "s1": "93d7e8eb3f04bb8d9aad0f5ac7d68a9d009b7fe7feaa6f4932738242154d8d4d",
+    "s10": "9633fb928a6c720c8fae74ed3da0a5f7ed555c4230f29ebf2ee89e5432566bb1",
+    "s11": "3e9c94371cc0b22adeb21c71a08fdd16433d8b4c1a22e73cd63d1171332089ba",
+    "s12": "dd8650523d29d87e6fa41408db7d0440cf17dfbd57f0ab6da0d5fcd223692d95",
+    "s13": "7b00f23667f49ba7de16f8823860c86ad35a562eebddf434fd1a6b9f1f5e9993",
+    "s14": "1469c86b5327d2429ce07b9ddd2fbca586d8831acb94119f8a187e315f48dcf7",
+    "s15": "22e863a58570b392be0ef270e9a2fbb2806026e35a0330feef4139ea00482588",
+    "s16": "4ab9d42bd2e71d070a1cc5393ebea66e1ec71d06dad51f1a82505c91ce309234",
+    "s2": "d8e1d44eab3d041cfa8f08f045885bcf9a783d27f0cb613fe7de2c0476c13887",
+    "s3": "d6efa514940aeb662c9b7fdee7f663c86e4da2526ec9a01c6977f967e30d886a",
+    "s4": "e7003c1b5457d6229da28b7d90f825f0e3ef67be2a012291c12a2daf14bf2273",
+    "s5": "934ff53a2b41de523672b7760ab4bbe2e8be5d3da6b580c600383ac0217825a2",
+    "s6": "532d289736e3278c9969cb253dc2c1c372054b378fd42f2cfb741906f6e66eb2",
+    "s7": "655ef45aae9c9f31c0c67cb28422cff4a16611cfce488326c298768a23f58efd",
+    "s8": "c78e67e053ac3d61a73df4b965e8209a12ca4d9b745535a102b0b0040cce3adc",
+    "s9": "f4ef4f0dc18779331d3654037d55a7dd1c27d3769bfbfe753867fccbb53f9a28"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T04:58:25.720824+00:00"
+}
