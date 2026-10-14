@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import re
+import socket
 import stat
 import time
 from collections.abc import Mapping
@@ -304,6 +305,10 @@ class _FollowerRegistration:
             "delivery": self.delivery,
             "scope": self.scope,
             "started_at": _utc_now(),
+            # The host this registration was written on, spelled as a producer
+            # seat spells its own. A reader on another host reads it to know
+            # that the recorded pid was issued by a kernel it cannot query.
+            "host": socket.gethostname(),
         }
         _write_watch_record(handle, self.record)
         self.held = True
@@ -474,6 +479,26 @@ def follower_owner() -> tuple[int, str]:
     return _RESOLVED_FOLLOWER_OWNER.resolve()
 
 
+def follower_registration_host(record: Mapping[str, Any]) -> str:
+    """The host a follower registration names as the one it was written on.
+
+    Spelled exactly as a producer seat's host is read (``runs._seat_host``): the
+    stored ``host`` field, or the empty string when the record carries none.
+    """
+    return str(record.get("host") or "")
+
+
+def registration_names_a_foreign_host(record: Mapping[str, Any]) -> bool:
+    """Report whether a registration names a host that is not this one.
+
+    A record naming no host is neither local nor foreign: it predates the field,
+    or it is an erased record, and both are read against the local process
+    table. Only a record known to belong to another host is spared that probe.
+    """
+    host = follower_registration_host(record)
+    return bool(host) and host != socket.gethostname()
+
+
 def _follower_liveness(path: Path) -> dict[str, Any]:
     """Read one registration and decide whether it still delivers."""
     if not path.is_file():
@@ -504,17 +529,30 @@ def _follower_liveness(path: Path) -> dict[str, Any]:
         time.sleep(0.005)
 
     pid = record.get("pid")
-    running = record_process_alive(record) is True
-
-    # An orphaned follower has lost the session it was reporting to, so its
-    # lines go nowhere even while the process runs.
-    consumer_alive = True
-    if "parent_pid" in record:
-        try:
-            parent_pid = int(record.get("parent_pid") or 0)
-        except (TypeError, ValueError):
-            parent_pid = 0
-        consumer_alive = parent_pid > 1 and process_alive(parent_pid) is True
+    foreign = registration_names_a_foreign_host(record)
+    if foreign:
+        # A pid is issued by one kernel, so a registration written on another
+        # host names a process this host's table cannot answer for: its absence
+        # here is not evidence of death, the rule a foreign watcher
+        # registration is already read under. The one fact that crosses the
+        # shared home is the registration's own advisory lock, which the
+        # follower holds for as long as it delivers and the kernel frees the
+        # instant it ends -- so a held lock is a live follower and a free one is
+        # a follower that has gone. The pid probes are left unknown rather than
+        # run against a number this host cannot see.
+        running: bool | None = None
+        consumer_alive: bool | None = None
+    else:
+        running = record_process_alive(record) is True
+        # An orphaned follower has lost the session it was reporting to, so its
+        # lines go nowhere even while the process runs.
+        consumer_alive = True
+        if "parent_pid" in record:
+            try:
+                parent_pid = int(record.get("parent_pid") or 0)
+            except (TypeError, ValueError):
+                parent_pid = 0
+            consumer_alive = parent_pid > 1 and process_alive(parent_pid) is True
 
     # Prefer what the descriptor says now over what registration recorded: a
     # recorded verdict survives its consumer going away, and answers with
@@ -522,15 +560,23 @@ def _follower_liveness(path: Path) -> dict[str, Any]:
     # keeps the declaration is the registering process itself, where the
     # declaration is a statement about its own output and deceives nobody
     # else; a dispatch guard is always a different process, which is the case
-    # this measures.
+    # this measures. A foreign registration's unknown probe is falsy, so the
+    # live descriptor is never read for a pid another kernel issued.
     observed = (
         delivery_mode_of(pid)
         if isinstance(pid, int) and running and pid != os.getpid()
         else None
     )
     delivery = observed or str(record.get("delivery") or "unknown")
+    # The two checkers that would read the local table are gated on "is not
+    # False", not on truth: for a foreign registration they answer unknown, and
+    # unknown must not be reported as death. The lock is what answers a foreign
+    # one, so a free lock is a released follower and reads gone.
     live = bool(
-        registered and running and consumer_alive and delivery in DELIVERING_MODES
+        registered
+        and running is not False
+        and consumer_alive is not False
+        and delivery in DELIVERING_MODES
     )
     # A row that is not live says which condition ended it. Its `since` records
     # when it attached, so a dead row's only timestamp makes it look older and
@@ -539,14 +585,22 @@ def _follower_liveness(path: Path) -> dict[str, Any]:
     reason = ""
     if not live:
         if not registered and record:
-            reason = (
-                f"the registration was released; its process {record.get('pid')} "
-                "is gone"
-                if not running
-                else "the registration was released"
-            )
+            # A foreign record's process is not this host's to confirm gone, so
+            # its release is stated without that claim.
+            if foreign or running:
+                reason = "the registration was released"
+            else:
+                reason = (
+                    f"the registration was released; its process "
+                    f"{record.get('pid')} is gone"
+                )
         elif not registered:
             reason = "no registration remains"
+        elif foreign:
+            reason = (
+                f"its lines end in a {delivery}, which nothing reads until the "
+                "command exits — and a follower does not exit"
+            )
         elif not running:
             reason = f"the registered process {record.get('pid')} is gone"
         elif not consumer_alive:
@@ -562,6 +616,8 @@ def _follower_liveness(path: Path) -> dict[str, Any]:
     return {
         "registered": registered,
         "live": live,
+        "host": follower_registration_host(record),
+        "foreign": foreign,
         # A registration file that exists while its advisory lock is free is a
         # follower that was armed and has since expired; a path that was never
         # created is a session that never armed one. Both read as not
