@@ -70,6 +70,11 @@
     <p>Run <code>r-20261013T202356776371-mcp-server-serves-current-code</code>, commits <code>203882d19</code> and <code>f591f7211</code> (<code>reckon/mcp.py</code> and <code>tests/test_mcp_server_serves_current_code.py</code>). Review <code>r-20261013T211958771791</code>. Merged to <code>main</code> as <code>136e48434</code> on 2026-10-13, and recorded on this plan on 2026-10-14.</p>
   </section>
 
+  <section id="s15">
+    <h2>§15 — One check decides whether a moved checkout can be trusted, landed</h2>
+    <p>Run <code>r-20261014T102752892402-one-check-trusts-a-moved-checkout</code>, commits <code>90ea1a360</code>, <code>30a960669</code>, <code>d27efabef</code>, <code>7a9ea0aea</code>, <code>417202f62</code> and <code>ba988eeda</code>. <code>moved_checkout_is_trustworthy</code> in the new <code>reckon/checkout_trust.py</code> answers whether a moved checkout can be trusted: it is clean against <code>HEAD</code> under <code>reckon/</code>, and every module imports through the follower's one probe, <code>_FOLLOWER_RELOAD_PROBE</code> in <code>reckon/crew_follow_commands.py</code>. The follower's reloader and <code>_stale_code_response</code> in <code>reckon/mcp.py</code> both call it, and <code>_CODE_IMPORT_PROBE</code> is gone. The new test file passes 4 of 4. The focused arm passed 50 with <code>EXIT=0</code> at base <code>197b54c81</code> and at the code head <code>417202f62</code>. With the MCP's own probe restored, the negative control fails the dirty-tree case. The first review, <code>r-20261014T115332924727</code>, scored 100/120. Its four follow-ons were fixed by resuming the worker: a formatting sweep was reverted, and a false docstring, a tautological assertion and the null suite records were corrected. The re-review at <code>ba988eeda</code> scored 104/120 with no added failures. Merged to <code>main</code> as <code>096844cd8</code> on 2026-10-14.</p>
+  </section>
+
 </main>
 </body>
 </html>
