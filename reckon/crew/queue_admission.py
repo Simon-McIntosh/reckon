@@ -17,7 +17,7 @@ import contextlib
 import copy
 import fcntl
 import time
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from contextlib import contextmanager, nullcontext
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -222,6 +222,59 @@ def _retry_delay(attempts: int) -> timedelta:
     """The bounded wait before a request that just failed may be retried."""
     seconds = ADMISSION_RETRY_BACKOFF_SECONDS * (2 ** max(attempts - 1, 0))
     return timedelta(seconds=min(seconds, ADMISSION_RETRY_BACKOFF_CAP_SECONDS))
+
+
+def _queued_scope_paths(pointer: Mapping[str, Any]) -> list[str]:
+    """The repository-relative write paths a queued request declares."""
+    node = pointer.get("node")
+    if not isinstance(node, Mapping):
+        return []
+    repo_value = str(pointer.get("repo") or "")
+    repo = Path(repo_value).expanduser() if repo_value else None
+    paths: list[str] = []
+    for raw in node.get("write_paths") or ():
+        normalized = runs._repository_relative_scope(str(raw), repo)
+        paths.append(normalized if normalized is not None else str(raw))
+    return paths
+
+
+def _queued_requests_overlap(
+    first: Mapping[str, Any], second: Mapping[str, Any]
+) -> bool:
+    """Whether two queued requests name a write path the other also names."""
+    first_paths = _queued_scope_paths(first)
+    if not first_paths:
+        return False
+    return any(
+        runs._scopes_overlap(left, right)
+        for left in first_paths
+        for right in _queued_scope_paths(second)
+    )
+
+
+def _earlier_overlapping_request(
+    pointer: Mapping[str, Any],
+    earlier: Sequence[Mapping[str, Any]],
+    *,
+    moment: datetime,
+) -> Mapping[str, Any] | None:
+    """An earlier-ranked queued request whose write paths overlap this one.
+
+    The head of the queue has no earlier-ranked request, so it is never held
+    this way. Once this request has waited longer than the starvation age the
+    pre-check stops holding it and it may launch ahead under the ordinary claim
+    rules, so a later request is never held without end behind an earlier one
+    whose own session is never granted a slot.
+    """
+    queued_at = parse_utc(pointer.get("queued_at"))
+    if queued_at is not None and (
+        (moment - queued_at).total_seconds() > queue_order.STARVATION_AGE_SECONDS
+    ):
+        return None
+    for candidate in earlier:
+        if _queued_requests_overlap(pointer, candidate):
+            return candidate
+    return None
 
 
 def _failure_text(failure: Any) -> str:
@@ -563,7 +616,7 @@ def admit_once(
             ]
         order = queue_order.admission_order(queued, live, now=moment)
         remaining: dict[str, float | None] = {}
-        for pointer in order:
+        for index, pointer in enumerate(order):
             session = str(pointer["session"])
             if session not in remaining:
                 remaining[session] = _session_allowance(pointer, config_for=config_for)
@@ -590,6 +643,21 @@ def admit_once(
                 result["held"].append(str(pointer["run_id"]))
                 result.setdefault("hold_detail", {})[str(pointer["run_id"])] = (
                     backoff_hold
+                )
+                continue
+            overlap = _earlier_overlapping_request(
+                pointer, order[:index], moment=moment
+            )
+            if overlap is not None:
+                # An earlier-ranked queued request names a path this one also
+                # names, so this launch would be refused against a claim that
+                # fences nothing while both wait. It is left exactly as it is —
+                # queued, with no failure recorded — and the head of the queue,
+                # which has no earlier overlap, is never held this way.
+                result["held"].append(str(pointer["run_id"]))
+                result.setdefault("hold_detail", {})[str(pointer["run_id"])] = (
+                    f"held behind earlier queued request "
+                    f"{str(overlap.get('run_id') or 'unknown')!r} over a shared path"
                 )
                 continue
             snapshot = copy.deepcopy(dict(pointer))

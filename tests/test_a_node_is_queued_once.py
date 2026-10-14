@@ -103,6 +103,7 @@ def _live(
     node_id: str = NODE,
     write_paths=("result.json",),
     pid: int | None = None,
+    repo: Path | None = None,
 ) -> dict[str, Any]:
     record = {
         "run_id": run_id,
@@ -116,6 +117,10 @@ def _live(
             "write_paths": list(write_paths),
         },
     }
+    if repo is not None:
+        # The claim registry resolves a pointer's paths against its repo, so a
+        # claim without one is skipped and refuses nothing.
+        record["repo"] = str(repo)
     if pid is not None:
         record["pid"] = pid
     runs._write_json(runs.pointer_path(run_id), record)
@@ -304,20 +309,44 @@ def test_a_different_node_still_queues(
     }
 
 
-def test_a_different_node_over_a_claimed_path_is_still_refused(
+def test_a_different_node_over_a_queued_path_launches(
     dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    # A queued request holds no worker and no worktree, so its claim on
+    # result.json fences nothing: a different node over that path proceeds like
+    # any other dispatch rather than being refused against a claim that is not
+    # held. The queued request itself stays live for its own launch.
     _configure(dispatch_repo, monkeypatch, session_slots=0)
     queued = _dispatch(dispatch_repo, "node-one")
     assert queued.exit_code == 0, queued.output
+    queued_id = backend_tests._payload(queued)["run_id"]
+    assert runs.read_pointer(queued_id)["phase"] == "queued"
 
-    # The lane now has room, so the second node reaches the launch path, where
-    # the queued request's claim on result.json is enforced.
+    # The lane now has room, so the second node reaches the launch path.
     _configure(dispatch_repo, monkeypatch, session_slots=4)
+    launched = _dispatch(dispatch_repo, "node-three")
+
+    assert launched.exit_code == 0, launched.output
+    payload = backend_tests._payload(launched)
+    assert payload.get("error") != "scope-conflict"
+    assert payload["ok"] is True
+    assert payload.get("queued", False) is False
+    assert payload["phase"] == "starting"
+    assert runs.read_pointer(queued_id)["phase"] == "queued"
+
+
+def test_a_different_node_over_a_working_run_s_path_is_refused(
+    dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A working run holds its claim, so a second node over result.json is
+    # refused exactly as before — only the queued case stops binding.
+    _configure(dispatch_repo, monkeypatch, session_slots=4)
+    _live("r-working", phase="working", pid=os.getpid(), repo=dispatch_repo)
+
     refused = _dispatch(dispatch_repo, "node-three")
 
     assert refused.exit_code == 7, refused.output
     assert backend_tests._payload(refused)["error"] == "scope-conflict"
     assert {pointer["node"]["id"] for pointer in runs.list_live(project=PROJECT)} == {
-        "node-one"
+        "held-node"
     }
