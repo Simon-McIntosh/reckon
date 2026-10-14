@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-worker-cannot-write-your-home">
+  <meta name="plan-evidence-for" content="a-worker-cannot-write-your-home">
+  <title>A shim ignores the job's Python path | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>A shim ignores the job's Python path</h1>
+    </header>
+
+    <section id="shims-ignore-the-job-python-path-landing">
+      <p>The four shims — <code>reckon/worker_shims/git</code> and <code>reckon/host_shims/salloc</code>, <code>sbatch</code>, <code>srun</code> — start reckon's interpreter with only reckon's import root on its path: they set <code>PYTHONPATH="$repo_root"</code>, add <code>-s</code> to drop the user site, and unset <code>PYTHONPATH</code>, <code>PYTHONHOME</code> and <code>PYTHONSTARTUP</code> so a job that ran <code>module load</code> cannot shadow reckon's dependencies. The caller's interpreter-path variables are parked under <code>RECKON_SHIM_CALLER_*</code> and restored by <code>caller_environment</code> in <code>reckon/worker_git_shim.py</code> and <code>reckon/nested_launch.py</code>, so the git or scheduler command a shim runs still receives the caller's environment unchanged, <code>PYTHONPATH</code> included.</p>
+      <p>Measured by <code>tests/test_a_shim_ignores_the_job_python_path.py</code>: with <code>PYTHONPATH</code> and <code>PYTHONHOME</code> naming a temporary directory whose <code>typing_extensions.py</code> raises on import, a git command through the worker shim succeeds, each host shim reaches its main, and the program each shim runs sees the caller's <code>PYTHONPATH</code> and <code>PYTHONHOME</code> unchanged. 4 passed. The declared negative control — restoring the appended caller <code>PYTHONPATH</code> in the shims — makes the same test fail with the import error on 3 of its 4 cases.</p>
+    </section>
+  </main>
+</body>
+</html>

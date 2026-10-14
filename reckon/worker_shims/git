@@ -34,10 +34,31 @@ if [ -z "$interpreter" ]; then
   exit 127
 fi
 
+# Start reckon's interpreter with only reckon's import root on its path, and no
+# user site (-s). A job that ran `module load` puts its own site-packages on
+# PYTHONPATH, and appending the caller's PYTHONPATH would let a 3.11 copy of a
+# dependency shadow the one in reckon's own environment, breaking the import
+# before git is reached. The caller's interpreter-path variables are set aside
+# under RECKON_SHIM_CALLER_* and put back by the module before it runs the real
+# program, which still receives the caller's environment unchanged.
 # -P keeps the working directory off sys.path, so the package imported is the
 # one this shim belongs to rather than whatever checkout happens to be the cwd.
-PYTHONPATH="$repo_root${PYTHONPATH:+:$PYTHONPATH}" \
-  exec "$interpreter" -P -c '
+if [ "${PYTHONPATH+set}" = set ]; then
+  RECKON_SHIM_CALLER_PYTHONPATH=$PYTHONPATH
+  export RECKON_SHIM_CALLER_PYTHONPATH
+fi
+if [ "${PYTHONHOME+set}" = set ]; then
+  RECKON_SHIM_CALLER_PYTHONHOME=$PYTHONHOME
+  export RECKON_SHIM_CALLER_PYTHONHOME
+fi
+if [ "${PYTHONSTARTUP+set}" = set ]; then
+  RECKON_SHIM_CALLER_PYTHONSTARTUP=$PYTHONSTARTUP
+  export RECKON_SHIM_CALLER_PYTHONSTARTUP
+fi
+unset PYTHONPATH PYTHONHOME PYTHONSTARTUP
+
+PYTHONPATH="$repo_root" \
+  exec "$interpreter" -P -s -c '
 import sys
 
 from reckon.worker_git_shim import main
