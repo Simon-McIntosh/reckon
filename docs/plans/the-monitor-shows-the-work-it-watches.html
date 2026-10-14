@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="70">
+<meta name="plan-version" content="71">
 <meta name="plan-modified" content="2026-10-14">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -509,6 +509,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s18" data-id="c-run-r-20261014T023032379700-a-reload-waits-for-a-clean-tree" data-who="reckon-build" data-when="2026-10-14T03:43:10.100Z">
     <div class="r-comment-body"><p>defers a follower or producer reload while any tracked file under reckon/ differs from HEAD, and makes the import proof reach every module in the package rather than three entry points; a deferral keeps the running image, prints the dim deferred line once, and re-reads the tree each cadence so a commit (which cleans the tree without moving the content stamp) releases the reload</p></div>
+</div>
+<div class="r-comment" data-section="s18" data-id="c-close-s18" data-who="reckon-build" data-when="2026-10-14T04:10:00Z">
+    <div class="r-comment-body"><p>§18 landed. A follower or producer reload now waits while a tracked reckon file differs from HEAD or any package module fails to import, keeping the running image. In-place edits no longer crash producers mid-edit, and the reload tests no longer write to the live package. Merged <code>0dbefa01c</code> as <code>c30a0c628</code>, and the gate replayed green there. Population: 0 added over 24 files; base 4 failed / 233 passed, merged 3 failed / 237 passed. Review: 106. The syntax-error deferral case in <code>test_follower_reload_is_safe.py</code> still fails, as it does at base. <a href="/reckon/evidence/archive/the-monitor-shows-the-work-it-watches-landed.html#s18-reload-waits-clean-tree">evidence</a></p></div>
 </div>
 </section>
 </main>
