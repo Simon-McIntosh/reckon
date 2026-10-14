@@ -1773,17 +1773,17 @@ def terminate(run_id: str) -> dict[str, Any]:
         run_directory = run_dir(run_id)
         recorded_pid = record.get("pid")
         project = str(record.get("project") or "") or None
-        # A recorded pid that still names a process, or a recorded start tick
-        # with no process behind it, goes through the identity-checked signal:
-        # it refuses a pid the kernel has since recycled rather than signalling
-        # an unrelated process and the run's pids are all it walks from. When
-        # neither is there the run record names nothing to check against, and
-        # the environment mark is the only reach left for a worker the
-        # supervisor left reparented to init.
-        if recorded_pid and (
-            process_alive(int(recorded_pid)) is True
-            or record.get("pid_start_time") is not None
-        ):
+        # A recorded pid that still names a process goes through the
+        # identity-checked signal: it refuses a pid the kernel has since
+        # recycled rather than signalling an unrelated process. A recorded
+        # start tick alone is not a reason to take that path — it is evidence
+        # about a process the table no longer holds, where there is no identity
+        # left to protect. A supervisor that has already exited leaves exactly
+        # that record, so taking the identity-checked path on the tick alone
+        # would refuse, or fail a group lookup for a pid with no process, and
+        # never reap the worker it left reparented to init — which the run's
+        # environment mark reaches.
+        if recorded_pid and process_alive(int(recorded_pid)) is True:
             ended = _signal_process_group(
                 int(recorded_pid),
                 record.get("pid_start_time"),

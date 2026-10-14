@@ -3642,7 +3642,18 @@ def _signal_process_group(
     recording an ended run needs; the empty list means nothing was signalled.
     """
     own_pid = os.getpid()
-    if pid == own_pid or os.getpgid(pid) == os.getpgid(own_pid):
+    shares_own_group = False
+    if pid != own_pid:
+        try:
+            shares_own_group = os.getpgid(pid) == os.getpgid(own_pid)
+        except (ProcessLookupError, PermissionError):
+            # A pid the process table no longer holds has no group to share
+            # with this process, so it is not the self-signal hazard this guard
+            # exists for. A run record carries the pid its supervisor held
+            # before it exited, and that lookup must not crash the stop that
+            # follows.
+            shares_own_group = False
+    if pid == own_pid or shares_own_group:
         detail = (
             f"refusing to signal pid {pid}: it is this process's own pid or "
             "shares this process's own process group, and killpg would "

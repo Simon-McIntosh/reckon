@@ -282,6 +282,48 @@ def test_crew_stop_ends_a_reparented_worker_and_its_children(
         assert _wait_gone(pids), f"a process of the run survived: {pids}"
 
 
+def test_crew_stop_reaps_the_worker_when_the_recorded_pid_is_gone(
+    crew_home: Path,
+) -> None:
+    # A supervisor that exited before its worker leaves the run record carrying
+    # its own start tick beside a pid the process table no longer holds. The
+    # tick is data about a process that is gone: there is no identity left to
+    # be wrong about, so the stop must reap the reparented worker rather than
+    # refuse — or crash on a group lookup for a pid with no process.
+    run_id = "r-exited-supervisor-with-tick"
+    with _tree(run_id, children=1) as pids:
+        worker = pids[0]
+        pids[:] = _with_children(worker)
+        assert len(pids) == 2, f"expected a worker and its child: {pids}"
+        _write_pointer(
+            run_id,
+            {
+                "run_id": run_id,
+                "project": "fixture-project",
+                "pid": _absent_pid(),
+                "pid_start_time": "424242",
+                "worktree": "",
+                "phase": "working",
+            },
+        )
+        _write_worker_record(run_id, pid=_absent_pid(), start_time=None)
+
+        from reckon.crew import dispatch_sessions
+
+        record = dispatch_sessions.terminate(run_id)
+        # A repeat stop finds the pointer's pid still gone, with the tick still
+        # recorded, and must reap nothing rather than crash.
+        again = dispatch_sessions.terminate(run_id)
+
+        from reckon.crew import routing
+
+        assert not routing._process_start_time(_absent_pid())
+        assert record["alive_after"] == []
+        assert set(record["ended_pids"]) >= set(pids)
+        assert again["alive_after"] == []
+        assert _wait_gone(pids), f"a process of the run survived: {pids}"
+
+
 def test_an_identity_checked_signal_with_a_run_dir_reaches_the_whole_run(
     crew_home: Path,
 ) -> None:
