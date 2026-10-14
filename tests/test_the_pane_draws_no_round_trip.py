@@ -82,6 +82,24 @@ def test_a_run_that_never_reached_the_pane_ends_unheld() -> None:
     assert policy.feed(end, now=1.0) == [end]
 
 
+def test_a_terminal_echo_the_pane_withholds_stays_hidden() -> None:
+    """A withheld row is not made visible by the round-trip hold.
+
+    The terminal echo (``complete -> recorded``) asks for nothing: the pane
+    already showed the completion, so the echo is inventory and the observer
+    hold withholds it. A departure hold on such a row would print it when the
+    window passed, which is the opposite of what the pane's contract says — so
+    a row the observer hold withholds stays withheld whether or not it is a
+    departure, and nothing is delivered at any later instant either.
+    """
+    policy = ticker.RowPolicy()
+    policy.seed(RUN, "complete")
+    echo = _row("complete", "recorded")
+    assert policy.feed(echo, now=0.0) == []
+    assert policy.flush(now=ticker.SETTLE_WINDOW) == []
+    assert policy.flush(now=1e9) == []
+
+
 def test_a_duty_arriving_while_away_still_reaches_the_pane() -> None:
     """A coordinator duty while the run is away prints, and the departure with it.
 

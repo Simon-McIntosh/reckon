@@ -1101,8 +1101,10 @@ class _Hold(NamedTuple):
 
 # A departure held for the round trip: the row that took a run away from the
 # word the pane last showed, the word it left, and the moment its window closes.
-# A run that returns to that word before the deadline drops the departure with
-# the return; one that does not is delivered when the window passes.
+# Only a row the pane would otherwise draw is ever held here, so the hold can
+# subtract a row and never add one. A run that returns to that word before the
+# deadline drops the departure with the return; one that does not is delivered
+# when the window passes, exactly as it would have been delivered unheld.
 class _Departure(NamedTuple):
     deadline: float
     event: Mapping[str, Any]
@@ -1320,6 +1322,29 @@ class RowPolicy:
         the promotion the reader owes the run is the news the pair must carry.
         """
         return self._row_class(event, kind) == ROW_COORDINATOR
+
+    def _hold_departure(
+        self, event: Mapping[str, Any], run_id: str, now: float
+    ) -> bool:
+        """Hold a row that takes a run away from the word the pane last showed.
+
+        The round trip is the whole of the news: a run that leaves the word the
+        pane drew for it and comes back to that word inside the settle window
+        shows the reader nothing they did not already have. This is called only
+        where the policy has already decided the row would print — after the
+        observer hold has judged it — because the hold may subtract a row the
+        pane would draw and must never make a hidden row visible. A row that
+        asks the coordinator for something is never held: that news is the row's
+        own, whatever word the run left.
+        """
+        shown = self._shown.get(run_id) if run_id else None
+        word = self._pane_word(event)
+        if not run_id or shown in (None, word) or self._actionable(event):
+            return False
+        if str(event.get("to_state") or "") not in SETTLED_STATES and word != "dropped":
+            return False
+        self._departures[run_id] = _Departure(now + SETTLE_WINDOW, event, shown)
+        return True
 
     def _note_printed(
         self, run_id: str, event: Mapping[str, Any], *, observed: bool = False
@@ -1591,25 +1616,11 @@ class RowPolicy:
         cls = self._row_class(event, kind)
 
         # A row that takes a run away from the word the pane last showed for it
-        # is a departure held for the round trip. It is held only when it lands
-        # the run in a state it does not leave quickly — a settled stop, or any
-        # move into the dropped word — and only for a run whose word the pane
-        # actually showed, so the ordinary end of a run that never reached the
-        # pane is untouched. A departure that is itself a coordinator duty is
-        # news and is handled below. A run that comes back to the shown word
-        # inside the settle window drops this hold with the return; one that
-        # does not is delivered when the window passes.
-        shown = self._shown.get(run_id) if run_id else None
-        word = self._pane_word(event)
-        if (
-            run_id
-            and cls != ROW_COORDINATOR
-            and shown not in (None, word)
-            and (to_state in SETTLED_STATES or word == "dropped")
-            and not self._actionable(event)
-        ):
-            self._departures[run_id] = _Departure(now + SETTLE_WINDOW, event, shown)
-            return out
+        # is a departure held for the round trip — but only where the policy has
+        # already decided the row would print. The observer hold below is
+        # consulted first, so this rule can subtract a row the pane would draw
+        # and can never add one the contract hides: a terminal echo that
+        # supersedes nothing is withheld whether or not it is a departure.
 
         if cls == ROW_COORDINATOR:
             if self._show_observer or not run_id:
@@ -1635,10 +1646,14 @@ class RowPolicy:
             # delivered is the row as it stands: a replayed history row (such as
             # ``working`` with no left side) arrives without being held, because
             # seeing the observed session's shape is the point of observing it.
+            if self._hold_departure(event, run_id, now):
+                return out
             out.append(event)
             self._note_printed(run_id, event, observed=True)
             return out
         if self._observer_exception(event, run_id):
+            if self._hold_departure(event, run_id, now):
+                return out
             out.append(event)
             self._note_printed(run_id, event, observed=True)
             return out
