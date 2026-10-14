@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-14T18:15:38.029Z",
+  "dispatched_at": "2026-10-14T18:05:24Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-seat-held-elsewhere-is-not-restarted/r-20261014T180451884362-plan-review-of-a-seat-held-elsewhere-is-not-restarted/plan.html:119",
+      "id": "reasoning-1",
+      "reason": "an unnamed interval lets the worker build a guard whose window can be shorter than the restarted period, so the node's measure can pass while the 2026-10-13 case still reads healthy; naming an interval above the observed ~6.7 s (or comparing against a stored baseline rather than a second sample) changes what the node writes.",
+      "text": "\u00a75's guard takes two restart-count readings \"a few seconds apart\", but \u00a71 measures the cycle at one restart per ~6.7 s, so a sampled interval shorter than the period can read the same count on both samples and report the cycling unit healthy \u2014 the exact false negative \u00a75 exists to remove",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-seat-held-elsewhere-is-not-restarted/r-20261014T180451884362-plan-review-of-a-seat-held-elsewhere-is-not-restarted/plan.html:119",
+      "id": "reasoning-2",
+      "reason": "the overclaim is justification for hosting the reader on the manager, which is the right home regardless, so correcting it does not change what the node builds.",
+      "text": "\u00a75's added sentence calls `SystemdUserUnitManager` the owner of \"every systemd unit query\" (reckon/service.py:324), but the repository reaches systemd directly elsewhere \u2014 `service.systemctl` in reckon/crew/paid_lanes.py:1147 and `service.write_named_unit` in the same module \u2014 so the manager is the per-unit query surface, not the sole systemd client",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "b085473a7f10a080857296e1fd1a99bade62507705400199c33801ed373a4be8",
+  "plan_slug": "a-seat-held-elsewhere-is-not-restarted",
+  "plan_version": 9,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261014T180451884362-plan-review-of-a-seat-held-elsewhere-is-not-restarted",
+  "reviewed_blob_sha": "6b47703507c3ec37e9007706fa825ed80d89f92a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 \u00a75's cited surface resolves: `SystemdUserUnitManager` (reckon/service.py:324) with its `active()` (reckon/service.py:341), the `manager` seam `ensure_watcher_service` already takes (reckon/crew/watch_unit.py:384), and the `crew watch --ensure` caller (reckon/crew_follow_commands.py:2930); the extensionless hrefs resolve as `<path>.html` and the archive sections #s3/#s6 exist.",
+    "done_when": "pass \u2014 \u00a75's done-when is a measurable two-arm test (rising count \u2192 cycling with both counts; holding count \u2192 reported as before, no added failure against base) and it declares a negative control (one reading only \u2192 healthy).",
+    "evidence_paths": "pass \u2014 \u00a75 cites no session-scratchpad or node-local path; its evidence is a test file under the repository's tests/ tree and the run directory convention the plan uses elsewhere.",
+    "naming": "pass \u2014 \u00a75's added text introduces no plan labels, stage names, ticket numbers or version tags, and names behaviour (`a unit-property reader`, `cycling`) rather than a tracker item.",
+    "reasoning": "a finding \u2014 \u00a75's two-reading detector can miss the very case it targets, because its sampling interval is left as \"a few seconds\" while its own \u00a71 evidence measures a restart every ~6.7 s (see FINDING reasoning 1).",
+    "single_goal": "pass \u2014 \u00a75 carries one deliverable, reporting a cycling unit, and its \"where the reader lives\" clause is implementation guidance for that one goal, not a second deliverable.",
+    "wiring": "pass \u2014 every relationship \u00a75 declares is consistent: it names itself independent of \u00a72 and its `data-links` is empty, and no depends-on it needs is missing."
+  },
+  "section_digests": {
+    "_document": "b5e9a5803f8d01013f39b9479df51d6f39be89b485428570f70d9af555af7564",
+    "s1": "e775b15757e63b277715e69df2ef97f2cf13db4e6364fc83b2f4ad6aa3bc858c",
+    "s2": "0ed10d108f8d1ab2183625c90b68b4eafa74562e02814b07bb8c2079f5f67566",
+    "s3": "738aba9bff855c84122fa9ea72b1f1ef13486345a013a765e54c0cfa391a20c0",
+    "s4": "ca75c5c574381e50431d8d43b8f5532df7925573cf2dee356bea7941fcbd55cb",
+    "s5": "b7a8bff783d147fc6ed5c34b9fa942ace3f0babb2a65ee409d754a16947f448c",
+    "s6": "c7b09760750dbf67efa83f9127581fea7578c7bf1e30b595ecd6c313b7505bad"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T18:19:46.930427+00:00"
+}
