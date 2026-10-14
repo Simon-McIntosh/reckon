@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="77">
+<meta name="plan-version" content="78">
 <meta name="plan-modified" content="2026-10-14">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -539,6 +539,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s21" data-id="c-close-s21" data-who="reckon-build" data-when="2026-10-14T10:15:00Z">
     <div class="r-comment-body"><p>§21 landed: a standing lift is no longer redrawn as <code>new → working</code> after each merge into <code>main</code>. The pane's memory of drawn lift groups survives the follower's reload and re-arm. Merged as <code>c7230c9d4</code>, reviewed at 114/120. <a href="/reckon/evidence/archive/the-monitor-shows-the-work-it-watches-landed.html#s21">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s21" data-id="c-run-r-20261014T080548832882-a-standing-lift-survives-a-follower-reload" data-who="reckon-build" data-when="2026-10-14T09:34:30.222Z">
+    <div class="r-comment-body"><p>A pane&#x27;s set of lift groups drawn as in force now travels across the follower&#x27;s own in-place reload (in the carried reader checkpoint) and across a re-arm (rebuilt from the stored history log), and is restored into the row policy before the first row is fed, so the producer&#x27;s re-arm baseline row for a still-standing lift draws nothing — measured by driving the follower&#x27;s own arming for both carriers, with each carrier&#x27;s removal turning exactly its own case red.</p></div>
 </div>
 </section>
 </main>
