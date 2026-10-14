@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-14T03:29:28.186Z",
+  "dispatched_at": "2026-10-14T03:21:28Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-writer.html:51",
+      "id": "reasoning-1",
+      "reason": "a builder told to extend \"the existing enumerators\" finds none that resolves a reparented worker's identity, so it must either invent an unnamed /proc environ scan or fail done-when case 2; the plan should name (or permit) the environment-and-start-time enumeration it actually requires, and stop citing a list-only enumerator as kill machinery.",
+      "text": "\u00a72 cites `_process_children`/`_live_descendant` (pick up a pid's descendant chain) and `_processes_holding` (matches /proc/<pid>/cwd and open fds) as \"the machinery this section needs\", and line 61 states `signal_worker` \"gains the reach to end a run's own processes through the existing enumerators\", qualifying a process \"if it descends from the run's recorded supervisor or worker \u2026 or if its environment carries `RECKON_RUN_ID`\". No existing enumerator does either: the descendant walk cannot reach a worker reparented to init (the exact s1/s2 incident and done-when case 2), and `_processes_holding` matches cwd/fd only \u2014 it reads no `/proc/<pid>/environ` and its own docstring declares it \"only ever reported, never killed\", which the plan repeats at line 61 (\"listed and never signalled\"). So the done-when case \"crew stop on a run whose worker was reparented to init ends that worker \u2026 identified by their `RECKON_RUN_ID`\" cannot be produced by the mechanism the plan names.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "56ae035f487fc7fc658402f5a6fa8ab395d7685164d048319dadd81b40284647",
+  "plan_slug": "a-run-has-one-live-writer",
+  "plan_version": 9,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261014T032039788411-plan-review-of-a-run-has-one-live-writer",
+  "reviewed_blob_sha": "0d5aa04c2a5cd7a138dac9f17afe9dd9149b9b95",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited module and test resolves (`signal_worker`, `_process_children`, `_live_descendant`, `local_liveness`, `_processes_holding`, `_signal_process_group`, `_reap_worker_on_its_terminal_manifest`, `_WORKER_DONE_MANIFEST_STATUSES`, `NON_TERMINAL_MANIFEST_STATUSES`, `_resume`, `change_lane`, the five named test files all exist), and gate evidence commit `2e44591a1` resolves and is an ancestor of main.",
+    "done_when": "pass \u2014 each node's done-when names a runnable test and a declared negative control (s2 \"signals the supervisor pid alone\", s3 \"restores the cause the reproduction named\", s4 \"with the reset removed\"), so each can fail.",
+    "evidence_paths": "pass \u2014 gate evidence and negative controls are logged under the run directory and the gate href carries the house prose-evidence convention, not a scratch or node-local path.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach the new symbols, filenames or comments; the two new test files are named by the mechanism they measure.",
+    "reasoning": "a finding \u2014 \u00a72's mechanism identifies a run's processes \"through the existing enumerators\" and by `RECKON_RUN_ID` in their environment, but no existing enumerator reads a process's environment or reaches a reparented worker.",
+    "single_goal": "pass \u2014 each section names one deliverable (s2 one-writer enforcement, s3 the resume liveness check, s4 the pre-spawn status reset); \u00a74's delegation of the CLI and MCP entry points onto `_resume` is instrumental to the reset, not a second goal.",
+    "wiring": "pass \u2014 `plan-section-depends-on` serializes \u00a73 on \u00a72 and \u00a74 on \u00a73, matching the followup's \"\u00a72, then \u00a73, then \u00a74\", and \u00a72's contention on `reckon/crew/routing.py` is carried by the declared gate `g-arholw-routing-released` (data-section=\"s2\"), which is closed `passed` on a merge commit that resolves and is an ancestor of main."
+  },
+  "section_digests": {
+    "_document": "81eea415626ff16179630945bdff97e00318da251c07c04a3f203139bf097810",
+    "s1": "9cd6c9d458f0450a790159824cc4f2a613e278e2ca2817a0c8974689ba755d5e",
+    "s2": "6aa27b6e5eed0de82accf87444b7cd0b3a58556e680f1e2ecdf2e414f983ae5e",
+    "s3": "060a70e3ce632a999ac991639855e2f75e5d7761dea5c56db1dd9606d1928740",
+    "s4": "3e08fbc0b9cda8edf62e3874ae68df4a888815f2b4390b5f8c2d26633102f0d8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T03:37:01.924566+00:00"
+}
