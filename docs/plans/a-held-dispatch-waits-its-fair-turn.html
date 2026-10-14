@@ -24,7 +24,7 @@
   <title>A Held Dispatch Waits Its Fair Turn | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="96">
+<meta name="plan-version" content="97">
 <meta name="plan-modified" content="2026-10-14">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="3c837fc1">
@@ -368,6 +368,9 @@
 </div>
 <div class="r-comment" data-section="s18" data-id="c-s18-lost-request-during-deadlock" data-who="health-review-1010" data-when="2026-10-13T22:30:00Z">
     <div class="r-comment-body"><p><strong>Evidence from reckon-0e, 2026-10-13.</strong> During the overlap deadlock, one admission relaunch of <code>stale-producer-remedy-runs-from-here</code> went from <code>dispatched</code> to <code>withdrawn</code> in 4 s at 21:56:19Z. Its queued pointer was then withdrawn at 21:58:03Z with nothing re-queued, so the request was lost and had to be dispatched again by hand. The admission process running then (pid 258214, started 06:42 local) predates the handover record and the <code>admitted_from</code> field reckon-0e merged at <code>1fc67c671</code>. Whether current code still loses a request on a <code>ScopeConflict</code> relaunch is something §18's tests should confirm, by asserting the later request survives every pass.</p></div>
+</div>
+<div class="r-comment" data-section="s15" data-id="c-run-r-20261014T015510941732-review-of-a-queued-plan-review-is-stored-209216f5da24" data-who="reckon-build" data-when="2026-10-14T02:11:04.521Z">
+    <div class="r-comment-body"><p>Independent review of r-20261014T011947963819-a-queued-plan-review-is-stored stored: six dimensions scored (goal_fidelity 20, evidence 17, scope_discipline 20, durability 19, fit 19, reuse 20; total 115), reviewed_base_sha 780980785f6770a32e16fe594e60690a0c36f896 and reviewed_head_sha 209216f5da241bcca4f0ae230a68fd2f142fba07 recorded, two follow-on findings (self-referential stored review_run_id assertion at tests/test_a_queued_plan_review_is_stored.py:248; reviewed manifest names after_suite with no baseline_suite at manifest.md:15), no blocking finding.</p></div>
 </div>
 </section>
 </main>
