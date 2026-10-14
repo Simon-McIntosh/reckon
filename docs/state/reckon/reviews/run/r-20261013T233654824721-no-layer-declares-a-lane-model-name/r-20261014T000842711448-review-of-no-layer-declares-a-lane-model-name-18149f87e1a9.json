@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own two gate arms, recorded in its manifest under tests and test_logs: logs/head_gate.log records 1 failed / 746 passed / 1 skipped EXIT=1 at the head change and logs/base_gate.log records 1 failed / 744 passed / 1 skipped EXIT=1 at base 98b17af1c; both carry the same FAILED id tests/test_follower_survives_a_config_change.py::test_a_follower_defers_one_tick_and_keeps_delivering_across_a_config_error, so the set difference is empty and the head adds no failing test. The head arm sees one failure, so the instrument is non-vacuous. NOTE: the reviewed manifest carries no baseline_suite/after_suite key, so read-time annotation reports this count as unmeasured even though it is stored here.",
+  "backend": "deepseek-v4.1-flash",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/flight.py:1582 resolve",
+    "reckon/crew/recovery_review_dispatch.py:1068 _ordered_review_lanes"
+  ],
+  "completed_at": "2026-10-14T00:22:13.758Z",
+  "dispatched_at": "2026-10-14T00:09:11Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T233654824721-no-layer-declares-a-lane-model-name/logs/head_gate.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the head arm header records revision 98b17af1c with the node change uncommitted rather than the reviewed head 18149f87e, so the gate log does not name the revision the review reads and a reader must infer the content is identical."
+    },
+    {
+      "file": "manifest.md",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed run's manifest names its two arms only under tests and test_logs and carries no baseline_suite or after_suite key, which is the pair the review store reads at read time, so a review of this run annotates added_failure_count as unmeasured and the derived count the reviewer stores is not visible to a reader."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read both commits against base 98b17af1c, production a2a5bb2d9 then evidence 18149f87e; the production change removes four backend blocks and four exclusion entries and adds two mechanism comments, and the new test file adds two checks.",
+    "done_when": "the done_when names tests/test_no_layer_declares_a_lane_model_name.py plus the flight-importing file set; the manifest records head 1 failed and 746 passed against base 1 failed and 744 passed, with the same single pre-existing failure id in both arms.",
+    "goal": "the node goal is to remove combined lane-and-model names from this repository's flight layer and name lanes in its review exclusions; docs/state/reckon/flight.yaml at head declares only the lanes claude, clive and codex under backends and names claude, codex and native in review_excluded_backends.",
+    "manifest": "read; it records the head and base arms with their log paths, the negative control, and honestly states that the host layer and power_convertor still carry the combined names so the coordinator must apply those out-of-repo edits in the same beat.",
+    "write_paths": "the manifest declares docs/state/reckon/flight.yaml, tests/test_no_layer_declares_a_lane_model_name.py, the evidence fragment and the figures directory; the diff touches the first three and nothing else, and every path sits inside the declared scope."
+  },
+  "justifications": {
+    "durability": "tests/test_no_layer_declares_a_lane_model_name.py:133 fails with assert ['codex-astra'] == [] when the combined backend name is restored, as negative_control.log records, and the head arm sees a failure so the instrument is non-vacuous.",
+    "evidence": "tests/test_no_layer_declares_a_lane_model_name.py passes 2 of 2 at head and both arms are logged, though logs/head_gate.log's header names base revision 98b17af1c rather than the reviewed head 18149f87e.",
+    "fit": "the test follows the per-file fixture idiom of tests/test_provenance_has_one_leaf_rule.py:77 and every fragment element id begins with the node id, with no forbidden name or plan label.",
+    "goal_fidelity": "docs/state/reckon/flight.yaml at 18149f87e declares no claude-haiku, claude-opus, codex-astra or codex-luna under backends and names the lanes claude, codex and native in review_excluded_backends.",
+    "reuse": "no production definition is added; the test calls the existing owners reckon/flight.py:1582 and reckon/crew/recovery_review_dispatch.py:1068, and a capability search over reckon/ found no existing derived-name lister to extend.",
+    "scope_discipline": "the diff touches only docs/state/reckon/flight.yaml, the new test file and the new evidence fragment, all three inside the declared write paths, with the figures directory left unused as the done-when permits."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to remove combined lane-and-model names from this repository's flight layer and name lanes in its review exclusions; docs/state/reckon/flight.yaml at head declares only the lanes claude, clive and codex under backends and names claude, codex and native in review_excluded_backends.\nVERDICT done_when: the done_when names tests/test_no_layer_declares_a_lane_model_name.py plus the flight-importing file set; the manifest records head 1 failed and 746 passed against base 1 failed and 744 passed, with the same single pre-existing failure id in both arms.\nVERDICT write_paths: the manifest declares docs/state/reckon/flight.yaml, tests/test_no_layer_declares_a_lane_model_name.py, the evidence fragment and the figures directory; the diff touches the first three and nothing else, and every path sits inside the declared scope.\nVERDICT manifest: read; it records the head and base arms with their log paths, the negative control, and honestly states that the host layer and power_convertor still carry the combined names so the coordinator must apply those out-of-repo edits in the same beat.\nVERDICT diff: read both commits against base 98b17af1c, production a2a5bb2d9 then evidence 18149f87e; the production change removes four backend blocks and four exclusion entries and adds two mechanism comments, and the new test file adds two checks.\nCALL_SITES: reckon/flight.py:1582 resolve, reckon/crew/recovery_review_dispatch.py:1068 _ordered_review_lanes\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: docs/state/reckon/flight.yaml at 18149f87e declares no claude-haiku, claude-opus, codex-astra or codex-luna under backends and names the lanes claude, codex and native in review_excluded_backends.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_no_layer_declares_a_lane_model_name.py passes 2 of 2 at head and both arms are logged, though logs/head_gate.log's header names base revision 98b17af1c rather than the reviewed head 18149f87e.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches only docs/state/reckon/flight.yaml, the new test file and the new evidence fragment, all three inside the declared write paths, with the figures directory left unused as the done-when permits.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_no_layer_declares_a_lane_model_name.py:133 fails with assert ['codex-astra'] == [] when the combined backend name is restored, as negative_control.log records, and the head arm sees a failure so the instrument is non-vacuous.\nSCORE fit: 18\nJUSTIFICATION fit: the test follows the per-file fixture idiom of tests/test_provenance_has_one_leaf_rule.py:77 and every fragment element id begins with the node id, with no forbidden name or plan label.\nSCORE reuse: 20\nJUSTIFICATION reuse: no production definition is added; the test calls the existing owners reckon/flight.py:1582 and reckon/crew/recovery_review_dispatch.py:1068, and a capability search over reckon/ found no existing derived-name lister to extend.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T233654824721-no-layer-declares-a-lane-model-name/logs/head_gate.log:1 follow-on: the head arm header records revision 98b17af1c with the node change uncommitted rather than the reviewed head 18149f87e, so the gate log does not name the revision the review reads and a reader must infer the content is identical.\nFINDING manifest.md:1 follow-on: the reviewed run's manifest names its two arms only under tests and test_logs and carries no baseline_suite or after_suite key, which is the pair the review store reads at read time, so a review of this run annotates added_failure_count as unmeasured and the derived count the reviewer stores is not visible to a reader.\nBASE_REVISION: 98b17af1cc977dcfd01474b2c37433dfe0ef2db3\nREVISION: 18149f87e1a98adff540e56b87e53a7c465d9c66\n",
+  "review_run_id": "r-20261014T000842711448-review-of-no-layer-declares-a-lane-model-name-18149f87e1a9",
+  "reviewed_base_sha": "98b17af1cc977dcfd01474b2c37433dfe0ef2db3",
+  "reviewed_head_sha": "18149f87e1a98adff540e56b87e53a7c465d9c66",
+  "reviewed_run_id": "r-20261013T233654824721-no-layer-declares-a-lane-model-name",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T00:20:17.994113+00:00",
+  "total": 114
+}
