@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-14T03:45:23.917Z",
+  "dispatched_at": "2026-10-14T03:40:48Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-writer.html:74",
+      "id": "reasoning-1",
+      "reason": "the gate is the machine-readable authority a dispatcher acts on and it is already passed, so a builder proceeds regardless; the stale sentence changes no deliverable, no write path and no done-when.",
+      "text": "\u00a72's closing line still says \"This section waits for that run to merge\" and calls `a-worktree-release-is-whole` \"in-flight\" while the section's own gate (line 118) now reads `data-status=\"closed\" data-verdict=\"passed\"` with evidence that the run merged at `2e44591a1` \u2014 the prose asserts a wait the plan's own gate records as over",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "7c55202e0a23c39d014b4e6362a45a4dfcc272108b2e8ecfa5604a3bbc1ebf79",
+  "plan_slug": "a-run-has-one-live-writer",
+  "plan_version": 10,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261014T034000260137-plan-review-of-a-run-has-one-live-writer",
+  "reviewed_blob_sha": "688050254778b362b143c9935c80660727c45976",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `tests/test_a_stopped_run_ends_its_supervisor.py`, `tests/test_live_process_outranks_classification.py`, the three \u00a73 test files, `recovery_classification.py`'s `local_liveness` call (line 149), `STOP_GRACE` in `dispatch_launch.py`, the gate's commit `2e44591a1` and `crew-runtime-positive-controls#s47` all resolve; the gate-evidence href is prose and is rendered as prose by `gateEvidenceIsReference` (docs/ui/plan.jsx:152), not as a link.",
+    "done_when": "pass \u2014 the done-when is four observable process/classification cases plus a declared negative control (line 73: signalling the supervisor pid alone fails case 1), all measurable against the process table and the classifier.",
+    "evidence_paths": "pass \u2014 the negative control and gate logs are written \"under the run directory\" (durable crew-home path), and the test fixture trees live only in the run's own scratch; no node-local temporary path carries evidence.",
+    "naming": "pass \u2014 the new helper is private and unnamed in the plan, the test file is mechanism-named, and no plan label or ticket number reaches a symbol; `crew-runtime-positive-controls \u00a747` appears only in plan prose.",
+    "reasoning": "a finding \u2014 the three checks hold (root cause matches \u00a71's evidence; the extended `signal_worker` with a descendant walk plus a new `RECKON_RUN_ID` scan, called by the supervisor exit path and `crew stop`, produces each done-when case; the callers are named), except that line 74's closing wait statement is contradicted by the section's own now-closed gate.",
+    "single_goal": "pass \u2014 \u00a72 carries one incident (a worker outliving its supervisor) with one closing test file `test_a_worker_never_outlives_its_supervisor.py`; the classification case is the same incident's second symptom, not a second deliverable.",
+    "wiring": "pass \u2014 s2's section gate `g-arholw-routing-released` is declared (`data-section=\"s2\" data-gated-sections=\"s2\"`), `plan-section-depends-on` gives s3\u2192s2 and s4\u2192s3, and both referenced nodes exist; the gate is now closed/passed, so the serialization it declares is real, not prose-only."
+  },
+  "section_digests": {
+    "_document": "81eea415626ff16179630945bdff97e00318da251c07c04a3f203139bf097810",
+    "s1": "9cd6c9d458f0450a790159824cc4f2a613e278e2ca2817a0c8974689ba755d5e",
+    "s2": "156a5ae66f3ba86ec86460b9c54a36b0e0d2b2520e5747ac3e2d41409754978d",
+    "s3": "060a70e3ce632a999ac991639855e2f75e5d7761dea5c56db1dd9606d1928740",
+    "s4": "3e08fbc0b9cda8edf62e3874ae68df4a888815f2b4390b5f8c2d26633102f0d8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T03:46:05.241099+00:00"
+}
