@@ -70,6 +70,11 @@
     <p>Source <code>1eb387165</code>, written by the coordinator in a scratch worktree. Tests were brought to the new row by four local-lane nodes: <code>r-20261013T200709695919-ticker-row-producer</code>, <code>r-20261013T200755442568-ticker-row-layout-tests</code>, <code>r-20261013T202033377549-ticker-row-render-tests</code> and <code>r-20261013T202359933004-ticker-row-lane-tests</code>. An independent source review, <code>r-20261013T213053886992</code>, found no blocking or should-fix findings. Merged to <code>main</code> as <code>1fc67c671</code> on 2026-10-13, and recorded on this plan on 2026-10-14.</p>
   </section>
 
+  <section id="s21">
+    <h2>§21 — A standing lift survives the follower&#x27;s own reload, landed</h2>
+    <p>Run <code>r-20261014T080548832882-a-standing-lift-survives-a-follower-reload</code>, commits <code>628006ff6</code> and <code>55b03c078</code>. <code>RowPolicy</code> and <code>PaneRowPath</code> in <code>reckon/crew/ticker.py</code> expose and accept the drawn lift groups. <code>reckon/crew/follow_checkpoint.py</code> carries them in the reader checkpoint, and <code>seed_lift_groups</code> rebuilds them from stored history. <code>reckon/crew_follow_commands.py</code> restores them on an in-place reload and on a re-arm before the first row is fed. The new test file passes 9 of 9. The head arm over the importing files passed 136 with <code>EXIT=0</code>, against 127 with <code>EXIT=0</code> at base. Dropping only the carried groups, or only the history seeding, each turns its own test red. The first review, <code>r-20261014T090446697042</code>, scored 103/120 and found the re-arm wiring untested; the worker added a test driving it. The re-review at <code>55b03c078</code> scored 114/120 with no added failures. Its one follow-on, an in-place reload with no carried groups but a grant in history, is an edge left untested. Merged to <code>main</code> as <code>c7230c9d4</code> on 2026-10-14.</p>
+  </section>
+
 </main>
 </body>
 </html>
