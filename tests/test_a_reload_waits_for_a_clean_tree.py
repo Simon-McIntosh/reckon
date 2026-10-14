@@ -146,6 +146,27 @@ def _fresh_checkout(tmp_path: Path) -> tuple[Path, Path]:
     return root, package
 
 
+def scratch_checkout(where: Path) -> tuple[Path, Path]:
+    """A committed checkout of the package a reload case may change.
+
+    A reload is deferred while a tracked file differs from ``HEAD``, so a case
+    that forces a reload by changing the source cannot edit the package its own
+    process imports: that leaves the tree modified and the reload is held back.
+    The case changes a copy of its own and commits the change, so the tree stays
+    clean against ``HEAD`` and the only thing that moved is the content stamp.
+    """
+    return _fresh_checkout(where)
+
+
+def commit_the_source_change(
+    root: Path, package: Path, relative: str, payload: bytes
+) -> None:
+    """Append to a file in the checkout and commit, leaving the tree clean."""
+    source = package / relative
+    source.write_bytes(source.read_bytes() + payload)
+    _commit(root, f"change {relative}")
+
+
 def _stamp_of(root: Path) -> str:
     """Compute the content-hash stamp over a copied tree, in its own process."""
     completed = subprocess.run(
