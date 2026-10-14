@@ -871,7 +871,6 @@ def dispatch(
 
             record_picker_hold(
                 project=project,
-                docs=Path(str(authority["plan"]["docs"])),
                 node=node.id,
                 plan=node.plan,
                 selection=picker_selection,
@@ -1172,7 +1171,6 @@ def dispatch(
 
                 record_picker_hold(
                     project=project,
-                    docs=Path(str(authority["plan"]["docs"])),
                     node=node.id,
                     plan=node.plan,
                     selection=held_selection,

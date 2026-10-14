@@ -29,6 +29,18 @@ def _milliseconds(started: float) -> float:
     return round((time.perf_counter() - started) * 1000, 3)
 
 
+def _step_label(stage: str) -> str:
+    """The emitted name of one pick step, from the step's own timing key.
+
+    The key's ``_ms`` suffix is dropped and underscores become hyphens, so a
+    caller that names the step a pick was inside reads pick()'s own vocabulary
+    (``state_render_ms`` reads ``state-render``) rather than keeping a list of
+    the step names beside it.
+    """
+    key = stage[:-3] if stage.endswith("_ms") else stage
+    return key.replace("_", "-")
+
+
 def _template_digest() -> str:
     """A digest of the templates that render a pick's state and questions.
 
@@ -63,9 +75,11 @@ def _dispatch_bound_seconds() -> float:
 def _append_crew_log_line(name: str, row: Mapping[str, Any]) -> None:
     """Append one JSON row to a named log under the crew home, best effort.
 
-    A pick must never fail or stall because its own record could not be written,
-    so every error is swallowed. One ``os.write`` on an ``O_APPEND`` descriptor
-    keeps a small row from interleaving with a concurrent writer's.
+    Both callers -- the pick's own timing line and the state render's per-read
+    counter -- pass through here, and neither may fail or stall because its
+    record could not be written, so every error is swallowed. One ``os.write``
+    on an ``O_APPEND`` descriptor keeps a small row from interleaving with a
+    concurrent writer's.
     """
     try:
         path = crew_home() / name
@@ -281,8 +295,9 @@ def pick(
     config: dict[str, Any],
     *,
     repo: Path,
-    snapshotter: Callable[..., list[Candidate]] = snapshot.candidates,
-    caller: Callable[..., dict[str, Any]] = client.ask,
+    snapshotter: Callable[..., list[Candidate]] | None = None,
+    caller: Callable[..., dict[str, Any]] | None = None,
+    running: dict[str, str | None] | None = None,
     records: list[dict[str, Any]] | None = None,
     verdict_inputs: dict[str, Any] | None = None,
     budget_snapshot: dict[str, Any] | None = None,
@@ -290,7 +305,26 @@ def pick(
     authority: dict[str, Any] | None = None,
     estimated_context_ms: float | None = None,
 ) -> Selection:
-    """Return one auditable selection; an excluded default cannot bypass gates."""
+    """Return one auditable selection; an excluded default cannot bypass gates.
+
+    Each step the pick runs marks itself in ``running`` under ``step`` while it
+    is inside it and clears the mark when it returns, so a caller that bounded
+    the pick and gave up can name the step that was running in pick()'s own
+    vocabulary. ``snapshotter`` and ``caller`` resolve to their live defaults
+    when a caller passes none, so a test can replace the Jev client or the
+    candidate scan at the module it is read from rather than the call site.
+    """
+    snapshotter = snapshotter or snapshot.candidates
+    caller = caller or client.ask
+
+    def mark(stage: str) -> None:
+        if running is not None:
+            running["step"] = _step_label(stage)
+
+    def unmark() -> None:
+        if running is not None:
+            running["step"] = None
+
     started = time.perf_counter()
     started_at = datetime.now(UTC).isoformat()
     # One slot per timed stage, so a stage that did not run reads null rather
@@ -315,20 +349,24 @@ def pick(
     )
     # One docs-tree scan serves every candidate's plan lookup in this pick.
     snapshot_started = time.perf_counter()
+    mark("snapshot_ms")
     estimate_out: dict[str, Any] = {}
-    with resource_scan_scope():
-        options = snapshotter(
-            request,
-            config,
-            repo,
-            records=rows,
-            verdict_inputs=verdict_inputs,
-            budget_snapshot=view,
-            cached_only=cached_only,
-            authority=authority,
-            estimate_out=estimate_out,
-        )
-    stages["snapshot_ms"] = _milliseconds(snapshot_started)
+    try:
+        with resource_scan_scope():
+            options = snapshotter(
+                request,
+                config,
+                repo,
+                records=rows,
+                verdict_inputs=verdict_inputs,
+                budget_snapshot=view,
+                cached_only=cached_only,
+                authority=authority,
+                estimate_out=estimate_out,
+            )
+    finally:
+        stages["snapshot_ms"] = _milliseconds(snapshot_started)
+        unmark()
     offered = [candidate for candidate in options if not candidate.reasons]
     excluded = [candidate.as_dict() for candidate in options if candidate.reasons]
     # The node's declared capability and estimate are read from the plan it
@@ -336,11 +374,16 @@ def pick(
     # null rather than failing the pick, and its cost is attributed to its own
     # stage so a slow resolve is visible rather than charged to the state render.
     capability_started = time.perf_counter()
-    capability, estimated_hours, hours_source = _declared_difficulty(
-        request, config, repo=repo, authority=authority
-    )
-    stages["capability_ms"] = _milliseconds(capability_started)
+    mark("capability_ms")
+    try:
+        capability, estimated_hours, hours_source = _declared_difficulty(
+            request, config, repo=repo, authority=authority
+        )
+    finally:
+        stages["capability_ms"] = _milliseconds(capability_started)
+        unmark()
     state_started = time.perf_counter()
+    mark("state_render_ms")
     try:
         rendered = prompts.render(
             "state.jinja",
@@ -365,6 +408,7 @@ def pick(
         )
     finally:
         stages["state_render_ms"] = _milliseconds(state_started)
+        unmark()
     # The estimate stage times the context estimate itself, wherever it ran. The
     # scan reports the duration of a measurement it made; a caller hands in the
     # duration of one it made before the pick, so the five-second bound Dispatch
@@ -397,13 +441,16 @@ def pick(
     else:
         try:
             questions_started = time.perf_counter()
+            mark("questions_render_ms")
             try:
                 questions = json.loads(
                     prompts.render("questions.jinja", candidates=offered)
                 )
             finally:
                 stages["questions_render_ms"] = _milliseconds(questions_started)
+                unmark()
             jev_started = time.perf_counter()
+            mark("jev_ms")
             try:
                 payload = caller(
                     json.loads(rendered), questions, env_path=client.credential_path()
@@ -418,6 +465,7 @@ def pick(
             finally:
                 jev_ms = (time.perf_counter() - jev_started) * 1000
                 stages["jev_ms"] = round(jev_ms, 3)
+                unmark()
         except Exception as exc:  # noqa: BLE001 - every Jev failure must produce a recorded fallback
             # Exception text may contain provider content or credentials; record its type only.
             fallback_reason = f"jev-error: {type(exc).__name__}"

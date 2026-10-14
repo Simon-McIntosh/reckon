@@ -40,27 +40,25 @@ from reckon.crew.runs import (
 
 PICKER_DISPATCH_TIMEOUT_SECONDS = 5.0
 
-# The stages a dispatch-path pick records elapsed milliseconds for, in the order
-# they run: the three inputs the dispatcher reads once (records, the verdict
-# inputs, the budget snapshot), the context estimate, and the picker call. A
-# pick that misses its deadline names the stage still running in its fallback
-# reason, so an expiry is attributed to the work that spent the budget rather
-# than to the pick's own bound. The estimate and the picker call run inside the
-# bound; the three inputs are read before it, so they are timed where they run
-# and merged onto the selection rather than charged to the picker call.
+# The dispatcher's own stages, in the order they run: the three inputs the
+# dispatcher reads once (records, the verdict inputs, the budget snapshot) and
+# the context estimate. A pick that misses its deadline names the stage still
+# running in its fallback reason, so an expiry is attributed to the work that
+# spent the budget rather than to the pick's own bound. The steps inside the
+# picker call are not listed here: pick() names them itself in the sink it is
+# handed, so a name is one vocabulary rather than two that can drift.
 PICK_STAGES = (
     "records",
     "verdict-inputs",
     "budget-snapshot",
     "context-estimate",
-    "jev",
 )
 
 # The dispatcher-scope inputs are built once, outside the pick's own bound, by
 # the caller that then hands them in. Their elapsed milliseconds are stashed
 # here for the pick that follows on the same thread to carry onto its selection,
-# so a production pick records all five stages' cost without the caller having
-# to thread the timings through its own call.
+# so a production pick records every one of the dispatcher's stages without the
+# caller having to thread the timings through its own call.
 _BUILD_STAGE_MS = threading.local()
 
 # A picker answer carries per-call measurements: how long the ask itself took.
@@ -300,13 +298,13 @@ def dispatch_picker_selection(
 
     Every stage of the ask is timed and carried on the returned selection, and a
     pick that misses the deadline names the stage still running in its fallback
-    reason (``timeout in budget-snapshot`` or ``timeout in context-estimate``)
-    with the finished stages' milliseconds beside it. A caller that hands
-    ``stage_ms`` and no inputs has the dispatcher-scope inputs read here, inside
-    the bound, so a slow input is attributed to itself; a caller that built the
-    inputs outside the bound keeps them, and their cost is carried here from the
-    build that measured it — so a production pick records all five stages either
-    way, and names the estimate it was inside rather than the bare ``timeout``.
+    reason — ``timeout in budget-snapshot`` or ``timeout in context-estimate``
+    for the dispatcher's own stages, and ``timeout in pick:<step>`` for a step
+    inside the picker call, which pick() marks in a sink handed to it rather
+    than being named from a list kept here. A caller that hands ``stage_ms`` and
+    no inputs has the dispatcher-scope inputs read here, inside the bound, so a
+    pick whose rendered state render, estimate or Jev call outlasts the bound
+    is named rather than read as the bare ``timeout``.
     """
     if input_errors:
         # An input the dispatcher could not build is not re-read here: the same
@@ -331,19 +329,21 @@ def dispatch_picker_selection(
         stages.update(stage_ms)
     elif records is not None or verdict_inputs is not None or budget_snapshot is not None:
         # A caller that built the dispatcher-scope inputs and handed them in left
-        # their cost stashed here; carry it onto the selection so all five stages
-        # are recorded, then clear it so a later pick cannot read a stale build.
+        # their cost stashed here; carry it onto the selection so every
+        # dispatcher stage is recorded, then clear it so a later pick cannot
+        # read a stale build.
         built = getattr(_BUILD_STAGE_MS, "times", None)
         _BUILD_STAGE_MS.times = None
         if built:
             stages.update({name: built[name] for name in built if name in stages})
-    # The stage the ask is inside when the deadline expires, so a fallback names
-    # the work that spent the budget rather than the call it overlapped. The
-    # context estimate sets it while it runs, since it is the stage before the
-    # picker call and the one that spends a production pick's budget; the picker
-    # call itself is opaque and leaves the bare ``timeout``, recording its
-    # duration beside it for the reader.
+    # The dispatcher stage the ask is inside when the deadline expires, so a
+    # fallback names the work that spent the budget rather than the call it
+    # overlapped. The context estimate sets it while it runs, since it is the
+    # stage before the picker call and the one a production pick spends its
+    # budget in. The steps inside the picker call set ``pick_running`` instead,
+    # in pick()'s own vocabulary, so the two are named from the work that ran.
     running: dict[str, str | None] = {"stage": None}
+    pick_running: dict[str, str | None] = {"step": None}
 
     def marked(stage: str, build: Callable[[], Any]) -> Any:
         """Run one timed stage, recording the stage the ask is inside."""
@@ -425,6 +425,7 @@ def dispatch_picker_selection(
                 "budget_snapshot": pick_budget,
                 "authority": pick_authority,
                 "estimated_context_ms": estimated_context_ms,
+                "running": pick_running,
             }
             parameters = inspect.signature(pick).parameters.values()
             if not any(item.kind is item.VAR_KEYWORD for item in parameters):
@@ -432,27 +433,24 @@ def dispatch_picker_selection(
                 inputs = {
                     key: value for key, value in inputs.items() if key in accepted
                 }
-            # The picker call is timed but not marked: its own snapshot, render
-            # and Jev stages are inside it, so an expiry during the call is
-            # attributed to no single dispatch stage and keeps the bare
-            # ``timeout`` rather than naming a stage the dispatcher cannot see.
-            moment = time.perf_counter()
-            try:
-                selection = pick(
-                    PickRequest(
-                        project,
-                        node,
-                        comment=comment,
-                        session=session,
-                        estimated_context=estimated_context,
-                    ),
-                    dict(config),
-                    repo=repo,
-                    cached_only=True,
-                    **inputs,
-                )
-            finally:
-                stages["jev"] = round((time.perf_counter() - moment) * 1000, 3)
+            # The pick times and names each of its own steps and marks the one
+            # it is inside in ``pick_running``, so an expiry during the call is
+            # named from pick()'s own vocabulary rather than from a step list
+            # kept here. The sink travels in with the other inputs and is
+            # dropped for any pick that does not accept it.
+            selection = pick(
+                PickRequest(
+                    project,
+                    node,
+                    comment=comment,
+                    session=session,
+                    estimated_context=estimated_context,
+                ),
+                dict(config),
+                repo=repo,
+                cached_only=True,
+                **inputs,
+            )
             result["selection"] = selection.as_dict()
         except Exception as exc:  # noqa: BLE001 - shadow routing cannot block dispatch
             result["error"] = f"{type(exc).__name__}: {exc}"
@@ -470,8 +468,15 @@ def dispatch_picker_selection(
         return selection
     error = result.get("error") or "picker returned no selection"
     reason = error
-    if error == "timeout" and running["stage"]:
-        reason = f"timeout in {running['stage']}"
+    if error == "timeout":
+        # A step pick() marked while it ran is named in pick()'s vocabulary; a
+        # pick that marked none keeps the bare reading, as does one that spent
+        # the budget in a dispatcher stage instead.
+        pick_step = pick_running["step"]
+        if pick_step:
+            reason = f"timeout in pick:{pick_step}"
+        elif running["stage"]:
+            reason = f"timeout in {running['stage']}"
     return _picker_fallback(
         reason,
         comment,

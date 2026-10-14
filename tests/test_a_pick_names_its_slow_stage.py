@@ -12,6 +12,10 @@ a completed pick to carry every stage's time on its selection.
 
 from __future__ import annotations
 
+import ast
+import importlib
+import inspect
+import json
 import time
 from pathlib import Path
 from types import SimpleNamespace
@@ -20,6 +24,8 @@ import pytest
 
 import reckon.crew.dispatch_picker as dispatch_picker_module
 from reckon.crew import picker
+from reckon.crew.node import TaskNode
+from reckon.crew.picker import Candidate
 from reckon.crew.picker import snapshot as picker_snapshot
 from reckon.crew.picker import outcomes
 
@@ -71,7 +77,7 @@ def test_a_slow_input_names_keeps_its_own_name(monkeypatch):
 
 
 def test_a_completed_pick_carries_every_stage_time(monkeypatch):
-    """A normal pick records all five stages' elapsed milliseconds."""
+    """A normal pick records every dispatcher stage's elapsed milliseconds."""
     _quiet_inputs(monkeypatch)
     monkeypatch.setattr(
         dispatch_picker_module, "_picker_budget_snapshot", lambda *_a, **_k: {}
@@ -140,12 +146,11 @@ def test_a_production_pick_names_the_estimate_it_ran_out_in(monkeypatch, tmp_pat
     # The stage still running carries none; the inputs built by the caller carry
     # their measured times even though they ran outside this pick's bound.
     assert result["stage_ms"]["context-estimate"] is None
-    assert result["stage_ms"]["jev"] is None
     for stage in ("records", "verdict-inputs", "budget-snapshot"):
         assert isinstance(result["stage_ms"][stage], (int, float))
 
 
-def test_a_normal_production_pick_carries_all_five_stage_times(monkeypatch, tmp_path):
+def test_a_normal_production_pick_carries_every_stage_time(monkeypatch, tmp_path):
     """A completed production pick records every stage's elapsed milliseconds."""
     _quiet_inputs(monkeypatch)
     monkeypatch.setattr(
@@ -235,3 +240,137 @@ def test_outcomes_classify_a_staged_timeout_by_its_stage():
         "timeout:budget-snapshot": 1,
         "timeout": 1,
     }
+
+
+def _candidate() -> Candidate:
+    return Candidate(
+        backend="beta",
+        family="test",
+        model="beta-model",
+        effort="medium",
+        local=False,
+        availability="served",
+        utilisation_pct=10,
+        burn_multiple=1,
+        pace_allowance=50,
+        resets_at=None,
+        worker_slots=None,
+        congestion=None,
+        outcomes={},
+    )
+
+
+def _node() -> TaskNode:
+    return TaskNode(
+        id="pick",
+        plan="",
+        role="implement",
+        spec_level="guided",
+        goal="g",
+        done_when="done",
+        time_budget="60m",
+    )
+
+
+def _fast_pick_collaborators(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Replace every pick step before the one under test with a cheap stand-in."""
+    monkeypatch.setattr(
+        picker_snapshot, "estimated_context_tokens", lambda *_a, **_k: 0
+    )
+    monkeypatch.setattr(
+        picker, "_declared_difficulty", lambda *_a, **_k: (None, None, None)
+    )
+    monkeypatch.setattr(picker.snapshot, "candidates", lambda *_a, **_k: [_candidate()])
+
+
+def _render(source: str):
+    """Render the state as valid JSON and the questions as valid JSON."""
+
+    def render(name: str, **_kwargs) -> str:
+        if name == "questions.jinja":
+            return json.dumps({"route": {"criteria": {"hold": {}}}})
+        return json.dumps({"note": source})
+
+    return render
+
+
+def test_a_state_render_that_outlasts_the_bound_is_named(monkeypatch):
+    """A slow state render is named by pick()'s own step, not as the picker.
+
+    The render, not the pick, is what outlasts the bound, so the real pick runs
+    and marks the step it is inside. The fallback names that step in pick()'s
+    vocabulary rather than reading the bare timeout the whole call used to
+    record.
+    """
+    monkeypatch.setattr(dispatch_picker_module, "PICKER_DISPATCH_TIMEOUT_SECONDS", 0.05)
+    _quiet_inputs(monkeypatch)
+    monkeypatch.setattr(
+        dispatch_picker_module, "_picker_budget_snapshot", lambda *_a, **_k: {}
+    )
+    _fast_pick_collaborators(monkeypatch)
+
+    def slow_state_render(name: str, **_kwargs) -> str:
+        if name == "questions.jinja":
+            return json.dumps({"route": {"criteria": {"hold": {}}}})
+        time.sleep(0.4)
+        return "state"
+
+    monkeypatch.setattr(picker.prompts, "render", slow_state_render)
+
+    result = dispatch_picker_module.dispatch_picker_selection(
+        node=_node(),
+        config={},
+        project="proj",
+        repo=Path("/tmp"),
+        stage_ms={},
+    )
+    assert result["action"] == "fallback"
+    assert result["fallback_reason"] == "timeout in pick:state-render"
+
+
+def test_a_jev_call_that_outlasts_the_bound_is_named(monkeypatch):
+    """The Jev call outlasting the bound is named as pick:jev, not the picker."""
+    monkeypatch.setattr(dispatch_picker_module, "PICKER_DISPATCH_TIMEOUT_SECONDS", 0.05)
+    _quiet_inputs(monkeypatch)
+    monkeypatch.setattr(
+        dispatch_picker_module, "_picker_budget_snapshot", lambda *_a, **_k: {}
+    )
+    _fast_pick_collaborators(monkeypatch)
+    monkeypatch.setattr(picker.prompts, "render", _render("state"))
+
+    def slow_client(*_args, **_kwargs):
+        time.sleep(0.4)
+        return {}
+
+    monkeypatch.setattr(picker.client, "ask", slow_client)
+
+    result = dispatch_picker_module.dispatch_picker_selection(
+        node=_node(),
+        config={},
+        project="proj",
+        repo=Path("/tmp"),
+        stage_ms={},
+    )
+    assert result["action"] == "fallback"
+    assert result["fallback_reason"] == "timeout in pick:jev"
+
+
+def test_record_picker_hold_takes_no_docs_parameter():
+    """A hold is written under the crew home, so its recorder takes no ``docs``."""
+    assert "docs" not in inspect.signature(outcomes.record_picker_hold).parameters
+
+
+def test_both_dispatch_holds_are_recorded_without_docs():
+    """Both hold-recording dispatch sites call the recorder, neither with docs."""
+    dispatch = importlib.import_module("reckon.crew.dispatch")
+    tree = ast.parse(Path(dispatch.__file__).read_text(encoding="utf-8"))
+    calls = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "record_picker_hold"
+    ]
+    assert len(calls) == 2
+    for call in calls:
+        assert "docs" not in {keyword.arg for keyword in call.keywords}

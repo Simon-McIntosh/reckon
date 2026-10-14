@@ -52,7 +52,6 @@ def _legacy_payload_dir(docs, project: str = PROJECT):
 def _record(docs, *, node, state, questions, project: str = PROJECT) -> dict:
     return record_picker_hold(
         project=project,
-        docs=docs,
         node=node,
         plan="",
         selection={"rendered_state": state, "questions": questions},

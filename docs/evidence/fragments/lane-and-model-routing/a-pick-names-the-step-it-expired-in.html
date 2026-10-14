@@ -1,0 +1,101 @@
+<article class="landed-report" data-run-id="r-20261014T003640772843-a-pick-names-the-step-it-expired-in" data-node="a-pick-names-the-step-it-expired-in">
+  <h3 id="a-pick-names-the-step-it-expired-in-summary">a-pick-names-the-step-it-expired-in — a deadline inside pick() names the step pick() is itself inside</h3>
+  <p id="a-pick-names-the-step-it-expired-in-change">
+    A dispatch bounds the picker call,
+    <code>PICKER_DISPATCH_TIMEOUT_SECONDS</code> (5 s) in
+    <code>reckon/crew/dispatch_picker.py</code>, and the deadline can expire at
+    any step the pick runs. Before this change the dispatcher knew only its own
+    input stages, so a pick that outlasted the bound inside the picker call
+    read the bare <code>fallback_reason: "timeout"</code> — blaming the picker
+    whether the slow work was the state render, the estimate, or the Jev call.
+    <code>pick()</code> now marks the step it is inside in a sink the dispatcher
+    hands it (<code>running["step"]</code>) and clears the mark when the step
+    returns; the dispatcher names that step in <code>pick()</code>'s own
+    vocabulary. The name is derived from the step's own timing key by
+    <code>_step_label</code>: the <code>_ms</code> suffix is dropped and
+    underscores become hyphens, so <code>state_render_ms</code> reads
+    <code>timeout in pick:state-render</code> and <code>jev_ms</code> reads
+    <code>timeout in pick:jev</code>.
+  </p>
+  <p id="a-pick-names-the-step-it-expired-in-one-vocabulary">
+    <strong>One vocabulary, not two.</strong> <code>PICK_STAGES</code> in the
+    dispatcher is now only the dispatcher's own stages — the ledger records, the
+    verdict inputs, the budget snapshot and the context estimate — and no longer
+    carries a <code>"jev"</code> entry mirroring a step name that belongs to
+    <code>pick()</code>. The <code>jev</code> timing key is gone from the
+    dispatcher's <code>stage_ms</code>; a step inside the picker call is named
+    by the pick, from the sink, rather than by a list kept beside it that can
+    drift. A pick that marks no step, or that spent the budget in a dispatcher
+    stage instead, keeps the previous reading: the dispatcher's own stage name,
+    and the bare <code>timeout</code> when neither applies.
+  </p>
+  <p id="a-pick-names-the-step-it-expired-in-stubbable-collaborators">
+    <strong>The pick's collaborators resolve where they are read.</strong>
+    <code>pick()</code>'s <code>snapshotter</code> and <code>caller</code>
+    defaults are now <code>None</code> and resolve to
+    <code>snapshot.candidates</code> and <code>client.ask</code> at call time,
+    so a check can replace the candidate scan or the Jev client at the module it
+    is read from instead of replacing <code>pick()</code> wholesale. That is
+    what lets the new checks exercise the real pick — and therefore the real
+    step marking — while making one step slow.
+  </p>
+  <p id="a-pick-names-the-step-it-expired-in-hold-recorder">
+    <strong>The hold recorder drops an argument it never used.</strong>
+    <code>record_picker_hold</code> in
+    <code>reckon/crew/picker/outcomes.py</code> writes its hold under the crew
+    home, so its <code>docs</code> parameter was dead weight: the recorder no
+    longer declares it, both call sites in
+    <code>reckon/crew/dispatch.py</code> stop passing it, and the three tests
+    that did — <code>tests/test_a_hold_is_kept_in_the_crew_home.py</code>,
+    <code>tests/test_picker_outcomes.py</code> and
+    <code>tests/test_hold_records_its_state.py</code> — stop passing it without
+    changing anything else they assert. A check pins the recorder's signature as
+    taking no <code>docs</code>, and another pins that both dispatch sites still
+    record a hold. The shared crew-home log helper in
+    <code>reckon/crew/picker/__init__.py</code> now states its never-fail
+    contract for both its callers — the pick's own timing line and the state
+    render's per-read counter.
+  </p>
+  <p id="a-pick-names-the-step-it-expired-in-measure">
+    <strong>Measure.</strong> Gate: the node's three test files plus every test
+    file importing <code>reckon/crew/dispatch_picker.py</code> or
+    <code>reckon.crew.picker</code> (48 files; <code>tests/conftest.py</code> is
+    excluded because it is a fixture module whose helper needs a fixture only
+    present in its normal collection context), run in place on the fleet
+    allocation with the shared environment's
+    <code>.venv/bin/python -m pytest -p no:cacheprovider -n 10 --timeout=300</code>.
+    Head arm: 385 passed, <code>EXIT=0</code>. Base arm at the pre-change
+    revision <code>28646f522f5394a93e92edc90764628e8a21fd0d</code>: 381 passed,
+    <code>EXIT=0</code> — the four added checks are the whole delta and no
+    failure is added. Logs
+    <code>head-importer.log</code> and <code>base-importer.log</code> under the
+    run directory, each ending in an <code>EXIT=</code> line and each naming the
+    resolved module <code>__file__</code>.
+  </p>
+  <p id="a-pick-names-the-step-it-expired-in-negative-control">
+    <strong>Negative control.</strong> The node's tests run against the
+    pre-change source at
+    <code>28646f522f5394a93e92edc90764628e8a21fd0d</code>:
+    <code>7 failed, 20 passed</code>, <code>EXIT=1</code>. Six of the seven are
+    the naming and recorder checks this node adds, failing because none of the
+    behaviour they pin exists at the base revision; the seventh,
+    <code>test_comment_reaches_the_picker_verbatim,</code> is noise rather than
+    signal — the scratch tree is a <code>git archive</code> with no
+    <code>.git</code>, so that test's dispatch resolves no plan
+    <code>HEAD</code> and exits 4 with <code>plan-unavailable</code> under
+    parallel load. It is not one of this node's checks and it passes in the head
+    arm. At the base revision
+    <code>pick()</code>'s collaborator defaults are bound at definition, so the
+    checks' stubs of the state render and the Jev client cannot take at all and
+    the real candidate scan runs; the fallback those arms reach is therefore a
+    <code>KeyError: 'backends'</code> rather than a
+    <code>timeout in pick:…</code> name. The base revision's own reading for a
+    pick that outlasts the bound is the bare <code>timeout</code>, shown two
+    ways in the log: the base revision's own
+    <code>test_slow_client_still_times_out_as_a_recorded_fallback</code> asserts
+    <code>fallback_reason == "timeout"</code>, and a pick-level probe returns
+    <code>'timeout'</code> from the same dispatcher at that revision. The change
+    leaves that reading in place for a pick that marks no step. Log
+    <code>negative-control.log</code> under the run directory.
+  </p>
+</article>
