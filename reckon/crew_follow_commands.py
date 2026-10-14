@@ -3,7 +3,6 @@ import json
 import os
 import shlex
 import signal
-import subprocess
 import sys
 import threading
 import time
@@ -13,6 +12,7 @@ from typing import Any
 
 import click
 
+from reckon import checkout_trust
 from reckon._timestamps import parse_utc
 from reckon.crew.session_host import SETTLE_ENV, SETTLED_EXIT_CODE
 from reckon.crew_dispatch_commands import _crew_modules, _emit_crew_result, crew
@@ -162,67 +162,10 @@ def _import_root(module) -> Path:
     raise RuntimeError(f"cannot identify the import root for {module.__name__}")
 
 
-def _tracked_reckon_tree_is_dirty(root: Path) -> tuple[bool, str]:
-    """Whether any tracked file under ``reckon/`` differs from ``HEAD``.
-
-    A tree a reloader reads mid-edit can import cleanly and still fail at its
-    first use: a rename half-applied binds a name the import proof never
-    reaches, and the replacement image dies only when a row is rendered. The
-    committed image is what a replacement should run, so git is asked which
-    tracked files differ from it rather than the answer being re-derived here.
-
-    A tree git cannot read -- not a checkout, or no git on ``PATH`` -- is
-    reported clean. The check has no opinion there and the import proof still
-    guards the replacement, so a follower that cannot see a repository keeps
-    its old behaviour rather than deferring every reload forever.
-
-    Untracked files are excluded by git itself. A newly written module that
-    fails to import is caught by the import proof, which reaches every module
-    git does not track as readily as every one it does.
-    """
-    try:
-        completed = subprocess.run(
-            [
-                "git",
-                "-C",
-                str(root),
-                "status",
-                "--porcelain",
-                "--untracked-files=no",
-                "--",
-                "reckon",
-            ],
-            capture_output=True,
-            text=True,
-            timeout=_FOLLOWER_RELOAD_PROBE_TIMEOUT,
-            check=False,
-        )
-    except (OSError, subprocess.SubprocessError) as exc:
-        return False, f"{type(exc).__name__}: {exc}"
-    if completed.returncode != 0:
-        return False, ""
-    entries = [line.strip() for line in completed.stdout.splitlines() if line.strip()]
-    if not entries:
-        return False, ""
-    return True, ", ".join(entries)
-
-
-_FOLLOWER_RELOAD_PROBE = (
-    "import importlib, pathlib, sys\n"
-    "root = pathlib.Path(sys.argv[1]).resolve()\n"
-    "sys.path.insert(0, str(root))\n"
-    "package = root / 'reckon'\n"
-    "sources = sorted(package.rglob('*.py'))\n"
-    "for path in sources:\n"
-    "    compile(path.read_bytes(), str(path), 'exec')\n"
-    "for path in sources:\n"
-    "    parts = list(path.relative_to(root).with_suffix('').parts)\n"
-    "    if parts and parts[-1] == '__init__':\n"
-    "        parts = parts[:-1]\n"
-    "    if not parts or parts[-1] == '__main__':\n"
-    "        continue\n"
-    "    importlib.import_module('.'.join(parts))\n"
-)
+# The follower's reload proof and the MCP's stale-code probe are one probe,
+# defined in ``reckon.checkout_trust`` so the two readers cannot disagree about
+# what a loadable checkout is. The name is kept here for the CLI's re-export.
+_FOLLOWER_RELOAD_PROBE = checkout_trust.IMPORT_PROBE
 
 
 
@@ -284,26 +227,14 @@ class _FollowerReloader:
     def _replacement_imports(self) -> tuple[bool, str]:
         """Prove the replacement image loads before re-executing into it.
 
-        Run in a throwaway interpreter against the same import root the exec
-        leads with, because this process is the wrong place to discover that the
-        new code does not parse: a failed import here would take the live pane
-        down with it. Returns whether the image is safe and, when it is not, one
-        line naming why.
+        The proof is the shared one in ``reckon.checkout_trust``: it runs every
+        tracked module in a throwaway interpreter against the same import root
+        the exec leads with, because this process is the wrong place to discover
+        that the new code does not load -- a failed import here would take the
+        live pane down with it. Returns whether the image is safe and, when it
+        is not, one line naming why.
         """
-        try:
-            completed = subprocess.run(
-                [sys.executable, "-c", _FOLLOWER_RELOAD_PROBE, str(self.import_root)],
-                capture_output=True,
-                text=True,
-                timeout=_FOLLOWER_RELOAD_PROBE_TIMEOUT,
-                check=False,
-            )
-        except (OSError, subprocess.SubprocessError) as exc:
-            return False, f"{type(exc).__name__}: {exc}"
-        if completed.returncode == 0:
-            return True, ""
-        lines = (completed.stderr or completed.stdout or "").strip().splitlines()
-        return False, (lines[-1] if lines else f"exit {completed.returncode}")
+        return checkout_trust.reckon_imports(self.import_root)
 
     def _echo_deferred_dirty(self, detail: str) -> None:
         """Say once that a moved code stamp is held back by an unclean tree."""
@@ -344,7 +275,7 @@ class _FollowerReloader:
         # edit cleans the tree without moving the stamp -- the content is
         # already what the commit records -- so only a fresh read of the tree
         # can tell the reload it may now proceed.
-        dirty, detail = _tracked_reckon_tree_is_dirty(self.import_root)
+        dirty, detail = checkout_trust.tracked_reckon_tree_is_dirty(self.import_root)
         if dirty:
             if not self.dirty_deferral:
                 self.dirty_deferral = True
