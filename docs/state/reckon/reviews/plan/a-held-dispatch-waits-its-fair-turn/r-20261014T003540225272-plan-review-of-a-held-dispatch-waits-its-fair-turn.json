@@ -1,0 +1,56 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-14T00:44:22.814Z",
+  "dispatched_at": "2026-10-14T00:36:13Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-held-dispatch-waits-its-fair-turn.html:135",
+      "id": "reasoning-1",
+      "reason": "the builder must either bound the pre-check hold or skip a predecessor held only on session allowance, which changes \u00a718's deliverable and its case-2 done-when.",
+      "text": "\u00a718's admission pre-check holds a later-ranked overlapping request \"with no failure recorded\" whenever an earlier-ranked overlapping queued request exists, but that predecessor can itself be held indefinitely by a session allowance of 0, a state the plan's own \u00a74 evidence records (line 250: a session \"never listed at its turn can wait forever\"); the later request then has no failure, no back-off and no rank escape, so the mechanism starves a launchable request \u2014 the inversion \u00a718 exists to prevent",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "f2cbaddff900eb584107be757c23fd9d3aff00e52cf45eff7c2ac4299c95d6c4",
+  "plan_slug": "a-held-dispatch-waits-its-fair-turn",
+  "plan_version": 93,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261014T003540225272-plan-review-of-a-held-dispatch-waits-its-fair-turn",
+  "reviewed_blob_sha": "168ba744a723b93e5d5e8ee541de484d3e10248f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_repository_scope_claims` (reckon/crew/dispatch_claims.py:222), `claim_disposition` (reckon/crew/node.py:1450), `_live_scope_claims` (reckon/crew/runs.py:856), `admit_once` and `_require_launched_record` (reckon/crew/queue_admission.py:525,514) all resolve, and \u00a718 carries no href.",
+    "done_when": "pass \u2014 the six cases name both mechanisms' outcomes and carry two declared negative controls (re-binding queued claims reddens case 1 and the `crew scopes` case; removing the admission pre-check reddens case 2), so the gate can show the guards fire.",
+    "evidence_paths": "pass \u2014 both controls are \"logged under the run directory\", a durable crew-runs path, not a scratch tree.",
+    "naming": "pass \u2014 no plan labels, stage names or ticket numbers reach the symbols or comments the section will write.",
+    "reasoning": "a finding \u2014 the stated root cause matches the code (both readers take `disposition.binding` from `claim_disposition`, and a pid-less pointer returns binding True at reckon/crew/node.py:1485-1488), and both mechanisms run on the named paths, but mechanism 2's hold is unbounded against a predecessor that may never clear.",
+    "single_goal": "pass \u2014 the two mechanisms serve the one titled goal (\"overlapping queued requests launch in turn\"); removing either is a distinct failure, so the section closes on one verdict.",
+    "wiring": "pass \u2014 \u00a718 declares its ordering against \u00a714 (\"runs after \u00a714, which has landed, and before \u00a715, which also writes `reckon/crew/queue_admission.py`\"), and that relationship resolves; the shared-file pair is explicit, so no needed dependency is missing."
+  },
+  "section_digests": {
+    "_document": "5e14043a491f99858173e3b893442375f85c205295e44c4f706b9faca823dba4",
+    "s1": "e09f72c38fa12dd06b1fede9137b6a8731c7f42dad95ea4d7873e48b6bcebc93",
+    "s10": "769f35c4ff338677b1083340b990086682e629701a25af49a8b6e2d3b8a175a4",
+    "s11": "3aafc106945bdc346a0f808fc26c7fc8e028b922103641455da38536ae24c036",
+    "s12": "f72ab709e3a40644be43c6e558b558089f939e3368a20a2b34321a9043c80c88",
+    "s13": "1f1792d925edd6b7c0b33bd02bebc3db1f499f9d5e1505b3ba04b305d9ed7f64",
+    "s14": "a86f35810a5d1446f8cf9294a46f7a7a393c1452cc3080ef8b9e51cf83670acf",
+    "s15": "694218fb467e061648aac13eed1a446529dbff08aca86ecfdb24792eb5b2820e",
+    "s16": "5d0a87ee69959477d707fb8d7b442b283f6ae0e7bc896382dd4c65c7e3efb9b8",
+    "s17": "d3bfb51ccfbe6c602a6a11cd9d7e433d1385fd2b90b604f2eb307029dc97f703",
+    "s18": "b742da32fb1d89e1f32fc3317939b726de29caa4f43aa9d5a520113b0da2b09d",
+    "s2": "c37ed4ecb2dad1331b0b031fb8351608243790308312236d375bede3594285b7",
+    "s3": "ef687123318fac196bded366330cf2e92b586c4991b5c1cc8670f228182f916c",
+    "s4": "e6a41eadc72e4752cc0ebe35a14a9bce3f28bc1061ec677e8f779fa09d8c037c",
+    "s5": "4b674f96924c3dbfde217945d16c606df376d034dc060f02360a4336412e74f8",
+    "s6": "9e35fc2341a06de64fed9ff7f176a0e83b22c1482c1b5a04a5539b6e4c07aab4",
+    "s7": "764a72dad2d59bddd4d3b1209f07c0c210ff6c46cd14147d4bcc7ffe9fa9426d",
+    "s8": "1b92313fdf672f4b813b45aa8e26f1304ca363cdc5a4d1752238f794a2019e27",
+    "s9": "ef8f75976cf8d243089cb5955b0e084cf6e2c6bcd478f9e56b8e8654080c6ad6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T00:44:42.149929+00:00"
+}
