@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed run carries no baseline_suite/after_suite JSON pair in its manifest; derived from the two gate arms it names -- gate5-base.log (base arm, the answering change absent, 2 failed 70 passed EXIT=1) and gate6.log (head arm, 778e084c, 76 passed EXIT=0). The head arm reported no FAILED/ERROR node id, so the added set is empty and the count is a measured 0.",
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/dispatch_sessions.py:1787",
+    "reckon/crew/dispatch_sessions.py:1623",
+    "reckon/crew/recovery_watch.py:393",
+    "reckon/crew/promotion_checks.py:236",
+    "reckon/crew/promotion_release.py:441",
+    "reckon/crew/recovery_review_delivery.py:221",
+    "reckon/crew/recovery_stream.py:347",
+    "reckon/crew/dispatch.py:2094"
+  ],
+  "completed_at": "2026-10-14T07:42:36.929Z",
+  "dispatched_at": "2026-10-14T07:21:13Z",
+  "findings": [
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "3645",
+      "severity": "follow-on",
+      "text": "follow-on: the unguarded os.getpgid raises ProcessLookupError for a pid that leaves the table between its caller's liveness check (reckon/crew/dispatch_sessions.py:1786) and this lookup, so a race in crew stop surfaces as an uncaught ProcessLookupError; the prior guard turned the same window into an uncaught CrewError, so this is not a regression, but neither state names the survivors crew stop exists to report."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 8 production call site(s)",
+    "diff": "read commit by commit against 778e084c's parent 59ae0da; the one gained commit removes the os.getpgid guard in reckon/crew/routing.py and adds one test in the node's file; two files, no other change.",
+    "done_when": "the node's done_when names tests/test_a_worker_never_outlives_its_supervisor.py with real child processes and a declared negative control; the manifest records gate6.log (76 passed, EXIT=0 at 778e084c), gate5-base.log (2 failed, 70 passed at base) and negative-control-6.log (1 failed, EXIT=1), so the gate the worker ran asserts the named measure.",
+    "goal": "the node's goal is to extend signal_worker so a stopped or exited supervisor leaves no worker alive (plan a-run-has-one-live-writer); the reviewed delta removes the group-lookup guard added at ca4250085 with terminate's reach left intact (reckon/crew/routing.py:3645), so the goal stands and the prior review's blocking finding is repaired.",
+    "manifest": "read manifest.md; it lists commits a6852ed6b..778e084c, records the head gate (76 passed, EXIT=0) and the declared negative control re-run at head, and names the removed guard and the new case as the repair.",
+    "write_paths": "read the manifest's declared write paths; git diff 59ae0da..778e084c touches exactly reckon/crew/routing.py and tests/test_a_worker_never_outlives_its_supervisor.py, both inside the fence and nothing outside."
+  },
+  "justifications": {
+    "durability": "tests/test_a_worker_never_outlives_its_supervisor.py:404 raises ProcessLookupError and reddens if the guard is reinstated, because the identity check then raises CrewError for the same absent pid.",
+    "evidence": "the manifest records gate6.log (76 passed, EXIT=0 at 778e084c) and gate5-base.log with literal commands, though it carries no baseline_suite/after_suite keys so the added-failure pair is derived from the two arms it names.",
+    "fit": "the revert restores the surrounding idiom at reckon/crew/routing.py:3645 and adds no symbol or plan label.",
+    "goal_fidelity": "reckon/crew/routing.py:3645 no longer swallows the group lookup, restoring the ProcessLookupError a caller that ends a run reads, while terminate's reach is unchanged.",
+    "reuse": "the diff adds no definition; it modifies the owner of the signal behaviour in place (reckon/crew/routing.py:_signal_process_group) rather than forking a second mechanism.",
+    "scope_discipline": "every path in the diff (reckon/crew/routing.py, tests/test_a_worker_never_outlives_its_supervisor.py) is inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to extend signal_worker so a stopped or exited supervisor leaves no worker alive (plan a-run-has-one-live-writer); the reviewed delta removes the group-lookup guard added at ca4250085 with terminate's reach left intact (reckon/crew/routing.py:3645), so the goal stands and the prior review's blocking finding is repaired.\nVERDICT done_when: the node's done_when names tests/test_a_worker_never_outlives_its_supervisor.py with real child processes and a declared negative control; the manifest records gate6.log (76 passed, EXIT=0 at 778e084c), gate5-base.log (2 failed, 70 passed at base) and negative-control-6.log (1 failed, EXIT=1), so the gate the worker ran asserts the named measure.\nVERDICT write_paths: read the manifest's declared write paths; git diff 59ae0da..778e084c touches exactly reckon/crew/routing.py and tests/test_a_worker_never_outlives_its_supervisor.py, both inside the fence and nothing outside.\nVERDICT manifest: read manifest.md; it lists commits a6852ed6b..778e084c, records the head gate (76 passed, EXIT=0) and the declared negative control re-run at head, and names the removed guard and the new case as the repair.\nVERDICT diff: read commit by commit against 778e084c's parent 59ae0da; the one gained commit removes the os.getpgid guard in reckon/crew/routing.py and adds one test in the node's file; two files, no other change.\nCALL_SITES: reckon/crew/dispatch_sessions.py:1787, reckon/crew/dispatch_sessions.py:1623, reckon/crew/recovery_watch.py:393, reckon/crew/promotion_checks.py:236, reckon/crew/promotion_release.py:441, reckon/crew/recovery_review_delivery.py:221, reckon/crew/recovery_stream.py:347, reckon/crew/dispatch.py:2094\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/routing.py:3645 no longer swallows the group lookup, restoring the ProcessLookupError a caller that ends a run reads, while terminate's reach is unchanged.\nSCORE evidence: 16\nJUSTIFICATION evidence: the manifest records gate6.log (76 passed, EXIT=0 at 778e084c) and gate5-base.log with literal commands, though it carries no baseline_suite/after_suite keys so the added-failure pair is derived from the two arms it names.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the diff (reckon/crew/routing.py, tests/test_a_worker_never_outlives_its_supervisor.py) is inside the manifest's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_worker_never_outlives_its_supervisor.py:404 raises ProcessLookupError and reddens if the guard is reinstated, because the identity check then raises CrewError for the same absent pid.\nSCORE fit: 18\nJUSTIFICATION fit: the revert restores the surrounding idiom at reckon/crew/routing.py:3645 and adds no symbol or plan label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition; it modifies the owner of the signal behaviour in place (reckon/crew/routing.py:_signal_process_group) rather than forking a second mechanism.\nFINDING reckon/crew/routing.py:3645 follow-on: the unguarded os.getpgid raises ProcessLookupError for a pid that leaves the table between its caller's liveness check (reckon/crew/dispatch_sessions.py:1786) and this lookup, so a race in crew stop surfaces as an uncaught ProcessLookupError; the prior guard turned the same window into an uncaught CrewError, so this is not a regression, but neither state names the survivors crew stop exists to report.",
+  "review_run_id": "r-20261014T072046294661-review-of-a-worker-never-outlives-its-supervisor-778e084c2012",
+  "reviewed_base_sha": "59ae0daae45b3ce2f08e9a27338d0a0ae7bc7657",
+  "reviewed_head_sha": "778e084c2012842093f125ac46280c43702e0c2a",
+  "reviewed_run_id": "r-20261014T035021276657-a-worker-never-outlives-its-supervisor",
+  "reviewer": "review-of-a-worker-never-outlives-its-supervisor-778e084c2012",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T07:38:19.616370+00:00",
+  "total": 109
+}
