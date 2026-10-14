@@ -584,9 +584,7 @@ def test_a_queued_launch_derives_write_paths_under_its_launched_run(
     )
     runs.queue_dispatch(request)
 
-    result = queue_admission.admit_once(
-        config_for=resolve, launcher=_launcher([])
-    )
+    result = queue_admission.admit_once(config_for=resolve, launcher=_launcher([]))
 
     launched = _launched_pointer(result)
     launched_dir = runs.run_dir(str(launched["run_id"])).resolve()
@@ -594,9 +592,7 @@ def test_a_queued_launch_derives_write_paths_under_its_launched_run(
     # The default write path the plan derived inside the run directory is now
     # the launched run's own, and no write path names the queued run directory.
     assert str((launched_dir / "scratch").resolve()) in paths
-    assert not any(
-        Path(path).is_relative_to(queued_dir.resolve()) for path in paths
-    )
+    assert not any(Path(path).is_relative_to(queued_dir.resolve()) for path in paths)
 
 
 def test_a_launched_run_leaves_queued_for_starting_then_working(
