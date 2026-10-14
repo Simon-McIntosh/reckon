@@ -888,7 +888,7 @@ def test_equality_check_reports_a_row_removed_from_the_store(
     config_home: Path,
 ) -> None:
     records = {
-        f"r-{suffix}": _real_record(f"r-{suffix}") for suffix in ("import-a", "import-b", "import-c")
+        f"r-{suffix}": _real_record(f"r-{suffix}") for suffix in ("one", "two", "three")
     }
     _seed_ledger("reckon", list(records.values()))
     run_store.import_ledger("reckon")
