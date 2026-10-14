@@ -25,7 +25,7 @@
   <title>A Run Has One Live Writer | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="28">
+<meta name="plan-version" content="29">
 <meta name="plan-modified" content="2026-10-14">
 </head>
 <body>
@@ -166,6 +166,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261014T123102704468-a-resumed-worker-is-not-ended-as-delivered" data-who="reckon-build" data-when="2026-10-14T14:33:12.791Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/a-run-has-one-live-writer/a-resumed-worker-is-not-ended-as-delivered.html</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-10-14T15:05:00Z">
+    <div class="r-comment-body"><p>§4 landed. Resuming a delivered run resets its done status to <code>in-progress</code> before the worker spawns, through the repair-status owners, with the delivered copy kept. A resumed worker is no longer killed on its first manifest edit, which retires the coordinators' <code>repair-status --status blocked</code> workaround. Every resume door now goes through <code>_resume</code>. Merged <code>71faf269e</code> as <code>a9b174e8b</code>, and the gate replayed green there. Population: 0 added over 184 files. Review: 113. <a href="/reckon/evidence/archive/a-run-has-one-live-writer-landed.html#s4-resumed-not-ended">evidence</a></p></div>
 </div>
 </section>
 <section data-reckon="followups" id="followups" class="r-followups">
