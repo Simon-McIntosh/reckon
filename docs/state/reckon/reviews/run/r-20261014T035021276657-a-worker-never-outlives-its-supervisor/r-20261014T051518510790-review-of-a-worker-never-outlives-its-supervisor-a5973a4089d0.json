@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed run carries no baseline_suite/after_suite pair; derived from the two gate arms its manifest names -- gate-before-compat-fix.log (base rev c90682a28, 6 failed 54 passed EXIT=1) and gate3.log (head rev a5973a4089d01eb899fef72229e5f8289d28855c, 58 passed EXIT=0). The head arm reported zero FAILED/ERROR node ids, so the added set is empty and the count is a measured 0, not an unmeasured null.",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/promotion_release.py:441",
+    "reckon/crew/promotion_checks.py:236",
+    "reckon/crew/recovery_watch.py:393",
+    "reckon/crew/dispatch_sessions.py:1623",
+    "reckon/crew/recovery_review_delivery.py:221",
+    "reckon/crew/recovery_stream.py:347",
+    "reckon/crew/dispatch.py:2094"
+  ],
+  "completed_at": "2026-10-14T05:30:34.541Z",
+  "dispatched_at": "2026-10-14T05:15:45Z",
+  "findings": [
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "3429",
+      "severity": "follow-on",
+      "text": "follow-on: _run_process_pids adds the worker record's pid as a descent root without comparing it against its recorded start tick, so a recycled pid could be signalled; the gained change newly exposes this path to the seven _signal_process_group callers."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T035021276657-a-worker-never-outlives-its-supervisor/gate3.log",
+      "line": "5",
+      "severity": "follow-on",
+      "text": "follow-on: the head gate log records a described command with angle-bracket placeholders rather than the literal command, so the added-failure baseline cannot be re-run from the log alone."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "read commit by commit against 9e2fbed6d; the single gained commit a5973a40 adds the run-directory branch to _signal_process_group in reckon/crew/routing.py, folds the nested if at reckon/crew/recovery_liveness.py:852 to clear the SIM102 finding, adds the identity-checked-reach test, and updates the fragment prose.",
+    "done_when": "the done_when names tests/test_a_worker_never_outlives_its_supervisor.py with real child processes plus its declared negative control; the source manifest records gate3.log 58 passed EXIT=0 at a5973a40 and negative-control-2.log EXIT=1 at a5973a40, and the new case test_an_identity_checked_signal_with_a_run_dir_reaches_the_whole_run asserts the gained behaviour.",
+    "goal": "the source node's goal is to extend signal_worker to end a run's own process tree; the gained commit a5973a40 wires reckon/crew/routing.py:3639 to derive the run id from the run directory and reckon/crew/routing.py:3640 to call signal_worker with reach_run=True, so every run-ending caller of _signal_process_group reaches the whole run.",
+    "manifest": "read; it lists commits a6852ed6b, 9e2fbed6d, a5973a40 (the reachable head chain), repairing the prior review's finding about unreachable shas, and records the head gate and negative control at a5973a40.",
+    "write_paths": "read the manifest's declared write paths; git diff 9e2fbed6d..a5973a40 touches exactly reckon/crew/routing.py, reckon/crew/recovery_liveness.py, tests/test_a_worker_never_outlives_its_supervisor.py and the evidence fragment, all inside the fence and nothing outside."
+  },
+  "justifications": {
+    "durability": "tests/test_a_worker_never_outlives_its_supervisor.py:315 asserts _wait_gone over real child pids, which reddens if _signal_process_group reverts to signalling the handed pid alone.",
+    "evidence": "gate3.log records 58 passed EXIT=0 at a5973a40 and negative-control-2.log records EXIT=1 at a5973a40, but gate3.log:5's command line is a description with placeholders rather than the literal command.",
+    "fit": "the change follows the surrounding idiom and folds the nested if at reckon/crew/recovery_liveness.py:852, clearing the SIM102 finding the prior review flagged.",
+    "goal_fidelity": "reckon/crew/routing.py:3647 passes reach_run=True, so each of the seven run-ending callers of _signal_process_group ends the run's whole tree, the plan's clause that every caller inherits the reach.",
+    "reuse": "no new definition is added; the change extends signal_worker's own owner and the reach helpers reuse recovery_liveness._process_children, the existing owner of the descendant walk.",
+    "scope_discipline": "git diff 9e2fbed6d..a5973a40 changes only reckon/crew/routing.py, reckon/crew/recovery_liveness.py, tests/test_a_worker_never_outlives_its_supervisor.py and the fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is to extend signal_worker to end a run's own process tree; the gained commit a5973a40 wires reckon/crew/routing.py:3639 to derive the run id from the run directory and reckon/crew/routing.py:3640 to call signal_worker with reach_run=True, so every run-ending caller of _signal_process_group reaches the whole run.\nVERDICT done_when: the done_when names tests/test_a_worker_never_outlives_its_supervisor.py with real child processes plus its declared negative control; the source manifest records gate3.log 58 passed EXIT=0 at a5973a40 and negative-control-2.log EXIT=1 at a5973a40, and the new case test_an_identity_checked_signal_with_a_run_dir_reaches_the_whole_run asserts the gained behaviour.\nVERDICT write_paths: read the manifest's declared write paths; git diff 9e2fbed6d..a5973a40 touches exactly reckon/crew/routing.py, reckon/crew/recovery_liveness.py, tests/test_a_worker_never_outlives_its_supervisor.py and the evidence fragment, all inside the fence and nothing outside.\nVERDICT manifest: read; it lists commits a6852ed6b, 9e2fbed6d, a5973a40 (the reachable head chain), repairing the prior review's finding about unreachable shas, and records the head gate and negative control at a5973a40.\nVERDICT diff: read commit by commit against 9e2fbed6d; the single gained commit a5973a40 adds the run-directory branch to _signal_process_group in reckon/crew/routing.py, folds the nested if at reckon/crew/recovery_liveness.py:852 to clear the SIM102 finding, adds the identity-checked-reach test, and updates the fragment prose.\nCALL_SITES: reckon/crew/promotion_release.py:441, reckon/crew/promotion_checks.py:236, reckon/crew/recovery_watch.py:393, reckon/crew/dispatch_sessions.py:1623, reckon/crew/recovery_review_delivery.py:221, reckon/crew/recovery_stream.py:347, reckon/crew/dispatch.py:2094\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/routing.py:3647 passes reach_run=True, so each of the seven run-ending callers of _signal_process_group ends the run's whole tree, the plan's clause that every caller inherits the reach.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate3.log records 58 passed EXIT=0 at a5973a40 and negative-control-2.log records EXIT=1 at a5973a40, but gate3.log:5's command line is a description with placeholders rather than the literal command.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 9e2fbed6d..a5973a40 changes only reckon/crew/routing.py, reckon/crew/recovery_liveness.py, tests/test_a_worker_never_outlives_its_supervisor.py and the fragment, all inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_worker_never_outlives_its_supervisor.py:315 asserts _wait_gone over real child pids, which reddens if _signal_process_group reverts to signalling the handed pid alone.\nSCORE fit: 18\nJUSTIFICATION fit: the change follows the surrounding idiom and folds the nested if at reckon/crew/recovery_liveness.py:852, clearing the SIM102 finding the prior review flagged.\nSCORE reuse: 20\nJUSTIFICATION reuse: no new definition is added; the change extends signal_worker's own owner and the reach helpers reuse recovery_liveness._process_children, the existing owner of the descendant walk.\nFINDING reckon/crew/routing.py:3429 follow-on: _run_process_pids adds the worker record's pid as a descent root without comparing it against its recorded start tick, so a recycled pid could be signalled; the gained change newly exposes this path to the seven _signal_process_group callers.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T035021276657-a-worker-never-outlives-its-supervisor/gate3.log:5 follow-on: the head gate log records a described command with angle-bracket placeholders rather than the literal command, so the added-failure baseline cannot be re-run from the log alone.\n",
+  "review_run_id": "r-20261014T051518510790-review-of-a-worker-never-outlives-its-supervisor-a5973a4089d0",
+  "reviewed_base_sha": "9e2fbed6dd87458880eb4beb7dd278e1f7f3bf2c",
+  "reviewed_head_sha": "a5973a4089d01eb899fef72229e5f8289d28855c",
+  "reviewed_run_id": "r-20261014T035021276657-a-worker-never-outlives-its-supervisor",
+  "reviewer": "review-of-a-worker-never-outlives-its-supervisor-a5973a4089d0",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T05:27:05Z",
+  "total": 112
+}
