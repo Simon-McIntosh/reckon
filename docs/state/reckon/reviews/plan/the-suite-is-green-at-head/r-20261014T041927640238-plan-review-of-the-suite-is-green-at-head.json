@@ -1,0 +1,92 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-14T04:27:27.063Z",
+  "dispatched_at": "2026-10-14T04:20:23Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-suite-is-green-at-head.html:687",
+      "id": "reasoning-1",
+      "reason": "as written the plan asserts a wiring that is not there, so it omits the required threading of the observed set through `PaneRowPath` into `RowPolicy`, and a literal implementer would search for a pass to extend and find none (the live follower at `reckon/crew_follow_commands.py:1235` and `follower_row_path` both stop short of the policy).",
+      "text": "the deliverable states `follower_row_path` \"already receives the observed sessions; it passes them to `RowPolicy`, which exempts an observed session's rows from the observer-context hold\", but `follower_row_path` (`reckon/crew_follow_commands.py:903-931`) passes the observed set only to its `selects` callable (`_follow_selects`), and neither `PaneRowPath.__init__` (`reckon/crew/ticker.py:1528`) nor `RowPolicy.__init__` (`reckon/crew/ticker.py:1109`) takes an observed argument \u2014 `RowPolicy`'s sole exemption is `_is_own_start` (`reckon/crew/ticker.py:1163`), keyed on `own_session` and `kind == START_KIND`.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-suite-is-green-at-head.html:687",
+      "id": "reasoning-2",
+      "reason": "either the plan must state that `tests/test_follow_sweep_cadence.py` is re-anchored to carry a `from_state` (the change that actually delivers those ids), or the thirteen-id done-when cannot be met by the mechanism the deliverable describes.",
+      "text": "the deliverable says \"The other family tests feed production-shaped rows: coordinator kinds or own-session starts, each with a session and a `from_state`\", but the cadence tests the same section assigns as write paths (`tests/test_follow_sweep_cadence.py:45-54`) emit `event: \"transition\"` lines with no `from_state` (kind `(None, to_state)`), and \u00a715's own Why and the cited report both call them \"truncated rows with no `from_state`\"; the stated mechanism (the observed-session exemption plus the own-session start exemption) therefore cannot make those ids pass, and the plan never says the cadence fixture is re-anchored.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "fdea6d665bf3f1033e14e5b2c2cebc3e7e5bf3281f0cf9e87f7d6aaab9d81a2f",
+  "plan_slug": "the-suite-is-green-at-head",
+  "plan_version": 321,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-14T04:29:07.884293+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "",
+      "when": "2026-10-14T04:29:20.819472+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-14T04:29:07.884293+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-14T04:29:20.819472+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-suite-is-green-at-head.v321.json",
+  "review_run_id": "r-20261014T041927640238-plan-review-of-the-suite-is-green-at-head",
+  "reviewed_blob_sha": "ad12a9aa841e4031cb18af5d2fe9b155d5355963",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/ticker.py`, `reckon/crew_follow_commands.py`, all eight named test files, the cited report, and commits `089cd7741` and its parent `6d28c3f50` all resolve; the self-link to `/reckon/plans/the-suite-is-green-at-head` is the plan itself.",
+    "done_when": "pass \u2014 the thirteen ids passing alone, the two pin files (`test_follow_settled_rows.py`, `test_row_policy_holds_observer_context.py`) staying green, and the no-added-failure population over the ticker/follow-commands importers are all measurable, and a negative control is named (drop the observed-session delivery; the observed-session cases must then fail).",
+    "evidence_paths": "pass \u2014 the Why cites the follower-family report at a durable reports path (`.../reports/reckon/the-suite-is-green-at-head/follower-family-shared-cause/report.md`) and the gate is logged under the run directory, neither a scratchpad nor a node-local temp path.",
+    "naming": "pass \u2014 \u00a715 names files, symbols and commits by what they are; no plan label, stage name, ticket number or version tag reaches a symbol, path or comment.",
+    "reasoning": "two findings \u2014 the mechanism is described as running through a caller chain that does not exist, and the section's stated mechanism cannot deliver the cadence ids it must make pass.",
+    "single_goal": "pass \u2014 one deliverable, repair the follower family's shared cause, with the cadence re-anchor serving that same goal rather than a second one.",
+    "wiring": "pass \u2014 \u00a715 declares no depends-on/gates/informs edges (this plan carries its ordering in prose, every `data-links` is empty), and the relationship it relies on \u2014 \u00a73 delegating the follower family to a single shared-cause node and requiring those ids to pass alone (\u00a73, line 94) \u2014 is stated in the plan's own text and evidenced by the follower-family report."
+  },
+  "section_digests": {
+    "_document": "83bc4eebbeaf35e1f8769b1cefa72ecf8466fb0d23d3dd350bf2e642790b97e5",
+    "s1": "93d7e8eb3f04bb8d9aad0f5ac7d68a9d009b7fe7feaa6f4932738242154d8d4d",
+    "s10": "9633fb928a6c720c8fae74ed3da0a5f7ed555c4230f29ebf2ee89e5432566bb1",
+    "s11": "3e9c94371cc0b22adeb21c71a08fdd16433d8b4c1a22e73cd63d1171332089ba",
+    "s12": "dd8650523d29d87e6fa41408db7d0440cf17dfbd57f0ab6da0d5fcd223692d95",
+    "s13": "7b00f23667f49ba7de16f8823860c86ad35a562eebddf434fd1a6b9f1f5e9993",
+    "s14": "1469c86b5327d2429ce07b9ddd2fbca586d8831acb94119f8a187e315f48dcf7",
+    "s15": "a179ac4084e74d29169a4d222db68d78feb6d1e62086312da51f1fb98f13afe6",
+    "s16": "4ab9d42bd2e71d070a1cc5393ebea66e1ec71d06dad51f1a82505c91ce309234",
+    "s2": "d8e1d44eab3d041cfa8f08f045885bcf9a783d27f0cb613fe7de2c0476c13887",
+    "s3": "d6efa514940aeb662c9b7fdee7f663c86e4da2526ec9a01c6977f967e30d886a",
+    "s4": "e7003c1b5457d6229da28b7d90f825f0e3ef67be2a012291c12a2daf14bf2273",
+    "s5": "934ff53a2b41de523672b7760ab4bbe2e8be5d3da6b580c600383ac0217825a2",
+    "s6": "532d289736e3278c9969cb253dc2c1c372054b378fd42f2cfb741906f6e66eb2",
+    "s7": "655ef45aae9c9f31c0c67cb28422cff4a16611cfce488326c298768a23f58efd",
+    "s8": "c78e67e053ac3d61a73df4b965e8209a12ca4d9b745535a102b0b0040cce3adc",
+    "s9": "f4ef4f0dc18779331d3654037d55a7dd1c27d3769bfbfe753867fccbb53f9a28"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T04:27:35.095807+00:00"
+}
