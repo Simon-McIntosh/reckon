@@ -142,12 +142,16 @@ def _own_pointers(crew_home: Path) -> list[str]:
     """This test's own traces under ``crew_home`` and the shared checkout.
 
     A dispatcher that wrote outside the temporary home would leave a live
-    pointer, a run directory or a roster row carrying one of this test's run
-    ids or its session, so the search names those rather than listing the
-    shared directories, which a peer's dispatch moves continuously.
+    pointer or a roster row carrying one of this test's run ids or its session,
+    so the search names those rather than listing the shared directories, which
+    a peer's dispatch moves continuously.
+
+    The run archive is deliberately not walked: its per-run transcript trees are
+    unbounded on the shared store, and a leaked run directory does not outlive
+    the live pointer that claims it, which the ``live`` subtree already covers.
     """
     checkout = Path(__file__).resolve().parents[1]
-    return traces_naming(crew_home, ("live", "runs", "watch"), _OWN_NEEDLES) + (
+    return traces_naming(crew_home, ("live", "watch"), _OWN_NEEDLES) + (
         traces_naming(checkout, ("docs/state",), _OWN_NEEDLES)
     )
 

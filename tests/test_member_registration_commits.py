@@ -323,8 +323,15 @@ def test_the_live_home_and_the_shared_checkout_are_untouched(tmp_path: Path) -> 
     # into the real home's crew tree or the shared checkout's state tree. A
     # peer registering its own member, or a peer commit under docs/state, moves
     # the same trees without anything being wrong here.
+    #
+    # Only the live pointer directory and the watcher stream are searched under
+    # the crew home. The run archive beside them is not walkable at a useful
+    # cost — its per-run transcript trees are unbounded on the shared store —
+    # and a leaked pointer is the trace that matters, because a run directory
+    # never outlives the live pointer that claims it.
     needles = (SESSION,)
-    before_home = traces_naming(real_home, ("crew",), needles)
+    subtrees = ("live", "watch")
+    before_home = traces_naming(real_home, subtrees, needles)
     before_state = traces_naming(checkout, ("docs/state",), needles)
     repository = _repository(tmp_path)
 
@@ -332,7 +339,7 @@ def test_the_live_home_and_the_shared_checkout_are_untouched(tmp_path: Path) -> 
 
     assert ledger.ledger_path(PROJECT, repository).is_relative_to(tmp_path)
     assert not Path(os.environ["RECKON_HOME"]).is_relative_to(Path.home())
-    assert traces_naming(real_home, ("crew",), needles) == before_home
+    assert traces_naming(real_home, subtrees, needles) == before_home
     assert traces_naming(checkout, ("docs/state",), needles) == before_state
 
 
