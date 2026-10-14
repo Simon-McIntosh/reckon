@@ -25,7 +25,7 @@
   <title>A Run Has One Live Writer | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="16">
+<meta name="plan-version" content="17">
 <meta name="plan-modified" content="2026-10-14">
 </head>
 <body>
@@ -139,6 +139,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261014T072046294661-review-of-a-worker-never-outlives-its-supervisor-778e084c2012" data-who="reckon-build" data-when="2026-10-14T07:42:36.929Z">
     <div class="r-comment-body"><p>a-run-has-one-live-writer S2 review; see landing_note.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261014T035021276657-a-worker-never-outlives-its-supervisor" data-who="reckon-build" data-when="2026-10-14T07:20:03.431Z">
+    <div class="r-comment-body"><p>a-run-has-one-live-writer §2 — signal_worker gains reach_run: it ends every process a run owns, found by descent from the run&#x27;s recorded supervisor and worker pids and by RECKON_RUN_ID in each process&#x27;s environment, and returns the pids ended. Every run-ending caller inherits the reach, because the identity-checked signal reads the run id from the run directory it is handed; a caller that merely holds a pid to stop keeps the single-pid behaviour and its boolean return. The reach is taken only while the pid it starts from still names the process a record registered, so a recycled pid contributes neither itself nor its children, and the launch floor the environment scan applies is the tick worker.json recorded. An unreadable environment and a bare worktree holder are never signalled. crew stop reports the pids ended, the survivors and the worktree holders; the supervisor&#x27;s exit record names the pids its signals reached; a run whose supervisor and recorded worker pid are gone but whose environment mark lives reads alive, so it is no longer classified complete or scoring.</p></div>
 </div>
 </section>
 <section data-reckon="followups" id="followups" class="r-followups">
