@@ -653,7 +653,11 @@ def admit_once(
                     )
                 continue
             _stamp_admission(str(record["run_id"]), snapshot, admitted_at=_utc_now())
+            joined = _join_admitted_plan_review(snapshot, str(record["run_id"]))
             result["launched"].append(str(record["run_id"]))
+            if joined:
+                joined_reviews = result.setdefault("joined_plan_reviews", {})
+                joined_reviews[str(record["run_id"])] = joined
             if allowance is not None:
                 remaining[session] = allowance - 1
         result["action"] = "admitted" if result["launched"] else "idle"
@@ -675,6 +679,21 @@ def _stamp_admission(
         return pointer
 
     runs._mutate_pointer(run_id, mutation)
+
+
+def _join_admitted_plan_review(pointer: Mapping[str, Any], launched_run_id: str) -> str:
+    """Write a launched plan review's run id into its composed dispatch sidecar.
+
+    A queued plan review's report directory names the crew run that ran it only
+    through ``dispatch.json``, and the compose left that sidecar unlaunched. The
+    join resolves promotion's lookup, so it is part of admitting the request —
+    not a later sweep. A pointer that names no plan review joins nothing and the
+    pass carries on. Imported here rather than at module load so the admission
+    surface does not depend on the review surface's own imports.
+    """
+    from reckon.crew import recovery_review_dispatch
+
+    return recovery_review_dispatch.join_admitted_plan_review(pointer, launched_run_id)
 
 
 def admit_until_stopped(
