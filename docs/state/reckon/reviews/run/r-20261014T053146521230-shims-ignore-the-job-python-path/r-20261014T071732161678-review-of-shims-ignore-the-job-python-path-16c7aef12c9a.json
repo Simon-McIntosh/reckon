@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: baseline_suite is {revision 9aa406abf, completed true, failure_count 0, failure_ids []} and after_suite is {revision 16c7aef12, completed true, failure_count 0, failure_ids []}, so no failure id appears at head that is absent at base and the added-failure count is zero.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/worker_shims/git",
+    "reckon/host_shims/salloc",
+    "reckon/host_shims/sbatch",
+    "reckon/host_shims/srun",
+    "reckon/worker_git_shim.py:758",
+    "reckon/nested_launch.py:198"
+  ],
+  "completed_at": "2026-10-14T07:31:32.967Z",
+  "dispatched_at": "2026-10-14T07:17:58Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T053146521230-shims-ignore-the-job-python-path/manifest.md",
+      "line": "3",
+      "severity": "follow-on",
+      "text": "follow-on: orientation_write_paths still lists the nine original paths, so the node's declared-scope record does not reflect the two files the repair's resume advice authorised (reckon/shim_lookup.py, tests/test_nested_launch.py) that changed_paths does name, and a scope audit reading the manifest alone sees two changed paths outside the declared scope."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commit by commit against base 426f7fc over the two gained commits; 16c7aef changes only the fragment (2 lines, rewording the hand-back owner and the removed append), and 1b9ddae moves CALLER_PATH_ENV and caller_environment into reckon/shim_lookup.py:114-143 and imports them at reckon/worker_git_shim.py:78-82 and reckon/nested_launch.py:42-47, strips the caller-path append and sitecustomize import from the four shim bootstraps, adds the raising-sitecustomize case, and rewrites tests/test_nested_launch.py to inject its fixture through a wrapper interpreter named by RECKON_SHIM_PYTHON rather than through a sitecustomize on the production path.",
+    "done_when": "the done_when names tests/test_a_shim_ignores_the_job_python_path.py running each shim with PYTHONPATH naming a directory whose typing_extensions.py raises; the added case test_a_raising_sitecustomize_on_the_job_path_does_not_stop_a_shim (tests/test_a_shim_ignores_the_job_python_path.py:297-321) drives the git shim and each host shim against a directory whose sitecustomize.py raises, the manifest records head 297 passed EXIT=0 (head-gate.log) against base 292 passed EXIT=0 (base-gate.log), and the reader's own arm re-read confirms both tails read EXIT=0.",
+    "goal": "the node goal \u2014 start every reckon shim's interpreter with only reckon's import root on its Python path \u2014 is met at head, where each of the four shims (reckon/worker_shims/git:63-75 and reckon/host_shims/salloc, sbatch, srun) sets PYTHONPATH=\"$repo_root\" and adds -P -s, and the gained commit 1b9ddae removed the bootstrap that re-appended the caller's PYTHONPATH and imported a caller sitecustomize, so nothing of the caller's sits on the shim interpreter's path.",
+    "manifest": "read; it records status complete, changed_paths adding reckon/shim_lookup.py and tests/test_nested_launch.py, tests \"297 passed EXIT=0\" head against \"292 passed EXIT=0\" base, negative_control_log named with note \"4 failed, 1 passed, EXIT=1\", baseline_suite and after_suite both completed:true failure_count 0, and evidence_inputs naming the test and the fragment.",
+    "write_paths": "the node's declared write paths name the four shims, reckon/worker_git_shim.py, reckon/nested_launch.py, tests/test_a_shim_ignores_the_job_python_path.py, the fragment and its figures directory; the gained commit 1b9ddae also writes reckon/shim_lookup.py and tests/test_nested_launch.py, which the repair's resume advice explicitly added to scope (\"Your scope now includes reckon/shim_lookup.py\" / \"Your scope now includes tests/test_nested_launch.py\"), so every path in the gained diff is inside the extended scope."
+  },
+  "justifications": {
+    "durability": "tests/test_a_shim_ignores_the_job_python_path.py:315 asserts returncode 0 and :316 the fake tool's recorded name against an independent process, and negative-control.log's summary (FAILED \u2026test_a_raising_sitecustomize_on_the_job_path_does_not_stop_a_shim) shows the assertion reddens when the removed append is reinstated; reduced for PYTHONSTARTUP and the dropped user site, which no case exercises.",
+    "evidence": "the done_when test records 297 passed EXIT=0 at head (head-gate.log) against 292 passed EXIT=0 at base (base-gate.log), the negative control records 4 failed/1 passed EXIT=1 (negative-control.log), and both suite records are completed:true failure_count 0.",
+    "fit": "the rewritten shim comments (reckon/worker_shims/git:42-45) and the new symbols (CALLER_PATH_ENV, caller_environment, RECKON_SHIM_CALLER_*) are mechanism-named with no plan, stage or ticket token.",
+    "goal_fidelity": "reckon/worker_shims/git:63-75 sets PYTHONPATH=\"$repo_root\" with -P -s and no caller append, and the host shims mirror it, so the interpreter's path is reckon's import root alone.",
+    "reuse": "CALLER_PATH_ENV and caller_environment now have one definition in reckon/shim_lookup.py:114-143, the shared shim helper both reckon/worker_git_shim.py:80 and reckon/nested_launch.py:43 import, so the gained change removes the two-copy fork the prior review named (searched reckon/ for RECKON_SHIM_CALLER and found no second definition).",
+    "scope_discipline": "every path in the gained diff (reckon/shim_lookup.py, tests/test_nested_launch.py included) is inside the scope the repair's resume advice granted, and no unrelated file is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal \u2014 start every reckon shim's interpreter with only reckon's import root on its Python path \u2014 is met at head, where each of the four shims (reckon/worker_shims/git:63-75 and reckon/host_shims/salloc, sbatch, srun) sets PYTHONPATH=\"$repo_root\" and adds -P -s, and the gained commit 1b9ddae removed the bootstrap that re-appended the caller's PYTHONPATH and imported a caller sitecustomize, so nothing of the caller's sits on the shim interpreter's path.\nVERDICT done_when: the done_when names tests/test_a_shim_ignores_the_job_python_path.py running each shim with PYTHONPATH naming a directory whose typing_extensions.py raises; the added case test_a_raising_sitecustomize_on_the_job_path_does_not_stop_a_shim (tests/test_a_shim_ignores_the_job_python_path.py:297-321) drives the git shim and each host shim against a directory whose sitecustomize.py raises, the manifest records head 297 passed EXIT=0 (head-gate.log) against base 292 passed EXIT=0 (base-gate.log), and the reader's own arm re-read confirms both tails read EXIT=0.\nVERDICT write_paths: the node's declared write paths name the four shims, reckon/worker_git_shim.py, reckon/nested_launch.py, tests/test_a_shim_ignores_the_job_python_path.py, the fragment and its figures directory; the gained commit 1b9ddae also writes reckon/shim_lookup.py and tests/test_nested_launch.py, which the repair's resume advice explicitly added to scope (\"Your scope now includes reckon/shim_lookup.py\" / \"Your scope now includes tests/test_nested_launch.py\"), so every path in the gained diff is inside the extended scope.\nVERDICT manifest: read; it records status complete, changed_paths adding reckon/shim_lookup.py and tests/test_nested_launch.py, tests \"297 passed EXIT=0\" head against \"292 passed EXIT=0\" base, negative_control_log named with note \"4 failed, 1 passed, EXIT=1\", baseline_suite and after_suite both completed:true failure_count 0, and evidence_inputs naming the test and the fragment.\nVERDICT diff: read commit by commit against base 426f7fc over the two gained commits; 16c7aef changes only the fragment (2 lines, rewording the hand-back owner and the removed append), and 1b9ddae moves CALLER_PATH_ENV and caller_environment into reckon/shim_lookup.py:114-143 and imports them at reckon/worker_git_shim.py:78-82 and reckon/nested_launch.py:42-47, strips the caller-path append and sitecustomize import from the four shim bootstraps, adds the raising-sitecustomize case, and rewrites tests/test_nested_launch.py to inject its fixture through a wrapper interpreter named by RECKON_SHIM_PYTHON rather than through a sitecustomize on the production path.\nCALL_SITES: reckon/worker_shims/git, reckon/host_shims/salloc, reckon/host_shims/sbatch, reckon/host_shims/srun, reckon/worker_git_shim.py:758, reckon/nested_launch.py:198\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/worker_shims/git:63-75 sets PYTHONPATH=\"$repo_root\" with -P -s and no caller append, and the host shims mirror it, so the interpreter's path is reckon's import root alone.\nSCORE evidence: 19\nJUSTIFICATION evidence: the done_when test records 297 passed EXIT=0 at head (head-gate.log) against 292 passed EXIT=0 at base (base-gate.log), the negative control records 4 failed/1 passed EXIT=1 (negative-control.log), and both suite records are completed:true failure_count 0.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the gained diff (reckon/shim_lookup.py, tests/test_nested_launch.py included) is inside the scope the repair's resume advice granted, and no unrelated file is touched.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_shim_ignores_the_job_python_path.py:315 asserts returncode 0 and :316 the fake tool's recorded name against an independent process, and negative-control.log's summary (FAILED \u2026test_a_raising_sitecustomize_on_the_job_path_does_not_stop_a_shim) shows the assertion reddens when the removed append is reinstated; reduced for PYTHONSTARTUP and the dropped user site, which no case exercises.\nSCORE fit: 18\nJUSTIFICATION fit: the rewritten shim comments (reckon/worker_shims/git:42-45) and the new symbols (CALLER_PATH_ENV, caller_environment, RECKON_SHIM_CALLER_*) are mechanism-named with no plan, stage or ticket token.\nSCORE reuse: 20\nJUSTIFICATION reuse: CALLER_PATH_ENV and caller_environment now have one definition in reckon/shim_lookup.py:114-143, the shared shim helper both reckon/worker_git_shim.py:80 and reckon/nested_launch.py:43 import, so the gained change removes the two-copy fork the prior review named (searched reckon/ for RECKON_SHIM_CALLER and found no second definition).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T053146521230-shims-ignore-the-job-python-path/manifest.md:3 follow-on: orientation_write_paths still lists the nine original paths, so the node's declared-scope record does not reflect the two files the repair's resume advice authorised (reckon/shim_lookup.py, tests/test_nested_launch.py) that changed_paths does name, and a scope audit reading the manifest alone sees two changed paths outside the declared scope.\n",
+  "review_run_id": "r-20261014T071732161678-review-of-shims-ignore-the-job-python-path-16c7aef12c9a",
+  "reviewed_base_sha": "426f7fc7406788c4dc57cab29df92d413986bb53",
+  "reviewed_head_sha": "16c7aef12c9a114c07a0063cc8582e9a17d83c75",
+  "reviewed_run_id": "r-20261014T053146521230-shims-ignore-the-job-python-path",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T07:29:05.094879+00:00",
+  "total": 115
+}
