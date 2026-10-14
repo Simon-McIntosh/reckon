@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;a-run-has-one-live-writer#s2&quot;], &quot;s4&quot;: [&quot;a-run-has-one-live-writer#s3&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
   <title>A Run Has One Live Writer | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="21">
+<meta name="plan-version" content="22">
 <meta name="plan-modified" content="2026-10-14">
 </head>
 <body>
@@ -74,7 +74,7 @@
     <p>Write paths: <code>reckon/crew/routing.py</code> (<code>signal_worker</code>), <code>reckon/crew/dispatch_launch.py</code>, <code>reckon/crew/dispatch_sessions.py</code> (<code>terminate</code>), <code>reckon/crew/recovery_classification.py</code>, <code>reckon/crew/recovery_liveness.py</code> (<code>local_liveness</code>), <code>tests/test_a_worker_never_outlives_its_supervisor.py</code>. <code>routing.py</code> was also written by the run <code>a-worktree-release-is-whole</code> (crew-runtime-positive-controls §47). This section waited for that run to merge, through a section gate declared on it, which closed passed when it merged at <code>2e44591a1</code>.</p>
 
     <h2 id="s3">§3 — A resume never launches beside a live attempt</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
     <p><strong>What already exists.</strong> The guards this section needs are already in the code. <code>resume_plan</code> in <code>reckon/crew/dispatch_sessions.py</code> refuses a resume while the run "still has a live process", and <code>_launcher_refusal</code> in <code>reckon/crew/resumption.py</code> holds the same guard for the dry run. <code>_observed_end_refusal</code> in <code>resumption.py</code> refuses a sweep lift that has not observed the attempt end. Three test files, landed between 2026-09-29 and 2026-10-03, lock these in: <code>tests/test_resume_refuses_a_live_worker.py</code>, <code>tests/test_resume_sweep_needs_an_observed_death.py</code> and <code>tests/test_direct_resume_needs_an_observed_death.py</code>. Yet on 2026-10-12, attempt 7 launched beside attempt 6.</p>
     <p><strong>Deliverable.</strong> First reproduce that sequence: the sweep's auto-resume launches an attempt, and a coordinator's <code>crew resume</code> follows a minute later. Establish why <code>resume_plan</code>'s check did not fire, and record it in the manifest. Candidates include:</p>
     <ul>
