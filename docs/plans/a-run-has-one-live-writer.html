@@ -25,7 +25,7 @@
   <title>A Run Has One Live Writer | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="32">
+<meta name="plan-version" content="33">
 <meta name="plan-modified" content="2026-10-15">
 </head>
 <body>
@@ -176,6 +176,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261014T225218606661-review-of-a-resume-claim-spans-its-launch-fec3cbb868d2" data-who="reckon-build" data-when="2026-10-14T23:01:04.743Z">
     <div class="r-comment-body"><p>recorded an independent review of a-resume-claim-spans-its-launch at fec3cbb86 against base 7e22391d: all 6 dimensions scored (goal_fidelity 20, evidence 15, scope_discipline 19, durability 20, fit 20, reuse 20; total 114), 6 checklist-item verdicts, 4 production call sites, added_failure_count 1 with the id tests/test_every_attempt_is_supervised.py::test_crew_redispatch_keeps_the_harness_behind_a_supervisor[codex], and one follow-on finding that the manifest cites logs/flaky-note.txt which is absent.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261014T215224932408-a-resume-claim-spans-its-launch" data-who="reckon-build" data-when="2026-10-14T22:50:50.917Z">
+    <div class="r-comment-body"><p>_resume takes its _LAUNCHES_IN_THIS_PROCESS entry inside the guarded block and holds it until record_resumption has written the attempt or the launch has failed, so a raised in-flight mark cannot leak the entry and a second pass in the same process is refused until the attempt is recorded; only a launch that failed before a worker existed clears the in-flight mark, so a recording failure after a pid exists leaves the mark on the pointer and drops just the in-process entry; the 39-file importer population adds no failure against base (head 2 failed/575 passed vs base 3 failed/574 passed, every base failure present at head and the one head-only test passing alone at the same head).</p></div>
 </div>
 </section>
 <section data-reckon="followups" id="followups" class="r-followups">
