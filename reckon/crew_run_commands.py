@@ -1314,10 +1314,11 @@ def crew_resume(run_id, advice, backend, reason, print_only, pretty):
             _emit_crew_result({"run_id": run_id, **plan.as_dict()}, pretty)
             return
         # One launch path serves this door and the sweep's, so the done-status
-        # reset and the in-flight marker are not re-composed here where CLI
-        # copy could drift from the launcher that writes the attempt. The
-        # spawn is read from the crew facade and handed in, so an override
-        # installed on it still reaches this door's launch.
+        # reset, the in-flight marker and the attempt record are not
+        # re-composed here where CLI copy could drift from the launcher that
+        # writes the attempt. The spawn is the package attribute this door has
+        # always launched through, handed in so an override installed on it
+        # still reaches the launch.
         from reckon.crew.resumption import _resume
 
         result = _resume(

@@ -2254,11 +2254,11 @@ def _crew_recover(
 
     try:
         # The MCP door reaches the same launch the sweep and the command line
-        # do, so the done-status reset and the in-flight marker are not
-        # re-composed here where they could drift from the launcher that
-        # writes the attempt. The spawn is read from the crew facade and
-        # handed in, so an override installed on it still reaches this door's
-        # launch.
+        # do, so the done-status reset, the in-flight marker and the attempt
+        # record are not re-composed here where they could drift from the
+        # launcher that writes the attempt. The spawn is the package attribute
+        # this door has always launched through, handed in so an override
+        # installed on it still reaches the launch.
         result = resumption_module._resume(
             run_id,
             record,
