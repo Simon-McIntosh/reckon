@@ -1,0 +1,92 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-14T08:17:02.148Z",
+  "dispatched_at": "2026-10-14T08:04:15Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-suite-is-green-at-head.html:651",
+      "id": "reasoning-1",
+      "reason": "a node taking \"re-export\" literally places the moved-name import at the top of routing.py and hits ImportError, or to avoid it pulls the 27 retained gc helpers into gc.py \u2014 far beyond the declared deliverable and changing the ~44,000-token end state \u2014 because the plan asserts the split is behaviour-preserving without naming the inbound edge that makes it work or not.",
+      "text": "\u00a76 says \"routing.py re-exports every moved name, so the twenty-odd production modules that import them from routing keep working unchanged\" and \"A pure move cannot change behaviour\", but the two moved families depend on 29 names that stay in routing.py \u2014 the gc family calls GcSweepError, _release_worktree_whole, _live_pointer_worktrees, _stale_run_locks, _git, _release_worktree_whole, _pinnable_unique_commits and 20 more, and the process family calls _write_sender_record and _running_descendants \u2014 so gc.py and process_signal.py must each do `from reckon.crew.routing import ...` while routing.py does `from reckon.crew.gc import ...`, a mutual import whose correctness depends entirely on statement order, which the plan never states",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-suite-is-green-at-head.html:651",
+      "id": "reasoning-2",
+      "reason": "the two figures disagree by 526 bytes but the conclusion (over the 50,000 bound, needing this split) is unchanged at either size, so no node's path shifts.",
+      "text": "\u00a76's \"Recounted on 2026-10-14\" pairs a byte count with a token count the repository's own estimate does not produce: \"208,281 bytes, about 59,660 estimated tokens\", but `_tokens_for_bytes` (the ratio the window test imports) gives 59,509 tokens for 208,281 bytes, and 59,660 tokens only for 208,807 bytes, which is what `routing.py` actually measures at HEAD",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "a10bfbe2ad4a4c08803a59cd55e91d283a6013f4a99e1a712d143f2cee5baaf8",
+  "plan_slug": "the-suite-is-green-at-head",
+  "plan_version": 338,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-14T08:18:52.185145+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "",
+      "when": "2026-10-14T08:19:07.658797+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-14T08:18:52.185145+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-14T08:19:07.658797+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-suite-is-green-at-head.v338.json",
+  "review_run_id": "r-20261014T080337070441-plan-review-of-the-suite-is-green-at-head",
+  "reviewed_blob_sha": "0e350171b52457e9c0a2a901636df6a2d329ec0e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `784d580de`, `2e44591a1` and `c0390eb72` all resolve to the commits \u00a76 names, and the `a-run-has-one-live-writer` href resolves to `docs/plans/a-run-has-one-live-writer.html`.",
+    "done_when": "pass \u2014 \u00a76's done-when is measurable (the window test names none of `routing.py`, `gc.py`, `process_signal.py`, and the files importing `routing` show no added failure against base) and carries a real negative control (append the moved families back and the window test must then name `routing.py`).",
+    "evidence_paths": "pass \u2014 the gate is \"logged under the run directory\", a durable path that survives the run.",
+    "naming": "pass \u2014 `gc.py` and `process_signal.py` are named by what they hold; no plan label, stage name, ticket number or version tag reaches the new modules or symbols.",
+    "reasoning": "a finding \u2014 the deliverable's mechanism runs only in one direction: it says `routing.py` re-exports every moved name so importers keep working, but the moved families themselves call 27 (gc) and 2 (process) names that stay defined in `routing.py`, so the new modules must import back from `routing.py` while `routing.py` imports from them, and the plan states no strategy for that cycle.",
+    "single_goal": "pass \u2014 \u00a76 names one deliverable: moving the gc/scratch family to `gc.py` and the process-signalling family to `process_signal.py`.",
+    "wiring": "pass \u2014 \u00a76's two waited-on peer merges resolve and are merged (`a-worktree-release-is-whole` at `2e44591a1`, live-writer \u00a72 at `c0390eb72`, whose subject \"Merge a worker never outlives its supervisor\" is live-writer \u00a72), and \u00a76 declares no other-plan evidence dependency that is unmet."
+  },
+  "section_digests": {
+    "_document": "83bc4eebbeaf35e1f8769b1cefa72ecf8466fb0d23d3dd350bf2e642790b97e5",
+    "s1": "93d7e8eb3f04bb8d9aad0f5ac7d68a9d009b7fe7feaa6f4932738242154d8d4d",
+    "s10": "9633fb928a6c720c8fae74ed3da0a5f7ed555c4230f29ebf2ee89e5432566bb1",
+    "s11": "3e9c94371cc0b22adeb21c71a08fdd16433d8b4c1a22e73cd63d1171332089ba",
+    "s12": "dd8650523d29d87e6fa41408db7d0440cf17dfbd57f0ab6da0d5fcd223692d95",
+    "s13": "7b00f23667f49ba7de16f8823860c86ad35a562eebddf434fd1a6b9f1f5e9993",
+    "s14": "1469c86b5327d2429ce07b9ddd2fbca586d8831acb94119f8a187e315f48dcf7",
+    "s15": "f84dc4d4bef37307ff05d71bd4f7071e9208e789832e7cb00be82c37bcfde97e",
+    "s16": "4ab9d42bd2e71d070a1cc5393ebea66e1ec71d06dad51f1a82505c91ce309234",
+    "s2": "d8e1d44eab3d041cfa8f08f045885bcf9a783d27f0cb613fe7de2c0476c13887",
+    "s3": "d6efa514940aeb662c9b7fdee7f663c86e4da2526ec9a01c6977f967e30d886a",
+    "s4": "e7003c1b5457d6229da28b7d90f825f0e3ef67be2a012291c12a2daf14bf2273",
+    "s5": "934ff53a2b41de523672b7760ab4bbe2e8be5d3da6b580c600383ac0217825a2",
+    "s6": "9dd9e1263b0a3c0e944c038ef623d69cf7d626f13b8fa5792738bf949ffcb83f",
+    "s7": "655ef45aae9c9f31c0c67cb28422cff4a16611cfce488326c298768a23f58efd",
+    "s8": "c78e67e053ac3d61a73df4b965e8209a12ca4d9b745535a102b0b0040cce3adc",
+    "s9": "f4ef4f0dc18779331d3654037d55a7dd1c27d3769bfbfe753867fccbb53f9a28"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T08:17:10.878309+00:00"
+}
