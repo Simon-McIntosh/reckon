@@ -36,6 +36,7 @@ from reckon.crew.dispatch_admission import _refuse_against_the_bookend_reserve
 from reckon.crew.dispatch_sessions import _pace_readings
 from reckon.crew.node import CrewError
 from reckon.crew.routing import _budget_verdict
+from tests.real_home_traces import traces_naming
 
 
 def _load_census_script(name: str):
@@ -50,7 +51,7 @@ def _load_census_script(name: str):
 
 pace_replay = _load_census_script("pace_replay")
 
-GROUP = "codex-sub"
+GROUP = "lift-guard-fixture"
 LANE = "codex-sub"
 PROJECT = "lift-bench"
 NOW = datetime(2026, 10, 8, 3, 12, tzinfo=UTC)
@@ -209,22 +210,29 @@ def _verdict_ceiling(config, home, session, readings):
     return float(verdict["effective_ceiling_pct"])
 
 
-_REAL_LIFTS = Path.home() / ".config" / "reckon" / bl.LIFTS_LEAF
+_REAL_HOME = Path.home() / ".config" / "reckon"
 
 
-def _real_lifts_bytes():
-    if _REAL_LIFTS.exists():
-        return _REAL_LIFTS.read_bytes()
-    return None
+def _real_lift_traces(root: Path) -> list[str]:
+    """The real lift record carrying this suite's own group, if any.
+
+    The needle is the group every grant here is keyed by, so a leaked write
+    names itself in the record, while a peer's own lift -- keyed by a group
+    this suite never uses -- is never a hit.
+    """
+    return traces_naming(root, (bl.LIFTS_LEAF,), (GROUP,))
 
 
 @pytest.fixture(autouse=True)
 def _isolated_home(tmp_path, monkeypatch):
-    before = _real_lifts_bytes()
+    before = _real_lift_traces(_REAL_HOME)
     monkeypatch.setenv("RECKON_HOME", str(tmp_path))
     monkeypatch.delenv(bl.RUN_ID_ENV, raising=False)
     yield tmp_path
-    assert _real_lifts_bytes() == before, "the real budget-lifts.json was written"
+    after = _real_lift_traces(_REAL_HOME)
+    assert after == before, (
+        f"the real budget-lifts.json was written by this case: {after}"
+    )
 
 
 def test_a_pace_row_with_no_lift_records_its_session_and_no_lift(monkeypatch):

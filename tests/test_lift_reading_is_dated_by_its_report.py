@@ -28,8 +28,9 @@ import pytest
 from reckon.crew import budget_lift as bl
 from reckon.crew import paid_lanes
 from reckon.crew import rollout as rollout_module
+from tests.real_home_traces import traces_naming
 
-GROUP = "codex-sub"
+GROUP = "lift-guard-fixture"
 RUN_ID = "r-live-demo"
 SESSION = "sess-live"
 ENV = {"USER": "lead"}
@@ -146,24 +147,51 @@ def _config() -> dict:
     }
 
 
+_REAL_HOME = Path.home() / ".config" / "reckon"
+_REAL_PUBLISHED = Path.home() / "public" / "reckon" / "paid-lanes.json"
+
+
+def _real_lift_traces() -> list[str]:
+    """The real lift record carrying this suite's own group, if any.
+
+    The needle is the group this suite keys its grants by, so a leaked write
+    names itself and a peer's own lift is never a hit.
+    """
+    return traces_naming(_REAL_HOME, (bl.LIFTS_LEAF,), (GROUP,))
+
+
+def _real_published_traces() -> list[str]:
+    """The real paid-lanes document carrying this run's own figure stamp.
+
+    The needle is the run-time ``T1`` stamp the case's own published entry is
+    dated by, so a scheduled refresh of the live document -- which stamps its
+    own instant -- is never a hit.
+    """
+    return traces_naming(
+        _REAL_PUBLISHED.parent, (_REAL_PUBLISHED.name,), (T1.isoformat(),)
+    )
+
+
 @pytest.fixture
 def crew_home(tmp_path, monkeypatch):
     """Point every home at a temp crew home and prove the live ones untouched."""
-    lifts = Path.home() / ".config" / "reckon" / bl.LIFTS_LEAF
-    before_lifts = lifts.read_bytes() if lifts.exists() else None
-    published = Path.home() / "public" / "reckon" / "paid-lanes.json"
-    before_published = published.read_bytes() if published.exists() else None
+    before_lifts = _real_lift_traces()
+    before_published = _real_published_traces()
 
     home = tmp_path / "crew-home"
     monkeypatch.setenv(paid_lanes.RECKON_HOME_ENV, str(home))
     monkeypatch.delenv(bl.RUN_ID_ENV, raising=False)
     yield home
 
-    after_lifts = lifts.read_bytes() if lifts.exists() else None
-    after_published = published.read_bytes() if published.exists() else None
+    after_lifts = _real_lift_traces()
+    after_published = _real_published_traces()
 
-    assert after_lifts == before_lifts, "a test wrote the live budget-lifts.json"
-    assert after_published == before_published, "a test wrote the live paid-lanes"
+    assert after_lifts == before_lifts, (
+        f"a test wrote the live budget-lifts.json: {after_lifts}"
+    )
+    assert after_published == before_published, (
+        f"a test wrote the live paid-lanes: {after_published}"
+    )
 
 
 def _gather(crew_home: Path, *, with_reader: bool) -> dict:

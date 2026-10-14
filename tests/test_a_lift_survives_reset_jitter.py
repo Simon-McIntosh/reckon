@@ -26,9 +26,10 @@ from pathlib import Path
 import pytest
 
 from reckon.crew import budget_lift as bl
+from tests.real_home_traces import traces_naming
 
 WEEK_HOURS = bl.CLOCK_HOURS[bl.SEVEN_DAY]
-GROUP = "codex-sub"
+GROUP = "lift-guard-fixture"
 NOW = datetime(2026, 10, 8, 3, 12, tzinfo=UTC)
 ENV = {"USER": "lead"}
 
@@ -71,14 +72,18 @@ def _config() -> dict:
 
 @pytest.fixture(autouse=True)
 def _isolated_home(tmp_path, monkeypatch):
-    """Point the config home at a temp dir; prove the real record is untouched."""
-    real = Path.home() / ".config" / "reckon" / bl.LIFTS_LEAF
-    before = real.read_bytes() if real.exists() else None
+    """Point the config home at a temp dir; prove the real record is untouched.
+
+    Only the group this suite keys its grants by is searched for, so a peer's
+    own lift -- keyed by a group this file never uses -- is never a hit.
+    """
+    home = Path.home() / ".config" / "reckon"
+    before = traces_naming(home, (bl.LIFTS_LEAF,), (GROUP,))
     monkeypatch.setenv("RECKON_HOME", str(tmp_path))
     monkeypatch.delenv(bl.RUN_ID_ENV, raising=False)
     yield tmp_path
-    after = real.read_bytes() if real.exists() else None
-    assert after == before, "a test wrote the live budget-lifts.json"
+    after = traces_naming(home, (bl.LIFTS_LEAF,), (GROUP,))
+    assert after == before, f"a test wrote the live budget-lifts.json: {after}"
 
 
 def _grant(config: dict, *, reading: dict) -> dict:

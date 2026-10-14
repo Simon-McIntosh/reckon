@@ -43,6 +43,7 @@ from reckon.crew import pace as pace_module
 from reckon.crew import runs
 from reckon.crew.dispatch import WATCH_ARMING_ENV
 from reckon.crew.node import CrewError
+from tests.real_home_traces import traces_naming
 
 # This workstation's own crew home. No case may write under it: every case
 # redirects the home through RECKON_HOME and the fixture proves nothing leaked.
@@ -270,14 +271,18 @@ def _assert_home_untouched(config_home: Path, run_id: str) -> None:
 
     A case may leave its run live or promote it, so the run's own directory —
     not its pointer, which promotion deletes — is what proves the dispatch
-    landed under the temporary home rather than this workstation's.
+    landed under the temporary home rather than this workstation's. The run id
+    is the needle this case mints, so only an entry naming it is reported and a
+    peer's own run is never a hit. The live pointer directory is searched
+    through the shared helper; the run archive is not walked unbounded, so the
+    run's own directory is checked by its name alone.
     """
     assert str(runs.live_dir()).startswith(str(config_home)), runs.live_dir()
     assert str(runs.run_dir(run_id)).startswith(str(config_home)), runs.run_dir(run_id)
     assert runs.run_dir(run_id).is_dir(), run_id
-    for directory in (REAL_HOME / "crew" / "live", REAL_HOME / "crew" / "runs"):
-        assert not (directory / f"{run_id}.json").exists(), f"{directory}/{run_id}"
-        assert not (directory / run_id).exists(), f"{directory}/{run_id}"
+    live = traces_naming(REAL_HOME / "crew", ("live",), (run_id,))
+    assert live == [], f"the real live directory carries this case's run: {live}"
+    assert not (REAL_HOME / "crew" / "runs" / run_id).exists(), run_id
 
 
 def _prescribed_node(config_home: Path, name: str) -> crew.TaskNode:

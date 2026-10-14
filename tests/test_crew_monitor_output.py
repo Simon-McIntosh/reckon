@@ -14,6 +14,7 @@ import pytest
 
 from reckon import cli
 from reckon.crew import recovery, runs
+from tests.real_home_traces import traces_naming
 
 
 def _append_line(path: Path, line: str) -> None:
@@ -211,16 +212,24 @@ def test_watch_payloads_carry_the_line_that_attaches_this_session(
 ) -> None:
     """A seat is project-global; only the attach line delivers to this session."""
     monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
-    real = Path.home() / ".config" / "reckon" / "crew" / "watch"
-    before = sorted(q.name for q in real.glob("demo*")) if real.is_dir() else []
+    # The project is this test's own, so the search reports only a lock its own
+    # project would name -- never a peer's watcher for a project it shares.
+    project = "monitor-output-fixture"
+    real_crew = Path.home() / ".config" / "reckon" / "crew"
+    before = traces_naming(real_crew, ("watch",), (project,))
 
-    for payload in (runs.watch_state("demo"), runs.project_watch_visibility("demo")):
-        assert payload["attach_line"] == runs._watch_attach_line("demo")
+    for payload in (
+        runs.watch_state(project),
+        runs.project_watch_visibility(project),
+    ):
+        assert payload["attach_line"] == runs._watch_attach_line(project)
         assert "crew follow" in payload["attach_line"]
         assert payload["arming_line"] != payload["attach_line"]
 
-    after = sorted(q.name for q in real.glob("demo*")) if real.is_dir() else []
-    assert after == before, "the redirected home leaked a lock into the real one"
+    after = traces_naming(real_crew, ("watch",), (project,))
+    assert after == before, (
+        f"the redirected home leaked a lock into the real one: {after}"
+    )
 
 
 def test_every_emitted_state_lands_in_exactly_one_fleet_bucket() -> None:

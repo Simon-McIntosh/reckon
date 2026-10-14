@@ -35,6 +35,7 @@ import pytest
 from reckon import crew
 from reckon.crew import review as review_module
 from reckon.crew.runs import list_live, pointer_path
+from tests.real_home_traces import traces_naming
 
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
 
@@ -93,15 +94,7 @@ def _fixture_pointers_in_the_real_home() -> list[str]:
     The real pointer directory is read, never written: a case whose isolation
     holds has no pointer there mentioning this project or run.
     """
-    found: list[str] = []
-    for path in REAL_LIVE.glob("*.json"):
-        try:
-            text = path.read_text(encoding="utf-8")
-        except OSError:
-            continue
-        if PROJECT in text or FIRST_RUN in text:
-            found.append(path.name)
-    return found
+    return traces_naming(REAL_LIVE.parent, ("live",), (PROJECT, FIRST_RUN))
 
 
 @pytest.fixture()

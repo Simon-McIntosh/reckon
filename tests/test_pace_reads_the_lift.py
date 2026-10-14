@@ -23,8 +23,9 @@ import pytest
 from reckon import budget
 from reckon.crew import budget_lift as bl
 from reckon.crew import window_reading
+from tests.real_home_traces import traces_naming
 
-GROUP = "codex-sub"
+GROUP = "lift-guard-fixture"
 BACKEND = "codex-sub"
 PROJECT = "lift-test"
 
@@ -152,20 +153,27 @@ def _grant(config: dict, **kwargs: object) -> dict:
     return bl.grant(config, group=GROUP, reason="spend ahead into the window", **kwargs)
 
 
-_REAL_LIFTS = Path.home() / ".config" / "reckon" / bl.LIFTS_LEAF
+_REAL_HOME = Path.home() / ".config" / "reckon"
 
 
-def _real_lifts_bytes() -> bytes | None:
-    return _REAL_LIFTS.read_bytes() if _REAL_LIFTS.exists() else None
+def _real_lift_traces(root: Path) -> list[str]:
+    """The real lift record carrying this suite's own group, if any.
+
+    The needle is the group every grant here is keyed by, so a leaked write
+    names itself in the record, while a peer's own lift -- keyed by a group
+    this suite never uses -- is never a hit.
+    """
+    return traces_naming(root, (bl.LIFTS_LEAF,), (GROUP,))
 
 
 @pytest.fixture(autouse=True)
 def _isolated_home(tmp_path, monkeypatch):
     """Point the config home at a temp dir; leave the real lift doc untouched."""
-    before = _real_lifts_bytes()
+    before = _real_lift_traces(_REAL_HOME)
     monkeypatch.setenv("RECKON_HOME", str(tmp_path))
     yield
-    assert _real_lifts_bytes() == before, "the real budget-lifts.json was written"
+    after = _real_lift_traces(_REAL_HOME)
+    assert after == before, f"the real budget-lifts.json was written: {after}"
 
 
 def test_the_configured_pace_holds_the_implement_dispatch() -> None:

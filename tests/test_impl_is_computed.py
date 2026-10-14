@@ -25,11 +25,12 @@ def _real_home_traces(needles: tuple[str, ...]) -> list[str]:
     """This test's own traces in the real home's project store, if any.
 
     The project is mounted under a temporary home, so a leak would write the
-    mounted project's ``sample`` state into the real home's ``state`` tree.
-    Searching for the temporary path and the project name, rather than
-    comparing the home's top-level names and mtimes, is what keeps a peer
-    session -- which churns the real ``crew/`` tree continuously -- from
-    failing this guard.
+    mounted project's ``impl-computed-fixture`` state into the real home's
+    ``state`` tree. Searching for the temporary path and the project name,
+    rather than comparing the home's top-level names and mtimes, is what keeps
+    a peer session -- which churns the real ``crew/`` tree continuously -- from
+    failing this guard. The project name is this suite's own, so a peer's
+    project is never a hit.
     """
     return traces_naming(REAL_CONFIG_HOME, ("state",), needles)
 
@@ -53,7 +54,7 @@ def _records_html(records: list[dict], stored_impl: str | None = None) -> str:
     return (
         '<!doctype html>\n<html lang="en"><head>\n'
         '<meta charset="utf-8">\n'
-        '<meta name="docs-project" content="sample">\n'
+        '<meta name="docs-project" content="impl-computed-fixture">\n'
         '<meta name="reckon-type" content="plan">\n'
         '<meta name="plan-slug" content="computed">\n'
         '<meta name="plan-title" content="Computed impl">\n'
@@ -73,13 +74,13 @@ def _write_plan(docs: Path, slug: str, html: str) -> Path:
 @pytest.fixture()
 def project(tmp_path, monkeypatch):
     """A mounted project under a temporary config home, with the real one guarded."""
-    needles = (str(tmp_path), "sample")
+    needles = (str(tmp_path), "impl-computed-fixture")
     before = _real_home_traces(needles)
     home = tmp_path / "config"
     (home / "state").mkdir(parents=True)
     docs = tmp_path / "repo" / "docs"
     (docs / "plans").mkdir(parents=True)
-    (home / "mounts.json").write_text(json.dumps({"sample": str(docs)}))
+    (home / "mounts.json").write_text(json.dumps({"impl-computed-fixture": str(docs)}))
     monkeypatch.setenv("RECKON_HOME", str(home))
     monkeypatch.setenv("RECKON_STATE_ROOT", str(home / "state"))
     # A live run id would fence every write to that run's own checkout; a unit
@@ -89,7 +90,7 @@ def project(tmp_path, monkeypatch):
     serve_module._STATE_ROOT = home / "state"
     serve_module._DISC_CACHE.clear()
     reload_mcp_family()
-    yield "sample", docs
+    yield "impl-computed-fixture", docs
     assert store_module._config_home() == home
     assert _real_home_traces(needles) == before
 
@@ -191,7 +192,7 @@ def _documenting_prose_html(stored_impl: str) -> str:
     return (
         '<!doctype html>\n<html lang="en"><head>\n'
         '<meta charset="utf-8">\n'
-        '<meta name="docs-project" content="sample">\n'
+        '<meta name="docs-project" content="impl-computed-fixture">\n'
         '<meta name="reckon-type" content="plan">\n'
         '<meta name="plan-slug" content="documenting">\n'
         '<meta name="plan-title" content="Documenting the record syntax">\n'
