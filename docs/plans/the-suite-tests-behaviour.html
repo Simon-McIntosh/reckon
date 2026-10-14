@@ -26,7 +26,7 @@
   <title>The Suite Tests Behaviour | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="45">
+<meta name="plan-version" content="46">
 <meta name="plan-modified" content="2026-10-14">
 </head>
 <body>
@@ -269,7 +269,10 @@
     <div class="r-comment-body"><p>§5 closed: 37 source-text sites down to 10 (merges <code>bbbb6c874</code>, <code>8cddf2cb1</code>), with the structural guards the count cost restored repo-wide (merge <code>6ef8ea30c</code>, review 107/120). <a href="/reckon/evidence/archive/the-suite-tests-behaviour-landed.html#s5-structural-guards">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261014T034420911401-review-of-real-home-guards-fail-only-on-their-own-writes-50bb75cfff40" data-who="reckon-build" data-when="2026-10-14T03:55:37.264Z">
-    <div class="r-comment-body"><p>review of r-20261014T030111578241-real-home-guards-fail-only-on-their-own-writes: parsed record scoring all six dimensions (goal_fidelity 15, evidence 11, scope_discipline 20, durability 12, fit 13, reuse 20; total 91), reviewed_base_sha 1a4633e8eea8d66e7cf0101ba1e8447f05cc800b and reviewed_head_sha 50bb75cfff400210dd9295e6ef9e280ded9d5abe, four findings — one blocking (the done-when&#x27;s base arm and crew/live entry counts were never recorded) and three follow-on (gate log names no revision; base_refused_one.log records EXIT=0 on a failing run; tests/real_home_traces.py adds two ruff findings).</p></div>
+    <div class="r-comment-body"><p>review of r-20261014T030111578241-real-home-guards-fail-only-on-their-own-writes: parsed record scoring all six dimensions (goal_fidelity 15, evidence 11, scope_discipline 20, durability 12, fit 13, reuse 20; total 91), reviewed_base_sha 1a4633e8eea8d66e7cf0101ba1e8447f05cc800b and reviewed_head_sha 50bb75cfff400210dd9295e6ef9e280ded9d5abe, four findings — one blocking (the done-when's base arm and crew/live entry counts were never recorded) and three follow-on (gate log names no revision; base_refused_one.log records EXIT=0 on a failing run; tests/real_home_traces.py adds two ruff findings).</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261014T030111578241-real-home-guards-fail-only-on-their-own-writes" data-who="reckon-build" data-when="2026-10-14T04:12:05.854Z">
+    <div class="r-comment-body"><p>tests/real_home_traces.py — one shared needle-filtered search replaces six whole-snapshot real-home guards, the private _own_traces and the four fixture_pointers copies, so one definition remains. Gate tests/test_real_home_traces.py: 3 passed EXIT=0. Both negative controls: 1 failed EXIT=1. Every migrated module re-run and passing; the sole failure is pre-existing at base.</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
