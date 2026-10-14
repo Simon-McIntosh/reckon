@@ -1,0 +1,71 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-14T04:15:25.575Z",
+  "dispatched_at": "2026-10-14T04:08:42Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-suite-is-green-at-head.html:687",
+      "id": "reasoning-1",
+      "reason": "the deliverable's stated mechanism does not reach the own session's non-start rows, so the \"thirteen ids pass alone\" done-when is satisfiable by editing the fixture away, leaving a reported field suppression unaddressed; the author must either widen the exemption to the own session's non-start rows (the report's preferred repair) or state why that transition is correctly withheld.",
+      "text": "\u00a715's Why lists \"starting \u2192 working rows that are neither coordinator nor start kinds\" among the rows the hold withholds, but the deliverable exempts only an observed session's rows and says \"the own session's rows stay as they are\", then asserts the other family tests \"feed production-shaped rows: coordinator kinds or own-session starts\"; test_follower_freshness feeds from_state starting \u2192 working on its own session (tests/test_follower_freshness.py:43-44 with `--session session-a`), which is neither an observed session nor a start kind (START_KIND = (\"dispatched\",\"working\"), reckon/crew/ticker.py:1031), so the fix re-anchors that test rather than delivering the row \u2014 and the cited report at follower-family-shared-cause/report.md:152-155 says exactly this transition \"is withheld on any real pane the same way, so the hold also suppresses some genuine transitions in the field\"",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "bf5081e84d9b063605b06957070f467e5a494363442eb329506566c1ef013c16",
+  "plan_slug": "the-suite-is-green-at-head",
+  "plan_version": 320,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-14T04:16:53.098069+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-14T04:16:53.098069+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-suite-is-green-at-head.v320.json",
+  "review_run_id": "r-20261014T040749313482-plan-review-of-the-suite-is-green-at-head",
+  "reviewed_blob_sha": "7d70f7f02d3e145a48b0505ed557af474e34b732",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited report.md exists, 089cd7741 resolves to \"feat(crew): hold observer-context rows back on the coordinator pane\", RowPolicy.feed and follower_row_path exist at the named files, and every named test file (test_follow_settled_rows.py, test_row_policy_holds_observer_context.py, test_follow_observes_other_sessions.py, test_follow_sweep_cadence.py, test_follower_freshness.py, test_follower_reload_is_safe.py, test_follower_survives_a_config_change.py, test_follower_survives_a_host_change.py) is present.",
+    "done_when": "pass \u2014 \u00a715's done-when is measurable (\"the thirteen ids pass alone\", the two hold-pin files still pass, no added failure in the importing test files) and names a declared negative control (\"drops the observed-session delivery, and the cases of test_follow_observes_other_sessions.py must then fail\"), which the cited report's per-id table shows is reachable (those five cases are the base-red ones).",
+    "evidence_paths": "pass \u2014 the shared-cause report sits under ~/.config/reckon/crew/reports/reckon/the-suite-is-green-at-head/follower-family-shared-cause/ and gate logs are \"logged under the run directory\"; both are durable, not a session scratchpad or node-local temp path.",
+    "naming": "pass \u2014 \u00a715's new symbols are named by mechanism (observed-session exemption), with no plan label, stage name, ticket number or version tag, and no changelog prose.",
+    "reasoning": "a finding \u2014 \u00a715 attributes the family failure to the observer-context hold and keeps the own session's rows withheld while re-anchoring the one test that feeds the own session's starting\u2192working transition, which its own cited report calls a production-shaped transition withheld on a real pane.",
+    "single_goal": "pass \u2014 \u00a715 carries one deliverable: the follower family goes green by delivering an observed session's rows and re-anchoring the fixtures that feed non-production rows.",
+    "wiring": "pass \u2014 the plan is standalone (plan-standalone meta) and section-level data-links are empty, so no depends-on/informs/gates points at a wrong node; \u00a715's cited report, commit and test paths all resolve."
+  },
+  "section_digests": {
+    "_document": "83bc4eebbeaf35e1f8769b1cefa72ecf8466fb0d23d3dd350bf2e642790b97e5",
+    "s1": "93d7e8eb3f04bb8d9aad0f5ac7d68a9d009b7fe7feaa6f4932738242154d8d4d",
+    "s10": "9633fb928a6c720c8fae74ed3da0a5f7ed555c4230f29ebf2ee89e5432566bb1",
+    "s11": "3e9c94371cc0b22adeb21c71a08fdd16433d8b4c1a22e73cd63d1171332089ba",
+    "s12": "dd8650523d29d87e6fa41408db7d0440cf17dfbd57f0ab6da0d5fcd223692d95",
+    "s13": "7b00f23667f49ba7de16f8823860c86ad35a562eebddf434fd1a6b9f1f5e9993",
+    "s14": "1469c86b5327d2429ce07b9ddd2fbca586d8831acb94119f8a187e315f48dcf7",
+    "s15": "6c201a0a8a201b7b988863301bf18cc386ce9dcb884ba0fb947860a2e1008728",
+    "s16": "4ab9d42bd2e71d070a1cc5393ebea66e1ec71d06dad51f1a82505c91ce309234",
+    "s2": "d8e1d44eab3d041cfa8f08f045885bcf9a783d27f0cb613fe7de2c0476c13887",
+    "s3": "d6efa514940aeb662c9b7fdee7f663c86e4da2526ec9a01c6977f967e30d886a",
+    "s4": "e7003c1b5457d6229da28b7d90f825f0e3ef67be2a012291c12a2daf14bf2273",
+    "s5": "934ff53a2b41de523672b7760ab4bbe2e8be5d3da6b580c600383ac0217825a2",
+    "s6": "532d289736e3278c9969cb253dc2c1c372054b378fd42f2cfb741906f6e66eb2",
+    "s7": "655ef45aae9c9f31c0c67cb28422cff4a16611cfce488326c298768a23f58efd",
+    "s8": "c78e67e053ac3d61a73df4b965e8209a12ca4d9b745535a102b0b0040cce3adc",
+    "s9": "f4ef4f0dc18779331d3654037d55a7dd1c27d3769bfbfe753867fccbb53f9a28"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T04:15:38.944974+00:00"
+}
