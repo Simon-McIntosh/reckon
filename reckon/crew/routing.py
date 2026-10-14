@@ -3376,15 +3376,21 @@ def _running_descendants(pid: int) -> list[int]:
     return seen
 
 
-def _recorded_worker_pid(run_dir: str | Path | None) -> int | None:
-    """The worker pid the run directory's own record names, or None."""
+def _worker_record(run_dir: str | Path | None) -> Mapping[str, Any] | None:
+    """The run directory's own worker record, or None when it cannot be read."""
     if run_dir is None:
         return None
     try:
         data = json.loads((Path(run_dir) / _RUN_WORKER_RECORD).read_text())
     except (OSError, ValueError):
         return None
-    if not isinstance(data, Mapping):
+    return data if isinstance(data, Mapping) else None
+
+
+def _recorded_worker_pid(run_dir: str | Path | None) -> int | None:
+    """The worker pid the run directory's own record names, or None."""
+    data = _worker_record(run_dir)
+    if data is None:
         return None
     try:
         return int(data.get("pid"))
@@ -3395,47 +3401,73 @@ def _recorded_worker_pid(run_dir: str | Path | None) -> int | None:
 def _run_launch_floor(run_dir: str | Path | None) -> int | None:
     """The start tick at or after which the run's own processes began.
 
-    Read from the worker record's own start tick: the worker is launched after
-    the supervisor's snapshot, so a process naming the run that began no earlier
-    than it is the run's. Absent a record there is no floor to apply, and the
-    scan falls back to the run id alone.
+    Read from the worker record's recorded start tick, not from whatever
+    process holds that pid now: the number in the record is the tick the
+    registered worker began at, so a pid the kernel has since recycled cannot
+    raise the floor above the run's real processes and hide them from the scan.
+    The worker is launched after the supervisor's snapshot, so a process naming
+    the run that began no earlier than it is the run's. Absent a record there is
+    no floor to apply, and the scan falls back to the run id alone.
     """
-    if run_dir is None:
+    data = _worker_record(run_dir)
+    if data is None:
         return None
     try:
-        data = json.loads((Path(run_dir) / _RUN_WORKER_RECORD).read_text())
-    except (OSError, ValueError):
+        return int(data.get("pid_start_time"))
+    except (TypeError, ValueError):
         return None
-    if not isinstance(data, Mapping):
-        return None
-    return _start_tick(data.get("pid"))
+
+
+def _root_names_the_recorded_process(pid: int, recorded_start: Any) -> bool:
+    """Whether ``pid`` still names the process a record registered.
+
+    A recorded start tick that differs from the running process's own rules the
+    root out: the pid was recycled, and walking from it would descend into an
+    unrelated process's children. An absent or unreadable recorded tick is not
+    proof of reuse — the same stance the run record's own liveness read takes —
+    so the root stands unless the two are both readable and differ.
+    """
+    if recorded_start is None:
+        return True
+    actual = _process_start_time(pid)
+    return actual is None or actual == str(recorded_start)
 
 
 def _run_process_pids(
-    pid: int | None, *, run_id: str | None, run_dir: str | Path | None
+    pid: int | None,
+    *,
+    run_id: str | None,
+    run_dir: str | Path | None,
+    expected_start_time: Any = None,
 ) -> list[int]:
     """Every process the run owns, by descent or by its environment mark.
 
     Two sources, unioned: the descent from the run's recorded supervisor and
     worker pids, which follows a live tree while the kernel still parenthesises
     it; and the environment scan for a worker the kernel has since reparented.
-    The caller's own pid is dropped, because ending the process asking to end a
-    run is never what the request means.
+    Each descent root is checked against the start tick its own record carries
+    before it is walked — the handed pid against the record the caller read it
+    from, the worker-record pid against the worker record's own tick — so a pid
+    the kernel has recycled contributes neither itself nor its children. The
+    caller's own pid is dropped, because ending the process asking to end a run
+    is never what the request means.
     """
-    roots: list[int] = []
+    roots: list[tuple[int, Any]] = []
     if pid:
-        roots.append(int(pid))
+        roots.append((int(pid), expected_start_time))
     worker_pid = _recorded_worker_pid(run_dir)
     if worker_pid is not None:
-        roots.append(worker_pid)
+        roots.append(
+            (worker_pid, (_worker_record(run_dir) or {}).get("pid_start_time"))
+        )
     collected: list[int] = []
-    for root in roots:
+    for root, recorded_start in roots:
+        if not _root_names_the_recorded_process(root, recorded_start):
+            continue
         collected.extend(_running_descendants(root))
     if run_id:
         floor = _run_launch_floor(run_dir)
-        for candidate in _processes_owning_run(
-            run_id, started_no_earlier_than=floor
-        ):
+        for candidate in _processes_owning_run(run_id, started_no_earlier_than=floor):
             collected.extend(_running_descendants(candidate))
     own_pid = os.getpid()
     ordered: list[int] = []
@@ -3509,6 +3541,7 @@ def signal_worker(
     project: str | None = None,
     run_id: str | None = None,
     reach_run: bool = False,
+    expected_start_time: Any = None,
 ) -> bool | list[int]:
     """Signal a spawned process, and the rest of its run when asked.
 
@@ -3538,7 +3571,9 @@ def signal_worker(
     old boolean, so a caller that is not ending a run keeps the contract it
     was written against. With ``reach_run`` the result is the list of pids the
     signal was delivered to, which is what a caller recording an ended run
-    needs.
+    needs. ``expected_start_time`` is the start tick the caller read ``pid``
+    from: the descent from that pid runs only while the pid still names that
+    process, so a recycled pid contributes neither itself nor its children.
 
     This is the only function in the crew that calls ``os.kill`` or
     ``os.killpg``, so the attribution scan has one home to point at. A caller
@@ -3551,15 +3586,18 @@ def signal_worker(
         return _signal_one(
             int(pid), sig, reason=reason, run_dir=run_dir, project=project
         )
-    targets = _run_process_pids(pid, run_id=run_id, run_dir=run_dir)
+    targets = _run_process_pids(
+        pid,
+        run_id=run_id,
+        run_dir=run_dir,
+        expected_start_time=expected_start_time,
+    )
     own_pid = os.getpid()
     ended: list[int] = []
     for target in targets:
         if target == own_pid:
             continue
-        if _signal_one(
-            target, sig, reason=reason, run_dir=run_dir, project=project
-        ):
+        if _signal_one(target, sig, reason=reason, run_dir=run_dir, project=project):
             ended.append(target)
     return ended
 
@@ -3571,7 +3609,7 @@ def _signal_process_group(
     reason: str = "",
     run_dir: str | Path | None = None,
     project: str | None = None,
-) -> None:
+) -> list[int]:
     """Signal a worker only while its pid still names the spawned process.
 
     A recorded pid is data from a run record, not a fact about who is calling
@@ -3599,6 +3637,9 @@ def _signal_process_group(
     on the handed pid — they protect the caller, not the run. A caller that only
     holds a pid to stop, with no run of its own, passes no directory and keeps
     the single-pid behaviour.
+
+    It returns the pids the signal was delivered to, which is what a caller
+    recording an ended run needs; the empty list means nothing was signalled.
     """
     own_pid = os.getpid()
     if pid == own_pid or os.getpgid(pid) == os.getpgid(own_pid):
@@ -3634,10 +3675,10 @@ def _signal_process_group(
         )
         raise CrewError(detail)
     if run_dir is None:
-        signal_worker(pid, signal.SIGTERM, reason=reason, project=project)
-        return
+        delivered = signal_worker(pid, signal.SIGTERM, reason=reason, project=project)
+        return [int(pid)] if delivered else []
     run_id = Path(run_dir).name
-    signal_worker(
+    ended = signal_worker(
         pid,
         signal.SIGTERM,
         reason=reason,
@@ -3645,7 +3686,9 @@ def _signal_process_group(
         project=project,
         run_id=run_id,
         reach_run=True,
+        expected_start_time=expected_start_time,
     )
+    return list(ended) if isinstance(ended, list) else []
 
 
 def _base_commit(repo: Path, base: str) -> str:

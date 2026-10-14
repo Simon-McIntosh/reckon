@@ -315,6 +315,50 @@ def test_an_identity_checked_signal_with_a_run_dir_reaches_the_whole_run(
         assert _wait_gone(all_pids), f"a process of the run survived: {all_pids}"
 
 
+def test_a_recycled_worker_record_pid_is_not_walked(crew_home: Path) -> None:
+    # A worker record names a pid, and the kernel may have handed that number to
+    # an unrelated process long after the worker it registered exited. Walking
+    # from it would descend into that process's children and signal them, so the
+    # walk is taken only while the pid still names the process the record
+    # registered — proven here by the same process being reached once its own
+    # start tick is the one recorded.
+    run_id = "r-recycled-worker-record"
+    with _tree(None, children=1) as stale:
+        root = stale[0]
+        stale[:] = _with_children(root)
+        assert len(stale) == 2, f"expected a process and its child: {stale}"
+        record_dir = run_dir(run_id)
+        record_dir.mkdir(parents=True, exist_ok=True)
+
+        _write_worker_record(run_id, pid=root, start_time="1")
+        ended = routing.signal_worker(
+            0,
+            signal.SIGTERM,
+            reason="reach-probe",
+            run_dir=record_dir,
+            run_id=run_id,
+            reach_run=True,
+            expected_start_time=None,
+        )
+        assert ended == [], f"a recycled pid was reached: {ended}"
+        for pid in stale:
+            assert _alive(pid), f"pid {pid} of an unrelated process was signalled"
+
+        _write_worker_record(
+            run_id, pid=root, start_time=routing._process_start_time(root)
+        )
+        ended = routing.signal_worker(
+            0,
+            signal.SIGTERM,
+            reason="reach-probe",
+            run_dir=record_dir,
+            run_id=run_id,
+            reach_run=True,
+        )
+        assert set(ended) >= set(stale), f"the recorded worker was missed: {ended}"
+        assert _wait_gone(stale), f"a process of the run survived: {stale}"
+
+
 def test_a_worktree_holder_with_no_mark_is_listed_and_left_alive(
     crew_home: Path,
 ) -> None:

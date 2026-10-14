@@ -1772,26 +1772,42 @@ def terminate(run_id: str) -> dict[str, Any]:
     def stop(record: dict[str, Any]) -> dict[str, Any]:
         run_directory = run_dir(run_id)
         recorded_pid = record.get("pid")
-        reached = _run_process_pids(
-            int(recorded_pid) if recorded_pid else None,
-            run_id=run_id,
-            run_dir=run_directory,
-        )
-        if not reached and not recorded_pid:
-            raise CrewError(f"run {run_id!r} has no process to stop")
-        ended = signal_worker(
-            int(recorded_pid) if recorded_pid else 0,
-            signal.SIGTERM,
-            reason="run-stop",
-            run_dir=run_directory,
-            project=str(record.get("project") or "") or None,
-            run_id=run_id,
-            reach_run=True,
-        )
+        project = str(record.get("project") or "") or None
+        # A recorded pid that still names a process, or a recorded start tick
+        # with no process behind it, goes through the identity-checked signal:
+        # it refuses a pid the kernel has since recycled rather than signalling
+        # an unrelated process and the run's pids are all it walks from. When
+        # neither is there the run record names nothing to check against, and
+        # the environment mark is the only reach left for a worker the
+        # supervisor left reparented to init.
+        if recorded_pid and (
+            process_alive(int(recorded_pid)) is True
+            or record.get("pid_start_time") is not None
+        ):
+            ended = _signal_process_group(
+                int(recorded_pid),
+                record.get("pid_start_time"),
+                run_dir=run_directory,
+                reason="run-stop",
+                project=project,
+            )
+        else:
+            ended = signal_worker(
+                0,
+                signal.SIGTERM,
+                reason="run-stop",
+                run_dir=run_directory,
+                project=project,
+                run_id=run_id,
+                reach_run=True,
+            )
+            if not ended and not recorded_pid:
+                raise CrewError(f"run {run_id!r} has no process to stop")
         alive_after = _await_run_processes_gone(
             int(recorded_pid) if recorded_pid else None,
             run_id=run_id,
             run_dir=run_directory,
+            expected_start_time=record.get("pid_start_time"),
         )
         worktree = str(record.get("worktree") or "")
         holders = _processes_holding(Path(worktree)) if worktree else []
@@ -1827,7 +1843,11 @@ _STOP_SETTLE_POLL_SECONDS = 0.02
 
 
 def _await_run_processes_gone(
-    pid: int | None, *, run_id: str, run_dir: Any
+    pid: int | None,
+    *,
+    run_id: str,
+    run_dir: Any,
+    expected_start_time: Any = None,
 ) -> list[int]:
     """Poll until the run's processes are gone, and name any that remain.
 
@@ -1842,7 +1862,10 @@ def _await_run_processes_gone(
         remaining = [
             candidate
             for candidate in _run_process_pids(
-                pid, run_id=run_id, run_dir=run_dir
+                pid,
+                run_id=run_id,
+                run_dir=run_dir,
+                expected_start_time=expected_start_time,
             )
             if process_alive(candidate) is True
         ]
