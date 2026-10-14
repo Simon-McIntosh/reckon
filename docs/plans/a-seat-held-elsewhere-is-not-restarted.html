@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-after" content="the-review-loop-runs-without-hand-steps">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
   <title>A Seat Held Elsewhere Is Not Restarted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="18">
+<meta name="plan-version" content="19">
 <meta name="plan-modified" content="2026-10-14">
 </head>
 <body>
@@ -84,7 +84,7 @@
     </p>
 
     <h2 id="s4">§4 — Every attached session's snapshot is published, whichever host it attaches from</h2>
-<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p>
       <strong>Deliverable.</strong> The seated producer publishes an obligations snapshot for every coordinator session with a registered
       follower in the project, whichever host the follower runs on, and the hook on any host reads it through the same foreign-seat
@@ -153,6 +153,9 @@
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261014T191156144929-review-of-a-snapshot-is-published-for-every-host-b5d2bf69ae78" data-who="reckon-build" data-when="2026-10-14T19:26:54.918Z">
     <div class="r-comment-body"><p>reviewed run r-20261014T183456520421-a-snapshot-is-published-for-every-host (base 40c8f4bb5fa917d9f0eb161b178226f7026c2177, head b5d2bf69ae7810ab29dd5f7560e9782aa063540d, commits 49b91a283 + b5d2bf69ae) and stored a parsed review record grading it on all six dimensions (total 102) - the fix (a follower registration records its host and a foreign registration is judged by its advisory lock rather than this host's process table) lands the goal and is well tested; two follow-on findings concern a duplicated host helper and an untested cross-host lock assumption</p></div>
 </div>
+<div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-10-14T20:00:00Z">
+    <div class="r-comment-body"><p>§4 landed. A follower registration records its host, and one from another host is judged by its advisory lock through the seat's host judgement. A session whose follower runs on another node therefore gets its obligations snapshot and its review reflex. Merged as <code>7f372b245</code>. Review: 102, then 107 after a repair round that removed two duplicate host helpers. Gate: 253 passed. <a href="/reckon/evidence/archive/a-seat-held-elsewhere-is-not-restarted-landed.html#s4">evidence</a></p></div>
+</div>
 <div class="r-comment" data-section="s5" data-id="c-close-s5" data-who="reckon-build" data-when="2026-10-14T19:40:00Z">
     <div class="r-comment-body"><p>§5 landed. <code>crew watch --ensure</code> reports a unit whose restart count rose over a 10 s sample as cycling, with both counts, in place of calling it healthy. The count is read through <code>SystemdUserUnitManager</code>. Merged as <code>d141e65f1</code>; gate 60 passed at head against 57 at base, with the same single error at both. Review: 107/120. Two follow-ons: the systemd parse is untested, and a cycling unit still exits 0. <a href="/reckon/evidence/archive/a-seat-held-elsewhere-is-not-restarted-landed.html#s5">evidence</a></p></div>
 </div>
@@ -160,7 +163,7 @@
     <div class="r-comment-body"><p>reviewed r-20261014T185238694574-ensure-reports-a-cycling-unit at head 1c1c54b32 (base d020eb6a5): scores goal_fidelity 19, evidence 18, scope_discipline 20, durability 13, fit 19, reuse 18, total 107; two follow-on findings (reckon/service.py:347 restart_count untested; reckon/crew_dispatch_commands.py:144 cycling not treated as a refusal); added_failure_count 0</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261014T185238694574-ensure-reports-a-cycling-unit" data-who="reckon-build" data-when="2026-10-14T19:18:28.593Z">
-    <div class="r-comment-body"><p>ensure reads the watcher unit&#x27;s restart count twice 10s apart through SystemdUserUnitManager.restart_count reached by the manager seam with an injected sleeper, and reports a rising count as cycling with both readings rather than as already active on an unchanged unit; tests/test_ensure_reports_a_cycling_unit.py 3 passed, gate of the ten write-path-importing test files 60 passed at head vs 57 passed at base with the same one pre-existing reaper error, no head-only failure, ruff check and ruff format --check add no findings</p></div>
+    <div class="r-comment-body"><p>ensure reads the watcher unit's restart count twice 10s apart through SystemdUserUnitManager.restart_count reached by the manager seam with an injected sleeper, and reports a rising count as cycling with both readings rather than as already active on an unchanged unit; tests/test_ensure_reports_a_cycling_unit.py 3 passed, gate of the ten write-path-importing test files 60 passed at head vs 57 passed at base with the same one pre-existing reaper error, no head-only failure, ruff check and ruff format --check add no findings</p></div>
 </div>
 </section>
 </main>
