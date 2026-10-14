@@ -192,9 +192,16 @@ def launch_in_flight(record: Mapping[str, Any]) -> bool:
 
 
 def mark_resume_launching(run_id: str) -> None:
-    """Record that this process has begun a resume of the run."""
+    """Record that this process has begun a resume of the run.
+
+    A run with no live pointer has nothing to carry the mark and nothing that
+    could read it back, so there is nothing to write and no refusal to warn of.
+    """
     with _pointer_lock(run_id):
-        current = read_pointer(run_id)
+        try:
+            current = read_pointer(run_id)
+        except CrewError:
+            return
         current[RESUME_LAUNCH_IN_FLIGHT] = {
             "pid": os.getpid(),
             "pid_start_time": process_start_time(os.getpid()),
