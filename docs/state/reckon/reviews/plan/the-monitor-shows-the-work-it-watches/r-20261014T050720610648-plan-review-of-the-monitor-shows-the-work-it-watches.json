@@ -1,0 +1,60 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-14T05:18:27.986Z",
+  "dispatched_at": "2026-10-14T05:08:17Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-monitor-shows-the-work-it-watches/r-20261014T050720610648-plan-review-of-the-monitor-shows-the-work-it-watches/plan.html:24",
+      "id": "wiring-1",
+      "reason": "adding the `s22 \u2192 s16` edge is exactly what makes \u00a722's declared ordering dispatchable, though dispatch's own scope check on `reckon/crew/ticker.py` may already refuse the concurrent claim.",
+      "text": "`plan-section-depends-on` is `{s3:[s5], s4:[s2], s5:[s2], s16:[s17]}` with no `s22` key, yet \u00a722's body at :320 states \"This section runs after \u00a716\"; both sections are `implementable` and both write `reckon/crew/ticker.py`, so a coordinator reading the graph \u2014 not \u00a722's prose \u2014 can dispatch them concurrently",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "1c0c90a6c1a269badc1f141f9eed0122fe9e6b1d8e69b45c0c69e55d1186bc53",
+  "plan_slug": "the-monitor-shows-the-work-it-watches",
+  "plan_version": 73,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261014T050720610648-plan-review-of-the-monitor-shows-the-work-it-watches",
+  "reviewed_blob_sha": "768c5247452922494cb9a03c57caeafa4900411d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited commits (`1eb387165`, `e81059843`), symbols (`declares_a_wait`, `STATE_WORD`), removed symbols (`probe_has_run`, `_unprobed_wait`, `UNPROBED_MARKER`) and plan links all resolve as \u00a722 states.",
+    "done_when": "pass \u2014 \u00a722 renders two rows for a waiting run, asserts `waiting?` against `waiting` with equal width and later cells in the same column, and names a negative control (remove the marker, the first case must fail).",
+    "evidence_paths": "pass \u2014 \u00a722 logs its control under the run directory, a durable path, and writes no node-local temporary artifact.",
+    "naming": "pass \u2014 \u00a722's symbols and its test name describe the mechanism; no plan labels, ticket numbers or version tags reach code, and the `wait_condition_state` field is named by what it holds.",
+    "reasoning": "pass \u2014 the root cause (the fixed-column row removed free text and took the marker with it) matches the cited commits, and the marker mechanism produces the done-when: a `?` appended to a left-aligned `waiting` inside `STATE_WORD` leaves the later cells' column unchanged.",
+    "single_goal": "pass \u2014 \u00a722 carries one deliverable, the unprobed-wait marker.",
+    "wiring": "a finding \u2014 \u00a722 declares \"This section runs after \u00a716\" but `plan-section-depends-on` carries no `s22` edge, so the ordering is not in the graph."
+  },
+  "section_digests": {
+    "_document": "6b3250a563f74cf0bd1cd7265e3e9e30d379b2470f398b0efa4d1bc0b1ec106b",
+    "s1": "52c4b79a6da0bc1e71b00748d6314e8a255bd5fa91b6acae30f6943e3c16cee5",
+    "s10": "ce58141a18e475a484415380e6ae181e597ad53c112e6cb22e1cfc60bb6b09fc",
+    "s11": "24bc7e718fa0dce82e99f82b1a80aa7f382204659e1a5fe08844c9bd4df9f21d",
+    "s12": "6b56be12afc45f4700363688128158c594eba3edb30de411ea7d4ca356b3335b",
+    "s13": "af506684f5bf69d74d9b3cdbdf5fa5888d1c3e2ec6b43d93fb08dc79c5821889",
+    "s14": "87e50c4f3edfdf578cc4501636727b40a183a8737e7f4673669428dbae23a0e5",
+    "s15": "09f7a8c8a774c6a9eebd4d5d69d79451363a282a7bf1bb77100479e9a7e98a02",
+    "s16": "867b2716d09b2503e28914fb9f8d9ef0902ca6517f1b150bda6a941a7b0be06b",
+    "s17": "141c743461dc46b9edeb2cbc1bdc6d82a711cf479391112777980c80b87d6e01",
+    "s18": "fce8a8c220cf6ee49aad89aea5514558f0aef180fc5f908cd07bf61114fbfbd2",
+    "s19": "cfcf6302efee0b3938220a54ba297408406e7500dc55f2e1a52535b18480b3fb",
+    "s2": "eeca9b70e096de79d92846f4178d8f31832962cb9c7c73d122ac2a9e06546f32",
+    "s20": "d85f627de7ebd9017fa3940ac745a4530bf4158cbe0d02a52677379592397aab",
+    "s21": "87fc24dd24da2dbf4d094ca09e8a791b4a346cc4b6d23073fce5682d4791d5ad",
+    "s22": "b76862cd2ea9a3ac095f2db0f0bf8ed1475a85d382ef62be3a3c21a7f6aa19b5",
+    "s3": "a37e4f17cfa5318f2229db2eabe7a7b80adf7bb6fcb474e3d262981478abba8e",
+    "s4": "fb6bae83cab6ff2e0a33bf64f8a01d35db72cb3113a73e4659d22617724629c9",
+    "s5": "349ee19ab8c71fbc5e62c4cfa2fd4c32d34af2e2f3e9ced2db0580bfd0e74815",
+    "s6": "301b59df6e0fdccf6650e206628516f0e967dbf4e1b58a616e3d6999015f18cc",
+    "s7": "aede0bed1a72c26f45a72032497a3a58f24022a1a5e8cd4f8f6e08aada09aab3",
+    "s8": "7b9b1e94e523da3024a014b4d3d8532114544257c92fcfe64893085d2166840f",
+    "s9": "b85d6764b003c3933d1609383c69602e5f4b2d502c8200fe4bab51f3e9085466"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T05:24:29.281401+00:00"
+}
