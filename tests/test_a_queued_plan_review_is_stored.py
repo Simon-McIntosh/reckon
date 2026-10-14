@@ -175,6 +175,22 @@ def _launched_pointer(
     monkeypatch.setattr(dispatch, "dispatch", launch)
 
 
+def _compose_directly(repo: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Compose a plan review whose dispatch returns a launched run at once.
+
+    No queued pointer is written and the admission pass never runs, so the
+    run id in the sidecar can only come from the compose path itself.
+    """
+    subject = recovery.plan_review_subject(PROJECT, PLAN_SLUG, "coordinator")
+    composed = plan_review.review_report_directory(
+        PROJECT, PLAN_SLUG, subject["run_id"]
+    )
+    _launched_pointer(repo, composed, monkeypatch)
+    result = recovery.dispatch_review_for_run(subject, config=_worker_config())
+    assert result["dispatched"] is True
+    return composed
+
+
 def _deliver(composed: Path) -> None:
     (composed / plan_review._REVIEW_REPORT_NAME).write_text(
         "RUBRIC wiring: pass — the plan declares a dependency that resolves.\n",
@@ -244,19 +260,15 @@ def test_a_directly_launched_plan_review_is_still_stored(
     project: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     _home, repo = project
-    composed = _compose_while_held(repo, monkeypatch)
+    composed = _compose_directly(repo, monkeypatch)
     composed_run_id = composed.name
 
-    _launched_pointer(repo, composed, monkeypatch)
-    admission = importlib.import_module("reckon.crew.queue_admission")
-    admission.admit_once(config_for=lambda _pointer: _worker_config())
-
-    # A direct launch writes the run id into the sidecar itself, exactly as the
-    # compose path does; the join resolves from the same field.
-    (composed / review_module.REVIEW_DISPATCH_FILE_NAME).write_text(
-        json.dumps({"run_id": LAUNCHED_RUN_ID, "status": "dispatched"}),
-        encoding="utf-8",
+    # The compose path wrote the launched run id into the sidecar itself.
+    assert (
+        review_module._plan_review_crew_run_id(PROJECT, PLAN_SLUG, composed_run_id)
+        == LAUNCHED_RUN_ID
     )
+
     _deliver(composed)
     crew.complete(LAUNCHED_RUN_ID, gate="passed", root=repo)
 
