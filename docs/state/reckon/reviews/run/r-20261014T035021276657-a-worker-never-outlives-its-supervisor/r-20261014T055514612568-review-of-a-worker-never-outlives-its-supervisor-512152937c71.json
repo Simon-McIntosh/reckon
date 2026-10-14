@@ -1,0 +1,82 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed run carries no baseline_suite/after_suite pair; derived from the two gate arms its manifest names -- gate-before-compat-fix.log (base rev c90682a28, 6 failed 54 passed EXIT=1) and gate4.log (head rev 512152937c714d1580f2c97689ab2a235a20bf81, 71 passed EXIT=0). The head arm reported zero FAILED/ERROR node ids, so the added set is empty and the count is a measured 0, not an unmeasured null.",
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/promotion_checks.py:236",
+    "reckon/crew/recovery_stream.py:347",
+    "reckon/crew/recovery_watch.py:393",
+    "reckon/crew/promotion_release.py:441",
+    "reckon/crew/dispatch_sessions.py:1623",
+    "reckon/crew/dispatch_sessions.py:1787",
+    "reckon/crew/recovery_review_delivery.py:221",
+    "reckon/crew/dispatch.py:2094"
+  ],
+  "completed_at": "2026-10-14T06:16:22.361Z",
+  "dispatched_at": "2026-10-14T05:55:40Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_sessions.py",
+      "line": "1787",
+      "severity": "blocking",
+      "text": "blocking: terminate routes a dead recorded pid that still carries a start tick into _signal_process_group, whose unguarded os.getpgid at reckon/crew/routing.py:3645 raises ProcessLookupError; reproduced end-to-end, a dead supervisor pid plus its recorded tick raises ProcessLookupError while the same run with pid_start_time None ends the reparented worker, so `crew stop` on a run whose supervisor already exited and any repeat stop crash instead of reaping the worker."
+    },
+    {
+      "file": "tests/test_a_worker_never_outlives_its_supervisor.py",
+      "line": "263",
+      "severity": "follow-on",
+      "text": "follow-on: the reparented-worker stop test writes pid_start_time None, a shape a real run pointer never has because reckon/crew/dispatch.py:2053 records pid and pid_start_time together, so the test takes the else branch and passes while the real record shape crashes."
+    },
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "3645",
+      "severity": "follow-on",
+      "text": "follow-on: `if not expected_start_time` treats an absent recorded tick as a refusal to signal, the opposite stance to _root_names_the_recorded_process at reckon/crew/routing.py:3421 in the same commit, so terminate can select a live pid with no recorded tick and get a refusal instead of a stop."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T035021276657-a-worker-never-outlives-its-supervisor/gate4.log",
+      "line": "5",
+      "severity": "follow-on",
+      "text": "follow-on: the after-arm log's command line carries angle-bracket placeholders rather than the literal command, so the head revision's gate cannot be re-run from the log alone."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 8 production call site(s)",
+    "diff": "read commit by commit against a5973a40; the single gained commit 512152937 routes terminate's stop back through _signal_process_group, makes it return the pids it ended, threads expected_start_time through signal_worker and _run_process_pids, adds _root_names_the_recorded_process, reorders _env_scan_run_pid below live_worker_pid, and adds one test.",
+    "done_when": "the done_when names tests/test_a_worker_never_outlives_its_supervisor.py with real child processes and its declared negative control; the manifest records gate4.log 71 passed EXIT=0 at 51215293 and negative-control-3.log EXIT=1, and the new case test_a_recycled_worker_record_pid_is_not_walked asserts the gained reach guard.",
+    "goal": "the source node's goal is to extend signal_worker to end a run's own processes; the gained commit 512152937 restores the recycled-pid identity check on the run-ending path and adds a per-root start-tick check in _run_process_pids at reckon/crew/routing.py:3421.",
+    "manifest": "read; it lists commits a6852ed6b, 9e2fbed6d, a5973a40 and 51215293 and records the head gate and the negative control at 51215293, with the recycled-pid reach guard named as the repaired defect.",
+    "write_paths": "read the manifest's declared write paths; git diff a5973a40..512152937 touches exactly reckon/crew/routing.py, reckon/crew/dispatch_sessions.py, reckon/crew/recovery_liveness.py, tests/test_a_worker_never_outlives_its_supervisor.py and the evidence fragment, all inside the fence and nothing outside."
+  },
+  "justifications": {
+    "durability": "tests/test_a_worker_never_outlives_its_supervisor.py:318 guards the reach's recycled-pid walk, but no assertion fails on the terminate crash because the stop test at :263 feeds a fixture-shaped record.",
+    "evidence": "gate4.log records 71 passed EXIT=0 at 51215293 and negative-control-3.log records EXIT=1, but gate4.log:5 names a command with angle-bracket placeholders rather than the literal command and the run records no baseline/after suite pair.",
+    "fit": "names and idiom follow the module, but reckon/crew/recovery_liveness.py:899 reorders _env_scan_run_pid purely to satisfy a source-text needle in tests/test_server_serves_one_code_version.py:198.",
+    "goal_fidelity": "the reach guard is added at reckon/crew/routing.py:3421, but terminate's new routing at reckon/crew/dispatch_sessions.py:1787 crashes for the record shape a real run carries, so the run-ending path the commit exists to protect does not hold.",
+    "reuse": "reckon/crew/routing.py:3399 extracts _worker_record from the duplicated worker-record read, while _root_names_the_recorded_process at :3421 restates a tick comparison already written inline at reckon/crew_follow_commands.py:1328.",
+    "scope_discipline": "every path in git diff a5973a40..512152937 is inside the declared write paths, with no out-of-scope edit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is to extend signal_worker to end a run's own processes; the gained commit 512152937 restores the recycled-pid identity check on the run-ending path and adds a per-root start-tick check in _run_process_pids at reckon/crew/routing.py:3421.\nVERDICT done_when: the done_when names tests/test_a_worker_never_outlives_its_supervisor.py with real child processes and its declared negative control; the manifest records gate4.log 71 passed EXIT=0 at 51215293 and negative-control-3.log EXIT=1, and the new case test_a_recycled_worker_record_pid_is_not_walked asserts the gained reach guard.\nVERDICT write_paths: read the manifest's declared write paths; git diff a5973a40..512152937 touches exactly reckon/crew/routing.py, reckon/crew/dispatch_sessions.py, reckon/crew/recovery_liveness.py, tests/test_a_worker_never_outlives_its_supervisor.py and the evidence fragment, all inside the fence and nothing outside.\nVERDICT manifest: read; it lists commits a6852ed6b, 9e2fbed6d, a5973a40 and 51215293 and records the head gate and the negative control at 51215293, with the recycled-pid reach guard named as the repaired defect.\nVERDICT diff: read commit by commit against a5973a40; the single gained commit 512152937 routes terminate's stop back through _signal_process_group, makes it return the pids it ended, threads expected_start_time through signal_worker and _run_process_pids, adds _root_names_the_recorded_process, reorders _env_scan_run_pid below live_worker_pid, and adds one test.\nCALL_SITES: reckon/crew/promotion_checks.py:236, reckon/crew/recovery_stream.py:347, reckon/crew/recovery_watch.py:393, reckon/crew/promotion_release.py:441, reckon/crew/dispatch_sessions.py:1623, reckon/crew/dispatch_sessions.py:1787, reckon/crew/recovery_review_delivery.py:221, reckon/crew/dispatch.py:2094\nSCORE goal_fidelity: 11\nJUSTIFICATION goal_fidelity: the reach guard is added at reckon/crew/routing.py:3421, but terminate's new routing at reckon/crew/dispatch_sessions.py:1787 crashes for the record shape a real run carries, so the run-ending path the commit exists to protect does not hold.\nSCORE evidence: 12\nJUSTIFICATION evidence: gate4.log records 71 passed EXIT=0 at 51215293 and negative-control-3.log records EXIT=1, but gate4.log:5 names a command with angle-bracket placeholders rather than the literal command and the run records no baseline/after suite pair.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff a5973a40..512152937 is inside the declared write paths, with no out-of-scope edit.\nSCORE durability: 9\nJUSTIFICATION durability: tests/test_a_worker_never_outlives_its_supervisor.py:318 guards the reach's recycled-pid walk, but no assertion fails on the terminate crash because the stop test at :263 feeds a fixture-shaped record.\nSCORE fit: 16\nJUSTIFICATION fit: names and idiom follow the module, but reckon/crew/recovery_liveness.py:899 reorders _env_scan_run_pid purely to satisfy a source-text needle in tests/test_server_serves_one_code_version.py:198.\nSCORE reuse: 16\nJUSTIFICATION reuse: reckon/crew/routing.py:3399 extracts _worker_record from the duplicated worker-record read, while _root_names_the_recorded_process at :3421 restates a tick comparison already written inline at reckon/crew_follow_commands.py:1328.\nFINDING reckon/crew/dispatch_sessions.py:1787 blocking: terminate routes a dead recorded pid that still carries a start tick into _signal_process_group, whose unguarded os.getpgid at reckon/crew/routing.py:3645 raises ProcessLookupError; reproduced end-to-end, a dead supervisor pid plus its recorded tick raises ProcessLookupError while the same run with pid_start_time None ends the reparented worker, so `crew stop` on a run whose supervisor already exited and any repeat stop crash instead of reaping the worker.\nFINDING tests/test_a_worker_never_outlives_its_supervisor.py:263 follow-on: the reparented-worker stop test writes pid_start_time None, a shape a real run pointer never has because reckon/crew/dispatch.py:2053 records pid and pid_start_time together, so the test takes the else branch and passes while the real record shape crashes.\nFINDING reckon/crew/routing.py:3645 follow-on: `if not expected_start_time` treats an absent recorded tick as a refusal to signal, the opposite stance to _root_names_the_recorded_process at reckon/crew/routing.py:3421 in the same commit, so terminate can select a live pid with no recorded tick and get a refusal instead of a stop.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T035021276657-a-worker-never-outlives-its-supervisor/gate4.log:5 follow-on: the after-arm log's command line carries angle-bracket placeholders rather than the literal command, so the head revision's gate cannot be re-run from the log alone.\n",
+  "review_run_id": "r-20261014T055514612568-review-of-a-worker-never-outlives-its-supervisor-512152937c71",
+  "reviewed_base_sha": "a5973a4089d01eb899fef72229e5f8289d28855c",
+  "reviewed_head_sha": "512152937c714d1580f2c97689ab2a235a20bf81",
+  "reviewed_run_id": "r-20261014T035021276657-a-worker-never-outlives-its-supervisor",
+  "reviewer": "review-of-a-worker-never-outlives-its-supervisor-512152937c71",
+  "scores": {
+    "durability": 9,
+    "evidence": 12,
+    "fit": 16,
+    "goal_fidelity": 11,
+    "reuse": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T06:09:45.212682+00:00",
+  "total": 83
+}
