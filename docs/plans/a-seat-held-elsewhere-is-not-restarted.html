@@ -25,7 +25,7 @@
   <title>A Seat Held Elsewhere Is Not Restarted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="16">
+<meta name="plan-version" content="18">
 <meta name="plan-modified" content="2026-10-14">
 </head>
 <body>
@@ -155,6 +155,12 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-close-s5" data-who="reckon-build" data-when="2026-10-14T19:40:00Z">
     <div class="r-comment-body"><p>§5 landed. <code>crew watch --ensure</code> reports a unit whose restart count rose over a 10 s sample as cycling, with both counts, in place of calling it healthy. The count is read through <code>SystemdUserUnitManager</code>. Merged as <code>d141e65f1</code>; gate 60 passed at head against 57 at base, with the same single error at both. Review: 107/120. Two follow-ons: the systemd parse is untested, and a cycling unit still exits 0. <a href="/reckon/evidence/archive/a-seat-held-elsewhere-is-not-restarted-landed.html#s5">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261014T191945263889-review-of-ensure-reports-a-cycling-unit-1c1c54b32e6b" data-who="reckon-build" data-when="2026-10-14T19:33:47.299Z">
+    <div class="r-comment-body"><p>reviewed r-20261014T185238694574-ensure-reports-a-cycling-unit at head 1c1c54b32 (base d020eb6a5): scores goal_fidelity 19, evidence 18, scope_discipline 20, durability 13, fit 19, reuse 18, total 107; two follow-on findings (reckon/service.py:347 restart_count untested; reckon/crew_dispatch_commands.py:144 cycling not treated as a refusal); added_failure_count 0</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261014T185238694574-ensure-reports-a-cycling-unit" data-who="reckon-build" data-when="2026-10-14T19:18:28.593Z">
+    <div class="r-comment-body"><p>ensure reads the watcher unit&#x27;s restart count twice 10s apart through SystemdUserUnitManager.restart_count reached by the manager seam with an injected sleeper, and reports a rising count as cycling with both readings rather than as already active on an unchanged unit; tests/test_ensure_reports_a_cycling_unit.py 3 passed, gate of the ten write-path-importing test files 60 passed at head vs 57 passed at base with the same one pre-existing reaper error, no head-only failure, ruff check and ruff format --check add no findings</p></div>
 </div>
 </section>
 </main>

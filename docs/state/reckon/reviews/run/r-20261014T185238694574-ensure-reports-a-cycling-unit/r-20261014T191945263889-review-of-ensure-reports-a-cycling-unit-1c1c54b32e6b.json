@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "d020eb6a503d1fee7e3bb3b56b62e6650b353b0e",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:2930",
+    "reckon/crew/runs.py:3106"
+  ],
+  "completed_at": "2026-10-14T19:33:47.299Z",
+  "dispatched_at": "2026-10-14T19:20:12Z",
+  "findings": [
+    {
+      "file": "reckon/service.py",
+      "line": "347",
+      "severity": "follow-on",
+      "text": "follow-on: restart_count is covered by no test, since the gate's fake manager returns ints and never reaches the systemctl show --property NRestarts read or the nonzero-returncode -> None branch at reckon/service.py:363-364, so a regression in the parse reddens no assertion."
+    },
+    {
+      "file": "reckon/crew_dispatch_commands.py",
+      "line": "144",
+      "severity": "follow-on",
+      "text": "follow-on: _crew_result_ok does not treat a cycling verdict as a refusal, so reckon crew watch --ensure still exits 0 with ok:true on a cycling unit; the human-facing detail reports it (reckon/crew/watch_unit.py:561), but a caller keying on the exit status alone still reads success."
+    }
+  ],
+  "head_log_revision": "1c1c54b32e6b935ae653a4e2a154f8caf043a32a",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base d020eb6a5; the single commit 1c1c54b32 adds SystemdUserUnitManager.restart_count (reckon/service.py:347), the sampler and the cycling branch to ensure_watcher_service (reckon/crew/watch_unit.py:381-586), the 170-line test module and the 27-line evidence fragment; no path outside the declaration is touched.",
+    "done_when": "the done_when names tests/test_ensure_reports_a_cycling_unit.py with a rising count reported as cycling with both counts, a held count reported as before, and a negative control; the manifest records head 60 passed/1 error EXIT=1 (logs/head-cycling-unit.log), base 57 passed/1 error EXIT=1 with the same id (logs/base-cycling-unit.log) and the negative control 1 failed/2 passed EXIT=1 (logs/negative-control-cycling-unit.log), so the gate asserts the measure.",
+    "goal": "the node's goal is to report a producer unit whose restart count rises between two readings as cycling from crew watch --ensure; reckon/crew/watch_unit.py:550-566 samples an already-active unchanged unit through the manager seam and sets detail to \"<unit> is cycling: its restart count rose from X to Y over 10s\" with cycling/restart_count_before/restart_count_after fields, reached in production by reckon/crew_follow_commands.py:2930.",
+    "manifest": "read; status complete, both gate arms with their failure ids and log paths, the negative control's declared string and applied mutation, and follow_ons naming the pre-existing reaper teardown error as out of scope; its changed_paths match the diff.",
+    "write_paths": "the manifest declares five paths (reckon/crew/watch_unit.py, reckon/service.py, tests/test_ensure_reports_a_cycling_unit.py, the evidence fragment under docs/evidence/fragments/ and its figures directory); git diff --stat d020eb6a5..1c1c54b32 lists only reckon/crew/watch_unit.py, reckon/service.py, the new test module and the fragment, all inside the declaration, with the figures directory correctly untouched."
+  },
+  "justifications": {
+    "durability": "tests/test_ensure_reports_a_cycling_unit.py:105-119 reddens when the two-reading sample is reverted (logs/negative-control-cycling-unit.log), but SystemdUserUnitManager.restart_count at reckon/service.py:347 is exercised by no test \u2014 the fake manager returns ints directly, so the NRestarts read is unguarded.",
+    "evidence": "the manifest's after_suite at 1c1c54b32 (EXIT=1, logs/head-cycling-unit.log) fails only the reaper teardown error its baseline_suite at d020eb6a5 fails, and the negative control reddens test_a_rising_restart_count_is_reported_as_cycling (logs/negative-control-cycling-unit.log), which is the done_when's measure.",
+    "fit": "reckon/crew/watch_unit.py:389-405 mirrors the existing hasattr-gated manager idiom for lingering and adds no plan or ticket token to any name or comment.",
+    "goal_fidelity": "reckon/crew/watch_unit.py:559-566 sets detail to the cycling sentence with both readings and :585-586 return the cycling flag and the two counts, which is the report the goal names.",
+    "reuse": "reckon/service.py:347 adds restart_count beside active() on the manager, extending the owner of unit-state reads, and no existing sampler or NRestarts reader was found to duplicate.",
+    "scope_discipline": "git diff --stat d020eb6a5..1c1c54b32 changes only reckon/crew/watch_unit.py, reckon/service.py, tests/test_ensure_reports_a_cycling_unit.py and docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/ensure-reports-a-cycling-unit.html, every one inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to report a producer unit whose restart count rises between two readings as cycling from crew watch --ensure; reckon/crew/watch_unit.py:550-566 samples an already-active unchanged unit through the manager seam and sets detail to \"<unit> is cycling: its restart count rose from X to Y over 10s\" with cycling/restart_count_before/restart_count_after fields, reached in production by reckon/crew_follow_commands.py:2930.\nVERDICT done_when: the done_when names tests/test_ensure_reports_a_cycling_unit.py with a rising count reported as cycling with both counts, a held count reported as before, and a negative control; the manifest records head 60 passed/1 error EXIT=1 (logs/head-cycling-unit.log), base 57 passed/1 error EXIT=1 with the same id (logs/base-cycling-unit.log) and the negative control 1 failed/2 passed EXIT=1 (logs/negative-control-cycling-unit.log), so the gate asserts the measure.\nVERDICT write_paths: the manifest declares five paths (reckon/crew/watch_unit.py, reckon/service.py, tests/test_ensure_reports_a_cycling_unit.py, the evidence fragment under docs/evidence/fragments/ and its figures directory); git diff --stat d020eb6a5..1c1c54b32 lists only reckon/crew/watch_unit.py, reckon/service.py, the new test module and the fragment, all inside the declaration, with the figures directory correctly untouched.\nVERDICT manifest: read; status complete, both gate arms with their failure ids and log paths, the negative control's declared string and applied mutation, and follow_ons naming the pre-existing reaper teardown error as out of scope; its changed_paths match the diff.\nVERDICT diff: read commit by commit against base d020eb6a5; the single commit 1c1c54b32 adds SystemdUserUnitManager.restart_count (reckon/service.py:347), the sampler and the cycling branch to ensure_watcher_service (reckon/crew/watch_unit.py:381-586), the 170-line test module and the 27-line evidence fragment; no path outside the declaration is touched.\nCALL_SITES: reckon/crew_follow_commands.py:2930, reckon/crew/runs.py:3106\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/watch_unit.py:559-566 sets detail to the cycling sentence with both readings and :585-586 return the cycling flag and the two counts, which is the report the goal names.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest's after_suite at 1c1c54b32 (EXIT=1, logs/head-cycling-unit.log) fails only the reaper teardown error its baseline_suite at d020eb6a5 fails, and the negative control reddens test_a_rising_restart_count_is_reported_as_cycling (logs/negative-control-cycling-unit.log), which is the done_when's measure.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat d020eb6a5..1c1c54b32 changes only reckon/crew/watch_unit.py, reckon/service.py, tests/test_ensure_reports_a_cycling_unit.py and docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/ensure-reports-a-cycling-unit.html, every one inside the declared write paths.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_ensure_reports_a_cycling_unit.py:105-119 reddens when the two-reading sample is reverted (logs/negative-control-cycling-unit.log), but SystemdUserUnitManager.restart_count at reckon/service.py:347 is exercised by no test \u2014 the fake manager returns ints directly, so the NRestarts read is unguarded.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/watch_unit.py:389-405 mirrors the existing hasattr-gated manager idiom for lingering and adds no plan or ticket token to any name or comment.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/service.py:347 adds restart_count beside active() on the manager, extending the owner of unit-state reads, and no existing sampler or NRestarts reader was found to duplicate.\nFINDING reckon/service.py:347 follow-on: restart_count is covered by no test, since the gate's fake manager returns ints and never reaches the systemctl show --property NRestarts read or the nonzero-returncode -> None branch at reckon/service.py:363-364, so a regression in the parse reddens no assertion.\nFINDING reckon/crew_dispatch_commands.py:144 follow-on: _crew_result_ok does not treat a cycling verdict as a refusal, so reckon crew watch --ensure still exits 0 with ok:true on a cycling unit; the human-facing detail reports it (reckon/crew/watch_unit.py:561), but a caller keying on the exit status alone still reads success.\n",
+  "review_run_id": "r-20261014T191945263889-review-of-ensure-reports-a-cycling-unit-1c1c54b32e6b",
+  "reviewed_base_sha": "d020eb6a503d1fee7e3bb3b56b62e6650b353b0e",
+  "reviewed_head_sha": "1c1c54b32e6b935ae653a4e2a154f8caf043a32a",
+  "reviewed_run_id": "r-20261014T185238694574-ensure-reports-a-cycling-unit",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 13,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T19:31:24.542604+00:00",
+  "total": 107
+}
