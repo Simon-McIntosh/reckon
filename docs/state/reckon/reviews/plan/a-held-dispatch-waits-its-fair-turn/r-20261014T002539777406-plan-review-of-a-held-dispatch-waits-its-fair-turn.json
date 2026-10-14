@@ -1,0 +1,56 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-14T00:33:52.446Z",
+  "dispatched_at": "2026-10-14T00:26:14Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-held-dispatch-waits-its-fair-turn.html:135",
+      "id": "done_when-1",
+      "reason": "without a view assertion the node's gate can pass green while `crew scopes` still reports a queued claim as binding, which is precisely the owner-versus-enforcer divergence the change was made to prevent.",
+      "text": "the deliverable now requires that `_live_scope_claims` (the `crew scopes` view) report a queued claim as non-binding \"matching dispatch\", which is the reason the skip was moved into `claim_disposition`, but the five done-when cases and the two negative controls never exercise that view; `tests/test_the_scopes_view_says_what_it_evaluated.py` holds no queued-phase case, and both controls revert the dispatch-side mechanism only",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "ee7a89cedc1e2b37c477ece6c1ef6a30e866b949ebcf93f38f803476ac4bd7ca",
+  "plan_slug": "a-held-dispatch-waits-its-fair-turn",
+  "plan_version": 92,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261014T002539777406-plan-review-of-a-held-dispatch-waits-its-fair-turn",
+  "reviewed_blob_sha": "a044b9d1b00288499f4d4a330ba90ebc6843436e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `claim_disposition` (reckon/crew/node.py:1450), `_repository_scope_claims` (reckon/crew/dispatch_claims.py:222), `_live_scope_claims` (reckon/crew/runs.py:856), `admit_once`/`_require_launched_record` (reckon/crew/queue_admission.py:525/514), the named case `tests/test_a_node_is_queued_once.py::test_a_different_node_over_a_claimed_path_is_still_refused`, `reckon/crew_follow_commands.py` and `queue-full` all resolve.",
+    "done_when": "a finding \u2014 the change's own stated requirement, that the `crew scopes` view report a queued claim as non-binding \"matching dispatch\", is exercised by none of the five done-when cases nor the two negative controls.",
+    "evidence_paths": "pass \u2014 both controls are \"logged under the run directory\", a durable per-run path, not a scratchpad or node-local temp.",
+    "naming": "pass \u2014 the new test file is named for its mechanism (`test_overlapping_queued_requests_launch_in_turn.py`); no ticket numbers, plan labels or changelog prose reach code or symbols.",
+    "reasoning": "pass \u2014 the stated cause (a queued, pid-less pointer binds through `claim_disposition`'s \"records no worker process yet\" branch) matches the cited `ScopeConflict` evidence; the moved rule reaches both readers on the real path via the named callers (`_repository_scope_claims` -> `claim_disposition` at dispatch_claims.py:249; `_live_scope_claims` -> `claim_disposition` at runs.py:886), so the two mechanisms do produce the done-when.",
+    "single_goal": "pass \u2014 the two mechanisms serve the one behaviour named by the heading (\"overlapping queued requests launch in turn\"); the first done-when case needs both, and one gate runs all five cases.",
+    "wiring": "pass \u2014 \u00a718 declares its ordering (\"runs after \u00a714, which has landed, and before \u00a715, which also writes queue_admission.py\"), both sections it shares code with exist, and every node it names is real."
+  },
+  "section_digests": {
+    "_document": "5e14043a491f99858173e3b893442375f85c205295e44c4f706b9faca823dba4",
+    "s1": "e09f72c38fa12dd06b1fede9137b6a8731c7f42dad95ea4d7873e48b6bcebc93",
+    "s10": "769f35c4ff338677b1083340b990086682e629701a25af49a8b6e2d3b8a175a4",
+    "s11": "3aafc106945bdc346a0f808fc26c7fc8e028b922103641455da38536ae24c036",
+    "s12": "f72ab709e3a40644be43c6e558b558089f939e3368a20a2b34321a9043c80c88",
+    "s13": "1f1792d925edd6b7c0b33bd02bebc3db1f499f9d5e1505b3ba04b305d9ed7f64",
+    "s14": "a86f35810a5d1446f8cf9294a46f7a7a393c1452cc3080ef8b9e51cf83670acf",
+    "s15": "694218fb467e061648aac13eed1a446529dbff08aca86ecfdb24792eb5b2820e",
+    "s16": "5d0a87ee69959477d707fb8d7b442b283f6ae0e7bc896382dd4c65c7e3efb9b8",
+    "s17": "d3bfb51ccfbe6c602a6a11cd9d7e433d1385fd2b90b604f2eb307029dc97f703",
+    "s18": "edb2334a6ce97042b74e8312e71553b06771af54ec53a7592ec961415f3f2852",
+    "s2": "c37ed4ecb2dad1331b0b031fb8351608243790308312236d375bede3594285b7",
+    "s3": "ef687123318fac196bded366330cf2e92b586c4991b5c1cc8670f228182f916c",
+    "s4": "e6a41eadc72e4752cc0ebe35a14a9bce3f28bc1061ec677e8f779fa09d8c037c",
+    "s5": "4b674f96924c3dbfde217945d16c606df376d034dc060f02360a4336412e74f8",
+    "s6": "9e35fc2341a06de64fed9ff7f176a0e83b22c1482c1b5a04a5539b6e4c07aab4",
+    "s7": "764a72dad2d59bddd4d3b1209f07c0c210ff6c46cd14147d4bcc7ffe9fa9426d",
+    "s8": "1b92313fdf672f4b813b45aa8e26f1304ca363cdc5a4d1752238f794a2019e27",
+    "s9": "ef8f75976cf8d243089cb5955b0e084cf6e2c6bcd478f9e56b8e8654080c6ad6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T00:34:11.204226+00:00"
+}
