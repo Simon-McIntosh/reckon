@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:753 _launch_queued",
+    "reckon/crew/queue_admission.py:649 admit_once",
+    "reckon/crew_run_commands.py:2559 crew admit service admits via admit_until_stopped"
+  ],
+  "call_sites_count": 3,
+  "completed_at": "2026-10-14T10:47:07.632Z",
+  "dispatched_at": "2026-10-14T10:28:39Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T095105250235-a-launched-request-delivers-into-its-own-run-directory/logs/population-base.log",
+      "line": "2",
+      "severity": "follow-on",
+      "text": "follow-on: the base population arm's own header records module.__file__ resolving to the reviewed run's worktree (.../a-launched-request-delivers-into-its-own-run-directory/reckon/crew/queue_admission.py) rather than /tmp/reckon-base-1952259/reckon/crew/queue_admission.py, so the base arm ran the base test files against the head module and the manifest's measurement_module line names a base path its own log contradicts; the 0-added-failure conclusion still holds because the head arm is valid and both arms are all-green, but the base arm is not the base measurement it claims."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commits 6477ad858 and fda8b7424 against base 3d926887c; 6477ad858 adds _inside_run_directory and drops run-directory defaults in _node_from_pointer in reckon/crew/queue_admission.py and adds four cases to tests/test_a_queued_run_is_admitted.py, and fda8b7424 is a format-only commit on the same test file.",
+    "done_when": "the done_when names four cases in tests/test_a_queued_run_is_admitted.py (manifest from the launched run id, an outside --manifest kept, a review brief kept, default write paths under the launched run), a negative control logged with a FAILED line and non-zero EXIT, and no added failure against base in the files importing queue_admission; head-arm-postformat.log 22 passed EXIT=0, negative-control.log 2 failed 2 passed EXIT=1, population-head.log 54 passed EXIT=0 and population-base.log 50 passed EXIT=0 carry every arm.",
+    "goal": "the node's goal is for a relaunched queued request to take its manifest path and default write paths from its launched run id; reckon/crew/queue_admission.py:74 _inside_run_directory and :90-109 _node_from_pointer blank a manifest path and drop a write path that lie inside the queued run's own directory, and reckon/crew/dispatch_plan.py:477 and :485 re-derive both under the launched id.",
+    "manifest": "read r-20261014T095105250235-a-launched-request-delivers-into-its-own-run-directory/manifest.md; it reports status complete, the four cases at 22 passed EXIT=0, the negative control at 2 failed EXIT=1, and the population at 54 passed (head) against 50 passed (base), and its measurement_module line names the base tree path.",
+    "write_paths": "the source node declared reckon/crew/queue_admission.py, tests/test_a_queued_run_is_admitted.py, an evidence fragment and a figure directory; the diff changes only the two source files, both inside the declared paths, and the done-when named no artifact so the fragment and figure are correctly absent."
+  },
+  "justifications": {
+    "durability": "negative-control.log carries over the run-directory paths unchanged and tests/test_a_queued_run_is_admitted.py:511 and :597 redden (2 failed EXIT=1), so the added assertions fail on the reinstated regression rather than moving with the value they supply.",
+    "evidence": "the head and negative-control arms in head-arm-postformat.log and negative-control.log measure the done_when, but population-base.log:2 records module.__file__ as the reviewed run's own worktree rather than /tmp/reckon-base-1952259, so the base arm is not the base measurement its header claims.",
+    "fit": "reckon/crew/queue_admission.py:74 _inside_run_directory follows the module's small predicate idiom and introduces no plan, ticket or version label.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:104-109 drops any queued-node manifest path or write path under runs.run_dir(pointer['run_id']) so dispatch_plan.py:477 and :485 derive them from the launched id, exactly the goal.",
+    "reuse": "a search over reckon/ for a path-containment owner found only inline is_relative_to expressions with no exported helper (e.g. reckon/crew/promotion_gate.py:156), so the new private helper forks no owned capability.",
+    "scope_discipline": "every path in the diff (reckon/crew/queue_admission.py and tests/test_a_queued_run_is_admitted.py) is inside the declared write paths, and no evidence file was written where the done-when named none."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is for a relaunched queued request to take its manifest path and default write paths from its launched run id; reckon/crew/queue_admission.py:74 _inside_run_directory and :90-109 _node_from_pointer blank a manifest path and drop a write path that lie inside the queued run's own directory, and reckon/crew/dispatch_plan.py:477 and :485 re-derive both under the launched id.\nVERDICT done_when: the done_when names four cases in tests/test_a_queued_run_is_admitted.py (manifest from the launched run id, an outside --manifest kept, a review brief kept, default write paths under the launched run), a negative control logged with a FAILED line and non-zero EXIT, and no added failure against base in the files importing queue_admission; head-arm-postformat.log 22 passed EXIT=0, negative-control.log 2 failed 2 passed EXIT=1, population-head.log 54 passed EXIT=0 and population-base.log 50 passed EXIT=0 carry every arm.\nVERDICT write_paths: the source node declared reckon/crew/queue_admission.py, tests/test_a_queued_run_is_admitted.py, an evidence fragment and a figure directory; the diff changes only the two source files, both inside the declared paths, and the done-when named no artifact so the fragment and figure are correctly absent.\nVERDICT manifest: read r-20261014T095105250235-a-launched-request-delivers-into-its-own-run-directory/manifest.md; it reports status complete, the four cases at 22 passed EXIT=0, the negative control at 2 failed EXIT=1, and the population at 54 passed (head) against 50 passed (base), and its measurement_module line names the base tree path.\nVERDICT diff: read commits 6477ad858 and fda8b7424 against base 3d926887c; 6477ad858 adds _inside_run_directory and drops run-directory defaults in _node_from_pointer in reckon/crew/queue_admission.py and adds four cases to tests/test_a_queued_run_is_admitted.py, and fda8b7424 is a format-only commit on the same test file.\nCALL_SITES: reckon/crew/queue_admission.py:753 _launch_queued, reckon/crew/queue_admission.py:649 admit_once, reckon/crew_run_commands.py:2559 crew admit service admits via admit_until_stopped\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:104-109 drops any queued-node manifest path or write path under runs.run_dir(pointer['run_id']) so dispatch_plan.py:477 and :485 derive them from the launched id, exactly the goal.\nSCORE evidence: 16\nJUSTIFICATION evidence: the head and negative-control arms in head-arm-postformat.log and negative-control.log measure the done_when, but population-base.log:2 records module.__file__ as the reviewed run's own worktree rather than /tmp/reckon-base-1952259, so the base arm is not the base measurement its header claims.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff (reckon/crew/queue_admission.py and tests/test_a_queued_run_is_admitted.py) is inside the declared write paths, and no evidence file was written where the done-when named none.\nSCORE durability: 19\nJUSTIFICATION durability: negative-control.log carries over the run-directory paths unchanged and tests/test_a_queued_run_is_admitted.py:511 and :597 redden (2 failed EXIT=1), so the added assertions fail on the reinstated regression rather than moving with the value they supply.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/queue_admission.py:74 _inside_run_directory follows the module's small predicate idiom and introduces no plan, ticket or version label.\nSCORE reuse: 20\nJUSTIFICATION reuse: a search over reckon/ for a path-containment owner found only inline is_relative_to expressions with no exported helper (e.g. reckon/crew/promotion_gate.py:156), so the new private helper forks no owned capability.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T095105250235-a-launched-request-delivers-into-its-own-run-directory/logs/population-base.log:2 follow-on: the base population arm's own header records module.__file__ resolving to the reviewed run's worktree (.../a-launched-request-delivers-into-its-own-run-directory/reckon/crew/queue_admission.py) rather than /tmp/reckon-base-1952259/reckon/crew/queue_admission.py, so the base arm ran the base test files against the head module and the manifest's measurement_module line names a base path its own log contradicts; the 0-added-failure conclusion still holds because the head arm is valid and both arms are all-green, but the base arm is not the base measurement it claims.",
+  "review_run_id": "r-20261014T102808098241-review-of-a-launched-request-delivers-into-its-own-run-directory-fda8b7424d5a",
+  "reviewed_base_sha": "3d926887c63b2e4f32a6c7d4e80420f2c567eff8",
+  "reviewed_head_sha": "fda8b7424d5a603b9af57d5b75b4173a4da96e98",
+  "reviewed_run_id": "r-20261014T095105250235-a-launched-request-delivers-into-its-own-run-directory",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T10:39:40.561742+00:00",
+  "total": 114
+}
