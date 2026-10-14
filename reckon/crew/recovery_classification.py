@@ -1321,8 +1321,23 @@ def classify_pointer(
         ),
         # A declaration that lifted its run and came back unchanged is the
         # defect the lift loop's own stop cannot name; carried on the row so a
-        # reader sees why the run is still parked rather than inferring it.
-        "wait_key_defect": wait.get("wait_key_defect") or None if wait else None,
+        # reader sees why the run is still parked rather than inferring it. A
+        # probe whose observation carries no state token is the same defect read
+        # from the probe's own output instead of the declaration, and the two
+        # are joined here so a reader sees one field whatever the cause.
+        "wait_key_defect": (
+            (
+                wait.get("wait_key_defect")
+                or _wait_observation_defect(
+                    wait_observation.get("observed")
+                    if wait_observation is not None
+                    else None
+                )
+            )
+            or None
+        )
+        if wait
+        else None,
     }
     if session_resolution is not None:
         classified["session_resolution"] = session_resolution
@@ -1371,6 +1386,7 @@ from .recovery_liveness import (  # noqa: E402
     _run_exit_record,
     _run_stream_mtime,
     _stranded_launch,
+    _wait_observation_defect,
     _worker_launched_after_manifest,
     _worker_record_liveness,
     _worker_record_pid,

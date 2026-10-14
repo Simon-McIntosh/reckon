@@ -5,7 +5,7 @@ import json
 import socket
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Mapping, Sequence
 
 from reckon._timestamps import parse_utc
 from reckon.crew import runs
@@ -480,6 +480,62 @@ def _declared_wait_age_seconds(
     return max(0, int(now_seconds - latest))
 
 
+# A wait's observation is the probe's own output line, matched against the
+# declared terminal states. A probe that prints a structured document can never
+# produce such a state: the last line of ``sacct --json`` is a closing brace.
+# The recommended scheduler query prints one state named on the command line
+# instead, and the refusal names it rather than the fault alone.
+_SACCT_STRUCTURED_OUTPUT_FLAGS = ("--json", "--parsable", "--parsable2")
+_SACCT_STATE_FORM = "sacct -n -X -o State -j"
+
+
+def _wait_probe_prints_structured_output(probe: Sequence[str]) -> str:
+    """The structured-output flag a probe carries, or "" when it prints states.
+
+    A probe's observation is compared against its ``wait_terminal`` states, so a
+    probe printing a JSON document or a machine-parsable table hands the reader
+    its last line — ``}`` for ``sacct --json`` — which no state can equal.
+    Measured 2026-10-13: a run declared ``["sacct", "--json", "-j", "1284803"]``
+    with terminal ``["COMPLETED", ...]``, so its observation was ``}`` and it
+    sat waiting about three hours after the job had completed. Only the
+    ``sacct`` program is read here: the flags are shared with other tools whose
+    output a caller may legitimately match, and a scheduler query is what a
+    wait declaration carries far more often than anything else.
+    """
+    if not probe:
+        return ""
+    program = str(probe[0]).rsplit("/", 1)[-1]
+    if program != "sacct":
+        return ""
+    for item in probe[1:]:
+        flag = str(item).split("=", 1)[0]
+        if flag in _SACCT_STRUCTURED_OUTPUT_FLAGS:
+            return flag
+    return ""
+
+
+def _wait_observation_defect(observed: Any) -> str:
+    """Name a probe observation that cannot be a state token, or "".
+
+    The observation is the line a wait's terminal list is matched against, so
+    an observation carrying no word character at all — empty, or punctuation
+    alone such as the ``}`` that closes a JSON document — can never equal a
+    declared state and the wait can never lift. Read at classification so the
+    row and the live view show it instead of a silent park. A probe that could
+    not answer is a separate reading (``unavailable``) that carries a word, and
+    is left to the row's own detail line.
+    """
+    if not isinstance(observed, str):
+        return ""
+    if any(character.isalnum() for character in observed):
+        return ""
+    return (
+        f"wait-key defect: the wait probe observed {observed!r}, which carries "
+        "no word-like state token, so it can never equal a declared terminal "
+        "state and the wait cannot lift; make the probe print a state name"
+    )
+
+
 def _manifest_wait(
     manifest_data: Mapping[str, Any],
     manifest: Path,
@@ -604,6 +660,17 @@ def _manifest_wait(
             "wait_terminal alongside wait_file, where the condition ends when "
             "its paths exist"
         )
+    structured_form = _wait_probe_prints_structured_output(declared_probe)
+    if structured_form:
+        # A probe that prints a structured document hands its last line to the
+        # reader, so the declaration can never lift. The refusal names the
+        # replacement form because the repair is a one-line edit to the probe.
+        missing.append(
+            f"wait_probe {[str(item) for item in declared_probe]!r} prints "
+            f"structured output ({structured_form}), whose last line is never "
+            f"a state a wait_terminal can name; use {_SACCT_STATE_FORM} <id> "
+            "instead"
+        )
     unemitted = _wait_terminal_names_no_probe_state(declared_terminal)
     if unemitted:
         missing.append(
@@ -642,7 +709,18 @@ def _manifest_wait(
         missing.append(expected_error)
     signature = _wait_declaration_signature(condition, probe, terminal, resume_brief)
     wait_key_defect = ""
-    if isinstance(previous_lift, Mapping) and previous_lift.get("trigger") == signature:
+    if structured_form:
+        wait_key_defect = (
+            f"wait-key defect: wait_probe "
+            f"{[str(item) for item in declared_probe]!r} prints structured "
+            f"output ({structured_form}), so its observation can name no state "
+            f"token; use {_SACCT_STATE_FORM} <id> instead"
+        )
+    if (
+        not wait_key_defect
+        and isinstance(previous_lift, Mapping)
+        and previous_lift.get("trigger") == signature
+    ):
         wait_key_defect = (
             "wait-key defect: this declaration already lifted the run and has "
             "come back unchanged, so its terminal state "
