@@ -1,0 +1,71 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-14T05:13:21.008Z",
+  "dispatched_at": "2026-10-14T05:02:19Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-suite-is-green-at-head.html:687",
+      "id": "reasoning-1",
+      "reason": "the node would re-anchor only the `from_state`, still see the cadence ids red, and either rediscover the cause the hard way or widen an exemption the plan deliberately keeps narrow; the plan needs the real recipe (arm the cadence follower with its own session, or re-anchor to coordinator-kind transitions with the clock advanced past SETTLE_WINDOW).",
+      "text": "\u00a715 says the cadence ids' transition lines \"carry no `from_state`, so no exemption reaches them, and those fixtures are re-anchored to carry the `from_state` of the transition each case exercises\", but every exemption the plan adds keys on a session the pane owns or observes \u2014 the observed-session exemption on the threaded observed set, the own-session start and own-session baseline exemptions on `self._own_session` \u2014 and the cadence pane names no session: `_Follower.start` calls `cli._follow_watch_lines(self.project, ...)` with no `session=`, so `own_session` is None (`reckon/crew_follow_commands.py:1158`) and adding a `from_state` to a `(None, \"working\")` line yields `(\"starting\", \"working\")`, still observer context and still withheld; so the stated remedy does not produce the done-when's \"thirteen ids pass alone\" for the cadence cases, and the stated reason (a missing `from_state`) misidentifies the mechanism, which is that the pane owns no session",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "dc427554febfac91c9ed3d4e0845ae2776f4ae1e25a19dea2dc0825c74ca52fc",
+  "plan_slug": "the-suite-is-green-at-head",
+  "plan_version": 327,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-14T05:14:10.114542+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-14T05:14:10.114542+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-suite-is-green-at-head.v327.json",
+  "review_run_id": "r-20261014T050141783510-plan-review-of-the-suite-is-green-at-head",
+  "reviewed_blob_sha": "aa76651d96659f773e8d050fdf97d3e7e36c1fd4",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 commit 089cd7741, reckon/crew/ticker.py, reckon/crew_follow_commands.py, the follower-family report and every named test file resolve; the extensionless href /reckon/plans/the-suite-is-green-at-head resolves under the <path>.html convention.",
+    "done_when": "pass \u2014 \u00a715's done-when is measurable (the thirteen ids pass alone; test_follow_settled_rows.py and test_row_policy_holds_observer_context.py still pass; importer files show no added failure against base) and names three negative controls, one per exemption.",
+    "evidence_paths": "pass \u2014 the negative controls are logged under the run directory, a durable path a later reader can open.",
+    "naming": "pass \u2014 \u00a715 names mechanisms and test ids in prose and introduces no plan labels, stage names, ticket numbers or version tags.",
+    "reasoning": "a finding \u2014 the root cause matches the cited report, the threading of the observed set through follower_row_path matches the code, but the stated remedy for the cadence ids cannot deliver the integer the plan says it delivers.",
+    "single_goal": "pass \u2014 \u00a715 carries one deliverable, delivering the rows a pane receives so the follower family passes; the three exemptions are parts of that one mechanism.",
+    "wiring": "pass \u2014 \u00a715 declares no depends-on/informs/gates, consistent with plan-standalone; the section element resolves and its prose references the report and code it acts on."
+  },
+  "section_digests": {
+    "_document": "83bc4eebbeaf35e1f8769b1cefa72ecf8466fb0d23d3dd350bf2e642790b97e5",
+    "s1": "93d7e8eb3f04bb8d9aad0f5ac7d68a9d009b7fe7feaa6f4932738242154d8d4d",
+    "s10": "9633fb928a6c720c8fae74ed3da0a5f7ed555c4230f29ebf2ee89e5432566bb1",
+    "s11": "3e9c94371cc0b22adeb21c71a08fdd16433d8b4c1a22e73cd63d1171332089ba",
+    "s12": "dd8650523d29d87e6fa41408db7d0440cf17dfbd57f0ab6da0d5fcd223692d95",
+    "s13": "7b00f23667f49ba7de16f8823860c86ad35a562eebddf434fd1a6b9f1f5e9993",
+    "s14": "1469c86b5327d2429ce07b9ddd2fbca586d8831acb94119f8a187e315f48dcf7",
+    "s15": "ddf9545dbfdb5c49d25aae6062f952dae22a754334452426003ec3428859f7db",
+    "s16": "4ab9d42bd2e71d070a1cc5393ebea66e1ec71d06dad51f1a82505c91ce309234",
+    "s2": "d8e1d44eab3d041cfa8f08f045885bcf9a783d27f0cb613fe7de2c0476c13887",
+    "s3": "d6efa514940aeb662c9b7fdee7f663c86e4da2526ec9a01c6977f967e30d886a",
+    "s4": "e7003c1b5457d6229da28b7d90f825f0e3ef67be2a012291c12a2daf14bf2273",
+    "s5": "934ff53a2b41de523672b7760ab4bbe2e8be5d3da6b580c600383ac0217825a2",
+    "s6": "532d289736e3278c9969cb253dc2c1c372054b378fd42f2cfb741906f6e66eb2",
+    "s7": "655ef45aae9c9f31c0c67cb28422cff4a16611cfce488326c298768a23f58efd",
+    "s8": "c78e67e053ac3d61a73df4b965e8209a12ca4d9b745535a102b0b0040cce3adc",
+    "s9": "f4ef4f0dc18779331d3654037d55a7dd1c27d3769bfbfe753867fccbb53f9a28"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T05:13:28.040374+00:00"
+}
