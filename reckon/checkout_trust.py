@@ -16,8 +16,10 @@ the probe compiles each one and imports it in a throwaway interpreter, because
 the running process is the wrong place to discover that the new code does not
 load.
 
-This module holds the only import probe in the source. Both readers call
-:func:`moved_checkout_is_trustworthy` rather than carrying a probe of their own.
+The import probe's text is defined once, in ``reckon.crew_follow_commands`` as
+``_FOLLOWER_RELOAD_PROBE``, and this module reads it rather than holding its own
+copy, so the two readers share one definition. Both call
+:func:`moved_checkout_is_trustworthy` rather than carrying a check of their own.
 """
 
 from __future__ import annotations

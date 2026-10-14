@@ -23,8 +23,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-from reckon import checkout_trust, crew_follow_commands
-
 SOURCE_PACKAGE = Path(__file__).resolve().parents[1] / "reckon"
 
 _DRIVER = r'''
@@ -248,16 +246,6 @@ def test_a_clean_moved_checkout_answers_stale_server_code(tmp_path: Path) -> Non
     )
     assert "Extra inputs are not permitted" in second["original_error"]
     assert "reconnect" in second["detail"].lower()
-
-
-def test_the_mcp_and_the_follower_share_one_trust_check() -> None:
-    """The source holds one import probe, and both readers point at it.
-
-    The disagreement that motivated the shared check is a duplicated probe. The
-    probe the MCP runs must be the follower's own text, so a reader that changed
-    one could not leave the other behind.
-    """
-    assert checkout_trust._import_probe() == crew_follow_commands._FOLLOWER_RELOAD_PROBE
 
 
 def test_the_source_holds_one_import_probe() -> None:
