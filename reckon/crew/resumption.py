@@ -47,7 +47,7 @@ import json
 import os
 import subprocess
 from collections.abc import Callable, Mapping
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -163,10 +163,8 @@ def consume_refused_advice(run_id: str) -> str:
         text = path.read_text(encoding="utf-8")
     except OSError:
         return ""
-    try:
+    with suppress(OSError):
         path.unlink()
-    except OSError:
-        pass
     return text.strip()
 
 
@@ -220,6 +218,7 @@ def live_attempt_refusal(run_id: str, record: Mapping[str, Any]) -> CrewError | 
         "start a worker beside it and leave both writing one tree; the advice "
         f"is kept at {refused_advice_path(run_id)}"
     )
+
 
 # How often the follower may sweep. Long enough that a tight poll loop cannot
 # turn the sweep into a hot path, short enough that a lane returning minutes
@@ -995,14 +994,28 @@ def _resume(
     attempt_started_at = _utc_now()
     manifest_baseline_mtime_ns = _manifest_mtime_ns(record.get("manifest_path") or "")
     _require_fleet_gate_open()
-    if launcher is None:
-        pid = _spawn(
-            plan, log_path=log_path, stderr_path=stderr_path, prompt_path=advice_path
-        )
-    else:
-        pid = launcher(
-            plan, log_path=log_path, stderr_path=stderr_path, prompt_path=advice_path
-        )
+    try:
+        if launcher is None:
+            pid = _spawn(
+                plan,
+                log_path=log_path,
+                stderr_path=stderr_path,
+                prompt_path=advice_path,
+            )
+        else:
+            pid = launcher(
+                plan,
+                log_path=log_path,
+                stderr_path=stderr_path,
+                prompt_path=advice_path,
+            )
+    except BaseException:
+        # A launch that ended before it held the session recorded no attempt of
+        # its own, so nothing will drop the in-flight marker resume_plan set.
+        # Left there it would refuse the next resume against a launcher already
+        # gone, so the marker goes with the launch that raised.
+        clear_resume_launching(run_id)
+        raise
     record_resumption(
         run_id,
         pid=pid,

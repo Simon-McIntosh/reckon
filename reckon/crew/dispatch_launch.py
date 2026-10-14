@@ -63,7 +63,6 @@ from reckon.crew.runs import (
 )
 
 
-
 # Every worker this process has launched but not yet waited on. The waiting is
 # the reaper's, not the caller's: an ordinary dispatch CLI is gone before its
 # worker finishes, and a long-lived follower that sweeps on a cadence only
@@ -1217,10 +1216,7 @@ def placement_job_id(
             for token in str(completed.stdout or "").split():
                 if token.isdigit():
                     return token, "recorded"
-            last = (
-                "probe answered no identifier "
-                f"(exit {completed.returncode})"
-            )
+            last = f"probe answered no identifier (exit {completed.returncode})"
         if attempt + 1 < _PLACEMENT_PROBE_ATTEMPTS:
             time.sleep(1.0)
     return None, last or "probe answered no identifier"
@@ -1562,6 +1558,34 @@ def _attempt_artifact_path(run_directory: Path, name: str, attempt: int) -> Path
     return run_directory / f"attempt-{attempt}-{name}"
 
 
+def _live_attempt_holder(run_id: str) -> int | None:
+    """The attempt whose process is still running, or None when none is.
+
+    Two records can name the attempt running now, and either being alive means
+    the run still has a writer: the pointer, which the launching door folds the
+    supervisor's pid onto only after the spawn, and the canonical worker record
+    the supervisor writes for itself. A supervisor that has exited before its
+    worker takes the pointer pid with it while the work continues, so neither
+    record alone answers it and both are read.
+    """
+    from reckon.crew import recovery_liveness as _liveness
+    from reckon.crew.process_liveness import record_process_alive
+
+    try:
+        record = read_pointer(run_id)
+    except CrewError:
+        return None
+    try:
+        attempt = int(record.get("attempt") or 1)
+    except (TypeError, ValueError):
+        attempt = 1
+    if _liveness._worker_record_liveness(record) is True:
+        return attempt
+    if record_process_alive(record, process_alive) is True:
+        return attempt
+    return None
+
+
 def _prepare_attempt_records(
     run_directory: Path,
     *,
@@ -1574,10 +1598,27 @@ def _prepare_attempt_records(
 
     The immutable attempt files retain every worker and exit receipt. The two
     canonical names remain the classifier's current-attempt surface, so they
-    are cleared before a new supervisor can start. Publishing the marker first
-    prevents a late exit from the previous supervisor from reclaiming those
-    canonical names while the replacement is launching.
+    are cleared before a new supervisor can start, and the marker goes down
+    first so a late exit from the previous supervisor cannot reclaim them while
+    the replacement is launching.
+
+    A live attempt's records are never retired. The canonical names are what
+    the classifier reads for the attempt running now, so replacing them with a
+    newer attempt's would report a working run as halted; the worker record
+    would be unlinked outright, taking the only account of the running worker.
+    A launch that finds a live holder is refused here, before the marker or any
+    record is written, so a second launch that ends without holding the session
+    leaves the incumbent's pointer phase, pids and records exactly as it found
+    them.
     """
+    holder = _live_attempt_holder(run_id)
+    if holder is not None:
+        raise CrewError(
+            f"run {run_id!r} attempt {holder} is still running: a launch that "
+            "started now would retire its worker record, so the run would read "
+            "as halted while its worker kept working; observe or stop it before "
+            "launching again"
+        )
     _supervisor_write(
         run_directory / ATTEMPT_RECORD_NAME,
         {
@@ -2924,7 +2965,10 @@ def _reap_worker_on_its_terminal_manifest(
                 ),
             )
             signalled_at = now
-        elif signalled_at is not None and now - signalled_at >= _WORKER_GRACE_KILL_SECONDS:
+        elif (
+            signalled_at is not None
+            and now - signalled_at >= _WORKER_GRACE_KILL_SECONDS
+        ):
             # The worker ignored the grace signal. SIGKILL cannot be ignored,
             # and the record names this second, harder signal.
             _record_ended(

@@ -65,9 +65,10 @@ EXIT_RUN = "r-observed-exit"
 DEAD_PID_RUN = "r-observed-dead-pid"
 UNKNOWN_RUN = "r-unobserved-liveness"
 LIVE_RUN = "r-proven-live"
+LAUNCHING_RUN = "r-resume-launching"
 
 
-NEEDLE_RUN_IDS = (EXIT_RUN, DEAD_PID_RUN, UNKNOWN_RUN, LIVE_RUN)
+NEEDLE_RUN_IDS = (EXIT_RUN, DEAD_PID_RUN, UNKNOWN_RUN, LIVE_RUN, LAUNCHING_RUN)
 
 
 def _real_home_traces(real_home: Path) -> list[str]:
@@ -274,3 +275,36 @@ def test_a_proven_live_process_is_not_lifted(
     detail = skipped[LIVE_RUN]["detail"]
     assert "still has a live process" in detail, detail
     assert "before resuming" in detail, detail
+
+
+def test_a_sweep_over_a_run_whose_launch_is_in_flight_resumes_nothing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A run whose own attempt is still starting is not lifted.
+
+    An automatic resume marks the pointer before it spawns and drops the mark
+    once the attempt is recorded, so a sweep that reads the pointer inside that
+    window meets a run whose process is running and whose attempt is not
+    recorded yet. Lifting there starts a worker beside one already starting —
+    and the run's end was never observed, because the attempt it would lift over
+    has not ended. The refusal names the launching process, so the coordinator
+    can see which run was left alone and why.
+    """
+    with liveness._live_child() as pid:
+        pointer = _parked_pointer(
+            tmp_path, LAUNCHING_RUN, pid=liveness._absent_pid(), launcher_host=HOST
+        )
+        pointer["resume_launch_in_flight"] = {"pid": pid, "at": "2026-09-29T11:59:00Z"}
+        runs._write_json(runs.pointer_path(LAUNCHING_RUN), pointer)
+        _declared_wait(pointer)
+
+        report = _sweep(monkeypatch, tmp_path, [pointer])
+
+    assert report["checked"] == 1
+    assert report["resumed"] == []
+    skipped = {row["run_id"]: row for row in report["skipped"]}
+    assert sorted(skipped) == [LAUNCHING_RUN]
+    entry = skipped[LAUNCHING_RUN]
+    assert entry["reason"] == "resume-refused", entry
+    assert str(pid) in entry["detail"], entry
+    assert "already has a resume launching" in entry["detail"], entry
