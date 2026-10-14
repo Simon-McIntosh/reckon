@@ -3277,38 +3277,183 @@ def _write_sender_record(
     return path
 
 
-def signal_worker(
+# The environment mark a launcher writes into every process it starts for one
+# run. It is the only handle on a worker the kernel reparented away from its
+# supervisor, which the descendant walk cannot cross and the working-directory
+# scan does not read.
+RUN_ID_ENV = "RECKON_RUN_ID"
+# The run directory's own record of the worker it started.
+_RUN_WORKER_RECORD = "worker.json"
+
+
+def _process_environment(pid: int) -> dict[str, str] | None:
+    """One process's environment, or None when it cannot be read.
+
+    Read-only and best-effort: a process may exit mid-scan, and one owned by
+    another user is unreadable. None is "could not read", never "carries no
+    mark", so a caller deciding what to signal treats it as unknown rather than
+    as a process it may end.
+    """
+    try:
+        raw = (Path("/proc") / str(pid) / "environ").read_bytes()
+    except OSError:
+        return None
+    environment: dict[str, str] = {}
+    for entry in raw.split(b"\0"):
+        if b"=" not in entry:
+            continue
+        key, _, value = entry.partition(b"=")
+        environment[key.decode("utf-8", "replace")] = value.decode("utf-8", "replace")
+    return environment
+
+
+def _start_tick(pid: Any) -> int | None:
+    """The kernel start tick of a process, or None when it cannot be read."""
+    try:
+        return int(_process_start_time(pid))
+    except (TypeError, ValueError):
+        return None
+
+
+def _processes_owning_run(
+    run_id: str, *, started_no_earlier_than: int | None = None
+) -> list[int]:
+    """Pids of this user's processes whose environment names ``run_id``.
+
+    The only reach for a worker the kernel reparented away from its supervisor:
+    the descendant walk cannot cross that boundary, and ``_processes_holding``
+    reads working directories and open files rather than environments. A
+    process qualifies on its environment naming the run and, when a floor is
+    known, a start tick no earlier than it — so a recycled pid cannot be
+    claimed. A process whose environment cannot be read is never named, because
+    the absence of a mark must not read as ownership. Read-only; the caller
+    decides what to signal.
+    """
+    if not run_id:
+        return []
+    proc = Path("/proc")
+    if not proc.is_dir():
+        return []
+    own_pid = os.getpid()
+    named: list[int] = []
+    for entry in proc.iterdir():
+        if not entry.name.isdigit():
+            continue
+        pid = int(entry.name)
+        if pid == own_pid:
+            continue
+        environment = _process_environment(pid)
+        if environment is None or environment.get(RUN_ID_ENV) != run_id:
+            continue
+        if started_no_earlier_than is not None:
+            start = _start_tick(pid)
+            if start is None or start < started_no_earlier_than:
+                continue
+        named.append(pid)
+    return named
+
+
+def _running_descendants(pid: int) -> list[int]:
+    """Every live process under ``pid``, including ``pid`` itself.
+
+    A worker that runs a command leaves the command as its child, so reaching
+    the worker alone leaves the command working. The walk reads the kernel's
+    child list at each step; a process that exits mid-walk simply contributes
+    no children.
+    """
+    from reckon.crew.recovery_liveness import _process_children
+
+    seen: list[int] = []
+    frontier = [pid]
+    while frontier:
+        current = frontier.pop()
+        if current in seen:
+            continue
+        seen.append(current)
+        children = _process_children(current)
+        if children:
+            frontier.extend(children)
+    return seen
+
+
+def _recorded_worker_pid(run_dir: str | Path | None) -> int | None:
+    """The worker pid the run directory's own record names, or None."""
+    if run_dir is None:
+        return None
+    try:
+        data = json.loads((Path(run_dir) / _RUN_WORKER_RECORD).read_text())
+    except (OSError, ValueError):
+        return None
+    if not isinstance(data, Mapping):
+        return None
+    try:
+        return int(data.get("pid"))
+    except (TypeError, ValueError):
+        return None
+
+
+def _run_launch_floor(run_dir: str | Path | None) -> int | None:
+    """The start tick at or after which the run's own processes began.
+
+    Read from the worker record's own start tick: the worker is launched after
+    the supervisor's snapshot, so a process naming the run that began no earlier
+    than it is the run's. Absent a record there is no floor to apply, and the
+    scan falls back to the run id alone.
+    """
+    if run_dir is None:
+        return None
+    try:
+        data = json.loads((Path(run_dir) / _RUN_WORKER_RECORD).read_text())
+    except (OSError, ValueError):
+        return None
+    if not isinstance(data, Mapping):
+        return None
+    return _start_tick(data.get("pid"))
+
+
+def _run_process_pids(
+    pid: int | None, *, run_id: str | None, run_dir: str | Path | None
+) -> list[int]:
+    """Every process the run owns, by descent or by its environment mark.
+
+    Two sources, unioned: the descent from the run's recorded supervisor and
+    worker pids, which follows a live tree while the kernel still parenthesises
+    it; and the environment scan for a worker the kernel has since reparented.
+    The caller's own pid is dropped, because ending the process asking to end a
+    run is never what the request means.
+    """
+    roots: list[int] = []
+    if pid:
+        roots.append(int(pid))
+    worker_pid = _recorded_worker_pid(run_dir)
+    if worker_pid is not None:
+        roots.append(worker_pid)
+    collected: list[int] = []
+    for root in roots:
+        collected.extend(_running_descendants(root))
+    if run_id:
+        floor = _run_launch_floor(run_dir)
+        for candidate in _processes_owning_run(
+            run_id, started_no_earlier_than=floor
+        ):
+            collected.extend(_running_descendants(candidate))
+    own_pid = os.getpid()
+    ordered: list[int] = []
+    for candidate in collected:
+        if candidate != own_pid and candidate not in ordered:
+            ordered.append(candidate)
+    return ordered
+
+
+def _signal_one(
     pid: int,
-    sig: int = signal.SIGTERM,
+    sig: int,
     *,
     reason: str = "",
     run_dir: str | Path | None = None,
     project: str | None = None,
 ) -> bool:
-    """Signal one spawned process, never a group it does not lead.
-
-    ``os.killpg`` takes a process GROUP id, and ``killpg(1, ...)`` is
-    ``kill(-1, ...)`` — every process the caller is permitted to signal. A pid
-    taken from a scan or a run record can report a group it does not lead: one
-    reparented to init, or started without a session of its own, shares its
-    group with unrelated work. Signalling that group reaches the whole account
-    across every control group and session, which no caller here intends, and
-    the reach is invisible at the call site because the argument looks like one
-    process.
-
-    The group is therefore signalled only when the process leads it, which is
-    true of anything started detached on purpose and is the case the group
-    signal exists for. Otherwise the process alone is signalled and its children
-    are left running, because ending one worker is never worth the risk of
-    ending everything. Returns whether a signal was delivered.
-
-    This is the only function in the crew that calls ``os.kill`` or
-    ``os.killpg``, so the attribution scan has one home to point at. A caller
-    that names the target's run directory gets a sender record written before
-    the signal goes out, and a matching outcome record after; a caller
-    signalling something that is not a run passes no directory and writes
-    nothing.
-    """
+    """Deliver one signal, never to a group the target does not lead."""
     try:
         group = os.getpgid(pid)
     except (ProcessLookupError, PermissionError):
@@ -3353,6 +3498,64 @@ def signal_worker(
             project=project,
         )
     return True
+
+
+def signal_worker(
+    pid: int,
+    sig: int = signal.SIGTERM,
+    *,
+    reason: str = "",
+    run_dir: str | Path | None = None,
+    project: str | None = None,
+    run_id: str | None = None,
+    reach_run: bool = False,
+) -> list[int]:
+    """Signal a spawned process, and the rest of its run when asked.
+
+    ``os.killpg`` takes a process GROUP id, and ``killpg(1, ...)`` is
+    ``kill(-1, ...)`` — every process the caller is permitted to signal. A pid
+    taken from a scan or a run record can report a group it does not lead: one
+    reparented to init, or started without a session of its own, shares its
+    group with unrelated work. Signalling that group reaches the whole account
+    across every control group and session, which no caller here intends, and
+    the reach is invisible at the call site because the argument looks like one
+    process.
+
+    The group is therefore signalled only when the process leads it, which is
+    true of anything started detached on purpose and is the case the group
+    signal exists for. Otherwise the process alone is signalled.
+
+    With ``reach_run`` the signal is delivered to every process the run owns,
+    not the one pid alone: a supervisor's worker and that worker's own children,
+    found by descent from the run's recorded pids and by the run id in their
+    environment — so a worker the kernel reparented to init is ended too, and a
+    direct worker's children are not left working. A process whose environment
+    cannot be read is not signalled, and a process that merely holds the run's
+    worktree as its working directory carries no mark and is therefore never
+    signalled. Returns the pids the signal was delivered to.
+
+    This is the only function in the crew that calls ``os.kill`` or
+    ``os.killpg``, so the attribution scan has one home to point at. A caller
+    that names the target's run directory gets a sender record written before
+    the signal goes out, and a matching outcome record after; a caller
+    signalling something that is not a run passes no directory and writes
+    nothing.
+    """
+    targets = (
+        _run_process_pids(pid, run_id=run_id, run_dir=run_dir)
+        if reach_run
+        else [int(pid)]
+    )
+    own_pid = os.getpid()
+    ended: list[int] = []
+    for target in targets:
+        if target == own_pid:
+            continue
+        if _signal_one(
+            target, sig, reason=reason, run_dir=run_dir, project=project
+        ):
+            ended.append(target)
+    return ended
 
 
 def _signal_process_group(

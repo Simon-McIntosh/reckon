@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import socket
 from datetime import UTC, datetime
 from pathlib import Path
@@ -848,7 +849,46 @@ def local_liveness(record: Mapping[str, Any]) -> tuple[bool | None, bool]:
     if launched_here and alive is not True and _worker_record_liveness(record) is True:
         alive = True
         proven = True
+    if launched_here and alive is not True and _worker_record(record) is not None:
+        # Both recorded pids are gone: the pointer's supervisor and the pid the
+        # worker record names. A worker started through an intermediary is
+        # reparented away from both, so the environment mark is the last place
+        # the run's own process can be found — without which a live run reads
+        # as ended and is classified from its manifest as complete or scoring.
+        if _env_scan_run_pid(record) is not None:
+            alive = True
+            proven = True
     return alive, proven
+
+
+def _env_scan_run_pid(record: Mapping[str, Any]) -> int | None:
+    """A live process whose environment names this run, or None.
+
+    The supervisor's worker record names the process the supervisor spawned,
+    and where a lane starts its worker through an intermediary that process is
+    the intermediary: it exits while the worker runs on, reparented to init and
+    outside any process group a stop can signal. The recorded pid is then gone
+    while the run works, and neither the pointer's pid nor the worker record
+    can say so. The environment mark a launcher writes into every process it
+    starts for the run is the reach for that worker, so a run left with no
+    other life is asked whether any process still carries the mark. A scan of
+    this user's process table costs a read per process, so it is asked only
+    after the cheaper reads have failed, and only for a run whose own record
+    shows a worker existed. A foreign run is never read here: a number is
+    meaningful only on the machine that issued it.
+    """
+    run_id = str(record.get("run_id") or "")
+    if not run_id or _record_is_known_foreign(record):
+        return None
+    from reckon.crew.routing import _processes_owning_run
+
+    own_pid = os.getpid()
+    for candidate in _processes_owning_run(run_id):
+        if candidate == own_pid:
+            continue
+        if process_alive(candidate) is True:
+            return candidate
+    return None
 
 
 def live_worker_pid(record: Mapping[str, Any]) -> int | None:
@@ -874,6 +914,11 @@ def live_worker_pid(record: Mapping[str, Any]) -> int | None:
     worker_pid = _worker_record_pid(record)
     if worker_pid is not None and _worker_record_liveness(record) is True:
         return worker_pid
+    if _worker_record(record) is not None:
+        # The same environment reach ``local_liveness`` uses, named here so a
+        # refusal that stops a resume over a reparented worker can point at the
+        # process it found rather than at a pid the table no longer holds.
+        return _env_scan_run_pid(record)
     return None
 
 

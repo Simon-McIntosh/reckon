@@ -2341,6 +2341,7 @@ def _supervisor_exit_record(
     launched_at: str,
     status: int | None,
     run_directory: Path,
+    ended_pids: list[int] | None = None,
 ) -> dict[str, Any]:
     """Compose the one record written for a worker's exit or launch failure."""
     paths = stream_paths_newest_first(run_directory)
@@ -2358,6 +2359,10 @@ def _supervisor_exit_record(
         # launch failure, and it wants a different recovery from a death while
         # working, so the two are distinguished on the record itself.
         "ended_during": "launch" if count == 0 else "working",
+        # The pids the supervisor's own signals reached before writing this
+        # record, so a reader can see the run's tree was ended rather than
+        # guessing from the single worker pid.
+        "ended_pids": list(ended_pids or []),
     }
     if status is None:
         record.update({"exit_code": None, "signal": None, "signal_name": None})
@@ -2746,6 +2751,15 @@ def _supervisor_manifest_baseline_ns(
     return max(baseline, started_ns)
 
 
+def _record_ended(accumulator: list[int] | None, ended: list[int]) -> None:
+    """Append the pids a signal reached, preserving first-seen order."""
+    if accumulator is None:
+        return
+    for pid in ended:
+        if pid not in accumulator:
+            accumulator.append(pid)
+
+
 def _reap_worker_on_its_terminal_manifest(
     pid: int,
     *,
@@ -2755,6 +2769,7 @@ def _reap_worker_on_its_terminal_manifest(
     baseline_ns: int,
     stop_requested: threading.Event | None = None,
     stop_grace_seconds: float = 0.0,
+    ended_pids: list[int] | None = None,
 ) -> int | None:
     """Collect a worker's exit, ending it once its manifest is delivered or a stop arrives.
 
@@ -2818,22 +2833,33 @@ def _reap_worker_on_its_terminal_manifest(
             # A stop ends the run: the group signal has already reached the
             # worker, and re-signalling it here names the sender in the run's
             # worker record. The grace covers only the flush between receiving
-            # the stop and exiting.
-            signal_worker(
-                pid,
-                signal.SIGTERM,
-                reason="run-stop",
-                run_dir=run_directory,
+            # the stop and exiting. The reach ends the worker's own children
+            # too, so a stop leaves nothing of the run working.
+            _record_ended(
+                ended_pids,
+                signal_worker(
+                    pid,
+                    signal.SIGTERM,
+                    reason="run-stop",
+                    run_dir=run_directory,
+                    run_id=run_directory.name,
+                    reach_run=True,
+                ),
             )
             stop_deadline = now + stop_grace_seconds
         if stop_deadline is not None and now >= stop_deadline:
             # The worker outlived the stop grace. SIGKILL cannot be ignored, so
             # the supervisor ends it rather than waiting on it further.
-            signal_worker(
-                pid,
-                signal.SIGKILL,
-                reason="worker-ignored-the-stop-grace-signal",
-                run_dir=run_directory,
+            _record_ended(
+                ended_pids,
+                signal_worker(
+                    pid,
+                    signal.SIGKILL,
+                    reason="worker-ignored-the-stop-grace-signal",
+                    run_dir=run_directory,
+                    run_id=run_directory.name,
+                    reach_run=True,
+                ),
             )
             stop_deadline = None
             stop_killed = True
@@ -2886,21 +2912,31 @@ def _reap_worker_on_its_terminal_manifest(
             # delivery's clock.
             deadline = None
         if deadline is not None and signalled_at is None and now >= deadline:
-            signal_worker(
-                pid,
-                signal.SIGTERM,
-                reason="worker-lingered-after-terminal-manifest",
-                run_dir=run_directory,
+            _record_ended(
+                ended_pids,
+                signal_worker(
+                    pid,
+                    signal.SIGTERM,
+                    reason="worker-lingered-after-terminal-manifest",
+                    run_dir=run_directory,
+                    run_id=run_directory.name,
+                    reach_run=True,
+                ),
             )
             signalled_at = now
         elif signalled_at is not None and now - signalled_at >= _WORKER_GRACE_KILL_SECONDS:
             # The worker ignored the grace signal. SIGKILL cannot be ignored,
             # and the record names this second, harder signal.
-            signal_worker(
-                pid,
-                signal.SIGKILL,
-                reason="worker-ignored-the-terminal-grace-signal",
-                run_dir=run_directory,
+            _record_ended(
+                ended_pids,
+                signal_worker(
+                    pid,
+                    signal.SIGKILL,
+                    reason="worker-ignored-the-terminal-grace-signal",
+                    run_dir=run_directory,
+                    run_id=run_directory.name,
+                    reach_run=True,
+                ),
             )
             signalled_at = now
         time.sleep(_WORKER_MANIFEST_POLL_SECONDS)
@@ -2968,6 +3004,7 @@ def _reap_the_launched_worker(
     baseline_ns: int,
     stop_requested: threading.Event | None = None,
     stop_grace_seconds: float = 0.0,
+    ended_pids: list[int] | None = None,
 ) -> tuple[int, int | None]:
     """Collect the exit of the worker a launcher started and left behind.
 
@@ -3001,6 +3038,7 @@ def _reap_the_launched_worker(
                 baseline_ns=baseline_ns,
                 stop_requested=stop_requested,
                 stop_grace_seconds=stop_grace_seconds,
+                ended_pids=ended_pids,
             )
             if child_status is not None:
                 # The exit that ended the wait is the attempt's exit; a child
@@ -3105,6 +3143,7 @@ def _run_supervisor(spec_path: Path) -> int:
     # signal, so the carried exit is the attempt's exit. A worker that outlived
     # the poll carries none and is supervised exactly as before.
     status = getattr(pid, "collected_wait_status", None)
+    ended: list[int] = []
     if status is not None:
         # The exit was collected from the worker itself, so it stands as the
         # attempt's exit on its own: the worker has been reaped, so no child of
@@ -3122,6 +3161,7 @@ def _run_supervisor(spec_path: Path) -> int:
             ),
             stop_requested=stop_requested,
             stop_grace_seconds=_stop_grace_seconds(),
+            ended_pids=ended,
         )
         worker_pid, status = _reap_the_launched_worker(
             pid,
@@ -3134,6 +3174,7 @@ def _run_supervisor(spec_path: Path) -> int:
             ),
             stop_requested=stop_requested,
             stop_grace_seconds=_stop_grace_seconds(),
+            ended_pids=ended,
         )
     exit_record = _supervisor_exit_record(
         run_id=str(spec.get("run_id") or ""),
@@ -3142,6 +3183,7 @@ def _run_supervisor(spec_path: Path) -> int:
         launched_at=launched_at,
         status=status,
         run_directory=run_directory,
+        ended_pids=ended,
     )
     _write_attempt_artifact(
         run_directory,

@@ -1,6 +1,7 @@
 # ruff: noqa: I001, UP035
 from __future__ import annotations
 import json
+import signal
 import subprocess
 from pathlib import (
     Path,
@@ -36,9 +37,12 @@ from reckon.crew.routing import (
     _agent_configuration,
     _budget_verdict,
     _competence_verdict,
+    _processes_holding,
+    _run_process_pids,
     _signal_process_group,
     resolve_dispatch_authority,
     resolve_dispatch_ledger_root,
+    signal_worker,
 )
 from reckon.crew.runs import (
     _manifest_freshness,
@@ -1753,28 +1757,98 @@ def change_lane(
 
 
 def terminate(run_id: str) -> dict[str, Any]:
-    """Signal a spawned run's process group to stop, and record that."""
+    """End a run's whole process tree, and record what was ended.
+
+    The recorded pid names the supervisor for a supervised launch, and a
+    supervisor that has already exited leaves its worker running — reparented
+    to init, outside any process group this command can signal. So the signal
+    reaches the run's own processes rather than one pid: the worker under the
+    supervisor by descent, and any process whose environment names the run, so
+    a worker the kernel moved is ended too. A process that merely holds the
+    run's worktree as its working directory carries no ownership mark and is
+    reported but never signalled.
+    """
 
     def stop(record: dict[str, Any]) -> dict[str, Any]:
-        pid = record.get("pid")
-        if not pid:
+        run_directory = run_dir(run_id)
+        recorded_pid = record.get("pid")
+        reached = _run_process_pids(
+            int(recorded_pid) if recorded_pid else None,
+            run_id=run_id,
+            run_dir=run_directory,
+        )
+        if not reached and not recorded_pid:
             raise CrewError(f"run {run_id!r} has no process to stop")
-        try:
-            _signal_process_group(
-                int(pid),
-                record.get("pid_start_time"),
-                run_dir=run_dir(run_id),
-                reason="run-stop",
+        ended = signal_worker(
+            int(recorded_pid) if recorded_pid else 0,
+            signal.SIGTERM,
+            reason="run-stop",
+            run_dir=run_directory,
+            project=str(record.get("project") or "") or None,
+            run_id=run_id,
+            reach_run=True,
+        )
+        alive_after = _await_run_processes_gone(
+            int(recorded_pid) if recorded_pid else None,
+            run_id=run_id,
+            run_dir=run_directory,
+        )
+        worktree = str(record.get("worktree") or "")
+        holders = _processes_holding(Path(worktree)) if worktree else []
+        record["ended_pids"] = ended
+        record["alive_after"] = alive_after
+        record["held_by"] = holders
+        if alive_after:
+            record["detail"] = (
+                f"SIGTERM sent to {len(ended)} process(es) of run {run_id}; "
+                f"{len(alive_after)} still alive afterwards: {alive_after}"
             )
-        except (ProcessLookupError, PermissionError, OSError) as exc:
-            record["detail"] = f"could not signal pid {pid} — {exc}"
         else:
-            record["detail"] = f"SIGTERM sent to process group of pid {pid}"
+            record["detail"] = (
+                f"run {run_id} ended: SIGTERM sent to {len(ended)} process(es)"
+            )
+        if holders:
+            record["detail"] += (
+                f"; {len(holders)} process(es) hold the worktree with no "
+                "ownership mark and were left alive"
+            )
         record["phase"] = "stopped"
         record["stopped_at"] = _utc_now()
         return record
 
     return _mutate_pointer(run_id, stop)
+
+
+# How long ``crew stop`` waits for the run's processes to leave the table before
+# it reports the survivors. Bounded so the command never hangs on a worker that
+# ignores SIGTERM.
+_STOP_SETTLE_SECONDS = 2.0
+_STOP_SETTLE_POLL_SECONDS = 0.02
+
+
+def _await_run_processes_gone(
+    pid: int | None, *, run_id: str, run_dir: Any
+) -> list[int]:
+    """Poll until the run's processes are gone, and name any that remain.
+
+    A signal is a request, not a fact: a process ends when the kernel schedules
+    its handler. The wait is bounded, and its result is the survivors a reader
+    must see rather than an assumed success.
+    """
+    import time as _time
+
+    deadline = _time.monotonic() + _STOP_SETTLE_SECONDS
+    while True:
+        remaining = [
+            candidate
+            for candidate in _run_process_pids(
+                pid, run_id=run_id, run_dir=run_dir
+            )
+            if process_alive(candidate) is True
+        ]
+        if not remaining or _time.monotonic() >= deadline:
+            return remaining
+        _time.sleep(_STOP_SETTLE_POLL_SECONDS)
 
 
 def record_resumption(
