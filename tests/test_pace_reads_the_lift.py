@@ -217,12 +217,14 @@ def test_a_moved_seven_day_reset_ends_the_lift() -> None:
     """A reading whose seven-day reset has moved is a fresh window."""
     config = _config()
     _grant(config, multiple=LIFT_MULTIPLE)
-    moved = _week_reset() + timedelta(hours=1)
+    moved = _week_reset() + timedelta(days=7)
 
     entry = _entry(config, window=_window(week_resets_at=moved))
 
     assert entry["allowance"].get("lift") is None
-    assert budget.pace_hold(entry, "implement")["held"] is True
+    # The window the reset names is fresh, so the configured pace admits the
+    # dispatch rather than holding it.
+    assert budget.pace_hold(entry, "implement")["held"] is False
 
 
 def test_a_drain_by_lift_holds_above_its_line_and_admits_below() -> None:

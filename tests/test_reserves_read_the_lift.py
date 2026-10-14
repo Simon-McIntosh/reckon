@@ -203,7 +203,7 @@ def test_the_bookend_refusal_returns_on_a_moved_reset(guarded_home) -> None:
     reading = _reading()
     _grant(config, readings=[reading])
 
-    moved = _reading(week_resets_at=_week_reset() + timedelta(hours=1))
+    moved = _reading(week_resets_at=_week_reset() + timedelta(days=7))
     with pytest.raises(CrewError):
         _refuse_against_the_bookend_reserve(
             config=config, role="implement", pace_record=_pace_record(moved)
@@ -274,7 +274,7 @@ def test_a_window_reading_that_moved_the_reset_returns_the_reserve(
                 utilisation=WEEK_UTILISATION,
                 observed_at=NOW,
                 age_seconds=0.0,
-                resets_at=(_week_reset() + timedelta(hours=1)).isoformat(),
+                resets_at=(_week_reset() + timedelta(days=7)).isoformat(),
             ),
         ),
         observed_at=NOW,
