@@ -1574,10 +1574,41 @@ def _prepare_attempt_records(
 
     The immutable attempt files retain every worker and exit receipt. The two
     canonical names remain the classifier's current-attempt surface, so they
-    are cleared before a new supervisor can start. Publishing the marker first
-    prevents a late exit from the previous supervisor from reclaiming those
-    canonical names while the replacement is launching.
+    are cleared before a new supervisor can start, and the marker goes down
+    first so a late exit from the previous supervisor cannot reclaim them while
+    the replacement is launching.
+
+    A live attempt's records are never retired. The canonical names are what
+    the classifier reads for the attempt running now, so replacing them with a
+    newer attempt's would report a working run as halted; the worker record
+    would be unlinked outright, taking the only account of the running worker.
+    A launch that finds a live holder is refused here, before the marker or any
+    record is written, so a second launch that ends without holding the session
+    leaves the incumbent's pointer phase, pids and records exactly as it found
+    them.
+
+    The holder is resolved by :func:`live_worker_pid`, the same read the
+    resumption refusal names a pid from, rather than through a private copy:
+    that read asks both the pointer's pid and the worker record the supervisor
+    writes beside the stream, reaches a worker reparented away from both through
+    the environment mark, and refuses to name a pid at all for a run this host
+    did not launch. A second copy of that composition answered None for exactly
+    the reparented worker it was written to protect.
     """
+    from reckon.crew.recovery_liveness import live_worker_pid
+
+    try:
+        record = read_pointer(run_id)
+    except CrewError:
+        record = {}
+    holder = live_worker_pid(record)
+    if holder is not None:
+        raise CrewError(
+            f"run {run_id!r} still has a live worker (pid {holder}): a launch "
+            "that started now would retire its worker record, so the run would "
+            "read as halted while its worker kept working; observe or stop it "
+            "before launching again"
+        )
     _supervisor_write(
         run_directory / ATTEMPT_RECORD_NAME,
         {

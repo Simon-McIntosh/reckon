@@ -47,7 +47,7 @@ import json
 import os
 import subprocess
 from collections.abc import Callable, Mapping
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -68,6 +68,7 @@ from reckon.crew.dispatch import (
     resume_plan,
 )
 from reckon.crew.node import CrewError
+from reckon.crew.process_liveness import _process_start_time as process_start_time
 from reckon.crew.recovery import (
     _process_reading,
     _run_exit_record,
@@ -102,6 +103,178 @@ CONTINUE_ADVICE = (
     "the provider limit that stopped this run has reset; continue from where "
     "you stopped, keeping the same node, fence and manifest path"
 )
+
+# Where a resume that was refused because the run already had a live attempt
+# leaves the advice it was carrying. The advice belongs to the run rather than
+# to the refused attempt: the attempt that holds the session is the one that
+# must receive it, and it will not be re-issued by whoever typed the refusal,
+# so the text is kept beside the run's resume records and delivered to the next
+# resume of that run. The existing resume records cannot carry it: a
+# resume-<n>-advice.txt is named for a turn the refused attempt never reached,
+# so its number is unknown at refusal time, and the text needs its own slot.
+REFUSED_ADVICE_NAME = "resume-refused-advice.txt"
+
+# The pointer slot recording that a resume of this run has begun and has not
+# yet recorded its attempt. The launch is not atomic with the check that
+# licenses it — the plan is built and the process spawned before the attempt's
+# pid is folded onto the pointer — so without this marker a second door reading
+# the pointer inside that window sees a run whose recorded process has ended
+# and starts a worker beside one already starting. The slot carries the pid of
+# the process doing the launching and the kernel start tick that pid was
+# issued with: while that process lives the launch is in flight. The start
+# tick is carried because the pid alone cannot answer it — a launcher that
+# died without clearing its mark leaves a number the kernel may hand to an
+# unrelated process, and read by number alone that stranger would hold every
+# resume of the run off for as long as it lived. The refusal then cannot
+# outlive the attempt it guarded.
+RESUME_LAUNCH_IN_FLIGHT = "resume_launch_in_flight"
+
+
+def refused_advice_path(run_id: str) -> Path:
+    """The path a refused resume leaves its advice at, beside the run records."""
+    return run_dir(run_id) / REFUSED_ADVICE_NAME
+
+
+def store_refused_advice(run_id: str, advice: str) -> Path | None:
+    """Keep a refused resume's advice for the run's next resume.
+
+    Returns the path the text was written to, or None when there is no advice
+    to keep. The text is what the next resume must deliver, so it is stored
+    verbatim and never merged with an earlier refusal's: the most recent
+    coordinator's answer is the one the run was last told.
+    """
+    text = str(advice or "").strip()
+    if not text:
+        return None
+    path = refused_advice_path(run_id)
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text + "\n", encoding="utf-8")
+    except OSError:
+        return None
+    return path
+
+
+def consume_refused_advice(run_id: str) -> str:
+    """Read and clear the advice a refusal left for this run, or ''.
+
+    The next resume is the one that delivers it, so the slot is emptied as it
+    is read: advice already carried into a resumed turn must not be replayed
+    into the one after it as though it were new.
+    """
+    path = refused_advice_path(run_id)
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return ""
+    with suppress(OSError):
+        path.unlink()
+    return text.strip()
+
+
+def launch_in_flight(record: Mapping[str, Any]) -> bool:
+    """Whether a resume of this run has begun and not yet recorded an attempt.
+
+    The mark this process wrote is not a refusal owed to this process. A door
+    that composed a plan and then chose not to launch — a resume offered and not
+    taken, a launcher that raised — would otherwise leave its own mark standing
+    for as long as it lives, refusing the very resume that would carry the run
+    on. The window this closes is between processes: another door, reading the
+    pointer while a launch it cannot see is under way.
+    """
+    marker = record.get(RESUME_LAUNCH_IN_FLIGHT)
+    if not isinstance(marker, Mapping):
+        return False
+    pid = marker.get("pid")
+    if pid is None or pid == os.getpid():
+        return False
+    return record_process_alive(marker) is True
+
+
+def mark_resume_launching(run_id: str) -> None:
+    """Record that this process has begun a resume of the run.
+
+    A run with no live pointer has nothing to carry the mark and nothing that
+    could read it back, so there is nothing to write and no refusal to warn of.
+    """
+    with _pointer_lock(run_id):
+        try:
+            current = read_pointer(run_id)
+        except CrewError:
+            return
+        current[RESUME_LAUNCH_IN_FLIGHT] = {
+            "pid": os.getpid(),
+            "pid_start_time": process_start_time(os.getpid()),
+            "at": _utc_now(),
+        }
+        _write_json(pointer_path(run_id), current)
+
+
+def clear_resume_launching(run_id: str) -> None:
+    """Drop the in-flight marker once the attempt's pid has been recorded."""
+    with _pointer_lock(run_id):
+        try:
+            current = read_pointer(run_id)
+        except CrewError:
+            return
+        if current.pop(RESUME_LAUNCH_IN_FLIGHT, None) is None:
+            return
+        _write_json(pointer_path(run_id), current)
+
+
+def live_attempt_refusal(run_id: str, record: Mapping[str, Any]) -> CrewError | None:
+    """The refusal a resume owes a run that already has an attempt starting.
+
+    Composed here rather than at each door, so the launcher and the prediction
+    that mirrors it refuse an in-flight run with one message, exactly as they do
+    for the process-table guard beside it. The refusal names the pid the launch
+    is running under and the file the refused advice is kept in, so a
+    coordinator receiving it can check the process table and find the text the
+    run's next resume will carry.
+    """
+    if not launch_in_flight(record):
+        return None
+    marker = record.get(RESUME_LAUNCH_IN_FLIGHT)
+    return _in_flight_refusal(run_id, marker if isinstance(marker, Mapping) else {})
+
+
+def _in_flight_refusal(run_id: str, marker: Mapping[str, Any]) -> CrewError:
+    """The one wording every door refuses an in-flight launch with."""
+    pid = marker.get("pid")
+    named = f" (pid {pid})" if pid is not None else ""
+    return CrewError(
+        f"run {run_id!r} already has a resume launching{named}: a launch has "
+        "begun and has not yet recorded its attempt, so a second resume would "
+        "start a worker beside it and leave both writing one tree; the advice "
+        f"is kept at {refused_advice_path(run_id)}"
+    )
+
+
+# The runs whose launch this process has begun and not yet finished. The pointer
+# mark separates one process from another; it cannot separate two passes of one
+# sweep, which share this process, and whose mark therefore necessarily names
+# it. This registry is the same fact kept where the two passes can be told
+# apart.
+_LAUNCHES_IN_THIS_PROCESS: set[str] = set()
+
+
+def _refuse_a_launch_already_running(run_id: str) -> None:
+    """Refuse a second launch of this run begun inside this process.
+
+    The reading above exempts a process from its own mark, because a door that
+    composed a plan and then chose not to launch must not hold off its own next
+    resume. A sweep is the door that exemption leaves open: its passes share the
+    one long-lived process that follows a fleet, so two wait-lifts of one run
+    would be separated by nothing but the re-read a launch performs before it
+    retires an attempt's records. The window a launch opens is per run in this
+    process, so it is kept here rather than read back off the pointer: a pointer
+    mark naming this process cannot say whether it is a live launch or the
+    residue of one that was built and then abandoned.
+    """
+    if run_id not in _LAUNCHES_IN_THIS_PROCESS:
+        return
+    raise _in_flight_refusal(run_id, {})
+
 
 # How often the follower may sweep. Long enough that a tight poll loop cannot
 # turn the sweep into a hot path, short enough that a lane returning minutes
@@ -648,6 +821,13 @@ def _launcher_refusal(
         return CrewError(
             f"run {run_id!r} still has a live process; observe or stop it before resuming"
         )
+    # The prediction must meet the in-flight guard too, or a preview would offer
+    # a resume the real launcher refuses while a launch of this run is in
+    # flight. It is composed by the same helper the launcher uses, so the two
+    # refuse with one message.
+    in_flight = live_attempt_refusal(run_id, record)
+    if in_flight is not None:
+        return in_flight
     try:
         _require_fleet_gate_open()
     except LanePaused as exc:
@@ -859,25 +1039,44 @@ def _resume(
             f"{failure['detail']} — repair the launch ("
             f"{failure['remedy']}) and resume it by hand, or complete it"
         )
-    plan = resume_plan(run_id, advice, config=config)
-    directory = run_dir(run_id)
-    turn = len(list(directory.glob("resume-*.jsonl"))) + 1
-    advice_path = directory / f"resume-{turn}-advice.txt"
-    advice_path.parent.mkdir(parents=True, exist_ok=True)
-    _write_resume_prompt(advice_path, plan=plan, advice=advice)
-    log_path = directory / f"resume-{turn}.jsonl"
-    stderr_path = directory / f"resume-{turn}.stderr.log"
-    attempt_started_at = _utc_now()
-    manifest_baseline_mtime_ns = _manifest_mtime_ns(record.get("manifest_path") or "")
-    _require_fleet_gate_open()
-    if launcher is None:
-        pid = _spawn(
-            plan, log_path=log_path, stderr_path=stderr_path, prompt_path=advice_path
-        )
-    else:
-        pid = launcher(
-            plan, log_path=log_path, stderr_path=stderr_path, prompt_path=advice_path
-        )
+    _refuse_a_launch_already_running(run_id)
+    _LAUNCHES_IN_THIS_PROCESS.add(run_id)
+    mark_resume_launching(run_id)
+    try:
+        plan = resume_plan(run_id, advice, config=config)
+        directory = run_dir(run_id)
+        turn = len(list(directory.glob("resume-*.jsonl"))) + 1
+        advice_path = directory / f"resume-{turn}-advice.txt"
+        advice_path.parent.mkdir(parents=True, exist_ok=True)
+        _write_resume_prompt(advice_path, plan=plan, advice=advice)
+        log_path = directory / f"resume-{turn}.jsonl"
+        stderr_path = directory / f"resume-{turn}.stderr.log"
+        attempt_started_at = _utc_now()
+        manifest_baseline_mtime_ns = _manifest_mtime_ns(record.get("manifest_path") or "")
+        _require_fleet_gate_open()
+        if launcher is None:
+            pid = _spawn(
+                plan,
+                log_path=log_path,
+                stderr_path=stderr_path,
+                prompt_path=advice_path,
+            )
+        else:
+            pid = launcher(
+                plan,
+                log_path=log_path,
+                stderr_path=stderr_path,
+                prompt_path=advice_path,
+            )
+    except BaseException:
+        # A launch that ended before it held the session recorded no attempt of
+        # its own, so nothing will drop the in-flight marker this door set.
+        # Left there it would refuse the next resume against a launcher already
+        # gone, so the marker goes with the launch that raised.
+        clear_resume_launching(run_id)
+        raise
+    finally:
+        _LAUNCHES_IN_THIS_PROCESS.discard(run_id)
     record_resumption(
         run_id,
         pid=pid,

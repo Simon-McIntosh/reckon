@@ -1026,9 +1026,24 @@ def resume_plan(
     if record.get("launch") != "cli":
         raise CrewError(f"run {run_id!r} is not a spawned run; resume it in-harness")
     if record_process_alive(record, process_alive) is True:
+        from reckon.crew import resumption as _resumption
+
+        _resumption.store_refused_advice(run_id, advice)
         raise CrewError(
             f"run {run_id!r} still has a live process; observe or stop it before resuming"
         )
+    # A launch is not atomic with the check above: the plan is built and the
+    # process spawned before the attempt's pid is folded onto the pointer, so a
+    # second door reading this record inside that window would see a run whose
+    # recorded process has ended and start a worker beside one already starting.
+    # The in-flight marker the launching process sets closes the window, and the
+    # advice this refusal would otherwise drop is kept for the run.
+    from reckon.crew import resumption as _resumption
+
+    in_flight = _resumption.live_attempt_refusal(run_id, record)
+    if in_flight is not None:
+        _resumption.store_refused_advice(run_id, advice)
+        raise in_flight
     # The ledger and budget lookups below run against the project's own mount,
     # so a run recorded in another repository is refused here and a run whose
     # record names none falls back to the mount rather than to whatever
@@ -1093,6 +1108,7 @@ def resume_plan(
 
     observed_end = _observed_end_refusal(record)
     if observed_end is not None:
+        _resumption.store_refused_advice(run_id, advice)
         raise observed_end
     backend.setdefault("sandbox", record.get("sandbox"))
     # The plan is built — and its executable resolved — before anything is
@@ -1103,6 +1119,13 @@ def resume_plan(
     )
     attempt_started_at = _utc_now()
     manifest_path = _recorded_manifest_path(record, run_id)
+    # A refusal that was carrying advice while the run's previous attempt still
+    # held the session left the text in the run directory. This is the attempt
+    # that delivers it: it is prepended to whatever the caller brings now, so
+    # the answer the run was last given is not lost between attempts.
+    delivered = _resumption.consume_refused_advice(run_id)
+    if delivered:
+        advice = f"{delivered}\n\n{advice}".strip()
     resumed_prompt = (
         _lane_prompt(record, advice, fresh_reason["reason"], continued=False)
         if fresh_reason
@@ -1177,6 +1200,11 @@ def resume_plan(
         return current
 
     _mutate_pointer(run_id, capture)
+    # The attempt's pid is not on the pointer until the caller records it, so
+    # this marker closes the window between here and that write: a second door
+    # reading the pointer in between sees a launch in flight and refuses, and
+    # record_resumption drops the marker once the attempt is recorded.
+    _resumption.mark_resume_launching(run_id)
     return plan
 
 
@@ -1887,7 +1915,7 @@ def record_resumption(
     """Record a launched resumption without overwriting newer observations."""
 
     def resume(record: dict[str, Any]) -> dict[str, Any]:
-        from reckon.crew.resumption import resolve_session
+        from reckon.crew.resumption import RESUME_LAUNCH_IN_FLIGHT, resolve_session
 
         prior_session_resumed = record.get("session_resumed")
         if prior_session_resumed is None:
@@ -1895,6 +1923,8 @@ def record_resumption(
         current_attempt = bool(
             attempt_started_at or manifest_baseline_mtime_ns is not None
         )
+        # The attempt is recorded now, so the launch is no longer in flight.
+        record.pop(RESUME_LAUNCH_IN_FLIGHT, None)
         record.update(
             {
                 "pid": pid,

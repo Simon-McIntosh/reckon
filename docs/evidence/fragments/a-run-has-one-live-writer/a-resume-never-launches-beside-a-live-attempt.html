@@ -1,0 +1,105 @@
+<!-- Evidence anchor: a-resume-never-launches-beside-a-live-attempt -->
+
+<section id="a-resume-never-launches-beside-a-live-attempt-evidence">
+  <h2>A resume never launches beside a live attempt</h2>
+
+  <p id="a-resume-never-launches-beside-a-live-attempt-cause">
+    The launch of a resumption is not atomic with the check that licenses it.
+    <code>resume_plan</code> reads the pointer, composes the plan and returns;
+    the caller spawns the process; only then does <code>record_resumption</code>
+    fold the new attempt onto the pointer. A second door that reads the pointer
+    inside that window sees a run whose recorded process has ended and starts a
+    worker beside one already starting — one run, two writers. The section's
+    own incident is this window met twice: run
+    <code>r-20261012T042612803730-proto-read-route</code> was auto-resumed by
+    the wait sweep at 10:07:30Z, and a coordinator's resume at 10:08:49Z
+    launched a second attempt beside it; the backend refused the second worker,
+    the pointer recorded that refusal as the attempt's exit, and the run read
+    as ended while the first worker was still working.
+  </p>
+
+  <p id="a-resume-never-launches-beside-a-live-attempt-fix">
+    The pointer now carries a <code>resume_launch_in_flight</code> mark while a
+    launch is between its check and its recorded attempt, and both doors refuse
+    against it — the same refusal the launcher itself gives, so the dry-run
+    prediction and the launch stay word for word alike. The mark holds the
+    launcher's own pid, so a launcher that ends without recording leaves a mark
+    no live process answers for and the refusal cannot outlive the attempt. An
+    advice a refused resume carried is kept beside the run and delivered into
+    the next resume's prompt, because the caller that composed it is gone by
+    the time the launch it lost to records anything.
+  </p>
+
+  <p id="a-resume-never-launches-beside-a-live-attempt-second-writer">
+    The same window has a second half, and it needed a second fix. A launch
+    that meets a live attempt used to publish its own attempt marker and retire
+    the canonical <code>worker.json</code> and <code>exit.json</code> before the
+    backend was ever asked to start — reporting a working run as halted and
+    unlinking the only record of its worker. The launch now reads the
+    incumbent's liveness first, from the run's own worker record as well as the
+    pointer, and is refused before the marker or either record is written. The
+    live reproduction is nova's
+    <code>r-20261014T044136316062-forward-solve-options</code>, measured
+    2026-10-14T08:18Z: one wait-lift started two supervisors 1 s apart
+    (1280598, 1280599), their launches came 25 s later one pid apart, the loser
+    (1282902) died on the backend's own active-writer refusal with its failure
+    recorded as <code>attempt-8-exit.json</code>, and the pointer then named the
+    dead supervisor at attempt 9 — so the run read halted while the winning
+    worker kept working. Read-only inspection only; that run directory was not
+    modified.
+  </p>
+
+  <p id="a-resume-never-launches-beside-a-live-attempt-evidence-tail">
+    The gate is the importer population of
+    <code>reckon/crew/resumption.py</code>,
+    <code>reckon/crew/dispatch_sessions.py</code> and
+    <code>reckon/crew/dispatch_launch.py</code>, and the cases added here cover
+    the four the section names: a resume during a launch in flight starts
+    nothing, names the live attempt and its process, and keeps its advice; the
+    next resume carries that kept advice; a sweep over a run whose attempt is
+    alive resumes nothing; and a launch meeting a live attempt leaves the
+    pointer's phase and pids, the worker record and the classification
+    unchanged. The negative control reapplies the named cause — the marker's
+    reader answers nothing — and the guarded case fails.
+  </p>
+
+  <p id="a-resume-never-launches-beside-a-live-attempt-evidence-repair">
+    Repair pass over the first landing. The population arm caught a real defect
+    this node's own, narrower run had missed: the in-flight mark recorded a pid
+    and the guard read it back with a bare process-table probe, so a launcher
+    that died without clearing its mark left a number the kernel may hand to an
+    unrelated process, and the stranger holding it would have refused every
+    resume of that run for as long as it lived. The mark now carries the kernel
+    start tick the pid was issued with and every door judges it through the
+    record accessor that discards a reused number. That is the read
+    <code>tests/test_crew_record_liveness.py</code> exists to enforce, and it is
+    the guard the first cut failed: the run reported one offender,
+    <code>resumption.py line 187, argument "pid" from a record</code>.
+  </p>
+
+  <p id="a-resume-never-launches-beside-a-live-attempt-evidence-repair-holder">
+    The launch's own live-holder check was a private copy of the liveness
+    composition, and the weaker one: it read the pointer's pid and the worker
+    record and stopped there, so a worker a lane started through an intermediary
+    -- reparented away from both recorded pids -- read as an ended attempt whose
+    records the launch would have retired underneath it. That copy is deleted
+    and the guard calls the same live-worker read every other surface reads,
+    which also refuses to name a pid at all for a run this host did not launch.
+    The case added starts a process whose only mark is the run id in its
+    environment, and the launch still refuses before the attempt marker or
+    either canonical record is written.
+  </p>
+
+  <p id="a-resume-never-launches-beside-a-live-attempt-evidence-repair-sweep">
+    The sweep's own launch path sets and clears the same mark. Its passes share
+    one long-lived process, so a mark on the pointer cannot separate two
+    wait-lifts of one run: it necessarily names that same process, and a process
+    is never refused for a mark it wrote. The window a launch opens is therefore
+    held as a fact about the process rather than read back off the pointer, and
+    it is entered and left around the launch alone. The case added takes a
+    second sweep pass inside the first pass's own launch and requires it to
+    refuse and start nothing, while a door that built a plan and then launched
+    it by hand still proceeds. The formatter's incidental rewraps of lines this work did not
+    otherwise change were reverted, so the change reads as the change.
+  </p>
+</section>
