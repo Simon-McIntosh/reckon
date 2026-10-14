@@ -27,6 +27,7 @@ from reckon.crew.runs import _write_json, pointer_path, run_dir, runs_dir
 from tests.helpers.git import git as _git
 
 routing_module = importlib.import_module("reckon.crew.routing")
+gc_module = importlib.import_module("reckon.crew.gc")
 promotion_release_module = importlib.import_module("reckon.crew.promotion_release")
 velocity_module = importlib.import_module("reckon.velocity")
 
@@ -42,9 +43,9 @@ REPOSITORY_ROOT = Path(__file__).resolve().parent.parent
 EXPECTED_HELPER_CALLERS = {
     "reckon/crew/routing.py": {
         "_save_and_release_worktree",
-        "garbage_collect",
         "_remove_worktree",
     },
+    "reckon/crew/gc.py": {"garbage_collect"},
     "reckon/crew/promotion_release.py": {"_release_run_workspace"},
 }
 
@@ -407,7 +408,7 @@ def test_gc_reports_a_withheld_release_and_leaves_it_out_of_removed(
     tree = _runs_root_tree(repository, "r-20261012T050000000001-refused-tree")
     reason = "worktree names the repository root or one of its ancestors"
     monkeypatch.setattr(
-        routing_module,
+        gc_module,
         "_release_worktree_whole",
         lambda repo, path, **kwargs: {
             "path": str(path),

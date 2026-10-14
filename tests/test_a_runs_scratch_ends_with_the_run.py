@@ -40,7 +40,7 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli, ledger
-from reckon.crew import promotion, routing
+from reckon.crew import gc, promotion, routing
 from reckon.crew.node import TaskNode
 from reckon.crew.prompts import compose_prompt
 from reckon.crew.runs import _write_json, pointer_path
@@ -172,7 +172,7 @@ def _age_control(monkeypatch: pytest.MonkeyPatch) -> None:
             return routing.SCRATCH_TERMINAL
         return routing.SCRATCH_UNATTRIBUTED
 
-    monkeypatch.setattr(routing, "_scratch_disposition", _decide)
+    monkeypatch.setattr(gc, "_scratch_disposition", _decide)
 
 
 def test_a_dry_run_keeps_it_and_apply_removes_a_promoted_runs_scratch(

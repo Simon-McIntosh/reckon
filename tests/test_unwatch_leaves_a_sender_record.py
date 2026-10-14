@@ -22,6 +22,7 @@ from pathlib import Path
 import pytest
 
 from reckon.crew import (
+    process_signal,
     recovery,
     recovery_review_delivery,
     recovery_stream,
@@ -125,7 +126,7 @@ def test_unwatch_writes_a_sender_record_before_it_signals(
     one delivered outcome, both carrying the watched project in its own field.
     """
     observed: dict = {}
-    real_killpg = routing.os.killpg
+    real_killpg = process_signal.os.killpg
 
     def spy_killpg(pgid, sig):
         observed["pgid"] = pgid
@@ -133,7 +134,7 @@ def test_unwatch_writes_a_sender_record_before_it_signals(
         observed["alive_at_signal"] = producer.poll() is None
         return real_killpg(pgid, sig)
 
-    monkeypatch.setattr(routing.os, "killpg", spy_killpg)
+    monkeypatch.setattr(process_signal.os, "killpg", spy_killpg)
 
     result = recovery.unwatch(PROJECT)
     assert result["stopped"] is True, result

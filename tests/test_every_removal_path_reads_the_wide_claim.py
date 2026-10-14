@@ -197,7 +197,7 @@ def _driver_release_run_workspace(fleet: Path, tree: Path) -> None:
 
 REMOVAL_DRIVERS = {
     "reckon/crew/routing.py::_remove_worktree": _driver_remove_worktree,
-    "reckon/crew/routing.py::garbage_collect": _driver_garbage_collect,
+    "reckon/crew/gc.py::garbage_collect": _driver_garbage_collect,
     "reckon/crew/routing.py::_save_and_release_worktree": (
         _driver_save_and_release_worktree
     ),
