@@ -1,0 +1,54 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own base and head arm gate logs (arm_base.log: 2 failed, 96 passed; arm_head.log: 1 failed, 97 passed): the head arm's failing ids are a subset of the base arm's, so the added-id set is empty. The reviewed manifest names these logs only under test_logs and artifacts and not under baseline_suite/after_suite, so the store's read-time annotator reports this count unmeasured.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-14T04:21:48.840Z",
+  "dispatched_at": "2026-10-14T04:14:08Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T030111578241-real-home-guards-fail-only-on-their-own-writes/manifest.md",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest names its two arm logs under test_logs and artifacts but not under the baseline_suite and after_suite fields reckon/crew/review.py:1262 reads, so the added-failure count derivable from those logs is reported unmeasured by the store's read-time annotation."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read the two commits gained since the prior review (b36aa49e9, 48b37a016) by git diff 50bb75cff..48b37a016; they touch exactly the two files the goal names, adding one evidence list item and switching one import to collections.abc with a trailing newline.",
+    "done_when": "the source node's done_when requires tests/test_real_home_traces.py green with a logged revision and EXIT=0, the census, both arms logged under the run directory with the real crew/live entry count before and after each arm, and two negative controls; the delta adds arm_base.log and arm_head.log and records them in the evidence fragment, completing the arm requirement the prior review found unmet.",
+    "goal": "the source node's goal is that every real-home write guard in the suite fails only on a trace its own test wrote, through one needle-filtered helper; the reviewed delta (50bb75cff..48b37a016) touches only the helper's imports and the evidence fragment, both consistent with that goal.",
+    "manifest": "read the source run's manifest; it reports status complete, the eight commits including b36aa49e9 and 48b37a016, and names arm_base.log and arm_head.log among its test_logs and artifacts.",
+    "write_paths": "the source manifest's declared write paths include tests/real_home_traces.py and docs/evidence/fragments/the-suite-tests-behaviour/real-home-guards-fail-only-on-their-own-writes.html; both files the delta touches lie inside them."
+  },
+  "justifications": {
+    "durability": "the delta adds no assertion; its only code change is the import source at tests/real_home_traces.py:21, and nothing reddens if it or the evidence item reverts, while the helper's guard in tests/test_real_home_traces.py is unchanged and predates the delta.",
+    "evidence": "arm_base.log and arm_head.log each record revision, live_before, live_after and live_distinct_seen, and the fragment's added item matches them exactly (base 2 failed, 96 passed, seen 31,32,33; head 1 failed, 97 passed, seen 33,34,35).",
+    "fit": "ruff check on tests/real_home_traces.py reports All checks passed and ruff format --check reports both files already formatted, clearing the prior review's UP035 at :22 and W292 at :59.",
+    "goal_fidelity": "the delta completes the arms evidence the source done_when demands (docs/evidence/fragments/the-suite-tests-behaviour/real-home-guards-fail-only-on-their-own-writes.html:11) and leaves the helper's search semantics unchanged.",
+    "reuse": "the delta adds no definition; traces_naming at tests/real_home_traces.py:24 remains the single owner of the search and the earlier delegations are untouched.",
+    "scope_discipline": "both changed paths, tests/real_home_traces.py and the evidence fragment, sit inside the source manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that every real-home write guard in the suite fails only on a trace its own test wrote, through one needle-filtered helper; the reviewed delta (50bb75cff..48b37a016) touches only the helper's imports and the evidence fragment, both consistent with that goal.\nVERDICT done_when: the source node's done_when requires tests/test_real_home_traces.py green with a logged revision and EXIT=0, the census, both arms logged under the run directory with the real crew/live entry count before and after each arm, and two negative controls; the delta adds arm_base.log and arm_head.log and records them in the evidence fragment, completing the arm requirement the prior review found unmet.\nVERDICT write_paths: the source manifest's declared write paths include tests/real_home_traces.py and docs/evidence/fragments/the-suite-tests-behaviour/real-home-guards-fail-only-on-their-own-writes.html; both files the delta touches lie inside them.\nVERDICT manifest: read the source run's manifest; it reports status complete, the eight commits including b36aa49e9 and 48b37a016, and names arm_base.log and arm_head.log among its test_logs and artifacts.\nVERDICT diff: read the two commits gained since the prior review (b36aa49e9, 48b37a016) by git diff 50bb75cff..48b37a016; they touch exactly the two files the goal names, adding one evidence list item and switching one import to collections.abc with a trailing newline.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the delta completes the arms evidence the source done_when demands (docs/evidence/fragments/the-suite-tests-behaviour/real-home-guards-fail-only-on-their-own-writes.html:11) and leaves the helper's search semantics unchanged.\nSCORE evidence: 18\nJUSTIFICATION evidence: arm_base.log and arm_head.log each record revision, live_before, live_after and live_distinct_seen, and the fragment's added item matches them exactly (base 2 failed, 96 passed, seen 31,32,33; head 1 failed, 97 passed, seen 33,34,35).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both changed paths, tests/real_home_traces.py and the evidence fragment, sit inside the source manifest's declared write paths.\nSCORE durability: 8\nJUSTIFICATION durability: the delta adds no assertion; its only code change is the import source at tests/real_home_traces.py:21, and nothing reddens if it or the evidence item reverts, while the helper's guard in tests/test_real_home_traces.py is unchanged and predates the delta.\nSCORE fit: 20\nJUSTIFICATION fit: ruff check on tests/real_home_traces.py reports All checks passed and ruff format --check reports both files already formatted, clearing the prior review's UP035 at :22 and W292 at :59.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta adds no definition; traces_naming at tests/real_home_traces.py:24 remains the single owner of the search and the earlier delegations are untouched.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T030111578241-real-home-guards-fail-only-on-their-own-writes/manifest.md:1 follow-on: the reviewed manifest names its two arm logs under test_logs and artifacts but not under the baseline_suite and after_suite fields reckon/crew/review.py:1262 reads, so the added-failure count derivable from those logs is reported unmeasured by the store's read-time annotation.\n",
+  "review_run_id": "r-20261014T041330119285-review-of-real-home-guards-fail-only-on-their-own-writes-48b37a0168c3",
+  "reviewed_base_sha": "50bb75cfff400210dd9295e6ef9e280ded9d5abe",
+  "reviewed_head_sha": "48b37a0168c3623f256a7f0e0119aab18783301a",
+  "reviewed_run_id": "r-20261014T030111578241-real-home-guards-fail-only-on-their-own-writes",
+  "scores": {
+    "durability": 8,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T04:24:31.354056+00:00",
+  "total": 105
+}
