@@ -90,6 +90,11 @@
     <p>Merged at <code>77a2dc500</code> (run <code>r-20261014T042323442964</code>, head <code>b25d7da1f</code>). The case's earlier attempt now commits in its own tree before its pointer is dropped. The leftover-tree release keeps that tree, and the second dispatch is refused naming the commit. The case asserts that, as well as its earlier claims: no live pointer of its own, no new run directory, and the earlier tree left in place. The coordinator had the worker reword one comment that named a plan section.</p><p>Evidence:</p><ul><li>Gate: 1 passed, <code>EXIT=0</code>, at <code>b25d7da1f</code>.</li><li>Negative control: with the commit removed, the case fails with <code>DID NOT RAISE CrewError</code>, <code>EXIT=1</code>.</li><li>Both affected files: 10 passed at head.</li><li>The coordinator ran those files with the real-home guard modules at the merged main: 15 passed.</li><li>Review: 117/120.</li></ul><p>Follow-on: the case's docstring also promises no watch row of its own, and no assertion checks it, in the original either.</p>
   </section>
 
+  <section id="s21-refusal-no-watch-row">
+    <h2>§21 — the occupied-worktree refusal case asserts no watch row</h2>
+    <p>Merged at <code>e92a48f8c</code> (run <code>r-20261014T090025554907</code>, review 118/120, no added failure). <code>test_a_refusal_over_an_existing_worktree_leaves_no_new_trace</code> now publishes the project's watcher transitions while the earlier run's pointer is still live, and again after the refusal. It requires rows naming the node to exist, and every one of them to carry the earlier run's id exactly. Gate: the file passes 6 of 6 at <code>1dc52e7e4</code>, EXIT=0. Negative control: a kept live pointer for a second run of the node fails the case naming <code>r-negative-control-kept-pointer-node-refused</code>, EXIT=1. Coordinator arms on main <code>a032162fd</code> and its merge: 6 passed in each, 0 added. Review follow-on, accepted as is: <code>transition_rows_naming</code> selects rows by a substring of the whole row, and every row in this fixture is derived from a pointer.</p>
+  </section>
+
 </main>
 </body>
 </html>
