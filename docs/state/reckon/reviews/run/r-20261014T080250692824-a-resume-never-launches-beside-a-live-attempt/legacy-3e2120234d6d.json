@@ -1,0 +1,83 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_stored_phase_advances.py::test_stored_phase_advances_from_starting_to_working_to_complete"
+  ],
+  "base_log_revision": "65e6c32a6f35290596e4d90cf317ab33f1639d68",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew_run_commands.py:1312 crew_resume",
+    "reckon/mcp.py:2256 mcp resume action",
+    "reckon/crew/dispatch_sessions.py:1414 change_lane",
+    "reckon/crew/resumption.py:1511 sweep _resume",
+    "reckon/crew/recovery_repair_dispatch.py:914 repair reflex _resume",
+    "reckon/crew/dispatch.py:2001 _prepare_attempt_records"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-14T08:03:34Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": "1561",
+      "severity": "follow-on",
+      "text": "follow-on: _live_attempt_holder duplicates the liveness read owned by reckon/crew/recovery_liveness.py:868 live_worker_pid, and as a weaker copy (no _launched_on_this_host check, no _env_scan_run_pid reach) it answers None for a run whose worker was reparented away from both recorded pids, so a launch can proceed and retire a live attempt's records."
+    },
+    {
+      "file": "reckon/crew/dispatch_sessions.py",
+      "line": "1207",
+      "severity": "follow-on",
+      "text": "follow-on: the in-flight mark is set only by resume_plan, so the sweep's own launch path (resumption.py:1511 _resume) never sets it and two concurrent sweeps of one run are separated only by the narrow _prepare_attempt_records re-read rather than the mark plan comment c-s3-double-sweep-resume-1013 asked to cover that path with."
+    },
+    {
+      "file": "reckon/crew/resumption.py",
+      "line": "185",
+      "severity": "follow-on",
+      "text": "follow-on: launch_in_flight treats a mark whose pid equals the current process as no refusal, so two resumes of one run inside a single long-lived process (an in-harness MCP server, a thread pool) are not separated by the mark."
+    },
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": "64",
+      "severity": "follow-on",
+      "text": "follow-on: the commit carries unrelated ruff-format reflows (blank-line removal here, and the last= and elif rewraps at :1219 and :2968) that the goal does not imply, adding diff noise to an in-scope file."
+    }
+  ],
+  "head_log_revision": "4cf6dd160fb192d5d0734dde525932cb77d2479a",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read 4cf6dd160 against base 65e6c32a6; three commits across six files, all inside the declared scope, adding the in-flight mark and the live-attempt refusal, the refused-advice store and delivery, and the _prepare_attempt_records live-holder guard.",
+    "done_when": "the done_when extends tests/test_resume_refuses_a_live_worker.py and tests/test_resume_sweep_needs_an_observed_death.py with the four named cases plus the advice-delivery and record-retirement cases; the manifest records them passing and records the importer-population head and base arms.",
+    "goal": "the node's goal is to make crew resume refuse, inside resume_plan's own check, a resume of a run whose current attempt is alive, storing the refused advice for that attempt's next resume; reckon/crew/resumption.py:210 composes the refusal and dispatch_sessions.py:1043 calls it from resume_plan.",
+    "manifest": "read r-20261014T080250692824/manifest.md; it records commits a78371282, 465b015df and 4cf6dd160, the importer-population head and base logs with their failure counts, the negative-control log path and note, and the live nova reproduction it was repaired against.",
+    "write_paths": "read the source node's dispatched paths plus reckon/crew/dispatch_launch.py, granted by the coordinator's resume advice with crew widen; every path in the diff is inside them."
+  },
+  "justifications": {
+    "durability": "the negative-control log reddens test_a_resume_while_a_launch_is_in_flight_starts_nothing_and_keeps_its_advice on its own assertion once launch_in_flight answers nothing, so the guard is shown to fire, though several added assertions echo a pid or advice the test itself wrote.",
+    "evidence": "the head gate log records 3 failed/1060 passed against base 4 failed/1055 passed, whose arithmetic leaves one head-only failure (tests/test_stored_phase_advances.py::test_stored_phase_advances_from_starting_to_working_to_complete) that the manifest attributes to -n 8 flakiness and that I re-ran three times serially at 5 passed each.",
+    "fit": "the new helpers follow resumption.py's module-local idiom and carry no plan or ticket label, though dispatch_launch.py:1561 reaches into the private recovery_liveness._worker_record_liveness.",
+    "goal_fidelity": "dispatch_sessions.py:1043 refuses inside resume_plan's own check and resumption.py:210 stores and names the advice, but the in-flight mark is set only by resume_plan, so the sweep's own launch path at resumption.py:1511 does not close the window plan comment c-s3-double-sweep-resume-1013 required covered.",
+    "reuse": "dispatch_launch.py:1561 _live_attempt_holder re-composes the pointer-then-worker-record liveness read that reckon/crew/recovery_liveness.py:868 live_worker_pid and :809 local_liveness already own, without extending either.",
+    "scope_discipline": "every changed path is inside the declared write paths including the crew widen grant of dispatch_launch.py, but the commit carries unrelated ruff-format reflows at dispatch_launch.py:64 and :1219."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make crew resume refuse, inside resume_plan's own check, a resume of a run whose current attempt is alive, storing the refused advice for that attempt's next resume; reckon/crew/dispatch_sessions.py:1043 calls live_attempt_refusal from resume_plan and :1207 sets the in-flight mark, and reckon/crew/resumption.py:210 composes a refusal naming the launching pid and the kept-advice file.\nVERDICT done_when: the done_when extends tests/test_resume_refuses_a_live_worker.py and tests/test_resume_sweep_needs_an_observed_death.py with the four named cases, the advice-delivery case and the record-retirement case; the manifest records those files at 7 passed and 3 passed, the importer population at head 3 failed/1060 passed against base 4 failed/1055 passed, and the negative-control log.\nVERDICT write_paths: read the source node's dispatched paths (reckon/crew/resumption.py, reckon/crew/dispatch_sessions.py, the two test files, the evidence fragment) plus reckon/crew/dispatch_launch.py, which the coordinator's resume advice granted with crew widen; every path in the diff is inside them.\nVERDICT manifest: read; it records commits a78371282, 465b015df and 4cf6dd160, the importer-population head and base logs with their failure counts, the negative-control log path and note, and the live nova reproduction it was repaired against.\nVERDICT diff: read commit by commit against base 65e6c32a6; three commits across six files, all inside the declared scope, adding the in-flight mark and the live-attempt refusal, the refused-advice store and delivery, and the _prepare_attempt_records live-holder guard.\nCALL_SITES: reckon/crew_run_commands.py:1312 crew_resume, reckon/mcp.py:2256 mcp resume action, reckon/crew/dispatch_sessions.py:1414 change_lane, reckon/crew/resumption.py:1511 sweep _resume, reckon/crew/recovery_repair_dispatch.py:914 repair reflex _resume, reckon/crew/dispatch.py:2001 _prepare_attempt_records\nREVIEWED_BASE_SHA: 65e6c32a6f35290596e4d90cf317ab33f1639d68\nREVIEWED_HEAD_SHA: 4cf6dd160fb192d5d0734dde525932cb77d2479a\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: dispatch_sessions.py:1043 refuses inside resume_plan's own check and resumption.py:210 stores and names the advice, but the in-flight mark is set only by resume_plan, so the sweep's own launch path at resumption.py:1511 does not close the window plan comment c-s3-double-sweep-resume-1013 required covered.\nSCORE evidence: 14\nJUSTIFICATION evidence: the head gate log records 3 failed/1060 passed against base 4 failed/1055 passed, whose arithmetic leaves one head-only failure (tests/test_stored_phase_advances.py::test_stored_phase_advances_from_starting_to_working_to_complete) that the manifest attributes to -n 8 flakiness and that I re-ran three times serially at 5 passed each.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: every changed path is inside the declared write paths including the crew widen grant of dispatch_launch.py, but the commit carries unrelated ruff-format reflows at dispatch_launch.py:64 and :1219.\nSCORE durability: 16\nJUSTIFICATION durability: the negative-control log reddens test_a_resume_while_a_launch_is_in_flight_starts_nothing_and_keeps_its_advice on its own assertion once launch_in_flight answers nothing, so the guard is shown to fire, though several added assertions echo a pid or advice the test itself wrote.\nSCORE fit: 17\nJUSTIFICATION fit: the new helpers follow resumption.py's module-local idiom and carry no plan or ticket label, though dispatch_launch.py:1561 reaches into the private recovery_liveness._worker_record_liveness.\nSCORE reuse: 5\nJUSTIFICATION reuse: dispatch_launch.py:1561 _live_attempt_holder re-composes the pointer-then-worker-record liveness read that reckon/crew/recovery_liveness.py:868 live_worker_pid and :809 local_liveness already own, without extending either.\nFINDING reckon/crew/dispatch_launch.py:1561 follow-on: _live_attempt_holder duplicates the liveness read owned by reckon/crew/recovery_liveness.py:868 live_worker_pid, and as a weaker copy (no _launched_on_this_host check, no _env_scan_run_pid reach) it answers None for a run whose worker was reparented away from both recorded pids, so a launch can proceed and retire a live attempt's records.\nFINDING reckon/crew/dispatch_sessions.py:1207 follow-on: the in-flight mark is set only by resume_plan, so the sweep's own launch path (resumption.py:1511 _resume) never sets it and two concurrent sweeps of one run are separated only by the narrow _prepare_attempt_records re-read rather than the mark plan comment c-s3-double-sweep-resume-1013 asked to cover that path with.\nFINDING reckon/crew/resumption.py:185 follow-on: launch_in_flight treats a mark whose pid equals the current process as no refusal, so two resumes of one run inside a single long-lived process (an MCP server, a thread pool) are not separated by the mark.\nFINDING reckon/crew/dispatch_launch.py:64 follow-on: the commit carries unrelated ruff-format reflows (blank-line removal here, and the last= and elif rewraps at :1219 and :2968) that the goal does not imply, adding diff noise to an in-scope file.",
+  "review_run_id": "legacy-3e2120234d6d",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "65e6c32a6f35290596e4d90cf317ab33f1639d68",
+  "reviewed_head_sha": "4cf6dd160fb192d5d0734dde525932cb77d2479a",
+  "reviewed_run_id": "r-20261014T080250692824-a-resume-never-launches-beside-a-live-attempt",
+  "scores": {
+    "durability": 16,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 5,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T09:53:02.888673+00:00",
+  "total": 83
+}
