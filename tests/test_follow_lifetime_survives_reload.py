@@ -10,10 +10,10 @@ of its own.
 
 The deadline is an absolute instant fixed at the first arming, carried to the
 replacement image in the environment so it survives ``os.execv``. The measure is
-therefore taken from the *original* arm: with the reload forced about three
-seconds in, the follower still ends within eight seconds of that arm — a bound a
-restarted clock cannot meet, because the replacement arms several seconds later
-and would then run a further six.
+therefore taken from the *original* arm: the follower still ends within a bound
+just past the arm's own lifetime, even though the reload lands part way through
+it — a bound a restarted clock cannot meet, because the replacement arms after
+the reload and would then run a further twenty.
 
 The test observes the follower's real process, because the property is about an
 image replacement and a fabricated generator would measure the test's own
@@ -38,13 +38,15 @@ from pathlib import Path
 
 import pytest
 
-from reckon import cli, crew, crew_follow_commands
+from reckon import crew
 from reckon.crew import runs
+from tests.test_a_reload_waits_for_a_clean_tree import (
+    commit_the_source_change,
+    scratch_checkout,
+)
 
 pytestmark = pytest.mark.xdist_group("follower_source")
 
-REPO_ROOT = Path(cli.__file__).resolve().parents[1]
-FOLLOWER_SOURCE = Path(crew_follow_commands.__file__).resolve()
 PROJECT = "proj"
 SESSION = "s1"
 RUN_ID = "r-1"
@@ -56,14 +58,18 @@ NODE = "n1"
 # case whose sweep runs a probe child on every cadence — a looser bound on
 # ending. The graced end carries the replacement image's own setup and its first
 # sweep, so a case that probes continuously reaches its end later than the reload
-# case does; the reload case is the one that holds the tighter bound.
-LIFETIME = "6s"
+# case does; the reload case is the one that holds the tighter bound. The bounds
+# on the reload itself carry the import proof the replacement runs before it
+# execs — every module of the package, which costs seconds on a cold interpreter
+# — so they are wider than the lifetime the case arms and would otherwise expire
+# before a reload that is working exactly as designed.
+LIFETIME = "20s"
 DEADLINE_ENV = "RECKON_FOLLOWER_LIFETIME_DEADLINE"
 ARM_WITHIN_SECONDS = 30.0
-END_WITHIN_SECONDS = 8.0
-SWEPT_END_WITHIN_SECONDS = 15.0
-RELOAD_WITHIN_SECONDS = 6.0
-CHILD_WITHIN_SECONDS = 6.0
+END_WITHIN_SECONDS = 24.0
+SWEPT_END_WITHIN_SECONDS = 28.0
+RELOAD_WITHIN_SECONDS = 25.0
+CHILD_WITHIN_SECONDS = 25.0
 POLL_SECONDS = 0.05
 
 # The replacement image is launched by the follower with a launcher that
@@ -77,12 +83,24 @@ RELOAD_LAUNCHER_MARKER = "sys.path.insert"
 # reader that imports it mid-window is unaffected.
 _SOURCE_CHANGE_BYTES = b"\n# follower reload probe\n"
 
-# The cases that force a source change edit one file on disk, and each restores
-# what it read before editing. Two of them running at once can therefore capture
-# and write back each other's edit, leaving the append behind in the tree and
-# comparing against a baseline neither of them set. One worker owns the group, so
-# the cases that touch the source run one at a time.
+# Each case that forces a reload runs a follower through an image replacement,
+# which is timing-sensitive and loads the node. The group keeps those cases apart
+# from one another, here and in the sibling files that name the same group, so no
+# two of them reload at once.
 SOURCE_CHANGE_GROUP = "follower-source-change"
+
+
+@pytest.fixture()
+def source_tree(tmp_path) -> tuple[Path, Path]:
+    """A committed checkout holding the follower's source, changeable per case.
+
+    The follower under test runs with this checkout on its import path. A reload
+    is deferred while a tracked file differs from ``HEAD``, so a case that forces
+    a reload by changing the source does so here and commits it, rather than
+    editing the package this test process imports — an edit there would leave the
+    tree modified and the reload would be held back instead of happening.
+    """
+    return scratch_checkout(tmp_path)
 
 
 @pytest.fixture()
@@ -212,8 +230,16 @@ def _wait_for_child(dump: Path, process: subprocess.Popen) -> list[str]:
     )
 
 
-def _arm(home: Path, *args: str) -> subprocess.Popen:
-    """Start the real follower command against the temporary config home."""
+def _arm(home: Path, source_root: Path, *args: str) -> subprocess.Popen:
+    """Start the real follower command against the temporary config home.
+
+    The follower imports the case's own checkout rather than this working tree,
+    so the source change the case makes is the one the follower stamps. It runs
+    with that checkout as its working directory, because ``python -c`` puts the
+    working directory first on ``sys.path``: from this working tree the package
+    here would be imported instead of the case's copy, and the change the case
+    committed would never move the stamp.
+    """
     return subprocess.Popen(
         [
             sys.executable,
@@ -231,7 +257,12 @@ def _arm(home: Path, *args: str) -> subprocess.Popen:
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
-        env={**os.environ, "RECKON_HOME": str(home), "PYTHONPATH": str(REPO_ROOT)},
+        cwd=source_root,
+        env={
+            **os.environ,
+            "RECKON_HOME": str(home),
+            "PYTHONPATH": str(source_root),
+        },
     )
 
 
@@ -346,15 +377,14 @@ def _wait_until_looping(home: Path, pid: int) -> None:
 
 @contextlib.contextmanager
 def _source_mutation_window():
-    """Hold the one window in which a case may edit the source the follower stamps.
+    """Hold the one window in which a case forces its follower to reload.
 
-    The stamp is computed over the imported package, so every case that forces a
-    reload edits a path all pytest workers share. Two of them editing at once can
-    read each other's append as their own baseline and write it back after their
-    restore, which leaves the change in the tree and has the follower compared
-    against a stamp neither case set. The distributor does not keep these cases
-    apart on its own — spreading by load is its default — so the window is held
-    under an exclusive lock instead.
+    A reload replaces the follower's process image and is observed by the
+    replacement's command line, so two of these cases running at once on a loaded
+    node can starve each other's timing bound. The cases share a group name across
+    the sibling files that force a reload, and the window serialises them under an
+    exclusive lock rather than leaving the spread to the distributor, which keeps
+    them apart by load alone.
     """
     lock_path = Path(tempfile.gettempdir()) / "reckon-follower-source-change.lock"
     with lock_path.open("a+") as handle:
@@ -365,48 +395,46 @@ def _source_mutation_window():
             fcntl.flock(handle, fcntl.LOCK_UN)
 
 
-def _force_source_change() -> tuple[bytes, int, int]:
-    """Advance the follower's source stamp with a real content change.
+def _force_source_change(source_root: Path) -> None:
+    """Advance the follower's source stamp with a real content change, committed.
 
     The stamp covers each source file's size and its mtime together, and an edit
     advances both, which is the change the follower exists to notice. The appended
     line is a comment, and every prefix of it, so the module parses while it is in
     place. A change made before the follower has fixed its baseline is captured as
     the baseline and never seen at all, so the caller waits for
-    ``_wait_until_looping`` first. What to restore is handed back with it.
+    ``_wait_until_looping`` first.
+
+    The change is committed in the case's own checkout. The content stamp moves
+    all the same, and the tree stays clean against ``HEAD``, so the reload is not
+    held back by the guard that defers onto a modified tree.
     """
-    stat = FOLLOWER_SOURCE.stat()
-    original = FOLLOWER_SOURCE.read_bytes()
-    with FOLLOWER_SOURCE.open("ab") as handle:
-        handle.write(_SOURCE_CHANGE_BYTES)
-    return original, stat.st_atime_ns, stat.st_mtime_ns
-
-
-def _restore_source_bytes(restore: tuple[bytes, int, int]) -> None:
-    """Put the source back byte for byte, and its timestamps back with it."""
-    original, atime_ns, mtime_ns = restore
-    FOLLOWER_SOURCE.write_bytes(original)
-    os.utime(FOLLOWER_SOURCE, ns=(atime_ns, mtime_ns))
+    commit_the_source_change(
+        source_root,
+        source_root / "reckon",
+        "crew_follow_commands.py",
+        _SOURCE_CHANGE_BYTES,
+    )
 
 
 @pytest.mark.xdist_group(SOURCE_CHANGE_GROUP)
-def test_a_reload_does_not_restart_the_lifetime(home) -> None:
+def test_a_reload_does_not_restart_the_lifetime(home, source_tree) -> None:
     """The deadline carried across a reload still ends the follower on time.
 
-    Armed with six seconds, forced to reload about three seconds in, the
-    follower ends within eight seconds of the original arm and prints its own
-    final line. A deadline anchored at the replacement's start cannot meet that
-    bound, which is what the declared negative control shows.
+    Forced to reload part way through its armed lifetime, the follower ends
+    within a bound just past that lifetime, measured from the original arm, and
+    prints its own final line. A deadline anchored at the replacement's start
+    cannot meet that bound, which is what the declared negative control shows.
     """
     _write_unpromoted_run(home)
-    restore = None
+    source_root, _package = source_tree
     with _source_mutation_window():
-        process = _arm(home, "--lifetime", LIFETIME)
+        process = _arm(home, source_root, "--lifetime", LIFETIME)
         try:
             _wait_until_armed(process)
             arm_at = time.monotonic()
             _wait_until_looping(home, process.pid)
-            restore = _force_source_change()
+            _force_source_change(source_root)
             reloaded_at = _wait_until_reloaded(process)
             assert reloaded_at > arm_at, "the reload was seen before the arm"
             ended_at = _wait_until_ended(process, arm_at=arm_at)
@@ -414,8 +442,6 @@ def test_a_reload_does_not_restart_the_lifetime(home) -> None:
         finally:
             if process.poll() is None:
                 _kill(process)
-            if restore is not None:
-                _restore_source_bytes(restore)
 
     assert process.returncode == 0, (
         f"a lifetime exit is the follower ending by itself, so it exits zero; "
@@ -444,7 +470,7 @@ def test_a_reload_does_not_restart_the_lifetime(home) -> None:
 
 
 @pytest.mark.xdist_group(SOURCE_CHANGE_GROUP)
-def test_the_deadline_reaches_no_child_the_follower_starts(home) -> None:
+def test_the_deadline_reaches_no_child_the_follower_starts(home, source_tree) -> None:
     """The carried deadline bounds the follower, never a child it starts.
 
     The deadline is handed to the replacement image through the environment the
@@ -454,13 +480,13 @@ def test_the_deadline_reaches_no_child_the_follower_starts(home) -> None:
     deadline that governs no process but the follower itself. The probe records
     the environment it was handed, so the property is observed in the one place
     a leaked variable would show, and the reload case still ends the arming
-    within the eight-second bound.
+    within the bound measured from the original arm.
     """
     dump = home / "child-environment.txt"
     _write_parked_run(home, dump)
-    restore = None
+    source_root, _package = source_tree
     with _source_mutation_window():
-        process = _arm(home, "--lifetime", LIFETIME)
+        process = _arm(home, source_root, "--lifetime", LIFETIME)
         try:
             _wait_until_armed(process)
             arm_at = time.monotonic()
@@ -479,7 +505,7 @@ def test_the_deadline_reaches_no_child_the_follower_starts(home) -> None:
             )
 
             _wait_until_looping(home, process.pid)
-            restore = _force_source_change()
+            _force_source_change(source_root)
             _wait_until_reloaded(process)
             # The arm must still end by itself: a follower that hangs here would
             # leave the leak unobserved. The tight timing property — the end
@@ -492,8 +518,6 @@ def test_the_deadline_reaches_no_child_the_follower_starts(home) -> None:
         finally:
             if process.poll() is None:
                 _kill(process)
-            if restore is not None:
-                _restore_source_bytes(restore)
 
     assert process.returncode == 0, (
         f"a lifetime exit is the follower ending by itself, so it exits zero; "

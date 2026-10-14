@@ -25,12 +25,14 @@ def test_a_producer_keeps_publishing_after_a_slow_reload(tmp_path, monkeypatch) 
     root, package = _copy_source(tmp_path)
     follower_path = package / "crew_follow_commands.py"
     source = follower_path.read_text()
-    needle = '    "import pathlib, sys\\n"\n'
+    # The proof the replacement image runs before it execs: its first line is
+    # where a sleep long enough to span a poll is spliced in.
+    needle = '    "import importlib, pathlib, sys\\n"\n'
     assert needle in source
     follower_path.write_text(
         source.replace(
             needle,
-            '    "import pathlib, sys, time\\n"\n    "time.sleep(2)\\n"\n',
+            '    "import importlib, pathlib, sys, time\\n"\n    "time.sleep(2)\\n"\n',
             1,
         )
     )
