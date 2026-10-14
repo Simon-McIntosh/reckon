@@ -1,0 +1,54 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-14T02:46:35.542Z",
+  "dispatched_at": "2026-10-14T02:36:38Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-suite-tests-behaviour.html:167",
+      "id": "wiring-1",
+      "reason": "a section the plan declares implementable but no followup names is unreachable by the dispatch sequence the plan relies on, so the work it describes may never be dispatched.",
+      "text": "\u00a78 is added as an implementable section yet the plan's only open followup, f-tstb-003, orders \"\u00a77 on \u00a72's held head, then \u00a72's merge; the follower and velocity half of \u00a73; \u00a74 then \u00a75\" \u2014 it names neither \u00a78 nor any path to it, while listing \u00a74 and \u00a75, which the plan's own comments c-close-s4 and c-close-s5 record as already closed, so a coordinator working the sequence reaches its end without ever dispatching \u00a78",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-suite-tests-behaviour.html:149",
+      "id": "done_when-1",
+      "reason": "without a control that makes one migrated guard's own write and shows it go red at head, the node cannot show the guard it moved still fires, which is the assertion the section exists to preserve.",
+      "text": "the deliverable keeps the write-side assertion (\"each test still fails if it leaves a trace of its own\", plan.html:148) but the only executed controls test the helper in isolation \u2014 `tests/test_real_home_traces.py` against a temporary root, and the negative control that reverts the helper to a whole-root comparison \u2014 and the \"no added failure against base\" clause cannot stand in, because the base arm is expected to be red on the foreign entry, so a node that moves the six guards onto the helper with a needle list its own test never writes passes every clause while each migrated guard detects nothing",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "77068d7b06fc2d7ffecf5260f7d3e751067aa9f821421fc966a4ba74edcaafe8",
+  "plan_slug": "the-suite-tests-behaviour",
+  "plan_version": 42,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261014T023551031407-plan-review-of-the-suite-tests-behaviour",
+  "reviewed_blob_sha": "4ffdc3c31b3dbf92ee3f20735d3da108ddc9b6c2",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 all twelve cited modules exist, `_own_traces` (tests/test_follow_lifetime.py:256) and the four `fixture_pointers` copies (e.g. tests/test_concurrent_dispatch_of_one_node.py:119) resolve with the described needle-filtered shape, the named test id `tests/test_no_member_dispatch_runs_alone.py::test_two_unnamed_reviews_launch_with_disposable_members` exists with `_live_view` (line 133) comparing exactly what \u00a78 says, and revision `64f44fdbe` resolves as a commit.",
+    "done_when": "a finding \u2014 \u00a78's only control exercises the new helper in isolation (plan.html:149), so the migrated guards' retained write-side assertion is never shown to fire.",
+    "evidence_paths": "pass \u2014 the gate log, the census and the negative-control log all sit under the run directory, a durable path on the shared filesystem (verified a run directory from 2026-10-10 still intact), not a scratchpad or node-local temporary directory.",
+    "naming": "pass \u2014 \u00a78's symbols and prose (`real_home_traces`, \"needle-filtered\", \"the test minted\") carry no plan label, stage name, ticket number or version tag, and its comments state the mechanism rather than a changelog.",
+    "reasoning": "pass \u2014 the stated root cause matches the cited code (each listed module does compare a whole shared tree: tests/test_watch_arming_isolation.py:309\u2013312, tests/test_impl_is_computed.py:27, tests/test_rollup_isolates_a_project.py:88\u201390, tests/test_append_decision_keeps_its_question.py:47, tests/test_lanes_view_is_live.py:153, tests/test_member_registration_commits.py:322\u2013337), the needle-filtered mechanism can produce the done-when, and the callers that must run it are named (the modules carrying the guards).",
+    "single_goal": "pass \u2014 \u00a78 names one deliverable: the needle-filtered trace check with one home, every guard moved onto it, and the census that finds the ones the list missed.",
+    "wiring": "a finding \u2014 \u00a78 is declared `implementable` (plan.html:136, plan-section-declarations at plan.html:25) but no followup, gate or link names it, and the sole open followup f-tstb-003 (plan.html:165\u2013167) orders \u00a77, \u00a72, \u00a73's follower/velocity half, \u00a74 and \u00a75 \u2014 not \u00a78."
+  },
+  "section_digests": {
+    "_document": "19b09db50597fc3f9d629799b2e2e09e64a592513cb902fd6bd0c0984acbcda3",
+    "s1": "1d6184c53af837617ac7ee370d7b6d622f0b187f5ac5e8f8d90a1dda6a98b5b2",
+    "s2": "0a2190864603950ade3af9b2de4b53b463e747cc8dc4c1f6e9175cdd5a4ee623",
+    "s3": "b54ea6f02bf0468b0b6f22c4317ef1f30b269045ffcaa9c19ae6abd2d175e96b",
+    "s4": "0bbb53f80bd6f9eb08c166f5e54fdde7bd5678c29b455fd39e15555bcbc17e35",
+    "s5": "ab2721f7547c999de436c1bb3551c6fe1aff3bbe51e9d92c2f44f5f91ce4123d",
+    "s6": "2ab2547ce36adce1b8926643bbc4604f1d6d1695d52434c1e8849e50f80c4b9d",
+    "s7": "6923b90ad2de1d3c7d21b7d4aa204ae8d2b445425f13415254e324f7452ce801",
+    "s8": "699f8fd4020dbffcbfcf90760b9ccd57efbcc13a340d5dd389c1b39fe51587c0"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T02:49:20.865817+00:00"
+}
