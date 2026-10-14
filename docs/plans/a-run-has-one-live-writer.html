@@ -25,7 +25,7 @@
   <title>A Run Has One Live Writer | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="9">
+<meta name="plan-version" content="10">
 <meta name="plan-modified" content="2026-10-14">
 </head>
 <body>
@@ -58,7 +58,7 @@
     </ul>
     <p>Then repair by extending those owners rather than adding a kill path beside them:</p>
     <ul>
-      <li><code>signal_worker</code> gains the reach to end a run's own processes through the existing enumerators, and returns the pids it ended. Every one of its callers inherits this, not <code>terminate</code> alone. A process qualifies only if it descends from the run's recorded supervisor or worker, identity-checked by its start time, or if its environment carries <code>RECKON_RUN_ID</code> naming this run. A process that merely holds the worktree as its working directory is listed and never signalled. That covers a coordinator or a peer that changed into it, so the extension cannot widen into the kill-everything hazard <code>signal_worker</code> exists to prevent.</li>
+      <li><code>signal_worker</code> gains the reach to end a run's own processes, and returns the pids it ended. Every one of its callers inherits this, not <code>terminate</code> alone. A process qualifies through either of two sources. The first is the descendant walk (<code>_process_children</code>) from the run's recorded supervisor and worker, each checked against its recorded start time. The second is a scan of this user's processes for an environment whose <code>RECKON_RUN_ID</code> names this run, with a start time no earlier than the run's launch. No existing enumerator can do the second: the descendant walk cannot reach a worker reparented to init, and <code>_processes_holding</code> reads only working directories and open files. So the scan is one new private helper beside <code>_processes_holding</code> in <code>reckon/crew/routing.py</code>, reusing its <code>/proc</code> walk, and <code>_processes_holding</code> stays report-only. A process whose environment cannot be read is not signalled. A process that merely holds the worktree as its working directory is listed and never signalled. That covers a coordinator or a peer that changed into it, so the extension cannot widen into the kill-everything hazard <code>signal_worker</code> exists to prevent.</li>
       <li>The supervisor's exit path and <code>crew stop</code> (<code>terminate</code> in <code>reckon/crew/dispatch_sessions.py</code>) end the run's tree through it, and record the pids ended. <code>crew stop</code> reports any process still alive afterwards, rather than returning ok.</li>
       <li>The gap the reproduction named is closed where it lives (in <code>local_liveness</code>, in the worker record's writer, or in the classifier's call), so a run whose worker lives is never classified complete or scoring.</li>
     </ul>
