@@ -1,0 +1,39 @@
+<article class="landed-report" data-run-id="r-20261013T235726770293-a-wait-probe-that-can-never-match-is-caught" id="a-wait-probe-that-can-never-match-is-caught">
+  <h3 id="a-wait-probe-that-can-never-match-is-caught-title">a-wait-probe-that-can-never-match-is-caught &mdash; a probe whose output is never a state is caught</h3>
+  <p id="a-wait-probe-that-can-never-match-is-caught-body">
+    A waiting run lifts when its probe's observation equals a declared terminal
+    state, so a probe that can never print one parks the run forever. Two
+    declarations are now caught.
+  </p>
+  <p id="a-wait-probe-that-can-never-match-is-caught-manifest">
+    <strong>Manifest form.</strong> A <code>sacct</code> probe carrying
+    <code>--json</code>, <code>--parsable</code> or <code>--parsable2</code>
+    prints a structured document whose last line is never a state: on
+    2026-10-13 a run declared <code>["sacct","--json","-j","1284803"]</code>
+    with terminal <code>["COMPLETED", &hellip;]</code>, observed
+    <code>}</code>, and sat waiting about three hours after its job finished.
+    <code>_manifest_wait</code> in <code>reckon/crew/recovery_liveness.py</code>
+    now refuses the form as invalid and names the replacement,
+    <code>sacct -n -X -o State -j &lt;id&gt;</code>.
+  </p>
+  <p id="a-wait-probe-that-can-never-match-is-caught-observation">
+    <strong>Observation.</strong> At classification, an observation carrying no
+    word character at all &mdash; empty, or punctuation alone such as
+    <code>}</code> &mdash; can never equal a state either, so the row reports a
+    <code>wait_key_defect</code> naming the observation instead of a silent
+    park. A probe reporting a real non-terminal state such as
+    <code>RUNNING</code> is an ordinary wait, and one reporting a terminal
+    state still lifts.
+  </p>
+  <p id="a-wait-probe-that-can-never-match-is-caught-gate">
+    <strong>Gate.</strong>
+    <code>tests/test_a_wait_probe_that_can_never_match_is_caught.py</code> at
+    <code>f0f039787</code>: 6 passed, EXIT=0 (<code>gate-head.log</code>). The
+    11 existing wait-related files run beside it: 187 passed, EXIT=0
+    (<code>gate-related.log</code>); the only lint finding on the touched
+    product files is a pre-existing <code>UP017</code> at
+    <code>recovery_classification.py:392</code>. Negative control: dropping the
+    observation check, 1 failed, EXIT=1, the <code>}</code> case reading as an
+    ordinary wait (<code>negative-control.log</code>).
+  </p>
+</article>
