@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 9,
+  "call_sites": [
+    "reckon/crew/ticker.py:1440 RowPolicy.feed",
+    "reckon/crew/ticker.py:1462 RowPolicy._feed",
+    "reckon/crew/ticker.py:1678 RowPolicy.flush",
+    "reckon/crew/ticker.py:1785 PaneRowPath.feed",
+    "reckon/crew/ticker.py:1795 PaneRowPath.flush",
+    "reckon/crew_follow_commands.py:1112",
+    "reckon/crew_follow_commands.py:1964",
+    "reckon/crew_follow_commands.py:2049",
+    "reckon/crew_follow_commands.py:2087"
+  ],
+  "completed_at": "2026-10-14T11:27:10.340Z",
+  "dispatched_at": "2026-10-14T11:03:11Z",
+  "findings": [
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": "1611",
+      "severity": "blocking",
+      "text": "blocking: at the reviewed head the departure hold is applied before the observer-context hold, and _release_expired (reckon/crew/ticker.py:1345-1358) delivers every expired departure unconditionally, so an observer row the pane withholds \u2014 e.g. the terminal echo complete -> recorded for a run the pane shows as complete \u2014 is held as a departure and then printed once the settle window passes, making a hidden row visible and inverting the pane's contract; the four cases and the 613-test gate pass over it, and the later commit 2f61639ce repairs exactly this ordering and adds the withheld-terminal-echo case that fails against c49f8921b."
+    },
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": "1210",
+      "severity": "follow-on",
+      "text": "follow-on: _pane_word duplicates the renderer's recovery-word substitution at ticker.py:2104-2113, so a new recovery word added to the pane vocabulary must be added in both places or the policy's judgement of what the pane draws will drift from the renderer."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 9 production call site(s)",
+    "diff": "read commits d20b62df1 (the departure hold, _shown/_note_shown/_pane_word and four tests) and c49f8921b (the evidence fragment) against base fcfc19fa9; the departure rule sits at ticker.py:1589-1611, before the observer-context hold at ticker.py:1643+.",
+    "done_when": "the done_when names tests/test_the_pane_draws_no_round_trip.py (queued->withdrawn->dispatched->queued shows no row; the same departure with no return delivers once the same window passes), no added failure against base, and a logged negative control; the manifest records gate-ticker.log at 613 passed EXIT=0 and negative-control.log at 3 failed EXIT=1.",
+    "goal": "the node's goal is for RowPolicy to hold a row that takes a run away from the word the pane last showed and drop it with the return inside the settle window; the reviewed head implements it \u2014 reckon/crew/ticker.py:1589-1611 holds the departure and ticker.py:1462-1470 drops it when the run returns to the shown word.",
+    "manifest": "read r-20261014T100611529003-the-pane-draws-no-round-trip/manifest.md; status complete, commits d20b62df1 and c49f8921b, gate 613 passed EXIT=0 and the negative control logged, changed_paths matching the diff.",
+    "write_paths": "the source node declared reckon/crew/ticker.py, tests/test_the_pane_draws_no_round_trip.py, an evidence fragment and a figure directory; the diff changes ticker.py, the test file and the fragment, all inside the declared paths, and the figure directory is unused."
+  },
+  "justifications": {
+    "durability": "the four cases at tests/test_the_pane_draws_no_round_trip.py:36-101 are independent and the negative control is sound, but no case feeds a row the observer hold withholds, so the reviewed head's ordering defect passes the whole suite.",
+    "evidence": "the manifest records gate-ticker.log 613 passed EXIT=0 and negative-control.log 3 failed EXIT=1, but it records no baseline_suite or after_suite, so the plan's no-added-failure-against-base clause is unmeasured and a 613-test green arm runs over the ordering defect.",
+    "fit": "class _Departure at reckon/crew/ticker.py:1106 follows the module's NamedTuple-hold idiom and introduces no plan, ticket, version or author label.",
+    "goal_fidelity": "reckon/crew/ticker.py:1590-1611 at the reviewed head holds the departure before the observer-context hold, so the rule also holds rows the pane would withhold and _release_expired at ticker.py:1345-1358 then prints them, over-applying the deliverable.",
+    "reuse": "reckon/crew/ticker.py:1210-1224 _pane_word re-implements the recovery-word substitution the renderer inlines at ticker.py:2104-2113, duplicating a capability the same module already owns rather than extending it.",
+    "scope_discipline": "every path in the diff (reckon/crew/ticker.py, tests/test_the_pane_draws_no_round_trip.py and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/the-pane-draws-no-round-trip.html) is inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is for RowPolicy to hold a row that takes a run away from the word the pane last showed and drop it with the return inside the settle window; the reviewed head implements it \u2014 reckon/crew/ticker.py:1589-1611 holds the departure and ticker.py:1462-1470 drops it when the run returns to the shown word.\nVERDICT done_when: the done_when names tests/test_the_pane_draws_no_round_trip.py (queued->withdrawn->dispatched->queued shows no row; the same departure with no return delivers once the same window passes), no added failure against base, and a logged negative control; the manifest records gate-ticker.log at 613 passed EXIT=0 and negative-control.log at 3 failed EXIT=1.\nVERDICT write_paths: the source node declared reckon/crew/ticker.py, tests/test_the_pane_draws_no_round_trip.py, an evidence fragment and a figure directory; the diff changes ticker.py, the test file and the fragment, all inside the declared paths, and the figure directory is unused.\nVERDICT manifest: read r-20261014T100611529003-the-pane-draws-no-round-trip/manifest.md; status complete, commits d20b62df1 and c49f8921b, gate 613 passed EXIT=0 and the negative control logged, changed_paths matching the diff.\nVERDICT diff: read commits d20b62df1 (the departure hold, _shown/_note_shown/_pane_word and four tests) and c49f8921b (the evidence fragment) against base fcfc19fa9; the departure rule sits at ticker.py:1589-1611, before the observer-context hold at ticker.py:1643+.\nCALL_SITES: reckon/crew/ticker.py:1440 RowPolicy.feed, reckon/crew/ticker.py:1462 RowPolicy._feed, reckon/crew/ticker.py:1678 RowPolicy.flush, reckon/crew/ticker.py:1785 PaneRowPath.feed, reckon/crew/ticker.py:1795 PaneRowPath.flush, reckon/crew_follow_commands.py:1112, reckon/crew_follow_commands.py:1964, reckon/crew_follow_commands.py:2049, reckon/crew_follow_commands.py:2087\nSCORE goal_fidelity: 12\nJUSTIFICATION goal_fidelity: reckon/crew/ticker.py:1590-1611 at the reviewed head holds the departure before the observer-context hold, so the rule also holds rows the pane would withhold and _release_expired at ticker.py:1345-1358 then prints them, over-applying the deliverable.\nSCORE evidence: 13\nJUSTIFICATION evidence: the manifest records gate-ticker.log 613 passed EXIT=0 and negative-control.log 3 failed EXIT=1, but it records no baseline_suite or after_suite, so the plan's no-added-failure-against-base clause is unmeasured and a 613-test green arm runs over the ordering defect.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff (reckon/crew/ticker.py, tests/test_the_pane_draws_no_round_trip.py and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/the-pane-draws-no-round-trip.html) is inside the declared write paths.\nSCORE durability: 12\nJUSTIFICATION durability: the four cases at tests/test_the_pane_draws_no_round_trip.py:36-101 are independent and the negative control is sound, but no case feeds a row the observer hold withholds, so the reviewed head's ordering defect passes the whole suite.\nSCORE fit: 18\nJUSTIFICATION fit: class _Departure at reckon/crew/ticker.py:1106 follows the module's NamedTuple-hold idiom and introduces no plan, ticket, version or author label.\nSCORE reuse: 14\nJUSTIFICATION reuse: reckon/crew/ticker.py:1210-1224 _pane_word re-implements the recovery-word substitution the renderer inlines at ticker.py:2104-2113, duplicating a capability the same module already owns rather than extending it.\nFINDING reckon/crew/ticker.py:1611 blocking: at the reviewed head the departure hold is applied before the observer-context hold, and _release_expired (reckon/crew/ticker.py:1345-1358) delivers every expired departure unconditionally, so an observer row the pane withholds \u2014 e.g. the terminal echo complete -> recorded for a run the pane shows as complete \u2014 is held as a departure and then printed once the settle window passes, making a hidden row visible and inverting the pane's contract; the four cases and the 613-test gate pass over it, and the later commit 2f61639ce repairs exactly this ordering and adds the withheld-terminal-echo case that fails against c49f8921b.\nFINDING reckon/crew/ticker.py:1210 follow-on: _pane_word duplicates the renderer's recovery-word substitution at ticker.py:2104-2113, so a new recovery word added to the pane vocabulary must be added in both places or the policy's judgement of what the pane draws will drift from the renderer.\n",
+  "review_run_id": "r-20261014T110051603065-review-of-the-pane-draws-no-round-trip-c49f8921b4e0",
+  "reviewed_base_sha": "fcfc19fa9886002ca4491f03eeb033c2907f25d3",
+  "reviewed_head_sha": "c49f8921b4e0e3989f913132736edb0a1d307396",
+  "reviewed_run_id": "r-20261014T100611529003-the-pane-draws-no-round-trip",
+  "scores": {
+    "durability": 12,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 12,
+    "reuse": 14,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T11:22:14.917715+00:00",
+  "total": 88
+}

@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="78">
+<meta name="plan-version" content="79">
 <meta name="plan-modified" content="2026-10-14">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -474,6 +474,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 <div class="r-comment" data-section="s16" data-id="c-s16-cross-host-unwritten" data-who="health-review-1010" data-when="2026-10-14T09:20:00Z">
     <div class="r-comment-body"><p>A further round trip measured on 2026-10-14, beyond the requeue kinds this section names. Run <code>r-20261014T090025554907</code> was launched on clu-2002 and was writing its stream throughout. The pane drew it <code>working → halted</code> at 09:04:30Z and <code>halted → working</code> at 09:04:55Z. The producer's row carried <code>to_state: running</code> and <code>classification: running</code>, but also <code>recovery_classification: unwritten</code>, <code>liveness_proven: false</code> and <code>recovery: resume</code>. The producer runs on clu-2018, so <code>local_liveness</code> correctly leaves a clu-2002 pid unproven. With no manifest yet, the recovery word becomes <code>unwritten</code>, which <code>PANE_STATES</code> files under halted. The worker wrote its first manifest at 09:04:54Z, and the row returned. So every run launched on a host other than the producer's draws this round trip before its first manifest write. This section's settle window would hold it, since the return came 25 s later. Its stated order is met: §6 is done, and the-suite-is-green-at-head §15 merged at <code>ce8f25bc6</code>. Separately, offering <code>recovery: resume</code> for an unproven run whose stream is fresh invites a second writer from any coordinator on a host that cannot see the pid. That belongs to the recovery classifier rather than to the pane.</p></div>
 </div>
+<div class="r-comment" data-section="s16" data-id="c-run-r-20261014T110051603065-review-of-the-pane-draws-no-round-trip-c49f8921b4e0" data-who="reckon-build" data-when="2026-10-14T11:27:10.340Z">
+    <div class="r-comment-body"><p>reviewed r-20261014T100611529003-the-pane-draws-no-round-trip at base fcfc19fa9..head c49f8921b; stored a parsed review record scoring all 6 dimensions (goal_fidelity 12, evidence 13, scope_discipline 19, durability 12, fit 18, reuse 14; total 88) with one blocking finding: at the reviewed head reckon/crew/ticker.py:1590-1611 holds a departure before the observer-context hold and _release_expired (ticker.py:1345-1358) then prints it, so a withheld observer row is made visible once the settle window passes.</p></div>
+</div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261013T050357966649-remembered-states-are-pane-words" data-who="reckon-build" data-when="2026-10-13T06:17:20.716Z">
     <div class="r-comment-body"><p>remembered states are mapped to pane words where the grid takes its memory in (ticker._remembered_word applied in _seed_ticker_memory); a run remembered as completed_unpromoted now draws `delivered` on the left, every internal state draws its pane word, and the reloaded-pane test now expects the pane word (halted) rather than the raw producer state</p></div>
 </div>
@@ -541,7 +544,7 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
     <div class="r-comment-body"><p>§21 landed: a standing lift is no longer redrawn as <code>new → working</code> after each merge into <code>main</code>. The pane's memory of drawn lift groups survives the follower's reload and re-arm. Merged as <code>c7230c9d4</code>, reviewed at 114/120. <a href="/reckon/evidence/archive/the-monitor-shows-the-work-it-watches-landed.html#s21">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s21" data-id="c-run-r-20261014T080548832882-a-standing-lift-survives-a-follower-reload" data-who="reckon-build" data-when="2026-10-14T09:34:30.222Z">
-    <div class="r-comment-body"><p>A pane&#x27;s set of lift groups drawn as in force now travels across the follower&#x27;s own in-place reload (in the carried reader checkpoint) and across a re-arm (rebuilt from the stored history log), and is restored into the row policy before the first row is fed, so the producer&#x27;s re-arm baseline row for a still-standing lift draws nothing — measured by driving the follower&#x27;s own arming for both carriers, with each carrier&#x27;s removal turning exactly its own case red.</p></div>
+    <div class="r-comment-body"><p>A pane's set of lift groups drawn as in force now travels across the follower's own in-place reload (in the carried reader checkpoint) and across a re-arm (rebuilt from the stored history log), and is restored into the row policy before the first row is fed, so the producer's re-arm baseline row for a still-standing lift draws nothing — measured by driving the follower's own arming for both carriers, with each carrier's removal turning exactly its own case red.</p></div>
 </div>
 </section>
 </main>
