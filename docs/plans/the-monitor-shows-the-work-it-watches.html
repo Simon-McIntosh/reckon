@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="73">
+<meta name="plan-version" content="74">
 <meta name="plan-modified" content="2026-10-14">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -470,6 +470,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s16" data-id="c-s16-lift-rows-carry-no-session" data-who="reckon-build" data-when="2026-10-13T07:05:00Z">
     <div class="r-comment-body"><p><strong>Noted for §16's node.</strong> A budget lift scoped to one session (on 2026-10-13, <code>codex-sub</code> scoped to <code>session:b8e6ba21…</code>) emits its <code>lift-granted</code>, <code>lift-in-force</code> and <code>lift-ended</code> rows with no session, so every pane draws them. They are rare, 4 of 645 events in an hour, and not part of the flicker. A lift scoped to a session should carry that session on its rows, so the row policy can hold it on other sessions' panes as observer context.</p></div>
+</div>
+<div class="r-comment" data-section="s16" data-id="c-s16-cross-host-unwritten" data-who="health-review-1010" data-when="2026-10-14T09:20:00Z">
+    <div class="r-comment-body"><p>A further round trip measured on 2026-10-14, beyond the requeue kinds this section names. Run <code>r-20261014T090025554907</code> was launched on clu-2002 and was writing its stream throughout. The pane drew it <code>working → halted</code> at 09:04:30Z and <code>halted → working</code> at 09:04:55Z. The producer's row carried <code>to_state: running</code> and <code>classification: running</code>, but also <code>recovery_classification: unwritten</code>, <code>liveness_proven: false</code> and <code>recovery: resume</code>. The producer runs on clu-2018, so <code>local_liveness</code> correctly leaves a clu-2002 pid unproven. With no manifest yet, the recovery word becomes <code>unwritten</code>, which <code>PANE_STATES</code> files under halted. The worker wrote its first manifest at 09:04:54Z, and the row returned. So every run launched on a host other than the producer's draws this round trip before its first manifest write. This section's settle window would hold it, since the return came 25 s later. Its stated order is met: §6 is done, and the-suite-is-green-at-head §15 merged at <code>ce8f25bc6</code>. Separately, offering <code>recovery: resume</code> for an unproven run whose stream is fresh invites a second writer from any coordinator on a host that cannot see the pid. That belongs to the recovery classifier rather than to the pane.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261013T050357966649-remembered-states-are-pane-words" data-who="reckon-build" data-when="2026-10-13T06:17:20.716Z">
     <div class="r-comment-body"><p>remembered states are mapped to pane words where the grid takes its memory in (ticker._remembered_word applied in _seed_ticker_memory); a run remembered as completed_unpromoted now draws `delivered` on the left, every internal state draws its pane word, and the reloaded-pane test now expects the pane word (halted) rather than the raw producer state</p></div>
