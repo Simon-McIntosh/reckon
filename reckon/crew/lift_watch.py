@@ -204,7 +204,7 @@ def _lift_row(
         "detail": _lift_detail(lift, kind=kind, ended=ended),
         "recovery_classification": current,
     }
-    return recovery_watch._watch_transition(
+    row = recovery_watch._watch_transition(
         project,
         kind=kind,
         snapshot=snapshot,
@@ -213,6 +213,12 @@ def _lift_row(
         counts={"working": 0, "blocked": 0, "unpromoted": 0},
         spend_runs=[],
     )
+    # The lift's id as a structured field, so a reader that has to key a row on
+    # the lift it names — the session pane's once-per-lift claim — reads the id
+    # rather than parsing it back out of the free-text clause, which the
+    # renderer drops. The group stays in ``node`` for the pane's own memory.
+    row["lift_id"] = str(lift.get("id") or "")
+    return row
 
 
 def _scope_session(lift: Mapping[str, Any]) -> str:
