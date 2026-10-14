@@ -1,0 +1,92 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-14T09:43:08.750Z",
+  "dispatched_at": "2026-10-14T09:35:37Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-suite-is-green-at-head.html:656",
+      "id": "reasoning-1",
+      "reason": "the node would run the stated `import reckon.crew.gc` check and hit a hard ImportError, and the fix (create `reckon/crew/__init__.py` importing routing first, whose import lines still satisfy check_pure_move) is a design decision the plan does not make.",
+      "text": "\u00a76 asserts \"Importing the reckon.crew package already loads routing\" and \"Importing gc or process_signal first resolves too\", and names `python -c \"import reckon.crew.gc\"` as a verified order, but `reckon/crew/__init__.py` does not exist, so `import reckon.crew.gc` executes gc.py first, whose module-level `from reckon.crew.routing import \u2026` starts routing, and routing's end-of-file re-export `from reckon.crew.gc import \u2026` then binds names from a still-empty, partially initialised gc \u2014 reproduced in a scratch package: \"ImportError: cannot import name 'b' from partially initialized module 'pkg.gc' (most likely due to a circular import)\" \u2014 so the split as designed cannot satisfy its own claim that it \"cannot cycle at load\", and the node's named import-order verification fails",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-suite-is-green-at-head.html:656",
+      "id": "done_when-1",
+      "reason": "without the import-order check in the gate, the node's only objective signal (check_pure_move exits 0) is satisfied by a broken-loading split, letting the defect above ship as \"done\".",
+      "text": "\u00a76's done-when rests on check_pure_move.py, which only compares moved statement text and is import-agnostic, so the gate can exit 0 and the window test pass on a tree whose split cannot be imported, so the measure does not cover the mechanism the split relies on",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "d8d593b691811e86394f56f18116a058f9ea05c2d2f437ba55144e8542de4106",
+  "plan_slug": "the-suite-is-green-at-head",
+  "plan_version": 351,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "the premise does not hold in this repository: reckon.crew is reckon/crew.py, which sets __path__ at line 33 and loads routing at import (measured: after import reckon.crew, reckon.crew.routing is in sys.modules, and routing loads before dispatch_sessions), so import reckon.crew.gc runs crew.py first, routing loads fully, and its end-of-file re-export runs gc with every routing definition bound; the scratch reproduction used a package with no equivalent of crew.py. The section now names crew.py and the measurement, and the gate runs the import orders",
+      "when": "2026-10-14T09:45:19.932172+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-14T09:45:37.184918+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-14T09:45:37.184918+00:00"
+    },
+    "reasoning-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "the premise does not hold in this repository: reckon.crew is reckon/crew.py, which sets __path__ at line 33 and loads routing at import (measured: after import reckon.crew, reckon.crew.routing is in sys.modules, and routing loads before dispatch_sessions), so import reckon.crew.gc runs crew.py first, routing loads fully, and its end-of-file re-export runs gc with every routing definition bound; the scratch reproduction used a package with no equivalent of crew.py. The section now names crew.py and the measurement, and the gate runs the import orders",
+      "when": "2026-10-14T09:45:19.932172+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-suite-is-green-at-head.v351.json",
+  "review_run_id": "r-20261014T093454253647-plan-review-of-the-suite-is-green-at-head",
+  "reviewed_blob_sha": "619f655135bf95408cb8c257b576ce685b52d613",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 both plan hrefs (a-held-dispatch-waits-its-fair-turn, a-run-has-one-live-writer) resolve as `<path>.html` and commits 784d580de, 2e44591a1 and c0390eb72 resolve; `a-worktree-release-is-whole` is a run id named in a-run-has-one-live-writer, not a plan file, so it is not a dangling anchor.",
+    "done_when": "a finding \u2014 \u00a76's done-when gate lists check_pure_move.py, the estimated_tokens bound, the window test and the added-failure delta, but omits the fresh-interpreter import check the same paragraph requires, so the gate passes on a split that cannot import.",
+    "evidence_paths": "pass \u2014 the pure-move receipt, both import-order logs and the negative-control log are written under the run directory, a durable path.",
+    "naming": "pass \u2014 \u00a76 carries no plan-label naming into code symbols, filenames or comments; the commit shas and plan names sit in the plan prose, not in source.",
+    "reasoning": "a finding \u2014 \u00a76's stated import mechanism cannot load in the reversed order, and the fresh-interpreter command the section names as proof raises ImportError against this repository's actual package layout.",
+    "single_goal": "pass \u2014 \u00a76 has one deliverable, splitting routing.py's two families into gc.py and process_signal.py so all three modules fit the bound.",
+    "wiring": "pass \u2014 \u00a76 states its dependencies (it waits on the peer runs a-worktree-release-is-whole and a-run-has-one-live-writer \u00a72, both recorded merged at 2e44591a1 and c0390eb72, which resolve), and the plan declares no depends-on meta that \u00a76 omits."
+  },
+  "section_digests": {
+    "_document": "83bc4eebbeaf35e1f8769b1cefa72ecf8466fb0d23d3dd350bf2e642790b97e5",
+    "s1": "93d7e8eb3f04bb8d9aad0f5ac7d68a9d009b7fe7feaa6f4932738242154d8d4d",
+    "s10": "9633fb928a6c720c8fae74ed3da0a5f7ed555c4230f29ebf2ee89e5432566bb1",
+    "s11": "3e9c94371cc0b22adeb21c71a08fdd16433d8b4c1a22e73cd63d1171332089ba",
+    "s12": "dd8650523d29d87e6fa41408db7d0440cf17dfbd57f0ab6da0d5fcd223692d95",
+    "s13": "7b00f23667f49ba7de16f8823860c86ad35a562eebddf434fd1a6b9f1f5e9993",
+    "s14": "1469c86b5327d2429ce07b9ddd2fbca586d8831acb94119f8a187e315f48dcf7",
+    "s15": "f84dc4d4bef37307ff05d71bd4f7071e9208e789832e7cb00be82c37bcfde97e",
+    "s16": "4ab9d42bd2e71d070a1cc5393ebea66e1ec71d06dad51f1a82505c91ce309234",
+    "s2": "d8e1d44eab3d041cfa8f08f045885bcf9a783d27f0cb613fe7de2c0476c13887",
+    "s3": "d6efa514940aeb662c9b7fdee7f663c86e4da2526ec9a01c6977f967e30d886a",
+    "s4": "e7003c1b5457d6229da28b7d90f825f0e3ef67be2a012291c12a2daf14bf2273",
+    "s5": "934ff53a2b41de523672b7760ab4bbe2e8be5d3da6b580c600383ac0217825a2",
+    "s6": "f3486fa0458dd3e75948012fbb280b8ef4ee8b00ecc1ab64288edd099b63b60c",
+    "s7": "655ef45aae9c9f31c0c67cb28422cff4a16611cfce488326c298768a23f58efd",
+    "s8": "c78e67e053ac3d61a73df4b965e8209a12ca4d9b745535a102b0b0040cce3adc",
+    "s9": "f4ef4f0dc18779331d3654037d55a7dd1c27d3769bfbfe753867fccbb53f9a28"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T09:43:42.832822+00:00"
+}
