@@ -380,9 +380,24 @@ def test_a_refusal_over_an_existing_worktree_leaves_no_new_trace(
     discarding command's to remove and dispatch must leave it untouched; what
     dispatch must not leave is a trace of its own — a pointer, a run directory
     or a watch row for the node it refused.
+
+    The earlier tree must be one a leftover-tree release keeps, so the second
+    dispatch meets the refusal rather than a release: a tree whose head carries
+    a commit beyond its base is kept, because the content it holds exists
+    nowhere else. The earlier attempt therefore commits in its own tree before
+    its pointer is dropped, and the refusal names that commit.
     """
     config_home, repo = home
     first = _dispatch(config_home, repo, launcher=_stub_launcher())
+    earlier = worktrees_naming(repo, NODE_ID)
+    assert earlier != []
+    earlier_tree = Path(earlier[0])
+    (earlier_tree / "earlier-attempt.txt").write_text(
+        "work left by the earlier attempt\n", encoding="utf-8"
+    )
+    _git(earlier_tree, "add", "earlier-attempt.txt")
+    _git(earlier_tree, "commit", "-q", "-m", "feat: earlier attempt work")
+    kept_commit = _git(earlier_tree, "rev-parse", "HEAD")
     # Drop the first run's pointer so the second dispatch is refused by the
     # occupied worktree rather than by a member still in flight.
     pointer_path(str(first["run_id"])).unlink()
@@ -390,8 +405,12 @@ def test_a_refusal_over_an_existing_worktree_leaves_no_new_trace(
     pre_run_dirs = run_directories_naming(config_home, NODE_ID)
     assert pre_existing != []
 
-    with pytest.raises(crew.CrewError):
+    with pytest.raises(crew.CrewError) as refusal:
         _dispatch(config_home, repo, launcher=_stub_launcher())
+
+    # The refusal is §16's kept-tree refusal, and it names the commit the
+    # earlier attempt left beyond its base.
+    assert kept_commit in str(refusal.value)
 
     assert live_pointers_naming(NODE_ID) == []
     # The refused dispatch adds no run directory of its own; the first run's
