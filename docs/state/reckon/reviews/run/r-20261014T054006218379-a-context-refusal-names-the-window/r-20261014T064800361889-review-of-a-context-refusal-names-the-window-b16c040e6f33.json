@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_stop_before_spawn_spawns_nothing.py::test_a_stop_between_the_check_and_the_spawn_spawns_no_worker"
+  ],
+  "added_failures_note": "derived from the reviewed run's own gate logs: baseline_suite is {revision f3d3c028b, completed true, failure_count 1, failure_ids [tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window]} and after_suite is {revision f3d3c028b plus b16c040e6, completed true, failure_count 2, failure_ids [tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window, tests/test_stop_before_spawn_spawns_nothing.py::test_a_stop_between_the_check_and_the_spawn_spawns_no_worker]}, so one id (test_stop_before_spawn_spawns_nothing::test_a_stop_between_the_check_and_the_spawn_spawns_no_worker) appears at head that is absent at base. The reviewer re-ran that test serially at head (1 passed in 7.54s), consistent with the parallel-load flake the reviewed manifest attributes; it is a SIGTERM/subprocess-liveness test in a file the node did not touch and it reaches neither CompetenceLimit nor the context verdict.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch.py:911",
+    "reckon/crew/dispatch_sessions.py:1458",
+    "reckon/crew_dispatch_commands.py:1445",
+    "reckon/crew_dispatch_commands.py:1734",
+    "reckon/crew_dispatch_commands.py:1955"
+  ],
+  "completed_at": "2026-10-14T06:59:57.303Z",
+  "dispatched_at": "2026-10-14T06:48:30Z",
+  "findings": [
+    {
+      "file": "reckon/crew/node.py",
+      "line": "587",
+      "severity": "follow-on",
+      "text": "_context_refusal_recommendation (reckon/crew/node.py:578-593) falls back to a hand-written literal \"split the node or route it to a backend with at least {estimated_tokens} usable input tokens\" (node.py:590-592) that duplicates the recommendation routing.py:4799-4803 already builds with the same sentence, so the fallback path can drift from the owner the message is meant to mirror; production callers pass routing's verdict, which always carries recommendation, so the fallback is never taken and this is a maintenance hazard rather than a live defect."
+    },
+    {
+      "file": "tests/test_stop_before_spawn_spawns_nothing.py",
+      "line": "651",
+      "severity": "follow-on",
+      "text": "the reviewed run's head arm carries one failure absent at base (test_a_stop_between_the_check_and_the_spawn_spawns_no_worker) against the done-when's literal \"no failure at head that is absent at base\"; the reviewer re-ran it serially at head and it passed in 7.54s, and the test exercises a SIGTERM-to-process-group liveness window with no path to CompetenceLimit or the context verdict, so it is a parallel-load flake in a file the node did not touch rather than a regression the change introduced."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s): CompetenceLimit is raised at reckon/crew/dispatch.py:911 and reckon/crew/dispatch_sessions.py:1458, and the message is surfaced to the operator by the except clauses at reckon/crew_dispatch_commands.py:1445, 1734 and 1955, so the new message reaches a real dispatch path.",
+    "diff": "read commit by commit against base f3d3c028b: b16c040e6 adds _context_refusal_recommendation and branches CompetenceLimit.__init__ on verdict[\"reason\"] == \"context-window-exceeded\" (reckon/crew/node.py:578-616), drops the two 0.0 setdefault calls from with_context_fit (reckon/crew/routing.py:4806-4809), and adds tests/test_a_context_refusal_names_the_window.py plus the landing fragment; 4 files, 203 insertions, 14 deletions, all inside the declared scope.",
+    "done_when": "the done_when names tests/test_a_context_refusal_names_the_window.py building a context-window-exceeded verdict through routing's verdict function and raising CompetenceLimit from it; the test does exactly that (test_a_context_refusal_names_the_window.py:97-117, verdict built by routing._competence_verdict at :83-96) and records 3 passed; the manifest records the two-arm gate as base 1 failed/1969 passed (gate-base.log) and head 2 failed/1971 passed (gate-head.log) \u2014 the head arm carries one added failure, a parallel-load flake the reviewer re-ran green serially (FINDING).",
+    "goal": "the goal is that a context-window refusal's message names the window instead of a worker-hour horizon; at head reckon/crew/node.py:607-612 branches on verdict[\"reason\"] and emits \"node context estimate {estimated_tokens} usable input tokens exceeds the {window_tokens} token window by {shortfall_tokens} tokens; {recommendation}\", which contains no \"worker-hour\", while the hour branch (node.py:613-616) keeps the prior text and with_context_fit no longer writes the 0.0 placeholders (reckon/crew/routing.py:4806-4809).",
+    "manifest": "read; it records status complete, commits [b16c040e6], changed_paths matching the diff, tests head 2 failed/1971 passed against base 1 failed/1969 passed, negative_control_log named with its note, baseline_suite and after_suite both completed:true, and evidence_inputs naming the window-naming message and the absent 0.0 horizon.",
+    "write_paths": "the declared scope is reckon/crew/node.py, reckon/crew/routing.py, tests/test_a_context_refusal_names_the_window.py, the fragment docs/evidence/fragments/crew-observability-truth/a-context-refusal-names-the-window.html and its figures directory; git diff --name-only f3d3c028b..b16c040e6 lists node.py, routing.py, the test and the fragment and nothing outside them, and no figure was created (the done-when names no artifact)."
+  },
+  "justifications": {
+    "durability": "the assertions are independent of the code under test \u2014 test_a_context_refusal_names_the_window.py:113-117 compares str(verdict[\"estimated_tokens\"/\"window_tokens\"/\"shortfall_tokens\"/\"recommendation\"]) (routing's real verdict values) against the message built by reckon/crew/node.py, and :117 asserts \"worker-hour not in message) (the hour template contains the word), each of which reddens on the pre-change node.py (negative-control.log:37 shows '305715' not in the restored hour message); :126 asserts the placeholder key is ABSENT, which reddens the moment routing.py:4806's setdefault is restored; and :130-150 pins the hour message as an exact literal; reduced because the fallback branch of _context_refusal_recommendation (node.py:585-592) is exercised by no case.",
+    "evidence": "the gate is the plan's own test file and the importer set the manifest names, its result recorded rather than claimed \u2014 base 1 failed/1969 passed EXIT=1 (gate-base.log) against head 2 failed/1971 passed EXIT=1 (gate-head.log), with the negative control 2 failed/1 passed EXIT=1 (negative-control.log); reduced because the head arm carries one failure id absent at base (FINDING), so the done-when's literal no-added-failure criterion is unmet on the raw arm even though the reviewer's serial re-run resolves it to a flake.",
+    "fit": "the change keeps the surrounding idiom (a Mapping verdict, format_refusal for the remedy, a mechanism-stating docstring at reckon/crew/node.py:578-593), the branch reads verdict[\"reason\"] the way the module already carries reason, and the new symbol _context_refusal_recommendation is mechanism-named with no plan, stage, ticket or version token in the name or comment.",
+    "goal_fidelity": "reckon/crew/node.py:607-612 renders the context refusal from estimated_tokens, window_tokens, shortfall_tokens and the verdict's own recommendation and contains no worker-hour, and reckon/crew/routing.py:4806-4809 stops writing the 0.0 placeholders, so the message names the window it exceeded as the goal states; the hour branch remains byte-identical (node.py:613-616, pinned by test_a_context_refusal_names_the_window.py:147-150).",
+    "reuse": "the message reuses routing's own recommendation via verdict.get(\"recommendation\") (reckon/crew/node.py:585-586), which extends the owner that builds it (reckon/crew/routing.py:4799-4803), but the fallback at node.py:587-592 re-creates the same recommendation sentence that owner already writes, so one capability now has a second copy in a module that is not its owner (FINDING).",
+    "scope_discipline": "git diff --name-only f3d3c028b..b16c040e6 lists reckon/crew/node.py, reckon/crew/routing.py, tests/test_a_context_refusal_names_the_window.py and docs/evidence/fragments/crew-observability-truth/a-context-refusal-names-the-window.html, every path inside the declared write paths, with no unrelated file touched and no artifact the done-when did not name."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a context-window refusal's message names the window instead of a worker-hour horizon; at head reckon/crew/node.py:607-612 branches on verdict[\"reason\"] and emits \"node context estimate {estimated_tokens} usable input tokens exceeds the {window_tokens} token window by {shortfall_tokens} tokens; {recommendation}\", which contains no \"worker-hour\", while the hour branch (node.py:613-616) keeps the prior text and with_context_fit no longer writes the 0.0 placeholders (reckon/crew/routing.py:4806-4809).\nVERDICT done_when: the done_when names tests/test_a_context_refusal_names_the_window.py building a context-window-exceeded verdict through routing's verdict function and raising CompetenceLimit from it; the test does exactly that (test_a_context_refusal_names_the_window.py:97-117, verdict built by routing._competence_verdict at :83-96) and records 3 passed; the manifest records the two-arm gate as base 1 failed/1969 passed (gate-base.log) and head 2 failed/1971 passed (gate-head.log) \u2014 the head arm carries one added failure, a parallel-load flake the reviewer re-ran green serially (FINDING).\nVERDICT write_paths: the declared scope is reckon/crew/node.py, reckon/crew/routing.py, tests/test_a_context_refusal_names_the_window.py, docs/evidence/fragments/crew-observability-truth/a-context-refusal-names-the-window.html and its figures directory; git diff --name-only f3d3c028b..b16c040e6 lists node.py, routing.py, the test and the fragment and nothing outside them, and no figure was created.\nVERDICT manifest: read; it records status complete, commits [b16c040e6], changed_paths matching the diff, tests head 2 failed/1971 passed against base 1 failed/1969 passed, negative_control_log named with its note, baseline_suite and after_suite both completed:true, and evidence_inputs naming the window-naming message and the absent 0.0 horizon.\nVERDICT diff: read commit by commit against base f3d3c028b: b16c040e6 adds _context_refusal_recommendation and branches CompetenceLimit.__init__ on verdict[\"reason\"] == \"context-window-exceeded\" (reckon/crew/node.py:578-616), drops the two 0.0 setdefault calls from with_context_fit (reckon/crew/routing.py:4806-4809), and adds tests/test_a_context_refusal_names_the_window.py plus the landing fragment; 4 files, 203 insertions, 14 deletions, all inside the declared scope.\nCALL_SITES: reckon/crew/dispatch.py:911, reckon/crew/dispatch_sessions.py:1458, reckon/crew_dispatch_commands.py:1445, reckon/crew_dispatch_commands.py:1734, reckon/crew_dispatch_commands.py:1955\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/node.py:607-612 renders the context refusal from estimated_tokens, window_tokens, shortfall_tokens and the verdict's own recommendation and contains no worker-hour, and reckon/crew/routing.py:4806-4809 stops writing the 0.0 placeholders, so the message names the window it exceeded as the goal states.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate's result is recorded rather than claimed \u2014 base 1 failed/1969 passed EXIT=1 (gate-base.log) against head 2 failed/1971 passed EXIT=1 (gate-head.log), with the negative control 2 failed/1 passed EXIT=1 (negative-control.log); reduced because the head arm carries one failure id absent at base.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only f3d3c028b..b16c040e6 lists reckon/crew/node.py, reckon/crew/routing.py, tests/test_a_context_refusal_names_the_window.py and the fragment, every path inside the declared write paths with no unrelated file touched.\nSCORE durability: 19\nJUSTIFICATION durability: test_a_context_refusal_names_the_window.py:113-117 compares routing's real verdict values against the message node.py builds and :117 asserts no \"worker-hour\", both reddening on the pre-change node.py (negative-control.log:37) and :126 reddens when routing.py:4806's setdefault returns; reduced because the fallback branch at node.py:587-592 is untested.\nSCORE fit: 19\nJUSTIFICATION fit: the change keeps the surrounding idiom (a Mapping verdict, format_refusal for the remedy, a mechanism-stating docstring at reckon/crew/node.py:578-593) and names no plan, stage, ticket or version token in any symbol or comment.\nSCORE reuse: 14\nJUSTIFICATION reuse: the message reuses routing's own recommendation via verdict.get(\"recommendation\") (reckon/crew/node.py:585-586), extending the owner at reckon/crew/routing.py:4799-4803, but the fallback at node.py:587-592 re-creates the same sentence that owner already writes (FINDING).\nFINDING reckon/crew/node.py:587 follow-on: _context_refusal_recommendation's fallback duplicates the recommendation sentence routing.py:4799-4803 already builds, so the two copies can drift and production callers never take the fallback.\nFINDING tests/test_stop_before_spawn_spawns_nothing.py:651 follow-on: the head arm carries one failure absent at base against the done-when's literal no-added-failure criterion, but the reviewer re-ran it serially green in 7.54s and it reaches neither CompetenceLimit nor the context verdict, so it is a parallel-load flake in a file the node did not touch.",
+  "review_run_id": "r-20261014T064800361889-review-of-a-context-refusal-names-the-window-b16c040e6f33",
+  "reviewed_base_sha": "f3d3c028bb97d3b77f33b36a412e54b20dd81a3a",
+  "reviewed_head_sha": "b16c040e6f33f7d86df4f8833ba2bba2fd80e8fb",
+  "reviewed_run_id": "r-20261014T054006218379-a-context-refusal-names-the-window",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 14,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T06:56:00.000000+00:00",
+  "total": 108
+}
