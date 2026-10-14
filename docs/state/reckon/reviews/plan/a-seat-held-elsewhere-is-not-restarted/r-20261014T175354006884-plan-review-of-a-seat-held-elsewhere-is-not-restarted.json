@@ -1,0 +1,66 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-14T18:01:24.586Z",
+  "dispatched_at": "2026-10-14T17:54:36Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/watch_unit.py:143",
+      "id": "reuse_search-1",
+      "reason": "the section should name `seat_names_a_live_foreign_producer` so the watcher wait and the snapshot producer share one foreign-seat judgement instead of two.",
+      "text": "\u00a72 says the foreign-seat judgement \"reuses `_seat_names_a_foreign_host` and `_seat_stream_fresh`\", but `seat_names_a_live_foreign_producer(project)` already composes exactly that judgement (a seat naming a foreign host whose stream is fresh) and is already the single reader used for this purpose by the obligation snapshot producer (`reckon/crew/obligation_snapshot.py:313`, via `_foreign_seat_is_live`). Re-composing the two primitives inside the watch loop forks the judgement into a second spelling that can drift from the snapshot producer's; and \u00a74 says \"the hook on any host reads it through the same foreign-seat judgement as \u00a72\", which only holds if \u00a72 names the composite rather than a fresh composition.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/runs.py:2710",
+      "id": "reuse_search-2",
+      "reason": "citing `watch_observer_alive` as the precedent fixes the \"for example from a stamp the follower refreshes\" question \u00a74 leaves open and keeps the two host-blindness rules consistent.",
+      "text": "\u00a74's rule \"a registration naming another host is never put to this host's process table\" already exists as an implemented pattern: `watch_observer_alive` returns `None` (unknown, not dead) for a registration naming a foreign host, precisely so a local reader does not judge a peer host's pid. The plan introduces the same rule for the follower registration without citing it, so the two cross-host liveness rules are written independently and the follower rule must re-solve what the watcher rule already settled (returning unknown rather than dead).",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/service.py:324",
+      "id": "duplicate_owner-1",
+      "reason": "naming the owner \u2014 add a unit-property reader to `SystemdUserUnitManager` and reach it through the `manager` seam `ensure_watcher_service` already exposes (`reckon/crew/watch_unit.py:381`) \u2014 keeps one systemd client and lets the existing watch tests supply a fake manager.",
+      "text": "\u00a75 delivers \"`reckon crew watch --ensure` reads the unit's restart count twice\" but names no source for that count and no module to own it. The owner of every systemd unit query in reckon is `SystemdUserUnitManager` (`reckon/service.py:324`), whose `active()` (`reckon/service.py:341`) already shells `systemctl --user is-active`; the newcomer in the incident (restart count 2,376, `ExecMainStatus=0`) is not read anywhere in the tree (no `NRestarts`/`systemctl show` reader exists). Placing the restart read in the watch path makes the watch module a second systemd client beside the manager, with its own error handling.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/follower_registration.py:506",
+      "id": "duplicate_owner-2",
+      "reason": "the plan's census names two of six consumers; the author must check the semantics of `watch_state`/`session_host`/`dispatch_watch` before flipping a foreign registration to `live`, because a dispatch guard that now reads a remote follower as delivering turns a refusal into an admission.",
+      "text": "census: \u00a74 changes liveness at its single reader, `_follower_liveness` (`reckon/crew/follower_registration.py:506-517`, `record_process_alive` + local `process_alive(parent_pid)`), and names two consumers \u2014 the obligation producer (`reckon/crew/runs.py:2164`) and the review reflex (`reckon/crew/recovery_watch.py:2557`). Six readers depend on the same `live` value and flip together: `reckon/crew/runs.py:2164`, `reckon/crew/runs.py:2795` (`project_watch_visibility`), `reckon/crew/watch_unit.py:170` (`watch_state`, feeding dispatch admission), `reckon/crew/session_host.py:421` (`_foreign_live_follower`), `reckon/crew/dispatch_watch.py:720` (peer-delivery listing), and `reckon/crew/recovery_watch.py:2557`. Two of the unnamed four are guards, not reports: `watch_state`'s `attached`/`session_attached` feeds dispatch admission (`reckon/crew/dispatch_watch.py:708-720`), and `session_host._foreign_live_follower` decides whether a live follower this host did not start holds the pair \u2014 each of these would begin counting a remote follower as delivering.",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "2e1d1451b3865c70822dd752a24c3b3dbf34911136d716605472a059acd35f85",
+  "plan_slug": "a-seat-held-elsewhere-is-not-restarted",
+  "plan_version": 8,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261014T175354006884-plan-review-of-a-seat-held-elsewhere-is-not-restarted",
+  "reviewed_blob_sha": "74d0722ff03c1ab436c6f8f131b42a808306387b",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a72 and \u00a74 extend existing machinery in place (the watcher follow loop; the single `_follower_liveness` reader) rather than adding a parallel module, and \u00a74 explicitly funnels both consumers through one liveness change.",
+    "duplicate_owner": "a finding \u2014 \u00a75 introduces a systemd unit-property read (restart count) without naming `SystemdUserUnitManager` (`reckon/service.py:324`) as the owner of unit queries, and \u00a74's account names two of the six consumers of the liveness reader it changes.",
+    "interface_budget": "pass \u2014 public_definitions 1721, cli_options 349, mcp_views 34, refusal_families 23; no reviewed section adds a CLI option, MCP view, public definition or refusal family \u2014 \u00a72 and \u00a75 change the behaviour and the payload of existing commands (`crew watch`, `crew watch --ensure`), and \u00a74 adds a data field (`host`) to the follower registration, not a new interface.",
+    "reuse_search": "a finding \u2014 the plan searched the watch/seat code and cites real helpers, but \u00a72 re-composes a foreign-seat judgement that already exists whole (`seat_names_a_live_foreign_producer`, `reckon/crew/watch_unit.py:143`), and \u00a74 re-derives a cross-host liveness rule already established by `watch_observer_alive` (`reckon/crew/runs.py:2710`).",
+    "thin_wrapper": "pass \u2014 no section adds a forwarding layer; \u00a75's restart-count read is an extension of the `--ensure` path, not a wrapper over existing machinery."
+  },
+  "section_digests": {
+    "_document": "b5e9a5803f8d01013f39b9479df51d6f39be89b485428570f70d9af555af7564",
+    "s1": "e775b15757e63b277715e69df2ef97f2cf13db4e6364fc83b2f4ad6aa3bc858c",
+    "s2": "60404fcfdb859744cb1997a1d328c312f35084e63dbf0f2b8517d2f48fd36e24",
+    "s3": "738aba9bff855c84122fa9ea72b1f1ef13486345a013a765e54c0cfa391a20c0",
+    "s4": "6909813bec7096eb98e13697bcce74acfd04ca04543820d9bccb8012db1ea84d",
+    "s5": "79cb809dd5d6c74e34fc0afce3e2d4ff6b757315bbac076808a4eafae4ac82e1",
+    "s6": "c7b09760750dbf67efa83f9127581fea7578c7bf1e30b595ecd6c313b7505bad"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T18:03:21.845563+00:00"
+}
