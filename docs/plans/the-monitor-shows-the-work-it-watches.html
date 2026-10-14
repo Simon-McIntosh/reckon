@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="86">
+<meta name="plan-version" content="87">
 <meta name="plan-modified" content="2026-10-14">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -333,15 +333,22 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
     <pre class="r-fu-prompt">/reckon-build the-monitor-shows-the-work-it-watches</pre>
     <p class="r-fu-outcome">done — no followup: every section landed and verified at the integrated head.</p>
     </article>
-<article class="r-fu" data-id="f-tmstwiw-remembered-words" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-13" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tmstwiw-remembered-words" data-status="resolved" data-written-by="reckon-build" data-written-at="2026-10-13" data-recommends-skill="" data-resolved-at="2026-10-14T17:57:41+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Map a pane&#x27;s remembered states to pane words (§6)</h4>
     <div class="r-fu-body"><p>A peer session found raw states on the left of rows after its follower reloaded onto the seven-word code. The grid's memory is seeded unmapped from the follower's checkpoint and stored history.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-monitor-shows-the-work-it-watches §6</pre>
+    <p class="r-fu-outcome">§6 landed on 2026-10-13 (c-close-s6): remembered states are mapped to pane words. Superseded by f-tmstwiw-reload-wakes.</p>
     </article>
-<article class="r-fu" data-id="f-tmstwiw-fold-and-flicker" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-13" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tmstwiw-fold-and-flicker" data-status="resolved" data-written-by="reckon-build" data-written-at="2026-10-13" data-recommends-skill="" data-resolved-at="2026-10-14T17:57:41+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Stop the flicker (§15, then §16), then build the folded sections</h4>
     <div class="r-fu-body"><p>§15 stops the queue runner cycling held requests, which is most of the flicker. §16 follows §6 and the suite plan's §15 on <code>ticker.py</code>. The folded sections §7–§14 owe a content review before they dispatch.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-monitor-shows-the-work-it-watches §15</pre>
+    <p class="r-fu-outcome">§15 and §16 landed (c-close-s15, c-close-s16), and §18 and §21 also landed on the flicker. The folded sections carry content-review coverage. The next section is §14, in f-tmstwiw-reload-wakes.</p>
+    </article>
+<article class="r-fu" data-id="f-tmstwiw-reload-wakes" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-14" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">A run that changes state across a producer reload wakes its session (§14)</h4>
+    <div class="r-fu-body"><p>Every merge into main reloads the producer, and the replacement republishes every live run as a baseline row with a null <code>from_state</code>. A run that finished during the reload never wakes its coordinator. §14 is in flight as <code>r-20261014T175600248310-a-replacement-producer-publishes-transitions</code>. After it, the open sections are §7–§12, and actionable round trips (cross-host <code>working → halted → working</code>) await the lead's decision on holding actionable stops.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-monitor-shows-the-work-it-watches §14</pre>
     </article>
 </section>
   <section data-reckon="decisions" id="decisions" class="r-decisions">
