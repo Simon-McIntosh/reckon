@@ -1,0 +1,52 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "3b13a7480926d0aa86b96889d3d58bd4817a338a",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:admit_once",
+    "reckon/crew/queue_admission.py:admit_until_stopped",
+    "reckon/crew_run_commands.py:2559"
+  ],
+  "completed_at": "2026-10-14T09:47:07.051Z",
+  "dispatched_at": "2026-10-14T09:37:16Z",
+  "findings": [],
+  "head_log_revision": "fb8a7a05be01c39ad6017e178ef5c6cb4547ad7b",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "the overlap helpers are reached only through `admit_once`, itself called by `admit_until_stopped` at reckon/crew/queue_admission.py:826/:830, which `reckon/crew_run_commands.py:2559` (the crew admit command) drives; no other production module calls them.",
+    "diff": "read against base 3b13a7480; 15d1755a0 adds the `_pass_claims` cache and the `claims` keyword on the two overlap helpers, 00115cd4b adds the landed-report fragment, fb8a7a05b runs ruff format over the test file with no logic change.",
+    "done_when": "the done-when asks an `admit_once` pass over at least six queued requests in one repository with at least one overlapping pair, counting resolutions and asserting the count is at most the request count while holding the later of the pair, logged with EXIT=0 plus a negative control with the runner's FAILED line and a non-zero EXIT; the case at tests/test_overlapping_queued_requests_launch_in_turn.py:598-660 satisfies it, head-green.log ends 1 passed EXIT=0 and negative-control.log ends 1 failed EXIT=1.",
+    "goal": "the node goal is \u00a720's deliverable, that one admission pass resolve each queued request's claims at most once and every comparison read the resolved claims; reckon/crew/queue_admission.py:250 `_pass_claims` is the cache and :282/:289 make `_queued_requests_overlap` read it, with `_earlier_overlapping_request` (:293) and the per-pass cache at :664 wiring it in.",
+    "manifest": "read; the manifest names the three commits, the single-test gate (1 passed EXIT=0) and the whole-file gate (11 passed EXIT=0), the negative control log, the base/head population arms (49 and 50 passed, no failure ids) and no follow-ons or blockers.",
+    "write_paths": "the manifest declares reckon/crew/queue_admission.py, tests/test_overlapping_queued_requests_launch_in_turn.py and the docs/evidence fragment; the diff 3b13a7480..fb8a7a05b touches exactly those three files, 107 insertions and 6 deletions."
+  },
+  "justifications": {
+    "durability": "tests/test_overlapping_queued_requests_launch_in_turn.py:658 counts resolution calls made by the code under test against the request count the test itself created (:649 and :652-653 are independent too), and the declared negative control reinstates per-comparison resolution and reddens exactly :658 at 22 resolutions.",
+    "evidence": "the run's single test ends 1 passed EXIT=0 and negative-control.log ends 1 failed EXIT=1 reddening the count assertion at tests/test_overlapping_queued_requests_launch_in_turn.py:658, though head-green.log's `revision=` header names the base 3b13a7480 rather than the landed head (only head-file-reformatted.log carries fb8a7a05b) and negative-control.log ran at 15d1755a0.",
+    "fit": "`_pass_claims` at reckon/crew/queue_admission.py:250 follows the module's private-helper idiom with a mechanism-only docstring and introduces no plan, ticket or version label.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:250 caches each request's resolved claims by run_id for one pass and :282/:289 route every comparison through it, leaving the comparison itself (same repository, `runs._scopes_overlap`) unchanged.",
+    "reuse": "`_pass_claims` wraps the existing owner `_resolved_request_claims` (reckon/crew/queue_admission.py:227) in the same module rather than re-implementing claim resolution, and the comparison reuses `runs._scopes_overlap`.",
+    "scope_discipline": "the diff 3b13a7480..fb8a7a05b touches only the two declared source write paths plus the docs/evidence fragment named in the manifest's write paths, with no unrelated file changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the \u00a720 deliverable \u2014 one admission pass resolving each queued request's claims at most once while every overlap comparison reads the pass's resolved claims \u2014 is met by `_pass_claims` at reckon/crew/queue_admission.py:250, threaded through `_queued_requests_overlap` (:270) and `_earlier_overlapping_request` (:293) from the per-pass cache created at :664 in `admit_once`.\nVERDICT done_when: the done_when asks one `admit_once` pass over at least six queued requests in one repository with at least one overlapping pair, counting claim resolutions and asserting the count is at most the request count while still holding the later request of the pair, logged with a literal command, its revision and EXIT=0 plus a negative control carrying the runner's FAILED line and a non-zero EXIT; tests/test_overlapping_queued_requests_launch_in_turn.py:658 asserts the count and :649/:652-653 the hold, head-green.log ends 1 passed EXIT=0 and negative-control.log ends 1 failed EXIT=1 at :658.\nVERDICT write_paths: the manifest declares reckon/crew/queue_admission.py, tests/test_overlapping_queued_requests_launch_in_turn.py and the evidence fragment docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/an-admission-pass-resolves-each-request-once.html, and the diff 3b13a7480..fb8a7a05b touches exactly those three and nothing else.\nVERDICT manifest: read; it records status complete, the three commits 15d1755a0/00115cd4b/fb8a7a05b, the single-test gate and the whole-file gate green, the negative control, and the population arms (base 49 passed, head 50 passed), with no follow-ons and no blockers.\nVERDICT diff: read commit by commit against base 3b13a7480 \u2014 15d1755a0 adds `_pass_claims` and threads a per-pass `claims` cache through the two overlap helpers, 00115cd4b adds the evidence fragment, and fb8a7a05b reformats the test file only.\nCALL_SITES: reckon/crew/queue_admission.py:admit_once, reckon/crew/queue_admission.py:admit_until_stopped, reckon/crew_run_commands.py:2559\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:250 caches each request's resolved claims by run_id for one pass and :282/:289 route every comparison through it, leaving the comparison itself (same repository, `runs._scopes_overlap`) unchanged.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate's single test ends 1 passed EXIT=0 and the negative control ends 1 failed EXIT=1 reddening the count assertion tests/test_overlapping_queued_requests_launch_in_turn.py:658, but head-green.log's own `revision=` header names the base 3b13a7480 rather than the landed head fb8a7a05b (only head-file-reformatted.log carries the final head) and negative-control.log ran at 15d1755a0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff 3b13a7480..fb8a7a05b touches only the two declared source write paths plus the evidence fragment named in the manifest's write paths, with no unrelated file changed.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_overlapping_queued_requests_launch_in_turn.py:658 counts resolutions made by the code under test and compares them against the request count the test itself created (:649 and :652-653 are independent too), and the declared negative control reinstates per-comparison resolution and reddens exactly :658 at 22 resolutions.\nSCORE fit: 20\nJUSTIFICATION fit: `_pass_claims` at reckon/crew/queue_admission.py:250 follows the module's private-helper idiom with a mechanism-only docstring and introduces no plan, ticket or version label.\nSCORE reuse: 20\nJUSTIFICATION reuse: `_pass_claims` wraps the existing owner `_resolved_request_claims` (reckon/crew/queue_admission.py:227) in the same module rather than re-implementing claim resolution, and the comparison reuses `runs._scopes_overlap`.\n",
+  "review_run_id": "r-20261014T093646080549-review-of-an-admission-pass-resolves-each-request-once-fb8a7a05be01",
+  "reviewed_base_sha": "3b13a7480926d0aa86b96889d3d58bd4817a338a",
+  "reviewed_head_sha": "fb8a7a05be01c39ad6017e178ef5c6cb4547ad7b",
+  "reviewed_run_id": "r-20261014T085916023917-an-admission-pass-resolves-each-request-once",
+  "scores": {
+    "durability": 20,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T09:44:57.500509+00:00",
+  "total": 118
+}
