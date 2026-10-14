@@ -3509,7 +3509,7 @@ def signal_worker(
     project: str | None = None,
     run_id: str | None = None,
     reach_run: bool = False,
-) -> list[int]:
+) -> bool | list[int]:
     """Signal a spawned process, and the rest of its run when asked.
 
     ``os.killpg`` takes a process GROUP id, and ``killpg(1, ...)`` is
@@ -3532,7 +3532,13 @@ def signal_worker(
     direct worker's children are not left working. A process whose environment
     cannot be read is not signalled, and a process that merely holds the run's
     worktree as its working directory carries no mark and is therefore never
-    signalled. Returns the pids the signal was delivered to.
+    signalled.
+
+    Without ``reach_run`` the single pid is signalled and the result is the
+    old boolean, so a caller that is not ending a run keeps the contract it
+    was written against. With ``reach_run`` the result is the list of pids the
+    signal was delivered to, which is what a caller recording an ended run
+    needs.
 
     This is the only function in the crew that calls ``os.kill`` or
     ``os.killpg``, so the attribution scan has one home to point at. A caller
@@ -3541,11 +3547,11 @@ def signal_worker(
     signalling something that is not a run passes no directory and writes
     nothing.
     """
-    targets = (
-        _run_process_pids(pid, run_id=run_id, run_dir=run_dir)
-        if reach_run
-        else [int(pid)]
-    )
+    if not reach_run:
+        return _signal_one(
+            int(pid), sig, reason=reason, run_dir=run_dir, project=project
+        )
+    targets = _run_process_pids(pid, run_id=run_id, run_dir=run_dir)
     own_pid = os.getpid()
     ended: list[int] = []
     for target in targets:

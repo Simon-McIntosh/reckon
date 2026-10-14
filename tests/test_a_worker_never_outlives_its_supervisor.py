@@ -201,14 +201,22 @@ def test_sigterm_to_a_supervisor_leaves_no_worker_or_worker_child(
         _write_worker_record(
             run_id, pid=root, start_time=routing._process_start_time(root)
         )
-        ended = routing.signal_worker(
-            root,
-            signal.SIGTERM,
-            reason="run-stop",
-            run_dir=record_dir,
-            run_id=run_id if _reach() else None,
-            reach_run=_reach(),
-        )
+        if _reach():
+            ended = routing.signal_worker(
+                root,
+                signal.SIGTERM,
+                reason="run-stop",
+                run_dir=record_dir,
+                run_id=run_id,
+                reach_run=True,
+            )
+        else:
+            # The declared mutation: the supervisor pid alone, the form before
+            # the extension, so the worker's child survives and the case fails.
+            delivered = routing.signal_worker(
+                root, signal.SIGTERM, reason="run-stop", run_dir=record_dir
+            )
+            ended = [root] if delivered else []
         assert _wait_gone(pids), f"a process of the run survived: {pids}"
         exit_record = _supervisor_exit_record(
             run_id=run_id,
