@@ -401,6 +401,27 @@ def test_a_recycled_worker_record_pid_is_not_walked(crew_home: Path) -> None:
         assert _wait_gone(stale), f"a process of the run survived: {stale}"
 
 
+def test_a_pid_with_no_process_raises_lookup_not_a_refusal(
+    crew_home: Path,
+) -> None:
+    # A caller ending a run takes the identity-checked signal only while the
+    # recorded pid still names a process, so a pid the table has dropped reaches
+    # it only from a caller that reads an absent process as an answer — the
+    # seat unwatch reads ProcessLookupError to report that its watcher exited
+    # before it could be signalled. Guarding the group lookup would reroute the
+    # same pid into the identity check, whose CrewError no such caller handles,
+    # and turn a reported race into an uncaught failure.
+    dead = _absent_pid()
+    assert not _alive(dead), f"pid {dead} unexpectedly names a process"
+    with pytest.raises(ProcessLookupError):
+        routing._signal_process_group(
+            dead,
+            routing._process_start_time(dead),
+            run_dir=crew_home,
+            reason="unwatch",
+        )
+
+
 def test_a_worktree_holder_with_no_mark_is_listed_and_left_alive(
     crew_home: Path,
 ) -> None:
