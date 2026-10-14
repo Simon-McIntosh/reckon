@@ -76,9 +76,15 @@
     <strong>Negative control.</strong> The node's tests run against the
     pre-change source at
     <code>28646f522f5394a93e92edc90764628e8a21fd0d</code>:
-    <code>6 failed, 21 passed</code>, <code>EXIT=1</code>. Five of the six are
+    <code>7 failed, 20 passed</code>, <code>EXIT=1</code>. Six of the seven are
     the naming and recorder checks this node adds, failing because none of the
-    behaviour they pin exists at the base revision. At the base revision
+    behaviour they pin exists at the base revision; the seventh,
+    <code>test_comment_reaches_the_picker_verbatim,</code> is noise rather than
+    signal — the scratch tree is a <code>git archive</code> with no
+    <code>.git</code>, so that test's dispatch resolves no plan
+    <code>HEAD</code> and exits 4 with <code>plan-unavailable</code> under
+    parallel load. It is not one of this node's checks and it passes in the head
+    arm. At the base revision
     <code>pick()</code>'s collaborator defaults are bound at definition, so the
     checks' stubs of the state render and the Jev client cannot take at all and
     the real candidate scan runs; the fallback those arms reach is therefore a

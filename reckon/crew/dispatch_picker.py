@@ -57,8 +57,8 @@ PICK_STAGES = (
 # The dispatcher-scope inputs are built once, outside the pick's own bound, by
 # the caller that then hands them in. Their elapsed milliseconds are stashed
 # here for the pick that follows on the same thread to carry onto its selection,
-# so a production pick records all five stages' cost without the caller having
-# to thread the timings through its own call.
+# so a production pick records every one of the dispatcher's stages without the
+# caller having to thread the timings through its own call.
 _BUILD_STAGE_MS = threading.local()
 
 # A picker answer carries per-call measurements: how long the ask itself took.
@@ -329,8 +329,9 @@ def dispatch_picker_selection(
         stages.update(stage_ms)
     elif records is not None or verdict_inputs is not None or budget_snapshot is not None:
         # A caller that built the dispatcher-scope inputs and handed them in left
-        # their cost stashed here; carry it onto the selection so all five stages
-        # are recorded, then clear it so a later pick cannot read a stale build.
+        # their cost stashed here; carry it onto the selection so every
+        # dispatcher stage is recorded, then clear it so a later pick cannot
+        # read a stale build.
         built = getattr(_BUILD_STAGE_MS, "times", None)
         _BUILD_STAGE_MS.times = None
         if built:

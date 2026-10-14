@@ -77,7 +77,7 @@ def test_a_slow_input_names_keeps_its_own_name(monkeypatch):
 
 
 def test_a_completed_pick_carries_every_stage_time(monkeypatch):
-    """A normal pick records all five stages' elapsed milliseconds."""
+    """A normal pick records every dispatcher stage's elapsed milliseconds."""
     _quiet_inputs(monkeypatch)
     monkeypatch.setattr(
         dispatch_picker_module, "_picker_budget_snapshot", lambda *_a, **_k: {}
