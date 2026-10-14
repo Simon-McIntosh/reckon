@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite (40c8f4bb5, gate-base.log, EXIT=1) fails 3 hook-installer/interpreter tests; after_suite (ea250bd82, gate-head-2.log, EXIT=0) fails none. Head failures absent at base: none - added_failure_count 0, no added ids. The 3 base-only failures are the three ids recorded in the reviewed manifest's baseline_suite.failure_ids and pass at head in the worktree, so they read as a bare-scratch-tree artifact rather than a defect; the reviewed manifest reports them under follow_ons.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/runs.py:2275",
+    "reckon/crew/watch_unit.py:169",
+    "reckon/crew/recovery_watch.py:2578",
+    "reckon/crew/session_host.py:418",
+    "reckon/crew/dispatch_watch.py:713",
+    "reckon/crew/recovery_repair_dispatch.py:1015"
+  ],
+  "completed_at": "2026-10-14T19:58:37.648Z",
+  "dispatched_at": "2026-10-14T19:44:39Z",
+  "findings": [
+    {
+      "file": "tests/test_a_snapshot_is_published_for_every_host.py",
+      "line": "271",
+      "severity": "follow-on",
+      "text": "follow-on: `assert watch_unit._seat_host(record) == runs._seat_host(record)` compares one function to itself - runs.py:3210 re-exports watch_unit._seat_host under the same name - so it is f(x) == f(x) and cannot fail, guarding nothing about the single-judgement claim it was added for."
+    },
+    {
+      "file": "tests/test_a_snapshot_is_published_for_every_host.py",
+      "line": "291",
+      "severity": "follow-on",
+      "text": "follow-on: the row's host and foreign fields are produced by _seat_host/_seat_names_a_foreign_host (reckon/crew/follower_registration.py:599 and :512) and the test compares them against a direct call to those same two functions, so both sides move together and neither parity assertion reddens if the production code reverts to an identically-texted duplicate helper; a mutation that re-introduces follower_registration_host with the same body leaves both green."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read commit by commit since the prior review at b5d2bf69a; ea250bd82 removes the duplicate follower_registration_host and registration_names_a_foreign_host helpers, imports the watch_unit seat helpers and updates the two call sites, and 77aecc5d updates the evidence fragment's prose and its parity assertion; no production module outside the declared write paths is touched.",
+    "done_when": "the done_when names tests/test_a_snapshot_is_published_for_every_host.py, a two-host fixture, the review reflex, the recorded host spelled as runs._seat_host, a released foreign registration reading gone, the six-reader manifest, and base/head gates ending EXIT=; the manifest records head-2 253 passed EXIT=0 (gate-head-2.log) and base 3 failed/245 passed EXIT=1 (gate-base.log), the negative control fails 3 of 5 (negative-control-local-process-table.log), and evidence_inputs names all six readers before and after, so the gate asserts the done_when's measure.",
+    "goal": "the node's goal is to judge a follower registration made on another host by a fact that host can supply instead of this host's process table; the gained commits keep that judgement, at reckon/crew/follower_registration.py:512 reading the foreign decision through watch_unit._seat_names_a_foreign_host and at :540-560 leaving the foreign pids unknown and answering from the held advisory lock.",
+    "manifest": "read; it records status complete, both gate arms with results, the negative control's declared and observed mutation, and the six-reader evidence_inputs; its changed_paths (follower_registration.py, the test module, the fragment) match the gained-commit diff.",
+    "write_paths": "the manifest declares six paths; git diff --name-only b5d2bf69a..77aecc5d lists reckon/crew/follower_registration.py, tests/test_a_snapshot_is_published_for_every_host.py and docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/a-snapshot-is-published-for-every-host.html, all inside the declaration and nothing outside it."
+  },
+  "justifications": {
+    "durability": "the behaviour guard survives (tests/test_a_snapshot_is_published_for_every_host.py:295-300 reddens 3 of 5 under the declared mutation per negative-control-local-process-table.log), but the two parity assertions the refactor adds at :271 and :291 compare a call to watch_unit._seat_host against the same function (runs._seat_host re-exports it at runs.py:3210; held[\"host\"] is produced by _seat_host at follower_registration.py:599), so they cannot fail.",
+    "evidence": "gate-head-2.log ends \"253 passed in 460.05s ... EXIT=0\" and gate-base.log \"3 failed, 245 passed in 430.55s ... EXIT=1\"; the re-run at ea250bd82 is recorded in the manifest's after_suite, so the delta's gate result is recorded rather than claimed.",
+    "fit": "reckon/crew/follower_registration.py:738-740 imports _seat_host and _seat_names_a_foreign_host from watch_unit beside its existing _watch_attach_line import, matching the module's deferred-import idiom, and no plan or ticket token enters the added names or comments.",
+    "goal_fidelity": "reckon/crew/follower_registration.py:512 and :599 route the delta's host read through watch_unit._seat_names_a_foreign_host and _seat_host, so the foreign registration is still judged by the host-supplied lock fact the goal names, unchanged from b5d2bf69a.",
+    "reuse": "reckon/crew/follower_registration.py:512 and :599 now extend the watch_unit owner and the delta deletes the two duplicate helpers (follower_registration_host, registration_names_a_foreign_host), repairing the prior review's only reuse finding.",
+    "scope_discipline": "git diff --name-only b5d2bf69a..77aecc5d lists only reckon/crew/follower_registration.py, tests/test_a_snapshot_is_published_for_every_host.py and the evidence fragment, every path inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the gained commits keep the node's goal - a foreign registration judged by a host-supplied fact - by reading the foreign decision through watch_unit._seat_names_a_foreign_host (reckon/crew/follower_registration.py:512) and answering its liveness from the held advisory lock at :540-560, leaving the foreign pids unknown rather than dead.\nVERDICT done_when: the done_when names tests/test_a_snapshot_is_published_for_every_host.py, a two-host fixture, the review reflex, the recorded host spelled as runs._seat_host, a released foreign registration reading gone, the six-reader manifest, and base/head gates ending EXIT=; the manifest records head-2 253 passed EXIT=0 (gate-head-2.log) and base 3 failed/245 passed EXIT=1 (gate-base.log), the negative control fails 3 of 5 (negative-control-local-process-table.log), and evidence_inputs names all six readers before and after.\nVERDICT write_paths: the manifest declares six paths; git diff --name-only b5d2bf69a..77aecc5d lists only reckon/crew/follower_registration.py, tests/test_a_snapshot_is_published_for_every_host.py and the evidence fragment, all inside the declaration and nothing outside it.\nVERDICT manifest: read; it records status complete, both gate arms with their results, the negative control's declared and observed mutation, and the six-reader evidence_inputs, with changed_paths matching the gained-commit diff.\nVERDICT diff: read commit by commit since the prior review at b5d2bf69a; ea250bd82 deletes the two duplicate host helpers, imports the watch_unit seat helpers and updates the two call sites, and 77aecc5d updates the fragment prose and its parity assertion; no production module outside the declared write paths is touched.\nCALL_SITES: reckon/crew/runs.py:2275, reckon/crew/watch_unit.py:169, reckon/crew/recovery_watch.py:2578, reckon/crew/session_host.py:418, reckon/crew/dispatch_watch.py:713, reckon/crew/recovery_repair_dispatch.py:1015\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/follower_registration.py:512 and :599 route the host read through watch_unit._seat_names_a_foreign_host and _seat_host, so the foreign registration is still judged by the host-supplied lock fact the goal names, unchanged from b5d2bf69a.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-head-2.log ends \"253 passed in 460.05s ... EXIT=0\" and gate-base.log \"3 failed, 245 passed in 430.55s ... EXIT=1\", and the re-run at ea250bd82 is recorded in the manifest's after_suite.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --name-only b5d2bf69a..77aecc5d lists only reckon/crew/follower_registration.py, the test module and the evidence fragment, every path inside the declared write paths.\nSCORE durability: 13\nJUSTIFICATION durability: the behaviour guard reddens 3 of 5 under the declared mutation, but the refactor's two parity assertions at tests/test_a_snapshot_is_published_for_every_host.py:271 and :291 compare a call to watch_unit._seat_host against the same function, so they cannot fail and do not guard the single-judgement claim.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew (follower_registration.py:738-740) imports the seat helpers beside the existing _watch_attach_line import, matching the module's deferred-import idiom, and no plan or ticket token enters the added names or comments.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/follower_registration.py:512 and :599 now extend the watch_unit owner and the delta deletes the two duplicate helpers, repairing the prior review's only reuse finding.\nFINDING tests/test_a_snapshot_is_published_for_every_host.py:271 follow-on: `assert watch_unit._seat_host(record) == runs._seat_host(record)` compares one function to itself - runs.py:3210 re-exports watch_unit._seat_host under the same name - so it is f(x) == f(x) and cannot fail.\nFINDING tests/test_a_snapshot_is_published_for_every_host.py:291 follow-on: the row's host and foreign fields are produced by _seat_host/_seat_names_a_foreign_host (reckon/crew/follower_registration.py:599 and :512) and the test compares them against a direct call to those same functions, so both sides move together and neither parity assertion reddens if the production code reverts to an identically-texted duplicate helper.\n",
+  "review_run_id": "r-20261014T194411097422-review-of-a-snapshot-is-published-for-every-host-77aecc5def97",
+  "reviewed_base_sha": "b5d2bf69ae7810ab29dd5f7560e9782aa063540d",
+  "reviewed_head_sha": "77aecc5def97f1fe25d018e1590b599f502dad4c",
+  "reviewed_run_id": "r-20261014T183456520421-a-snapshot-is-published-for-every-host",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 13,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T19:50:00+00:00",
+  "total": 107
+}
