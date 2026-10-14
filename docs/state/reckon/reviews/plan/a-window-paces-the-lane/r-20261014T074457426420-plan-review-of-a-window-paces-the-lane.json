@@ -1,0 +1,56 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-14T08:04:14.023Z",
+  "dispatched_at": "2026-10-14T07:45:38Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-window-paces-the-lane.html#s16",
+      "id": "reasoning-1",
+      "reason": "a worker must be told which two readings count, or it will implement one of two incompatible behaviours and the single-reading flap survives on the surface whose history it read.",
+      "text": "\u00a716 asserts \"`end_cause` reads the pending mark, so the pace path and the watch path give the same verdict\", but the reset signal is computed from the passed reading sequence: the watch sweep hands `end_cause` one reading (`_default_readings` \u2192 `published_readings`, which returns `[payload]` at reckon/crew/budget_lift.py:219), the dispatch/preflight pace path hands it a multi-reading `_lift_history` (reckon/budget.py:2629-2634, whose docstring says the resolver \"needs the sequence and not only the newest figure\"), and the routing path hands it one (`budget_group._lift_readings`); `_reset_observed`'s pairwise-fall clause and `_stamp_moved_past_jitter`'s jitter both scale with the sequence, so two lengths of the same reading set can end or not end one lift, and the plan never states whether the \"two readings\" are the pending mark plus the newest passed reading or any two readings in the passed sequence",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "1935d75fba3277544712a84236bd257a2a3270eee665c2ddf469874cbc166bef",
+  "plan_slug": "a-window-paces-the-lane",
+  "plan_version": 216,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261014T074457426420-plan-review-of-a-window-paces-the-lane",
+  "reviewed_blob_sha": "7c58b7ff500f9bf74ea88f0bb82e5980c1b84c72",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited code resolves in the tree: `_reset_observed` and `end_cause` in `reckon/crew/budget_lift.py`, `lift_watch.sweep` in `reckon/crew/lift_watch.py`, and `published_readings` does return a single-element list (`return [payload]`, reckon/crew/budget_lift.py:219), exactly as \u00a716 states for the watch path.",
+    "done_when": "pass \u2014 \u00a716's done-when is measurable and names a declared negative control: it points the config home and the watch stream at a temporary directory, grants at utilisation 0.06, feeds three readings through `lift_watch.sweep`, asserts the real `budget-lifts.json` and the real watch stream are byte-identical before and after, requires no added failure against base in the importing test files, and says the real watch stream and document are unchanged; its control (restore single-reading ends) must then redden the first case.",
+    "evidence_paths": "pass \u2014 the only artifact \u00a716 declares is the negative-control log \"under the run directory\", which survives the run; nothing is written to a session scratchpad or a node-local temporary directory.",
+    "naming": "pass \u2014 \u00a716 names mechanisms (`_reset_observed`, `end_cause`, `published_readings`) and its new test file by what it does (`tests/test_a_reset_needs_a_second_reading.py`); no plan label, stage name, ticket number or version tag reaches a symbol, filename or comment.",
+    "reasoning": "a finding \u2014 the section's same-verdict claim is not established by its own mechanism: `end_cause` decides the reset on the `readings` it is handed as well as the pending mark, and the three callers hand it differently sized sequences, so the pairwise-fall signal and the jitter measurement differ by caller.",
+    "single_goal": "pass \u2014 \u00a716 carries one deliverable (a reset-anchored lift ends only when a second reading confirms the reset), with the pending mark and the recorded end as that mechanism's own store rather than a second goal.",
+    "wiring": "pass \u2014 \u00a716 declares no formal depends-on/informs/gates edge (like every other section in this plan, whose `data-links` are empty), and the prose predecessors it names \u2014 \u00a712 (the jitter rule whose `_reset_observed` it edits), \u00a714 and \u00a715 (the reading-dating work) \u2014 all resolve to done sections, and its write paths (`reckon/crew/budget_lift.py`, `reckon/crew/lift_watch.py`) are the files those sections built; no dependency it needs is missing and no edge points at a wrong node."
+  },
+  "section_digests": {
+    "_document": "fda3b02b7cdf1aaf51dcc28b302e76dbfa5532ff457c61b6cacd4458d68c0b30",
+    "s1": "fd232b0e9e301983eea254fa355a00f9cfdad5e4ba397415c196946997e8b78a",
+    "s10": "cff30d466dd7580b4623ab4ba85a967692183d1c1fbf0a887b817140c3fe2bf9",
+    "s11": "4f344761a1c7f9eeda684c28b5399f6cc6c50a6961808244c50f4f385a8dfb83",
+    "s12": "d332f915a715e0ce7c1efdd5027285714154977800a9ec70d7b055bf5762609f",
+    "s13": "627916281462553dd6f077d4f3ad0d176f2e5177a66b12b43e0c6d7b6788b3d7",
+    "s14": "5c54d28fac7106fc49f1eb45cc396fb761556bbd5ae16f469c6cf14cdd342fc8",
+    "s15": "5acca22c78776d5b829195bb01b2c5d660f4787c61cd3b04e511e66046bc7cf0",
+    "s16": "19bf66380371c5613ccbd5f91f54aaea124e9bf08229366e0bcda1585f81db3a",
+    "s2": "0c4f642bff7cb6b87908ea9e036cb3161c15e31cb3285273e06bb2ac1f5c368c",
+    "s3": "ae3d7625321a46e7fa6a9ee3bac0272ee77d236811612140ef03b79670883261",
+    "s4": "8f3ac850d09e4745435c5274237c26be090ce2db03ac422e941c3329841d8563",
+    "s5": "3bc104a16d90fb6279e9ab8c70555e1041253ad31f6376c64b455da33489c6b0",
+    "s5b": "1be686d2a1165f13c4f4e81a29ca56c362c3b069dfc80759cf370cca59440d41",
+    "s6": "8e4ab80a317b73fb60010fe92858cbe3b073511ce10c4547c6eb8952a89829f0",
+    "s6-the-probe-reader-and-the-undeclared-dialect": "c463be6993bc79b07591a01d9e1a1d92d699a48d4c322b2cc395a0e78a2d097d",
+    "s7": "39b7111a3bfa256531f953bd33de123967e24fa4ffc75e6d1cbeca26a45c565d",
+    "s8": "9d68431496117798ca30bbebd6828adc5853e02df969ac62de3bb2dcd41512a4",
+    "s9": "5f72c27f2288b837b6513304ec92d0bf2e8950d169b0389c4c3ffeba27c23b6b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T08:04:40.367272+00:00"
+}
