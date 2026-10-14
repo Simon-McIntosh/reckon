@@ -1097,39 +1097,51 @@ def _resume(
     # written unguarded, so a second pass of this process could launch a worker
     # beside the one starting.
     try:
-        _LAUNCHES_IN_THIS_PROCESS.add(run_id)
-        mark_resume_launching(run_id)
-        plan = resume_plan(run_id, advice, config=config)
-        directory = run_dir(run_id)
-        turn = len(list(directory.glob("resume-*.jsonl"))) + 1
-        advice_path = directory / f"resume-{turn}-advice.txt"
-        advice_path.parent.mkdir(parents=True, exist_ok=True)
-        _write_resume_prompt(advice_path, plan=plan, advice=advice)
-        log_path = directory / f"resume-{turn}.jsonl"
-        stderr_path = directory / f"resume-{turn}.stderr.log"
-        attempt_started_at = _utc_now()
-        manifest_baseline_mtime_ns = _manifest_mtime_ns(
-            record.get("manifest_path") or ""
-        )
-        _require_fleet_gate_open()
-        # The previous attempt may have left a done manifest on disk; clear its
-        # verdict so the supervisor does not read the new worker's first edit as
-        # that delivery.
-        _reset_delivered_manifest_status(run_id, record)
-        if launcher is None:
-            pid = _spawn(
-                plan,
-                log_path=log_path,
-                stderr_path=stderr_path,
-                prompt_path=advice_path,
+        try:
+            _LAUNCHES_IN_THIS_PROCESS.add(run_id)
+            mark_resume_launching(run_id)
+            plan = resume_plan(run_id, advice, config=config)
+            directory = run_dir(run_id)
+            turn = len(list(directory.glob("resume-*.jsonl"))) + 1
+            advice_path = directory / f"resume-{turn}-advice.txt"
+            advice_path.parent.mkdir(parents=True, exist_ok=True)
+            _write_resume_prompt(advice_path, plan=plan, advice=advice)
+            log_path = directory / f"resume-{turn}.jsonl"
+            stderr_path = directory / f"resume-{turn}.stderr.log"
+            attempt_started_at = _utc_now()
+            manifest_baseline_mtime_ns = _manifest_mtime_ns(
+                record.get("manifest_path") or ""
             )
-        else:
-            pid = launcher(
-                plan,
-                log_path=log_path,
-                stderr_path=stderr_path,
-                prompt_path=advice_path,
-            )
+            _require_fleet_gate_open()
+            # The previous attempt may have left a done manifest on disk; clear
+            # its verdict so the supervisor does not read the new worker's first
+            # edit as that delivery.
+            _reset_delivered_manifest_status(run_id, record)
+            if launcher is None:
+                pid = _spawn(
+                    plan,
+                    log_path=log_path,
+                    stderr_path=stderr_path,
+                    prompt_path=advice_path,
+                )
+            else:
+                pid = launcher(
+                    plan,
+                    log_path=log_path,
+                    stderr_path=stderr_path,
+                    prompt_path=advice_path,
+                )
+        except BaseException:
+            # A launch that ended before it held the session recorded no attempt
+            # of its own, so nothing will drop the in-flight marker this door
+            # set. Left there it would refuse the next resume against a launcher
+            # already gone, so the marker goes with the launch that raised. This
+            # arm covers the launch alone: once a worker has been started its
+            # process holds the run, and a later failure recording the attempt
+            # must not drop the guard that keeps another door from launching a
+            # second worker beside it.
+            clear_resume_launching(run_id)
+            raise
         record_resumption(
             run_id,
             pid=pid,
@@ -1139,13 +1151,6 @@ def _resume(
             attempt_started_at=attempt_started_at,
             manifest_baseline_mtime_ns=manifest_baseline_mtime_ns,
         )
-    except BaseException:
-        # A launch that ended before it held the session recorded no attempt of
-        # its own, so nothing will drop the in-flight marker this door set.
-        # Left there it would refuse the next resume against a launcher already
-        # gone, so the marker goes with the launch that raised.
-        clear_resume_launching(run_id)
-        raise
     finally:
         _LAUNCHES_IN_THIS_PROCESS.discard(run_id)
     return {"pid": pid, "turn": turn, "log_path": str(log_path), "plan": plan}

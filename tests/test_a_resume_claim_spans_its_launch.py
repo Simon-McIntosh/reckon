@@ -14,8 +14,12 @@ Two placements of that entry each defeat it:
   and ``record_resumption`` recording the attempt. A second pass of the same
   process taken inside that window is not refused by the registry and launches a
   worker beside the one already starting.
+* Cleared by an ``except`` that also spans ``record_resumption``, a failure in
+  that recording drops the cross-process in-flight mark while the worker the
+  launch just started is live — the one state this plan exists to prevent. Only
+  a launch that failed before a worker existed may clear the mark.
 
-Both cases drive ``_resume`` directly with a launcher seam, so no worker and no
+The cases drive ``_resume`` directly with a launcher seam, so no worker and no
 thread is started and there is nothing left to end. Each asserts the registry is
 left as it was found.
 
@@ -26,6 +30,7 @@ attempt is recorded. Applied together, both cases go red.
 
 from __future__ import annotations
 
+import os
 from collections.abc import Callable
 from pathlib import Path
 from types import SimpleNamespace
@@ -197,4 +202,39 @@ def test_a_pass_between_the_launcher_and_the_recorded_attempt_is_refused(
     # The refused pass started nothing, so the outer launch recorded the one and
     # only attempt for the run.
     assert recorded == [RUN_ID], recorded
+    assert RUN_ID not in resumption._LAUNCHES_IN_THIS_PROCESS
+
+
+def test_a_recording_failure_leaves_the_live_workers_in_flight_mark(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A worker that started keeps its cross-process guard if recording fails.
+
+    The launcher has returned a pid, so a worker is live. A failure recording
+    the attempt must drop only the in-process registry entry — the process is
+    free to try again — and must leave the in-flight mark on the pointer, since
+    that mark is what keeps another door, in another process, from launching a
+    second worker beside the live one.
+    """
+    _fixture(tmp_path, monkeypatch)
+    pid = 555001
+
+    def record_raises(*args: Any, **kwargs: Any) -> None:
+        raise RuntimeError("the attempt could not be recorded")
+
+    monkeypatch.setattr(resumption, "record_resumption", record_raises)
+
+    with pytest.raises(RuntimeError):
+        resumption._resume(
+            RUN_ID,
+            runs.read_pointer(RUN_ID),
+            config=None,
+            launcher=_launcher(pid),
+            advice="continue",
+        )
+
+    record = runs.read_pointer(RUN_ID)
+    mark = record.get(resumption.RESUME_LAUNCH_IN_FLIGHT)
+    assert isinstance(mark, dict), record
+    assert mark["pid"] == os.getpid(), mark
     assert RUN_ID not in resumption._LAUNCHES_IN_THIS_PROCESS
