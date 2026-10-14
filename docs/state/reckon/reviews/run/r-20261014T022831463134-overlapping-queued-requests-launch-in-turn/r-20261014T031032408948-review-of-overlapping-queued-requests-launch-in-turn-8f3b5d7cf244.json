@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own head arms: the focused gate (gate-overlapping-queued-requests.log, 18 passed, EXIT=0) and the importer population (population-importers.log, 101 passed, EXIT=0) each report no failing node id, so the change adds no failing test; the reviewed manifest names no baseline_suite/after_suite pair, so no base arm was read.",
+  "backend": "deepseek-v4.1-flash",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch_claims.py:249",
+    "reckon/crew/runs.py:886",
+    "reckon/crew/queue_admission.py:648",
+    "reckon/crew_run_commands.py:2559"
+  ],
+  "completed_at": "2026-10-14T03:23:33.066Z",
+  "dispatched_at": "2026-10-14T03:11:10Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "241",
+      "severity": "follow-on",
+      "text": "follow-on: _queued_requests_overlap compares paths each normalised against its own pointer's repo but never compares the two pointers' repos, so two queued requests in different repositories declaring the same repository-relative path are treated as overlapping and the later is held, even though the dispatch scope check it mirrors is per-repository (reckon/crew/dispatch_claims.py:1050) and would never refuse it; the delay is bounded by STARVATION_AGE_SECONDS so it is not a deadlock."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T022831463134-overlapping-queued-requests-launch-in-turn/manifest.md",
+      "line": "12",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest carries neither baseline_suite nor after_suite, the two fields the review's added-failure derivation reads, so the record's added_failure_count rests on the head arms' empty failing set rather than on a base/after delta."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read both commits against base 36540240a; 33b317a7a adds the non-binding queued disposition (reckon/crew/node.py:1489) and the rank-order pre-check with three helpers (reckon/crew/queue_admission.py:227-278 and the call at 648), rewrites the superseded queued-once case into test_a_different_node_over_a_queued_path_launches with a companion working-run refusal, and adds the new test module; 8f3b5d7cf adds only the evidence fragment.",
+    "done_when": "the source done_when names tests/test_overlapping_queued_requests_launch_in_turn.py and tests/test_a_node_is_queued_once.py plus three negative controls; the manifest records the focused gate as 18 passed with EXIT=0 and the log header (gate-overlapping-queued-requests.log) names revision 33b317a7a and the literal command, while each control log records its FAILED id and an EXIT=1 line.",
+    "goal": "the node goal is that overlapping queued requests launch in rank order instead of refusing each other; reckon/crew/node.py:1489 makes claim_disposition return a non-binding disposition for a pointer in the queued phase, and reckon/crew/queue_admission.py:648 holds a later-ranked overlapping queued request behind an earlier one, which are the two mechanisms the section names, and my spot run of test_the_scopes_view_reports_a_queued_claim_as_non_binding passes at the reviewed head.",
+    "manifest": "read; it records the gate (18 passed, EXIT=0), the importer population (101 passed, EXIT=0), the three controls (2 failed, 1 failed, 1 failed; each EXIT=1) and names the logs on disk, but it carries no baseline_suite/after_suite pair the added-failure derivation reads.",
+    "write_paths": "read the manifest's declared write paths and the node's dispatch scope; the two-commit diff touches reckon/crew/node.py, reckon/crew/queue_admission.py, tests/test_a_node_is_queued_once.py, tests/test_overlapping_queued_requests_launch_in_turn.py and the evidence fragment, every one inside the declared set, with reckon/crew/dispatch.py and the figures directory declared but unused."
+  },
+  "justifications": {
+    "durability": "each of the two mechanisms has a test that reddens when it is reverted \u2014 negative-control-1-queued-claim-binds.log fails the earlier-launches case and the scopes case, negative-control-2-no-pre-check.log fails the later-waits case, and negative-control-3-no-starvation-bound.log fails the release case.",
+    "evidence": "the gate log header names revision 33b317a7a and the literal command and records 18 passed EXIT=0, and each of the three negative controls records its FAILED node id with EXIT=1, but the manifest names no baseline_suite/after_suite pair, so the added-failure derivation the done-when names reads no base arm.",
+    "fit": "the three new helpers (_queued_scope_paths, _queued_requests_overlap, _earlier_overlapping_request) at reckon/crew/queue_admission.py:227 follow the module's private-helper-and-docstring idiom and introduce no name the naming rules forbid.",
+    "goal_fidelity": "reckon/crew/node.py:1489 returns binding=False for a queued pointer (keyed on the phase, so a starting run stays binding) and reckon/crew/queue_admission.py:648 holds a later-ranked overlapping request behind an earlier one bounded by STARVATION_AGE_SECONDS.",
+    "reuse": "_queued_requests_overlap at reckon/crew/queue_admission.py:241 composes the enforcer's own runs._scopes_overlap and runs._repository_relative_scope rather than forking an overlap predicate, and a capability search found reckon/capabilities.py:610 _paths_overlap, which carries different membership semantics and is deliberately left untouched.",
+    "scope_discipline": "every path in the two-commit diff (reckon/crew/node.py, reckon/crew/queue_admission.py, both test files, the evidence fragment) is inside the declared write paths, with reckon/crew/dispatch.py and the figures directory declared but untouched."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that overlapping queued requests launch in rank order instead of refusing each other; reckon/crew/node.py:1489 makes claim_disposition return a non-binding disposition for a pointer in the queued phase, and reckon/crew/queue_admission.py:648 holds a later-ranked overlapping queued request behind an earlier one, which are the two mechanisms the section names, and my spot run of test_the_scopes_view_reports_a_queued_claim_as_non_binding passes at the reviewed head.\nVERDICT done_when: the source done_when names tests/test_overlapping_queued_requests_launch_in_turn.py and tests/test_a_node_is_queued_once.py plus three negative controls; the manifest records the focused gate as 18 passed with EXIT=0 and the log header (gate-overlapping-queued-requests.log) names revision 33b317a7a and the literal command, while each control log records its FAILED id and an EXIT=1 line.\nVERDICT write_paths: read the manifest's declared write paths and the node's dispatch scope; the two-commit diff touches reckon/crew/node.py, reckon/crew/queue_admission.py, tests/test_a_node_is_queued_once.py, tests/test_overlapping_queued_requests_launch_in_turn.py and the evidence fragment, every one inside the declared set, with reckon/crew/dispatch.py and the figures directory declared but unused.\nVERDICT manifest: read; it records the gate (18 passed, EXIT=0), the importer population (101 passed, EXIT=0), the three controls (2 failed, 1 failed, 1 failed; each EXIT=1) and names the logs on disk, but it carries no baseline_suite/after_suite pair the added-failure derivation reads.\nVERDICT diff: read both commits against base 36540240a; 33b317a7a adds the non-binding queued disposition (reckon/crew/node.py:1489) and the rank-order pre-check with three helpers (reckon/crew/queue_admission.py:227-278 and the call at 648), rewrites the superseded queued-once case into test_a_different_node_over_a_queued_path_launches with a companion working-run refusal, and adds the new test module; 8f3b5d7cf adds only the evidence fragment.\nCALL_SITES: reckon/crew/dispatch_claims.py:249, reckon/crew/runs.py:886, reckon/crew/queue_admission.py:648, reckon/crew_run_commands.py:2559\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/node.py:1489 returns binding=False for a queued pointer (keyed on the phase, so a starting run stays binding) and reckon/crew/queue_admission.py:648 holds a later-ranked overlapping request behind an earlier one bounded by STARVATION_AGE_SECONDS.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate log header names revision 33b317a7a and the literal command and records 18 passed EXIT=0, and each of the three negative controls records its FAILED node id with EXIT=1, but the manifest names no baseline_suite/after_suite pair, so the added-failure derivation the done-when names reads no base arm.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the two-commit diff (reckon/crew/node.py, reckon/crew/queue_admission.py, both test files, the evidence fragment) is inside the declared write paths, with reckon/crew/dispatch.py and the figures directory declared but untouched.\nSCORE durability: 19\nJUSTIFICATION durability: each of the two mechanisms has a test that reddens when it is reverted \u2014 negative-control-1-queued-claim-binds.log fails the earlier-launches case and the scopes case, negative-control-2-no-pre-check.log fails the later-waits case, and negative-control-3-no-starvation-bound.log fails the release case.\nSCORE fit: 19\nJUSTIFICATION fit: the three new helpers (_queued_scope_paths, _queued_requests_overlap, _earlier_overlapping_request) at reckon/crew/queue_admission.py:227 follow the module's private-helper-and-docstring idiom and introduce no name the naming rules forbid.\nSCORE reuse: 18\nJUSTIFICATION reuse: _queued_requests_overlap at reckon/crew/queue_admission.py:241 composes the enforcer's own runs._scopes_overlap and runs._repository_relative_scope rather than forking an overlap predicate, and a capability search found reckon/capabilities.py:610 _paths_overlap, which carries different membership semantics and is deliberately left untouched.\nFINDING reckon/crew/queue_admission.py:241 follow-on: _queued_requests_overlap compares paths each normalised against its own pointer's repo but never compares the two pointers' repos, so two queued requests in different repositories declaring the same repository-relative path are treated as overlapping and the later is held, even though the dispatch scope check it mirrors is per-repository (reckon/crew/dispatch_claims.py:1050) and would never refuse it; the delay is bounded by STARVATION_AGE_SECONDS so it is not a deadlock.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T022831463134-overlapping-queued-requests-launch-in-turn/manifest.md:12 follow-on: the reviewed manifest carries neither baseline_suite nor after_suite, the two fields the review's added-failure derivation reads, so the record's added_failure_count rests on the head arms' empty failing set rather than on a base/after delta.\nreviewed_base_sha: 36540240a694603b4c78c876ebd49df0f9729d90\nreviewed_head_sha: 8f3b5d7cf2441772dcb5c72c06807063551d2a30",
+  "review_run_id": "r-20261014T031032408948-review-of-overlapping-queued-requests-launch-in-turn-8f3b5d7cf244",
+  "reviewed_base_sha": "36540240a694603b4c78c876ebd49df0f9729d90",
+  "reviewed_head_sha": "8f3b5d7cf2441772dcb5c72c06807063551d2a30",
+  "reviewed_run_id": "r-20261014T022831463134-overlapping-queued-requests-launch-in-turn",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T03:19:03.412548+00:00",
+  "total": 113
+}
