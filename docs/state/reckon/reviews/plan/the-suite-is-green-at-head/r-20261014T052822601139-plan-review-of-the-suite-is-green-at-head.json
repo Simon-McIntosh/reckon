@@ -1,0 +1,71 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-14T05:37:31.237Z",
+  "dispatched_at": "2026-10-14T05:29:00Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-suite-is-green-at-head.html#s15",
+      "id": "reasoning-1",
+      "reason": "a worker implementing \u00a715 as written will find four of the thirteen ids still red with no instruction to re-anchor `test_follow_observes_other_sessions.py`, so the plan must either deliver the own session's rows on a pane that observes another session or name that file as a re-anchor.",
+      "text": "\u00a715's done-when requires \"the thirteen ids pass alone\", but its deliverable explicitly keeps the own session's baseline row withheld (\"An own-session baseline row, kind `(None, state)`, stays withheld\") and delivers only the *observed* session's rows; four of the thirteen ids live in `tests/test_follow_observes_other_sessions.py` and assert the pane shows the **own** session's `(None, \"working\")` baseline row with a session that is not in the observed set, so under the stated mechanism those rows are still withheld and the ids stay red. Reproduced at base (`base-observes-own-row-withheld.log`): `test_rows_from_an_observed_session_carry_the_foreign_marker_and_own_rows_do_not` fails with `KeyError: 'my-node'` at `tests/test_follow_observes_other_sessions.py:348` and `test_an_observed_session_named_identically_to_the_owning_session_adds_no_duplicate` fails `assert 0 == 1` at line 390 \u2014 both because the own-session `my-node` baseline never reaches the pane. The other two ids (`\u2026row_achieves_the_pane_without_falling_out`, `\u2026the_real_configuration_home_gains_no_file`, and `\u2026that_dispatched_nothing_yields_no_rows_and_no_error`) assert the same own row.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "40d20525d4abaf31d95e7cae359b552683e08af89eb32cfb7137698f0e183f02",
+  "plan_slug": "the-suite-is-green-at-head",
+  "plan_version": 331,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-14T05:38:27.070909+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-14T05:38:27.070909+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-suite-is-green-at-head.v331.json",
+  "review_run_id": "r-20261014T052822601139-plan-review-of-the-suite-is-green-at-head",
+  "reviewed_blob_sha": "632e55aca8f2040d535550d0a7c006727c94ecdc",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/ticker.py`, `reckon/crew_follow_commands.py`, the eight cited test files and the report at `~/.config/reckon/crew/reports/reckon/the-suite-is-green-at-head/follower-family-shared-cause/report.md` all resolve.",
+    "done_when": "pass \u2014 \u00a715's done-when is a measurable id gate and declares two named negative controls, one per exemption.",
+    "evidence_paths": "pass \u2014 \u00a715's two negative controls are logged under the node's durable run directory, matching the plan's convention for \u00a79\u2013\u00a714.",
+    "naming": "pass \u2014 \u00a715's new symbols are named by mechanism (`START_KIND`, observed-session exemption); no plan labels, stage names or ticket numbers reach them.",
+    "reasoning": "a finding \u2014 the stated mechanism (deliver the observed session's rows, widen the own-session start to `starting \u2192 working`) does not deliver the own session's `(None, working)` baseline, which four of the thirteen named ids read from the pane.",
+    "single_goal": "pass \u2014 \u00a715 carries one deliverable: the follower pane delivers the rows the family tests feed it (one hold, two exemptions).",
+    "wiring": "pass \u2014 \u00a715 is a standalone node (plan declares `plan-standalone`, `data-links=\"\"`); its cited commit `089cd7741` and the follower-family report both resolve."
+  },
+  "section_digests": {
+    "_document": "83bc4eebbeaf35e1f8769b1cefa72ecf8466fb0d23d3dd350bf2e642790b97e5",
+    "s1": "93d7e8eb3f04bb8d9aad0f5ac7d68a9d009b7fe7feaa6f4932738242154d8d4d",
+    "s10": "9633fb928a6c720c8fae74ed3da0a5f7ed555c4230f29ebf2ee89e5432566bb1",
+    "s11": "3e9c94371cc0b22adeb21c71a08fdd16433d8b4c1a22e73cd63d1171332089ba",
+    "s12": "dd8650523d29d87e6fa41408db7d0440cf17dfbd57f0ab6da0d5fcd223692d95",
+    "s13": "7b00f23667f49ba7de16f8823860c86ad35a562eebddf434fd1a6b9f1f5e9993",
+    "s14": "1469c86b5327d2429ce07b9ddd2fbca586d8831acb94119f8a187e315f48dcf7",
+    "s15": "fd8f1183533c6563922688bc675f9e2b2b61d0aa557e927298983a0c09322212",
+    "s16": "4ab9d42bd2e71d070a1cc5393ebea66e1ec71d06dad51f1a82505c91ce309234",
+    "s2": "d8e1d44eab3d041cfa8f08f045885bcf9a783d27f0cb613fe7de2c0476c13887",
+    "s3": "d6efa514940aeb662c9b7fdee7f663c86e4da2526ec9a01c6977f967e30d886a",
+    "s4": "e7003c1b5457d6229da28b7d90f825f0e3ef67be2a012291c12a2daf14bf2273",
+    "s5": "934ff53a2b41de523672b7760ab4bbe2e8be5d3da6b580c600383ac0217825a2",
+    "s6": "532d289736e3278c9969cb253dc2c1c372054b378fd42f2cfb741906f6e66eb2",
+    "s7": "655ef45aae9c9f31c0c67cb28422cff4a16611cfce488326c298768a23f58efd",
+    "s8": "c78e67e053ac3d61a73df4b965e8209a12ca4d9b745535a102b0b0040cce3adc",
+    "s9": "f4ef4f0dc18779331d3654037d55a7dd1c27d3769bfbfe753867fccbb53f9a28"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T05:37:38.941507+00:00"
+}
