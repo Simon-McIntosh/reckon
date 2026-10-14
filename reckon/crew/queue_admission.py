@@ -71,8 +71,34 @@ def _admit_lock():
             fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
 
+def _inside_run_directory(value: str, directory: Path) -> bool:
+    """Whether a declared path lies inside one run's own directory.
+
+    The queued run's id is minted at dispatch, so no coordinator could have
+    named a path inside its directory: a path there is a default the plan
+    derived for the queued run, and it must not follow the request onto the
+    launched run's id. Only an absolute path can be inside the run directory —
+    a relative path resolves against the repository, never the run directory.
+    """
+    if not value:
+        return False
+    path = Path(value).expanduser()
+    if not path.is_absolute():
+        return False
+    return path.resolve().is_relative_to(directory.resolve())
+
+
 def _node_from_pointer(pointer: Mapping[str, Any]) -> TaskNode:
     node = dict(pointer.get("node") or {})
+    # A manifest path or write path a previous dispatch defaulted into the
+    # queued run's own directory is dropped here, so the launched run's plan
+    # derives those defaults afresh from its own id. Every other path — a
+    # ``--manifest`` the coordinator named elsewhere, a declared write path, the
+    # brief the run reads — is carried over unchanged.
+    queued_dir = runs.run_dir(str(pointer["run_id"]))
+    manifest_path = str(node.get("manifest_path") or "")
+    if _inside_run_directory(manifest_path, queued_dir):
+        manifest_path = ""
     return TaskNode(
         id=str(node["id"]),
         goal=str(node.get("goal") or ""),
@@ -84,9 +110,13 @@ def _node_from_pointer(pointer: Mapping[str, Any]) -> TaskNode:
         role=str(node.get("role") or "implement"),
         spec_level=str(node.get("spec_level") or ""),
         done_when=str(node.get("done_when") or ""),
-        write_paths=list(node.get("write_paths") or ()),
+        write_paths=[
+            str(path)
+            for path in (node.get("write_paths") or ())
+            if not _inside_run_directory(str(path), queued_dir)
+        ],
         time_budget=str(node.get("time_budget") or ""),
-        manifest_path=str(node.get("manifest_path") or ""),
+        manifest_path=manifest_path,
         negative_control=str(node.get("negative_control") or ""),
         estimated_hours=node.get("estimated_hours"),
         requires_decisions=list(node.get("requires_decisions") or ()),

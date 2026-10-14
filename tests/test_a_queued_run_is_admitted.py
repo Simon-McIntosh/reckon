@@ -468,6 +468,137 @@ def _working_launcher(plan, *, log_path, stderr_path, prompt_path):
     return os.getpid()
 
 
+def _queued_request(
+    repository: Path,
+    *,
+    node_id: str,
+    run_id: str,
+    manifest_path: str | None = None,
+    write_paths: list[str] | None = None,
+    brief_path: str | None = None,
+    brief: str = "",
+    role: str = "implement",
+) -> dict:
+    """A queued pointer whose node carries the defaults a dispatch stored.
+
+    The queued pointer records the node exactly as ``dispatch_plan`` resolved
+    it for the queued run, so a default it derived there — a manifest path or a
+    write path inside the queued run's own directory — is the input the
+    admission pass reads.
+    """
+    request = _queue(repository, node_id=node_id, run_id=run_id)
+    node = request["node"]
+    node["role"] = role
+    if manifest_path is not None:
+        node["manifest_path"] = manifest_path
+    if write_paths is not None:
+        node["write_paths"] = list(write_paths)
+    if brief_path is not None:
+        node["brief_path"] = brief_path
+    node["brief"] = brief
+    return request
+
+
+def _launched_pointer(result: dict) -> dict:
+    assert result["launched"], json.dumps(result, default=str)
+    return runs.read_pointer(result["launched"][0])
+
+
+def test_a_queued_launch_takes_its_manifest_from_its_launched_run(
+    admit_repo: Path,
+) -> None:
+    _, resolve = _config_for()
+    queued_dir = runs.run_dir("r-queued-manifest")
+    request = _queued_request(
+        admit_repo,
+        node_id="queued-manifest",
+        run_id="r-queued-manifest",
+        manifest_path=str(queued_dir / "manifest.md"),
+    )
+    runs.queue_dispatch(request)
+
+    result = queue_admission.admit_once(config_for=resolve, launcher=_launcher([]))
+
+    launched = _launched_pointer(result)
+    launched_id = str(launched["run_id"])
+    launched_dir = runs.run_dir(launched_id)
+    assert launched["manifest_path"] == str(launched_dir / "manifest.md")
+    prompt = Path(launched["prompt_path"]).read_text(encoding="utf-8")
+    assert str(launched_dir) in prompt
+    assert str(queued_dir) not in prompt
+
+
+def test_a_queued_launch_keeps_a_manifest_named_outside_a_run_directory(
+    admit_repo: Path, tmp_path: Path
+) -> None:
+    _, resolve = _config_for()
+    named = tmp_path / "named" / "manifest.md"
+    request = _queued_request(
+        admit_repo,
+        node_id="named-manifest",
+        run_id="r-named-manifest",
+        manifest_path=str(named),
+    )
+    runs.queue_dispatch(request)
+
+    result = queue_admission.admit_once(config_for=resolve, launcher=_launcher([]))
+
+    assert _launched_pointer(result)["manifest_path"] == str(named)
+
+
+def test_a_queued_review_keeps_its_brief_path(
+    admit_repo: Path,
+) -> None:
+    config, resolve = _config_for()
+    config["roles"]["review"] = {}
+    queued_dir = runs.run_dir("r-queued-brief")
+    brief = queued_dir / "brief.md"
+    brief.parent.mkdir(parents=True, exist_ok=True)
+    brief.write_text("review this section\n", encoding="utf-8")
+    request = _queued_request(
+        admit_repo,
+        node_id="queued-brief",
+        run_id="r-queued-brief",
+        brief_path=str(brief),
+        brief=str(brief),
+        role="review",
+    )
+    runs.queue_dispatch(request)
+
+    result = queue_admission.admit_once(config_for=resolve, launcher=_launcher([]))
+
+    assert _launched_pointer(result)["node"]["brief"] == str(brief)
+
+
+def test_a_queued_launch_derives_write_paths_under_its_launched_run(
+    admit_repo: Path,
+) -> None:
+    config, resolve = _config_for()
+    config["backends"]["clive"]["write_paths"] = ["scratch"]
+    queued_dir = runs.run_dir("r-queued-writes")
+    request = _queued_request(
+        admit_repo,
+        node_id="queued-writes",
+        run_id="r-queued-writes",
+        write_paths=[str((queued_dir / "scratch").resolve())],
+    )
+    runs.queue_dispatch(request)
+
+    result = queue_admission.admit_once(
+        config_for=resolve, launcher=_launcher([])
+    )
+
+    launched = _launched_pointer(result)
+    launched_dir = runs.run_dir(str(launched["run_id"])).resolve()
+    paths = [str(path) for path in launched["node"]["write_paths"]]
+    # The default write path the plan derived inside the run directory is now
+    # the launched run's own, and no write path names the queued run directory.
+    assert str((launched_dir / "scratch").resolve()) in paths
+    assert not any(
+        Path(path).is_relative_to(queued_dir.resolve()) for path in paths
+    )
+
+
 def test_a_launched_run_leaves_queued_for_starting_then_working(
     admit_repo: Path, tmp_path: Path
 ) -> None:
