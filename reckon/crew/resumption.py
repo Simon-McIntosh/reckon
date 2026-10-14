@@ -68,6 +68,7 @@ from reckon.crew.dispatch import (
     resume_plan,
 )
 from reckon.crew.node import CrewError
+from reckon.crew.process_liveness import _process_start_time as process_start_time
 from reckon.crew.recovery import (
     _process_reading,
     _run_exit_record,
@@ -119,10 +120,13 @@ REFUSED_ADVICE_NAME = "resume-refused-advice.txt"
 # pid is folded onto the pointer — so without this marker a second door reading
 # the pointer inside that window sees a run whose recorded process has ended
 # and starts a worker beside one already starting. The slot carries the pid of
-# the process doing the launching: while that process lives the launch is in
-# flight, and a launch whose launcher is gone without recording its attempt
-# leaves a marker no live process answers for, so the refusal cannot outlive
-# the attempt it guarded.
+# the process doing the launching and the kernel start tick that pid was
+# issued with: while that process lives the launch is in flight. The start
+# tick is carried because the pid alone cannot answer it — a launcher that
+# died without clearing its mark leaves a number the kernel may hand to an
+# unrelated process, and read by number alone that stranger would hold every
+# resume of the run off for as long as it lived. The refusal then cannot
+# outlive the attempt it guarded.
 RESUME_LAUNCH_IN_FLIGHT = "resume_launch_in_flight"
 
 
@@ -184,14 +188,18 @@ def launch_in_flight(record: Mapping[str, Any]) -> bool:
     pid = marker.get("pid")
     if pid is None or pid == os.getpid():
         return False
-    return process_alive(pid) is True
+    return record_process_alive(marker) is True
 
 
 def mark_resume_launching(run_id: str) -> None:
     """Record that this process has begun a resume of the run."""
     with _pointer_lock(run_id):
         current = read_pointer(run_id)
-        current[RESUME_LAUNCH_IN_FLIGHT] = {"pid": os.getpid(), "at": _utc_now()}
+        current[RESUME_LAUNCH_IN_FLIGHT] = {
+            "pid": os.getpid(),
+            "pid_start_time": process_start_time(os.getpid()),
+            "at": _utc_now(),
+        }
         _write_json(pointer_path(run_id), current)
 
 
@@ -220,7 +228,12 @@ def live_attempt_refusal(run_id: str, record: Mapping[str, Any]) -> CrewError | 
     if not launch_in_flight(record):
         return None
     marker = record.get(RESUME_LAUNCH_IN_FLIGHT)
-    pid = marker.get("pid") if isinstance(marker, Mapping) else None
+    return _in_flight_refusal(run_id, marker if isinstance(marker, Mapping) else {})
+
+
+def _in_flight_refusal(run_id: str, marker: Mapping[str, Any]) -> CrewError:
+    """The one wording every door refuses an in-flight launch with."""
+    pid = marker.get("pid")
     named = f" (pid {pid})" if pid is not None else ""
     return CrewError(
         f"run {run_id!r} already has a resume launching{named}: a launch has "
@@ -228,6 +241,29 @@ def live_attempt_refusal(run_id: str, record: Mapping[str, Any]) -> CrewError | 
         "start a worker beside it and leave both writing one tree; the advice "
         f"is kept at {refused_advice_path(run_id)}"
     )
+
+
+def _refuse_a_launch_already_running(run_id: str) -> None:
+    """Refuse when a mark names a launcher still running, whoever wrote it.
+
+    The reading above exempts a process from its own mark, because a door that
+    composed a plan and then chose not to launch must not hold off its own next
+    resume. A sweep is the door that exemption leaves open: its passes share the
+    one long-lived process that follows a fleet, so two wait-lifts of one run
+    would be separated by nothing but the re-read a launch performs before it
+    retires an attempt's records. This door therefore asks the mark on a fresh
+    read of the pointer and with no exemption.
+    """
+    try:
+        current = read_pointer(run_id)
+    except CrewError:
+        return
+    marker = current.get(RESUME_LAUNCH_IN_FLIGHT)
+    if not isinstance(marker, Mapping):
+        return
+    if record_process_alive(marker) is not True:
+        return
+    raise _in_flight_refusal(run_id, marker)
 
 
 # How often the follower may sweep. Long enough that a tight poll loop cannot
@@ -993,18 +1029,20 @@ def _resume(
             f"{failure['detail']} — repair the launch ("
             f"{failure['remedy']}) and resume it by hand, or complete it"
         )
-    plan = resume_plan(run_id, advice, config=config)
-    directory = run_dir(run_id)
-    turn = len(list(directory.glob("resume-*.jsonl"))) + 1
-    advice_path = directory / f"resume-{turn}-advice.txt"
-    advice_path.parent.mkdir(parents=True, exist_ok=True)
-    _write_resume_prompt(advice_path, plan=plan, advice=advice)
-    log_path = directory / f"resume-{turn}.jsonl"
-    stderr_path = directory / f"resume-{turn}.stderr.log"
-    attempt_started_at = _utc_now()
-    manifest_baseline_mtime_ns = _manifest_mtime_ns(record.get("manifest_path") or "")
-    _require_fleet_gate_open()
+    _refuse_a_launch_already_running(run_id)
+    mark_resume_launching(run_id)
     try:
+        plan = resume_plan(run_id, advice, config=config)
+        directory = run_dir(run_id)
+        turn = len(list(directory.glob("resume-*.jsonl"))) + 1
+        advice_path = directory / f"resume-{turn}-advice.txt"
+        advice_path.parent.mkdir(parents=True, exist_ok=True)
+        _write_resume_prompt(advice_path, plan=plan, advice=advice)
+        log_path = directory / f"resume-{turn}.jsonl"
+        stderr_path = directory / f"resume-{turn}.stderr.log"
+        attempt_started_at = _utc_now()
+        manifest_baseline_mtime_ns = _manifest_mtime_ns(record.get("manifest_path") or "")
+        _require_fleet_gate_open()
         if launcher is None:
             pid = _spawn(
                 plan,
@@ -1021,7 +1059,7 @@ def _resume(
             )
     except BaseException:
         # A launch that ended before it held the session recorded no attempt of
-        # its own, so nothing will drop the in-flight marker resume_plan set.
+        # its own, so nothing will drop the in-flight marker this door set.
         # Left there it would refuse the next resume against a launcher already
         # gone, so the marker goes with the launch that raised.
         clear_resume_launching(run_id)

@@ -38,7 +38,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import recovery, resumption, runs
+from reckon.crew import recovery, resumption, routing, runs
 from reckon.crew.dispatch import resume_plan
 from reckon.crew.dispatch_launch import _prepare_attempt_records
 from reckon.crew.node import CrewError
@@ -104,6 +104,30 @@ def _live_worker():
         child.wait()
 
 
+@contextmanager
+def _marked_worker(run_id: str):
+    """A running process whose environment names the run, and no other record.
+
+    This is the worker a lane started through an intermediary: the pointer's pid
+    and the worker record's pid both name processes that have ended, and the
+    environment mark the launcher wrote into every process it started is the
+    only place the run's live process can be found. It is started in its own
+    session so nothing about it depends on this test's process group.
+    """
+    child = subprocess.Popen(
+        [sys.executable, "-c", "import time; time.sleep(300)"],
+        env={**os.environ, routing.RUN_ID_ENV: run_id},
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True,
+    )
+    try:
+        yield child.pid
+    finally:
+        child.kill()
+        child.wait()
+
+
 _REAL_HOME = Path(os.path.expanduser("~")) / ".config" / "reckon" / "crew"
 _RUN_IDS = (
     "r-manual-live-worker",
@@ -111,6 +135,7 @@ _RUN_IDS = (
     "r-live-under-record",
     "r-launch-in-flight",
     "r-launch-over-live",
+    "r-env-marked-worker",
 )
 
 
@@ -488,7 +513,8 @@ def test_a_second_launch_over_a_live_attempt_leaves_its_records_untouched(
                 attempt_started_at="2026-09-29T10:05:00Z",
             )
 
-        assert "is still running" in str(raised.value), str(raised.value)
+        refusal = str(raised.value)
+        assert f"still has a live worker (pid {worker_pid})" in refusal, refusal
         after = runs.read_pointer("r-launch-over-live")
         assert after["phase"] == before["phase"]
         assert after["pid"] == before["pid"]
@@ -498,3 +524,134 @@ def test_a_second_launch_over_a_live_attempt_leaves_its_records_untouched(
         # Refused before the marker went down, so no later reader is told this
         # run has an attempt that the refusal never started.
         assert not (directory / "attempt.json").exists()
+
+
+def test_a_mark_naming_a_reused_pid_is_not_in_flight_and_the_resume_goes_ahead(
+    home, tmp_path: Path
+) -> None:
+    """A mark whose number has been handed on is not the launch it names.
+
+    The mark carries the pid of the process that set it and the kernel start
+    tick that pid was issued with. A launcher that died without clearing its
+    mark leaves the number behind, and the kernel is free to hand that number to
+    an unrelated process; read by number alone the stranger would hold every
+    resume of the run off for as long as it lived. A mark whose recorded start
+    tick is not the running process's is therefore not in flight, and the resume
+    it would have refused proceeds.
+    """
+    with _live_worker() as stranger_pid:
+        record = _pointer(tmp_path, "r-launch-in-flight", pid=_absent_pid())
+        tick = int(recovery._process_start_time(stranger_pid))
+        record["resume_launch_in_flight"] = {
+            "pid": stranger_pid,
+            "pid_start_time": str(tick - 1),
+            "at": "2026-09-29T10:00:05Z",
+        }
+        record["argv"] = ["claude", "-p"]
+        _write_json(pointer_path("r-launch-in-flight"), record)
+
+        # A backend reckon can translate, so the case composes a real plan and
+        # the only thing under test is whether the mark stops it.
+        config = {
+            **CONFIG,
+            "backends": {
+                "alpha": {**CONFIG["backends"]["alpha"], "command": "claude"},
+            },
+        }
+        plan = resume_plan("r-launch-in-flight", "carry on", config=config)
+
+        assert plan is not None
+        assert "carry on" in plan.stdin_text, plan.stdin_text
+
+
+def test_a_worker_reachable_only_by_its_run_environment_is_not_retired(
+    home, tmp_path: Path
+) -> None:
+    """A launch finds the holder the run's own records cannot name.
+
+    A lane that starts its worker through an intermediary leaves a run whose
+    pointer pid and whose worker record's pid have both ended while the worker
+    goes on, reparented outside anything the run recorded. The environment mark
+    a launcher writes into every process it starts for the run is the only reach
+    left to it. A second launch that finds a holder there refuses before the
+    attempt marker or either canonical record is written, so the worker that is
+    still working keeps the record of itself.
+    """
+    with _marked_worker("r-env-marked-worker") as marker_pid:
+        _pointer(
+            tmp_path,
+            "r-env-marked-worker",
+            pid=_absent_pid(),
+            worker_pid=_absent_pid(),
+        )
+        directory = runs.run_dir("r-env-marked-worker")
+        worker_record = directory / recovery.WORKER_RECORD_NAME
+        worker_before = worker_record.read_text(encoding="utf-8")
+        before = runs.read_pointer("r-env-marked-worker")
+
+        with pytest.raises(CrewError) as raised:
+            _prepare_attempt_records(
+                directory,
+                run_id="r-env-marked-worker",
+                attempt=2,
+                attempt_kind="resume",
+                attempt_started_at="2026-09-29T10:05:00Z",
+            )
+
+        refusal = str(raised.value)
+        assert f"still has a live worker (pid {marker_pid})" in refusal, refusal
+        assert worker_record.read_text(encoding="utf-8") == worker_before
+        assert runs.read_pointer("r-env-marked-worker")["pid"] == before["pid"]
+        assert not (directory / "attempt.json").exists()
+
+
+def test_two_sweep_passes_over_one_run_whose_resume_is_in_flight_launch_one_attempt(
+    home, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """One wait-lift starting two supervisors starts one attempt, not two.
+
+    Two supervisors from a single wait-lift share the sweep's own long-lived
+    process, so the mark's own-process exemption cannot separate them and the
+    re-read a launch performs before it retires an attempt's records is the only
+    thing between them. The second pass, taken while the first launch has begun
+    and has not recorded its attempt, must therefore refuse and start nothing.
+    """
+    pointer = _pointer(tmp_path, "r-launch-in-flight", pid=_absent_pid(), parked=True)
+    # A command this host can resolve, so both passes reach the launch rather
+    # than stopping at an unresolvable one. Neither pass spawns it: the launcher
+    # seam stands in for the spawn.
+    pointer["argv"] = ["claude", "-p"]
+    _write_json(pointer_path("r-launch-in-flight"), pointer)
+    nested: dict = {}
+
+    def launcher(plan, **kwargs):
+        # A second pass of the same sweep, in the same process, inside the
+        # window this pass's own launch opened.
+        report, launches = _sweep_launching(
+            monkeypatch, [runs.read_pointer("r-launch-in-flight")]
+        )
+        nested["report"] = report
+        nested["launches"] = launches
+        return 424242
+
+    monkeypatch.setattr(resumption, "_claimed_write_paths", lambda _pointer: [])
+    monkeypatch.setattr(resumption, "dispatch_awaiting_reviews", lambda **_kwargs: {})
+    monkeypatch.setattr(resumption, "list_live", lambda **_kwargs: [pointer])
+    outer = resumption.sweep(
+        PROJECT,
+        config=CONFIG,
+        dry_run=False,
+        launcher=launcher,
+        now=datetime.fromtimestamp(NOW_SECONDS, tz=UTC),
+    )
+
+    assert len(outer["resumed"]) == 1, json.dumps(outer["skipped"], default=str)
+    assert nested["launches"] == [], nested
+    assert nested["report"]["resumed"] == [], nested
+    entry = next(
+        row
+        for row in nested["report"]["skipped"]
+        if row["run_id"] == "r-launch-in-flight"
+    )
+    assert entry["reason"] == "resume-refused", entry
+    assert "already has a resume launching" in entry["detail"], entry
