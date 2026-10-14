@@ -169,12 +169,22 @@ def consume_refused_advice(run_id: str) -> str:
 
 
 def launch_in_flight(record: Mapping[str, Any]) -> bool:
-    """Whether a resume of this run has begun and not yet recorded an attempt."""
+    """Whether a resume of this run has begun and not yet recorded an attempt.
+
+    The mark this process wrote is not a refusal owed to this process. A door
+    that composed a plan and then chose not to launch — a resume offered and not
+    taken, a launcher that raised — would otherwise leave its own mark standing
+    for as long as it lives, refusing the very resume that would carry the run
+    on. The window this closes is between processes: another door, reading the
+    pointer while a launch it cannot see is under way.
+    """
     marker = record.get(RESUME_LAUNCH_IN_FLIGHT)
     if not isinstance(marker, Mapping):
         return False
     pid = marker.get("pid")
-    return pid is not None and process_alive(pid) is True
+    if pid is None or pid == os.getpid():
+        return False
+    return process_alive(pid) is True
 
 
 def mark_resume_launching(run_id: str) -> None:
