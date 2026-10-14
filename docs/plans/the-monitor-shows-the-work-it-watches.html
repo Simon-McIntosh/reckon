@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="69">
+<meta name="plan-version" content="70">
 <meta name="plan-modified" content="2026-10-14">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -506,6 +506,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s18" data-id="c-run-r-20261014T034420911144-review-of-a-reload-waits-for-a-clean-tree-0dbefa01c50a" data-who="reckon-build" data-when="2026-10-14T03:56:32.423Z">
     <div class="r-comment-body"><p>independent review of r-20261014T023032379700-a-reload-waits-for-a-clean-tree landed; six dimensions scored (goal_fidelity 19, evidence 16, scope_discipline 17, durability 19, fit 18, reuse 17; total 106), all six checklist items carry a verdict, three follow-on findings and no blocking finding; revisions read c4dc0fa7c (base) -&gt; 0dbefa01c (head)</p></div>
+</div>
+<div class="r-comment" data-section="s18" data-id="c-run-r-20261014T023032379700-a-reload-waits-for-a-clean-tree" data-who="reckon-build" data-when="2026-10-14T03:43:10.100Z">
+    <div class="r-comment-body"><p>defers a follower or producer reload while any tracked file under reckon/ differs from HEAD, and makes the import proof reach every module in the package rather than three entry points; a deferral keeps the running image, prints the dim deferred line once, and re-reads the tree each cadence so a commit (which cleans the tree without moving the content stamp) releases the reload</p></div>
 </div>
 </section>
 </main>
