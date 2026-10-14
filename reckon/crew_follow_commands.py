@@ -162,15 +162,66 @@ def _import_root(module) -> Path:
     raise RuntimeError(f"cannot identify the import root for {module.__name__}")
 
 
+def _tracked_reckon_tree_is_dirty(root: Path) -> tuple[bool, str]:
+    """Whether any tracked file under ``reckon/`` differs from ``HEAD``.
+
+    A tree a reloader reads mid-edit can import cleanly and still fail at its
+    first use: a rename half-applied binds a name the import proof never
+    reaches, and the replacement image dies only when a row is rendered. The
+    committed image is what a replacement should run, so git is asked which
+    tracked files differ from it rather than the answer being re-derived here.
+
+    A tree git cannot read -- not a checkout, or no git on ``PATH`` -- is
+    reported clean. The check has no opinion there and the import proof still
+    guards the replacement, so a follower that cannot see a repository keeps
+    its old behaviour rather than deferring every reload forever.
+
+    Untracked files are excluded by git itself. A newly written module that
+    fails to import is caught by the import proof, which reaches every module
+    git does not track as readily as every one it does.
+    """
+    try:
+        completed = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(root),
+                "status",
+                "--porcelain",
+                "--untracked-files=no",
+                "--",
+                "reckon",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=_FOLLOWER_RELOAD_PROBE_TIMEOUT,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        return False, f"{type(exc).__name__}: {exc}"
+    if completed.returncode != 0:
+        return False, ""
+    entries = [line.strip() for line in completed.stdout.splitlines() if line.strip()]
+    if not entries:
+        return False, ""
+    return True, ", ".join(entries)
+
 
 _FOLLOWER_RELOAD_PROBE = (
-    "import pathlib, sys\n"
-    "root = sys.argv[1]\n"
-    "sys.path.insert(0, root)\n"
-    "package = pathlib.Path(root, 'reckon')\n"
-    "for path in sorted(package.rglob('*.py')):\n"
+    "import importlib, pathlib, sys\n"
+    "root = pathlib.Path(sys.argv[1]).resolve()\n"
+    "sys.path.insert(0, str(root))\n"
+    "package = root / 'reckon'\n"
+    "sources = sorted(package.rglob('*.py'))\n"
+    "for path in sources:\n"
     "    compile(path.read_bytes(), str(path), 'exec')\n"
-    "import reckon.cli, reckon.crew.dispatch, reckon.crew.runs\n"
+    "for path in sources:\n"
+    "    parts = list(path.relative_to(root).with_suffix('').parts)\n"
+    "    if parts and parts[-1] == '__init__':\n"
+    "        parts = parts[:-1]\n"
+    "    if not parts or parts[-1] == '__main__':\n"
+    "        continue\n"
+    "    importlib.import_module('.'.join(parts))\n"
 )
 
 
@@ -222,6 +273,13 @@ class _FollowerReloader:
         # not reprinted on every tick; a reload retries only once the code
         # changes again.
         self.deferred_stamp: str | None = None
+        # Whether a reload is presently held because a tracked file differs from
+        # HEAD. Unlike an import failure the deferral cannot be keyed on the
+        # stamp: committing the edit cleans the tree without changing a byte, so
+        # the stamp a dirty deferral was taken at is the stamp a clean tree still
+        # reports. The flag keeps the tree re-read on each cadence until it is
+        # clean, and the printed line is owed once per contiguous dirtiness.
+        self.dirty_deferral = False
 
     def _replacement_imports(self) -> tuple[bool, str]:
         """Prove the replacement image loads before re-executing into it.
@@ -247,6 +305,17 @@ class _FollowerReloader:
         lines = (completed.stderr or completed.stdout or "").strip().splitlines()
         return False, (lines[-1] if lines else f"exit {completed.returncode}")
 
+    def _echo_deferred_dirty(self, detail: str) -> None:
+        """Say once that a moved code stamp is held back by an unclean tree."""
+        line = (
+            f"reckon {self.label} deferred its reload: tracked files are "
+            f"modified against HEAD ({detail}); keeping the current image, "
+            "retrying when the tree is clean"
+        )
+        if self.color:
+            line = _dim_history_line(line)
+        _echo_follow_line(line, stream=self.stream)
+
     def poll(self, checkpoint: Mapping[str, Any]) -> None:
         """Check at a bounded cadence and re-exec with the reader checkpoint."""
         from reckon.crew import runs
@@ -263,9 +332,25 @@ class _FollowerReloader:
         self.checked_at = moment
         current_stamp = runs.follower_code_stamp()
         if current_stamp == self.code_stamp:
+            # No code has moved, so there is nothing to reload onto: a tree left
+            # dirty without a stamp change is not a reload this arming owes.
+            self.dirty_deferral = False
             return
-        if current_stamp == self.deferred_stamp:
+        if current_stamp == self.deferred_stamp and not self.dirty_deferral:
             return
+        # A tracked file differing from HEAD defers the reload: a tree mid-edit
+        # can import cleanly and still fail at first use. The check is repeated
+        # on every cadence once it has held one reload, because committing the
+        # edit cleans the tree without moving the stamp -- the content is
+        # already what the commit records -- so only a fresh read of the tree
+        # can tell the reload it may now proceed.
+        dirty, detail = _tracked_reckon_tree_is_dirty(self.import_root)
+        if dirty:
+            if not self.dirty_deferral:
+                self.dirty_deferral = True
+                self._echo_deferred_dirty(detail)
+            return
+        self.dirty_deferral = False
         reloadable, reason = self._replacement_imports()
         if not reloadable:
             self.deferred_stamp = current_stamp
