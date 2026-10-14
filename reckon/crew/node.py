@@ -751,6 +751,7 @@ class TaskNode:
     estimated_hours: float | None = None
     requires_decisions: list[str] = field(default_factory=list)
     peer_scopes: dict[str, list[str]] = field(default_factory=dict)
+    images: list[str] = field(default_factory=list)
 
     def as_dict(self) -> dict[str, Any]:
         """Return the node as sorted JSON-ready data."""
@@ -761,6 +762,7 @@ class TaskNode:
             "done_when": self.done_when,
             "goal": self.goal,
             "id": self.id,
+            "images": list(self.images),
             "manifest_path": self.manifest_path,
             "estimated_hours": self.estimated_hours,
             "negative_control": self.negative_control,

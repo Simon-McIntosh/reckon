@@ -1839,6 +1839,7 @@ def dispatch(
                         writable_directories=fence_roots,
                         final_message_path=str(final_path),
                         resume_session=reuse_session,
+                        images=node.images,
                         fence=compose_fence,
                         fence_config=config,
                         fence_waiver=fence_waiver or None,
