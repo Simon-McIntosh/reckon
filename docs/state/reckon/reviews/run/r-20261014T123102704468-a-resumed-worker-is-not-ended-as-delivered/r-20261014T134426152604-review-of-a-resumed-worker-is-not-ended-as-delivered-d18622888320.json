@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured: base-importer-population.log records 52 passed EXIT=0 at ece9d52b and importer-population.log records 58 passed EXIT=0 at d18622888; the 6 extra are this node's new test file, so head carries no failure absent at base.",
+  "base_log_revision": "ece9d52b3b527fcdc73da431943b614e4c767297",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/resumption.py:1116 (_resume calls the reset)",
+    "reckon/crew/dispatch_sessions.py:1675 (change_lane calls the reset)",
+    "reckon/crew_run_commands.py:1324 (crew_resume door onto _resume)",
+    "reckon/mcp.py:2262 (_crew_recover door onto _resume)",
+    "reckon/crew/recovery_repair_dispatch.py:914 (repair reflex resumes through _resume)",
+    "reckon/crew/resumption.py:1622 (sweep resumes through _resume)"
+  ],
+  "completed_at": "2026-10-14T13:51:45.043Z",
+  "dispatched_at": "2026-10-14T13:44:52Z",
+  "findings": [
+    {
+      "file": "reckon/crew/resumption.py",
+      "line": "1049",
+      "severity": "follow-on",
+      "text": "follow-on: _reset_delivered_manifest_status duplicates mechanics reckon/crew/runs.py already owns without extending it \u2014 the first-status-line rewrite at runs.py:1469 (_status_line_replaced), the pointer-first manifest resolution at runs.py:1442 (_manifest_for_repair), and the .asdelivered suffix declared at runs.py:1433 (AS_DELIVERED_SUFFIX) \u2014 so a later change to that vocabulary or resolution order will not reach this copy."
+    },
+    {
+      "file": "tests/test_a_resumed_worker_is_not_ended_as_delivered.py",
+      "line": "46",
+      "severity": "follow-on",
+      "text": "follow-on: the comment \"exactly the edit the incident made\" cites an unstated incident rather than describing the mechanism, which the repository's comment-hygiene rule forbids in source."
+    }
+  ],
+  "head_log_revision": "d186228883205eceba1c5a0e1096136ff57094ec",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read both commits against base ece9d52b; resumption.py adds _reset_delivered_manifest_status and the \"plan\" key, dispatch_sessions.py:1675 calls the reset from change_lane, crew_run_commands.py:1324 and mcp.py:2262 repoint their doors onto _resume, plus the new 584-line test file, the 25-line guard-test edit and the 81-line evidence fragment.",
+    "done_when": "the done_when names tests/test_a_resumed_worker_is_not_ended_as_delivered.py with five behaviour clauses plus the declared negative control; gate.log records the file 6 passed EXIT=0 at d18622888, and the importer population records 58 passed head against 52 passed at base ece9d52b, both EXIT=0.",
+    "goal": "the goal is one function in resumption.py that resets a done manifest status to in-progress, called by _resume and change_lane, with the CLI and MCP resume doors calling _resume; reckon/crew/resumption.py:1008 defines _reset_delivered_manifest_status, resumption.py:1116 and reckon/crew/dispatch_sessions.py:1675 are its two callers, and reckon/crew_run_commands.py:1324 and reckon/mcp.py:2262 are the two doors now delegating to _resume.",
+    "manifest": "read r-20261014T123102704468-a-resumed-worker-is-not-ended-as-delivered/manifest.md; status complete, commits ce4753e3 and d1862288, gate 6/6 and importer 58/52 EXIT=0, negative control EXIT=1, changed_paths matching the diff.",
+    "write_paths": "the manifest declares reckon/crew/resumption.py, reckon/crew/dispatch_sessions.py, reckon/crew_run_commands.py, reckon/mcp.py, tests/test_a_resumed_worker_is_not_ended_as_delivered.py, tests/test_the_fleet_gate_holds_dispatch.py (added by the recorded crew widen in resume-1-advice.txt), the evidence fragment and the figure directory; every path in the diff is inside that set."
+  },
+  "justifications": {
+    "durability": "the first case observes /proc liveness after driving the supervisor for quiet+grace+slack and asserts observed == [\"kept\"], independent of the manifest text the test wrote; the declared mutation is exercised (negative-control.log, FAILED, EXIT=1) but reddens at the manifest-text assertion at tests/test_a_resumed_worker_is_not_ended_as_delivered.py:262 before the behavioural assertion runs, so that assertion's guard is argued by reading, not shown red.",
+    "evidence": "the manifest's gate.log records tests/test_a_resumed_worker_is_not_ended_as_delivered.py 6 passed EXIT=0 and importer-population.log records 58 passed against 52 at base, so the done_when's measure is run and its result recorded.",
+    "fit": "the code follows the module idiom and carries no plan, version or author label, but tests/test_a_resumed_worker_is_not_ended_as_delivered.py:46 cites an unstated incident rather than the mechanism the repository's comment rule requires.",
+    "goal_fidelity": "reckon/crew/resumption.py:1008 is the single reset function, resumption.py:1116 and dispatch_sessions.py:1675 are its two call sites, and crew_run_commands.py:1324 and mcp.py:2262 are the CLI and MCP doors that now call _resume, so every clause of the goal holds.",
+    "reuse": "reckon/crew/resumption.py:1034-1054 re-implements the manifest resolution and first-status-line rewrite that reckon/crew/runs.py already owns and hardcodes the .asdelivered suffix that runs.py:1433 declares.",
+    "scope_discipline": "every path in the diff against ece9d52b is one the manifest declares, including tests/test_the_fleet_gate_holds_dispatch.py, which resume-1-advice.txt records as granted by crew widen."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is one function in resumption.py that resets a done manifest status to in-progress, called by _resume and change_lane, with the CLI and MCP resume doors calling _resume; reckon/crew/resumption.py:1008 defines _reset_delivered_manifest_status, resumption.py:1116 and reckon/crew/dispatch_sessions.py:1675 are its two callers, and reckon/crew_run_commands.py:1324 and reckon/mcp.py:2262 are the two doors now delegating to _resume.\nVERDICT done_when: the done_when names tests/test_a_resumed_worker_is_not_ended_as_delivered.py with five behaviour clauses plus the declared negative control; gate.log records the file 6 passed EXIT=0 at d18622888, and the importer population records 58 passed head against 52 passed at base ece9d52b, both EXIT=0.\nVERDICT write_paths: the manifest declares reckon/crew/resumption.py, reckon/crew/dispatch_sessions.py, reckon/crew_run_commands.py, reckon/mcp.py, tests/test_a_resumed_worker_is_not_ended_as_delivered.py, tests/test_the_fleet_gate_holds_dispatch.py (added by the recorded crew widen in resume-1-advice.txt), the evidence fragment and the figure directory; every path in the diff is inside that set.\nVERDICT manifest: read r-20261014T123102704468-a-resumed-worker-is-not-ended-as-delivered/manifest.md; status complete, commits ce4753e3 and d1862288, gate 6/6 and importer 58/52 EXIT=0, negative control EXIT=1, changed_paths matching the diff.\nVERDICT diff: read both commits against base ece9d52b; resumption.py adds _reset_delivered_manifest_status and the \"plan\" key, dispatch_sessions.py:1675 calls the reset from change_lane, crew_run_commands.py:1324 and mcp.py:2262 repoint their doors onto _resume, plus the new 584-line test file, the 25-line guard-test edit and the 81-line evidence fragment.\nCALL_SITES: reckon/crew/resumption.py:1116 (_resume calls the reset), reckon/crew/dispatch_sessions.py:1675 (change_lane calls the reset), reckon/crew_run_commands.py:1324 (crew_resume door onto _resume), reckon/mcp.py:2262 (_crew_recover door onto _resume), reckon/crew/recovery_repair_dispatch.py:914 (repair reflex resumes through _resume), reckon/crew/resumption.py:1622 (sweep resumes through _resume)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/resumption.py:1008 is the single reset function, resumption.py:1116 and dispatch_sessions.py:1675 are its two call sites, and crew_run_commands.py:1324 and mcp.py:2262 are the CLI and MCP doors that now call _resume, so every clause of the goal holds.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest's gate.log records tests/test_a_resumed_worker_is_not_ended_as_delivered.py 6 passed EXIT=0 and importer-population.log records 58 passed against 52 at base, so the done_when's measure is run and its result recorded.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every path in the diff against ece9d52b is one the manifest declares, including tests/test_the_fleet_gate_holds_dispatch.py, which resume-1-advice.txt records as granted by crew widen.\nSCORE durability: 17\nJUSTIFICATION durability: the first case observes /proc liveness after driving the supervisor for quiet+grace+slack and asserts observed == [\"kept\"], independent of the manifest text the test wrote; the declared mutation is exercised (negative-control.log, FAILED, EXIT=1) but reddens at the manifest-text assertion at tests/test_a_resumed_worker_is_not_ended_as_delivered.py:262 before the behavioural assertion runs, so that assertion's guard is argued by reading, not shown red.\nSCORE fit: 15\nJUSTIFICATION fit: the code follows the module idiom and carries no plan, version or author label, but tests/test_a_resumed_worker_is_not_ended_as_delivered.py:46 cites an unstated incident rather than the mechanism the repository's comment rule requires.\nSCORE reuse: 4\nJUSTIFICATION reuse: reckon/crew/resumption.py:1034-1054 re-implements the manifest resolution and first-status-line rewrite that reckon/crew/runs.py already owns and hardcodes the .asdelivered suffix that runs.py:1433 declares.\nFINDING reckon/crew/resumption.py:1049 follow-on: _reset_delivered_manifest_status duplicates mechanics reckon/crew/runs.py already owns without extending it \u2014 the first-status-line rewrite at runs.py:1469 (_status_line_replaced), the pointer-first manifest resolution at runs.py:1442 (_manifest_for_repair), and the .asdelivered suffix declared at runs.py:1433 (AS_DELIVERED_SUFFIX) \u2014 so a later change to that vocabulary or resolution order will not reach this copy.\nFINDING tests/test_a_resumed_worker_is_not_ended_as_delivered.py:46 follow-on: the comment \"exactly the edit the incident made\" cites an unstated incident rather than describing the mechanism, which the repository's comment-hygiene rule forbids in source.\n",
+  "review_run_id": "r-20261014T134426152604-review-of-a-resumed-worker-is-not-ended-as-delivered-d18622888320",
+  "reviewed_base_sha": "ece9d52b3b527fcdc73da431943b614e4c767297",
+  "reviewed_head_sha": "d186228883205eceba1c5a0e1096136ff57094ec",
+  "reviewed_run_id": "r-20261014T123102704468-a-resumed-worker-is-not-ended-as-delivered",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 15,
+    "goal_fidelity": 19,
+    "reuse": 4,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T13:50:08.444900+00:00",
+  "total": 90
+}

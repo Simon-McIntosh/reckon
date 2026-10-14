@@ -25,7 +25,7 @@
   <title>A Run Has One Live Writer | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="24">
+<meta name="plan-version" content="25">
 <meta name="plan-modified" content="2026-10-14">
 </head>
 <body>
@@ -157,6 +157,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-10-14T07:50:00Z">
     <div class="r-comment-body"><p>§2 landed. Stopping a run, or losing its supervisor, now ends the worker and its children, including a worker reparented to init, found by <code>RECKON_RUN_ID</code>. Every pid used is identity-checked against its recorded start time. Every run-ending signal path inherits the reach, and a run whose worker lives is no longer classified complete or scoring. Merged <code>778e084c2</code> as <code>c0390eb72</code>; the gate replayed green there. Five repair rounds caught a missed caller set, a bypassed recycled-pid guard, a crash in the dead-supervisor case, and a guard regression, all before merge. Population: 0 attributable added failures over 128 files. Review: 109. Follow-on: <code>routing.py</code> needs splitting, as it is over the worker-window bound. <a href="/reckon/evidence/archive/a-run-has-one-live-writer-landed.html#s2-worker-never-outlives">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261014T134426152604-review-of-a-resumed-worker-is-not-ended-as-delivered-d18622888320" data-who="reckon-build" data-when="2026-10-14T13:51:45.043Z">
+    <div class="r-comment-body"><p>an independent review of run r-20261014T123102704468-a-resumed-worker-is-not-ended-as-delivered: a parsed record scoring all six dimensions (goal_fidelity 19, evidence 18, scope_discipline 17, durability 17, fit 15, reuse 4; total 90), reviewed_base_sha ece9d52b3b527fcdc73da431943b614e4c767297 and reviewed_head_sha d186228883205eceba1c5a0e1096136ff57094ec, added_failure_count 0 with no added ids derived from the run&#x27;s own base-importer-population (52 passed) and importer-population (58 passed) gate logs, carrying two follow-on findings — the reset helper duplicating reckon/crew/runs.py&#x27;s manifest-status mechanics, and an incident-citing comment in the new test.</p></div>
 </div>
 </section>
 <section data-reckon="followups" id="followups" class="r-followups">
