@@ -479,26 +479,6 @@ def follower_owner() -> tuple[int, str]:
     return _RESOLVED_FOLLOWER_OWNER.resolve()
 
 
-def follower_registration_host(record: Mapping[str, Any]) -> str:
-    """The host a follower registration names as the one it was written on.
-
-    Spelled exactly as a producer seat's host is read (``runs._seat_host``): the
-    stored ``host`` field, or the empty string when the record carries none.
-    """
-    return str(record.get("host") or "")
-
-
-def registration_names_a_foreign_host(record: Mapping[str, Any]) -> bool:
-    """Report whether a registration names a host that is not this one.
-
-    A record naming no host is neither local nor foreign: it predates the field,
-    or it is an erased record, and both are read against the local process
-    table. Only a record known to belong to another host is spared that probe.
-    """
-    host = follower_registration_host(record)
-    return bool(host) and host != socket.gethostname()
-
-
 def _follower_liveness(path: Path) -> dict[str, Any]:
     """Read one registration and decide whether it still delivers."""
     if not path.is_file():
@@ -529,7 +509,7 @@ def _follower_liveness(path: Path) -> dict[str, Any]:
         time.sleep(0.005)
 
     pid = record.get("pid")
-    foreign = registration_names_a_foreign_host(record)
+    foreign = _seat_names_a_foreign_host(record)
     if foreign:
         # A pid is issued by one kernel, so a registration written on another
         # host names a process this host's table cannot answer for: its absence
@@ -616,7 +596,7 @@ def _follower_liveness(path: Path) -> dict[str, Any]:
     return {
         "registered": registered,
         "live": live,
-        "host": follower_registration_host(record),
+        "host": _seat_host(record),
         "foreign": foreign,
         # A registration file that exists while its advisory lock is free is a
         # follower that was armed and has since expired; a path that was never
@@ -756,5 +736,7 @@ from .run_paths import (  # noqa: E402
 
 
 from .watch_unit import (  # noqa: E402
+    _seat_host,
+    _seat_names_a_foreign_host,
     _watch_attach_line,
 )

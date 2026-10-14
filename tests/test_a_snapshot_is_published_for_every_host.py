@@ -32,7 +32,6 @@ from typing import Any
 import pytest
 
 from reckon.crew import (
-    follower_registration,
     obligation_snapshot,
     recovery_watch,
     runs,
@@ -265,12 +264,11 @@ def test_a_registration_records_the_host_it_was_written_on(
     assert state["foreign"] is False
     assert state["host"] == socket.gethostname()
     record = state["follower"]
-    assert (
-        follower_registration.follower_registration_host(record) == socket.gethostname()
-    )
-    assert follower_registration.follower_registration_host(record) == runs._seat_host(
-        record
-    )
+    # One host judgement serves seats and followers alike: the row reads the
+    # registration through the same helper a producer seat is read through, so
+    # the two can never answer differently about one host.
+    assert watch_unit._seat_host(record) == socket.gethostname()
+    assert watch_unit._seat_host(record) == runs._seat_host(record)
 
 
 def test_a_foreign_registration_is_judged_by_its_lock_not_this_hosts_table(
@@ -289,6 +287,11 @@ def test_a_foreign_registration_is_judged_by_its_lock_not_this_hosts_table(
         held = runs.follower_state(PROJECT, SESSION_FOREIGN)
         assert held["foreign"] is True
         assert held["host"] == FOREIGN_HOST
+        # The row's host judgement is the seat judgement, not a second one.
+        assert held["host"] == watch_unit._seat_host(held["follower"])
+        assert held["foreign"] is watch_unit._seat_names_a_foreign_host(
+            held["follower"]
+        )
         assert held["live"] is True, held
         # The producer's selection and the reflex's guard read this one value.
         rows = {row["session"]: row for row in runs.list_followers(PROJECT)}
