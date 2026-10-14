@@ -18,8 +18,8 @@ whose body records the session are each caught.
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Sequence
 from pathlib import Path
-from typing import Iterable, Sequence
 
 
 def _read_text(path: Path) -> str:
