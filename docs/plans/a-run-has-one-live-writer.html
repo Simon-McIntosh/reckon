@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-run-has-one-live-writer">
   <meta name="plan-title" content="A Run Has One Live Writer">
   <meta name="plan-summary" content="Two nova incidents put a second writer in a run&#x27;s tree: a worker outlived its supervisor, and a resume launched beside a live one. Each run gets one writer.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="done">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="3.25">
   <meta name="plan-capability-version" content="1.0">
@@ -25,7 +25,7 @@
   <title>A Run Has One Live Writer | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="33">
+<meta name="plan-version" content="34">
 <meta name="plan-modified" content="2026-10-15">
 </head>
 <body>
@@ -180,6 +180,9 @@
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261014T215224932408-a-resume-claim-spans-its-launch" data-who="reckon-build" data-when="2026-10-14T22:50:50.917Z">
     <div class="r-comment-body"><p>_resume takes its _LAUNCHES_IN_THIS_PROCESS entry inside the guarded block and holds it until record_resumption has written the attempt or the launch has failed, so a raised in-flight mark cannot leak the entry and a second pass in the same process is refused until the attempt is recorded; only a launch that failed before a worker existed clears the in-flight mark, so a recording failure after a pid exists leaves the mark on the pointer and drops just the in-process entry; the 39-file importer population adds no failure against base (head 2 failed/575 passed vs base 3 failed/574 passed, every base failure present at head and the one head-only test passing alone at the same head).</p></div>
 </div>
+<div class="r-comment" data-section="s5" data-id="c-close-s5" data-who="reckon-build" data-when="2026-10-14T23:15:00Z">
+    <div class="r-comment-body"><p>§5 landed. A resume's in-process claim is taken inside the guarded block and held until the attempt is recorded. The in-flight mark is cleared only when the launch itself failed, never on a live worker. Merged as <code>71f0e811c</code>, and the gate was replayed green there. Population: 112 files, 0 added. Review: 114. A repair round caught a first cut that would have cleared the mark after a successful spawn. <a href="/reckon/evidence/archive/a-run-has-one-live-writer-landed.html#s5-claim-spans-launch">evidence</a></p></div>
+</div>
 </section>
 <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
@@ -189,10 +192,17 @@
     <pre class="r-fu-prompt">/reckon-build a-run-has-one-live-writer §2</pre>
     <p class="r-fu-outcome">§2, §3 and §4 landed on 2026-10-14 (c-close-s2, c-close-s3, c-close-s4). The two §3 follow-ons are folded into §5, carried by f-arolw-claim-span.</p>
     </article>
-<article class="r-fu" data-id="f-arolw-claim-span" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-14" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-arolw-claim-span" data-status="resolved" data-written-by="reckon-build" data-written-at="2026-10-14" data-recommends-skill="" data-resolved-at="2026-10-14T23:11:31+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Make a resume&#x27;s in-process claim span exactly its launch (§5)</h4>
     <div class="r-fu-body"><p>§2–§4 have landed. Two follow-ons from §3 remain and form §5: the registry entry leaks when writing the in-flight mark raises, and it is released before the attempt is recorded.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-run-has-one-live-writer §5</pre>
+    <p class="r-fu-outcome">§5 merged as 71f0e811c (c-close-s5): a resume's in-process claim spans exactly its launch, and the in-flight mark survives a recording failure on a live worker.</p>
+    </article>
+<article class="r-fu" data-id="f-arolw-close" data-status="resolved" data-written-by="reckon-build" data-written-at="2026-10-14" data-recommends-skill="" data-resolved-at="2026-10-14T23:15:00Z" data-resolved-by="reckon-build">
+    <h4 class="r-fu-title">A run has one live writer — done</h4>
+    <div class="r-fu-body"><p>§2–§5 have landed: a worker never outlives its supervisor, a resume never launches beside a live attempt, a resumed worker is not ended as a delivery it has not made, and a resume's in-process claim spans exactly its launch.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-run-has-one-live-writer</pre>
+    <p class="r-fu-outcome">done — no followup</p>
     </article>
 </section>
 </main>
