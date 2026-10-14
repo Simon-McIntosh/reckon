@@ -1,0 +1,44 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-14T18:32:20.503Z",
+  "dispatched_at": "2026-10-14T18:22:09Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-seat-held-elsewhere-is-not-restarted/r-20261014T182137182694-plan-review-of-a-seat-held-elsewhere-is-not-restarted/plan.html:119",
+      "id": "reasoning-1",
+      "reason": "bounding the section's claim to cycles faster than the interval, and choosing the interval with margin over the period's observed variance, changes the sampling constant and the sentence a node builds against; left as written it presents a rate-limited detector as a universal one.",
+      "text": "\u00a75 asserts its two readings \"cannot read the same count on both\" and that this is how \"a cycle of any cause becomes visible\", but that guarantee holds only for a sustained cycle faster than the 10 s interval; \u00a71's period is a single point measurement (restarts 6 in 40 s, about 6.7 s) whose import-time component varies, so a slower pass can push the period past 10 s and both readings can match, reporting the cycling unit healthy \u2014 the same false negative \u00a75 exists to remove \u2014 while a genuinely slower cycle of any other cause is never seen at all. A reader or builder acting on \"any cause\" will not build for that case, and the margin is only 1.5x over a figure measured once, so the guard's sufficiency rests on a claim the section's own evidence does not support.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "3c27e875a24c2dc04377332ff59f95173d77e03cf72fb0cf8b8441bf268b9514",
+  "plan_slug": "a-seat-held-elsewhere-is-not-restarted",
+  "plan_version": 11,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261014T182137182694-plan-review-of-a-seat-held-elsewhere-is-not-restarted",
+  "reviewed_blob_sha": "252b640e2f9a4590ec1c37bb4b79885a3f0195cd",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `SystemdUserUnitManager` resolves (reckon/service.py:324) with its `active()` (line 341), `ensure_watcher_service` (reckon/crew/watch_unit.py:381) and its `manager` seam (line 384, used at 441), the \"already active on an unchanged unit\" line it quotes (watch_unit.py:493-494), \u00a71's 6.7 s, and the review-loop plan's \u00a75 all resolve; the archive hrefs #s3 and #s6 resolve.",
+    "done_when": "pass \u2014 \u00a75's done-when is measurable in two arms (a rising count reports \"cycling\") and a control that can fail (a holding count reports \"as before\"), and it names a declared negative control (\"with only one reading taken, the rising unit must read as healthy, reproducing 2026-10-13\").",
+    "evidence_paths": "pass \u2014 \u00a75 promises no gate log in a scratch or node-local path; its test evidence is delivered through the run manifest, as for \u00a72.",
+    "naming": "pass \u2014 no plan label, stage name, ticket number or version tag reaches \u00a75's promised symbols; \"one named constant\" carries no label.",
+    "reasoning": "a finding \u2014 \u00a75's closing sentence claims the mechanism is \"how a cycle of any cause becomes visible\", but the mechanism detects only cycles whose period is shorter than its 10 s sampling interval, and the 10 s interval rests on \u00a71's single point measurement (6 in 40 s) with only a 1.5x margin.",
+    "single_goal": "pass \u2014 \u00a75 names one deliverable: report a cycling unit.",
+    "wiring": "pass \u2014 \u00a72 hands the cycling report to \u00a75, \u00a74 cites \u00a73's confirmed cause, and \u00a75's only cross-reference (the 6.7 s measurement in \u00a71) names a section marked done; no declared relationship points at the wrong section."
+  },
+  "section_digests": {
+    "_document": "b5e9a5803f8d01013f39b9479df51d6f39be89b485428570f70d9af555af7564",
+    "s1": "e775b15757e63b277715e69df2ef97f2cf13db4e6364fc83b2f4ad6aa3bc858c",
+    "s2": "0ed10d108f8d1ab2183625c90b68b4eafa74562e02814b07bb8c2079f5f67566",
+    "s3": "738aba9bff855c84122fa9ea72b1f1ef13486345a013a765e54c0cfa391a20c0",
+    "s4": "ca75c5c574381e50431d8d43b8f5532df7925573cf2dee356bea7941fcbd55cb",
+    "s5": "8a405fc1033a28f8896ec57821174288726cdfc9d0c2d105991aaccfbe106537",
+    "s6": "c7b09760750dbf67efa83f9127581fea7578c7bf1e30b595ecd6c313b7505bad"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T18:33:34.331255+00:00"
+}
