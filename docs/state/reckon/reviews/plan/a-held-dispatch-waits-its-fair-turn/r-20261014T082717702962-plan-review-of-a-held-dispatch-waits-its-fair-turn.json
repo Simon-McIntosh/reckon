@@ -1,0 +1,60 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-14T08:41:07.433Z",
+  "dispatched_at": "2026-10-14T08:27:53Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-held-dispatch-waits-its-fair-turn.html:153",
+      "id": "done_when-1",
+      "reason": "the gate does not prove the deliverable's second half, so the same defect the section exists to close survives in the write-path case the plan itself names.",
+      "text": "\u00a722's deliverable re-roots \"a manifest path or write path inside the queued run's own directory\", but the three done-when cases assert only the manifest path (case 1: launched manifest_path and prompt; case 2: an external --manifest kept elsewhere; case 3: the brief path unchanged) and the single negative control reverts only \"the queued manifest path carried over unchanged\", so a builder that re-roots the manifest path alone passes the gate while a node whose write paths default under the queued run's directory keeps delivering into it",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "f48746b7b9ee2f4de61d1b8c68d11aac74dfcfd1be2d57c675d902c540b47c89",
+  "plan_slug": "a-held-dispatch-waits-its-fair-turn",
+  "plan_version": 113,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261014T082717702962-plan-review-of-a-held-dispatch-waits-its-fair-turn",
+  "reviewed_blob_sha": "794df19ada7e4a45cc431eef248722a7cbbd06d0",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_node_from_pointer` (reckon/crew/queue_admission.py:74), `_supervisor_manifest_path` (reckon/crew/dispatch_launch.py:2612), `_resolved_write_paths` (reckon/crew/dispatch_admission.py:1756) and dispatch_plan.py:477 all resolve, and the cited measurement run r-20261014T080250692824 exists with admitted_from naming r-20261014T080011715849.",
+    "done_when": "a finding \u2014 \u00a722's deliverable re-roots both a manifest path and a write path out of the queued run's own directory, but its three cases and its single negative control exercise only the manifest path.",
+    "evidence_paths": "pass \u2014 \u00a722's gate and its negative control are logged under the run directory, a durable path rather than a session scratchpad or a node-local temp directory.",
+    "naming": "pass \u2014 \u00a722 introduces no plan labels, stage names, ticket numbers or version tags, and names its mechanism (the queued run's directory) rather than a tracker entry.",
+    "reasoning": "pass \u2014 the stated root cause matches the cited evidence: the live pointer for r-20261014T080250692824 still carries a manifest_path under the queued run r-20261014T080011715849 and admitted_from naming that queued run, and _launch_queued passes the rebuilt node to dispatch, which reads the non-empty path as caller-named, so the mechanism runs on the real path with _launch_queued named.",
+    "single_goal": "pass \u2014 \u00a722 carries one deliverable: a relaunched request takes its run-directory defaults from its launched run id.",
+    "wiring": "pass \u2014 \u00a722 declares its ordering with \u00a720 (\"shares queue_admission.py with \u00a720, so it is dispatched after \u00a720 lands\") and its relationship to \u00a79's brief path; the cited plan a-run-has-one-live-writer and its \u00a73 both resolve."
+  },
+  "section_digests": {
+    "_document": "bcfa170778d0fcddc3eb5ff6b63c26489d5f1f61be8a483293c6eacd3569349e",
+    "s1": "e09f72c38fa12dd06b1fede9137b6a8731c7f42dad95ea4d7873e48b6bcebc93",
+    "s10": "769f35c4ff338677b1083340b990086682e629701a25af49a8b6e2d3b8a175a4",
+    "s11": "3aafc106945bdc346a0f808fc26c7fc8e028b922103641455da38536ae24c036",
+    "s12": "f72ab709e3a40644be43c6e558b558089f939e3368a20a2b34321a9043c80c88",
+    "s13": "1f1792d925edd6b7c0b33bd02bebc3db1f499f9d5e1505b3ba04b305d9ed7f64",
+    "s14": "a86f35810a5d1446f8cf9294a46f7a7a393c1452cc3080ef8b9e51cf83670acf",
+    "s15": "694218fb467e061648aac13eed1a446529dbff08aca86ecfdb24792eb5b2820e",
+    "s16": "5d0a87ee69959477d707fb8d7b442b283f6ae0e7bc896382dd4c65c7e3efb9b8",
+    "s17": "d3bfb51ccfbe6c602a6a11cd9d7e433d1385fd2b90b604f2eb307029dc97f703",
+    "s18": "f67610611bfb819007234cb2d266523cab773379dedf07c8b53feb8f9e78ef59",
+    "s19": "1a735ef01d42913d9085a7d2db7eb238ecd99450b1ee61e3702d9951b4be8b04",
+    "s2": "c37ed4ecb2dad1331b0b031fb8351608243790308312236d375bede3594285b7",
+    "s20": "27cbb7d66474dcc03ee947d28d02bf69241181f95114d64b5dfd64cece9a6d2d",
+    "s21": "9d6a0b0914d4b7c617f66b56c23c29f423e83783cee042a59efd0844e910758e",
+    "s22": "9354dce0944fb0f063842cc1bcb072e8c97f9da2ba52582cf63570ebd5d77da8",
+    "s3": "ef687123318fac196bded366330cf2e92b586c4991b5c1cc8670f228182f916c",
+    "s4": "e6a41eadc72e4752cc0ebe35a14a9bce3f28bc1061ec677e8f779fa09d8c037c",
+    "s5": "4b674f96924c3dbfde217945d16c606df376d034dc060f02360a4336412e74f8",
+    "s6": "9e35fc2341a06de64fed9ff7f176a0e83b22c1482c1b5a04a5539b6e4c07aab4",
+    "s7": "764a72dad2d59bddd4d3b1209f07c0c210ff6c46cd14147d4bcc7ffe9fa9426d",
+    "s8": "1b92313fdf672f4b813b45aa8e26f1304ca363cdc5a4d1752238f794a2019e27",
+    "s9": "ef8f75976cf8d243089cb5955b0e084cf6e2c6bcd478f9e56b8e8654080c6ad6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T08:42:49.943758+00:00"
+}
