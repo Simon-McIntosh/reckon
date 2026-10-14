@@ -1,0 +1,92 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-14T05:24:43.048Z",
+  "dispatched_at": "2026-10-14T05:16:06Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-suite-is-green-at-head.html#s15",
+      "id": "reasoning-1",
+      "reason": "the plan must narrow the exemption (e.g. deliver an own-session baseline only for a state the pane's fleet report does not already carry, or key it on the run having stream history) before a node implements it, or the node's first gate run turns `test_follow_settled_rows.py` red and the section cannot close.",
+      "text": "\u00a715's \"own-session baseline on a first arm\" exemption (`kind (None, state)`, delivered whenever the pane holds no checkpoint) is indistinguishable from the fleet baseline that `tests/test_follow_settled_rows.py::test_the_pane_receives_only_the_settled_changes` arms on: `_deliver` writes two own-session pointers at `phase=\"working\"` (`test_follow_settled_rows.py:109,232`) with no prior stream content, so the first arming's `_fleet_replay` feeds two own-session baseline rows of kind `(None,\"working\")` \u2014 the same shape the exemption delivers \u2014 yet that test asserts `first == []` (\"the attach's own re-announcements ask for nothing, so the first arming wakes nobody\", line 256-258). Meanwhile the third negative control relies on the same exemption delivering the identical row shape in `test_follower_survives_a_config_change.py` (pointer `phase=\"working\"`, line 169) and `test_follower_survives_a_host_change.py` (pointer `phase=\"working\"`, line 57). One kind-keyed rule cannot both deliver and withhold it, so as written the exemption breaks the pin the done-when names.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-suite-is-green-at-head.html#s15",
+      "id": "done_when-1",
+      "reason": "a done-when that its own mechanism provably fails is the measurable form of the reasoning defect above; the plan must either narrow the exemption or move `test_follow_settled_rows.py` into the write paths and state how it is re-anchored.",
+      "text": "\u00a715's done-when asserts \"`test_follow_settled_rows.py` \u2026 still pass\", but that file is not in \u00a715's write paths and under the deliverable's third exemption its first-arm assertion `first == []` cannot hold, so the gate as stated is unsatisfiable by the mechanism as stated.",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "2d4e1d0eaf43ab2266ea83530d170333b356e2bc7291348e5ecdbc556d6c2eb7",
+  "plan_slug": "the-suite-is-green-at-head",
+  "plan_version": 328,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-14T05:26:46.024699+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-14T05:27:00.347104+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-14T05:27:00.347104+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-14T05:26:46.024699+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-suite-is-green-at-head.v328.json",
+  "review_run_id": "r-20261014T051528433311-plan-review-of-the-suite-is-green-at-head",
+  "reviewed_blob_sha": "5c881750149d83b7f0052847c686d58050bae0b3",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 commit `089cd7741` resolves, the cited report directory exists, and the extensionless `href=\"/reckon/plans/the-suite-is-green-at-head\"` resolves as `<path>.html`.",
+    "done_when": "a finding \u2014 \u00a715's done-when requires `tests/test_follow_settled_rows.py` to still pass, but the third exemption it introduces delivers the very baseline rows that test asserts are withheld.",
+    "evidence_paths": "pass \u2014 the cited investigation report (`~/.config/reckon/crew/reports/reckon/the-suite-is-green-at-head/follower-family-shared-cause/report.md`, present) and the three negative-control logs under the run directory are durable paths, not a session scratchpad.",
+    "naming": "pass \u2014 \u00a715 names real symbols (`RowPolicy`, `START_KIND`, `SETTLE_WINDOW`, `follower_row_path`, `PaneRowPath`) with no plan label, stage name, ticket number or version tag.",
+    "reasoning": "a finding \u2014 the third exemption, stated as \"an own-session baseline row, kind `(None, state)`, is delivered on a first arm\", is keyed on exactly the row shape that `test_follow_settled_rows.py`'s first arming feeds and asserts is withheld, so the mechanism the section describes cannot produce the section's own done-when.",
+    "single_goal": "pass \u2014 \u00a715 carries one deliverable (deliver the follower-family rows through the pane) closed by one gate.",
+    "wiring": "pass \u2014 the plan declares itself standalone (`plan-standalone`: \"gates no other plan\"), and \u00a715 introduces no `depends-on`/`informs`/`gates` edge that resolves to a missing or wrong node; its only new edges are in-file write paths."
+  },
+  "section_digests": {
+    "_document": "83bc4eebbeaf35e1f8769b1cefa72ecf8466fb0d23d3dd350bf2e642790b97e5",
+    "s1": "93d7e8eb3f04bb8d9aad0f5ac7d68a9d009b7fe7feaa6f4932738242154d8d4d",
+    "s10": "9633fb928a6c720c8fae74ed3da0a5f7ed555c4230f29ebf2ee89e5432566bb1",
+    "s11": "3e9c94371cc0b22adeb21c71a08fdd16433d8b4c1a22e73cd63d1171332089ba",
+    "s12": "dd8650523d29d87e6fa41408db7d0440cf17dfbd57f0ab6da0d5fcd223692d95",
+    "s13": "7b00f23667f49ba7de16f8823860c86ad35a562eebddf434fd1a6b9f1f5e9993",
+    "s14": "1469c86b5327d2429ce07b9ddd2fbca586d8831acb94119f8a187e315f48dcf7",
+    "s15": "c8a4464af690a0e08f5c026107723eb73e0956406653b6d578e066421fe1a143",
+    "s16": "4ab9d42bd2e71d070a1cc5393ebea66e1ec71d06dad51f1a82505c91ce309234",
+    "s2": "d8e1d44eab3d041cfa8f08f045885bcf9a783d27f0cb613fe7de2c0476c13887",
+    "s3": "d6efa514940aeb662c9b7fdee7f663c86e4da2526ec9a01c6977f967e30d886a",
+    "s4": "e7003c1b5457d6229da28b7d90f825f0e3ef67be2a012291c12a2daf14bf2273",
+    "s5": "934ff53a2b41de523672b7760ab4bbe2e8be5d3da6b580c600383ac0217825a2",
+    "s6": "532d289736e3278c9969cb253dc2c1c372054b378fd42f2cfb741906f6e66eb2",
+    "s7": "655ef45aae9c9f31c0c67cb28422cff4a16611cfce488326c298768a23f58efd",
+    "s8": "c78e67e053ac3d61a73df4b965e8209a12ca4d9b745535a102b0b0040cce3adc",
+    "s9": "f4ef4f0dc18779331d3654037d55a7dd1c27d3769bfbfe753867fccbb53f9a28"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T05:24:52.246157+00:00"
+}
