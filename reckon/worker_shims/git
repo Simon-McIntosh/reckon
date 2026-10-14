@@ -39,10 +39,9 @@ fi
 # site-packages on PYTHONPATH; left ahead of reckon's own packages, a 3.11 copy
 # of a dependency shadows the one reckon needs and the import fails before git
 # is reached. The caller's interpreter-path variables are parked under
-# RECKON_SHIM_CALLER_* here: the module hands them back to the program the shim
-# runs, and the bootstrap below appends the caller's PYTHONPATH after reckon's
-# own packages, so a caller's sitecustomize still runs while its packages
-# cannot shadow reckon's.
+# RECKON_SHIM_CALLER_* here: shim_lookup's caller_environment hands them back
+# to the git command the shim runs, so they never reach this interpreter and
+# nothing on the caller's path can shadow reckon's packages.
 # -P keeps the working directory off sys.path, so the package imported is the
 # one this shim belongs to rather than whatever checkout happens to be the cwd.
 if [ "${PYTHONPATH+set}" = set ]; then
@@ -61,16 +60,7 @@ unset PYTHONPATH PYTHONHOME PYTHONSTARTUP
 
 PYTHONPATH="$repo_root" \
   exec "$interpreter" -P -s -c '
-import os
 import sys
-
-_extra = os.environ.get("RECKON_SHIM_CALLER_PYTHONPATH", "")
-if _extra:
-    sys.path.extend(_part for _part in _extra.split(os.pathsep) if _part)
-    try:
-        import sitecustomize  # noqa: F401
-    except ModuleNotFoundError:
-        pass
 
 from reckon.worker_git_shim import main
 

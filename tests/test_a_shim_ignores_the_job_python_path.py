@@ -15,9 +15,10 @@ worker shim succeeds, each host shim reaches its main, and the program the shim
 runs still sees the caller's ``PYTHONPATH`` and ``PYTHONHOME`` unchanged.
 
 The negative control the file declares restores the appended caller
-``PYTHONPATH`` in the shims; the cases below then fail on the import error the
-hostile directory raises. ``mutate_shim_source`` applies it, and the control is
-logged under the run directory.
+``PYTHONPATH`` and the bootstrap's ``sitecustomize`` import in the shims; the
+cases below then fail on the import error the hostile directory raises.
+``mutate_shim_source`` applies it, and the control is logged under the run
+directory.
 """
 
 from __future__ import annotations
@@ -53,6 +54,21 @@ _FIXED_EXEC = 'PYTHONPATH="$repo_root" \\'
 _BUGGY_EXEC = 'PYTHONPATH="$repo_root${PYTHONPATH:+:$PYTHONPATH}" \\'
 _FIXED_UNSET = "unset PYTHONPATH PYTHONHOME PYTHONSTARTUP"
 _BUGGY_UNSET = "unset PYTHONHOME PYTHONSTARTUP"
+_FIXED_PROLOGUE = "import sys\n\nfrom reckon."
+_BUGGY_PROLOGUE = (
+    "import os\n"
+    "import sys\n"
+    "\n"
+    '_extra = os.environ.get("RECKON_SHIM_CALLER_PYTHONPATH", "")\n'
+    "if _extra:\n"
+    "    sys.path.extend(_part for _part in _extra.split(os.pathsep) if _part)\n"
+    "    try:\n"
+    "        import sitecustomize\n"
+    "    except ModuleNotFoundError:\n"
+    "        pass\n"
+    "\n"
+    "from reckon."
+)
 
 
 def mutation_names() -> tuple[str, ...]:
@@ -69,7 +85,15 @@ def mutate_shim_source(text: str) -> str:
     """
     if _FIXED_EXEC not in text or _FIXED_UNSET not in text:
         raise AssertionError("the code the mutation targets is not where it expects it")
-    mutated = text.replace(_FIXED_UNSET, _BUGGY_UNSET).replace(_FIXED_EXEC, _BUGGY_EXEC)
+    if _FIXED_PROLOGUE not in text:
+        raise AssertionError(
+            "the bootstrap prologue is not where the mutation expects it"
+        )
+    mutated = (
+        text.replace(_FIXED_UNSET, _BUGGY_UNSET)
+        .replace(_FIXED_EXEC, _BUGGY_EXEC)
+        .replace(_FIXED_PROLOGUE, _BUGGY_PROLOGUE)
+    )
     if mutated == text:
         raise AssertionError("the mutation changed nothing")
     return mutated
@@ -78,6 +102,10 @@ def mutate_shim_source(text: str) -> str:
 # The hostile dependency: any interpreter that imports it fails, which is the
 # failure the job's Python-3.11 copy of typing_extensions produced.
 _HOSTILE = 'raise ImportError("hostile typing_extensions on the job PYTHONPATH")\n'
+
+# The hostile startup hook: a caller-path ``sitecustomize`` that raises on
+# import, the shape a module-load path can carry.
+_SITE_CUSTOMIZE = 'raise ImportError("hostile sitecustomize on the job PYTHONPATH")\n'
 
 # A fake real tool that records the environment the shim handed it. ``%s`` is
 # its own name so one body serves git and each scheduler tool.
@@ -102,6 +130,20 @@ def make_hostile(root: Path) -> Path:
     hostile = root / "hostile"
     hostile.mkdir(parents=True, exist_ok=True)
     (hostile / "typing_extensions.py").write_text(_HOSTILE, encoding="utf-8")
+    return hostile
+
+
+def make_raising_sitecustomize(root: Path) -> Path:
+    """A directory whose ``sitecustomize`` raises on import.
+
+    A caller's ``PYTHONPATH`` naming such a directory is the shape a
+    ``module load`` can leave: a startup hook written for another Python
+    version that cannot even be imported. A shim that imports it before git is
+    reached stops there.
+    """
+    hostile = root / "hostile-sitecustomize"
+    hostile.mkdir(parents=True, exist_ok=True)
+    (hostile / "sitecustomize.py").write_text(_SITE_CUSTOMIZE, encoding="utf-8")
     return hostile
 
 
@@ -248,3 +290,35 @@ def test_each_host_shim_reaches_its_main_under_a_hostile_python_path(
         assert fields.get("TOOL") == tool, f"{tool}: {result.stdout}"
         assert fields.get("PYTHONPATH") == str(hostile), f"{tool}: {result.stdout}"
         assert fields.get("PYTHONHOME") == str(hostile), f"{tool}: {result.stdout}"
+
+
+# ── a raising caller sitecustomize does not stop a shim ──────────────────────
+
+
+def test_a_raising_sitecustomize_on_the_job_path_does_not_stop_a_shim(
+    tmp_path: Path,
+) -> None:
+    """A caller ``sitecustomize`` that raises must not reach the shim.
+
+    The shims used to append the caller's ``PYTHONPATH`` and import a
+    ``sitecustomize`` found there, so a startup hook that raises — a hook
+    written for another Python version, say — stopped the shim before git or
+    the scheduler was reached. With the append gone the hook never runs: a git
+    command succeeds and each host shim reaches its main.
+    """
+    hostile = make_raising_sitecustomize(tmp_path)
+    fake = make_fake_bin(tmp_path)
+
+    git_env = base_env(tmp_path, hostile)
+    git_env["PATH"] = os.pathsep.join([str(fake), str(WORKER_SHIM_DIR), os.defpath])
+    result = run_shim(GIT_SHIM, ["status", "--short"], git_env)
+    assert result.returncode == 0, result.stderr
+    assert _recorded(result.stdout).get("TOOL") == "git", result.stdout
+
+    for tool in HOST_TOOLS:
+        env = base_env(tmp_path, hostile)
+        env["PATH"] = os.pathsep.join([str(fake), str(HOST_SHIM_DIR), os.defpath])
+        env["RECKON_ALLOW_NESTED_LAUNCH"] = "1"
+        result = run_shim(HOST_SHIM_DIR / tool, ["--version"], env)
+        assert result.returncode == 0, f"{tool}: {result.stderr}"
+        assert _recorded(result.stdout).get("TOOL") == tool, f"{tool}: {result.stdout}"

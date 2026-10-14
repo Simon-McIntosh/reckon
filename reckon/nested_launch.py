@@ -39,7 +39,12 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 
 from reckon.host import HostFacts, host_facts
-from reckon.shim_lookup import deeper, depth_refusal, real_executable
+from reckon.shim_lookup import (
+    caller_environment,
+    deeper,
+    depth_refusal,
+    real_executable,
+)
 
 # The status a refusal exits with. Distinct from the codes used by the real
 # scheduler tools so a caller can tell a refusal from a launch failure.
@@ -62,35 +67,6 @@ PARTITION_EXAMPLES = ("all_debug", "betelgeuse")
 
 # Truthy values that are not the discharge. Anything else non-empty enables it.
 _OFF = frozenset({"", "0", "false", "no"})
-
-# The interpreter-path variables the srun/sbatch/salloc shims set aside before
-# starting reckon's interpreter with only reckon's import root on its path, so a
-# job's module load cannot change which packages reckon imports. Each key maps
-# the caller's variable to the name its value is parked under.
-CALLER_PATH_ENV = {
-    "PYTHONPATH": "RECKON_SHIM_CALLER_PYTHONPATH",
-    "PYTHONHOME": "RECKON_SHIM_CALLER_PYTHONHOME",
-    "PYTHONSTARTUP": "RECKON_SHIM_CALLER_PYTHONSTARTUP",
-}
-
-
-def caller_environment(environ: Mapping[str, str]) -> dict[str, str]:
-    """The environment the real scheduler tool runs with: the caller's own.
-
-    The shim starts reckon's interpreter with only reckon's import root on its
-    path, so a caller's ``PYTHONPATH`` cannot shadow reckon's dependencies; it
-    parks the caller's interpreter-path variables under the ``RECKON_SHIM_CALLER_*``
-    names read here. Putting them back means the scheduler command the shim
-    forwards to is unaffected by the shim having run, and the parked names
-    themselves are dropped so nothing of the shim's making reaches it.
-    """
-    environment = dict(environ)
-    for name, parked in CALLER_PATH_ENV.items():
-        saved = environment.pop(parked, None)
-        if saved is not None:
-            environment[name] = saved
-    return environment
-
 
 # The tool whose argv may name an explicit single step. The others have no
 # overlap form and are refused on the implicit launch alone.

@@ -76,40 +76,16 @@ import tempfile
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 
-from reckon.shim_lookup import deeper, depth_refusal, real_executable
+from reckon.shim_lookup import (
+    caller_environment,
+    deeper,
+    depth_refusal,
+    real_executable,
+)
 
 # The environment key dispatch exports into every worker. Its presence marks
 # the caller as a run-scoped worker rather than a coordinator.
 RUN_ID_ENV = "RECKON_RUN_ID"
-
-# The interpreter-path variables the ``git`` shim sets aside before starting
-# reckon's interpreter with only reckon's import root on its path, so a job's
-# module load cannot change which packages reckon imports. Each key maps the
-# caller's variable to the name its value is parked under.
-CALLER_PATH_ENV = {
-    "PYTHONPATH": "RECKON_SHIM_CALLER_PYTHONPATH",
-    "PYTHONHOME": "RECKON_SHIM_CALLER_PYTHONHOME",
-    "PYTHONSTARTUP": "RECKON_SHIM_CALLER_PYTHONSTARTUP",
-}
-
-
-def caller_environment(environ: Mapping[str, str]) -> dict[str, str]:
-    """The environment the real git runs with: the caller's own, unchanged.
-
-    The shim starts reckon's interpreter with only reckon's import root on its
-    path, so a caller's ``PYTHONPATH`` cannot shadow reckon's dependencies; it
-    parks the caller's interpreter-path variables under the ``RECKON_SHIM_CALLER_*``
-    names read here. Putting them back means the git the shim forwards to is
-    unaffected by the shim having run, and the parked names themselves are
-    dropped so nothing of the shim's making reaches git.
-    """
-    environment = dict(environ)
-    for name, parked in CALLER_PATH_ENV.items():
-        saved = environment.pop(parked, None)
-        if saved is not None:
-            environment[name] = saved
-    return environment
-
 
 # The status a refusal exits with. Distinct from the codes the real git uses so
 # a caller can tell a refusal from a failed git command.

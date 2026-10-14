@@ -110,3 +110,34 @@ def depth_refusal(tool: str, environ: Mapping[str, str]) -> str | None:
         "shim instead of the real tool, and forwarding would only deepen the "
         "loop. Nothing ran. Check PATH for more than one reckon shim directory."
     )
+
+
+# The interpreter-path variables a shim sets aside before starting reckon's
+# interpreter with only reckon's import root on its path, so a job's module
+# load cannot change which packages reckon imports. Each key maps the caller's
+# variable to the name its value is parked under.
+CALLER_PATH_ENV = {
+    "PYTHONPATH": "RECKON_SHIM_CALLER_PYTHONPATH",
+    "PYTHONHOME": "RECKON_SHIM_CALLER_PYTHONHOME",
+    "PYTHONSTARTUP": "RECKON_SHIM_CALLER_PYTHONSTARTUP",
+}
+
+
+def caller_environment(environ: Mapping[str, str]) -> dict[str, str]:
+    """The environment the program a shim runs gets: the caller's own, unchanged.
+
+    The shim starts reckon's interpreter with only reckon's import root on its
+    path, so a caller's ``PYTHONPATH`` cannot shadow reckon's dependencies; the
+    shim parks the caller's interpreter-path variables under the
+    ``RECKON_SHIM_CALLER_*`` names read here. Putting them back means the real
+    tool is unaffected by the shim having run, and the parked names themselves
+    are dropped so nothing of the shim's making reaches it. Both the git shim's
+    decision and the scheduler shims' decision read the hand-back from here, so
+    one spelling of the mapping serves every shim.
+    """
+    environment = dict(environ)
+    for name, parked in CALLER_PATH_ENV.items():
+        saved = environment.pop(parked, None)
+        if saved is not None:
+            environment[name] = saved
+    return environment
