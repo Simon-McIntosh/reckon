@@ -54,23 +54,19 @@ def _git(repository: Path, *arguments: str) -> None:
     subprocess.run(["git", *arguments], cwd=repository, check=True, capture_output=True)
 
 
-@pytest.fixture()
-def admit_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    config_home = tmp_path / "config"
-    config_home.mkdir()
-    monkeypatch.setenv("RECKON_HOME", str(config_home))
-
-    repository = tmp_path / "checkout"
+def _seed_checkout(tmp_path: Path, project: str) -> Path:
+    """A minimal mounted checkout for ``project``, committed and ready to dispatch."""
+    repository = tmp_path / f"checkout-{project}"
     scripts = repository / "skills" / "reckon-build" / "scripts"
     scripts.mkdir(parents=True)
     source = Path(__file__).parents[1] / "skills" / "reckon-build" / "scripts"
     (scripts / "worktree_fleet.py").write_text(
         (source / "worktree_fleet.py").read_text(encoding="utf-8"), encoding="utf-8"
     )
-    state = repository / "docs" / "state" / PROJECT
+    state = repository / "docs" / "state" / project
     state.mkdir(parents=True)
     (state / "index.json").write_text(
-        json.dumps({"project": PROJECT, "data": {"_version": 0}}) + "\n",
+        json.dumps({"project": project, "data": {"_version": 0}}) + "\n",
         encoding="utf-8",
     )
     plan = repository / "docs" / "plans" / "plan-a.html"
@@ -80,7 +76,7 @@ def admit_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         "\n".join(
             [
                 "<!doctype html>",
-                f"<meta name={quote}docs-project{quote} content={quote}{PROJECT}{quote}>",
+                f"<meta name={quote}docs-project{quote} content={quote}{project}{quote}>",
                 f"<meta name={quote}reckon-type{quote} content={quote}plan{quote}>",
                 f"<meta name={quote}plan-slug{quote} content={quote}plan-a{quote}>",
                 f"<h2 id={quote}dispatch{quote}>Dispatch</h2>",
@@ -95,9 +91,29 @@ def admit_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     _git(repository, "add", "--", "docs")
     _git(repository, "add", "--", "skills")
     _git(repository, "commit", "-q", "-m", "chore: seed checkout")
+    return repository
+
+
+def _mount(config_home: Path, *repositories: Path) -> None:
+    """Publish each checkout's docs directory as the mount for its own project."""
     (config_home / "mounts.json").write_text(
-        json.dumps({PROJECT: str(repository / "docs")}), encoding="utf-8"
+        json.dumps(
+            {
+                path.name.removeprefix("checkout-"): str(path / "docs")
+                for path in repositories
+            }
+        ),
+        encoding="utf-8",
     )
+
+
+@pytest.fixture()
+def admit_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    config_home = tmp_path / "config"
+    config_home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(config_home))
+    repository = _seed_checkout(tmp_path, PROJECT)
+    _mount(config_home, repository)
     return repository
 
 
@@ -141,6 +157,7 @@ def _queue(
     session: str,
     write_paths: list[str],
     queued_at: str,
+    project: str = PROJECT,
 ) -> dict:
     node = TaskNode(
         id=node_id,
@@ -154,7 +171,7 @@ def _queue(
     )
     return {
         "run_id": run_id,
-        "project": PROJECT,
+        "project": project,
         "session": session,
         "repo": str(repository),
         "node": node.as_dict(),
@@ -166,7 +183,7 @@ def _queue(
         "created_at": queued_at,
         "hold": {"held": True},
         "dispatch_options": {
-            "project": PROJECT,
+            "project": project,
             "plan_slug": "plan-a",
             "section": "dispatch",
             "session": session,
@@ -520,3 +537,57 @@ def test_the_scopes_view_reports_a_queued_claim_as_non_binding(
 
     assert claims["r-queued"]["binding"] is False
     assert claims["r-starting"]["binding"] is True
+
+
+# --- Case 8: one relative path in two repositories is not an overlap ----------
+
+
+PROJECT_B = "proj-b"
+
+
+def test_requests_in_different_repositories_over_one_relative_path_do_not_hold(
+    admit_repo: Path, tmp_path: Path
+) -> None:
+    """A shared spelling is not a shared file: the pre-check compares repositories.
+
+    The pass drains every project's queued requests on the lane, so a comparison
+    over bare repository-relative paths would hold a request in one repository
+    behind an unrelated one in another whose declared path merely reads the same.
+    """
+    config_home = Path(os.environ["RECKON_HOME"])
+    second = _seed_checkout(tmp_path, PROJECT_B)
+    _mount(config_home, admit_repo, second)
+    lane = _lane_document(tmp_path, slots={SESSION_A: 1, SESSION_B: 1})
+    config = _config(lane)
+    runs.queue_dispatch(
+        _queue(
+            admit_repo,
+            project=PROJECT,
+            node_id="first-repo",
+            run_id="r-first-repo",
+            session=SESSION_A,
+            write_paths=[SHARED],
+            queued_at="2026-10-14T11:58:00+00:00",
+        )
+    )
+    runs.queue_dispatch(
+        _queue(
+            second,
+            project=PROJECT_B,
+            node_id="second-repo",
+            run_id="r-second-repo",
+            session=SESSION_B,
+            write_paths=[SHARED],
+            queued_at="2026-10-14T11:59:00+00:00",
+        )
+    )
+
+    result = queue_admission.admit_once(
+        now=START, config_for=lambda _pointer: config, launcher=_launcher([])
+    )
+
+    launched = {
+        runs.read_pointer(run_id)["node"]["id"] for run_id in result["launched"]
+    }
+    assert launched == {"first-repo", "second-repo"}
+    assert not result["held"]

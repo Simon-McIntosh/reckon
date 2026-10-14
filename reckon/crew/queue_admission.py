@@ -224,31 +224,46 @@ def _retry_delay(attempts: int) -> timedelta:
     return timedelta(seconds=min(seconds, ADMISSION_RETRY_BACKOFF_CAP_SECONDS))
 
 
-def _queued_scope_paths(pointer: Mapping[str, Any]) -> list[str]:
-    """The repository-relative write paths a queued request declares."""
-    node = pointer.get("node")
-    if not isinstance(node, Mapping):
-        return []
-    repo_value = str(pointer.get("repo") or "")
-    repo = Path(repo_value).expanduser() if repo_value else None
-    paths: list[str] = []
-    for raw in node.get("write_paths") or ():
-        normalized = runs._repository_relative_scope(str(raw), repo)
-        paths.append(normalized if normalized is not None else str(raw))
-    return paths
+def _resolved_request_claims(
+    pointer: Mapping[str, Any],
+) -> list[tuple[Path | None, Path]]:
+    """A queued request's write paths, resolved as the dispatch scope check does.
+
+    The resolution itself lives in ``dispatch_claims._pointer_scope_entries``, so
+    the pre-check and the claim check cannot drift: each declared path becomes a
+    ``(repository, absolute path)`` pair, and a pair in another repository never
+    overlaps however its relative spelling reads. Comparing bare
+    repository-relative paths instead would hold two requests in different
+    repositories — both declaring, say, ``pyproject.toml`` — behind each other
+    for the starvation age with no overlap at all.
+    """
+    from reckon.crew.dispatch_claims import _pointer_scope_entries
+
+    return [
+        (repository, absolute)
+        for repository, _path, absolute, _declared, _derived_from in (
+            _pointer_scope_entries(pointer)
+        )
+    ]
 
 
 def _queued_requests_overlap(
     first: Mapping[str, Any], second: Mapping[str, Any]
 ) -> bool:
-    """Whether two queued requests name a write path the other also names."""
-    first_paths = _queued_scope_paths(first)
-    if not first_paths:
+    """Whether two queued requests name a write path in one repository.
+
+    The comparison is the dispatch scope check's own: same repository, and paths
+    that overlap by component containment. A pair in different repositories never
+    overlaps, however their relative spellings read.
+    """
+    first_claims = _resolved_request_claims(first)
+    if not first_claims:
         return False
     return any(
-        runs._scopes_overlap(left, right)
-        for left in first_paths
-        for right in _queued_scope_paths(second)
+        repository == other_repository
+        and runs._scopes_overlap(absolute.as_posix(), other_absolute.as_posix())
+        for repository, absolute in first_claims
+        for other_repository, other_absolute in _resolved_request_claims(second)
     )
 
 
