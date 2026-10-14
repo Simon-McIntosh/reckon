@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own manifest: baseline_suite log base-arm.log (revision bb4bc2477, complete) reports 8 failed / 2810 passed, and after_suite log head-arm.log (revision d3b3e3da2) reports no FAILED lines, so the node-id set difference is empty and the head adds no failing test. The head arm was killed at 99% with no summary, so the head's 0 rests on an arm that printed no FAILED line rather than on a completed arm; the base arm's nine FAILED/ERROR lines show the instrument is non-vacuous. The three new tests fail at base (base-arm.log:516-518) and pass at head.",
+  "backend": "deepseek-v4.1-flash",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch_plan.py:337",
+    "reckon/crew_dispatch_commands.py:1177",
+    "reckon/crew_dispatch_commands.py:1888",
+    "reckon/crew_dispatch_commands.py:858"
+  ],
+  "completed_at": "2026-10-14T00:39:01.214Z",
+  "dispatched_at": "2026-10-14T00:27:11Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T233548277609-one-function-narrows-a-model/head-arm.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the head arm was killed at 99% with no pytest summary, so after_suite is unreadable and the added-failure count derived from it is 0 only because the killed arm printed no FAILED lines; the run's \"no added failure\" rests on a targeted re-run that was never logged, so the delta is not reproducible from the run's own evidence."
+    },
+    {
+      "file": "docs/evidence/fragments/lane-and-model-routing/one-function-narrows-a-model.html",
+      "line": "4",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment names the head run's three inline failures as specific base-present ids (test_congested_local_lane_routing twice and test_two_unnamed_reviews_launch_with_disposable_members), but the killed head arm's log carries no summary to identify them, so the fragment states an identity the recorded evidence does not support."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read both commits against base bb4bc2477: d3b3e3da2 moves the narrowing into reckon/ledger.py and re-points both callers, a0531548a adds only the evidence fragment; 214 insertions and 94 deletions across the six declared paths.",
+    "done_when": "the done_when names the shared resolver, both callers, a spy test, a catalogue-alias test, an identical-refusal test, the snapshot model_key removal and the argv test built from the resolved backend; the manifest records a complete base arm (8 failed / 2810 passed) and an incomplete head arm (after_suite completed false), the three new tests fail at base (base-arm.log:516-518) and pass at head in a re-run of the named file (6 passed), but the head arm ran -n 20 rather than the named -n 10 and was killed at 99% before its summary, so the arm procedure the done_when states is not fully met.",
+    "goal": "the node goal is to share one model-narrowing function beside resolve_name for --model and the picker route; reckon/ledger.py:319 defines backend_serving_model immediately beside resolve_name at reckon/ledger.py:228, and both reckon/crew_dispatch_commands.py:505 and reckon/crew/dispatch_plan.py:231 delegate to it and keep no narrowing of their own.",
+    "manifest": "read; it records the two commits, the six changed paths, a complete base arm and an incomplete head arm, the negative control, and its follow_ons name the stopped head arm and the three pre-existing environmental failures rather than overclaiming a green head.",
+    "write_paths": "the manifest and node spec declare seven write paths; the diff touches reckon/ledger.py, reckon/crew/dispatch_plan.py, reckon/crew_dispatch_commands.py, reckon/crew/picker/snapshot.py, tests/test_a_picked_model_is_the_model_launched.py and docs/evidence/fragments/lane-and-model-routing/one-function-narrows-a-model.html, every one inside the declared scope, with the figures directory left unused."
+  },
+  "justifications": {
+    "durability": "tests/test_a_picked_model_is_the_model_launched.py:262 and :296 assert the catalogue-only alias reaches codex-astra and gpt-6-astra against independent literals, and they redden when the picker route's inline backend-field matcher is restored, as base-arm.log:516 records.",
+    "evidence": "tests/test_a_picked_model_is_the_model_launched.py fails three of its tests at base bb4bc247 (base-arm.log:516-518) and passes six of six at head in a re-run, but the manifest's after_suite completes false because head-arm.log was killed at 99%.",
+    "fit": "reckon/ledger.py:319 follows the surrounding Mapping-typed style beside resolve_name and introduces no name the repository naming rules forbid.",
+    "goal_fidelity": "reckon/ledger.py:319 backend_serving_model sits beside resolve_name (reckon/ledger.py:228) and both reckon/crew_dispatch_commands.py:505 and reckon/crew/dispatch_plan.py:231 call it with no inline narrowing left.",
+    "reuse": "the change consolidates two hand-rolled narrowers into the first owner of a lane-and-model lookup at reckon/ledger.py:319, extending resolve_name rather than duplicating it; a capability search over reckon/ found no prior owner.",
+    "scope_discipline": "every path in the diff (reckon/ledger.py, reckon/crew/dispatch_plan.py, reckon/crew_dispatch_commands.py, reckon/crew/picker/snapshot.py, the test file and the evidence fragment) is inside the declared write paths."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to share one model-narrowing function beside resolve_name for --model and the picker route; reckon/ledger.py:319 defines backend_serving_model immediately beside resolve_name at reckon/ledger.py:228, and both reckon/crew_dispatch_commands.py:505 and reckon/crew/dispatch_plan.py:231 delegate to it and keep no narrowing of their own.\nVERDICT done_when: the done_when names the shared resolver, both callers, a spy test, a catalogue-alias test, an identical-refusal test, the snapshot model_key removal and the argv test built from the resolved backend; the manifest records a complete base arm (8 failed / 2810 passed) and an incomplete head arm (after_suite completed false), the three new tests fail at base (base-arm.log:516-518) and pass at head in a re-run of the named file (6 passed), but the head arm ran -n 20 rather than the named -n 10 and was killed at 99% before its summary, so the arm procedure the done_when states is not fully met.\nVERDICT write_paths: the manifest and node spec declare seven write paths; the diff touches reckon/ledger.py, reckon/crew/dispatch_plan.py, reckon/crew_dispatch_commands.py, reckon/crew/picker/snapshot.py, tests/test_a_picked_model_is_the_model_launched.py and docs/evidence/fragments/lane-and-model-routing/one-function-narrows-a-model.html, every one inside the declared scope, with the figures directory left unused.\nVERDICT manifest: read; it records the two commits, the six changed paths, a complete base arm and an incomplete head arm, the negative control, and its follow_ons name the stopped head arm and the three pre-existing environmental failures rather than overclaiming a green head.\nVERDICT diff: read both commits against base bb4bc2477: d3b3e3da2 moves the narrowing into reckon/ledger.py and re-points both callers, a0531548a adds only the evidence fragment; 214 insertions and 94 deletions across the six declared paths.\nCALL_SITES: reckon/crew/dispatch_plan.py:337, reckon/crew_dispatch_commands.py:1177, reckon/crew_dispatch_commands.py:1888, reckon/crew_dispatch_commands.py:858\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/ledger.py:319 backend_serving_model sits beside resolve_name (reckon/ledger.py:228) and both reckon/crew_dispatch_commands.py:505 and reckon/crew/dispatch_plan.py:231 call it with no inline narrowing left.\nSCORE evidence: 13\nJUSTIFICATION evidence: tests/test_a_picked_model_is_the_model_launched.py fails three of its tests at base bb4bc247 (base-arm.log:516-518) and passes six of six at head in a re-run, but the manifest's after_suite completes false because head-arm.log was killed at 99%.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff (reckon/ledger.py, reckon/crew/dispatch_plan.py, reckon/crew_dispatch_commands.py, reckon/crew/picker/snapshot.py, the test file and the evidence fragment) is inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_picked_model_is_the_model_launched.py:262 and :296 assert the catalogue-only alias reaches codex-astra and gpt-6-astra against independent literals, and they redden when the picker route's inline backend-field matcher is restored, as base-arm.log:516 records.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/ledger.py:319 follows the surrounding Mapping-typed style beside resolve_name and introduces no name the repository naming rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change consolidates two hand-rolled narrowers into the first owner of a lane-and-model lookup at reckon/ledger.py:319, extending resolve_name rather than duplicating it; a capability search over reckon/ found no prior owner.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T233548277609-one-function-narrows-a-model/head-arm.log:1 follow-on: the head arm was killed at 99% with no pytest summary, so after_suite is unreadable and the added-failure count derived from it is 0 only because the killed arm printed no FAILED lines; the run's \"no added failure\" rests on a targeted re-run that was never logged, so the delta is not reproducible from the run's own evidence.\nFINDING docs/evidence/fragments/lane-and-model-routing/one-function-narrows-a-model.html:4 follow-on: the fragment names the head run's three inline failures as specific base-present ids (test_congested_local_lane_routing twice and test_two_unnamed_reviews_launch_with_disposable_members), but the killed head arm's log carries no summary to identify them, so the fragment states an identity the recorded evidence does not support.\nBASE_REVISION: bb4bc2477362a11c8bb66a7aa7f16d995c0d0775\nREVISION: a0531548abaf1695dbd00dcb5b52983ce64a64da\n",
+  "review_run_id": "r-20261014T002643029979-review-of-one-function-narrows-a-model-a0531548abaf",
+  "reviewed_base_sha": "bb4bc2477362a11c8bb66a7aa7f16d995c0d0775",
+  "reviewed_head_sha": "a0531548abaf1695dbd00dcb5b52983ce64a64da",
+  "reviewed_run_id": "r-20261013T233548277609-one-function-narrows-a-model",
+  "scores": {
+    "durability": 19,
+    "evidence": 13,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T00:36:05.161129+00:00",
+  "total": 111
+}
