@@ -100,6 +100,23 @@ def _stream_path() -> Path:
     return runs.watch_stream_path(PROJECT)
 
 
+def _install_transition_sweep(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep the first sweep's transition read, drop only its background thread.
+
+    Taking the seat runs this producer's first stream sweep, which reads the
+    seed the seat's own ticker then takes. A case that stubbed the sweep away
+    wholesale would leave the ticker with no seed and could not tell a fixed
+    ticker from a broken one.
+    """
+
+    def sweep(project: str, records) -> None:
+        runs._publish_watch_transitions(
+            project, runs._WATCH_STREAM_PRODUCERS[project], records
+        )
+
+    monkeypatch.setattr(runs, "_publish_watch_stream", sweep)
+
+
 def _write_stream(*lines: str) -> Path:
     path = _stream_path()
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -175,7 +192,7 @@ class _StillWaitingError(Exception):
 
 def test_a_live_foreign_seat_is_waited_out_not_restarted(home, monkeypatch) -> None:
     """A fresh foreign stream keeps the watch re-reading the seat, not exiting."""
-    monkeypatch.setattr(runs, "_publish_watch_stream", lambda *_: None)
+    _install_transition_sweep(monkeypatch)
     interval_calls: list[float] = []
     seat = _hold_seat(host=FOREIGN_HOST)
     _write_stream(_row_line(_row("r-other", to_state="working", from_state="", at=NOW)))
@@ -209,7 +226,7 @@ def test_a_stale_stream_takes_the_seat_and_seeds_after_the_wait(
     as a transition from the state that row named rather than as fresh
     inventory.
     """
-    monkeypatch.setattr(runs, "_publish_watch_stream", lambda *_: None)
+    _install_transition_sweep(monkeypatch)
     run_id = "r-moved"
     _write_pointer(run_id, phase="complete", manifest_status="complete")
     seat = _hold_seat(host=FOREIGN_HOST)
@@ -241,10 +258,26 @@ def test_a_stale_stream_takes_the_seat_and_seeds_after_the_wait(
     assert row["from_state"] == "working", row
     assert _read_seat()["host"] == socket.gethostname()
 
+    # Taking the seat ran this producer's first stream sweep, which appended its
+    # own row for the run. The ticker's row and that appended row carry the same
+    # transition because both were seeded by the one read the sweep took before
+    # it appended: a ticker that read the stream itself would find this
+    # producer's own row and announce the run as unchanged.
+    published = [
+        json.loads(line)
+        for line in _stream_path().read_text().splitlines()
+        if line.strip()
+    ]
+    moved = [item for item in published if item.get("run_id") == run_id]
+    assert moved, published
+    assert moved[-1]["event"] == "transition", moved
+    assert moved[-1]["from_state"] == row["from_state"], (moved[-1], row)
+    assert moved[-1]["to_state"] == row["to_state"], (moved[-1], row)
+
 
 def test_a_seat_held_on_this_host_is_reported_as_before(home, monkeypatch) -> None:
     """A seat this host owns reads as a watcher-live row with no waiting."""
-    monkeypatch.setattr(runs, "_publish_watch_stream", lambda *_: None)
+    _install_transition_sweep(monkeypatch)
     waited: list[float] = []
     seat = _hold_seat(host=socket.gethostname())
     _write_stream(_row_line(_row("r-other", to_state="working", from_state="", at=NOW)))
@@ -267,7 +300,7 @@ def test_a_seat_held_on_this_host_is_reported_as_before(home, monkeypatch) -> No
 
 def test_the_watch_asks_the_shared_foreign_seat_judgement(home, monkeypatch) -> None:
     """The foreign-seat judgement is the shared one, not a copy composed here."""
-    monkeypatch.setattr(runs, "_publish_watch_stream", lambda *_: None)
+    _install_transition_sweep(monkeypatch)
     asked: list[str] = []
 
     def spy(project: str) -> bool:

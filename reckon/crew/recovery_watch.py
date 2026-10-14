@@ -2301,17 +2301,16 @@ def watch_ticker(
             }
             return
 
-        # The state each live run's predecessor last published. Read after the
-        # seat is taken rather than before the wait, so a row appended to the
-        # stream while this producer was waiting out a foreign holder is part of
-        # the seed. Taking the seat writes this producer's own baseline rows over
-        # the stream's tail, so a run that moved while the seat was down would
-        # read back as unchanged and be announced as inventory instead of as the
-        # transition that wakes its dispatching session.
-        published_states = runs._seed_published_states(
-            runs.watch_stream_path(project),
-            runs._live_created(runs._list_live_records(project=project)),
-        )
+        # The state each live run's predecessor last published. Taking the seat
+        # runs this producer's first stream sweep, which reads the seed before it
+        # appends and keeps it on the producer record; the ticker takes that one
+        # read rather than making its own, because by now the sweep has written
+        # this producer's own row for every live run and a second read would find
+        # those rows instead of the predecessor's and announce every run as
+        # unchanged. One read, taken after any wait for a foreign holder and
+        # before the first append, therefore seeds both writers alike.
+        producer = runs._WATCH_STREAM_PRODUCERS[project]
+        published_states = dict(producer.seeded_states)
         # The interval actually slept grows while the project has no live run
         # pointer and returns to the base on the first wake that sees one. The
         # producer records it each pass so a reader sees how far it has backed

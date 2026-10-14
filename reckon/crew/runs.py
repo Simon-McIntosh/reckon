@@ -1789,6 +1789,12 @@ class _WatchStreamProducer:
     known: dict[str, dict[str, Any]]
     stall_window: str
     fleet_seen: bool = False
+    # The state the stream last published for each live run, as read before this
+    # producer's own first sweep appended to it. One read serves both writers of
+    # the stream: the sweep seeds the rows it appends, and the seat's own ticker
+    # seeds the transitions it yields, so a run that moved while the seat was
+    # down reads as a transition on stdout and in the stream alike.
+    seeded_states: dict[str, str] = field(default_factory=dict)
     # Whether the last tick's read was deferred because the resolved config did
     # not load. Held so the deferral is announced once per episode rather than
     # on every retry, and cleared the moment a tick reads the config cleanly.
@@ -2104,6 +2110,12 @@ def _publish_watch_transitions(
             # wakes on; a run the stream never named, or that stands where it
             # last did, is inventory and is published as a baseline.
             published = _seed_published_states(producer.path, _live_created(records))
+            # Kept on the producer, because the seat's own ticker starts after
+            # this sweep has already appended these rows: a ticker that read the
+            # stream for itself would find this producer's own first row for
+            # every run and so announce every one of them as unchanged, losing
+            # exactly the transitions this seed was taken to carry.
+            producer.seeded_states = published
             baseline = {run_id: dict(snapshot) for run_id, snapshot in current.items()}
             counts = _transition_counts(current)
             lines = []
