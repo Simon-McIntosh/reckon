@@ -435,9 +435,11 @@ def test_a_refusal_over_an_existing_worktree_leaves_no_new_trace(
     _publish_transitions()
     rows_naming_node = transition_rows_naming(config_home, NODE_ID)
     assert rows_naming_node != []
-    rows_naming_another_run = [
-        row
-        for row in rows_naming_node
-        if str(row.get("run_id") or "") != earlier_run_id
-    ]
-    assert not rows_naming_another_run, rows_naming_another_run
+    runs_naming_another = sorted(
+        {
+            str(row.get("run_id") or "")
+            for row in rows_naming_node
+            if str(row.get("run_id") or "") != earlier_run_id
+        }
+    )
+    assert not runs_naming_another, runs_naming_another
