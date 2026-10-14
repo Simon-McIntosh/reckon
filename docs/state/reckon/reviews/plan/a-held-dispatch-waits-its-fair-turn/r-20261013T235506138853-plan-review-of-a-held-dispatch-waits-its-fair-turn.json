@@ -1,0 +1,64 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-14T00:06:21.299Z",
+  "dispatched_at": "2026-10-13T23:55:39Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-held-dispatch-waits-its-fair-turn.html:135",
+      "id": "done_when-1",
+      "reason": "without that case and a control that removes the pre-check, a builder can ship the scope-check change alone, pass every declared case and the stated control, and still let a later request launch ahead of the head of the queue.",
+      "text": "\u00a718 makes the admission pass's pre-release overlap detection load-bearing (\"The pass detects that overlap itself, before it releases the pointer\") and makes the scope check stop refusing on a queued claim, but its negative control reverts only the second half (\"count queued pointers as claims again\") and none of its five done-when cases creates the state where the pre-check is the only thing preserving order: an earlier-ranked queued request that is itself held (its session's allowance is zero, so `admit_once` `continue`s past it at allowance<=0) while a later-ranked overlapping request would launch, because with a queued claim no longer refusing the later request's `dispatch` returns a launched record and it starts ahead",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-held-dispatch-waits-its-fair-turn.html:135",
+      "id": "reasoning-1",
+      "reason": "the plan must say the ordering is rank-directed and name how the launching dispatch's position is known, or a builder implementing it literally deadlocks the head of the queue instead of admitting it.",
+      "text": "the deliverable says a queued pointer's claim \"gets a third treatment beside binding and ignored. It orders: the scope check neither refuses on it nor drops it, and instead turns an overlap with it into 'queue behind'\", but the same section requires the opposite outcome when `admit_once` launches the head of the queue while a later-ranked queued request overlaps it (\"Neither refuses the other while both are queued. The first launches\"); `dispatch` is the shared path for both a coordinator's new dispatch and the pass's relaunch of a queued request, so a uniform \"turn the overlap into queue behind\" returns a queued record for the head and `_require_launched_record` (reckon/crew/queue_admission.py:514) raises \"dispatch did not return a launched record\", recording a failure on the request the pass was trying to launch",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "6ad662d662cb1e2177168e9fd018a76a620410b23734e309b3b6195ea9cbb724",
+  "plan_slug": "a-held-dispatch-waits-its-fair-turn",
+  "plan_version": 90,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261013T235506138853-plan-review-of-a-held-dispatch-waits-its-fair-turn",
+  "reviewed_blob_sha": "428c650f867cc49ef0f55d6274c721bb4fa06496",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_repository_scope_claims` (reckon/crew/dispatch_claims.py:222), `claim_disposition` (reckon/crew/node.py:1450), `admit_once` (reckon/crew/queue_admission.py:525), `_require_launched_record` (queue_admission.py:514), `_retry_backoff_hold` (queue_admission.py:337) and the cited `tests/test_a_node_is_queued_once.py::test_a_different_node_over_a_claimed_path_is_still_refused` all exist, and the 600 s back-off cap in the done-when matches `ADMISSION_RETRY_BACKOFF_CAP_SECONDS` (queue_admission.py:46).",
+    "done_when": "a finding \u2014 the declared negative control reverts only the scope-check half of \u00a718; the admission pass's own pre-release overlap ordering, which the deliverable makes load-bearing, is asserted by no failing case.",
+    "evidence_paths": "pass \u2014 the control is logged under the run directory, a durable path, not a session scratchpad.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach the symbols the section names.",
+    "reasoning": "a finding \u2014 the deliverable's mechanism (\"the scope check neither refuses on it nor drops it, and instead turns an overlap with it into 'queue behind'\") is stated without the rank direction the same paragraph requires, so a literal implementation hands the admission pass's own launch a queued record that `_require_launched_record` records as a failed launch.",
+    "single_goal": "pass \u2014 \u00a718 carries one contract (a `queued` claim orders rather than refuses, and no longer refuses a new dispatch), with its cap and supersession consequences.",
+    "wiring": "pass \u2014 \u00a718 declares its ordering after \u00a714 (which it also declares it supersedes) and before \u00a715, both of which write `queue_admission.py`, and every module it names resolves."
+  },
+  "section_digests": {
+    "_document": "5e14043a491f99858173e3b893442375f85c205295e44c4f706b9faca823dba4",
+    "s1": "e09f72c38fa12dd06b1fede9137b6a8731c7f42dad95ea4d7873e48b6bcebc93",
+    "s10": "769f35c4ff338677b1083340b990086682e629701a25af49a8b6e2d3b8a175a4",
+    "s11": "3aafc106945bdc346a0f808fc26c7fc8e028b922103641455da38536ae24c036",
+    "s12": "f72ab709e3a40644be43c6e558b558089f939e3368a20a2b34321a9043c80c88",
+    "s13": "1f1792d925edd6b7c0b33bd02bebc3db1f499f9d5e1505b3ba04b305d9ed7f64",
+    "s14": "a86f35810a5d1446f8cf9294a46f7a7a393c1452cc3080ef8b9e51cf83670acf",
+    "s15": "694218fb467e061648aac13eed1a446529dbff08aca86ecfdb24792eb5b2820e",
+    "s16": "5d0a87ee69959477d707fb8d7b442b283f6ae0e7bc896382dd4c65c7e3efb9b8",
+    "s17": "d3bfb51ccfbe6c602a6a11cd9d7e433d1385fd2b90b604f2eb307029dc97f703",
+    "s18": "99f4ee43591d5a880f14cbc276746d2deef18c3c1e728874a18f091cb1c84455",
+    "s2": "c37ed4ecb2dad1331b0b031fb8351608243790308312236d375bede3594285b7",
+    "s3": "ef687123318fac196bded366330cf2e92b586c4991b5c1cc8670f228182f916c",
+    "s4": "e6a41eadc72e4752cc0ebe35a14a9bce3f28bc1061ec677e8f779fa09d8c037c",
+    "s5": "4b674f96924c3dbfde217945d16c606df376d034dc060f02360a4336412e74f8",
+    "s6": "9e35fc2341a06de64fed9ff7f176a0e83b22c1482c1b5a04a5539b6e4c07aab4",
+    "s7": "764a72dad2d59bddd4d3b1209f07c0c210ff6c46cd14147d4bcc7ffe9fa9426d",
+    "s8": "1b92313fdf672f4b813b45aa8e26f1304ca363cdc5a4d1752238f794a2019e27",
+    "s9": "ef8f75976cf8d243089cb5955b0e084cf6e2c6bcd478f9e56b8e8654080c6ad6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T00:06:24.202193+00:00"
+}
