@@ -1,0 +1,60 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-14T21:52:02.243Z",
+  "dispatched_at": "2026-10-14T21:47:34Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-run-has-one-live-writer.html:23",
+      "id": "wiring-1",
+      "reason": "\u00a72, \u00a73 and \u00a74 have already landed (f-arolw-claim-span states it), so a \u00a75 dispatch is correctly ordered regardless; the missing edge is documentation of a satisfied dependency, not a gate a node would cross wrongly.",
+      "text": "`plan-section-depends-on` declares `s3:[\u2026s2]` and `s4:[\u2026s3]` but no edge for `s5`, which writes `reckon/crew/resumption.py` \u2014 a path \u00a74 also writes and where \u00a73 introduced the `_LAUNCHES_IN_THIS_PROCESS` registry \u00a75 presupposes \u2014 so the plan's own ordering convention (retained for the done predecessors s2 and s3) is not applied to the new section",
+      "type": "wiring",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "ff2e244c3770d73af3192d3361341ad8297878d69bda6c1df661353ad7b018f1",
+  "plan_slug": "a-run-has-one-live-writer",
+  "plan_version": 30,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "67139f13-acc5-4116-8e4d-ecb63acaac2c",
+      "finding": "wiring-1",
+      "reason": "the sections \u00a75 would follow (\u00a72, \u00a73, \u00a74) have all landed and are done, so the edge would document a satisfied dependency rather than order any dispatch, and dispatch's scope check on reckon/crew/resumption.py already refuses a concurrent claim; adding it changes the document unit and reopens the review for no ordering gain",
+      "when": "2026-10-14T21:52:16.497353+00:00"
+    }
+  ],
+  "responses": {
+    "wiring-1": {
+      "action": "declined",
+      "by": "67139f13-acc5-4116-8e4d-ecb63acaac2c",
+      "reason": "the sections \u00a75 would follow (\u00a72, \u00a73, \u00a74) have all landed and are done, so the edge would document a satisfied dependency rather than order any dispatch, and dispatch's scope check on reckon/crew/resumption.py already refuses a concurrent claim; adding it changes the document unit and reopens the review for no ordering gain",
+      "when": "2026-10-14T21:52:16.497353+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-run-has-one-live-writer.v30.json",
+  "review_run_id": "r-20261014T214659857595-plan-review-of-a-run-has-one-live-writer",
+  "reviewed_blob_sha": "e83072ca91084bba891d6e9945615eb70eff0598",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_LAUNCHES_IN_THIS_PROCESS` (resumption.py:262), `_resume` (:1056), `mark_resume_launching` (:198) and `record_resumption` (imported :67) all resolve, and the resolved followup's cited comment ids c-close-s2/c-close-s3/c-close-s4 exist in the document.",
+    "done_when": "pass \u2014 \u00a75's two cases each fail on the unfixed `_resume` (case 1: the leaked registry entry refuses the second resume; case 2: the discard before `record_resumption` lets the concurrent resume launch), and each names its own negative control restoring the old placement of the add or the discard.",
+    "evidence_paths": "pass \u2014 \u00a75 puts both negative controls \"under the run directory\", the durable run store (`~/.config/reckon/crew/runs/<run>/`), matching the convention \u00a72\u2013\u00a74 use, not a scratchpad.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags; `_LAUNCHES_IN_THIS_PROCESS` and `tests/test_a_resume_claim_spans_its_launch.py` are named by behaviour.",
+    "reasoning": "pass \u2014 \u00a75's stated root cause matches the code: the add (`:1092`) and `mark_resume_launching` (`:1093`) sit before the `try` (`:1094`) so the `finally` (`:1131`) cannot discard on a raising mark, and the `finally` discards before `record_resumption` (`:1133`) while the pointer mark exempts its own pid (`:193-194`); the repair runs inside `_resume`, the path \u00a74 consolidated to, with `_resume` named as the caller.",
+    "single_goal": "pass \u2014 \u00a75's two edges are one claim, the registry entry's lifetime in `_resume`, taken inside the guarded block and held until the attempt is recorded; both close on one verdict.",
+    "wiring": "a finding \u2014 \u00a75 writes `reckon/crew/resumption.py`, the same path \u00a74 writes and where \u00a73's in-process registry lives, yet `plan-section-depends-on` (meta, line 23) declares edges only for s3 and s4 and none for s5."
+  },
+  "section_digests": {
+    "_document": "0ceb9f73758b024753e3b7f2e7870bf09fe4a5859d8508a1686a844d2a7b1b34",
+    "s1": "9cd6c9d458f0450a790159824cc4f2a613e278e2ca2817a0c8974689ba755d5e",
+    "s2": "ec5a0de1b87e93c712ba64014335416de4a2a465fd9814afb9756696b6bfa4af",
+    "s3": "060a70e3ce632a999ac991639855e2f75e5d7761dea5c56db1dd9606d1928740",
+    "s4": "3e08fbc0b9cda8edf62e3874ae68df4a888815f2b4390b5f8c2d26633102f0d8",
+    "s5": "5568d88d2d48abc4969815fb7f97db3d72186728213278fce915cc3f96cb38f2"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T21:51:50.424564+00:00"
+}
