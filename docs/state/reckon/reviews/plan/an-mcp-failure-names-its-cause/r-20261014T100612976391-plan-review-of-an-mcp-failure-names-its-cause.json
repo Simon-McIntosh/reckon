@@ -1,0 +1,69 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-14T10:20:29.010Z",
+  "dispatched_at": "2026-10-14T10:07:13Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-mcp-failure-names-its-cause.html:144",
+      "id": "done_when-1",
+      "reason": "the run directory is this plan's established convention and no scratchpad path is named, so a reader can still find the log; naming it tightens the record without redirecting the work.",
+      "text": "\u00a710's done-when says the negative control \"is executed and logged\" but names no durable path, where \u00a713 and \u00a715 name the run directory",
+      "type": "done_when",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-mcp-failure-names-its-cause.html:164",
+      "id": "evidence_paths-1",
+      "reason": "an earlier finding on this axis (\u00a79/\u00a72, line 219) was acted on by naming the run directory, so this is a consistency gap that a reader can still satisfy from the plan's own convention rather than a blocker.",
+      "text": "\u00a711 (like \u00a710) leaves the negative-control log's location unstated, and its gate rests on that log",
+      "type": "evidence_paths",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-mcp-failure-names-its-cause.html:155",
+      "id": "anchors_resolve-1",
+      "reason": "a worker following \u00a711 would edit `_backends.py` (import and call site only) and never reach the function body, or exceed its write scope to touch `reckon/_worker_fence.py`; the write path and the reader's location must be named as `reckon/_worker_fence.py`.",
+      "text": "\u00a711 says `_declared_worker_mcp_servers` is \"in `reckon/_backends.py`\" and declares it a write path, but that reader and its key constant live in `reckon/_worker_fence.py` (`_declared_worker_mcp_servers` at :265, `WORKER_MCP_SERVERS` at :61); `reckon/_backends.py` only imports them (:93) and calls the reader once (:2181), so \u00a711's deliverable (\"that reader now refuses a value that is not a list\") cannot be made within the declared write paths `reckon/flight.py`, `reckon/_backends.py`, `tests/test_worker_mcp_servers.py`",
+      "type": "anchors_resolve",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "5e77145defd0afcd08338966e2bb75d9299d518e797fb1347371dba30f4ba35f",
+  "plan_slug": "an-mcp-failure-names-its-cause",
+  "plan_version": 88,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261014T100612976391-plan-review-of-an-mcp-failure-names-its-cause",
+  "reviewed_blob_sha": "bb6a7b78300ce360c8efb0f6e39ea7888165030d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a711 cites `reckon/_backends.py` as the home of `_declared_worker_mcp_servers`, but that reader is defined in `reckon/_worker_fence.py` (see FINDING below); every other cited file, section and commit resolves (evidence-archive anchors `#s2-\u2026`\u2026`#s14`, `the-monitor-shows-the-work-it-watches#s21`, `reckon/mcp_census.py` `CAUSES`, `reckon/mcp.py` `_CODE_IMPORT_PROBE`, `reckon/crew_follow_commands.py` `_FOLLOWER_RELOAD_PROBE`/`_tracked_reckon_tree_is_dirty`, and \u00a714's commits `203882d19`/`f591f7211` all resolve).",
+    "done_when": "a finding \u2014 \u00a710 and \u00a711 declare their negative controls \"logged\" but name no path, while \u00a713 (\"timed in a log in the run directory\") and \u00a715 (\"logged under the run directory\") do; \u00a713, \u00a710, \u00a711 and \u00a715 each do otherwise carry a falsifiable negative control.",
+    "evidence_paths": "a finding \u2014 \u00a710 and \u00a711 name no durable path for their gate/negative-control logs; \u00a710's done-when (line 144) and \u00a711's (line 164) rest on a log whose location the plan leaves unstated.",
+    "naming": "pass \u2014 \u00a710, \u00a711, \u00a713 and \u00a715 propose no symbol, filename or comment carrying a plan label, stage name, ticket number or version tag; `stale_server_code` and `reckon/checkout_trust.py` name behaviour, not a plan item.",
+    "reasoning": "pass \u2014 \u00a71's census figures match their cited logs (\u00a72's re-measurement reads 1,065 of \u00a71's 1,068 CONNECTION_CLOSED), \u00a714's stated cause matches its cited transcript, each implementable section's mechanism (read the lock read-only / pop a reckon-owned key before validation / attribute each failed connection to one CAUSES entry / one shared import probe) is capable of producing its done-when, and each named caller is a production path.",
+    "single_goal": "pass \u2014 \u00a710 (read-only live view), \u00a711 (project-named worker servers), \u00a713 (census partition), \u00a715 (one trust check) each name one deliverable.",
+    "wiring": "pass \u2014 plan-depends-on `reckon-reads-answer-in-seconds` resolves, \u00a715's `data-links` to `the-monitor-shows-the-work-it-watches#s21` resolves (that section exists), and the followup chain ends in the open `f-amfc-004` recommending `/reckon-build an-mcp-failure-names-its-cause \u00a713`."
+  },
+  "section_digests": {
+    "_document": "d67ad74403cdf8a2d0093ed7135bdd72f45185d7a74208af370ece5da761f4af",
+    "s1": "d0ea88c8e7e70627417eeb698c89b91962c8e03f4f18bbdc2e310ceeb8b0f1f5",
+    "s10": "469866bcda74ceac15429518848b4083b1f85964c53820829d32e65df2661acc",
+    "s11": "ba5d0db257057d6dede25c9555898552abc78e291d39b953a7da192229ffbd2f",
+    "s12": "371c3889cd142db38637604c178d996b86294895ad0edc5534d1731f0271fefe",
+    "s13": "79a2b6dff46b0ddd765c409edeb1596fe9bbdf3e4c884875a0e137630010b0db",
+    "s14": "9c62796a08277a796de0c39af58a83a98ae5b16d930532f934636d24dad5d4c5",
+    "s15": "2cc785cc7428c93e41c236ddb2a247143254032421d61d555e7da335bcaf3734",
+    "s2": "3a0632a9c77266389bb16c116a82d809d3c62b98f0ca44f8c9f8eb4ccde7a18e",
+    "s3": "05d43e5ed58103318c10e33d1dc6795cf27a2ab17593f4c172bb381d8c00fcde",
+    "s4": "fd5d8817baa9c4f4d8838eaad2fd20fb5a6088ac1c8dad8718a0fc1f7eeec45f",
+    "s5": "16d91b56539888d5683fc9808616b764742e6c7e93516541ff6dc793aec9fc84",
+    "s6": "38a3b13749c17899e607aeb6eb1c1324c5b7b7ecbe0f2027b43a50657e063c20",
+    "s7": "9a485205c44b324dcb24ad7acf24f7bfd53171fa8c18a03e9c9a2bdf3a458bed",
+    "s8": "019dc7e9b6ed8d4895820ecc99822eb6c6d34ba61c11a67986dd5d0154d5f3c1",
+    "s9": "633f50004da507a9f6881ceffc2c738ff841e6e61a27b5ff963f53749c491fcd"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T10:22:01.252070+00:00"
+}
