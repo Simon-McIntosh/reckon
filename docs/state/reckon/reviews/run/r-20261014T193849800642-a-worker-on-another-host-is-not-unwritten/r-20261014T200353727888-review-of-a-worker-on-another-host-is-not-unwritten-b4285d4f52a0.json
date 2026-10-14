@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite (ffaa109a9, logs/gate-base.txt, '177 passed', EXIT=0, 0 failures) and after_suite (b4285d4f5, logs/gate-head.txt, '181 passed', EXIT=0, 0 failures). Head failures absent at base: none - added_failure_count 0, no added ids.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/recovery_classification.py:1108",
+    "reckon/crew/recovery.py:108",
+    "reckon/crew/runs.py:1587",
+    "reckon/crew/runs.py:3015"
+  ],
+  "completed_at": "2026-10-14T20:18:17.452Z",
+  "dispatched_at": "2026-10-14T20:04:23Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T193037739274-a-worker-on-another-host-is-not-unwritten/manifest.md",
+      "line": "11",
+      "severity": "follow-on",
+      "text": "follow-on: the record's tests line quotes '177 passed in 60.31s' and '181 passed in 60.46s' while the log it cites, logs/gate-base.txt, reads '177 passed in 77.60s' and gate-head.txt '181 passed in 63.58s', so the quoted metric does not reconcile with the log it names on the timing figure (pass counts and EXIT= both agree)."
+    },
+    {
+      "file": "reckon/crew/recovery_liveness.py",
+      "line": "181",
+      "severity": "follow-on",
+      "text": "follow-on: _newest_stream_in_motion takes now_seconds but its only production caller, _orientation_write_of_a_run_in_motion at :169, never threads the classifier's moment, so the stream-motion decision reads wall clock rather than the caller's instant; latent today because every production caller passes the penalty-free real clock."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read the single commit b4285d4f5 against base ffaa109a9; it edits recovery_liveness.py (the liveness gate plus the new helper), adds the 178-line test file and the 28-line fragment, all inside the declared scope.",
+    "done_when": "the done-when names a foreign run of unknown liveness with an assistant turn inside the stall window reading its classification rather than unwritten, its quiet-stream arm reading unwritten, and a local gone-pid run reading unwritten; tests/test_a_worker_on_another_host_is_not_unwritten.py:103-157 asserts those three arms with the crew home under tmp_path.",
+    "goal": "the node's goal is to read a run launched on another host as in motion from its fresh stream when its pointer liveness is unknown; reckon/crew/recovery_liveness.py:169-176 now accepts alive=None and decides from _newest_stream_in_motion, which is exactly that reading.",
+    "manifest": "read the reviewed manifest at runs/r-20261014T193037739274-.../manifest.md; status complete, node test 4 passed, gate 177 base / 181 head with EXIT=0 both and no added failure.",
+    "write_paths": "the node declared reckon/crew/recovery_liveness.py, tests/test_a_worker_on_another_host_is_not_unwritten.py, the fragment HTML and the figures directory; the diff changes the first three and nothing outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_worker_on_another_host_is_not_unwritten.py:118 reddens under the restored early return shown in logs/negative_control.txt, and its quiet-stream and local-gone-pid arms fail if the LOG_STALE_AFTER_SECONDS bound or the alive-is-FINDING guard is dropped.",
+    "evidence": "the gate ran the 18 importing test files at base (logs/gate-base.txt '177 passed ... EXIT=0') and head (logs/gate-head.txt '181 passed ... EXIT=0') with the named interpreter, though the manifest's quoted durations 60.31s/60.46s do not match those logs' 77.60s/63.58s.",
+    "fit": "_newest_stream_in_motion at reckon/crew/recovery_liveness.py:180 matches the module's typed-helper idiom, is keyword-only and carries no plan, sprint or ticket identifier in its name or docstring.",
+    "goal_fidelity": "reckon/crew/recovery_liveness.py:172-176 routes an orientation-only run whose liveness is unknown to _newest_stream_in_motion instead of refusing it on anything but True, so a foreign run with a fresh assistant-turn stream keeps its classification.",
+    "reuse": "the new helper composes the existing owners _newest_stream_shows_work (reckon/crew/recovery_wait.py:1168) and _run_stream_quiet_seconds (reckon/crew/recovery_liveness.py:423) rather than re-deriving either capability.",
+    "scope_discipline": "the single commit b4285d4f5 changes only reckon/crew/recovery_liveness.py, tests/test_a_worker_on_another_host_is_not_unwritten.py and the evidence fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to read a run launched on another host as in motion from its fresh stream when its pointer liveness is unknown; reckon/crew/recovery_liveness.py:169-176 accepts alive=None and decides from _newest_stream_in_motion, which is that reading.\nVERDICT done_when: the done-when names a foreign run of unknown liveness with an assistant turn inside the stall window reading its classification rather than unwritten, a quiet-stream arm reading unwritten, and a local gone-pid run reading unwritten; tests/test_a_worker_on_another_host_is_not_unwritten.py:103-157 asserts exactly those three arms.\nVERDICT write_paths: the node declared recovery_liveness.py, the new test file, the fragment HTML and the figures directory; the diff changes the first three and nothing outside them.\nVERDICT manifest: read runs/r-20261014T193037739274-.../manifest.md; status complete, node test 4 passed, gate 177 base / 181 head with EXIT=0 both and no added failure.\nVERDICT diff: read the single commit b4285d4f5 against base ffaa109a9; recovery_liveness.py, the new 178-line test file and the 28-line fragment are the whole change, all inside the declared scope.\nCALL_SITES: reckon/crew/recovery_classification.py:1108, reckon/crew/recovery.py:108, reckon/crew/runs.py:1587, reckon/crew/runs.py:3015\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_liveness.py:172-176 routes an orientation-only run whose liveness is unknown to _newest_stream_in_motion instead of refusing it on anything but True, so a foreign run with a fresh assistant-turn stream keeps its classification.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate ran the 18 importing test files at base (logs/gate-base.txt '177 passed ... EXIT=0') and head (logs/gate-head.txt '181 passed ... EXIT=0') with the named interpreter, though the manifest's quoted durations 60.31s/60.46s do not match those logs' 77.60s/63.58s.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the single commit b4285d4f5 changes only reckon/crew/recovery_liveness.py, tests/test_a_worker_on_another_host_is_not_unwritten.py and the evidence fragment, all inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_worker_on_another_host_is_not_unwritten.py:118 reddens under the restored early return shown in logs/negative_control.txt, and its quiet-stream and local-gone-pid arms fail if the LOG_STALE_AFTER_SECONDS bound or the alive-is-FINDING guard is dropped.\nSCORE fit: 19\nJUSTIFICATION fit: _newest_stream_in_motion at reckon/crew/recovery_liveness.py:180 matches the module's typed-helper idiom, is keyword-only and carries no plan, sprint or ticket identifier in its name or docstring.\nSCORE reuse: 20\nJUSTIFICATION reuse: the new helper composes the existing owners _newest_stream_shows_work (reckon/crew/recovery_wait.py:1168) and _run_stream_quiet_seconds (reckon/crew/recovery_liveness.py:423) rather than re-deriving either capability.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T193037739274-a-worker-on-another-host-is-not-unwritten/manifest.md:11 follow-on: follow-on: the record's tests line quotes '177 passed in 60.31s' and '181 passed in 60.46s' while the log it cites, logs/gate-base.txt, reads '177 passed in 77.60s' and gate-head.txt '181 passed in 63.58s', so the quoted metric does not reconcile with the log it names on the timing figure (pass counts and EXIT= both agree).\nFINDING reckon/crew/recovery_liveness.py:181 follow-on: follow-on: _newest_stream_in_motion takes now_seconds but its only production caller, _orientation_write_of_a_run_in_motion at :169, never threads the classifier's moment, so the stream-motion decision reads wall clock rather than the caller's instant; latent today because every production caller passes the penalty-free real clock.",
+  "review_run_id": "r-20261014T200353727888-review-of-a-worker-on-another-host-is-not-unwritten-b4285d4f52a0",
+  "reviewed_base_sha": "ffaa109a9190e84f94e3e198f42e2d7592847e00",
+  "reviewed_head_sha": "b4285d4f52a0897784460e76a13f016c35e1dd7c",
+  "reviewed_run_id": "r-20261014T193849800642-a-worker-on-another-host-is-not-unwritten",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T20:15:48.669682+00:00",
+  "total": 115
+}
