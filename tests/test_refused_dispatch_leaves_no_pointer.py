@@ -381,6 +381,12 @@ def test_a_refusal_over_an_existing_worktree_leaves_no_new_trace(
     dispatch must not leave is a trace of its own — a pointer, a run directory
     or a watch row for the node it refused.
 
+    The project's transition stream is published while the earlier run's pointer
+    is still live, so that run's own rows are in the stream going into the
+    refusal, and published again after the refusal. Rows naming the node are
+    then the earlier run's alone: a row naming any other run is a row the
+    refusal's own pointer left behind.
+
     The earlier tree must be one a leftover-tree release keeps, so the second
     dispatch meets the refusal rather than a release: a tree whose head carries
     a commit beyond its base is kept, because the content it holds exists
@@ -389,6 +395,7 @@ def test_a_refusal_over_an_existing_worktree_leaves_no_new_trace(
     """
     config_home, repo = home
     first = _dispatch(config_home, repo, launcher=_stub_launcher())
+    earlier_run_id = str(first["run_id"])
     earlier = worktrees_naming(repo, NODE_ID)
     assert earlier != []
     earlier_tree = Path(earlier[0])
@@ -398,6 +405,9 @@ def test_a_refusal_over_an_existing_worktree_leaves_no_new_trace(
     _git(earlier_tree, "add", "earlier-attempt.txt")
     _git(earlier_tree, "commit", "-q", "-m", "feat: earlier attempt work")
     kept_commit = _git(earlier_tree, "rev-parse", "HEAD")
+    # Publish the project's transitions while the earlier run's pointer is
+    # still live, so that run's rows are what the stream holds going in.
+    _publish_transitions()
     # Drop the first run's pointer so the second dispatch is refused by the
     # occupied worktree rather than by a member still in flight.
     pointer_path(str(first["run_id"])).unlink()
@@ -418,3 +428,18 @@ def test_a_refusal_over_an_existing_worktree_leaves_no_new_trace(
     assert run_directories_naming(config_home, NODE_ID) == pre_run_dirs
     # The refusal does not over-reach: the earlier run's worktree stays.
     assert worktrees_naming(repo, NODE_ID) == pre_existing
+
+    # Publish again after the refusal. Every row naming the node is the earlier
+    # run's: a refusal that kept a pointer of its own would have published a row
+    # naming that run.
+    _publish_transitions()
+    rows_naming_node = transition_rows_naming(config_home, NODE_ID)
+    assert rows_naming_node != []
+    runs_naming_another = sorted(
+        {
+            str(row.get("run_id") or "")
+            for row in rows_naming_node
+            if str(row.get("run_id") or "") != earlier_run_id
+        }
+    )
+    assert not runs_naming_another, runs_naming_another
