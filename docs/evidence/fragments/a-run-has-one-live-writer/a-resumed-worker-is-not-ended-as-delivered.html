@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>a-run-has-one-live-writer §4 — a resumed worker is not ended as delivered</title>
+<meta name="plan-slug" content="a-run-has-one-live-writer">
+<meta name="plan-node" content="a-resumed-worker-is-not-ended-as-delivered">
+</head>
+<body>
+<article class="r-evidence"
+         id="a-resumed-worker-is-not-ended-as-delivered">
+  <h2 id="a-resumed-worker-is-not-ended-as-delivered-h">A resumed worker is not ended as a delivery it has not made</h2>
+  <p id="a-resumed-worker-is-not-ended-as-delivered-why">
+    A run resumed after it wrote a done manifest keeps that manifest path. The
+    launch supervisor ends a worker whose manifest reads a done word once it has
+    rested, so the new worker's first edit to any other field made the stale
+    delivery look fresh and the worker was ended as delivered.
+  </p>
+
+  <section id="a-resumed-worker-is-not-ended-as-delivered-change">
+    <h3>Change</h3>
+    <ul>
+      <li id="a-resumed-worker-is-not-ended-as-delivered-reset">
+        One function in <code>reckon/crew/resumption.py</code>,
+        <code>_reset_delivered_manifest_status</code>, sets a manifest's status
+        word to <code>in-progress</code> when it reads a status in the
+        supervisor's done set (<code>complete</code>, <code>failed</code>),
+        keeping the delivered text beside it under
+        <code>manifest.md.attempt-&lt;n&gt;.asdelivered</code> so a status
+        repair's <code>manifest.md.asdelivered</code> is never overwritten. A
+        status outside the done set is left as it is.
+      </li>
+      <li id="a-resumed-worker-is-not-ended-as-delivered-callers">
+        Two launch functions call it: <code>_resume</code> and
+        <code>change_lane</code>. The CLI <code>crew resume</code> and the MCP
+        resume action call <code>_resume</code> instead of copying its launch
+        steps, so the reset has two callers rather than four. Their exit codes
+        and payloads are unchanged.
+      </li>
+    </ul>
+  </section>
+
+  <section id="a-resumed-worker-is-not-ended-as-delivered-measure">
+    <h3>Measure</h3>
+    <p id="a-resumed-worker-is-not-ended-as-delivered-gate">
+      <code>tests/test_a_resumed_worker_is_not_ended_as_delivered.py</code>
+      passes (6 passed), logged under the run directory with the literal
+      command, its revision and an <code>EXIT=0</code> line.
+    </p>
+    <ul>
+      <li id="a-resumed-worker-is-not-ended-as-delivered-c1">
+        A complete manifest resumed through <code>crew resume</code>, the stub
+        editing a non-status field, is not signalled within the shortened quiet
+        period plus grace; the manifest reads <code>in-progress</code> and the
+        attempt-named copy holds the delivered text.
+      </li>
+      <li id="a-resumed-worker-is-not-ended-as-delivered-c2">
+        The same holds through <code>_resume</code> and through
+        <code>change_lane</code>.
+      </li>
+      <li id="a-resumed-worker-is-not-ended-as-delivered-c3">
+        A resumed stub that writes <code>complete</code> is still ended as
+        delivered.
+      </li>
+      <li id="a-resumed-worker-is-not-ended-as-delivered-c4">
+        A <code>blocked</code> manifest keeps its word and is not kept as a
+        delivery.
+      </li>
+      <li id="a-resumed-worker-is-not-ended-as-delivered-c5">
+        The live view classifies the working stub as <code>running</code>.
+      </li>
+    </ul>
+    <p id="a-resumed-worker-is-not-ended-as-delivered-negative">
+      The declared negative control — remove the status reset — is executed and
+      logged under the run directory: the first case fails with the runner's
+      <code>FAILED</code> line and a non-zero <code>EXIT</code>.
+    </p>
+  </section>
+</article>
+</body>
+</html>

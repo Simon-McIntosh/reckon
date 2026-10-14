@@ -1667,6 +1667,13 @@ def change_lane(
         ),
         encoding="utf-8",
     )
+    # The move relaunches a worker over the same manifest path, so a done word
+    # the previous attempt left would be read as this attempt's delivery on the
+    # worker's first edit. Clear it before the new worker spawns.
+    from reckon.crew.resumption import _reset_delivered_manifest_status
+
+    _reset_delivered_manifest_status(run_id, record)
+
     spawned_pid: int | None = None
     if target_plan is not None:
         spawn = launcher or _spawn

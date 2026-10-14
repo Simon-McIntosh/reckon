@@ -54,9 +54,10 @@ from typing import Any
 
 from reckon import _backends, ledger
 from reckon import budget as budget_module
-from reckon._store import write_json_atomically
+from reckon._store import write_atomically, write_json_atomically
 from reckon._timestamps import parse_utc
 from reckon.crew.dispatch import (
+    _WORKER_DONE_MANIFEST_STATUSES,
     BudgetHold,
     LanePaused,
     _actionable_budget_hold,
@@ -1004,6 +1005,61 @@ def _write_resume_prompt(advice_path: Path, *, plan: Any, advice: str) -> None:
     advice_path.write_text(prompt_text.rstrip("\n") + "\n", encoding="utf-8")
 
 
+def _reset_delivered_manifest_status(
+    run_id: str, record: Mapping[str, Any] | None = None
+) -> Path | None:
+    """Clear a delivered manifest's verdict before a new attempt rewrites it.
+
+    A resumed or relaunched worker keeps its manifest path, so the previous
+    attempt's delivered manifest — reading complete or failed — is still on
+    disk when the new worker starts. The launch supervisor ends a worker whose
+    manifest reads one of those done words and has rested, so the first edit
+    the new worker makes to any other field would make the stale delivery look
+    fresh and the supervisor would end it as delivered. Setting the status word
+    to a non-terminal value before the new attempt spawns leaves the supervisor
+    waiting on it, and the classifier reads the run as working.
+
+    The delivered text is kept beside the manifest under a name carrying the
+    attempt it came from, so an earlier copy — such as a status repair's
+    ``manifest.md.asdelivered`` — is never overwritten. A status outside the
+    supervisor's done set (blocked, waiting, in-progress) is left as it is. The
+    manifest already in force is returned so a caller can report where the
+    delivery was kept, or None when nothing was replaced.
+    """
+    if record is None:
+        try:
+            record = read_pointer(run_id)
+        except CrewError:
+            record = {}
+    named = str(record.get("manifest_path") or "").strip()
+    manifest = Path(named) if named else run_dir(run_id) / "manifest.md"
+    try:
+        text = manifest.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    lines = text.splitlines()
+    status = ""
+    for line in lines:
+        if line.startswith("status:"):
+            status = line.split(":", 1)[1].strip().lower()
+            break
+    if status not in _WORKER_DONE_MANIFEST_STATUSES:
+        return None
+    attempt = int(record.get("attempt") or 1)
+    kept = manifest.with_name(f"{manifest.name}.attempt-{attempt}.asdelivered")
+    if not kept.exists():
+        kept.write_text(text, encoding="utf-8")
+    for index, line in enumerate(lines):
+        if line.startswith("status:"):
+            lines[index] = "status: in-progress"
+            break
+    rewritten = "\n".join(lines)
+    if text.endswith("\n"):
+        rewritten += "\n"
+    write_atomically(manifest, lambda handle: handle.write(rewritten), fsync=False)
+    return kept
+
+
 def _resume(
     run_id: str,
     record: Mapping[str, Any],
@@ -1054,6 +1110,10 @@ def _resume(
         attempt_started_at = _utc_now()
         manifest_baseline_mtime_ns = _manifest_mtime_ns(record.get("manifest_path") or "")
         _require_fleet_gate_open()
+        # The previous attempt may have left a done manifest on disk; clear its
+        # verdict so the supervisor does not read the new worker's first edit as
+        # that delivery.
+        _reset_delivered_manifest_status(run_id, record)
         if launcher is None:
             pid = _spawn(
                 plan,
@@ -1086,7 +1146,7 @@ def _resume(
         attempt_started_at=attempt_started_at,
         manifest_baseline_mtime_ns=manifest_baseline_mtime_ns,
     )
-    return {"pid": pid, "turn": turn, "log_path": str(log_path)}
+    return {"pid": pid, "turn": turn, "log_path": str(log_path), "plan": plan}
 
 
 def _run_condition_probe(
@@ -1570,6 +1630,10 @@ def sweep(
             skipped.append(_refusal_entry(entry, exc))
             continue
         _stamp_resumption_trigger(run_id, signature)
+        # The composed plan rides along for the doors that render it. The sweep
+        # records the attempt it started rather than the invocation, so the plan
+        # is dropped here instead of written into the recovery log.
+        launched.pop("plan", None)
         resumed.append(
             {
                 **entry,

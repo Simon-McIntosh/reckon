@@ -1286,7 +1286,7 @@ def crew_resume(run_id, advice, backend, reason, print_only, pretty):
     if reason and not backend:
         raise click.UsageError("--reason requires --backend")
     crew_module, flight_module = _crew_modules()
-    from reckon.crew.dispatch import LanePaused, _require_fleet_gate_open
+    from reckon.crew.dispatch import LanePaused
 
     try:
         record = crew_module.read_pointer(run_id)
@@ -1309,7 +1309,24 @@ def crew_resume(run_id, advice, backend, reason, print_only, pretty):
             )
             _emit_crew_result(moved, pretty)
             return
-        plan = crew_module.resume_plan(run_id, advice, config=config)
+        if print_only:
+            plan = crew_module.resume_plan(run_id, advice, config=config)
+            _emit_crew_result({"run_id": run_id, **plan.as_dict()}, pretty)
+            return
+        # One launch path serves this door and the sweep's, so the done-status
+        # reset and the in-flight marker are not re-composed here where CLI
+        # copy could drift from the launcher that writes the attempt. The
+        # spawn is read from the crew facade and handed in, so an override
+        # installed on it still reaches this door's launch.
+        from reckon.crew.resumption import _resume
+
+        result = _resume(
+            run_id,
+            record,
+            config=config,
+            advice=advice,
+            launcher=crew_module._spawn,
+        )
     except LanePaused as exc:
         _emit(
             {
@@ -1335,50 +1352,15 @@ def crew_resume(run_id, advice, backend, reason, print_only, pretty):
         raise click.exceptions.Exit(3) from exc
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
+    plan = result["plan"]
     payload = {"run_id": run_id, **plan.as_dict()}
-    if print_only:
-        _emit_crew_result(payload, pretty)
-        return
-    directory = crew_module.run_dir(run_id)
-    turn = len(list(directory.glob("resume-*.jsonl"))) + 1
-    advice_path = directory / f"resume-{turn}-advice.txt"
-    from reckon.crew.resumption import _write_resume_prompt
-
-    _write_resume_prompt(advice_path, plan=plan, advice=advice)
-    log_path = directory / f"resume-{turn}.jsonl"
-    stderr_path = directory / f"resume-{turn}.stderr.log"
-    current = crew_module.read_pointer(run_id)
-    manifest_baseline_mtime_ns = crew_module._manifest_mtime_ns(
-        current.get("manifest_path") or ""
+    payload.update(
+        {
+            "pid": result["pid"],
+            "log_path": result["log_path"],
+            "resumed_turn": result["turn"],
+        }
     )
-    attempt_started_at = crew_module._utc_now()
-    try:
-        _require_fleet_gate_open()
-        pid = crew_module._spawn(
-            plan, log_path=log_path, stderr_path=stderr_path, prompt_path=advice_path
-        )
-    except LanePaused as exc:
-        _emit(
-            {
-                "ok": False,
-                "error": "lane-paused",
-                "detail": _lane_paused_detail(exc.gate),
-                "reason": exc.gate.get("reason"),
-                "lane_gate": exc.gate,
-            },
-            pretty,
-        )
-        raise click.exceptions.Exit(75) from exc
-    crew_module.record_resumption(
-        run_id,
-        pid=pid,
-        turn=turn,
-        log_path=log_path,
-        stderr_path=stderr_path,
-        attempt_started_at=attempt_started_at,
-        manifest_baseline_mtime_ns=manifest_baseline_mtime_ns,
-    )
-    payload.update({"pid": pid, "log_path": str(log_path), "resumed_turn": turn})
     _emit_crew_result(payload, pretty)
 
 
