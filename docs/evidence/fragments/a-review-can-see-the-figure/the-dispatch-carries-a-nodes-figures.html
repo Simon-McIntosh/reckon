@@ -1,0 +1,22 @@
+<!doctype html>
+<html>
+<head>
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="doc">
+</head>
+<body>
+<section id="the-dispatch-carries-a-nodes-figures">
+<h2 id="the-dispatch-carries-a-nodes-figures-landed">The dispatch carries a node's figures</h2>
+<p id="the-dispatch-carries-a-nodes-figures-landing">
+<code>TaskNode</code> now carries an <code>images</code> list; the fresh dispatch,
+<code>resume_plan</code> and <code>change_lane</code> pass it to
+<code>launch_plan</code>, and <code>crew dispatch --image PATH</code> sets it.
+Measure: <code>tests/test_dispatch_attaches_the_figures.py</code> fails if the
+list is dropped at any of the three call sites — a node dispatched with two
+figures emits two <code>-i</code> flags on a codex lane and a clive lane is
+refused by name; the negative control dropped the argument at each call site in
+turn and each arm red.
+</p>
+</section>
+</body>
+</html>
