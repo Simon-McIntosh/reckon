@@ -41,6 +41,7 @@ from reckon.crew.runs import (
     watch_lock_path,
 )
 from reckon.crew.ticker import NEEDS_ACTION, Ticker, _agent_label
+from reckon.crew.watch_unit import seat_names_a_live_foreign_producer
 
 # The waiting family is the stop that lifts itself, an overdue wait included:
 # a run whose declared external wait has aged past its expectation has not
@@ -324,24 +325,54 @@ def _utc_seconds() -> float:
     return datetime.now(tz=timezone.utc).timestamp()
 
 
+# A producer that finds its project's seat held by a live producer on another
+# host waits rather than exiting into its supervisor's restart, re-reading the
+# seat at this bounded interval and taking it once the foreign producer's stream
+# goes stale. Exiting here is what made a login-node unit restart every few
+# seconds beside a producer healthy on a compute node: each restart took the
+# seat for an instant, saw a foreign holder, and gave up.
+FOREIGN_SEAT_REREAD_SECONDS = 5.0
+
+
 @contextmanager
-def _watch_registration(project: str, stall_window: str):
-    """Register a watcher together with the process responsible for reaping it."""
-    with _project_watch_claim(project, stall_window) as (acquired, watcher):
-        if acquired:
-            parent_pid = os.getppid()
-            watcher.update(
-                {
-                    "parent_pid": parent_pid,
-                    "parent_start_time": _process_start_time(parent_pid),
-                }
-            )
-            # The record is written through the seat handle the claim holds,
-            # never by reopening the path: an unlink in the moment between
-            # taking the seat and this write would make the reopen raise
-            # FileNotFoundError and end the producer before it polls once.
-            _write_watch_record(runs._WATCH_SEAT_HANDLES[project], watcher)
-        yield acquired, watcher
+def _watch_registration(
+    project: str, stall_window: str, *, sleeper: Callable[[float], None] = time.sleep
+):
+    """Register a watcher, waiting out a live producer seated on another host.
+
+    A producer that finds the seat held on another host has no local evidence
+    the holder is still alive: the holder's process table is on another node, so
+    this host sees only the seat record and the holder's transition stream. While
+    ``seat_names_a_live_foreign_producer`` reports that a foreign producer is
+    still producing, this waits on a bounded interval and re-reads the seat,
+    taking it the moment the claim succeeds — the foreign producer's stream
+    having gone stale, or its seat released. Any other held seat is yielded as
+    before, so a caller's existing handling of a watcher-live seat is unchanged.
+    """
+    while True:
+        with _project_watch_claim(project, stall_window) as (acquired, watcher):
+            if acquired:
+                parent_pid = os.getppid()
+                watcher.update(
+                    {
+                        "parent_pid": parent_pid,
+                        "parent_start_time": _process_start_time(parent_pid),
+                    }
+                )
+                # The record is written through the same seat handle the claim
+                # holds, never by reopening the path: an unlink in the moment
+                # between taking the claim and this write would make the reopen
+                # raise FileNotFoundError and end the producer before it polls.
+                _write_watch_record(runs._WATCH_SEAT_HANDLES[project], watcher)
+                yield acquired, watcher
+                return
+        # The seat is held. Wait and re-read it only while a live producer on
+        # another host owns it; any other held seat is one the caller already
+        # knows how to report.
+        if not seat_names_a_live_foreign_producer(project):
+            yield False, watcher
+            return
+        sleeper(FOREIGN_SEAT_REREAD_SECONDS)
 
 
 UNWATCH_SEAT_WAIT_SECONDS = 2.0
@@ -2196,15 +2227,6 @@ def watch_ticker(
     """
     _refuse_unresolvable_watch(project)
     stall_seconds = parse_duration(stall_window)
-    # The state each live run's predecessor last published, read before the seat
-    # is taken: taking it writes this producer's own baseline rows over the
-    # stream's tail, so a run that moved while the seat was down would read back
-    # as unchanged and be announced as inventory instead of as the transition
-    # that wakes its dispatching session.
-    published_states = runs._seed_published_states(
-        runs.watch_stream_path(project),
-        runs._live_created(runs._list_live_records(project=project)),
-    )
     known: dict[str, dict[str, Any]] = {}
     fleet_seen = False
     # Rate standings move on their own cadence, so one resolution serves the
@@ -2263,7 +2285,10 @@ def watch_ticker(
         remaining = _lease_remaining()
         return remaining is not None and remaining <= 0
 
-    with _watch_registration(project, stall_window) as (acquired, watcher):
+    with _watch_registration(project, stall_window, sleeper=sleeper) as (
+        acquired,
+        watcher,
+    ):
         if not acquired:
             yield {
                 "project": project,
@@ -2276,6 +2301,17 @@ def watch_ticker(
             }
             return
 
+        # The state each live run's predecessor last published. Read after the
+        # seat is taken rather than before the wait, so a row appended to the
+        # stream while this producer was waiting out a foreign holder is part of
+        # the seed. Taking the seat writes this producer's own baseline rows over
+        # the stream's tail, so a run that moved while the seat was down would
+        # read back as unchanged and be announced as inventory instead of as the
+        # transition that wakes its dispatching session.
+        published_states = runs._seed_published_states(
+            runs.watch_stream_path(project),
+            runs._live_created(runs._list_live_records(project=project)),
+        )
         # The interval actually slept grows while the project has no live run
         # pointer and returns to the base on the first wake that sees one. The
         # producer records it each pass so a reader sees how far it has backed
