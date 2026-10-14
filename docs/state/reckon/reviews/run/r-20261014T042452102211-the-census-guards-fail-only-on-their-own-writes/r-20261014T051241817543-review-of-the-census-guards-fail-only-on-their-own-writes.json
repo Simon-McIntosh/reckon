@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite (revision 5cc43c19) ran 148 passed EXIT=0 and after_suite (revision a6238872) ran 148 passed EXIT=0, both completed to their summary line, so the added set is empty.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-14T05:25:34.213Z",
+  "dispatched_at": "2026-10-14T05:13:19Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T042452102211-the-census-guards-fail-only-on-their-own-writes/arm_head.log",
+      "line": "2",
+      "severity": "follow-on",
+      "text": "follow-on: the head arm's second header line names revision 5cc43c19 (the base) while line 1 names the head a6238872, so a reader taking that line for the arm's revision is misled."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T042452102211-the-census-guards-fail-only-on-their-own-writes/manifest.md",
+      "line": "22",
+      "severity": "follow-on",
+      "text": "follow-on: follow_ons[4] describes the 23 re-classified modules as \"classified read-only\" though census_recheck.log classifies nine of them as the still-present snapshot-unfiltered defect, and its \"37\" contradicts the 16+23=39 its own parts sum to."
+    },
+    {
+      "file": "docs/evidence/fragments/the-suite-tests-behaviour/the-census-guards-fail-only-on-their-own-writes.html",
+      "line": "12",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment says the two arms cover \"the sixteen modules plus the two helper paths\", but arm_head.log:1 and arm_base.log:1 name only the sixteen modules; the helper gate is separate (gate_helper.log)."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "Read commit by commit against 5cc43c19 - one commit, a6238872, extends tests/real_home_traces.py:51-59 (traces_naming) to search a subtree that names a single file and routes sixteen modules' real-home guards through it with test-minted needles, replacing the generic \"codex-sub\", \"sample\", \"proj\" and \"demo\" needles.",
+    "done_when": "The done_when names each listed module's guard searching through tests/real_home_traces.py with self-minted needles and no search reading crew/runs, a logged census naming each line read, base and head arms with revision, command, EXIT and the real crew/live and budget-lifts.json state, and a negative control with a FAILED line and non-zero EXIT; the run's logs (arm_base.log, arm_head.log, gate_helper.log, negative_control.log, census_recheck.log) and the manifest record all of these.",
+    "goal": "The node goal is that every real-home guard the census found still unfiltered fails only on a trace its own test minted; the sixteen modules in the manifest's write scope now route their real-home guard through tests/real_home_traces.py:32-68 with test-minted needles (tests/test_budget_lift.py:83/87, tests/test_directory_claim_asks_first.py:117), but census_recheck.log leaves nine further snapshot-unfiltered guards unmigrated (recorded in the manifest's follow_ons).",
+    "manifest": "Read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T042452102211-the-census-guards-fail-only-on-their-own-writes/manifest.md; it states 148 passed EXIT=0 at both arms, the helper gate 4 passed EXIT=0, and the negative control 1 failed EXIT=1, all reconciling with the logs, but its follow_ons[4] calls the 23 re-classified modules \"classified read-only\" and totals them with the sixteen as 37 rather than 39.",
+    "write_paths": "The manifest declares the sixteen modules plus a fragment and figure path; the diff touches those sixteen, docs/evidence/fragments/the-suite-tests-behaviour/the-census-guards-fail-only-on-their-own-writes.html, and two files outside the literal fence - tests/real_home_traces.py and tests/test_real_home_traces.py - which section 8 names as write paths and the manifest records as an accepted blocker."
+  },
+  "justifications": {
+    "durability": "with tests/real_home_traces.py:51-59 in place the guard at tests/test_budget_lift.py:87 reddens if a case writes its own group into the real budget-lifts.json, as negative_control.log reproduces, and test_real_home_traces.py:80 reddens if the single-file branch is removed.",
+    "evidence": "arm_head.log:1 and arm_base.log:1 name revision, tree and command with EXIT=0 at 148 passed and census_recheck.log:1-69 gives line-level verdicts, though arm_head.log:2 misnames the base revision.",
+    "fit": "the migrated files import traces_naming from tests/real_home_traces.py:32 and add only fixture-only constants like \"lift-guard-fixture\", matching the surrounding test idiom with no banned name.",
+    "goal_fidelity": "tests/test_budget_lift.py:83/87 and tests/test_directory_claim_asks_first.py:117 route their guards through tests/real_home_traces.py with fixture-only needles, but census_recheck.log leaves nine snapshot-unfiltered guards the census still finds, so the goal's \"every\" is unmet.",
+    "reuse": "every migrated module and the four private glob-and-read closures at tests/test_directory_claim_asks_first.py:117 extend the single owner tests/real_home_traces.py:32 rather than forking a search.",
+    "scope_discipline": "the diff lies in the sixteen declared modules plus the section-owned tests/real_home_traces.py and tests/test_real_home_traces.py, the latter two outside the literal prompt fence and recorded as an accepted blocker."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is that every real-home guard the census found still unfiltered fails only on a trace its own test minted; the sixteen modules in the manifest's write scope now route their real-home guard through tests/real_home_traces.py:32-68 with test-minted needles (tests/test_budget_lift.py:83/87, tests/test_directory_claim_asks_first.py:117), but census_recheck.log leaves nine further snapshot-unfiltered guards unmigrated (recorded in the manifest's follow_ons).\nVERDICT done_when: The done_when names each listed module's guard searching through tests/real_home_traces.py with self-minted needles and no search reading crew/runs, a logged census naming each line read, base and head arms with revision, command, EXIT and the real crew/live and budget-lifts.json state, and a negative control with a FAILED line and non-zero EXIT; the run's logs (arm_base.log, arm_head.log, gate_helper.log, negative_control.log, census_recheck.log) and the manifest record all of these.\nVERDICT write_paths: The manifest declares the sixteen modules plus a fragment and figure path; the diff touches those sixteen, docs/evidence/fragments/the-suite-tests-behaviour/the-census-guards-fail-only-on-their-own-writes.html, and two files outside the literal fence - tests/real_home_traces.py and tests/test_real_home_traces.py - which section 8 names as write paths and the manifest records as an accepted blocker.\nVERDICT manifest: Read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T042452102211-the-census-guards-fail-only-on-their-own-writes/manifest.md; it states 148 passed EXIT=0 at both arms, the helper gate 4 passed EXIT=0, and the negative control 1 failed EXIT=1, all reconciling with the logs, but its follow_ons[4] calls the 23 re-classified modules \"classified read-only\" and totals them with the sixteen as 37 rather than 39.\nVERDICT diff: Read commit by commit against 5cc43c19 - one commit, a6238872, extends tests/real_home_traces.py:51-59 (traces_naming) to search a subtree that names a single file and routes sixteen modules' real-home guards through it with test-minted needles, replacing the generic \"codex-sub\", \"sample\", \"proj\" and \"demo\" needles.\nCALL_SITES: none\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: tests/test_budget_lift.py:83/87 and tests/test_directory_claim_asks_first.py:117 route their guards through tests/real_home_traces.py with fixture-only needles, but census_recheck.log leaves nine snapshot-unfiltered guards the census still finds, so the goal's \"every\" is unmet.\nSCORE evidence: 16\nJUSTIFICATION evidence: arm_head.log:1 and arm_base.log:1 name revision, tree and command with EXIT=0 at 148 passed and census_recheck.log:1-69 gives line-level verdicts, though arm_head.log:2 misnames the base revision.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: the diff lies in the sixteen declared modules plus the section-owned tests/real_home_traces.py and tests/test_real_home_traces.py, the latter two outside the literal prompt fence and recorded as an accepted blocker.\nSCORE durability: 18\nJUSTIFICATION durability: with tests/real_home_traces.py:51-59 in place the guard at tests/test_budget_lift.py:87 reddens if a case writes its own group into the real budget-lifts.json, as negative_control.log reproduces, and test_real_home_traces.py:80 reddens if the single-file branch is removed.\nSCORE fit: 19\nJUSTIFICATION fit: the migrated files import traces_naming from tests/real_home_traces.py:32 and add only fixture-only constants like \"lift-guard-fixture\", matching the surrounding test idiom with no banned name.\nSCORE reuse: 20\nJUSTIFICATION reuse: every migrated module and the four private glob-and-read closures at tests/test_directory_claim_asks_first.py:117 extend the single owner tests/real_home_traces.py:32 rather than forking a search.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T042452102211-the-census-guards-fail-only-on-their-own-writes/arm_head.log:2 follow-on: the head arm's second header line names revision 5cc43c19 (the base) while line 1 names the head a6238872, so a reader taking that line for the arm's revision is misled.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T042452102211-the-census-guards-fail-only-on-their-own-writes/manifest.md:22 follow-on: follow_ons[4] describes the 23 re-classified modules as \"classified read-only\" though census_recheck.log classifies nine of them as the still-present snapshot-unfiltered defect, and its \"37\" contradicts the 16+23=39 its own parts sum to.\nFINDING docs/evidence/fragments/the-suite-tests-behaviour/the-census-guards-fail-only-on-their-own-writes.html:12 follow-on: the fragment says the two arms cover \"the sixteen modules plus the two helper paths\", but arm_head.log:1 and arm_base.log:1 name only the sixteen modules; the helper gate is separate (gate_helper.log).\n",
+  "review_run_id": "r-20261014T051241817543-review-of-the-census-guards-fail-only-on-their-own-writes",
+  "reviewed_base_sha": "5cc43c19de0bd171a398236730dbba7a5005350b",
+  "reviewed_head_sha": "a6238872b4f039984f4e4f7cd624fd34e00c9080",
+  "reviewed_run_id": "r-20261014T042452102211-the-census-guards-fail-only-on-their-own-writes",
+  "reviewer": "review-of-the-census-guards-fail-only-on-their-own-writes",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 15,
+    "reuse": 20,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T05:30:00.000000+00:00",
+  "total": 104
+}
