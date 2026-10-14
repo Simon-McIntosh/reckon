@@ -408,8 +408,8 @@ def test_a_refusal_over_an_existing_worktree_leaves_no_new_trace(
     with pytest.raises(crew.CrewError) as refusal:
         _dispatch(config_home, repo, launcher=_stub_launcher())
 
-    # The refusal is §16's kept-tree refusal, and it names the commit the
-    # earlier attempt left beyond its base.
+    # The refusal is the leftover-tree release's kept-tree refusal, and it
+    # names the commit the earlier attempt left beyond its base.
     assert kept_commit in str(refusal.value)
 
     assert live_pointers_naming(NODE_ID) == []
