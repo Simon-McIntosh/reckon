@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log (baseline_suite and after_suite both read 'not run'), so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew_run_commands.py:1234",
+    "reckon/crew/fleet_supervisor.py:82",
+    "reckon/crew/standing_suite.py:48",
+    "reckon/crew/dispatch_sessions.py:45",
+    "reckon/crew/dispatch_launch.py:47",
+    "reckon/crew/dispatch.py:154"
+  ],
+  "completed_at": "2026-10-14T11:38:43.201Z",
+  "dispatched_at": "2026-10-14T11:24:38Z",
+  "findings": [],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified the production importers of the moved names resolve through routing's re-export \u2014 reckon/crew_run_commands.py:1234, reckon/crew/fleet_supervisor.py:82, reckon/crew/standing_suite.py:48, reckon/crew/dispatch_sessions.py:45, reckon/crew/dispatch_launch.py:47 and reckon/crew/dispatch.py:154 \u2014 and no production module patches routing.os or routing.shutil.",
+    "diff": "read the single commit 75c1d319f against base c7230c9d4; routing.py loses both families (its only added lines are the two from-import re-export blocks and one noqa comment), gc.py (+1109) and process_signal.py (+521) are the moved bodies, and eight test files repoint os/shutil patches and one source-text expectation.",
+    "done_when": "the done_when names scripts/check_pure_move.py with a per-module token receipt, fresh-interpreter imports of the three modules, tests/test_every_module_fits_a_worker_window.py, and a negative control; the manifest records all four arms \u2014 logs/pure_move.log EXIT=0 with problems [], the three import logs EXIT=0, logs/window_test.log 4 passed EXIT=0, and logs/negative_control.log 1 failed EXIT=1 naming routing.py at 60453.",
+    "goal": "the node's goal is to move the gc/scratch and process-signalling families out of reckon/crew/routing.py into new modules as pure moves with re-exports so all three fit the 50000-token window; the head does exactly that \u2014 reckon/crew/gc.py:262 garbage_collect and reckon/crew/process_signal.py:365 signal_worker now carry the moved bodies and reckon/crew/routing.py:3579 re-exports every moved name.",
+    "manifest": "read r-20261014T100305413110-routing-fits-a-worker-window/manifest.md; status complete, commit 75c1d319f, changed_paths matching the diff, and it names pure_move.log, the three import logs, window_test.log, in_scope_tests.log (86 passed) and negative_control.log; baseline_suite and after_suite read \"not run\".",
+    "write_paths": "the manifest declares 12 changed paths, every one inside the node's declared write_paths (reckon/crew/routing.py, reckon/crew/gc.py, reckon/crew/process_signal.py and nine test files); nothing outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_every_module_fits_a_worker_window.py:69 fails if the moved families are appended back \u2014 the negative control shows it naming routing.py at 60453 \u2014 and tests/test_a_worktree_release_is_whole.py:474 fails if garbage_collect leaves gc.py, though the diff adds no assertion the split itself introduces.",
+    "evidence": "logs/pure_move.log records EXIT=0 with problems [] and logs/window_test.log 4 passed EXIT=0, but the manifest carries baseline_suite and after_suite as \"not run\", so the section's no-added-failure-against-base claim rests on the coordinator's merge-time importer run rather than a worker arm and the record's added-failure count is unmeasured and noted.",
+    "fit": "the new modules are named by capability (gc.py, process_signal.py) with no plan, version or ticket label, and their bodies are byte-identical to routing's per the receipt's empty problems list.",
+    "goal_fidelity": "reckon/crew/gc.py:262 and reckon/crew/process_signal.py:365 hold the moved families and reckon/crew/routing.py:3579 re-exports every one of them, and the receipt puts routing at 41308, gc at 13413 and process_signal at 5731 tokens, all under 50000.",
+    "reuse": "signal_worker remains the crew's one caller of os.kill/os.killpg at reckon/crew/process_signal.py:365 and the receipt reports no duplicated statement, so the split extends the one implementation rather than forking a capability.",
+    "scope_discipline": "all 12 paths in the commit (reckon/crew/routing.py, gc.py, process_signal.py and nine test files) are inside the node's declared write_paths, and no statement beyond the two import blocks and a noqa comment was added to routing.py."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to move the gc/scratch and process-signalling families out of reckon/crew/routing.py into new modules as pure moves with re-exports so all three fit the 50000-token window; the head does exactly that \u2014 reckon/crew/gc.py:262 garbage_collect and reckon/crew/process_signal.py:365 signal_worker now carry the moved bodies and reckon/crew/routing.py:3579 re-exports every moved name.\nVERDICT done_when: the done_when names scripts/check_pure_move.py with a per-module token receipt, fresh-interpreter imports of the three modules, tests/test_every_module_fits_a_worker_window.py, and a negative control; the manifest records all four arms \u2014 logs/pure_move.log EXIT=0 with problems [], the three import logs EXIT=0, logs/window_test.log 4 passed EXIT=0, and logs/negative_control.log 1 failed EXIT=1 naming routing.py at 60453.\nVERDICT write_paths: the manifest declares 12 changed paths, every one inside the node's declared write_paths (reckon/crew/routing.py, reckon/crew/gc.py, reckon/crew/process_signal.py and nine test files); nothing outside them.\nVERDICT manifest: read r-20261014T100305413110-routing-fits-a-worker-window/manifest.md; status complete, commit 75c1d319f, changed_paths matching the diff, and it names pure_move.log, the three import logs, window_test.log, in_scope_tests.log (86 passed) and negative_control.log; baseline_suite and after_suite read \"not run\".\nVERDICT diff: read the single commit 75c1d319f against base c7230c9d4; routing.py loses both families (its only added lines are the two from-import re-export blocks and one noqa comment), gc.py (+1109) and process_signal.py (+521) are the moved bodies, and eight test files repoint os/shutil patches and one source-text expectation.\nVERDICT call_sites: verified the production importers of the moved names resolve through routing's re-export \u2014 reckon/crew_run_commands.py:1234, reckon/crew/fleet_supervisor.py:82, reckon/crew/standing_suite.py:48, reckon/crew/dispatch_sessions.py:45, reckon/crew/dispatch_launch.py:47 and reckon/crew/dispatch.py:154 \u2014 and no production module patches routing.os or routing.shutil.\nCALL_SITES: reckon/crew_run_commands.py:1234, reckon/crew/fleet_supervisor.py:82, reckon/crew/standing_suite.py:48, reckon/crew/dispatch_sessions.py:45, reckon/crew/dispatch_launch.py:47, reckon/crew/dispatch.py:154\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/gc.py:262 and reckon/crew/process_signal.py:365 hold the moved families and reckon/crew/routing.py:3579 re-exports every one of them, and the receipt puts routing at 41308, gc at 13413 and process_signal at 5731 tokens, all under 50000.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/pure_move.log records EXIT=0 with problems [] and logs/window_test.log 4 passed EXIT=0, but the manifest carries baseline_suite and after_suite as \"not run\", so the section's no-added-failure-against-base claim rests on the coordinator's merge-time importer run rather than a worker arm and the record's added-failure count is unmeasured and noted.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all 12 paths in the commit (reckon/crew/routing.py, gc.py, process_signal.py and nine test files) are inside the node's declared write_paths, and no statement beyond the two import blocks and a noqa comment was added to routing.py.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_every_module_fits_a_worker_window.py:69 fails if the moved families are appended back \u2014 the negative control shows it naming routing.py at 60453 \u2014 and tests/test_a_worktree_release_is_whole.py:474 fails if garbage_collect leaves gc.py, though the diff adds no assertion the split itself introduces.\nSCORE fit: 18\nJUSTIFICATION fit: the new modules are named by capability (gc.py, process_signal.py) with no plan, version or ticket label, and their bodies are byte-identical to routing's per the receipt's empty problems list.\nSCORE reuse: 20\nJUSTIFICATION reuse: signal_worker remains the crew's one caller of os.kill/os.killpg at reckon/crew/process_signal.py:365 and the receipt reports no duplicated statement, so the split extends the one implementation rather than forking a capability.\n",
+  "review_run_id": "r-20261014T112408940304-review-of-routing-fits-a-worker-window-75c1d319fd23",
+  "reviewed_base_sha": "c7230c9d4ed6021fd0339d794d083fd26cf12c14",
+  "reviewed_head_sha": "75c1d319fd231ab924a222013e2f2a686b6462c2",
+  "reviewed_run_id": "r-20261014T100305413110-routing-fits-a-worker-window",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T11:34:31.538541+00:00",
+  "total": 111
+}
