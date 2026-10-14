@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived 0 from the reviewed run's own gate logs: gate-head.log (6 passed, no FAILED/ERROR id) and gate-related.log (187 passed, no FAILED/ERROR id) record no failing test at the head arm, so the set difference against any base is empty. The reviewed manifest carries no baseline_suite/after_suite key, which is the pair read-time annotation reads, so it reports the count as unmeasured; the stored 0 is the reviewer's derivation from the arms the manifest names under tests and test_logs.",
+  "backend": "clive",
+  "base_log_revision": null,
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/recovery_classification.py:278 classify_pointer",
+    "reckon/crew/recovery_classification.py:1328 classify_pointer",
+    "reckon/hooks/worker_stop.py:302 worker_stop",
+    "reckon/crew/reports.py:1940 report_render"
+  ],
+  "completed_at": "2026-10-14T00:38:29.327Z",
+  "dispatched_at": "2026-10-14T00:25:31Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": "1328",
+      "severity": "blocking",
+      "text": "blocking: the diff edits a file the declared write paths do not contain, so promotion raises 'changed paths outside its declared write scope' unless the coordinator records a scope acceptance or corrects the plan's write-path line; the join is necessary because the observation is known only after the probe runs, so the remedy is procedural rather than a revert."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T235726770293-a-wait-probe-that-can-never-match-is-caught/gate-head.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the gate log's header records revision 11d144aa (base) with the node change uncommitted, so the log does not name the reviewed head 11ed18272 and a reader must infer the identity."
+    },
+    {
+      "file": "manifest.md",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest carries no baseline_suite or after_suite key, so read-time annotation of this review reports added_failure_count as unmeasured; the count stored here is derived by hand."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read both commits against base 11d144aa; production f0f039787 adds _wait_probe_prints_structured_output and _wait_observation_defect and the structured refusal in _manifest_wait plus the classification join, and evidence 11ed18272 lands the fragment.",
+    "done_when": "the done_when names tests/test_a_wait_probe_that_can_never_match_is_caught.py with four coverage bullets plus a negative control; the manifest records 6 passed EXIT=0 in gate-head.log and the negative control's single failure EXIT=1 in negative-control.log.",
+    "goal": "the node goal is to report a wait probe that cannot produce a terminal value as a wait-key defect; reckon/crew/recovery_liveness.py:663 has _manifest_wait refuse a sacct probe carrying --json/--parsable/--parsable2 and name sacct -n -X -o State -j <id>, and the join at reckon/crew/recovery_classification.py:1328 puts a punctuation-only observation onto wait_key_defect.",
+    "manifest": "read; it records the gate and negative-control results and the two commits f0f039787 and 11ed18272, and self-declares that recovery_classification.py was edited beyond the declared write paths.",
+    "write_paths": "the manifest declares reckon/crew/recovery_liveness.py, the new test file, the evidence fragment and the figures directory; the diff also edits reckon/crew/recovery_classification.py, which none of those names."
+  },
+  "justifications": {
+    "durability": "negative-control.log drops the observation check and tests/test_a_wait_probe_that_can_never_match_is_caught.py:155 then fails assert defect is not None, so the guard reddens on the regression it exists to catch.",
+    "evidence": "tests/test_a_wait_probe_that_can_never_match_is_caught.py passes 6 of 6 with EXIT=0 recorded in gate-head.log, but that log's header names base revision 11d144aa with a working tree rather than the reviewed head 11ed18272.",
+    "fit": "the added helpers and their comments follow the surrounding idiom of recovery_liveness.py, and _wait_probe_prints_structured_output, _wait_observation_defect and _SACCT_STATE_FORM carry no plan label.",
+    "goal_fidelity": "recovery_liveness.py:492 adds _wait_probe_prints_structured_output and :517 adds _wait_observation_defect, and the join at recovery_classification.py:1328 reports a punctuation observation as wait_key_defect.",
+    "reuse": "no existing owner checks whether a probe observation can equal a state, and the structured-form refusal is added into _manifest_wait, the owner of wait validation.",
+    "scope_discipline": "the diff edits reckon/crew/recovery_classification.py, which no declared write path names, so promotion refuses it until the path is accepted."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to report a wait probe that cannot produce a terminal value as a wait-key defect; reckon/crew/recovery_liveness.py:663 has _manifest_wait refuse a sacct probe carrying --json/--parsable/--parsable2 and name sacct -n -X -o State -j <id>, and the join at reckon/crew/recovery_classification.py:1328 puts a punctuation-only observation onto wait_key_defect.\nVERDICT done_when: the done_when names tests/test_a_wait_probe_that_can_never_match_is_caught.py with four coverage bullets plus a negative control; the manifest records 6 passed EXIT=0 in gate-head.log and the negative control's single failure EXIT=1 in negative-control.log.\nVERDICT write_paths: the manifest declares reckon/crew/recovery_liveness.py, the new test file, the evidence fragment and the figures directory; the diff also edits reckon/crew/recovery_classification.py, which none of those names.\nVERDICT manifest: read; it records the gate and negative-control results and the two commits f0f039787 and 11ed18272, and self-declares that recovery_classification.py was edited beyond the declared write paths.\nVERDICT diff: read both commits against base 11d144aa; production f0f039787 adds _wait_probe_prints_structured_output and _wait_observation_defect and the structured refusal in _manifest_wait plus the classification join, and evidence 11ed18272 lands the fragment.\nCALL_SITES: reckon/crew/recovery_classification.py:278 classify_pointer, reckon/crew/recovery_classification.py:1328 classify_pointer, reckon/hooks/worker_stop.py:302 worker_stop, reckon/crew/reports.py:1940 report_render\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: recovery_liveness.py:492 adds _wait_probe_prints_structured_output and :517 adds _wait_observation_defect, and the join at recovery_classification.py:1328 reports a punctuation observation as wait_key_defect.\nSCORE evidence: 15\nJUSTIFICATION evidence: tests/test_a_wait_probe_that_can_never_match_is_caught.py passes 6 of 6 with EXIT=0 recorded in gate-head.log, but that log's header names base revision 11d144aa with a working tree rather than the reviewed head 11ed18272.\nSCORE scope_discipline: 10\nJUSTIFICATION scope_discipline: the diff edits reckon/crew/recovery_classification.py, which no declared write path names, so promotion refuses it until the path is accepted.\nSCORE durability: 19\nJUSTIFICATION durability: negative-control.log drops the observation check and tests/test_a_wait_probe_that_can_never_match_is_caught.py:155 then fails assert defect is not None, so the guard reddens on the regression it exists to catch.\nSCORE fit: 18\nJUSTIFICATION fit: the added helpers and their comments follow the surrounding idiom of recovery_liveness.py, and _wait_probe_prints_structured_output, _wait_observation_defect and _SACCT_STATE_FORM carry no plan label.\nSCORE reuse: 20\nJUSTIFICATION reuse: no existing owner checks whether a probe observation can equal a state, and the structured-form refusal is added into _manifest_wait, the owner of wait validation.\nFINDING reckon/crew/recovery_classification.py:1328 blocking: the diff edits a file the declared write paths do not contain, so promotion raises 'changed paths outside its declared write scope' unless the coordinator records a scope acceptance or corrects the plan's write-path line; the join is necessary because the observation is known only after the probe runs, so the remedy is procedural rather than a revert.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261013T235726770293-a-wait-probe-that-can-never-match-is-caught/gate-head.log:1 follow-on: the gate log's header records revision 11d144aa (base) with the node change uncommitted, so the log does not name the reviewed head 11ed18272 and a reader must infer the identity.\nFINDING manifest.md:1 follow-on: the reviewed manifest carries no baseline_suite or after_suite key, so read-time annotation of this review reports added_failure_count as unmeasured; the count stored here is derived by hand.",
+  "review_run_id": "r-20261014T002501790672-review-of-a-wait-probe-that-can-never-match-is-caught-11ed18272ae6",
+  "reviewed_base_sha": "11d144aa9344ea2e8f31f9966a5d9fb342f60b1f",
+  "reviewed_head_sha": "11ed18272ae6e10f10abed2174291146685ccf89",
+  "reviewed_run_id": "r-20261013T235726770293-a-wait-probe-that-can-never-match-is-caught",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 10
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T00:34:43.790887+00:00",
+  "total": 101
+}
