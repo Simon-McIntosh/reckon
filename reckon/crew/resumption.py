@@ -83,8 +83,11 @@ from reckon.crew.recovery import (
     stream_paths_newest_first,
 )
 from reckon.crew.runs import (
+    AS_DELIVERED_SUFFIX,
+    _manifest_for_repair,
     _manifest_mtime_ns,
     _pointer_lock,
+    _status_line_replaced,
     _utc_now,
     _write_json,
     crew_home,
@@ -1026,36 +1029,26 @@ def _reset_delivered_manifest_status(
     manifest already in force is returned so a caller can report where the
     delivery was kept, or None when nothing was replaced.
     """
-    if record is None:
-        try:
-            record = read_pointer(run_id)
-        except CrewError:
-            record = {}
-    named = str(record.get("manifest_path") or "").strip()
-    manifest = Path(named) if named else run_dir(run_id) / "manifest.md"
+    try:
+        manifest = _manifest_for_repair(run_id)
+    except CrewError:
+        # The repair resolves the manifest the same way and refuses when there
+        # is none at either path; a run with nothing delivered has nothing to
+        # clear, so the refusal is not this caller's error.
+        return None
     try:
         text = manifest.read_text(encoding="utf-8")
     except OSError:
         return None
-    lines = text.splitlines()
-    status = ""
-    for line in lines:
-        if line.startswith("status:"):
-            status = line.split(":", 1)[1].strip().lower()
-            break
-    if status not in _WORKER_DONE_MANIFEST_STATUSES:
+    rewritten, previous = _status_line_replaced(text, "in-progress")
+    if rewritten is None:
         return None
-    attempt = int(record.get("attempt") or 1)
-    kept = manifest.with_name(f"{manifest.name}.attempt-{attempt}.asdelivered")
+    if previous.strip().lower() not in _WORKER_DONE_MANIFEST_STATUSES:
+        return None
+    attempt = int((record or {}).get("attempt") or 1)
+    kept = manifest.with_name(f"{manifest.name}.attempt-{attempt}{AS_DELIVERED_SUFFIX}")
     if not kept.exists():
         kept.write_text(text, encoding="utf-8")
-    for index, line in enumerate(lines):
-        if line.startswith("status:"):
-            lines[index] = "status: in-progress"
-            break
-    rewritten = "\n".join(lines)
-    if text.endswith("\n"):
-        rewritten += "\n"
     write_atomically(manifest, lambda handle: handle.write(rewritten), fsync=False)
     return kept
 

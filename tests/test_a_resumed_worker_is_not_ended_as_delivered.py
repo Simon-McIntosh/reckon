@@ -43,7 +43,8 @@ from tests import test_a_live_run_never_reads_dead as liveness
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
 
 # A stub worker that leaves the status word alone and edits a non-status field,
-# then sleeps far past any grace: exactly the edit the incident made.
+# then sleeps far past any grace: one edit like this is all it takes for the
+# inherited done status to read as fresh and have the worker ended.
 STUB_EDIT_NONSTATUS = (
     "import os, time\n"
     "from pathlib import Path\n"
