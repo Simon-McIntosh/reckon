@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own head arms: the focused gate (gate-overlapping-queued-requests-3.log, 19 passed, EXIT=0) and the importer population (population-importers-3.log, 102 passed, EXIT=0) each report no failing node id, so the change adds no failing test; the reviewed manifest names no baseline_suite/after_suite pair, so no base arm was read.",
+  "backend": "deepseek-v4.1-flash",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch_claims.py:299",
+    "reckon/crew/queue_admission.py:663",
+    "reckon/crew/queue_admission.py:290"
+  ],
+  "completed_at": "2026-10-14T03:42:07.851Z",
+  "dispatched_at": "2026-10-14T03:31:13Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T022831463134-overlapping-queued-requests-launch-in-turn/manifest.md",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest still carries no baseline_suite/after_suite, so the record's added_failure_count rests on the head arms' empty failing set rather than on a base/after delta."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "245",
+      "severity": "follow-on",
+      "text": "follow-on: _resolved_request_claims calls _pointer_scope_entries with repository_projects=None, so each comparison re-reads the mount table through mounted_repository_projects(); _queued_requests_overlap calls it once per earlier candidate, so a pass over N queued requests re-reads mounts O(N^2) times."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read c5645a1a9 against 8f3b5d7cf commit by commit; it extracts _pointer_scope_entries in reckon/crew/dispatch_claims.py:222 and rewrites _repository_scope_claims to call it, replaces _queued_scope_paths with _resolved_request_claims in reckon/crew/queue_admission.py:227, adds the repository-equality guard at reckon/crew/queue_admission.py:250, adds case 8 in the test file, and updates the fragment.",
+    "done_when": "the source done_when names tests/test_overlapping_queued_requests_launch_in_turn.py (eight cases including the crew-scopes verdict and the starvation release), tests/test_a_node_is_queued_once.py with its superseded case rewritten, and the negative controls; the manifest records the focused gate 19 passed EXIT=0 and the importer population 102 passed EXIT=0, and the new case's control (negative-control-4-cross-repository-3.log) fails it at EXIT=1.",
+    "goal": "the source node goal is that overlapping queued requests launch in rank order instead of refusing each other; the repair commit c5645a1a9 keeps that mechanism and scopes the overlap to one repository, so reckon/crew/queue_admission.py:250 _queued_requests_overlap holds a later request only against an earlier one whose resolved path shares its repository.",
+    "manifest": "read the delivered manifest at the reviewed head; it records the gate (19 passed, EXIT=0), the population (102 passed, EXIT=0), four negative controls each EXIT=1, and names the -3 logs on disk, but still carries no baseline_suite/after_suite pair.",
+    "write_paths": "the repair diff touches reckon/crew/dispatch_claims.py, reckon/crew/queue_admission.py, tests/test_overlapping_queued_requests_launch_in_turn.py and the evidence fragment; every one is inside the node's declared write paths, with reckon/crew/dispatch_claims.py added by the coordinator's widen recorded in resume-2-advice.txt."
+  },
+  "justifications": {
+    "durability": "the new assertion at tests/test_overlapping_queued_requests_launch_in_turn.py:592 reddens when the repository comparison is reverted, as negative-control-4-cross-repository-3.log shows.",
+    "evidence": "gate-overlapping-queued-requests-3.log records 19 passed EXIT=0 and negative-control-4-cross-repository-3.log records the new case failing at EXIT=1, but the reviewed manifest still carries no baseline_suite/after_suite so added_failure_count rests on the head arms.",
+    "fit": "_pointer_scope_entries and _resolved_request_claims follow the module's private-helper-and-docstring idiom and introduce no plan label or forbidden name.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:250 compares (repository, absolute) pairs so a later queued request is held behind an earlier overlapping one only within one repository, which is the rank-order goal without the spurious cross-repository hold.",
+    "reuse": "the repair removes the duplicated pointer-resolution logic by extracting _pointer_scope_entries at reckon/crew/dispatch_claims.py:222, which _repository_scope_claims and the queue pre-check both call, and composes runs._scopes_overlap rather than forking an overlap predicate.",
+    "scope_discipline": "every path in the repair commit is inside the declared write paths, with reckon/crew/dispatch_claims.py widened into scope by the coordinator."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node goal is that overlapping queued requests launch in rank order instead of refusing each other; the repair commit c5645a1a9 keeps that mechanism and scopes the overlap to one repository, so reckon/crew/queue_admission.py:250 _queued_requests_overlap holds a later request only against an earlier one whose resolved path shares its repository.\nVERDICT done_when: the source done_when names tests/test_overlapping_queued_requests_launch_in_turn.py (eight cases including the crew-scopes verdict and the starvation release), tests/test_a_node_is_queued_once.py with its superseded case rewritten, and the negative controls; the manifest records the focused gate 19 passed EXIT=0 and the importer population 102 passed EXIT=0, and the new case's control (negative-control-4-cross-repository-3.log) fails it at EXIT=1.\nVERDICT write_paths: the repair diff touches reckon/crew/dispatch_claims.py, reckon/crew/queue_admission.py, tests/test_overlapping_queued_requests_launch_in_turn.py and the evidence fragment; every one is inside the node's declared write paths, with reckon/crew/dispatch_claims.py added by the coordinator's widen recorded in resume-2-advice.txt.\nVERDICT manifest: read the delivered manifest at the reviewed head; it records the gate (19 passed, EXIT=0), the population (102 passed, EXIT=0), four negative controls each EXIT=1, and names the -3 logs on disk, but still carries no baseline_suite/after_suite pair.\nVERDICT diff: read c5645a1a9 against 8f3b5d7cf commit by commit; it extracts _pointer_scope_entries in reckon/crew/dispatch_claims.py:222 and rewrites _repository_scope_claims to call it, replaces _queued_scope_paths with _resolved_request_claims in reckon/crew/queue_admission.py:227, adds the repository-equality guard at reckon/crew/queue_admission.py:250, adds case 8 in the test file, and updates the fragment.\nCALL_SITES: reckon/crew/dispatch_claims.py:299, reckon/crew/queue_admission.py:663, reckon/crew/queue_admission.py:290\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:250 compares (repository, absolute) pairs so a later queued request is held behind an earlier overlapping one only within one repository, which is the rank-order goal without the spurious cross-repository hold.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-overlapping-queued-requests-3.log records 19 passed EXIT=0 and negative-control-4-cross-repository-3.log records the new case failing at EXIT=1, but the reviewed manifest still carries no baseline_suite/after_suite so added_failure_count rests on the head arms.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the repair commit is inside the declared write paths, with reckon/crew/dispatch_claims.py widened into scope by the coordinator.\nSCORE durability: 19\nJUSTIFICATION durability: the new assertion at tests/test_overlapping_queued_requests_launch_in_turn.py:592 reddens when the repository comparison is reverted, as negative-control-4-cross-repository-3.log shows.\nSCORE fit: 19\nJUSTIFICATION fit: _pointer_scope_entries and _resolved_request_claims follow the module's private-helper-and-docstring idiom and introduce no plan label or forbidden name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the repair removes the duplicated pointer-resolution logic by extracting _pointer_scope_entries at reckon/crew/dispatch_claims.py:222, which _repository_scope_claims and the queue pre-check both call, and composes runs._scopes_overlap rather than forking an overlap predicate.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T022831463134-overlapping-queued-requests-launch-in-turn/manifest.md:1 follow-on: the reviewed manifest still carries no baseline_suite/after_suite, so the record's added_failure_count rests on the head arms' empty failing set rather than on a base/after delta.\nFINDING reckon/crew/queue_admission.py:245 follow-on: _resolved_request_claims calls _pointer_scope_entries with repository_projects=None, so each comparison re-reads the mount table through mounted_repository_projects(); _queued_requests_overlap calls it once per earlier candidate, so a pass over N queued requests re-reads mounts O(N^2) times.\nreviewed_base_sha: 8f3b5d7cf2441772dcb5c72c06807063551d2a30\nreviewed_head_sha: c5645a1a9dc760c6491a5b10dcd41859916fac03",
+  "review_run_id": "r-20261014T033035746952-review-of-overlapping-queued-requests-launch-in-turn-c5645a1a9dc7",
+  "reviewed_base_sha": "8f3b5d7cf2441772dcb5c72c06807063551d2a30",
+  "reviewed_head_sha": "c5645a1a9dc760c6491a5b10dcd41859916fac03",
+  "reviewed_run_id": "r-20261014T022831463134-overlapping-queued-requests-launch-in-turn",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T03:40:27.304894+00:00",
+  "total": 115
+}

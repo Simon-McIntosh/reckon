@@ -24,7 +24,7 @@
   <title>A Held Dispatch Waits Its Fair Turn | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="103">
+<meta name="plan-version" content="104">
 <meta name="plan-modified" content="2026-10-14">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="3c837fc1">
@@ -377,6 +377,9 @@
 </div>
 <div class="r-comment" data-section="s18" data-id="c-close-s18" data-who="reckon-build" data-when="2026-10-14T03:50:00Z">
     <div class="r-comment-body"><p>§18 landed at <code>71b151ef0</code>. A queued claim no longer binds, and the admission pass keeps rank order among overlapping queued requests in one repository, through the claim module's own resolver, until the starvation age. Gate: 19 passed. Four controls each fail their named case. Population: 647 passed at head against 636 at base, with 0 added. Review: 115/120. The fix takes effect on the lane only after the admit service restarts. <a href="/reckon/evidence/archive/a-held-dispatch-waits-its-fair-turn-landed.html#s18-overlapping-queued-requests">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s18" data-id="c-run-r-20261014T033035746952-review-of-overlapping-queued-requests-launch-in-turn-c5645a1a9dc7" data-who="reckon-build" data-when="2026-10-14T03:42:07.851Z">
+    <div class="r-comment-body"><p>§18 review at head c5645a1a9: the repair that scopes the queued-request overlap to one repository is reviewed across the four commits-gained paths; six dimensions scored (goal_fidelity 20, evidence 17, scope_discipline 20, durability 19, fit 19, reuse 20; total 115), the record carries reviewed_base_sha 8f3b5d7cf and reviewed_head_sha c5645a1a9 plus added_failure_count 0, with two follow-on findings and no blocking finding.</p></div>
 </div>
 <div class="r-comment" data-section="s15" data-id="c-run-r-20261014T015510941732-review-of-a-queued-plan-review-is-stored-209216f5da24" data-who="reckon-build" data-when="2026-10-14T02:11:04.521Z">
     <div class="r-comment-body"><p>Independent review of r-20261014T011947963819-a-queued-plan-review-is-stored stored: six dimensions scored (goal_fidelity 20, evidence 17, scope_discipline 20, durability 19, fit 19, reuse 20; total 115), reviewed_base_sha 780980785f6770a32e16fe594e60690a0c36f896 and reviewed_head_sha 209216f5da241bcca4f0ae230a68fd2f142fba07 recorded, two follow-on findings (self-referential stored review_run_id assertion at tests/test_a_queued_plan_review_is_stored.py:248; reviewed manifest names after_suite with no baseline_suite at manifest.md:15), no blocking finding.</p></div>
