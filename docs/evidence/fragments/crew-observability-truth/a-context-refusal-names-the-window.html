@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>a-context-refusal-names-the-window — landing record</title>
+</head>
+<body>
+<article id="a-context-refusal-names-the-window">
+<h3>Context-window refusal names the window</h3>
+<p id="a-context-refusal-names-the-window-summary">A context-window refusal is an exit-5 <code>CompetenceLimit</code>. Its message was rendered through the neutral-hour template, so a token refusal reported a competence horizon of <code>0.0</code> worker-hours that nobody measured and advised splitting into zero-hour nodes. <code>CompetenceLimit</code> now chooses its message from the verdict's <code>reason</code>: a token refusal names the estimated tokens, the window, the shortfall and the verdict's own D08 recommendation; an hour refusal keeps its text. <code>with_context_fit</code> no longer writes <code>0.0</code> placeholders, so an unmeasured horizon stays absent from the verdict.</p>
+<p id="a-context-refusal-names-the-window-measure">Gate: the test files importing <code>reckon/crew/node.py</code> or <code>reckon/crew/routing.py</code> run at base and at head. Base 1 failed, 1969 passed; head 1 failed, 1971 passed. No stable failure at head is absent at base; the sole head-only failure is a parallel-load timing flake in a supervisor-liveness subprocess test, passing 3/3 serially. Negative control: with the <code>0.0</code> defaults and the single hour message restored, the context case fails.</p>
+</article>
+</body>
+</html>

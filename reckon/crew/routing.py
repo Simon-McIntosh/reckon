@@ -4803,12 +4803,10 @@ def _competence_verdict(
                 ),
             }
         )
-        # ``CompetenceLimit`` is the established exit-5 envelope. Its legacy
-        # message renders neutral-hour fields, while callers consume this
-        # structured verdict; keep the constructor total until that message is
-        # made dimension-aware at its owning boundary.
-        verdict.setdefault("competence_horizon_hours", 0.0)
-        verdict.setdefault("target_size_hours", 0.0)
+        # ``CompetenceLimit`` reads its message from ``reason``: a token refusal
+        # names the window it exceeded, so no neutral-hour placeholder is
+        # written here. A horizon nobody measured stays absent from the verdict
+        # rather than appearing as a measured zero.
         return verdict
 
     if cache_status == "stale":
