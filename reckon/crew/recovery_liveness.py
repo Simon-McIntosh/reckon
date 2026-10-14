@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import os
 import socket
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Mapping, Sequence
@@ -160,20 +161,57 @@ def _orientation_write_of_a_run_in_motion(
 
     The file alone cannot answer this: a stub and the first minute of a turn are
     the same bytes, and the difference is whether the worker is still writing
-    them. Liveness is that difference, and it must be a positive answer — a
-    worker whose process is gone left its stub behind as the missing verdict it
-    may well be, and the word for that stands. Beside liveness the reading wants
-    the evidence the phase derivation uses for the same run, so the two surfaces
-    cannot disagree: a worker record naming a pid, or an assistant turn in the
-    run's newest stream, says the launch got past starting.
+    them. Liveness is that difference where it can be read, and it must be a
+    positive answer — a worker whose process is gone left its stub behind as the
+    missing verdict it may well be, and the word for that stands. Beside
+    liveness the reading wants the evidence the phase derivation uses for the
+    same run, so the two surfaces cannot disagree: a worker record naming a pid,
+    or an assistant turn in the run's newest stream, says the launch got past
+    starting.
+
+    Liveness can also be *unknown*, and that is not the same as gone. A run
+    launched on another host carries a pid this reader's process table cannot
+    look up, so no answer comes back — most often because the reader classifies
+    a producer's fleet from a different login node. Reading that silence as an
+    end draws a working run halted the moment it opens its manifest and sends a
+    reader to resume work in flight. The run's own stream decides instead: a
+    worker still writing has an assistant turn in its newest stream, and one
+    written inside the stall window the stall clock already applies is a run in
+    motion. A proven-gone process is still refused above that, and a proven-live
+    one is decided as before.
     """
-    if alive is not True:
+    if alive is False:
         return False
     if not _carries_orientation_write(manifest_text, manifest_data):
         return False
-    if worker_alive is True:
-        return True
-    return _newest_stream_shows_work(record)
+    if alive is True:
+        if worker_alive is True:
+            return True
+        return _newest_stream_shows_work(record)
+    return _newest_stream_in_motion(record)
+
+
+def _newest_stream_in_motion(
+    record: Mapping[str, Any], *, now_seconds: float | None = None
+) -> bool:
+    """Whether a run whose liveness is unknown is producing output right now.
+
+    The reading a run launched elsewhere gets in place of a process-table
+    answer: the newest stream carries an assistant turn and was written inside
+    the stall window the stall clock already applies, so a reader on this host
+    sees the same thing a proven-live worker shows rather than a halt. A stream
+    that is too old, or holds no assistant turn, answers false — the run may be
+    in flight elsewhere, but nothing here shows it, and the missing verdict
+    stands as unwritten. No window is introduced: the same
+    :data:`LOG_STALE_AFTER_SECONDS` bound that decides a stalled run decides
+    this one.
+    """
+    if not _newest_stream_shows_work(record):
+        return False
+    moment = time.time() if now_seconds is None else now_seconds
+    return _run_stream_quiet_seconds(record, now_seconds=moment) <= (
+        LOG_STALE_AFTER_SECONDS
+    )
 
 
 def _worker_record(record: Mapping[str, Any]) -> Mapping[str, Any] | None:
