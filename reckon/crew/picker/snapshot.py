@@ -758,7 +758,7 @@ def candidates(
         else:
             variants.append((name, None, None))
     result = []
-    for name, model_key, model_settings in variants:
+    for name, _model_key, model_settings in variants:
         local = name == config.get("local_backend")
         _, backend = routing.resolve_role_override(
             config,
@@ -773,7 +773,6 @@ def candidates(
                 for key, value in model_settings.items()
                 if key != "name" and value is not None
             )
-            backend["model_key"] = model_key
         model = backend.get("model")
         reasons = []
         if name in review_excluded:

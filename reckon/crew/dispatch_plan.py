@@ -210,12 +210,11 @@ def _backend_serving_picked_model(
     """Return the backend whose lane serves the model a picker route chose.
 
     A picker route names a lane's own backend with the chosen model beside it,
-    so applying the pick means resolving that model to the entry that serves it.
-    The model is matched against the lane's model key, its model id and its
-    alias, so any spelling the lane declares reaches the entry — exactly as
-    ``--model`` resolves a named pair. A model the lane does not declare is
-    refused by name rather than launched as the lane default, which would run
-    one model while the run records another.
+    so applying the pick means resolving that model to the entry that serves it
+    through the same resolver ``--model`` narrows a named pair with
+    (``ledger.backend_serving_model``). A model the lane does not declare is
+    refused with that resolver's message rather than launched as the lane
+    default, which would run one model while the run records another.
     """
     backends = config.get("backends") or {}
     picked = backends.get(backend_name)
@@ -228,22 +227,10 @@ def _backend_serving_picked_model(
         # A backend that declares no lane carries its own model directly, so
         # there is no lane-and-model pair for the pick to narrow.
         return backend_name
-    for name, entry in backends.items():
-        if not isinstance(entry, Mapping):
-            continue
-        if str(entry.get("lane") or "") != lane:
-            continue
-        if model in (
-            str(entry.get("model_key") or ""),
-            str(entry.get("model") or ""),
-            str(entry.get("alias") or ""),
-        ):
-            return str(name)
-    raise CrewError(
-        f"picker named lane {lane!r} model {model!r}, but no model of that "
-        "lane declares the name; refusing rather than launching the lane's "
-        "declared default under the picked name"
-    )
+    try:
+        return ledger.backend_serving_model(config, lane=lane, model=model)[0]
+    except ValueError as exc:
+        raise CrewError(str(exc)) from exc
 
 
 def plan_dispatch(

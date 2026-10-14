@@ -452,37 +452,6 @@ def _model_availability_refusal(
     }
 
 
-def _lanes_declaring_model(model: str) -> list[str]:
-    """Every lane the catalogue declares ``model`` under, ignoring any filter.
-
-    Used to name the declaring lane(s) when a model is refused for being
-    outside the lane it was asked for. A bare name a single lane declares
-    resolves directly; a name two lanes declare makes ``ledger.resolve_name``
-    raise, so each lane the catalogue declares is then asked in turn, and a key
-    repeated across lanes is reported for every lane that carries it. A name no
-    lane declares returns an empty list, leaving the caller's unknown-name
-    refusal to stand.
-    """
-    from reckon import flight, ledger
-
-    try:
-        lane, _key = ledger.resolve_name(model)
-    except ValueError:
-        lane = None
-    if lane is not None:
-        return [lane]
-    catalogue = flight.read_layer_file(str(flight.model_catalogue_path()))
-    declaring: list[str] = []
-    for lane_name in catalogue.get("lanes") or {}:
-        try:
-            match_lane, _key = ledger.resolve_name(model, lane=str(lane_name))
-        except ValueError:
-            continue
-        if match_lane is not None:
-            declaring.append(str(lane_name))
-    return declaring
-
-
 def _refuse_a_combined_lane_model_backend(backend: str) -> None:
     """Refuse a ``--backend`` spelling that names a lane and model pair.
 
@@ -513,12 +482,13 @@ def _refuse_a_combined_lane_model_backend(backend: str) -> None:
 def _model_narrowed_backend(config, model, backend, *, local):
     """Resolve ``--model`` to the backend whose expanded entry serves that model.
 
-    The pair comes from the flight's own name resolver over the model
-    catalogue, so a model key, a model id and an alias all reach the same
-    ``(lane, model_key)``. A ``--backend`` already named constrains the match to
-    its lane, so a model two lanes declare stays resolvable when the lane is
-    given and is refused by name when it is not. ``--local`` constrains to the
-    local lane the same way. The backend that served the pair is returned, so
+    The pair comes from the flight's own name resolver over the model catalogue
+    (``ledger.backend_serving_model``), so a model key, a model id and an alias
+    all reach the same ``(lane, model_key)`` — exactly as a picker route narrows
+    its chosen model. A ``--backend`` already named constrains the match to its
+    lane, so a model two lanes declare stays resolvable when the lane is given
+    and is refused by name when it is not. ``--local`` constrains to the local
+    lane the same way. The backend that served the pair is returned, so
     ``--backend claude...`` naming the pair routes exactly as the legacy
     ``<lane>-<key>`` backend would. Returns ``(backend_name, lane, model_key)``.
     """
@@ -532,38 +502,9 @@ def _model_narrowed_backend(config, model, backend, *, local):
         if local_backend:
             lane_filter = ledger.resolve_name(local_backend)[0]
     try:
-        lane, key = ledger.resolve_name(model, lane=lane_filter)
+        return ledger.backend_serving_model(config, lane=lane_filter, model=model)
     except ValueError as exc:
         raise click.UsageError(str(exc)) from exc
-    if lane is None:
-        # A lane was named and this model is declared elsewhere: the refusal
-        # names the model, the lane it was asked for and the lane that declares
-        # it, so a caller spelling a pair the wrong way is told which lane the
-        # model belongs to rather than only that the name is unknown.
-        if lane_filter is not None:
-            declaring = [
-                lane for lane in _lanes_declaring_model(model) if lane != lane_filter
-            ]
-            if declaring:
-                label = "lane" if len(declaring) == 1 else "lanes"
-                names = ", ".join(repr(lane) for lane in sorted(declaring))
-                raise click.UsageError(
-                    f"--model {model!r} is declared by {label} {names}, "
-                    f"not by the {lane_filter!r} lane it was asked for"
-                )
-        raise click.UsageError(
-            f"--model {model!r} names no model, model id or alias the catalogue "
-            "declares"
-        )
-    for name, entry in (config.get("backends") or {}).items():
-        if not isinstance(entry, Mapping):
-            continue
-        if str(entry.get("lane")) == lane and str(entry.get("model_key")) == key:
-            return str(name), lane, key
-    raise click.UsageError(
-        f"--model {model!r} resolves to lane {lane!r} model key {key!r}, which "
-        "no configured backend serves"
-    )
 
 
 def _repo_root(repo) -> Path:

@@ -267,6 +267,85 @@ def resolve_name(
     return next(iter(matches), (None, None))
 
 
+def lanes_declaring_model(model: str) -> list[str]:
+    """Every catalogue lane that declares ``model`` as a key, id or alias.
+
+    A bare name a single lane declares resolves directly; a name two lanes
+    declare makes :func:`resolve_name` raise, so each lane is asked in turn.
+    Used to name the declaring lane(s) when a model is refused for being
+    outside the lane it was asked for.
+    """
+    from reckon import flight
+
+    catalogue = flight.read_layer_file(str(flight.model_catalogue_path()))
+    declaring: list[str] = []
+    for lane_name in catalogue.get("lanes") or {}:
+        try:
+            match_lane, _key = resolve_name(model, lane=str(lane_name))
+        except ValueError:
+            continue
+        if match_lane is not None:
+            declaring.append(str(lane_name))
+    return declaring
+
+
+def _undeclared_model_refusal(model: str, lane: str | None) -> str:
+    """The one message both ``--model`` and a picker route refuse a name with.
+
+    A lane was named and the model is declared elsewhere: the refusal names the
+    model, the lane it was asked for and the lane that declares it. No lane was
+    named: the message names only the model. Either way the same pair produces
+    the same text whichever route reached the resolver.
+    """
+    if lane is not None:
+        declaring = [name for name in lanes_declaring_model(model) if name != lane]
+        if declaring:
+            label = "lane" if len(declaring) == 1 else "lanes"
+            names = ", ".join(repr(name) for name in sorted(declaring))
+            return (
+                f"model {model!r} is declared by {label} {names}, "
+                f"not by the {lane!r} lane it was asked for"
+            )
+        return (
+            f"model {model!r} is not declared by the {lane!r} lane it was "
+            "asked for, and names no model, model id or alias the catalogue "
+            "declares"
+        )
+    return (
+        f"{model!r} names no model, model id or alias the catalogue declares"
+    )
+
+
+def backend_serving_model(
+    config: Mapping[str, Any], *, lane: str | None, model: str
+) -> tuple[str, str, str]:
+    """Resolve a lane and a model name to the configured backend that serves it.
+
+    The pair comes from :func:`resolve_name` over the model catalogue, so a
+    model key, a model id and an alias all reach the same ``(lane, model_key)``
+    and the configured backend whose entry carries that pair is returned with
+    it. A name no lane declares, a lane that does not declare the name and a
+    pair no configured backend serves are each refused with one message, so
+    ``--model`` and a picker route refuse an undeclared pair identically rather
+    than each spelling its own. Returns ``(backend_name, lane, model_key)``.
+    """
+    resolved_lane, key = resolve_name(model, lane=lane)
+    if resolved_lane is None:
+        raise ValueError(_undeclared_model_refusal(model, lane))
+    for name, entry in (config.get("backends") or {}).items():
+        if not isinstance(entry, Mapping):
+            continue
+        if (
+            str(entry.get("lane")) == resolved_lane
+            and str(entry.get("model_key")) == key
+        ):
+            return str(name), resolved_lane, key
+    raise ValueError(
+        f"model {model!r} resolves to lane {resolved_lane!r} model key {key!r}, "
+        "which no configured backend serves"
+    )
+
+
 def normalize_identity(
     record: Mapping[str, Any], *, lane: str | None = None
 ) -> dict[str, Any]:
