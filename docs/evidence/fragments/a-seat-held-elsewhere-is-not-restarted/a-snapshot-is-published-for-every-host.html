@@ -20,8 +20,11 @@
       </header>
       <p id="a-snapshot-is-published-for-every-host-landing-note">
         <code>reckon/crew/follower_registration.py</code> records the host a
-        registration was written on, spelled as a producer seat spells its own
-        (<code>runs._seat_host</code>), and a registration naming another host is
+        registration was written on, read through the same two helpers a producer
+        seat is read through (<code>watch_unit._seat_host</code> and
+        <code>watch_unit._seat_names_a_foreign_host</code>, over the module's
+        deferred import), so a seat and a follower cannot answer differently
+        about one host; a registration naming another host is
         never put to <em>this</em> host's process table: its pids read unknown
         rather than dead, and its liveness is the one fact that crosses the shared
         home &mdash; the advisory lock the follower holds for as long as it
