@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="94">
+<meta name="plan-version" content="95">
 <meta name="plan-modified" content="2026-10-14">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -594,6 +594,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s14" data-id="c-close-s14" data-who="reckon-build" data-when="2026-10-14T19:50:00Z">
     <div class="r-comment-body"><p>§14 landed. A replacement producer seeds its first sweep from the state the event stream last published for each live run. A run that finished during a reload now reaches the <code>.events</code> stream as a <code>transition</code> and wakes its session, not as a baseline. Merged as <code>62cbcfbfb</code>, and the gate was replayed green there. Population: 104 files, 991 → 998 passed, 0 failed. Review: 112, 0 added. The section's named write path was only half the job: the follower-read rows come from <code>runs._publish_watch_transitions</code>, so the run was widened to <code>runs.py</code> mid-node. <a href="/reckon/evidence/archive/the-monitor-shows-the-work-it-watches-landed.html#s14-reload-wakes">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s23" data-id="c-run-r-20261014T200304742122-review-of-a-lift-is-drawn-once-per-pane-08e743032449" data-who="reckon-build" data-when="2026-10-14T20:22:42.033Z">
+    <div class="r-comment-body"><p>reviewed r-20261014T190832327112-a-lift-is-drawn-once-per-pane (base 931406cc1dce0caa4108514f048c108422cf0dd2, head 08e743032449b3baa2002e032d92e78ce8f8261d): all 6 dimensions scored (goal_fidelity 18, evidence 15, scope_discipline 19, durability 18, fit 15, reuse 15); 4 follow-on findings, no blocking finding; record stored parsed with reviewed_base_sha/reviewed_head_sha and added_failure_count 0 / added_failure_ids []</p></div>
 </div>
 </section>
 </main>

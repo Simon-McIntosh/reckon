@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:1328",
+    "reckon/cli.py:407",
+    "reckon/crew/ticker.py:1912"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-14T19:09:30Z",
+  "findings": [
+    {
+      "file": "tests/test_a_lift_is_drawn_once_per_pane.py",
+      "line": "8",
+      "severity": "follow-on",
+      "text": "follow-on: the module docstring attributes the observed defect to a role (\"the noise a lead read on 2026-10-14\"), provenance the repository bans from source comments and docstrings; state the mechanism instead."
+    },
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": "947",
+      "severity": "follow-on",
+      "text": "follow-on: take_lift_claim creates the claim before the row reaches the pane, so a follower that dies or whose delivery fails in that window leaves a standing claim that blocks every other follower of the session from drawing that transition for up to LIFT_CLAIM_MAX_AGE_SECONDS (24h); a shorter bound or a delivery-checked claim would bound the loss."
+    },
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": "930",
+      "severity": "follow-on",
+      "text": "follow-on: take_lift_claim re-implements the exclusive-create claim pattern the repository already owns at reckon/crew/dispatch_claims.py:526 (O_EXCL with staleness reclaim) without extending or wrapping it, so the two can drift."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T190832327112-a-lift-is-drawn-once-per-pane/base-gate.log",
+      "line": "2",
+      "severity": "follow-on",
+      "text": "follow-on: the base arm's own `module.__file__` line names the head worktree's reckon/crew/ticker.py, not the base tree its header and the manifest's measurement_module name, so the record does not show which revision the base arm imported."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read the two commits against base 931406cc1dce0caa4108514f048c108422cf0dd2; five files changed inside the declared scope, adding the lift_id field, the lift_claim seam, the claim helpers and their tests.",
+    "done_when": "the done_when asks for a temp-crew-home test running three followers of one session over three streams carrying the same lift-granted and lift-ended row, exactly one grant and one end across their output, a second lift id drawing its own row, another session drawing on its own claim, the claim's shape and pruning, and the negative control; tests/test_a_lift_is_drawn_once_per_pane.py:1 implements each of those cases.",
+    "goal": "the node goal is to draw each lift row once per session pane by sharing one exclusive-create claim across the session's project followers, and reckon/crew_follow_commands.py:930 take_lift_claim with the RowPolicy._feed_lift seam at reckon/crew/ticker.py:1705 delivers exactly that, matching plan \u00a723's deliverable.",
+    "manifest": "read; it records tests/test_a_lift_is_drawn_once_per_pane.py 10/10, head 725 passed 0 failed, base 713 passed 2 failed, and names head-gate.log, base-gate.log and negative-control.log.",
+    "write_paths": "the source node was fenced to reckon/crew/lift_watch.py, reckon/crew/ticker.py, reckon/crew_follow_commands.py, tests/test_a_lift_is_drawn_once_per_pane.py, the evidence fragment and the figure directory, and every path in the diff is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_lift_is_drawn_once_per_pane.py:109 asserts exactly one grant across three followers, an independent count over their printed output, and negative-control.log records it reddening when the claim is dropped in RowPolicy._feed_lift.",
+    "evidence": "the two arm logs and the named test are recorded in the manifest, but base-gate.log's own `module.__file__` line names the head worktree's reckon/crew/ticker.py rather than the base tree its own header and the manifest's measurement_module name, so the base arm's recorded instrument does not reconcile.",
+    "fit": "the seam, helpers and comments state the mechanism in the surrounding idiom, but tests/test_a_lift_is_drawn_once_per_pane.py:8 names \"a lead\" as the observer, a role attribution the source rules forbid in comments and docstrings.",
+    "goal_fidelity": "reckon/crew_follow_commands.py:1017 binds the claim to the follower's own session and reckon/crew/ticker.py:1705 takes it at the print point, so a session's followers draw one row per (session, lift id, transition).",
+    "reuse": "reckon/crew_follow_commands.py:947 opens its own O_CREAT|O_EXCL claim beside the existing claim owner reckon/crew/dispatch_claims.py:526 and the atomic-create helper reckon/_store.py:449, extending neither.",
+    "scope_discipline": "all five changed paths sit inside the six declared write paths, the figure directory left unused, and no path outside them is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to draw each lift row once per session pane by sharing one exclusive-create claim across the session's project followers, and reckon/crew_follow_commands.py:930 take_lift_claim with the RowPolicy._feed_lift seam at reckon/crew/ticker.py:1705 delivers exactly that, matching plan \u00a723's deliverable.\nVERDICT done_when: the done_when asks for a temp-crew-home test running three followers of one session over three streams carrying the same lift-granted and lift-ended row, exactly one grant and one end across their output, a second lift id drawing its own row, another session drawing on its own claim, the claim's shape and pruning, and the negative control; tests/test_a_lift_is_drawn_once_per_pane.py:1 implements each of those cases.\nVERDICT write_paths: the source node was fenced to reckon/crew/lift_watch.py, reckon/crew/ticker.py, reckon/crew_follow_commands.py, tests/test_a_lift_is_drawn_once_per_pane.py, the evidence fragment and the figure directory, and every path in the diff is inside them.\nVERDICT manifest: read; it records tests/test_a_lift_is_drawn_once_per_pane.py 10/10, head 725 passed 0 failed, base 713 passed 2 failed, and names head-gate.log, base-gate.log and negative-control.log.\nVERDICT diff: read the two commits against base 931406cc1dce0caa4108514f048c108422cf0dd2; five files changed inside the declared scope, adding the lift_id field, the lift_claim seam, the claim helpers and their tests.\nCALL_SITES: reckon/crew_follow_commands.py:1328, reckon/cli.py:407, reckon/crew/ticker.py:1912\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew_follow_commands.py:1017 binds the claim to the follower's own session and reckon/crew/ticker.py:1705 takes it at the print point, so a session's followers draw one row per (session, lift id, transition).\nSCORE evidence: 15\nJUSTIFICATION evidence: the two arm logs and the named test are recorded in the manifest, but base-gate.log's own `module.__file__` line names the head worktree's reckon/crew/ticker.py rather than the base tree its own header and the manifest's measurement_module name, so the base arm's recorded instrument does not reconcile.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: all five changed paths sit inside the six declared write paths, the figure directory left unused, and no path outside them is touched.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_lift_is_drawn_once_per_pane.py:109 asserts exactly one grant across three followers, an independent count over their printed output, and negative-control.log records it reddening when the claim is dropped in RowPolicy._feed_lift.\nSCORE fit: 15\nJUSTIFICATION fit: the seam, helpers and comments state the mechanism in the surrounding idiom, but tests/test_a_lift_is_drawn_once_per_pane.py:8 names \"a lead\" as the observer, a role attribution the source rules forbid in comments and docstrings.\nSCORE reuse: 15\nJUSTIFICATION reuse: reckon/crew_follow_commands.py:947 opens its own O_CREAT|O_EXCL claim beside the existing claim owner reckon/crew/dispatch_claims.py:526 and the atomic-create helper reckon/_store.py:449, extending neither.\nFINDING tests/test_a_lift_is_drawn_once_per_pane.py:8 follow-on: the module docstring attributes the observed defect to a role (\"the noise a lead read on 2026-10-14\"), provenance the repository bans from source comments and docstrings; state the mechanism instead.\nFINDING reckon/crew_follow_commands.py:947 follow-on: take_lift_claim creates the claim before the row reaches the pane, so a follower that dies or whose delivery fails in that window leaves a standing claim that blocks every other follower of the session from drawing that transition for up to LIFT_CLAIM_MAX_AGE_SECONDS (24h); a shorter bound or a delivery-checked claim would bound the loss.\nFINDING reckon/crew_follow_commands.py:930 follow-on: take_lift_claim re-implements the exclusive-create claim pattern the repository already owns at reckon/crew/dispatch_claims.py:526 (O_EXCL with staleness reclaim) without extending or wrapping it, so the two can drift.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T190832327112-a-lift-is-drawn-once-per-pane/base-gate.log:2 follow-on: the base arm's own `module.__file__` line names the head worktree's reckon/crew/ticker.py, not the base tree its header and the manifest's measurement_module name, so the record does not show which revision the base arm imported.",
+  "review_run_id": "r-20261014T200304742122-review-of-a-lift-is-drawn-once-per-pane",
+  "reviewed_base_sha": "931406cc1dce0caa4108514f048c108422cf0dd2",
+  "reviewed_head_sha": "08e743032449b3baa2002e032d92e78ce8f8261d",
+  "reviewed_run_id": "r-20261014T190832327112-a-lift-is-drawn-once-per-pane",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 15,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "subject": "review",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T20:24:39.374214+00:00",
+  "total": 100
+}
