@@ -1,0 +1,44 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-14T05:19:47.012Z",
+  "dispatched_at": "2026-10-14T05:03:36Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-seat-held-elsewhere-is-not-restarted.html#s4",
+      "id": "reasoning-1",
+      "reason": "as written the node is not implementable (the mechanism cannot run on the real code path without first recording the follower's host), so the author must name where the host comes from or state that the registration gains one.",
+      "text": "\u00a74's deliverable (\"a registration made on another host is not judged gone from this host's process table\") needs to know the registration's host, but the follower registration record writes no host key (cited evidence: archive \u00a73, follower_registration.py:296-307), so at the liveness read the producer cannot distinguish a foreign registration from a dead local one, and the fix silently requires a new data source the section never names",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "c2515948ce765d84a3cbf8a2e7224b34ee7da4064206fb8369e17cdc3b613686",
+  "plan_slug": "a-seat-held-elsewhere-is-not-restarted",
+  "plan_version": 7,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261014T050305588933-plan-review-of-a-seat-held-elsewhere-is-not-restarted",
+  "reviewed_blob_sha": "dc20211fb604088ea3544423b6fc07b21c7e8097",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited modules (watch_unit.py, follower_registration.py, recovery_watch.py, crew_follow_commands.py, obligation_snapshot.py), symbols, commits 7ebf0de29/ed650e36b (the latter an ancestor of HEAD), and the #s3/#s6 archive anchors all resolve; the comment's runs.py:1920-1927 is a revision-pinned citation (see archive \u00a73, \"at 81b1d6e\") that resolves at the revision it names.",
+    "done_when": "pass \u2014 \u00a72, \u00a74 and \u00a75 each declare a measurable done-when with a negative control that reproduces the defect (remove the wait \u2192 exit 0; restrict publication \u2192 \"no producer\"; single reading \u2192 healthy).",
+    "evidence_paths": "pass \u2014 the gate is the on-disk report plus durable evidence at docs/evidence/archive/a-seat-held-elsewhere-is-not-restarted-landed.html and run-dir logs; nothing cites a session scratchpad.",
+    "naming": "pass \u2014 no plan labels, ticket numbers or version tags reach symbols or comments; the plan proposes no new labelled identifiers.",
+    "reasoning": "a finding \u2014 \u00a74's stated mechanism presupposes a registration host that the registration record does not carry.",
+    "single_goal": "pass \u2014 each implementable section names one change (a wait in the watch, one liveness judgement feeding two consumers, and a two-reading cycling check).",
+    "wiring": "pass \u2014 plan-after resolves to the live plan the-review-loop-runs-without-hand-steps; no depends-on/informs/gates edge is needed, and the declared soft after-edge points at the plan this one follows."
+  },
+  "section_digests": {
+    "_document": "b5e9a5803f8d01013f39b9479df51d6f39be89b485428570f70d9af555af7564",
+    "s1": "e775b15757e63b277715e69df2ef97f2cf13db4e6364fc83b2f4ad6aa3bc858c",
+    "s2": "60404fcfdb859744cb1997a1d328c312f35084e63dbf0f2b8517d2f48fd36e24",
+    "s3": "738aba9bff855c84122fa9ea72b1f1ef13486345a013a765e54c0cfa391a20c0",
+    "s4": "dee05be43e39f23cc2bf693f63e1aa84897e59cad2025b1239e2f03624f08c09",
+    "s5": "79cb809dd5d6c74e34fc0afce3e2d4ff6b757315bbac076808a4eafae4ac82e1",
+    "s6": "c7b09760750dbf67efa83f9127581fea7578c7bf1e30b595ecd6c313b7505bad"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T05:22:53.778258+00:00"
+}
