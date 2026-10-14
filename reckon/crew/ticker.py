@@ -1028,7 +1028,16 @@ ARRIVAL_WINDOW = 90.0
 # own session only: a peer session's start, a bare re-announcement of an
 # already-running run, an echo and a replay are still held, so nothing arrives
 # for work that is not this pane's.
+#
+# A run reaches ``working`` from ``dispatched`` on a fresh launch and from
+# ``starting`` on a resumed or relaunched attempt: both rows announce the same
+# news — the run began doing the work — so both are starts. ``START_KIND`` is the
+# fresh-launch pair a reader names when it means the canonical start; the set is
+# what the policy tests a row against.
 START_KIND: tuple[Any, Any] = ("dispatched", "working")
+START_KINDS: frozenset[tuple[Any, Any]] = frozenset(
+    {START_KIND, ("starting", "working")}
+)
 
 # ── The settle hold ───────────────────────────────────────────────────────────
 #
@@ -1106,13 +1115,25 @@ class RowPolicy:
     """
 
     def __init__(
-        self, *, show_observer: bool = False, own_session: str | None = None
+        self,
+        *,
+        show_observer: bool = False,
+        own_session: str | None = None,
+        observed_sessions: Iterable[str] = (),
     ) -> None:
         self._show_observer = bool(show_observer)
         # The session this pane follows. A start row is delivered for this
         # session's own runs alone; a pane with no named session — a fleet-wide
         # reader — holds every start as it held every observer row.
         self._own_session = str(own_session) if own_session else None
+        # The sessions this pane was asked to observe for oversight. Observing a
+        # session is a request to see its rows, so an observed session's rows are
+        # exempt from the observer-context hold. The launch-flicker and settle
+        # holds still apply to them, because those decide when a row prints, not
+        # whether it is this pane's to print.
+        self._observed_sessions = frozenset(
+            str(name) for name in observed_sessions if name
+        )
         self._reported: dict[str, str] = {}
         # run_id -> the withheld row and its hold. A run carries one hold at
         # most: a second hold for the same run supersedes the first where the
@@ -1167,12 +1188,28 @@ class RowPolicy:
         peer session's start is work this reader does not own, and the pane's
         silence about it is what keeps another session's history off this one's
         line. A pane with no named session owns no run, so no start qualifies.
+        Both start pairs qualify — a fresh launch's ``dispatched -> working`` and
+        a resumed attempt's ``starting -> working`` — because both announce the
+        same news, that the run began.
         """
         if self._own_session is None:
             return False
         if str(event.get("session") or "") != self._own_session:
             return False
-        return kind == START_KIND
+        return kind in START_KINDS
+
+    def _is_observed(self, event: Mapping[str, Any]) -> bool:
+        """Whether this row belongs to a session the pane was asked to observe.
+
+        Observing a session is a request to see its rows, so its rows are this
+        pane's to print however the classifier classes the kind — a bare
+        ``working`` row with no left side included. A pane observing nothing
+        answers False for every row, so the exemption is inert until a caller
+        names a session.
+        """
+        if not self._observed_sessions:
+            return False
+        return str(event.get("session") or "") in self._observed_sessions
 
     @staticmethod
     def _lands_in_an_action_state(event: Mapping[str, Any]) -> bool:
@@ -1465,6 +1502,15 @@ class RowPolicy:
             out.append(event)
             self._note_printed(run_id, event)
             return out
+        if self._is_observed(event):
+            # A session the pane was asked to observe is one whose rows it
+            # prints, so the observer-context hold does not apply to it. What is
+            # delivered is the row as it stands: a replayed history row (such as
+            # ``working`` with no left side) arrives without being held, because
+            # seeing the observed session's shape is the point of observing it.
+            out.append(event)
+            self._note_printed(run_id, event, observed=True)
+            return out
         if self._observer_exception(event, run_id):
             out.append(event)
             self._note_printed(run_id, event, observed=True)
@@ -1532,15 +1578,21 @@ class PaneRowPath:
         reported: Mapping[str, str] | None = None,
         show_observer: bool = False,
         own_session: str | None = None,
+        observed_sessions: Iterable[str] = (),
     ) -> None:
         self._selects = selects
         self._show_observer = bool(show_observer)
         self._own_session = str(own_session) if own_session else None
+        self._observed_sessions = frozenset(
+            str(name) for name in observed_sessions if name
+        )
         self.reported: dict[str, str] = {
             str(run_id): str(state) for run_id, state in dict(reported or {}).items()
         }
         self._policy = RowPolicy(
-            show_observer=self._show_observer, own_session=self._own_session
+            show_observer=self._show_observer,
+            own_session=self._own_session,
+            observed_sessions=self._observed_sessions,
         )
         for run_id, state in self.reported.items():
             self._policy.seed(run_id, state)
@@ -1564,7 +1616,9 @@ class PaneRowPath:
             str(run_id): str(state) for run_id, state in dict(reported or {}).items()
         }
         self._policy = RowPolicy(
-            show_observer=self._show_observer, own_session=self._own_session
+            show_observer=self._show_observer,
+            own_session=self._own_session,
+            observed_sessions=self._observed_sessions,
         )
         for run_id, state in self.reported.items():
             self._policy.seed(run_id, state)
@@ -1625,6 +1679,7 @@ def replay_row_policy(
     selects: Callable[[Mapping[str, Any]], bool] | None = None,
     show_observer: bool = False,
     own_session: str | None = None,
+    observed_sessions: Iterable[str] = (),
 ) -> list[Mapping[str, Any]]:
     """Print an ordered stream the way one follower's own row path would.
 
@@ -1635,10 +1690,15 @@ def replay_row_policy(
     follower's own selection, and a caller measuring a real follower passes the
     same selection function the follower was built with. ``own_session`` names
     the session the pane follows, so its own runs' starts are delivered here the
-    same way the live follower delivers them.
+    same way the live follower delivers them, and ``observed_sessions`` names the
+    sessions it was asked to observe, whose rows the pane prints as it prints its
+    own.
     """
     path = PaneRowPath(
-        selects=selects, show_observer=show_observer, own_session=own_session
+        selects=selects,
+        show_observer=show_observer,
+        own_session=own_session,
+        observed_sessions=observed_sessions,
     )
     printed: list[Mapping[str, Any]] = []
     for event in events:
