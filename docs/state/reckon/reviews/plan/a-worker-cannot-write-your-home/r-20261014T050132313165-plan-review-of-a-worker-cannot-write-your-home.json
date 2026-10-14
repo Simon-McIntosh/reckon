@@ -1,0 +1,62 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-14T05:14:20.032Z",
+  "dispatched_at": "2026-10-14T05:02:05Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-worker-cannot-write-your-home.html:1495",
+      "id": "anchors_resolve-1",
+      "reason": "the corrected href is a one-line edit that restores \u00a75's evidence pointer, which now 404s.",
+      "text": "\u00a75's landed-summary links `<a href=\"s5-fenced-claude-carries-its-login\">full record</a>`, a bare extensionless href; the surface fetches `/${project}/${href}.html` (`docs/ui/plan.jsx:669`), resolving this to `/reckon/s5-fenced-claude-carries-its-login.html`, and no such file exists anywhere under `docs/` (searched `find docs -name '*s5-fenced-claude*'`, no result). The evidence actually lives at `docs/evidence/archive/a-worker-cannot-write-your-home-landed.html#s5-fenced-claude-carries-its-login`, the form every other landed section in the repo uses (`/reckon/evidence/archive/<slug>-landed.html#<anchor>`), so a reader following \u00a75's \"full record\" reaches a missing page.",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-worker-cannot-write-your-home.html:1500",
+      "id": "done_when-1",
+      "reason": "an implementable section that cannot be shown to fail is exactly the gap the done-when rubric exists to catch, and \u00a76 is the next section a node will build.",
+      "text": "\u00a76's done-when (\"the harness-home carry merges, imas-ambix qualifies fenced clive and one fenced codex launch, and the codex pause is lifted\") declares no negative control, so a node dispatched at \u00a76 has no falsifier showing its guard fires; \u00a78 by contrast names one (\"restore the appended PYTHONPATH; the test must then fail with the import error\"), and the sections already done (\u00a71\u2013\u00a74, \u00a77) each state a control.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-worker-cannot-write-your-home.html:1498",
+      "id": "single_goal-1",
+      "reason": "splitting \u00a76 by deliverable is what makes each half reviewable, since the cross-repo qualification carries a different done-when and evidence regime than the reckon merge.",
+      "text": "\u00a76 carries at least four deliverables in one node: merge the declared harness-home carry in reckon, run the clive D4 qualification in imas-ambix, run a controlled codex launch, and lift the codex pause in host config; two of these live outside the reckon repository entirely, so the section cannot be reviewed or closed on one verdict (its gate proves neither the reckon change nor the imas-ambix qualification).",
+      "type": "single_goal",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "a4b69e2213445310f86946b3adaf6805cf9f45486b0bfcea4320bdbade814432",
+  "plan_slug": "a-worker-cannot-write-your-home",
+  "plan_version": 125,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261014T050132313165-plan-review-of-a-worker-cannot-write-your-home",
+  "reviewed_blob_sha": "20ca66cf6a35503099a5b8eff8e1e64cde8683a3",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the \u00a75 landed-summary's \"full record\" link is a bare extensionless href that does not resolve once `.html` is appended.",
+    "done_when": "a finding \u2014 \u00a76's done-when states only outcomes (\"the harness-home carry merges, imas-ambix qualifies fenced clive and one fenced codex launch, and the codex pause is lifted\") and names no declared negative control, unlike \u00a78, which names one explicitly.",
+    "evidence_paths": "pass \u2014 the landed archive `docs/evidence/archive/a-worker-cannot-write-your-home-landed.html`, the logs and figures under `docs/figures/a-worker-cannot-write-your-home/`, and the per-run gate logs under `~/.config/reckon/crew/runs/<run>/` all sit on the operator home or in-repo, not on a node-local temporary path.",
+    "naming": "pass \u2014 the plan prescribes mechanism-named files and symbols (`worker_git_shim.py`, `protected_read_only_binds`, `fenced_write_roots`, `test_a_shim_ignores_the_job_python_path.py`) and carries no plan label or ticket number into code.",
+    "reasoning": "pass \u2014 the root causes match their cited evidence (\u00a78's shim PYTHONPATH append against `slurm-1284825.out`, which carries the `pydantic_core`/`typing_extensions` traceback; \u00a71's missing boundary against the deleted-directory incident), each section's mechanism is capable of its done-when, and the external callers are named (\u00a76 names the imas-ambix D4 run; \u00a78 names the job's `module load`).",
+    "single_goal": "a finding \u2014 \u00a76 binds several deliverables (merge the harness-home carry in reckon; run the plan's D4 qualification in imas-ambix; run a controlled codex launch; lift the codex pause in host config) under one done-when, so no single verdict closes it.",
+    "wiring": "pass \u2014 the declared `plan-informs` targets (`new-work-gets-a-new-worker`, `worker-death-is-recorded`) both exist, and the gating edge the fence section owns is carried on the counterpart plan (`the-boundary-check-reads-two-trees` declares `plan-informs: a-worker-cannot-write-your-home`), so no dependency is missing and none points at a nonexistent node."
+  },
+  "section_digests": {
+    "_document": "a7419148654cc3623a253145b1d701478561deaab2ccd6664ae4ec65025e5619",
+    "s1": "20aea2196f748a0a26dcd8c4f13a51e89056dc090927dcbf7c88e3384e3a5ab4",
+    "s2": "dfbb662d3da9aa4d3d153e8d2cd5e2c614534034829ebd298f56063c2150b8b6",
+    "s3": "8a798e91551442bdcf324bf0e8f2801e9ced17b35f45f3867f8314e98619dde9",
+    "s4": "b249a7c0cf7296d1b03a7dcdc45216481b546ee13550784bcaabea3f34abe51d",
+    "s5": "b591d224f29bac0f9b5918e6ee3a87b55260f3424887d057e5a8bec79aec03b1",
+    "s6": "a2ea9ae61376b301400c70bae6a0060a2a2abf072b89cbf83a102cea2ab5f3b4",
+    "s7": "b363364b7464f2f7c7af654833037ddd56f6af79fd55aa44a6d3327083f626a5",
+    "s8": "af9d785f0f9f36ee58ec7010366aec4f06efdf850c84cf4ce0619311174d54dd"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T05:18:27.689713+00:00"
+}
