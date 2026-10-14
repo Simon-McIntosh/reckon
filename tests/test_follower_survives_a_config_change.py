@@ -166,7 +166,11 @@ def test_a_follower_defers_one_tick_and_keeps_delivering_across_a_config_error(
     under a live follower then costs the pane a tick, not the stream.
     """
     _break_the_config(home, monkeypatch)
-    _write_pointer(home, RUN_A, "node-a", phase="working")
+    # A blocked run lands in a state the pane's policy delivers: a settled, not
+    # an observer, reading of a run that is holding a seat. The row is held for
+    # the settle window and released when the arming ends, so the delivery the
+    # loop must survive the config error to reach is a row the reader acts on.
+    _write_pointer(home, RUN_A, "node-a", phase="blocked")
 
     real_cursor = runs.watch_stream_cursor
     attempts = {"n": 0}

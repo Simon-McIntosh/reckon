@@ -66,6 +66,47 @@ def _deliver(home: Path, run_id: str, status: str) -> None:
     manifest.write_text(f"node: n\nstatus: {status}\ncommits: HEAD\nblockers: none\n")
 
 
+def _own_start(run_id: str, *, node: str, session: str) -> dict:
+    """The owning session's launch start, the row its pane delivers.
+
+    A bare re-announcement of the current state asks the reader for nothing and
+    is held back as observer context, so a case that wants the own row on the
+    pane feeds the ``dispatched -> working`` start rather than a state word.
+    """
+    return {
+        "project": "proj",
+        "event": "transition",
+        "run_id": run_id,
+        "node": node,
+        "session": session,
+        "from_state": "dispatched",
+        "to_state": "working",
+        "working": 1,
+        "blocked": 0,
+        "unpromoted": 0,
+        "observed_at": runs._utc_now(),
+    }
+
+
+def _deliver_own_start(
+    *, run_id: str, node: str, session: str, until, bound: float, stream=None
+) -> None:
+    """Append the own start until the reader has it, bounded.
+
+    The stream is read from the place its reader was at when it armed, so a
+    single append can land before the reader is placed and be skipped. Appending
+    until the row arrives is idempotent: a repeated start for a run the pane
+    already shows is suppressed, so the retries add no duplicate row.
+    """
+    stream = stream if stream is not None else runs.watch_stream_path("proj")
+    deadline = time.monotonic() + bound
+    while not until():
+        if time.monotonic() >= deadline:
+            return
+        runs._append_watch_lines(stream, [_own_start(run_id, node=node, session=session)])
+        time.sleep(0.02)
+
+
 def _any_event(received: list[dict]) -> bool:
     """The default collector condition: at least one event has arrived."""
     return bool(received)
@@ -121,6 +162,54 @@ def _follow(
     _collect_until(received, until, bound=settle)
     stop.set()
     thread.join(timeout=2)
+    assert not thread.is_alive(), "a stopped follower must return"
+    return received
+
+
+def _follow_own_start(
+    project: str,
+    *,
+    run_id: str,
+    node: str,
+    session: str,
+    observed: tuple[str, ...] = (),
+    until=_any_event,
+    bound: float = WATCHER_LOAD_BOUND_SECONDS,
+) -> list[dict]:
+    """Collect a follower's rows while feeding the own session's launch start.
+
+    The pane's own session reaches its line on the launch start, so a case that
+    wants the own row read feeds that row while the follower is reading rather
+    than by re-announcing the run's current state.
+    """
+    received: list[dict] = []
+    stop = threading.Event()
+
+    def reader() -> None:
+        for event in cli._follow_watch_lines(
+            project,
+            session=session,
+            observed=observed,
+            poll_interval=0.001,
+            stop=stop,
+        ):
+            if event.get("event") in {"attached", "reattached"}:
+                continue
+            received.append(event)
+
+    thread = threading.Thread(target=reader, daemon=True)
+    thread.start()
+    try:
+        _deliver_own_start(
+            run_id=run_id,
+            node=node,
+            session=session,
+            until=lambda: until(received),
+            bound=bound,
+        )
+    finally:
+        stop.set()
+        thread.join(timeout=2)
     assert not thread.is_alive(), "a stopped follower must return"
     return received
 
@@ -211,12 +300,15 @@ def test_an_observed_session_row_achieves_the_pane_without_falling_out(home) -> 
         _write_pointer(home, "r-owned", "owned-node", session="mine", phase="working")
         with runs._project_watch_claim("proj", "1h"):
             crew.list_live(project="proj")
-            _wait_for(
-                lambda: (
-                    any(e["node"] == "owned-node" for e in received)
-                    and any(e["node"] == "late-node" for e in received)
-                )
+            _wait_for(lambda: any(e["node"] == "late-node" for e in received))
+            _deliver_own_start(
+                run_id="r-owned",
+                node="owned-node",
+                session="mine",
+                until=lambda: any(e["node"] == "owned-node" for e in received),
+                bound=WATCHER_LOAD_BOUND_SECONDS,
             )
+            _wait_for(lambda: any(e["node"] == "owned-node" for e in received))
     finally:
         stop.set()
         thread.join(timeout=2)
@@ -336,8 +428,10 @@ def test_rows_from_an_observed_session_carry_the_foreign_marker_and_own_rows_do_
 
     with runs._project_watch_claim("proj", "1h"):
         crew.list_live(project="proj")
-        events = _follow(
+        events = _follow_own_start(
             "proj",
+            run_id="r-mine",
+            node="my-node",
             session="mine",
             observed=("old-a",),
             until=lambda received: len(received) >= 2,
@@ -406,7 +500,14 @@ def test_an_observed_session_that_dispatched_nothing_yields_no_rows_and_no_error
 
     with runs._project_watch_claim("proj", "1h"):
         crew.list_live(project="proj")
-        events = _follow("proj", session="mine", observed=("ghost",))
+        events = _follow_own_start(
+            "proj",
+            run_id="r-mine",
+            node="my-node",
+            session="mine",
+            observed=("ghost",),
+            until=lambda received: any(e["node"] == "my-node" for e in received),
+        )
 
     assert {event["node"] for event in events} == {"my-node"}
     assert not runs.follower_lock_path("proj", "ghost").exists()
@@ -437,8 +538,10 @@ def test_the_real_configuration_home_gains_no_file(home) -> None:
         crew.list_live(project="proj")
         with runs.follower_claim("proj", "mine", delivery="stream") as (held, _r):
             assert held is True
-            events = _follow(
+            events = _follow_own_start(
                 "proj",
+                run_id="r-mine",
+                node="my-node",
                 session="mine",
                 observed=("old-a",),
                 until=lambda received: len(received) >= 2,
