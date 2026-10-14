@@ -41,6 +41,7 @@ import pytest
 from reckon import crew
 from reckon.crew import runs as runs_module
 from reckon.crew.runs import _WatchStreamProducer, list_live, pointer_path
+from tests.real_home_traces import traces_naming
 
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
 
@@ -269,15 +270,7 @@ def real_live_directory_is_not_a_fixture_target() -> None:
     """
 
     def fixture_pointers() -> list[str]:
-        found = []
-        for path in REAL_LIVE.glob("*.json"):
-            try:
-                text = path.read_text(encoding="utf-8")
-            except OSError:
-                continue
-            if PROJECT in text or NODE_ID in text:
-                found.append(path.name)
-        return found
+        return traces_naming(REAL_LIVE.parent, ("live",), (PROJECT, NODE_ID))
 
     assert fixture_pointers() == []
     yield

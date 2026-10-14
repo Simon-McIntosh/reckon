@@ -25,6 +25,7 @@ import pytest
 import reckon.crew.dispatch_watch as dispatch_watch_module
 from reckon import crew
 from reckon.crew.dispatch import WATCH_ARMING_ENV
+from tests.real_home_traces import traces_naming
 
 # `reckon.crew` re-exports the dispatch callable under the submodule's name, so
 # the module itself is reached through the import machinery.
@@ -293,19 +294,23 @@ def test_the_shared_fixture_keeps_writes_out_of_the_real_home(
     """An isolated read does not prove an isolated write, so assert the write.
 
     Two watch locks carrying test input names were found in the real home,
-    which is what a resolved home nobody checked looks like afterwards.
+    which is what a resolved home nobody checked looks like afterwards. The
+    search is for this test's own session and node id rather than for the whole
+    ``crew/watch`` listing, because a peer follower arms its own registration
+    there and moves the listing without anything being wrong.
     """
     config_home, repo = fixture_project
     store = importlib.import_module("reckon._store")
     real_home = Path.home() / ".config" / "reckon"
-    before = sorted(path.name for path in (real_home / "crew" / "watch").glob("*"))
+    needles = ("session-isolated", "node-isolated")
+    before = traces_naming(real_home, ("crew/watch",), needles)
 
     record = _dispatch(config_home, repo, "isolated")
 
     assert store._config_home() == config_home
     assert Path(record["manifest_path"]).is_relative_to(config_home)
-    after = sorted(path.name for path in (real_home / "crew" / "watch").glob("*"))
-    assert after == before
+    after = traces_naming(real_home, ("crew/watch",), needles)
+    assert after == before == []
 
 
 def test_a_producer_is_bound_to_this_run_by_the_home_it_reports_into(

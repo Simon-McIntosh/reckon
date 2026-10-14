@@ -25,6 +25,7 @@ import pytest
 from reckon import crew as crew_module
 from reckon import serve
 from reckon.project_state import ProjectStateError
+from tests.real_home_traces import traces_naming
 
 _GOOD_BODY = "<h2 id='s1'>Section</h2>"
 # A section record carrying an id and no data-id, with no adjacent h2: the
@@ -73,22 +74,20 @@ def _await_bind(port: int) -> None:
     raise AssertionError("the served port never answered within the bound")
 
 
-def _real_config_home_fingerprint() -> list[tuple[str, int]]:
-    """Top-level entries of the real config home, minus the harness's own runs.
+def _real_home_traces() -> list[str]:
+    """This test's own traces in the real config home, if any.
 
-    The rollup resolves every path through the environment, so nothing here
-    should move. The harness churns ``crew/`` for the live run during a test,
-    so it is excluded rather than compared.
+    The rollup resolves every path through the environment, so a leak would
+    write one of the synthesised mounts' state, or a log naming one, into the
+    real home. Searching for the mount names, rather than comparing every
+    top-level name and mtime, is what keeps a peer session's dispatch and a
+    peer's lanes read -- which rewrite ``logs/``, ``state/`` and
+    ``budget-lifts.json`` -- from failing this guard. ``crew/`` is not walked:
+    this case stubs the fleet watch out, so it writes nothing there, and a walk
+    of it would measure a peer's runs.
     """
-
     home = Path.home() / ".config" / "reckon"
-    if not home.exists():
-        return []
-    return sorted(
-        (entry.name, entry.stat().st_mtime_ns)
-        for entry in home.iterdir()
-        if entry.name != "crew"
-    )
+    return traces_naming(home, ("state", "logs"), _MOUNTS)
 
 
 @pytest.fixture()
@@ -151,7 +150,7 @@ def served_rollup(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 
 def test_refused_page_is_isolated_to_its_project(served_rollup):
     port, _mounts = served_rollup
-    before = _real_config_home_fingerprint()
+    before = _real_home_traces()
 
     status, payload = _get_json(port, "/_projects/index.json")
 
@@ -165,7 +164,7 @@ def test_refused_page_is_isolated_to_its_project(served_rollup):
     assert _REFUSED_FILE in rows["bad"]["error"]
     assert "record must be adjacent to its h2" in rows["bad"]["error"]
 
-    assert _real_config_home_fingerprint() == before
+    assert _real_home_traces() == before
 
 
 def test_base_except_clause_fails_the_request(
