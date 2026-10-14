@@ -1089,9 +1089,16 @@ def _resume(
             f"{failure['remedy']}) and resume it by hand, or complete it"
         )
     _refuse_a_launch_already_running(run_id)
-    _LAUNCHES_IN_THIS_PROCESS.add(run_id)
-    mark_resume_launching(run_id)
+    # The registry entry is taken inside the guarded block and held across the
+    # whole launch, including the attempt's own recording. Taken before the
+    # guard it would leak on a mark that raised, leaving the run refused by a
+    # launch that never started; released before record_resumption it would
+    # leave the window between the launcher returning and the attempt being
+    # written unguarded, so a second pass of this process could launch a worker
+    # beside the one starting.
     try:
+        _LAUNCHES_IN_THIS_PROCESS.add(run_id)
+        mark_resume_launching(run_id)
         plan = resume_plan(run_id, advice, config=config)
         directory = run_dir(run_id)
         turn = len(list(directory.glob("resume-*.jsonl"))) + 1
@@ -1101,7 +1108,9 @@ def _resume(
         log_path = directory / f"resume-{turn}.jsonl"
         stderr_path = directory / f"resume-{turn}.stderr.log"
         attempt_started_at = _utc_now()
-        manifest_baseline_mtime_ns = _manifest_mtime_ns(record.get("manifest_path") or "")
+        manifest_baseline_mtime_ns = _manifest_mtime_ns(
+            record.get("manifest_path") or ""
+        )
         _require_fleet_gate_open()
         # The previous attempt may have left a done manifest on disk; clear its
         # verdict so the supervisor does not read the new worker's first edit as
@@ -1121,6 +1130,15 @@ def _resume(
                 stderr_path=stderr_path,
                 prompt_path=advice_path,
             )
+        record_resumption(
+            run_id,
+            pid=pid,
+            turn=turn,
+            log_path=log_path,
+            stderr_path=stderr_path,
+            attempt_started_at=attempt_started_at,
+            manifest_baseline_mtime_ns=manifest_baseline_mtime_ns,
+        )
     except BaseException:
         # A launch that ended before it held the session recorded no attempt of
         # its own, so nothing will drop the in-flight marker this door set.
@@ -1130,15 +1148,6 @@ def _resume(
         raise
     finally:
         _LAUNCHES_IN_THIS_PROCESS.discard(run_id)
-    record_resumption(
-        run_id,
-        pid=pid,
-        turn=turn,
-        log_path=log_path,
-        stderr_path=stderr_path,
-        attempt_started_at=attempt_started_at,
-        manifest_baseline_mtime_ns=manifest_baseline_mtime_ns,
-    )
     return {"pid": pid, "turn": turn, "log_path": str(log_path), "plan": plan}
 
 

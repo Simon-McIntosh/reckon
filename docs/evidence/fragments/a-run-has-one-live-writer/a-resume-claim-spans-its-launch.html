@@ -1,0 +1,13 @@
+<!-- Evidence anchor: a-resume-claim-spans-its-launch -->
+
+<section id="a-resume-claim-spans-its-launch-landing">
+  <p id="a-resume-claim-spans-its-launch-landing-line">
+    reckon/crew/resumption.py: <code>_resume</code> now takes its entry in
+    <code>_LAUNCHES_IN_THIS_PROCESS</code> inside the guarded block and holds it
+    until <code>record_resumption</code> has written the attempt or the launch
+    has raised, so a raised in-flight mark cannot leak the entry and a second
+    pass in the same process is refused until the attempt is recorded.
+    tests/test_a_resume_claim_spans_its_launch.py: 2 passed; on the pre-fix
+    placement both cases fail (EXIT=1).
+  </p>
+</section>
