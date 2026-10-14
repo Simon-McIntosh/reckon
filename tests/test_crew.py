@@ -27,7 +27,7 @@ import reckon.crew.dispatch_plan as dispatch_plan_module
 import reckon.crew.dispatch_sessions as dispatch_sessions_module
 from reckon import cli as cli_module
 from reckon import crew, crew_dispatch_commands, crew_run_commands, flight, ledger
-from reckon.crew import recovery, recovery_stream, review, runs
+from reckon.crew import process_signal, recovery, recovery_stream, review, runs
 from reckon.crew.refusals import format_refusal
 from tests import test_a_live_run_never_reads_dead as liveness
 from tests.conftest import TEST_TEMP_ROOT_ENV
@@ -3220,9 +3220,11 @@ def test_recycled_pid_is_refused_before_signalling(home, repo, monkeypatch) -> N
     )
     process = spawned["process"]
     signalled: list[tuple[int, int]] = []
-    monkeypatch.setattr(crew, "_process_start_time", lambda pid: "different-start")
     monkeypatch.setattr(
-        crew.os,
+        process_signal, "_process_start_time", lambda pid: "different-start"
+    )
+    monkeypatch.setattr(
+        process_signal.os,
         "killpg",
         lambda process_group, sig: signalled.append((process_group, sig)),
     )

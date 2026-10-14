@@ -28,7 +28,7 @@ from pathlib import Path
 from click.testing import CliRunner
 
 from reckon import cli
-from reckon.crew import routing
+from reckon.crew import gc, routing
 from reckon.crew.routing import _workspace_roots
 
 
@@ -96,7 +96,7 @@ def test_a_worktree_vanishing_before_its_pin_does_not_stop_the_sweep(
             shutil.rmtree(path)
         return real_step(repo, path, integrated_into, record, **kwargs)
 
-    monkeypatch.setattr(routing, "_save_and_release_worktree", vanishing_step)
+    monkeypatch.setattr(gc, "_save_and_release_worktree", vanishing_step)
 
     result = CliRunner().invoke(
         cli.main,
