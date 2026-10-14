@@ -1120,6 +1120,7 @@ class RowPolicy:
         show_observer: bool = False,
         own_session: str | None = None,
         observed_sessions: Iterable[str] = (),
+        lift_groups: Iterable[str] = (),
     ) -> None:
         self._show_observer = bool(show_observer)
         # The session this pane follows. A start row is delivered for this
@@ -1147,8 +1148,30 @@ class RowPolicy:
         # run id, so the run-keyed memory cannot hold it; the group in ``node``
         # is the key. A grant records a group, an end forgets it, and a baseline
         # in-force row draws only for a group not yet drawn — so a reloaded lift
-        # watcher re-announcing a standing lift adds no row.
-        self._lift_groups: set[str] = set()
+        # watcher re-announcing a standing lift adds no row. The groups a
+        # previous image drew are handed in here, so the memory survives the
+        # reload as well as the watcher's own restart.
+        # The groups a previous image drew, or none when the carrier named no
+        # lift; the set is built from whatever was handed in.
+        self._lift_groups: set[str] = {
+            str(group) for group in (lift_groups or ()) if group
+        }
+
+    @property
+    def lift_groups(self) -> frozenset[str]:
+        """The lift groups this pane has drawn as in force."""
+        return frozenset(self._lift_groups)
+
+    def seed_lift_group(self, group: str) -> None:
+        """Remember a lift group the pane already shows as in force.
+
+        The restore path for a memory read from elsewhere — a reload's carried
+        checkpoint, or the stored history a re-arm reads — so the producer's
+        re-arm baseline row for a group already drawn adds no row.
+        """
+        name = str(group or "")
+        if name:
+            self._lift_groups.add(name)
 
     def seed(self, run_id: str, state: str) -> None:
         """Remember a state the pane already shows, before this pane's first row.
@@ -1579,6 +1602,7 @@ class PaneRowPath:
         show_observer: bool = False,
         own_session: str | None = None,
         observed_sessions: Iterable[str] = (),
+        lift_groups: Iterable[str] = (),
     ) -> None:
         self._selects = selects
         self._show_observer = bool(show_observer)
@@ -1593,6 +1617,7 @@ class PaneRowPath:
             show_observer=self._show_observer,
             own_session=self._own_session,
             observed_sessions=self._observed_sessions,
+            lift_groups=lift_groups,
         )
         for run_id, state in self.reported.items():
             self._policy.seed(run_id, state)
@@ -1610,8 +1635,27 @@ class PaneRowPath:
         self.reported[key] = value
         self._policy.seed(key, value)
 
-    def reseed(self, reported: Mapping[str, str] | None) -> None:
-        """Replace the remembered states, as a continuation restores them."""
+    def remember_lift(self, group: str) -> None:
+        """Note a lift group the pane already shows as in force."""
+        self._policy.seed_lift_group(group)
+
+    @property
+    def lift_groups(self) -> frozenset[str]:
+        """The lift groups this pane has drawn as in force."""
+        return self._policy.lift_groups
+
+    def reseed(
+        self,
+        reported: Mapping[str, str] | None,
+        *,
+        lift_groups: Iterable[str] = (),
+    ) -> None:
+        """Replace the remembered states, as a continuation restores them.
+
+        The lift groups a continuation carries are restored in the same step,
+        because a fresh policy would otherwise start with no memory of the
+        stands the previous image already drew and re-announce them.
+        """
         self.reported = {
             str(run_id): str(state) for run_id, state in dict(reported or {}).items()
         }
@@ -1619,6 +1663,7 @@ class PaneRowPath:
             show_observer=self._show_observer,
             own_session=self._own_session,
             observed_sessions=self._observed_sessions,
+            lift_groups=lift_groups,
         )
         for run_id, state in self.reported.items():
             self._policy.seed(run_id, state)

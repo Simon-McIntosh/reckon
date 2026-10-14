@@ -36,7 +36,7 @@ import hashlib
 import json
 import os
 import re
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from pathlib import Path
 from typing import Any
 
@@ -193,6 +193,7 @@ def write(
     stream_path: str | Path,
     offset: int,
     reported: Mapping[str, str],
+    lift_groups: Iterable[str] | None = None,
     identity: Mapping[str, Any] | None = None,
 ) -> None:
     """Atomically record a follower's place after the last delivered line.
@@ -227,6 +228,12 @@ def write(
         "offset": int(offset),
         "reported": {str(k): str(v) for k, v in dict(reported).items()},
     }
+    drawn_lifts = sorted({str(group) for group in (lift_groups or ()) if group})
+    if drawn_lifts:
+        # The groups a pane has drawn as in force. Omitted when there are none,
+        # so a checkpoint that carries no lift keeps the document a reader
+        # already recognises to the byte.
+        record["lift_groups"] = drawn_lifts
     write_json_atomically(
         target,
         record,
@@ -278,6 +285,7 @@ def _parse_history(raw: str) -> list[dict[str, Any]]:
                 "text": text,
                 "run_id": str(row.get("run_id") or ""),
                 "state": str(row.get("state") or ""),
+                "group": str(row.get("group") or ""),
             }
         )
     return kept
@@ -300,6 +308,32 @@ def seed_states(rows: list[dict[str, Any]]) -> dict[str, str]:
         if run_id and state:
             latest[run_id] = state
     return latest
+
+
+def seed_lift_groups(rows: list[dict[str, Any]]) -> set[str]:
+    """The lift groups the pane last showed as in force, read from the log.
+
+    A lift row carries no run id, so :func:`seed_states` skips it and cannot
+    hold the groups a re-armed pane already drew. Those groups live on the log's
+    own rows: a grant or a baseline in-force row records a group, an end forgets
+    it, and the set the pane would carry is the grants not yet ended. Read in
+    order, so an end after a grant removes it and a later grant adds it back.
+    """
+    from reckon.crew import ticker
+
+    in_force: set[str] = set()
+    for row in rows:
+        if row.get("kind") != ROW_KIND:
+            continue
+        group = str(row.get("group") or "")
+        if not group:
+            continue
+        state = str(row.get("state") or "")
+        if state in (ticker.LIFT_GRANTED, ticker.LIFT_IN_FORCE):
+            in_force.add(group)
+        elif state == ticker.LIFT_ENDED:
+            in_force.discard(group)
+    return in_force
 
 
 def collapse_format_markers(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -384,6 +418,7 @@ def append_history(
     kind: str = ROW_KIND,
     run_id: str = "",
     state: str = "",
+    group: str = "",
     now: float | None = None,
     max_rows: int = DEFAULT_HISTORY_ROWS,
     max_seconds: float = DEFAULT_HISTORY_SECONDS,
@@ -411,6 +446,11 @@ def append_history(
         "run_id": str(run_id),
         "state": str(state),
     }
+    if group:
+        # A lift row's group, so a re-arm can rebuild the groups the pane drew
+        # as in force from the log. Omitted for a run's own row, which carries
+        # none, so the stored row keeps the shape the log already holds.
+        row["group"] = str(group)
     target = history_path(project, session)
     try:
         target.parent.mkdir(parents=True, exist_ok=True)

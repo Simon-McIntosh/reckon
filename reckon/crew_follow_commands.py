@@ -847,7 +847,7 @@ def _follow_resume_plan(
     *,
     stream_path: Path,
     resume_state: Mapping[str, Any],
-) -> tuple[str, int, dict[str, str]]:
+) -> tuple[str, int, dict[str, str], tuple[str, ...]]:
     """Decide how a follower starts against the stream it is about to read.
 
     Three modes, one per kind of place an arming can begin from:
@@ -860,7 +860,9 @@ def _follow_resume_plan(
     start and filtered to the runs whose state differs from the checkpoint's.
 
     The recorded state travels back with the mode either way, so a continuation
-    delivers only what changed rather than re-announcing the fleet.
+    delivers only what changed rather than re-announcing the fleet. The lift
+    groups the pane already drew travel back with it, so a continuation holds
+    the producer's re-arm baseline for a lift the pane already shows.
     """
     from reckon.crew import follow_checkpoint
 
@@ -872,31 +874,37 @@ def _follow_resume_plan(
             str(run_id): str(state)
             for run_id, state in dict(resume_state.get("reported") or {}).items()
         }
+        carried_lifts = tuple(
+            str(group) for group in (resume_state.get("lift_groups") or ()) if group
+        )
         if (
             isinstance(offset, int)
             and not isinstance(offset, bool)
             and resume_state.get("stream_path") == str(stream_path)
         ):
-            return "continue", max(0, offset), recorded
-        return "baseline", 0, recorded
+            return "continue", max(0, offset), recorded, carried_lifts
+        return "baseline", 0, recorded, carried_lifts
 
     if session is None:
         # A session-less follower observes the whole fleet in one pass and has
         # no pane to restore, so it has no durable place. Reading one would find
         # a place a concurrent session-less follower wrote, resume mid-stream,
         # and deliver a resume event and rows the pane already showed.
-        return "baseline", 0, {}
+        return "baseline", 0, {}, ()
 
     record = follow_checkpoint.read(project, session)
     if not record:
-        return "baseline", 0, {}
+        return "baseline", 0, {}, ()
     recorded = {
         str(run_id): str(state)
         for run_id, state in dict(record.get("reported") or {}).items()
     }
+    recorded_lifts = tuple(
+        str(group) for group in (record.get("lift_groups") or ()) if group
+    )
     if follow_checkpoint.continues(record, stream_path):
-        return "continue", max(0, int(record["offset"])), recorded
-    return "restart", 0, recorded
+        return "continue", max(0, int(record["offset"])), recorded, recorded_lifts
+    return "restart", 0, recorded, recorded_lifts
 
 
 
@@ -906,6 +914,7 @@ def follower_row_path(
     observed: Iterable[str] = (),
     run_ids: Iterable[str] = (),
     reported: Mapping[str, str] | None = None,
+    lift_groups: Iterable[str] = (),
 ):
     """The row path a follower runs on, for a reader that has to measure one.
 
@@ -934,6 +943,10 @@ def follower_row_path(
         # context and an observing follower shows nothing of the session it was
         # armed to watch.
         observed_sessions=observed_sessions,
+        # The lift groups the pane already drew, carried in the checkpoint a
+        # reload hands across, so the memory of them starts where the previous
+        # image left it rather than empty.
+        lift_groups=lift_groups,
     )
 
 
@@ -1243,6 +1256,7 @@ def _follow_watch_lines(
         observed=observed_sessions,
         run_ids=selected_runs,
         reported=resume_state.get("reported"),
+        lift_groups=resume_state.get("lift_groups"),
     )
 
     started_at = clock()
@@ -1406,6 +1420,7 @@ def _follow_watch_lines(
             tuple(
                 sorted((str(key), str(value)) for key, value in path.reported.items())
             ),
+            tuple(sorted(path.lift_groups)),
         )
         if place == written_place and follow_checkpoint.exists(project, session):
             return
@@ -1416,6 +1431,7 @@ def _follow_watch_lines(
                 stream_path=stream_path,
                 offset=offset,
                 reported=path.reported,
+                lift_groups=path.lift_groups,
                 identity=identity,
             )
         except OSError:
@@ -1452,6 +1468,11 @@ def _follow_watch_lines(
                     "reported": dict(path.reported),
                     "stream_path": str(stream_path) if stream_path else "",
                     "offset": offset,
+                    # The lift groups the pane has drawn as in force, carried
+                    # to the replacement image beside the states, so a reload
+                    # holds the producer's re-arm baseline for a stand the pane
+                    # already shows.
+                    "lift_groups": sorted(path.lift_groups),
                     # The grid this image draws with, carried to the replacement
                     # so a reload that leaves every column where it was does not
                     # claim the drawing style changed.
@@ -1780,7 +1801,7 @@ def _follow_watch_lines(
         # stream — a reader wants worker transitions and the fleet posture, not
         # two streams interleaved into one pane.
         stream_path = Path(cursor["stream_path"])
-        mode, offset, recorded = _follow_resume_plan(
+        mode, offset, recorded, carried_lifts = _follow_resume_plan(
             project,
             session,
             stream_path=stream_path,
@@ -1805,7 +1826,7 @@ def _follow_watch_lines(
             # the states the pane already showed restored, so only what moved is
             # delivered and nothing is re-announced.
             cursor["offset"] = offset
-            path.reseed(recorded)
+            path.reseed(recorded, lift_groups=carried_lifts)
             if first_attach:
                 # Continue each run's chain from what the pane last showed it,
                 # for the runs the checkpoint does not name. The checkpoint is
@@ -1816,11 +1837,15 @@ def _follow_watch_lines(
                 # keeps the checkpoint's word, so the log cannot overwrite it.
                 # The replacement image's grid starts empty, so it needs the
                 # same memory a re-arm does, or the first row it draws falls
-                # back to the producer's own ``from_state``.
-                for run_id, state in follow_checkpoint.seed_states(
-                    follow_checkpoint.read_history(project, session)
-                ).items():
+                # back to the producer's own ``from_state``. The lift groups the
+                # log carries come back the same way, so a reload whose carried
+                # checkpoint named no lift still holds the producer's re-arm
+                # baseline for a stand the pane already drew.
+                history = follow_checkpoint.read_history(project, session)
+                for run_id, state in follow_checkpoint.seed_states(history).items():
                     path.remember(run_id, state)
+                for group in follow_checkpoint.seed_lift_groups(history):
+                    path.remember_lift(group)
             # The pane's own line, before the rows': the format switch, never a
             # run's row. It carries the remembered states so the renderer can
             # seed its grid from the same map, which is what keeps a row's left
@@ -1860,6 +1885,17 @@ def _follow_watch_lines(
             # newline, so a record the producer is still writing is not split
             # across the two reads: a line boundary is a record boundary.
             boundary = _follow_boundary(stream_path)
+            # A re-arm reads its memory from the stored history: the groups the
+            # pane last showed as in force are the grants on that log not yet
+            # ended. Restored before the replay feeds the fleet, so the
+            # producer's re-arm baseline row for a stand already drawn adds no
+            # row. A first attach has no history, so it draws the standing lift
+            # once as before.
+            if session is not None:
+                for group in follow_checkpoint.seed_lift_groups(
+                    follow_checkpoint.read_history(project, session)
+                ):
+                    path.remember_lift(group)
             # What this session's pane was last shown, one state per run. It is
             # consulted only by an attach that has no place to resume from. A
             # re-arm whose recorded offset still names this stream continues
@@ -2830,6 +2866,7 @@ def crew_follow(
                         at=_follow_row_stamp(event),
                         run_id=str(event.get("run_id") or ""),
                         state=str(event.get("to_state") or ""),
+                        group=str(event.get("node") or ""),
                         max_rows=history_caps[0],
                         max_seconds=history_caps[1],
                     )
