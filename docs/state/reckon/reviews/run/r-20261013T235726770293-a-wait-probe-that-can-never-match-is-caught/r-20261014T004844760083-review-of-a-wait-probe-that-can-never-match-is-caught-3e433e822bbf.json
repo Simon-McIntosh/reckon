@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived 0 from the reviewed run's own gate logs: gate-head.log (6 passed, EXIT=0, no FAILED/ERROR id) and gate-related.log (187 passed, EXIT=0, no FAILED/ERROR id) record no failing test at the head arm, so the set difference against any base is empty. The reviewed manifest carries no baseline_suite/after_suite arm (both keys empty), which is the pair read-time annotation reads, so the count is unmeasured there and the stored 0 is this reviewer's derivation from the arms the manifest names under tests and test_logs.",
+  "backend": "clive",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/evidence.py:560 compose_landed_record",
+    "reckon/doccheck.py:1886 _duplicate_element_id_findings",
+    "reckon/compliance.py:108"
+  ],
+  "completed_at": "2026-10-14T00:57:21.630Z",
+  "dispatched_at": "2026-10-14T00:49:14Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/crew-observability-truth/a-wait-probe-that-can-never-match-is-caught.html",
+      "line": "35",
+      "severity": "follow-on",
+      "text": "follow-on: the Scope paragraph asserts 'The repair round accepts the companion write by adding the file to this node's fence', but the run's declared write paths were not widened - the live pointer's node.write_paths still lists only the four original paths - so the sentence records a fence change that has not happened and a reader trusts a scope acceptance that has not been made."
+    },
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": "1328",
+      "severity": "blocking",
+      "text": "blocking: the run's declared write paths still exclude this edited file and no widen or promotion acceptance is recorded, so promotion's scope check remains unsatisfied; the gained commit documents the reason for the companion write but does not widen the fence."
+    }
+  ],
+  "head_log_revision": "3e433e822bbfc6546f1d58297d2fe3b4ec6dbfce",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read the gained commit 3e433e822 against 11ed18272; it adds one Scope paragraph (11 lines) to the fragment and changes nothing else.",
+    "done_when": "the done_when names tests/test_a_wait_probe_that_can_never_match_is_caught.py with four coverage bullets plus a negative control; the manifest records 6 passed EXIT=0 in gate-head.log, whose header line 2 now names the reviewed head 3e433e822, and the negative control's single failure EXIT=1 in negative-control.log.",
+    "goal": "the node goal is to report a wait probe that cannot produce a terminal value as a wait-key defect; the gained commit docs/evidence/fragments/crew-observability-truth/a-wait-probe-that-can-never-match-is-caught.html:28-38 adds a Scope paragraph documenting why the observation check is read where the classifier builds the row, and the run's implementation of the goal (reckon/crew/recovery_liveness.py:663 refusing the structured probe, reckon/crew/recovery_classification.py:1328 joining the observation defect) is unchanged.",
+    "manifest": "read; it records the gained commit 3e433e822, the gate and negative-control results, and a check_manifest_note stating the live pointer still names only the four original paths and that the coordinator must widen or accept the companion write.",
+    "write_paths": "the gained commit writes only docs/evidence/fragments/crew-observability-truth/a-wait-probe-that-can-never-match-is-caught.html, a declared write path; the run's cumulative diff still edits reckon/crew/recovery_classification.py, which the run's declared write paths (the live pointer node.write_paths) still exclude."
+  },
+  "justifications": {
+    "durability": "the gained commit adds only prose and no assertion, so the guard remains tests/test_a_wait_probe_that_can_never_match_is_caught.py, whose negative control reddens when the dropped check returns.",
+    "evidence": "gate-head.log:2 now names the reviewed head 3e433e822 with 6 passed and EXIT=0, resolving the earlier review's concern that the log named the base.",
+    "fit": "the added paragraph follows the fragment's idiom and its id a-wait-probe-that-can-never-match-is-caught-scope begins with the node id as the fragment contract requires.",
+    "goal_fidelity": "the goal's implementation is unchanged and the gained paragraph at docs/evidence/fragments/crew-observability-truth/a-wait-probe-that-can-never-match-is-caught.html:32-35 accurately records why the join lives in the classifier.",
+    "reuse": "no capability is added; the search over reckon/ (evidence.py, doccheck.py, compliance.py) found the fragment's own consumers rather than any duplicated mechanism.",
+    "scope_discipline": "the gained commit stays inside its declared write path, but the run's declared write paths still exclude reckon/crew/recovery_classification.py:1328, which the run edits."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to report a wait probe that cannot produce a terminal value as a wait-key defect; the gained commit docs/evidence/fragments/crew-observability-truth/a-wait-probe-that-can-never-match-is-caught.html:28-38 adds a Scope paragraph documenting why the observation check is read where the classifier builds the row, and the run's implementation of the goal (reckon/crew/recovery_liveness.py:663 refusing the structured probe, reckon/crew/recovery_classification.py:1328 joining the observation defect) is unchanged.\nVERDICT done_when: the done_when names tests/test_a_wait_probe_that_can_never_match_is_caught.py with four coverage bullets plus a negative control; the manifest records 6 passed EXIT=0 in gate-head.log, whose header line 2 now names the reviewed head 3e433e822, and the negative control's single failure EXIT=1 in negative-control.log.\nVERDICT write_paths: the gained commit writes only docs/evidence/fragments/crew-observability-truth/a-wait-probe-that-can-never-match-is-caught.html, a declared write path; the run's cumulative diff still edits reckon/crew/recovery_classification.py, which the run's declared write paths (the live pointer node.write_paths) still exclude.\nVERDICT manifest: read; it records the gained commit 3e433e822, the gate and negative-control results, and a check_manifest_note stating the live pointer still names only the four original paths and that the coordinator must widen or accept the companion write.\nVERDICT diff: read the gained commit 3e433e822 against 11ed18272; it adds one Scope paragraph (11 lines) to the fragment and changes nothing else.\nCALL_SITES: reckon/evidence.py:560 compose_landed_record, reckon/doccheck.py:1886 _duplicate_element_id_findings, reckon/compliance.py:108\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the goal's implementation is unchanged and the gained paragraph at docs/evidence/fragments/crew-observability-truth/a-wait-probe-that-can-never-match-is-caught.html:32-35 accurately records why the join lives in the classifier.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-head.log:2 now names the reviewed head 3e433e822 with 6 passed and EXIT=0, resolving the earlier review's concern that the log named the base.\nSCORE scope_discipline: 12\nJUSTIFICATION scope_discipline: the gained commit stays inside its declared write path, but the run's declared write paths still exclude reckon/crew/recovery_classification.py:1328, which the run edits.\nSCORE durability: 18\nJUSTIFICATION durability: the gained commit adds only prose and no assertion, so the guard remains tests/test_a_wait_probe_that_can_never_match_is_caught.py, whose negative control reddens when the dropped check returns.\nSCORE fit: 18\nJUSTIFICATION fit: the added paragraph follows the fragment's idiom and its id a-wait-probe-that-can-never-match-is-caught-scope begins with the node id as the fragment contract requires.\nSCORE reuse: 20\nJUSTIFICATION reuse: no capability is added; the search over reckon/ (evidence.py, doccheck.py, compliance.py) found the fragment's own consumers rather than any duplicated mechanism.\nFINDING docs/evidence/fragments/crew-observability-truth/a-wait-probe-that-can-never-match-is-caught.html:35 follow-on: the Scope paragraph asserts 'The repair round accepts the companion write by adding the file to this node's fence', but the run's declared write paths were not widened - the live pointer's node.write_paths still lists only the four original paths - so the sentence records a fence change that has not happened and a reader trusts a scope acceptance that has not been made.\nFINDING reckon/crew/recovery_classification.py:1328 blocking: the run's declared write paths still exclude this edited file and no widen or promotion acceptance is recorded, so promotion's scope check remains unsatisfied; the gained commit documents the reason for the companion write but does not widen the fence.",
+  "review_run_id": "r-20261014T004844760083-review-of-a-wait-probe-that-can-never-match-is-caught-3e433e822bbf",
+  "reviewed_base_sha": "11ed18272ae6e10f10abed2174291146685ccf89",
+  "reviewed_head_sha": "3e433e822bbfc6546f1d58297d2fe3b4ec6dbfce",
+  "reviewed_run_id": "r-20261013T235726770293-a-wait-probe-that-can-never-match-is-caught",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 12
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T00:56:07.679880+00:00",
+  "total": 103
+}
