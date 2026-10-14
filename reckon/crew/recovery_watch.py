@@ -2196,6 +2196,15 @@ def watch_ticker(
     """
     _refuse_unresolvable_watch(project)
     stall_seconds = parse_duration(stall_window)
+    # The state each live run's predecessor last published, read before the seat
+    # is taken: taking it writes this producer's own baseline rows over the
+    # stream's tail, so a run that moved while the seat was down would read back
+    # as unchanged and be announced as inventory instead of as the transition
+    # that wakes its dispatching session.
+    published_states = runs._seed_published_states(
+        runs.watch_stream_path(project),
+        runs._live_created(runs._list_live_records(project=project)),
+    )
     known: dict[str, dict[str, Any]] = {}
     fleet_seen = False
     # Rate standings move on their own cadence, so one resolution serves the
@@ -2344,12 +2353,24 @@ def watch_ticker(
                 fleet_seen = True
                 known = {run_id: dict(snapshot) for run_id, snapshot in current.items()}
                 for snapshot in current.values():
+                    run_id = str(snapshot.get("run_id") or "")
+                    state = str(snapshot["state"])
+                    published = published_states.get(run_id)
+                    # A run the stream named at another state moved while the
+                    # seat was down, so the row is the news a session wakes on;
+                    # a run the stream never named, or that stands where it last
+                    # did, is inventory and reads as a baseline, exactly as it
+                    # did before the replacement learned the stream's memory.
                     yield _watch_transition(
                         project,
-                        kind="baseline",
+                        kind=(
+                            "transition"
+                            if published is not None and published != state
+                            else "baseline"
+                        ),
                         snapshot=snapshot,
-                        previous=None,
-                        current=str(snapshot["state"]),
+                        previous=published if published != state else None,
+                        current=state,
                         counts=counts,
                         spend_runs=pointers,
                         rate_statuses=rate_statuses,

@@ -283,6 +283,16 @@ def test_incremental_transitions_match_the_whole_file_path(
     # Rebuild identical starting files, drop every memo, and drive again with
     # the resume path disabled so each poll re-reads whole streams: the whole-
     # file arm over the same file sequence.
+    #
+    # The project's event stream goes too. The first arm's producer published
+    # its fleet's states there, and a replacement seeds its first sweep from the
+    # states the stream last published, so a second arm read over that history
+    # would announce the change the first arm made as a transition of its own.
+    # The arm runs the same fleet from the same starting states, so the stream
+    # it reads must start as empty as the first arm's did.
+    stream = runs.watch_stream_path(PROJECT)
+    if stream.exists():
+        stream.unlink()
     for index, record in enumerate(records):
         record["status"] = None if index == 0 else "running"
         _seed(record)
