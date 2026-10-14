@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-seat-held-elsewhere-is-not-restarted">
+  <meta name="plan-evidence-for" content="a-seat-held-elsewhere-is-not-restarted">
+  <title>A follower on another host is published | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <section id="a-snapshot-is-published-for-every-host-landing">
+      <header>
+        <p class="eyebrow">Execution evidence &middot; fragment</p>
+        <h2>A follower on another host is published</h2>
+      </header>
+      <p id="a-snapshot-is-published-for-every-host-landing-note">
+        <code>reckon/crew/follower_registration.py</code> records the host a
+        registration was written on, spelled as a producer seat spells its own
+        (<code>runs._seat_host</code>), and a registration naming another host is
+        never put to <em>this</em> host's process table: its pids read unknown
+        rather than dead, and its liveness is the one fact that crosses the shared
+        home &mdash; the advisory lock the follower holds for as long as it
+        delivers. A session whose follower is elsewhere therefore keeps its
+        obligations snapshot, its hook prints the checklist instead of
+        <code>no producer</code>, and the review reflex dispatches for a scoring
+        run whose session's follower is on the second host. The judgement is
+        shaped as <code>watch_observer_alive</code>'s unknown-not-dead rule, and
+        both consumers read the one <code>follower_state</code> value.
+        <code>tests/test_a_snapshot_is_published_for_every_host.py</code> passes 5
+        tests with a bare <code>EXIT=0</code>; reverting the foreign-host decision
+        to this host's process table fails 3 of them &mdash; the hook, the reflex,
+        and the held-lock judgement.
+      </p>
+    </section>
+  </main>
+</body>
+</html>
