@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_every_attempt_is_supervised.py::test_crew_redispatch_keeps_the_harness_behind_a_supervisor[codex]"
+  ],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/resumption.py:sweep",
+    "reckon/crew_run_commands.py:crew_resume",
+    "reckon/mcp.py:_crew_recover",
+    "reckon/crew/recovery_repair_dispatch.py:dispatch_repair_for_run"
+  ],
+  "completed_at": "2026-10-14T23:01:04.743Z",
+  "dispatched_at": "2026-10-14T22:52:48Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "18",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest cites logs/flaky-note.txt as the evidence that test_every_attempt_is_supervised.py::test_crew_redispatch_keeps_the_harness_behind_a_supervisor[codex] is flaky, but no such file exists in the run's log directory, so the head arm's added failure id is unexplained by any artefact and the done-when's claim of no added failure against base is unverified."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit; fe219c5d takes the registry entry and mark inside the guard, 11cdec2c narrows the clearing except to the launch so a recording failure keeps the in-flight mark, fec3cbb8 is the evidence fragment only, and the production change is confined to reckon/crew/resumption.py.",
+    "done_when": "the done_when names tests/test_a_resume_claim_spans_its_launch.py plus an importer-population arm and two negative controls; the manifest records 3 passed EXIT=0 in logs/head-arm.log and each control 1 failed/2 passed EXIT=1 in logs/negative-control-a.log and -b.log, but the head importer arm carries one added failure id the base arm does not.",
+    "goal": "the goal is to hold _resume's in-process launch registry entry inside its guarded block until the attempt is recorded or the launch fails; reckon/crew/resumption.py:1101 takes the entry inside the inner try and 1155 discards it in the outer finally after record_resumption at 1148.",
+    "manifest": "read; status complete; baseline_suite at 7e22391d (3 failed/574 passed) and after_suite at 11cdec2c (2 failed/575 passed) both completed, and it cites logs/flaky-note.txt which is not present on disk.",
+    "write_paths": "the run declares reckon/crew/resumption.py, tests/test_a_resume_claim_spans_its_launch.py, docs/evidence/fragments/a-run-has-one-live-writer/a-resume-claim-spans-its-launch.html and a figures dir; git diff --name-only 7e22391d..fec3cbb8 lists exactly the first three."
+  },
+  "justifications": {
+    "durability": "tests/test_a_resume_claim_spans_its_launch.py:143 fails when the registry take is moved before the guard and :200 fails when the discard is moved before record_resumption, both reproduced by the run's own controls, and :238 fails at the intermediate commit fe219c5d (logs/case3-at-old-head.log).",
+    "evidence": "logs/head-arm.log shows 3 passed EXIT=0 and both controls red, but the head importer arm (logs/importers-head.log:404) adds tests/test_every_attempt_is_supervised.py::test_crew_redispatch_keeps_the_harness_behind_a_supervisor[codex] against base and the flaky attribution cites logs/flaky-note.txt which does not exist.",
+    "fit": "the change keeps the module's existing registry mechanism and comment idiom (reckon/crew/resumption.py:1092-1097) and adds no name the naming rules forbid.",
+    "goal_fidelity": "reckon/crew/resumption.py:1101 takes the entry inside the inner try and it is discarded only at 1155 after record_resumption at 1148, so a raised mark cannot leak it and a second pass is refused until the attempt is written.",
+    "reuse": "the change adds no definition; it re-places the existing _LAUNCHES_IN_THIS_PROCESS registry (reckon/crew/resumption.py:262) and the existing mark_resume_launching/clear_resume_launching pair, forking no capability.",
+    "scope_discipline": "git diff --name-only 7e22391d..fec3cbb8 lists exactly reckon/crew/resumption.py, tests/test_a_resume_claim_spans_its_launch.py and the fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 7e22391dd968ada7d46be748f54befbc77a7851f\nreviewed_head_sha: fec3cbb868d20afe5ab79d25d5d862812184911a\nVERDICT goal: the goal is to hold _resume's in-process launch registry entry inside its guarded block until the attempt is recorded or the launch fails; reckon/crew/resumption.py:1101 takes the entry inside the inner try and 1155 discards it in the outer finally after record_resumption at 1148.\nVERDICT done_when: the done_when names tests/test_a_resume_claim_spans_its_launch.py plus an importer-population arm and two negative controls; the manifest records 3 passed EXIT=0 in logs/head-arm.log and each control 1 failed/2 passed EXIT=1 in logs/negative-control-a.log and -b.log, but the head importer arm carries one added failure id the base arm does not.\nVERDICT write_paths: the run declares reckon/crew/resumption.py, tests/test_a_resume_claim_spans_its_launch.py, docs/evidence/fragments/a-run-has-one-live-writer/a-resume-claim-spans-its-launch.html and a figures dir; git diff --name-only 7e22391d..fec3cbb8 lists exactly the first three.\nVERDICT manifest: read; status complete; baseline_suite at 7e22391d (3 failed/574 passed) and after_suite at 11cdec2c (2 failed/575 passed) both completed, and it cites logs/flaky-note.txt which is not present on disk.\nVERDICT diff: read commit by commit; fe219c5d takes the registry entry and mark inside the guard, 11cdec2c narrows the clearing except to the launch so a recording failure keeps the in-flight mark, fec3cbb8 is the evidence fragment only, and the production change is confined to reckon/crew/resumption.py.\nCALL_SITES: reckon/crew/resumption.py:sweep, reckon/crew_run_commands.py:crew_resume, reckon/mcp.py:_crew_recover, reckon/crew/recovery_repair_dispatch.py:dispatch_repair_for_run\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/resumption.py:1101 takes the entry inside the inner try and it is discarded only at 1155 after record_resumption at 1148, so a raised mark cannot leak it and a second pass is refused until the attempt is written.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/head-arm.log shows 3 passed EXIT=0 and both controls red, but the head importer arm (logs/importers-head.log:404) adds tests/test_every_attempt_is_supervised.py::test_crew_redispatch_keeps_the_harness_behind_a_supervisor[codex] against base and the flaky attribution cites logs/flaky-note.txt which does not exist.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --name-only 7e22391d..fec3cbb8 lists exactly reckon/crew/resumption.py, tests/test_a_resume_claim_spans_its_launch.py and the fragment, all inside the declared write paths.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_resume_claim_spans_its_launch.py:143 fails when the registry take is moved before the guard and :200 fails when the discard is moved before record_resumption, both reproduced by the run's own controls, and :238 fails at the intermediate commit fe219c5d (logs/case3-at-old-head.log).\nSCORE fit: 20\nJUSTIFICATION fit: the change keeps the module's existing registry mechanism and comment idiom (reckon/crew/resumption.py:1092-1097) and adds no name the naming rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition; it re-places the existing _LAUNCHES_IN_THIS_PROCESS registry (reckon/crew/resumption.py:262) and the existing mark_resume_launching/clear_resume_launching pair, forking no capability.\nFINDING manifest.md:18 follow-on: the manifest cites logs/flaky-note.txt as the evidence that test_every_attempt_is_supervised.py::test_crew_redispatch_keeps_the_harness_behind_a_supervisor[codex] is flaky, but no such file exists in the run's log directory, so the head arm's added failure id is unexplained by any artefact and the done-when's claim of no added failure against base is unverified.\n",
+  "review_run_id": "r-20261014T225218606661-review-of-a-resume-claim-spans-its-launch-fec3cbb868d2",
+  "reviewed_base_sha": "7e22391dd968ada7d46be748f54befbc77a7851f",
+  "reviewed_head_sha": "fec3cbb868d20afe5ab79d25d5d862812184911a",
+  "reviewed_run_id": "r-20261014T215224932408-a-resume-claim-spans-its-launch",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 20,
+    "evidence": 15,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T22:59:14.070046+00:00",
+  "total": 114
+}
