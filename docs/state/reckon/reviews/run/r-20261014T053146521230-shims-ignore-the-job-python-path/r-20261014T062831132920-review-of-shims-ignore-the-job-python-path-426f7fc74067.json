@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: baseline_suite is {revision 9aa406abf, completed true, failure_count 0, failure_ids []} and after_suite is {revision 426f7fc74, completed true, failure_count 0, failure_ids []}, so no failure id appears at head that is absent at base and the added-failure count is zero.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/worker_shims/git:75",
+    "reckon/host_shims/salloc:75",
+    "reckon/host_shims/sbatch:75",
+    "reckon/host_shims/srun:75"
+  ],
+  "completed_at": "2026-10-14T06:40:38.120Z",
+  "dispatched_at": "2026-10-14T06:28:58Z",
+  "findings": [
+    {
+      "file": "reckon/nested_launch.py",
+      "line": "70",
+      "severity": "follow-on",
+      "text": "follow-on: caller_environment and CALLER_PATH_ENV (lines 70-90) are copied verbatim from reckon/worker_git_shim.py:89-108; both modules already import reckon/shim_lookup.py, the stdlib-only helper the shims load first and the natural shared home for this plumbing, so the two copies must now be kept in step by hand and diverge silently on the same defect."
+    },
+    {
+      "file": "reckon/worker_shims/git",
+      "line": "67",
+      "severity": "follow-on",
+      "text": "follow-on: the bootstrap re-adds the caller's PYTHONPATH to the shim interpreter's own sys.path after reckon's site-packages, so the interpreter does not strictly keep \"only reckon's import root on its path\" as the deliverable states; ordering still protects reckon's own packages (the negative control reddens only when the append precedes), but a module present only in the caller's directory becomes importable inside the shim process. The same bootstrap is in reckon/host_shims/salloc:67, sbatch:67 and srun:67."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against base 9aa406abf: dd33cb740 starts reckon's interpreter with only its own import root in the four shims, and 426f7fc74 adds caller_environment to reckon/worker_git_shim.py:96 and reckon/nested_launch.py:77 to hand the caller's environment back, plus tests/test_a_shim_ignores_the_job_python_path.py and the evidence fragment; 8 files, 476 insertions, 10 deletions, all inside the declared scope.",
+    "done_when": "the done_when names a test running each shim with PYTHONPATH naming a temporary directory whose typing_extensions.py raises; tests/test_a_shim_ignores_the_job_python_path.py:165-251 does exactly that (hostile dir made at :100, fake real tool at :108, both driven at :185 and :244) and records 4 passed; the manifest carries head 296 passed EXIT=0 (head-gate.log), base 292 passed EXIT=0 (base-gate.log), delta +4, and the negative control 3 failed/1 passed EXIT=1 (negative-control.log).",
+    "goal": "the goal is that each of the four shims (reckon/worker_shims/git, reckon/host_shims/salloc, sbatch, srun) starts reckon's interpreter with only reckon's import root on its path, ignoring the caller's PYTHONPATH, PYTHONHOME and PYTHONSTARTUP and user site, while the program the shim finally runs still receives the caller's environment unchanged; at head each shim sets PYTHONPATH=\"$repo_root\", adds -P -s and unsets the three variables (reckon/worker_shims/git:44-65), and caller_environment restores them for the child (reckon/worker_git_shim.py:96, reckon/nested_launch.py:77), with the caller path re-appended to the shim interpreter after reckon's own packages (reckon/worker_shims/git:67, FINDING).",
+    "manifest": "read; it records status complete, changed_paths matching the diff, tests \"296 passed EXIT=0\" head against \"292 passed EXIT=0\" base, negative_control_log named with note 3 failed/1 passed EXIT=1, baseline_suite and after_suite both completed:true failure_count 0, and evidence_inputs naming the test and the fragment.",
+    "write_paths": "the declared scope is reckon/worker_shims/git, reckon/host_shims/salloc, reckon/host_shims/sbatch, reckon/host_shims/srun, reckon/worker_git_shim.py, reckon/nested_launch.py, tests/test_a_shim_ignores_the_job_python_path.py, the fragment docs/evidence/fragments/a-worker-cannot-write-your-home/shims-ignore-the-job-python-path.html and its figures directory; git diff --name-only 9aa406abf..426f7fc74 lists exactly those files and nothing outside them."
+  },
+  "justifications": {
+    "durability": "the assertions are independent of the values they check \u2014 tests/test_a_shim_ignores_the_job_python_path.py:190-191 compares the child's recorded PYTHONPATH/PYTHONHOME against str(hostile), an independent constant the test created, and :187 asserts returncode 0 \u2014 and each names the code change that reddens it (restore the appended caller PYTHONPATH and the deep-import cases fail, as negative-control.log:152-156 shows on 3 cases); reduced for PYTHONSTARTUP and the dropped user site, which no case exercises.",
+    "evidence": "the gate is the plan's own test at tests/test_a_shim_ignores_the_job_python_path.py:165-251, its result is recorded rather than claimed \u2014 296 passed EXIT=0 at head (head-gate.log) against 292 passed EXIT=0 at base (base-gate.log), and the negative control 3 failed/1 passed EXIT=1 (negative-control.log) \u2014 and the added-failure pair is derived from those logs (both failure_count 0).",
+    "fit": "the shims keep the surrounding idiom (a comment explaining the mechanism, then the guarded exec), the bootstrap and caller_environment docstrings state the why in mechanism terms, and no plan, stage or ticket token enters any symbol, filename or comment; the one duplication (CALLER_PATH_ENV) is a reuse matter, not a naming one.",
+    "goal_fidelity": "reckon/worker_shims/git:44-65 and the three host shims start reckon's interpreter with PYTHONPATH=\"$repo_root\" plus -P -s and unset PYTHONPATH/PYTHONHOME/PYTHONSTARTUP, while caller_environment (reckon/worker_git_shim.py:96, reckon/nested_launch.py:77) restores them so the program the shim runs sees them unchanged; reduced one because the bootstrap at reckon/worker_shims/git:67 re-adds the caller's PYTHONPATH to the shim interpreter, so its path is not strictly reckon's root alone (FINDING).",
+    "reuse": "reckon/nested_launch.py:70-90 and reckon/worker_git_shim.py:89-108 define caller_environment and CALLER_PATH_ENV verbatim twice; both modules already import reckon/shim_lookup.py, the shared stdlib-only shim helper, which owns this kind of shim plumbing, and neither new definition extends it (searched reckon/ for an existing caller-environment restore and found only these two copies), so the change forks one capability across two owners.",
+    "scope_discipline": "git diff --name-only 9aa406abf..426f7fc74 lists reckon/worker_shims/git, reckon/host_shims/salloc, reckon/host_shims/sbatch, reckon/host_shims/srun, reckon/worker_git_shim.py, reckon/nested_launch.py, tests/test_a_shim_ignores_the_job_python_path.py and the fragment \u2014 every path inside the declared write paths, with no unrelated file touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that each of the four shims (reckon/worker_shims/git and reckon/host_shims/salloc, sbatch, srun) starts reckon's interpreter with only reckon's import root on its path, ignoring the caller's PYTHONPATH, PYTHONHOME and PYTHONSTARTUP and user site, while the program the shim finally runs still receives the caller's environment unchanged; at head each shim sets PYTHONPATH=\"$repo_root\", adds -P -s and unsets the three variables (reckon/worker_shims/git:44-65), and caller_environment restores them for the child (reckon/worker_git_shim.py:96, reckon/nested_launch.py:77), with the caller path re-appended to the shim interpreter after reckon's own packages (reckon/worker_shims/git:67, FINDING).\nVERDICT done_when: the done_when names a test running each shim with PYTHONPATH naming a temporary directory whose typing_extensions.py raises; tests/test_a_shim_ignores_the_job_python_path.py:165-251 does exactly that and records 4 passed; the manifest carries head 296 passed EXIT=0 (head-gate.log), base 292 passed EXIT=0 (base-gate.log), delta +4, and the negative control 3 failed/1 passed EXIT=1 (negative-control.log).\nVERDICT write_paths: the declared scope is reckon/worker_shims/git, the three host shims, reckon/worker_git_shim.py, reckon/nested_launch.py, tests/test_a_shim_ignores_the_job_python_path.py, the fragment docs/evidence/fragments/a-worker-cannot-write-your-home/shims-ignore-the-job-python-path.html and its figures directory; git diff --name-only 9aa406abf..426f7fc74 lists exactly those files and nothing outside them.\nVERDICT manifest: read; it records status complete, changed_paths matching the diff, tests 296 passed EXIT=0 head against 292 passed EXIT=0 base, negative_control_log named with note 3 failed/1 passed EXIT=1, baseline_suite and after_suite both completed:true failure_count 0, and evidence_inputs naming the test and the fragment.\nVERDICT diff: read commit by commit against base 9aa406abf; dd33cb740 starts reckon's interpreter with only its own import root in the four shims, and 426f7fc74 adds caller_environment to reckon/worker_git_shim.py:96 and reckon/nested_launch.py:77 to hand the caller's environment back, plus tests/test_a_shim_ignores_the_job_python_path.py and the evidence fragment; 8 files, 476 insertions, 10 deletions, all inside the declared scope.\nCALL_SITES: reckon/worker_shims/git:75, reckon/host_shims/salloc:75, reckon/host_shims/sbatch:75, reckon/host_shims/srun:75\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/worker_shims/git:44-65 and the three host shims start reckon's interpreter with PYTHONPATH=\"$repo_root\" plus -P -s and unset PYTHONPATH/PYTHONHOME/PYTHONSTARTUP, while caller_environment (reckon/worker_git_shim.py:96, reckon/nested_launch.py:77) restores them so the program the shim runs sees them unchanged; reduced one because the bootstrap at reckon/worker_shims/git:67 re-adds the caller's PYTHONPATH behind reckon's packages, so its path is not strictly reckon's root alone (FINDING).\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate is the plan's own test at tests/test_a_shim_ignores_the_job_python_path.py:165-251, its result recorded rather than claimed \u2014 296 passed EXIT=0 at head (head-gate.log) against 292 passed EXIT=0 at base (base-gate.log), and the negative control 3 failed/1 passed EXIT=1 (negative-control.log).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --name-only 9aa406abf..426f7fc74 lists the four shims, reckon/worker_git_shim.py, reckon/nested_launch.py, the new test and the fragment, every path inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_shim_ignores_the_job_python_path.py:190-191 compares the child's recorded PYTHONPATH/PYTHONHOME against str(hostile), an independent constant the test created, and negative-control.log:152-156 shows the deep-import cases red on 3 of 4 when the appended caller path is restored; reduced for PYTHONSTARTUP and the dropped user site, which no case exercises.\nSCORE fit: 17\nJUSTIFICATION fit: the shims keep the surrounding comment-then-exec idiom and the new symbols (CALLER_PATH_ENV, caller_environment, RECKON_SHIM_CALLER_*) are mechanism-named with no plan or ticket token (reckon/worker_git_shim.py:89-108).\nSCORE reuse: 8\nJUSTIFICATION reuse: reckon/nested_launch.py:70-90 and reckon/worker_git_shim.py:89-108 define caller_environment and CALLER_PATH_ENV verbatim twice, and both modules already import the shared stdlib-only reckon/shim_lookup.py without either new definition extending it (FINDING).\nFINDING reckon/nested_launch.py:70 follow-on: caller_environment and CALLER_PATH_ENV are copied verbatim from reckon/worker_git_shim.py:89-108 while both modules already import the shared reckon/shim_lookup.py, so the two copies must be kept in step by hand.\nFINDING reckon/worker_shims/git:67 follow-on: the bootstrap re-adds the caller's PYTHONPATH to the shim interpreter's sys.path after reckon's own packages, so the interpreter is not strictly reckon's import root alone and a caller-only module becomes importable inside the shim process.",
+  "review_run_id": "r-20261014T062831132920-review-of-shims-ignore-the-job-python-path-426f7fc74067",
+  "reviewed_base_sha": "9aa406abfd1fbb4f4f0afa47649f96b631499cef",
+  "reviewed_head_sha": "426f7fc7406788c4dc57cab29df92d413986bb53",
+  "reviewed_run_id": "r-20261014T053146521230-shims-ignore-the-job-python-path",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 8,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T06:36:00.000000+00:00",
+  "total": 98
+}
