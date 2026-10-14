@@ -24,7 +24,7 @@
   <title>A Held Dispatch Waits Its Fair Turn | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="99">
+<meta name="plan-version" content="100">
 <meta name="plan-modified" content="2026-10-14">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="3c837fc1">
@@ -373,7 +373,10 @@
     <div class="r-comment-body"><p>Independent review of r-20261014T011947963819-a-queued-plan-review-is-stored stored: six dimensions scored (goal_fidelity 20, evidence 17, scope_discipline 20, durability 19, fit 19, reuse 20; total 115), reviewed_base_sha 780980785f6770a32e16fe594e60690a0c36f896 and reviewed_head_sha 209216f5da241bcca4f0ae230a68fd2f142fba07 recorded, two follow-on findings (self-referential stored review_run_id assertion at tests/test_a_queued_plan_review_is_stored.py:248; reviewed manifest names after_suite with no baseline_suite at manifest.md:15), no blocking finding.</p></div>
 </div>
 <div class="r-comment" data-section="s15" data-id="c-run-r-20261014T011947963819-a-queued-plan-review-is-stored" data-who="reckon-build" data-when="2026-10-14T01:54:08.910Z">
-    <div class="r-comment-body"><p>Admission now joins a queued plan review&#x27;s launched run into its composed dispatch.json, so promotion stores the delivered report with times taken from the launched run; gate tests/test_a_queued_plan_review_is_stored.py 2 passed (EXIT=0), negative control 1 failed (EXIT=1).</p></div>
+    <div class="r-comment-body"><p>Admission now joins a queued plan review's launched run into its composed dispatch.json, so promotion stores the delivered report with times taken from the launched run; gate tests/test_a_queued_plan_review_is_stored.py 2 passed (EXIT=0), negative control 1 failed (EXIT=1).</p></div>
+</div>
+<div class="r-comment" data-section="s15" data-id="c-close-s15" data-who="reckon-build" data-when="2026-10-14T02:25:00Z">
+    <div class="r-comment-body"><p>§15 landed. A plan review that queued and was launched later is now joined to its launched run at admission, so promotion stores it with that run's times, and no later dispatch has to sweep it up. Merged <code>209216f5d</code> as <code>ef4079795</code>; the gate replayed green there. Population: 174 to 176 passed, 0 added. Review: 115. This removes the hand step of running <code>store_delivered_reviews</code> after a queued plan review delivers, once the admit service runs the new code. <a href="/reckon/evidence/archive/a-held-dispatch-waits-its-fair-turn-landed.html#s15-queued-review-stored">evidence</a></p></div>
 </div>
 </section>
 </main>
