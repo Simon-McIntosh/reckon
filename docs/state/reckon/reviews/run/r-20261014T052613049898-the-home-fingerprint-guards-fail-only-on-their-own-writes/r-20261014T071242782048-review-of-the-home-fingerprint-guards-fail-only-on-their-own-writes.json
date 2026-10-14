@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "8a3f394a3f580bad658b52842738b6a4b8b03f17",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-14T07:28:18.349Z",
+  "dispatched_at": "2026-10-14T07:13:22Z",
+  "findings": [
+    {
+      "file": "tests/test_ledger.py",
+      "line": "3149",
+      "severity": "follow-on",
+      "text": "follow-on: `_real_store_traces` is added here and again, near-verbatim, at tests/test_run_store.py:205 (everything but the docstring's first line is identical), so the store-search adapter has two owners and a change to one leaves the other stale."
+    },
+    {
+      "file": "tests/test_a_foreign_pid_never_reads_dead.py",
+      "line": "85",
+      "severity": "follow-on",
+      "text": "follow-on: the migration narrows the guard from the whole real home's top-level name+mtime listing to crew/live and crew/watch filtered by the module's run ids, so a leak into another crew sub-tree (crew/runs, crew/reports) or into docs/state is no longer observed by these six guards."
+    }
+  ],
+  "head_log_revision": "98a858a2be5dd241f95985d3272ebbf2ec713f53",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against base 8a3f394a -- five commits replace the copied `_home_fingerprint`, the store existence checks and the decoded-text search, and tests/real_home_traces.py:25 reads bytes once per file.",
+    "done_when": "all five clauses hold -- `_home_fingerprint` is absent from tests/ at fc6c679a (six modules carried it at base 8a3f394a), each of the nine guards calls traces_naming with a module-minted needle, the four test_run_store.py:205 and five test_ledger.py:3149 store checks assert `_real_store_traces(...) == []` on a written run id, arm_base.log:1 and arm_head.log:1 log revision, command, EXIT=0 and the real home 27/27 top-level entries, and negative_control.log carries the runner's FAILED line and EXIT=1.",
+    "goal": "The node goal is that the nine real-home snapshot guards the census re-check confirmed now fail only on a trace their own test minted; the diff migrates all nine listed modules onto tests/real_home_traces.py:42 with a needle each mints.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T052613049898-the-home-fingerprint-guards-fail-only-on-their-own-writes/manifest.md; it records 168 passed EXIT=0 at base and 168 passed EXIT=0 at head over the nine modules, 401 passed EXIT=0 over all 36 importers, and the negative control 1 failed EXIT=1, all reconciling with the logs, and it is transparent that arm_head.log ran at f3988705 before the audit repairs at 98a858a2.",
+    "write_paths": "the manifest declares the nine modules, tests/real_home_traces.py, the fragment and a figure path; the diff of 11 files (base 8a3f394a..fc6c679a) touches exactly the nine modules, tests/real_home_traces.py:25-85 and the fragment, and the figure path is unused."
+  },
+  "justifications": {
+    "durability": "negative_control.log shows tests/test_run_store.py:281 failing on a trace the test wrote, so the assertions are independent of the value under test, but the control exercises one of nine guards and six modules narrow their watch set to crew/live and crew/watch.",
+    "evidence": "arm_base.log:1 and arm_head.log:1 name revision, command and EXIT=0 with the real home at 27/27 entries, and negative_control.log carries a FAILED line and EXIT=1, and added_failure_count derived from those logs is 0.",
+    "fit": "tests/test_a_foreign_pid_never_reads_dead.py:85 and its siblings use a module-level NEEDLE_RUN_IDS tuple and a private _real_home_traces wrapper matching the surrounding test idiom, with no plan label or version name.",
+    "goal_fidelity": "tests/test_run_store.py:205 and tests/test_ledger.py:3149 search an id the case writes, and tests/real_home_traces.py:66-84 reports only a file whose name or bytes carry a minted needle, so the nine guards fail only on their own trace.",
+    "reuse": "every migrated guard extends the single owner tests/real_home_traces.py:42 rather than forking a search, but _real_store_traces is added as a near-identical wrapper in two modules.",
+    "scope_discipline": "every path in the diff sits inside the manifest's declared write paths, but the declared figure path docs/figures/the-suite-tests-behaviour/... is unused."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is that the nine real-home snapshot guards the census re-check confirmed now fail only on a trace their own test minted; the diff migrates all nine listed modules onto tests/real_home_traces.py:42 with a needle each mints.\nVERDICT done_when: all five clauses hold -- `_home_fingerprint` is absent from tests/ at fc6c679a (six modules carried it at base 8a3f394a), each of the nine guards calls traces_naming with a module-minted needle, the four test_run_store.py:205 and five test_ledger.py:3149 store checks assert `_real_store_traces(...) == []` on a written run id, arm_base.log:1 and arm_head.log:1 log revision, command, EXIT=0 and the real home 27/27 top-level entries, and negative_control.log carries the runner's FAILED line and EXIT=1.\nVERDICT write_paths: the manifest declares the nine modules, tests/real_home_traces.py, the fragment and a figure path; the diff of 11 files (base 8a3f394a..fc6c679a) touches exactly the nine modules, tests/real_home_traces.py:25-85 and the fragment, and the figure path is unused.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T052613049898-the-home-fingerprint-guards-fail-only-on-their-own-writes/manifest.md; it records 168 passed EXIT=0 at base and 168 passed EXIT=0 at head over the nine modules, 401 passed EXIT=0 over all 36 importers, and the negative control 1 failed EXIT=1, all reconciling with the logs, and it is transparent that arm_head.log ran at f3988705 before the audit repairs at 98a858a2.\nVERDICT diff: read commit by commit against base 8a3f394a -- five commits replace the copied `_home_fingerprint`, the store existence checks and the decoded-text search, and tests/real_home_traces.py:25 reads bytes once per file.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_run_store.py:205 and tests/test_ledger.py:3149 search an id the case writes, and tests/real_home_traces.py:66-84 reports only a file whose name or bytes carry a minted needle, so the nine guards fail only on their own trace.\nSCORE evidence: 19\nJUSTIFICATION evidence: arm_base.log:1 and arm_head.log:1 name revision, command and EXIT=0 with the real home at 27/27 entries, and negative_control.log carries a FAILED line and EXIT=1, and added_failure_count derived from those logs is 0.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every path in the diff sits inside the manifest's declared write paths, but the declared figure path docs/figures/the-suite-tests-behaviour/... is unused.\nSCORE durability: 17\nJUSTIFICATION durability: negative_control.log shows tests/test_run_store.py:281 failing on a trace the test wrote, so the assertions are independent of the value under test, but the control exercises one of nine guards and six modules narrow their watch set to crew/live and crew/watch.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_a_foreign_pid_never_reads_dead.py:85 and its siblings use a module-level NEEDLE_RUN_IDS tuple and a private _real_home_traces wrapper matching the surrounding test idiom, with no plan label or version name.\nSCORE reuse: 17\nJUSTIFICATION reuse: every migrated guard extends the single owner tests/real_home_traces.py:42 rather than forking a search, but _real_store_traces is added as a near-identical wrapper in two modules.\nFINDING tests/test_ledger.py:3149 follow-on: `_real_store_traces` is added here and again, near-verbatim, at tests/test_run_store.py:205 (everything but the docstring's first line is identical), so the store-search adapter has two owners and a change to one leaves the other stale.\nFINDING tests/test_a_foreign_pid_never_reads_dead.py:85 follow-on: the migration narrows the guard from the whole real home's top-level name+mtime listing to crew/live and crew/watch filtered by the module's run ids, so a leak into another crew sub-tree (crew/runs, crew/reports) or into docs/state is no longer observed by these six guards.",
+  "review_run_id": "r-20261014T071242782048-review-of-the-home-fingerprint-guards-fail-only-on-their-own-writes",
+  "reviewed_base_sha": "8a3f394a3f580bad658b52842738b6a4b8b03f17",
+  "reviewed_head_sha": "fc6c679a0a7b4d25e9c215209264467091d2d239",
+  "reviewed_run_id": "r-20261014T052613049898-the-home-fingerprint-guards-fail-only-on-their-own-writes",
+  "reviewer": "review-of-the-home-fingerprint-guards-fail-only-on-their-own-writes",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T07:20:00.000000+00:00",
+  "total": 108
+}
