@@ -20,13 +20,13 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;a-run-has-one-live-writer#s2&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;a-run-has-one-live-writer#s2&quot;], &quot;s4&quot;: [&quot;a-run-has-one-live-writer#s3&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
   <title>A Run Has One Live Writer | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="7">
-<meta name="plan-modified" content="2026-10-13">
+<meta name="plan-version" content="9">
+<meta name="plan-modified" content="2026-10-14">
 </head>
 <body>
   <main class="plan-doc">
@@ -98,6 +98,21 @@
     <p>The negative control, which restores the cause the reproduction named, fails the reproduced case. It is logged under the run directory. The test files that import <code>resumption</code> or <code>dispatch_sessions</code> show no added failure against base.</p>
     <p>Write paths: <code>reckon/crew/resumption.py</code>, <code>reckon/crew/dispatch_sessions.py</code>, <code>tests/test_resume_refuses_a_live_worker.py</code>, <code>tests/test_resume_sweep_needs_an_observed_death.py</code>. It runs after §2, which also writes <code>dispatch_sessions.py</code>.</p>
     
+  <h2 id="s4">§4 — A resumed worker is not ended as a delivery it has not made</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> The launch supervisor ends a worker once its delivery is on disk. <code>_reap_worker_on_its_terminal_manifest</code> in <code>reckon/crew/dispatch_launch.py</code> sends SIGTERM, and SIGKILL after a grace, once the manifest reads a status in <code>_WORKER_DONE_MANIFEST_STATUSES</code> (<code>complete</code> or <code>failed</code>), is whole, was written after the attempt's baseline (<code>_supervisor_manifest_baseline_ns</code>), and has rested past the quiet period. The baseline discounts a manifest written before the attempt began. It does not discount a done status the previous attempt left on disk. A resumed worker inherits that word, so its first edit to any other field of the manifest makes the stale <code>complete</code> fresh, and the supervisor ends it as delivered.</p>
+<p>Measured on 2026-10-14. Run <code>r-20261014T022831463134-overlapping-queued-requests-launch-in-turn</code> delivered with <code>status: complete</code> and was resumed with repair advice. At 03:03:38Z the worker corrected its <code>landing:</code> line and left the status word alone. Slurm then recorded step <code>1281970.2854</code> as <code>CANCELLED</code> with exit code <code>0:9</code> at 03:08:42Z, while the worker waited on its importer population with the repair uncommitted. The run's exit record read exit 0, no signal, last record <code>tool_progress</code>. Nothing in <code>reckon/crew/resumption.py</code> resets the status word, and the exposure is wide. Every path that resumes a run whose manifest reads complete or failed is exposed: the coordinator's <code>crew resume</code>, the repair reflex resuming a delivered worker on a blocking review finding (<code>recovery_repair_dispatch.py</code>, through <code>resumption._resume</code>), the sweep's auto-resume (<code>resumption.py</code>, through <code>_resume</code>), the MCP resume action in <code>reckon/mcp.py</code>, and a lane change (<code>change_lane</code> in <code>reckon/crew/dispatch_sessions.py</code>). reckon-cd's resume of a-held-dispatch-waits-its-fair-turn §15 at 01:43Z the same day survived only because its worker left the manifest alone until it had finished. The coordinators' current workaround is <code>crew repair-status --status blocked</code> before every resume, because <code>blocked</code> is not in the reaper's done set.</p>
+<p><strong>Deliverable.</strong> Before a resumed or relaunched worker is spawned, a manifest whose status is in the reaper's done set has its status word set to <code>in-progress</code>. That is a recognised non-terminal status (<code>NON_TERMINAL_MANIFEST_STATUSES</code> in <code>reckon/crew/reports.py</code>), so the reaper ignores the worker's interim edits and the classifier reads the run as working, not unreadable. The replaced manifest is kept beside it under a name carrying the attempt it came from, so an earlier copy, such as <code>repair-status</code>'s <code>manifest.md.asdelivered</code>, is never overwritten. Only a done status the new attempt writes counts as its delivery. The reset is one function in <code>reckon/crew/resumption.py</code>. Two launch functions call it: <code>_resume</code>, which serves the sweep and the repair reflex, and <code>change_lane</code>. The CLI <code>crew resume</code> in <code>reckon/crew_run_commands.py</code> and the MCP resume action in <code>reckon/mcp.py</code> today copy <code>_resume</code>'s launch steps (prompt write, baseline read, gate check, spawn, <code>record_resumption</code>). They call <code>_resume</code> instead, with their exit codes and payloads unchanged, so the reset has two callers rather than four. A manifest whose status is not in the done set, such as <code>blocked</code>, <code>waiting</code> or <code>in-progress</code>, is left as it is.</p>
+<p><strong>Done when</strong> <code>tests/test_a_resumed_worker_is_not_ended_as_delivered.py</code> passes, logged under the run directory with the literal command, its revision and an <code>EXIT=0</code> line, with these cases:</p>
+<ul>
+<li>A run whose manifest reads <code>complete</code> is resumed through the <code>crew resume</code> command, with a stub worker that edits a non-status manifest field and keeps running. The test shortens the quiet period and grace through their environment variables. The supervisor does not signal the stub within the shortened quiet period plus grace. The manifest reads <code>in-progress</code>, and the attempt-named copy holds the delivered manifest.</li>
+<li>The same holds for a resume through <code>_resume</code>, as the sweep and the repair reflex call it, and through <code>change_lane</code>.</li>
+<li>A resumed stub that writes <code>complete</code> is still ended as delivered once the quiet period passes.</li>
+<li>A run whose manifest reads <code>blocked</code> keeps that word through the resume.</li>
+<li>While the stub works, the <code>live</code> view classifies the run as running.</li>
+</ul>
+<p>The negative control is executed and logged under the run directory with the runner's own <code>FAILED</code> line and a non-zero <code>EXIT</code>: with the reset removed, the first case fails, and the stub is signalled. The test files importing <code>reckon/crew/resumption.py</code>, <code>reckon/crew/dispatch_sessions.py</code> or <code>reckon/crew_run_commands.py</code> show no added failure against base. Write paths: <code>reckon/crew/resumption.py</code>, <code>reckon/crew/dispatch_sessions.py</code>, <code>reckon/crew_run_commands.py</code>, <code>reckon/mcp.py</code>, <code>tests/test_a_resumed_worker_is_not_ended_as_delivered.py</code>. This section runs after §2 and §3, which also write <code>resumption.py</code> and <code>dispatch_sessions.py</code>.</p>
+
   <section data-reckon="gates" id="gates" class="r-gates">
 <h2><span class="sec">§</span> Evidence gates</h2>
 <div class="r-gate" data-id="g-arholw-routing-released" data-section="s2" data-gated-sections="s2" data-status="closed" data-verdict="passed">
@@ -110,6 +125,14 @@
 <div class="r-comment" data-section="s3" data-id="c-s3-double-sweep-resume-1013" data-who="reckon-build (health-review-1010)" data-when="2026-10-13T03:52:00Z">
     <div class="r-comment-body"><p>A third instance, reported by nova on 2026-10-12. Run <code>r-20261012T143631303990-exterior-fixture-delegation</code> (clive) had its wait on H200 job 1283901 lift at COMPLETED. At about 15:16Z two supervisors started within the same second. One was 3987233, which the pointer tracks as attempt 3; the other was 3987234, which nothing tracked. Each launched its own claude worker (3990557 and 3990556) in the same worktree. The event before it read "wait-key defect: this declaration already lifted the run and has come back", which suggests the wait-lift path and the wait-aged path both resumed the run. The clive lane has no thread-store lock like codex's, so nothing refused the second. nova ended the untracked tree by pid after about 15 s, with no stray edits. This section's liveness check must therefore cover the sweep's own two resume paths, under one per-run launch lock taken before spawning, not only a coordinator's <code>crew resume</code>.</p></div>
 </div>
+</section>
+<section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-arolw-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="health-review-1010" data-written-at="2026-10-14" data-recommends-skill="/reckon-build a-run-has-one-live-writer §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §2, then §3, then §4</h4>
+    <div class="r-fu-body"><p>The three open sections share <code>reckon/crew/resumption.py</code> and <code>reckon/crew/dispatch_sessions.py</code>, so they run in order: §2 (a worker never outlives its supervisor), then §3 (a resume never launches beside a live attempt), then §4 (a resumed worker is not ended as a delivery it has not made). The S26 builder builds them. Until §4 lands, run <code>crew repair-status --status blocked</code> before resuming a run whose manifest reads complete.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-run-has-one-live-writer §2</pre>
+    </article>
 </section>
 </main>
 </body>
