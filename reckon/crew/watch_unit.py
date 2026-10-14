@@ -378,6 +378,58 @@ def _arm_watcher_as_process(project: str) -> Mapping[str, Any]:
     return _ensure_watch_producer(project)
 
 
+# The interval between the two restart count readings ``ensure`` takes of a
+# unit it found already active, in seconds. It is longer than the fastest cycle
+# a producer unit has been measured at, so a unit cycling that fast cannot read
+# the same count on both readings. A cycle slower than this can, and is not
+# claimed here.
+WATCH_RESTART_SAMPLE_INTERVAL = 10.0
+
+
+def _read_unit_restart_count(manager: Any, project: str) -> int | None:
+    """Read a unit's restart count through the manager, if it can answer.
+
+    A manager with no reader leaves the count unknown rather than reporting a
+    zero, which is what keeps a test double written before the property existed
+    from reading as a unit that has never restarted.
+    """
+    reader = getattr(manager, "restart_count", None)
+    if reader is None:
+        return None
+    try:
+        value = reader(project)
+    except (RuntimeError, OSError, ValueError, TypeError):
+        return None
+    if isinstance(value, bool) or not isinstance(value, int):
+        return None
+    return value
+
+
+def _unit_restart_readings(
+    manager: Any,
+    project: str,
+    *,
+    sleeper: Callable[[float], None],
+    interval: float = WATCH_RESTART_SAMPLE_INTERVAL,
+) -> tuple[bool, int | None, int | None]:
+    """Take two restart-count readings a sample interval apart.
+
+    Returns whether the count rose between them, with both readings. A first
+    count the manager cannot read ends the sample before the interval is spent:
+    there is nothing to compare, and waiting for a second unreadable reading
+    would cost the wait for no answer. A count unreadable only on the second
+    reading is reported as not rising, because a missing reading is neither
+    evidence of a healthy unit nor of a cycling one.
+    """
+    before = _read_unit_restart_count(manager, project)
+    if before is None:
+        return False, None, None
+    sleeper(interval)
+    after = _read_unit_restart_count(manager, project)
+    rising = after is not None and after > before
+    return rising, before, after
+
+
 def ensure_watcher_service(
     project: str,
     *,
@@ -385,6 +437,7 @@ def ensure_watcher_service(
     config: Mapping[str, Any] | None = None,
     restart: bool = False,
     producer: Callable[[str], Mapping[str, Any]] | None = None,
+    sleeper: Callable[[float], None] | None = None,
 ) -> dict[str, Any]:
     """Start or restart a project's watcher as an idempotent user service.
 
@@ -413,6 +466,16 @@ def ensure_watcher_service(
     The fallback is deliberately narrow — a unit the manager refused on its
     merits still raises — and ``producer`` is the seam that lets a caller supply
     a process arming, so a test exercises this path without starting a watcher.
+
+    A unit found already active on an unchanged definition is additionally
+    sampled: its restart count is read twice a sample interval apart, and a count
+    that rose between the readings is reported as cycling rather than as healthy,
+    with both readings. This is the fault a person is told a live watcher has
+    while systemd is restarting it under them; the count is read through
+    ``manager`` so the watch module does not become a second systemd client, and
+    ``sleeper`` is the seam that lets a test supply the interval instead of
+    waiting it out. A unit this call starts is not sampled, because a fresh count
+    says nothing about a cycle the next dispatch would see.
     """
     from reckon import flight, service
 
@@ -481,8 +544,25 @@ def ensure_watcher_service(
             producer=producer or _arm_watcher_as_process,
         )
 
+    cycling = False
+    restart_before: int | None = None
+    restart_after: int | None = None
+    if not start_required:
+        # Only an already-active, unchanged unit is sampled. A unit this call
+        # just started has a fresh count that says nothing about a cycle the
+        # next dispatch would see, and the reading costs the sample interval.
+        cycling, restart_before, restart_after = _unit_restart_readings(
+            service_manager, project, sleeper=sleeper or time.sleep
+        )
+
     registration = _register_watch_unit(project, watch_unit_name(project))
-    if start_required:
+    if cycling:
+        detail = (
+            f"{watch_unit_name(project)} is cycling: its restart count rose from "
+            f"{restart_before} to {restart_after} over "
+            f"{WATCH_RESTART_SAMPLE_INTERVAL:g}s"
+        )
+    elif start_required:
         detail = (
             f"restarted {watch_unit_name(project)} onto a rewritten unit"
             if changed and was_active
@@ -501,6 +581,9 @@ def ensure_watcher_service(
         "service_active": was_active or start_required,
         "started": start_required,
         "detail": detail,
+        "cycling": cycling,
+        "restart_count_before": restart_before,
+        "restart_count_after": restart_after,
         "environment": environment,
         "lingering": lingering,
         "registration": registration,
@@ -558,6 +641,9 @@ def _watcher_armed_as_process(
         "unit_changed": bool(unit_changed),
         "service_active": False,
         "started": live,
+        "cycling": False,
+        "restart_count_before": None,
+        "restart_count_after": None,
         "detail": (
             f"{cause} ({reason}); "
             + (

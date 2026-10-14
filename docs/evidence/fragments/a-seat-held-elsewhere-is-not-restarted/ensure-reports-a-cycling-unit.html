@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-seat-held-elsewhere-is-not-restarted">
+  <meta name="plan-evidence-for" content="a-seat-held-elsewhere-is-not-restarted">
+  <title>A cycling unit is reported as cycling | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <section id="ensure-reports-a-cycling-unit-landing">
+      <h2>A cycling unit is reported as cycling</h2>
+      <p><code>reckon crew watch --ensure</code> now reads the watcher unit's restart count twice a sample interval apart, through <code>SystemdUserUnitManager.restart_count</code> reached by the <code>manager</code>
+      seam with an injected <code>sleeper</code>, and reports a unit whose count rose as cycling with both readings rather than as already active on an unchanged unit. <code>reckon/crew/watch_unit.py</code>
+      adds <code>WATCH_RESTART_SAMPLE_INTERVAL</code> (10&nbsp;s, longer than the 6.7&nbsp;s cycle measured in §1) and samples only a unit found already active on an unchanged definition;
+      <code>reckon/service.py</code> adds the <code>NRestarts</code> property reader beside <code>active()</code>. Measure: <code>tests/test_ensure_reports_a_cycling_unit.py</code> &mdash; 3 passed, a rising count
+      reported as cycling with both counts and a held count reported as before, no real <code>systemctl</code> reached. Gate: the ten test files importing the changed modules are 60 passed with one
+      pre-existing reaper error at head, against 57 passed with the same error at base; no failure at head is absent at base.</p>
+    </section>
+  </main>
+</body>
+</html>
