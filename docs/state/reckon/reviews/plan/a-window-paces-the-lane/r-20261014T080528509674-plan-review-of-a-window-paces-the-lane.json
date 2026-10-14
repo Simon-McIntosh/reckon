@@ -1,0 +1,64 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-14T08:27:55.842Z",
+  "dispatched_at": "2026-10-14T08:13:09Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-window-paces-the-lane.html:1990",
+      "id": "done_when-1",
+      "reason": "",
+      "text": "\u2014 the done-when says \"the existing `tests/test_a_lift_survives_reset_jitter.py` still passes\", but the deliverable replaces the measured-jitter tolerance, and that test asserts the exact behaviour",
+      "type": "done_when",
+      "would_change": null
+    },
+    {
+      "anchor": "docs/plans/a-window-paces-the-lane.html:1990",
+      "id": "reasoning-1",
+      "reason": "the done-when must state that each reading reaches `end_cause`/`lift_watch.sweep` in its own call as `published_readings` returns a one-element list (reckon/crew/budget_lift.py:219), otherwise a node that takes \"alternating\" literally writes a test whose positive case and control both measure nothing.",
+      "text": "the done-when's positive case feeds \"Readings alternating between that stamp and 04:59:38\" and asserts they leave the lift in force, and the negative control restores the measured-jitter threshold and asserts \"the 82-second drift must then end the lift\"; but the jitter is the spread the history carries, so the two halves pull against the sequence length. Reproduced against the worktree: with a single drifted reading `_reset_observed` is True and with two readings `[04:58:15, 04:59:38]` it is True (history holds only the old stamp, jitter 1 s), but with four alternating readings `[04:58:15, 04:59:38, 04:58:15, 04:59:38]` it is False, because the history now carries the drifted stamp and the measured jitter is 83 s, which already exceeds the 82-second move. If the node builds the \"alternating\" sequence as one list of more than two readings, the unfixed code already leaves the lift in force (the positive assertion passes on code the fix never touched) and the restored-jitter control does not redden (the reason the control exists is lost).",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "7c8e70f2dac8a701a4c9fc702780d1959145298582644414bfbc6ef1fdece68a",
+  "plan_slug": "a-window-paces-the-lane",
+  "plan_version": 217,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261014T080528509674-plan-review-of-a-window-paces-the-lane",
+  "reviewed_blob_sha": "ac0947b405ef499c269743e307fc85a9e61d750c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_reset_*observed*`/`_stamp_moved_past_jitter` (reckon/crew/budget_lift.py:802/842), `WINDOW_MINUTES_CLOCK` (reckon/budget.py:3368), `end_cause`, `lift_watch.sweep`, and the stream rows all resolve; stream rows 44809\u201344811 are the three `lift ended: cause reset` rows at 07:21:15Z and rows 44813\u201344815 the three `lift granted` rows at 07:22:11Z, exactly 56 s later.",
+    "done_when": "a finding \u2014 \u00a716's done-when requires `tests/test_a_lift_survives_reset_jitter.py` to still pass, but the deliverable changes the tolerance that test pins, and the file is outside \u00a716's write paths.",
+    "evidence_paths": "pass \u2014 the write paths are repo files (`reckon/crew/budget_lift.py`, `tests/test_a_reset_moves_the_window.py`) and the control log sits under the crew run directory, not a scratchpad.",
+    "naming": "pass \u2014 the changed and new files carry no plan labels, stage names, ticket numbers or version tags.",
+    "reasoning": "a finding \u2014 the done-when's alternating readings, if handed to `end_cause` as one list, leave the lift in force on the unfixed code too, so both the positive assertion and the control stop measuring the change.",
+    "single_goal": "pass \u2014 \u00a716 carries one deliverable, the half-window stamp threshold, with the two utilisation signals explicitly unchanged.",
+    "wiring": "pass \u2014 the plan declares `plan-informs=\"background-agent-fitness-and-dispatch-scope\"`, which resolves to docs/plans/background-agent-fitness-and-dispatch-scope.html, and \u00a716 declares no depends-on/gates edge that would point anywhere."
+  },
+  "section_digests": {
+    "_document": "fda3b02b7cdf1aaf51dcc28b302e76dbfa5532ff457c61b6cacd4458d68c0b30",
+    "s1": "fd232b0e9e301983eea254fa355a00f9cfdad5e4ba397415c196946997e8b78a",
+    "s10": "cff30d466dd7580b4623ab4ba85a967692183d1c1fbf0a887b817140c3fe2bf9",
+    "s11": "4f344761a1c7f9eeda684c28b5399f6cc6c50a6961808244c50f4f385a8dfb83",
+    "s12": "d332f915a715e0ce7c1efdd5027285714154977800a9ec70d7b055bf5762609f",
+    "s13": "627916281462553dd6f077d4f3ad0d176f2e5177a66b12b43e0c6d7b6788b3d7",
+    "s14": "5c54d28fac7106fc49f1eb45cc396fb761556bbd5ae16f469c6cf14cdd342fc8",
+    "s15": "5acca22c78776d5b829195bb01b2c5d660f4787c61cd3b04e511e66046bc7cf0",
+    "s16": "c16cd005b4320f18948c1cfca6d4864267387d441aa3af6666c0d85a4edb147c",
+    "s2": "0c4f642bff7cb6b87908ea9e036cb3161c15e31cb3285273e06bb2ac1f5c368c",
+    "s3": "ae3d7625321a46e7fa6a9ee3bac0272ee77d236811612140ef03b79670883261",
+    "s4": "8f3ac850d09e4745435c5274237c26be090ce2db03ac422e941c3329841d8563",
+    "s5": "3bc104a16d90fb6279e9ab8c70555e1041253ad31f6376c64b455da33489c6b0",
+    "s5b": "1be686d2a1165f13c4f4e81a29ca56c362c3b069dfc80759cf370cca59440d41",
+    "s6": "8e4ab80a317b73fb60010fe92858cbe3b073511ce10c4547c6eb8952a89829f0",
+    "s6-the-probe-reader-and-the-undeclared-dialect": "c463be6993bc79b07591a01d9e1a1d92d699a48d4c322b2cc395a0e78a2d097d",
+    "s7": "39b7111a3bfa256531f953bd33de123967e24fa4ffc75e6d1cbeca26a45c565d",
+    "s8": "9d68431496117798ca30bbebd6828adc5853e02df969ac62de3bb2dcd41512a4",
+    "s9": "5f72c27f2288b837b6513304ec92d0bf2e8950d169b0389c4c3ffeba27c23b6b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T08:31:16.837833+00:00"
+}
