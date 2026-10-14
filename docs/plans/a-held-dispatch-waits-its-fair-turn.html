@@ -24,7 +24,7 @@
   <title>A Held Dispatch Waits Its Fair Turn | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="101">
+<meta name="plan-version" content="102">
 <meta name="plan-modified" content="2026-10-14">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="3c837fc1">
@@ -371,6 +371,9 @@
 </div>
 <div class="r-comment" data-section="s18" data-id="c-run-r-20261014T031032408948-review-of-overlapping-queued-requests-launch-in-turn-8f3b5d7cf244" data-who="reckon-build" data-when="2026-10-14T03:23:33.066Z">
     <div class="r-comment-body"><p>Reviewed r-20261014T022831463134-overlapping-queued-requests-launch-in-turn at head 8f3b5d7cf244: goal_fidelity 20, evidence 17, scope_discipline 20, durability 19, fit 19, reuse 18 (total 113), with two follow-on findings and no blocking finding; the record names reviewed_base_sha 36540240a and reviewed_head_sha 8f3b5d7cf244 and carries added_failure_count and added_failure_ids.</p></div>
+</div>
+<div class="r-comment" data-section="s18" data-id="c-run-r-20261014T022831463134-overlapping-queued-requests-launch-in-turn" data-who="reckon-build" data-when="2026-10-14T03:28:57.531Z">
+    <div class="r-comment-body"><p>§18 landed: claim_disposition reads a queued pointer as non-binding so a queued claim refuses nothing and the dispatch scope check and crew scopes view agree, and admit_once holds a later-ranked overlapping queued request behind an earlier-ranked one, in the same repository, resolved through the claim module&#x27;s own resolver, until it has been queued longer than STARVATION_AGE_SECONDS.</p></div>
 </div>
 <div class="r-comment" data-section="s15" data-id="c-run-r-20261014T015510941732-review-of-a-queued-plan-review-is-stored-209216f5da24" data-who="reckon-build" data-when="2026-10-14T02:11:04.521Z">
     <div class="r-comment-body"><p>Independent review of r-20261014T011947963819-a-queued-plan-review-is-stored stored: six dimensions scored (goal_fidelity 20, evidence 17, scope_discipline 20, durability 19, fit 19, reuse 20; total 115), reviewed_base_sha 780980785f6770a32e16fe594e60690a0c36f896 and reviewed_head_sha 209216f5da241bcca4f0ae230a68fd2f142fba07 recorded, two follow-on findings (self-referential stored review_run_id assertion at tests/test_a_queued_plan_review_is_stored.py:248; reviewed manifest names after_suite with no baseline_suite at manifest.md:15), no blocking finding.</p></div>
