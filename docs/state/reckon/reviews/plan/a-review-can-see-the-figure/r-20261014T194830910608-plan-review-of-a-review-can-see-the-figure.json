@@ -1,0 +1,63 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-14T20:00:55.984Z",
+  "dispatched_at": "2026-10-14T19:49:04Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-review-can-see-the-figure.html:215",
+      "id": "done_when-1",
+      "reason": "the two guards the change introduced are exactly the ones with no falsifier, so they could be absent or inverted and the stated gate would still pass; the plan should extend the control (or add one) to the images passed at the resume and lane-change call sites.",
+      "text": "\u00a76's done-when adds a resume case (case 3) and a lane-change case (case 4) and rests its \"a figure run that is resumed or moved to another lane never loses its figures\" claim on them, but the one declared negative control \u2014 \"drops the images at the dispatch call\" \u2014 mutates only the fresh-dispatch site in `reckon/crew/dispatch.py`; the resume and lane-change paths read images from the run's record and pass them at their own `launch_plan` calls in `reckon/crew/dispatch_sessions.py`, so that single mutation leaves cases 3 and 4 green and their guards unproven",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "f396fa50ee72561d1a946ae599c4fdf6e43635b2b1a36b2ff71458a04db307a9",
+  "plan_slug": "a-review-can-see-the-figure",
+  "plan_version": 16,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "67139f13-acc5-4116-8e4d-ecb63acaac2c",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-14T20:01:04.758484+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "67139f13-acc5-4116-8e4d-ecb63acaac2c",
+      "reason": "",
+      "when": "2026-10-14T20:01:04.758484+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-review-can-see-the-figure.v16.json",
+  "review_run_id": "r-20261014T194830910608-plan-review-of-a-review-can-see-the-figure",
+  "reviewed_blob_sha": "349bcaa055e24505391e0df603c1bab9928a409b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every file \u00a76 names resolves (`reckon/crew/node.py`, `reckon/crew/dispatch.py`, `reckon/crew/dispatch_sessions.py` holding both `resume_plan` and `change_lane`, `reckon/crew_dispatch_commands.py`); the earlier line-number anchor to `dispatch.py:1578` is gone, and the only remaining anchor in the plan (`reckon/_backends.py:1220`) resolves to the codex `exec` argv.",
+    "done_when": "a finding \u2014 the declared negative control mutates only the fresh-dispatch call, so it cannot redden the resume and lane-change cases the change added.",
+    "evidence_paths": "pass \u2014 the negative-control log and the \u00a77/\u00a78 reports are named under the durable run directory, not a session scratchpad or a node-local path.",
+    "naming": "pass \u2014 \u00a76 carries no plan labels, ticket numbers, stage names or changelog prose.",
+    "reasoning": "pass \u2014 \u00a76's \"Why\" state matches the code (the dispatch at `reckon/crew/dispatch.py:1833` calls `launch_plan` with no images), the mechanism is feasible (the record persists `node.as_dict()` and `resume_plan`/`change_lane` already read `record[\"node\"]`), and each caller it relies on is a real production caller (`crew dispatch`, `crew resume`/`resumption`, and the lane-change commands in `reckon/crew_run_commands.py`).",
+    "single_goal": "pass \u2014 \u00a76 carries one deliverable: a node's declared figures reach `launch_plan` on every dispatch path (fresh, CLI, resume, lane change).",
+    "wiring": "pass \u2014 \u00a76 declares no section wire and needs none; its dependency (\u00a72, the landed argv half) is done, and the plan-level `plan-informs` is unchanged, so the change introduces no missing or wrong relationship."
+  },
+  "section_digests": {
+    "_document": "69f7775e01af2e54dd87245e6c262b9f88296c537664b5807e7dcf1a25fbe1e8",
+    "s1": "6f91847c26df4249f7e99f6d661c548de475be73869ba4799469bc0c04801047",
+    "s2": "48353069f5981e05b9d1248e19c4f56817113396a3555a2fe6e05b67a505d3f7",
+    "s3": "f8f9ad248d1ff3713092ca3da6a8795cbcecd4726a79d20dc2f63f64ceff2d87",
+    "s4": "994ed10fbb9803a9ae4914f05275f2373d788b16292a7fefaa8350883803056a",
+    "s5": "52bd0da92f26e42df8184445e6ab07cae636d7072675b3a1900951957b3a077d",
+    "s6": "ce9705dbaad70ab2b3a9425eead9900cc284deb7f1d5ecacb553d3745679b3d7",
+    "s7": "e4673147c5a3a66171bb0892dbe6927ce54eabc205870310627b08054076101a",
+    "s8": "2c200fdd964f328342811e9362e4cd14da60f3c8352368899ccf87797d9e7f5b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T20:00:36.732520+00:00"
+}
