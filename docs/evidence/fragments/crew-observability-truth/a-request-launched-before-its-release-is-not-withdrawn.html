@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>a-request-launched-before-its-release-is-not-withdrawn — landing record</title>
+</head>
+<body>
+<article id="a-request-launched-before-its-release-is-not-withdrawn">
+<h3>A request launched before its release is not drawn as withdrawn</h3>
+<p id="a-request-launched-before-its-release-is-not-withdrawn-summary">The fleet fold in <code>reckon/crew/recovery_watch.py</code> read <code>admitted_from</code> only from runs that arrived in the current observation. Admission does not keep that order: the launched run's pointer is observed first without the field, gains it a moment later, and the request's own pointer is released last — so by the time a queued request vanishes the run that continues it is already known. The fold held the request one observation and worded it <code>withdrawn</code>, drawn as a drop beside the run that replaced it. The fold now reads <code>admitted_from</code> from every live run, so the request leaves silently while any run names it, whether that run arrived this observation or an earlier one. A request that vanishes with no run naming it is unchanged: held one observation and then worded.</p>
+<p id="a-request-launched-before-its-release-is-not-withdrawn-measure">Gate: the 42 test files importing <code>reckon/crew/recovery_watch.py</code> run at base and at head. Base 10 failed, 370 passed; head 3 failed, 377 passed. Every head failure is also a base failure — the three are <code>test_follower_freshness.py</code> and <code>test_follower_reload_is_safe.py</code> subprocess-ordering cases that fail without this change too — so no failure at head is absent at base. Negative control: with <code>continued</code> restricted to arriving runs again, the four-observation case words the request <code>withdrawn</code> on its fourth observation (<code>test_a_launch_naming_its_request_from_an_earlier_observation_leaves_it_silent</code> and <code>test_a_launch_naming_its_request_is_reported_as_the_continuing_run</code> both fail at base and pass at head).</p>
+</article>
+</body>
+</html>
