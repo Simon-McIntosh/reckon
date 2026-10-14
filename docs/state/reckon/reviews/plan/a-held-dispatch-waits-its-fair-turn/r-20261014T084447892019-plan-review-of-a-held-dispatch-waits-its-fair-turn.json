@@ -1,0 +1,68 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-14T08:56:13.585Z",
+  "dispatched_at": "2026-10-14T08:45:40Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-held-dispatch-waits-its-fair-turn.html:153",
+      "id": "reasoning-1",
+      "reason": "the sentence is the plan's stated consequence of the defect and its own cited function contradicts it, so the rationale (and any production check of the fix) names the wrong reader of the delivery.",
+      "text": "the Why claims \"The launch supervisor watches the launched run's own directory (`_supervisor_manifest_path(run_id)`), so it never sees the delivery\", but `_supervisor_manifest_path` reads the *recorded* manifest path from the run's live pointer (`_recorded_manifest_path`, `dispatch_sessions.py:926`) and only falls back to the run directory when the pointer names none; for the very instance \u00a722 cites it returns the queued run's path, so the supervisor watches the same file the worker writes and does see the delivery",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-held-dispatch-waits-its-fair-turn.html:153",
+      "id": "reasoning-2",
+      "reason": "a builder implementing the sentence as written has to either edit `dispatch.py`/`dispatch_plan.py` (outside the declared write paths) or silently substitute the clear-and-re-derive mechanism, so the plan should state which, since its SPEC is exact.",
+      "text": "the deliverable places the re-root \"when the queued pointer is turned back into a node\" and targets \"the same relative path under the launched run's directory\", but at `_node_from_pointer` the launched run id does not yet exist (it is minted inside `dispatch` via `new_run_id`, and `dispatch()` accepts no `run_id`), while the declared write paths are only `queue_admission.py` and the test; the in-scope implementation is to blank paths under the queued run's directory and let `dispatch_plan.py:477/485` re-derive them",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "5ea749440b584e1db50216a56d0451b686419d44b7373f461390702d968026d8",
+  "plan_slug": "a-held-dispatch-waits-its-fair-turn",
+  "plan_version": 114,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261014T084447892019-plan-review-of-a-held-dispatch-waits-its-fair-turn",
+  "reviewed_blob_sha": "9d47bd1de06c7da09205ecba4ffc90dd8b09ea95",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `dispatch_plan.py:477`, `_node_from_pointer` (`queue_admission.py:74`), `_supervisor_manifest_path` (`dispatch_launch.py:2612`), `_resolved_write_paths(..., run_directory=...)` (`dispatch_admission.py:1756`) and \u00a79 all resolve.",
+    "done_when": "pass \u2014 four cases assert the launched pointer's `manifest_path`, the launched prompt and the write paths, and the declared mutation of the cited functions are correct through the extensionless href convention.",
+    "evidence_paths": "pass \u2014 the replace-with-launched-directory mutation reddens cases one and four by name, so the measure can fail.",
+    "naming": "pass \u2014 no plan label, stage name or ticket id reaches a symbol; the \u00a73 reference is prose in the plan's own HTML.",
+    "reasoning": "two findings \u2014 the parenthetical about the launch supervisor mis-describes the function it cites, and the deliverable names a re-root point that cannot compute the launched run id, which is minted inside `dispatch` and not reachable from the declared write paths.",
+    "single_goal": "pass \u2014 one deliverable (re-root the relaunched node's run-directory defaults), one product file and one test file.",
+    "wiring": "pass \u2014 \u00a722 declares the only ordering it needs (a shared write on `queue_admission.py` with \u00a720, dispatched after it), and the \u00a79 brief it relies on has landed."
+  },
+  "section_digests": {
+    "_document": "bcfa170778d0fcddc3eb5ff6b63c26489d5f1f61be8a483293c6eacd3569349e",
+    "s1": "e09f72c38fa12dd06b1fede9137b6a8731c7f42dad95ea4d7873e48b6bcebc93",
+    "s10": "769f35c4ff338677b1083340b990086682e629701a25af49a8b6e2d3b8a175a4",
+    "s11": "3aafc106945bdc346a0f808fc26c7fc8e028b922103641455da38536ae24c036",
+    "s12": "f72ab709e3a40644be43c6e558b558089f939e3368a20a2b34321a9043c80c88",
+    "s13": "1f1792d925edd6b7c0b33bd02bebc3db1f499f9d5e1505b3ba04b305d9ed7f64",
+    "s14": "a86f35810a5d1446f8cf9294a46f7a7a393c1452cc3080ef8b9e51cf83670acf",
+    "s15": "694218fb467e061648aac13eed1a446529dbff08aca86ecfdb24792eb5b2820e",
+    "s16": "5d0a87ee69959477d707fb8d7b442b283f6ae0e7bc896382dd4c65c7e3efb9b8",
+    "s17": "d3bfb51ccfbe6c602a6a11cd9d7e433d1385fd2b90b604f2eb307029dc97f703",
+    "s18": "f67610611bfb819007234cb2d266523cab773379dedf07c8b53feb8f9e78ef59",
+    "s19": "1a735ef01d42913d9085a7d2db7eb238ecd99450b1ee61e3702d9951b4be8b04",
+    "s2": "c37ed4ecb2dad1331b0b031fb8351608243790308312236d375bede3594285b7",
+    "s20": "27cbb7d66474dcc03ee947d28d02bf69241181f95114d64b5dfd64cece9a6d2d",
+    "s21": "9d6a0b0914d4b7c617f66b56c23c29f423e83783cee042a59efd0844e910758e",
+    "s22": "3128dca01acf150b6708b74e70f8d524aaf61dc48a1162fe1a0b770e7302748f",
+    "s3": "ef687123318fac196bded366330cf2e92b586c4991b5c1cc8670f228182f916c",
+    "s4": "e6a41eadc72e4752cc0ebe35a14a9bce3f28bc1061ec677e8f779fa09d8c037c",
+    "s5": "4b674f96924c3dbfde217945d16c606df376d034dc060f02360a4336412e74f8",
+    "s6": "9e35fc2341a06de64fed9ff7f176a0e83b22c1482c1b5a04a5539b6e4c07aab4",
+    "s7": "764a72dad2d59bddd4d3b1209f07c0c210ff6c46cd14147d4bcc7ffe9fa9426d",
+    "s8": "1b92313fdf672f4b813b45aa8e26f1304ca363cdc5a4d1752238f794a2019e27",
+    "s9": "ef8f75976cf8d243089cb5955b0e084cf6e2c6bcd478f9e56b8e8654080c6ad6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T08:57:14.206565+00:00"
+}
