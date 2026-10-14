@@ -24,6 +24,7 @@ from pathlib import Path
 import pytest
 
 from reckon import run_store
+from tests.real_home_traces import traces_naming
 
 
 @pytest.fixture()
@@ -201,6 +202,21 @@ def _real_store_path() -> Path:
     return _real_config_home() / "crew" / "run_store.db"
 
 
+def _real_store_traces(*run_ids: str) -> list[str]:
+    """Any trace of these run ids in the real crew store's file, if any.
+
+    The store a test writes resolves under the temporary config home; the real
+    one is read only to prove nothing naming this test's runs landed in it.
+    Searching the store's bytes for those run ids, rather than comparing the
+    file's mere existence before and after, is what a peer promotion rewriting
+    the real store cannot fail: a peer's row names the peer's runs, so it is no
+    hit. The store is a single file, read directly; the real home's directory
+    trees are not walked.
+    """
+    store = _real_store_path()
+    return traces_naming(store.parent, (store.name,), run_ids)
+
+
 # ── The store path and write isolation ─────────────────────────────────────
 
 
@@ -240,12 +256,10 @@ def test_the_store_location_default_is_the_crew_config_home(
 def test_store_is_created_on_first_use_with_separate_tables(
     store: Path,
 ) -> None:
-    real_store = _real_store_path()
-    was_present = real_store.exists()
 
     # First use through the default seam creates the store under the
     # configured (temporary) config home.
-    run_store.append("proj", _addressing_record("r-one"))
+    run_store.append("proj", _addressing_record("r-storefs-first-use"))
 
     store_location = run_store.store_path()
     assert store_location.is_file()
@@ -263,8 +277,8 @@ def test_store_is_created_on_first_use_with_separate_tables(
         assert {"run_id", "payload"} <= durable_columns
         assert {"run_id", "detail"} <= detail_columns
 
-    # The real crew config home was not written to.
-    assert real_store.exists() == was_present
+    # The real crew store carries no row for the run this test wrote.
+    assert _real_store_traces("storefs") == []
     # The write landed under the temporary config home the suite provides.
     configured_home = os.environ.get("RECKON_HOME", "")
     assert configured_home and str(store_location).startswith(configured_home)
@@ -399,8 +413,6 @@ def test_washing_every_detail_row_leaves_the_durable_half_answering(
 def test_append_writes_one_durable_and_one_detail_row_and_leaves_others_alone(
     store: Path, tmp_path: Path
 ) -> None:
-    real_store = _real_store_path()
-    was_present = real_store.exists()
 
     with run_store.RunStore(store) as sqlite_store:
         for suffix in ("one", "two", "three"):
@@ -421,7 +433,7 @@ def test_append_writes_one_durable_and_one_detail_row_and_leaves_others_alone(
         }
 
     with run_store.RunStore(store) as sqlite_store:
-        sqlite_store.append("proj", _addressing_record("r-four"))
+        sqlite_store.append("proj", _addressing_record("r-storefs-four"))
 
     with _connect(store) as connection:
         after = {
@@ -441,11 +453,12 @@ def test_append_writes_one_durable_and_one_detail_row_and_leaves_others_alone(
     assert {run_id: after[run_id] for run_id in before} == before
     assert {run_id: detail_after[run_id] for run_id in detail_before} == detail_before
     # The new row landed in both halves.
-    assert "r-four" in after
-    assert "r-four" in detail_after
-    assert "r-four" not in before
+    assert "r-storefs-four" in after
+    assert "r-storefs-four" in detail_after
+    assert "r-storefs-four" not in before
 
-    assert real_store.exists() == was_present
+    # The real crew store carries no row for the run this test wrote.
+    assert _real_store_traces("storefs") == []
 
 
 def test_a_failed_detail_write_rolls_back_the_whole_append(
@@ -757,11 +770,9 @@ def _seed_ledger(project: str, runs: list[dict]) -> None:
 def test_import_brings_every_ledger_run_into_the_store_and_reports_imported(
     config_home: Path,
 ) -> None:
-    real_store = _real_store_path()
-    was_present = real_store.exists()
 
     records = {
-        f"r-{suffix}": _real_record(f"r-{suffix}") for suffix in ("one", "two", "three")
+        f"r-{suffix}": _real_record(f"r-{suffix}") for suffix in ("import-a", "import-b", "import-c")
     }
     _seed_ledger("reckon", list(records.values()))
 
@@ -780,8 +791,8 @@ def test_import_brings_every_ledger_run_into_the_store_and_reports_imported(
                 _durable_expected(record, project="reckon"),
                 where=f"{run_id} after import",
             )
-    # The real crew config home was not written to.
-    assert real_store.exists() == was_present
+    # The real crew store carries no row for the run this test wrote.
+    assert _real_store_traces("storefs") == []
 
 
 def test_a_second_import_pass_reports_zero_of_both(config_home: Path) -> None:
@@ -861,7 +872,7 @@ def test_equality_check_reports_zero_on_all_three_after_import(
     config_home: Path,
 ) -> None:
     records = {
-        f"r-{suffix}": _real_record(f"r-{suffix}") for suffix in ("one", "two", "three")
+        f"r-{suffix}": _real_record(f"r-{suffix}") for suffix in ("import-a", "import-b", "import-c")
     }
     _seed_ledger("reckon", list(records.values()))
     run_store.import_ledger("reckon")
@@ -877,7 +888,7 @@ def test_equality_check_reports_a_row_removed_from_the_store(
     config_home: Path,
 ) -> None:
     records = {
-        f"r-{suffix}": _real_record(f"r-{suffix}") for suffix in ("one", "two", "three")
+        f"r-{suffix}": _real_record(f"r-{suffix}") for suffix in ("import-a", "import-b", "import-c")
     }
     _seed_ledger("reckon", list(records.values()))
     run_store.import_ledger("reckon")
@@ -969,8 +980,6 @@ def test_equality_check_scopes_the_store_by_project(config_home: Path) -> None:
 def test_a_rate_limit_refusal_stamp_outlives_its_run_directory(
     store: Path, tmp_path: Path
 ) -> None:
-    real_store = _real_store_path()
-    was_present = real_store.exists()
     run_dir = tmp_path / "run-dir"
     run_dir.mkdir()
 
@@ -978,7 +987,7 @@ def test_a_rate_limit_refusal_stamp_outlives_its_run_directory(
     # inside the reclaimable run dir, and never in any ledger file.
     with run_store.RunStore(store) as sqlite_store:
         sqlite_store.stamp_refusal(
-            "codex-spark",
+            "storefs-lane",
             "2026-09-14T10:00:00Z",
             "2026-09-15T00:00:00Z",
         )
@@ -997,17 +1006,17 @@ def test_a_rate_limit_refusal_stamp_outlives_its_run_directory(
         stamps = sqlite_store.refusal_stamps()
         # Stamping never created a run row: the refusal is not answerable as
         # a run in the runs table.
-        assert sqlite_store.get_run("codex-spark") is None
+        assert sqlite_store.get_run("storefs-lane") is None
 
     assert stamps == [
         {
-            "lane": "codex-spark",
+            "lane": "storefs-lane",
             "refused_at": "2026-09-14T10:00:00Z",
             "returns_at": "2026-09-15T00:00:00Z",
         }
     ]
-    # The real crew config home was not written to.
-    assert real_store.exists() == was_present
+    # The real crew store carries no row for the run this test wrote.
+    assert _real_store_traces("storefs") == []
 
 
 def test_refusal_stamps_accumulate_oldest_first_and_keep_both_readings(
@@ -1015,12 +1024,12 @@ def test_refusal_stamps_accumulate_oldest_first_and_keep_both_readings(
 ) -> None:
     with run_store.RunStore(store) as sqlite_store:
         sqlite_store.stamp_refusal(
-            "codex-spark",
+            "storefs-lane",
             "2026-09-14T10:00:00Z",
             "2026-09-15T00:00:00Z",
         )
         sqlite_store.stamp_refusal(
-            "codex-spark",
+            "storefs-lane",
             "2026-09-14T15:00:00Z",
             "2026-09-15T07:00:00Z",
         )
@@ -1036,8 +1045,8 @@ def test_refusal_stamps_accumulate_oldest_first_and_keep_both_readings(
     # wiping the first — the pair of readings a later inference separates.
     assert [(stamp["lane"], stamp["refused_at"]) for stamp in stamps] == [
         ("sol", "2026-09-14T09:00:00Z"),
-        ("codex-spark", "2026-09-14T10:00:00Z"),
-        ("codex-spark", "2026-09-14T15:00:00Z"),
+        ("storefs-lane", "2026-09-14T10:00:00Z"),
+        ("storefs-lane", "2026-09-14T15:00:00Z"),
     ]
     assert stamps[1]["returns_at"] == "2026-09-15T00:00:00Z"
 
@@ -1050,7 +1059,7 @@ def test_a_failed_stamp_write_leaves_the_run_append_unaffected(store: Path) -> N
         # rather than half-landing a row.
         with pytest.raises(TypeError):
             sqlite_store.stamp_refusal(
-                "codex-spark", "2026-09-14T10:00:00Z", b"\x00not-a-time"
+                "storefs-lane", "2026-09-14T10:00:00Z", b"\x00not-a-time"
             )
 
         # No refusal row landed...

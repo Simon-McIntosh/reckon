@@ -57,6 +57,7 @@ import pytest
 from reckon.crew import directory, recovery, runs
 from tests import test_a_live_run_never_reads_dead as liveness
 from tests import test_stalled_row_names_liveness as stalled
+from tests.real_home_traces import traces_naming
 
 HOST = socket.gethostname()
 
@@ -81,16 +82,31 @@ DECLARED_MUTATION = (
 )
 
 
-def _home_fingerprint(home: Path) -> list[tuple[str, int]]:
-    """The real config home's own entries, by name and mtime.
+NEEDLE_RUN_IDS = (
+    "r-launched-elsewhere",
+    "r-foreign-with-a-local-number",
+    "r-launched-here-with-no-process",
+    "r-foreign-with-a-recorded-exit",
+    "r-death-read-elsewhere",
+    "r-foreign-row-with-a-local-number",
+    "r-drain-foreign-row-with-a-local-number",
+    "r-drain-foreign-with-a-recorded-exit",
+    "r-drain-launched-here-with-no-process",
+)
 
-    One directory level only: the point is to catch a write that landed in the
-    reader's own home, and a recursive walk of a live fleet's home on GPFS is
-    the crawl this check must not itself become.
+
+def _real_home_traces(real_home: Path) -> list[str]:
+    """This module's own traces in the shared crew home, if any.
+
+    Searching for the run ids this module mints, rather than comparing the real
+    home's top-level names and mtimes, is what keeps a write this test did not
+    make from failing this guard. A leaked pointer or registration lands under
+    the shared home's ``live/`` or ``watch/`` tree naming one of these run ids;
+    a peer's own entry names the peer, so it is no hit. The rest of the home --
+    ``runs/``, ``reports/``, ``reviews/`` -- holds hundreds of thousands of
+    durable files on a busy workstation, so it is not walked.
     """
-    if not home.is_dir():
-        return []
-    return sorted((entry.name, entry.stat().st_mtime_ns) for entry in home.iterdir())
+    return traces_naming(real_home, ("crew/live", "crew/watch"), NEEDLE_RUN_IDS)
 
 
 @pytest.fixture(autouse=True)
@@ -104,11 +120,11 @@ def isolated_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[N
     re-read after the case ends.
     """
     real_home = Path(os.path.expanduser("~")) / ".config" / "reckon"
-    before = _home_fingerprint(real_home)
+    before = _real_home_traces(real_home)
     monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
     assert runs.crew_home().is_relative_to(tmp_path)
     yield
-    assert _home_fingerprint(real_home) == before
+    assert _real_home_traces(real_home) == before
 
 
 def _run_launched_elsewhere(

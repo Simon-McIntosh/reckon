@@ -30,6 +30,7 @@ from reckon.hooks.coordinator_obligations import (
     format_checklist,
 )
 from tests.helpers.git import git as _git
+from tests.real_home_traces import traces_naming
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 HOOK = REPO_ROOT / "reckon" / "hooks" / "coordinator_obligations.py"
@@ -647,23 +648,55 @@ def test_the_ancestry_walk_resolves_a_session_when_the_harness_exports_no_pid(
     )
 
 
+def _real_home_traces() -> list[str]:
+    """This module's own traces in the real home and the settings files.
+
+    The hook resolves its configuration through a synthesised home, so a write it
+    leaked would land under the real home naming an identifier this test minted.
+    Searching for those, rather than stamping the real home and the two settings
+    files by mtime and size, keeps a peer session -- which churns the real crew
+    tree continuously -- from failing this guard for a write this test did not
+    make. The settings files are read as single files, and the crew home only
+    under ``live/`` and ``watch/``, where a leaked pointer, registration or duty
+    digest would land, never the hundreds of thousands of durable files under
+    ``runs/``, ``reports/`` and ``reviews/``.
+    """
+    home = Path(os.path.expanduser("~"))
+    needles = (
+        PROJECT,
+        SESSION,
+        RUN_ID,
+        NODE_ID,
+        FIRST_RUN_ID,
+        FIRST_NODE_ID,
+        SECOND_RUN_ID,
+        SECOND_NODE_ID,
+        SCORING_RUN_ID,
+        SCORING_NODE_ID,
+    )
+    return traces_naming(
+        home,
+        (
+            ".config/reckon/crew/live",
+            ".config/reckon/crew/watch",
+            ".claude/settings.json",
+            ".claude/settings.local.json",
+        ),
+        needles,
+    )
+
+
 def test_the_real_settings_home_is_never_read_or_written(
     repository: Path, tmp_path: Path
 ) -> None:
-    watched = [
-        Path.home() / ".config" / "reckon",
-        Path.home() / ".claude" / "settings.json",
-        Path.home() / ".claude" / "settings.local.json",
-    ]
-    before = {path: _stamp(path) for path in watched}
+    before = _real_home_traces()
 
     _blocked_run(repository, tmp_path)
     with runs.follower_claim(PROJECT, SESSION):
         _hook("prompt", _prompt_payload(repository, "harness-session"))
         _hook("stop", _stop_payload(repository, "harness-session"))
 
-    after = {path: _stamp(path) for path in watched}
-    assert after == before
+    assert _real_home_traces() == before
 
 
 def test_no_follower_leaves_the_hook_silent(repository: Path, tmp_path: Path) -> None:
