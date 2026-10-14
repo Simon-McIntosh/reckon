@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest records baseline_suite: null and after_suite: null, so no base or after gate log exists to take an added-failure count from",
+  "base_log_revision": null,
+  "call_site_count": 10,
+  "call_sites": [
+    "reckon/crew/ticker.py:1808 PaneRowPath.feed",
+    "reckon/crew/ticker.py:1812 PaneRowPath.flush",
+    "reckon/crew/ticker.py:1870 replay_row_policy",
+    "reckon/crew_follow_commands.py:1112",
+    "reckon/crew_follow_commands.py:1254 follower_row_path",
+    "reckon/crew_follow_commands.py:1964",
+    "reckon/crew_follow_commands.py:2049",
+    "reckon/crew_follow_commands.py:2064",
+    "reckon/crew_follow_commands.py:2087",
+    "reckon/crew_follow_commands.py:2097"
+  ],
+  "completed_at": "2026-10-14T12:00:55.023Z",
+  "dispatched_at": "2026-10-14T11:32:19Z",
+  "findings": [
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": "1639",
+      "severity": "follow-on",
+      "text": "follow-on: the gained fix applies the departure hold only in the _is_observed branch (ticker.py:1649) and the _observer_exception branch (ticker.py:1655), so the if self._show_observer or not run_id: branch at ticker.py:1639 is outside the hold and prints a round-trip departure immediately where c49f8921b held it and delivered it once the window passed; no production caller sets show_observer and no test covers a departure under it."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 10 production call site(s)",
+    "diff": "read commit 2f61639ce (the departure-hold relocation, _hold_departure added at ticker.py:1326 and called at ticker.py:1649/1655) and 85282f1c9 (the evidence-fragment paragraph) against base c49f8921b; three files, +55/-22, all inside the declared scope.",
+    "done_when": "plan section 16's done_when names tests/test_the_pane_draws_no_round_trip.py (queued->withdrawn->dispatched->queued shows no row; a non-returning departure delivers at the window), no added failure against base, and a logged negative control removing the round-trip rule; the manifest records gate-ticker.log at 553 passed EXIT=0 and negative-control.log at 3 failed EXIT=1, but records no baseline_suite or after_suite arm, so the no-added-failure clause is unmeasured.",
+    "goal": "the node's goal is for RowPolicy to hold a row that takes a run away from the word the pane last showed and drop it with the return inside the settle window; the gained commits keep that rule (reckon/crew/ticker.py:1326 _hold_departure) and place it at the two points where the pane would draw the row (ticker.py:1649, 1655), after the observer hold.",
+    "manifest": "read r-20261014T100611529003-the-pane-draws-no-round-trip/manifest.md; status complete, commits 2f61639ce and 85282f1c9 among its four, gate 553 passed EXIT=0, negative control EXIT=1, changed_paths matching the diff.",
+    "write_paths": "the node declared reckon/crew/ticker.py, tests/test_the_pane_draws_no_round_trip.py, a docs/evidence fragment and a figure directory; the gained diff changes ticker.py, the test file and the fragment, every path inside the declared set (the figure directory is unused)."
+  },
+  "justifications": {
+    "durability": "tests/test_the_pane_draws_no_round_trip.py:85-100 test_a_terminal_echo_the_pane_withholds_stays_hidden fails against the prior ordering, where the withheld complete->recorded echo is held as a departure and flush(now=SETTLE_WINDOW) returns it.",
+    "evidence": "the manifest records gate-ticker.log at 553 passed EXIT=0 and negative-control.log at 3 failed EXIT=1, but records neither a baseline_suite nor an after_suite arm, so plan section 16's no-added-failure-against-base clause cannot be checked.",
+    "fit": "reckon/crew/ticker.py:1326 _hold_departure sits beside _hold_settle at ticker.py:1405 and follows the module's own hold idiom, introducing no plan, ticket, version or author label.",
+    "goal_fidelity": "reckon/crew/ticker.py:1326-1346 _hold_departure holds a departure and ticker.py:1487-1490 drops it when the run returns to the shown word, so the round trip queued->withdrawn->dispatched->queued draws no row.",
+    "reuse": "the gained change is an extraction, not a fork: _hold_departure is called at the two RowPolicy print sites (ticker.py:1649, 1655) rather than duplicated inline, so it extends the policy that owns the rule.",
+    "scope_discipline": "every path in the gained diff (reckon/crew/ticker.py, tests/test_the_pane_draws_no_round_trip.py, the evidence fragment) is inside the write paths the manifest declares."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is for RowPolicy to hold a row that takes a run away from the word the pane last showed and drop it with the return inside the settle window; the gained commits keep that rule (reckon/crew/ticker.py:1326 _hold_departure) and place it at the two points where the pane would draw the row (ticker.py:1649, 1655), after the observer hold.\nVERDICT done_when: plan section 16's done_when names tests/test_the_pane_draws_no_round_trip.py (queued->withdrawn->dispatched->queued shows no row; a non-returning departure delivers at the window), no added failure against base, and a logged negative control removing the round-trip rule; the manifest records gate-ticker.log at 553 passed EXIT=0 and negative-control.log at 3 failed EXIT=1, but records no baseline_suite or after_suite arm, so the no-added-failure clause is unmeasured.\nVERDICT write_paths: the node declared reckon/crew/ticker.py, tests/test_the_pane_draws_no_round_trip.py, a docs/evidence fragment and a figure directory; the gained diff changes ticker.py, the test file and the fragment, every path inside the declared set (the figure directory is unused).\nVERDICT manifest: read r-20261014T100611529003-the-pane-draws-no-round-trip/manifest.md; status complete, commits 2f61639ce and 85282f1c9 among its four, gate 553 passed EXIT=0, negative control EXIT=1, changed_paths matching the diff.\nVERDICT diff: read commit 2f61639ce (the departure-hold relocation, _hold_departure added at ticker.py:1326 and called at ticker.py:1649/1655) and 85282f1c9 (the evidence-fragment paragraph) against base c49f8921b; three files, +55/-22, all inside the declared scope.\nCALL_SITES: reckon/crew/ticker.py:1808 PaneRowPath.feed, reckon/crew/ticker.py:1812 PaneRowPath.flush, reckon/crew/ticker.py:1870 replay_row_policy, reckon/crew_follow_commands.py:1112, reckon/crew_follow_commands.py:1254 follower_row_path, reckon/crew_follow_commands.py:1964, reckon/crew_follow_commands.py:2049, reckon/crew_follow_commands.py:2064, reckon/crew_follow_commands.py:2087, reckon/crew_follow_commands.py:2097\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/ticker.py:1326-1346 _hold_departure holds a departure and ticker.py:1487-1490 drops it when the run returns to the shown word, so the round trip queued->withdrawn->dispatched->queued draws no row.\nSCORE evidence: 13\nJUSTIFICATION evidence: the manifest records gate-ticker.log at 553 passed EXIT=0 and negative-control.log at 3 failed EXIT=1, but records neither a baseline_suite nor an after_suite arm, so plan section 16's no-added-failure-against-base clause cannot be checked.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the gained diff (reckon/crew/ticker.py, tests/test_the_pane_draws_no_round_trip.py, the evidence fragment) is inside the write paths the manifest declares.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_the_pane_draws_no_round_trip.py:85-100 test_a_terminal_echo_the_pane_withholds_stays_hidden fails against the prior ordering, where the withheld complete->recorded echo is held as a departure and flush(now=SETTLE_WINDOW) returns it.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/ticker.py:1326 _hold_departure sits beside _hold_settle at ticker.py:1405 and follows the module's own hold idiom, introducing no plan, ticket, version or author label.\nSCORE reuse: 18\nJUSTIFICATION reuse: the gained change is an extraction, not a fork: _hold_departure is called at the two RowPolicy print sites (ticker.py:1649, 1655) rather than duplicated inline, so it extends the policy that owns the rule.\nFINDING reckon/crew/ticker.py:1639 follow-on: the gained fix applies the departure hold only in the _is_observed branch (ticker.py:1649) and the _observer_exception branch (ticker.py:1655), so the if self._show_observer or not run_id: branch at ticker.py:1639 is outside the hold and prints a round-trip departure immediately where c49f8921b held it and delivered it once the window passed; no production caller sets show_observer and no test covers a departure under it.",
+  "review_run_id": "r-20261014T113151219990-review-of-the-pane-draws-no-round-trip-85282f1c9188",
+  "reviewed_base_sha": "c49f8921b4e0e3989f913132736edb0a1d307396",
+  "reviewed_head_sha": "85282f1c918863a4b33d9b0f3d0440e0868a4058",
+  "reviewed_run_id": "r-20261014T100611529003-the-pane-draws-no-round-trip",
+  "scores": {
+    "durability": 16,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T11:50:18.325548+00:00",
+  "total": 102
+}

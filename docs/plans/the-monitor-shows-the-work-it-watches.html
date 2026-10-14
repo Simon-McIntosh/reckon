@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="79">
+<meta name="plan-version" content="80">
 <meta name="plan-modified" content="2026-10-14">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -476,6 +476,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s16" data-id="c-run-r-20261014T110051603065-review-of-the-pane-draws-no-round-trip-c49f8921b4e0" data-who="reckon-build" data-when="2026-10-14T11:27:10.340Z">
     <div class="r-comment-body"><p>reviewed r-20261014T100611529003-the-pane-draws-no-round-trip at base fcfc19fa9..head c49f8921b; stored a parsed review record scoring all 6 dimensions (goal_fidelity 12, evidence 13, scope_discipline 19, durability 12, fit 18, reuse 14; total 88) with one blocking finding: at the reviewed head reckon/crew/ticker.py:1590-1611 holds a departure before the observer-context hold and _release_expired (ticker.py:1345-1358) then prints it, so a withheld observer row is made visible once the settle window passes.</p></div>
+</div>
+<div class="r-comment" data-section="s16" data-id="c-run-r-20261014T113151219990-review-of-the-pane-draws-no-round-trip-85282f1c9188" data-who="reckon-build" data-when="2026-10-14T12:00:55.023Z">
+    <div class="r-comment-body"><p>review of r-20261014T100611529003-the-pane-draws-no-round-trip at base c49f8921b4e0e3989f913132736edb0a1d307396..head 85282f1c918863a4b33d9b0f3d0440e0868a4058; stored a parsed record scoring all 6 dimensions (goal_fidelity 18, evidence 13, scope_discipline 19, durability 16, fit 18, reuse 18; total 102) with one follow-on finding — the departure hold&#x27;s relocation in 2f61639ce leaves the show_observer branch (reckon/crew/ticker.py:1639) outside the hold; the fix otherwise repairs the prior review&#x27;s blocking ordering defect and the added test test_a_terminal_echo_the_pane_withholds_stays_hidden guards it.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261013T050357966649-remembered-states-are-pane-words" data-who="reckon-build" data-when="2026-10-13T06:17:20.716Z">
     <div class="r-comment-body"><p>remembered states are mapped to pane words where the grid takes its memory in (ticker._remembered_word applied in _seed_ticker_memory); a run remembered as completed_unpromoted now draws `delivered` on the left, every internal state draws its pane word, and the reloaded-pane test now expects the pane word (halted) rather than the raw producer state</p></div>
