@@ -1531,8 +1531,9 @@ def fleet_transitions(
     publishing the launch under a new run id, so the request is absent for the
     length of a launch. That absence is not a departure. While a handover
     record names the request — ``handovers`` holds their run ids — the request
-    keeps its remembered state. Once a run naming it in ``admitted_from``
-    arrives, the request leaves silently and the new run arrives in its place.
+    keeps its remembered state. Once any live run names it in
+    ``admitted_from`` — whether that run arrived in this observation or an
+    earlier one — the request leaves silently and the new run stays in its place.
     A queued request that vanishes with neither is held one observation more
     before it is worded, which covers a handover cleared between this
     observation's two reads.
@@ -1558,10 +1559,16 @@ def fleet_transitions(
     changes: list[tuple[Mapping[str, Any], str | None, str]] = []
 
     held_by_admission = {str(run_id) for run_id in handovers}
+    # Any live run naming the request counts, whether it arrived in this
+    # observation or an earlier one. Admission does not keep the order the
+    # launch implies: the launched run's pointer is frequently observed first
+    # without ``admitted_from``, gains the field a moment later, and the
+    # request's own pointer is released last — so by the time the request
+    # vanishes the run that continues it is already known. Reading the field
+    # only from arrivals misses that link and words the request withdrawn
+    # beside the run that replaced it.
     continued = {
-        str(snapshot.get("admitted_from") or "")
-        for run_id, snapshot in current.items()
-        if run_id not in known
+        str(snapshot.get("admitted_from") or "") for snapshot in current.values()
     } - {""}
     departures = []
     for run_id in (item for item in known if item not in current):
