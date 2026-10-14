@@ -1,0 +1,45 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-14T19:28:18.920Z",
+  "dispatched_at": "2026-10-14T19:14:44Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-seat-held-elsewhere-is-not-restarted.html#s7",
+      "id": "reasoning-1",
+      "reason": "the section is single-goal and its done-when is met as written; the residual is a narrower sub-window the author may deliberately leave to a follow-up rather than widen this deliverable, so the plan need not change for it.",
+      "text": "\u00a77's deliverable is scoped to the run's stream, but the same defect it names has a second liveness gate that a stream-only rule cannot reach: `recovery_classification.py:320` clears `manifest_unwritten` only `if alive is True`, so for a foreign run (`alive is None`) the launch-window/rewrite suppression at `_absence_of_a_verdict_is_transient` never runs and the run reads `unwritten` from dispatch until its first stream record \u2014 the window \u00a77 attributes to the fault. The observed instance is fixed (its stream is present and fresh), but the titled defect (\"drawn halted until it writes its first status\") stands for the sub-window that precedes the stream",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "9b32b1ff474ae85cfee7dbd2dd8581c68a47512c435a05b9a7f934e4a636b6a1",
+  "plan_slug": "a-seat-held-elsewhere-is-not-restarted",
+  "plan_version": 14,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261014T191410319780-plan-review-of-a-seat-held-elsewhere-is-not-restarted",
+  "reviewed_blob_sha": "517ea0011d097476cf8a79fdaba84f4f56cb0507",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/recovery_liveness.py` resolves; `_orientation_write_of_a_run_in_motion` exists at line 151 and does return early at line 170 for `alive is not True`; `_newest_stream_shows_work` resolves (recovery_wait.py:1168) and is already imported and called by the cited function at line 176; the cited run `r-20261014T190832327112-a-lift-is-drawn-once-per-pane` resolves under `~/.config/reckon/crew/runs/`, and the run's stream holds an assistant record at 19:10:01Z, 58 s before the 19:10:59Z `unwritten` row \u00a77 quotes and well inside the 900 s stall window, so the fix's stream arm would have fired and changed the reported row.",
+    "done_when": "pass \u2014 \u00a77's done-when is measurable and names a control: \"a test gives the classifier a run launched on another host, whose pointer liveness reads unknown, whose manifest holds only its orientation write, and whose newest stream holds an assistant record written inside the stall window. The run's recovery classification is its classification and not `unwritten`\"; the negative control is declared (\"restore the early return for any liveness other than `True`: the first case must then read `unwritten`\") and is a control that CAN fail, because line 170 of the cited function is exactly the early return it restores.",
+    "evidence_paths": "pass \u2014 the negative-control log is placed \"under the run directory\" (durable, under `~/.config/reckon/crew/runs/<run>/`), the test isolates the crew home in \"a temporary directory\", and the cited evidence anchor `docs/evidence/archive/a-seat-held-elsewhere-is-not-restarted-landed.html#s3` resolves on disk with `id=\"s3\"`.",
+    "naming": "pass \u2014 \u00a77 introduces no new symbol names beyond the existing `_newest_stream_shows_work`; no plan label, sprint id, ticket number or version tag reaches a symbol, filename or comment, and `tests/test_a_worker_on_another_host_is_not_unwritten.py` names what it tests.",
+    "reasoning": "a finding \u2014 the stated harm (\"Until the worker writes its first status, the run reads `unwritten` and its reader is told to resume work that is in flight\") covers the whole dispatch-to-first-status window, but a stream-only exemption cannot fire before the stream's first record, so a foreign run with pointer liveness `None` and no stream yet still reads `unwritten` for the launch window that the local path suppresses.",
+    "single_goal": "pass \u2014 \u00a77 carries one deliverable (the exemption decided by the run's stream when pointer liveness is unknown for a foreign run) with its own test and write paths; the three arms of the done-when measure one mechanism, not three.",
+    "wiring": "pass \u2014 the plan is wired at the plan level (`plan-after=\"the-review-loop-runs-without-hand-steps\"`, which resolves to `docs/plans/the-review-loop-runs-without-hand-steps.html`), and the changed unit `_document` adds `s7:\"implementable\"` to `plan-section-declarations` matching \u00a77's `data-status=\"implementable\"`; no section declares a depends-on that would need a peer (\u00a77's write paths, `reckon/crew/recovery_liveness.py` and its test, do not overlap \u00a74's scope \u2014 \u00a74 changes follower liveness in `reckon/crew/follower_registration.py` and `runs.py`, \u00a77 changes run-pointer liveness, and each USES the other's cause rather than waiting on it)."
+  },
+  "section_digests": {
+    "_document": "839bb060b25137d11a156018779887903d897e16efa1afe48488dac634a9315e",
+    "s1": "e775b15757e63b277715e69df2ef97f2cf13db4e6364fc83b2f4ad6aa3bc858c",
+    "s2": "0ed10d108f8d1ab2183625c90b68b4eafa74562e02814b07bb8c2079f5f67566",
+    "s3": "738aba9bff855c84122fa9ea72b1f1ef13486345a013a765e54c0cfa391a20c0",
+    "s4": "ca75c5c574381e50431d8d43b8f5532df7925573cf2dee356bea7941fcbd55cb",
+    "s5": "96d5fc1c72a25970cab856a7dde0a3cab839fd87c83786b7b49ffc4c1dabb1ab",
+    "s6": "c7b09760750dbf67efa83f9127581fea7578c7bf1e30b595ecd6c313b7505bad",
+    "s7": "d3e16f60d17ef3ee4666f9cd189aa6cd8e26f038173b65ee34b68f3f2cd822e7"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T19:29:22.979318+00:00"
+}
