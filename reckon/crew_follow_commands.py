@@ -61,7 +61,6 @@ def _follow_selects(
     return True
 
 
-
 def _follow_render_event(
     event: Mapping[str, Any],
     *,
@@ -86,7 +85,6 @@ def _follow_render_event(
     return event
 
 
-
 def _sweep_lapsed_holds(project: str, *, dry_run: bool = False) -> dict[str, Any]:
     """Resume this project's runs whose provider refusal has lapsed.
 
@@ -100,13 +98,10 @@ def _sweep_lapsed_holds(project: str, *, dry_run: bool = False) -> dict[str, Any
     return sweep(project, dry_run=dry_run)
 
 
-
 _FOLLOWER_CHECKPOINT_ENV = "RECKON_FOLLOWER_CHECKPOINT"
 
 
-
 _FOLLOWER_LIFETIME_ENV = "RECKON_FOLLOWER_LIFETIME_DEADLINE"
-
 
 
 def _carried_lifetime_deadline() -> float | None:
@@ -128,7 +123,6 @@ def _carried_lifetime_deadline() -> float | None:
         return None
 
 
-
 def _take_follower_checkpoint(project: str) -> dict[str, Any]:
     """Consume the stream position handed across an in-place process reload."""
     raw = os.environ.pop(_FOLLOWER_CHECKPOINT_ENV, "")
@@ -142,7 +136,6 @@ def _take_follower_checkpoint(project: str) -> dict[str, Any]:
         return {}
     checkpoint = payload.get("checkpoint")
     return dict(checkpoint) if isinstance(checkpoint, dict) else {}
-
 
 
 def _import_root(module) -> Path:
@@ -162,11 +155,33 @@ def _import_root(module) -> Path:
     raise RuntimeError(f"cannot identify the import root for {module.__name__}")
 
 
-# The follower's reload proof and the MCP's stale-code probe are one probe,
-# defined in ``reckon.checkout_trust`` so the two readers cannot disagree about
-# what a loadable checkout is. The name is kept here for the CLI's re-export.
-_FOLLOWER_RELOAD_PROBE = checkout_trust.IMPORT_PROBE
-
+# The one proof that a checkout's current code loads. A fresh interpreter is
+# required: the running process is the wrong place to discover a broken module,
+# because the check must not import the new code into the image it is judging.
+# Every tracked module is compiled first, so a syntax error anywhere is reported
+# as itself, and then imported, so a rename bound at a call site is caught at
+# load rather than at first use.
+#
+# ``reckon.checkout_trust`` reads this same text, so the follower's reload proof
+# and the MCP's stale-code probe cannot disagree about what a loadable checkout
+# is. The definition lives here because a reload proof spliced into this module
+# at run time must be the one the follower itself runs.
+_FOLLOWER_RELOAD_PROBE = (
+    "import importlib, pathlib, sys\n"
+    "root = pathlib.Path(sys.argv[1]).resolve()\n"
+    "sys.path.insert(0, str(root))\n"
+    "package = root / 'reckon'\n"
+    "sources = sorted(package.rglob('*.py'))\n"
+    "for path in sources:\n"
+    "    compile(path.read_bytes(), str(path), 'exec')\n"
+    "for path in sources:\n"
+    "    parts = list(path.relative_to(root).with_suffix('').parts)\n"
+    "    if parts and parts[-1] == '__init__':\n"
+    "        parts = parts[:-1]\n"
+    "    if not parts or parts[-1] == '__main__':\n"
+    "        continue\n"
+    "    importlib.import_module('.'.join(parts))\n"
+)
 
 
 class _FollowerReloader:
@@ -378,7 +393,6 @@ class _FollowerReloader:
             )
 
 
-
 class _StampPoll:
     """Poll the producer's code stamp on the follower's cadence.
 
@@ -417,9 +431,7 @@ class _StampPoll:
             self.previous = None
 
 
-
 FOLLOWER_END_EVENT = "follower-end"
-
 
 
 FOLLOWER_SETTLE_EVENT = "follower-settle"
@@ -434,17 +446,13 @@ FOLLOWER_SETTLE_INTERVAL_SECONDS = 1.0
 FOLLOWER_RESUME_EVENT = "follower-resume"
 
 
-
 FOLLOWER_FORMAT_EVENT = "follower-format-changed"
-
 
 
 FOLLOWER_STALE_PRODUCER_EVENT = "stale-producer"
 
 
-
 FOLLOWER_REATTACH_EVENT = "follower-reattached"
-
 
 
 def _snapshot_module() -> Any:
@@ -464,33 +472,25 @@ def _snapshot_module() -> Any:
     return module
 
 
-
 _SNAPSHOT_READER = _snapshot_module()
-
 
 
 _FOLLOWER_RELOAD_PROBE_TIMEOUT = _SNAPSHOT_READER.FOLLOWER_RELOAD_PROBE_TIMEOUT_SECONDS
 
 
-
 PRODUCER_POLL_INTERVAL_CAP_SECONDS = _SNAPSHOT_READER.PRODUCER_POLL_INTERVAL_CAP_SECONDS
-
 
 
 PRODUCER_RELOAD_WINDOW_SECONDS = _SNAPSHOT_READER.PRODUCER_RELOAD_WINDOW_SECONDS
 
 
-
 FOLLOWER_PRODUCER_RELOADING_EVENT = "producer-reloading"
-
 
 
 FOLLOWER_PRODUCER_RELOAD_FAILED_EVENT = "producer-reload-failed"
 
 
-
 FOLLOWER_PRODUCER_STOPPED_EVENT = "producer-stopped"
-
 
 
 def _logged_producer_stop(project: str) -> str | None:
@@ -512,7 +512,6 @@ def _logged_producer_stop(project: str) -> str | None:
                 candidate = candidate.split("] ", 1)[1]
             return candidate if candidate.startswith(marker) else None
     return None
-
 
 
 def _ticker_layout_signature() -> str:
@@ -548,7 +547,6 @@ def _ticker_layout_signature() -> str:
         ticker_module.MIN_WIDTH,
     )
     return hashlib.sha256(repr(layout).encode()).hexdigest()[:16]
-
 
 
 def _needs_you_runs(project: str, *, session: str | None) -> list[dict[str, str]]:
@@ -593,7 +591,6 @@ def _needs_you_runs(project: str, *, session: str | None) -> list[dict[str, str]
     return rows
 
 
-
 def _population_has_live_work(project: str, *, session: str | None) -> bool:
     """Whether this follower's own fleet still holds a run that has not ended.
 
@@ -619,7 +616,6 @@ def _population_has_live_work(project: str, *, session: str | None) -> bool:
             continue
         return True
     return False
-
 
 
 def _session_host_child(project: str, session: str | None) -> bool:
@@ -742,7 +738,6 @@ def _follower_end_event(
     }
 
 
-
 def _follower_settle_line(session: str | None, *, since: float) -> str:
     """The one line the pane shows when a session has no work left to watch.
 
@@ -838,7 +833,6 @@ def _follow_resume_plan(
     return "restart", 0, recorded, recorded_lifts
 
 
-
 def follower_row_path(
     *,
     session: str | None = None,
@@ -881,7 +875,6 @@ def follower_row_path(
     )
 
 
-
 def _follow_boundary(stream_path: Path) -> int:
     """The byte after the last complete record when the boundary is taken.
 
@@ -898,7 +891,6 @@ def _follow_boundary(stream_path: Path) -> int:
     from reckon.crew import runs
 
     return runs.line_boundary(stream_path)
-
 
 
 def _stream_events_upto(stream_path: Path, *, offset: int, boundary: int) -> list[dict]:
@@ -934,7 +926,6 @@ def _stream_events_upto(stream_path: Path, *, offset: int, boundary: int) -> lis
             if event is not None:
                 events.append(event)
     return events
-
 
 
 def _recorded_fleet_times(
@@ -974,7 +965,6 @@ def _recorded_fleet_times(
             continue
         latest[run_id] = (stamp, state)
     return latest
-
 
 
 def _fleet_replay(
@@ -1044,11 +1034,9 @@ def _fleet_replay(
     return printed
 
 
-
 _FOLLOW_REATTACH_FRAME = (
     "── re-attached · {live} live runs · {changed} changed since {when} ──"
 )
-
 
 
 def _follow_reattach_line(live: int, changed: int, recorded_at: str) -> str:
@@ -1058,7 +1046,6 @@ def _follow_reattach_line(live: int, changed: int, recorded_at: str) -> str:
     return _FOLLOW_REATTACH_FRAME.format(
         live=live, changed=changed, when=ticker_module.local_clock(recorded_at)
     )
-
 
 
 def _follow_gap_rows(
@@ -1100,7 +1087,6 @@ def _follow_gap_rows(
         event["from_state"] = recorded or "dispatched"
         rows.append(event)
     return rows
-
 
 
 def _follow_watch_lines(
@@ -1787,7 +1773,9 @@ def _follow_watch_lines(
             # the pane stays quiet. ``pane_line`` carries that decision to the
             # consumer, the way the producer's stop and reload-failed lines do.
             if first_attach:
-                layout_changed = resume_state.get("layout") != _ticker_layout_signature()
+                layout_changed = (
+                    resume_state.get("layout") != _ticker_layout_signature()
+                )
                 yield {
                     "event": FOLLOWER_FORMAT_EVENT,
                     "project": project,
@@ -1841,7 +1829,9 @@ def _follow_watch_lines(
             # header that says how many runs were found and how many changed.
             record = (
                 runs.read_delivered(project, session)
-                if first_attach and not reloaded_in_place and mode in ("baseline", "restart")
+                if first_attach
+                and not reloaded_in_place
+                and mode in ("baseline", "restart")
                 else {}
             )
             gap_rows = (
@@ -2045,7 +2035,6 @@ def _follow_watch_lines(
         )
 
 
-
 def _echo_follow_line(line: str, *, stream=None) -> None:
     """Write and flush one ticker line so pipe readers receive it immediately.
 
@@ -2061,13 +2050,10 @@ def _echo_follow_line(line: str, *, stream=None) -> None:
     output.flush()
 
 
-
 HISTORY_DIM = "\x1b[2m"
 
 
-
 HISTORY_RESET = "\x1b[0m"
-
 
 
 def _short_code_stamp(stamp: Any) -> str:
@@ -2082,7 +2068,6 @@ def _short_code_stamp(stamp: Any) -> str:
     return text[:8] if text else "none"
 
 
-
 def _dim_history_line(text: str) -> str:
     """Wrap one replayed row in the dim styling, leaving its own bytes intact.
 
@@ -2091,7 +2076,6 @@ def _dim_history_line(text: str) -> str:
     with the original sees the same columns and the same clock.
     """
     return f"{HISTORY_DIM}{text}{HISTORY_RESET}"
-
 
 
 def _follow_history_caps(project: str) -> tuple[int, float]:
@@ -2125,7 +2109,6 @@ def _follow_history_caps(project: str) -> tuple[int, float]:
     return rows, seconds
 
 
-
 def _follow_row_stamp(event: Mapping[str, Any]) -> float:
     """The epoch a delivered row was drawn under, read from its own stamp.
 
@@ -2145,7 +2128,6 @@ def _follow_row_stamp(event: Mapping[str, Any]) -> float:
     return moment.timestamp()
 
 
-
 def _follow_replay_visible() -> bool:
     """Whether this follower's reader is watching a live pane, not a pipe.
 
@@ -2162,9 +2144,7 @@ def _follow_replay_visible() -> bool:
         return False
 
 
-
 _HISTORY_FRAME = "── history · {count} rows ──"
-
 
 
 def _follow_history_burst(rows, *, dim=_dim_history_line) -> str:
@@ -2186,9 +2166,7 @@ def _follow_history_burst(rows, *, dim=_dim_history_line) -> str:
     return "\n".join([frame, *(dim(row["text"]) for row in rows)])
 
 
-
 TICKER_THEMES = ("dark", "light")
-
 
 
 def _row_is_stale_inventory(event) -> bool:
@@ -2209,7 +2187,6 @@ def _row_is_stale_inventory(event) -> bool:
     return ticker_module.hidden_at_attach(event)
 
 
-
 def _ticker_grid(width, theme, no_color):
     """Build the reader's grid, deferring the import that owns its defaults."""
     from reckon.crew import ticker as ticker_module
@@ -2219,7 +2196,6 @@ def _ticker_grid(width, theme, no_color):
         theme=ticker_module.DEFAULT_THEME if theme is None else theme,
         color=not no_color,
     )
-
 
 
 def _seed_ticker_memory(grid, states) -> None:
@@ -2243,7 +2219,6 @@ def _seed_ticker_memory(grid, states) -> None:
             for key, value in dict(states).items()
         }
     )
-
 
 
 def _ticker_options(command):
@@ -2285,9 +2260,7 @@ def _ticker_options(command):
     return command
 
 
-
 _ATTENTION_REMOVED_AFTER = "2027-06-30"
-
 
 
 _ATTENTION_DEPRECATION = (
@@ -2297,13 +2270,12 @@ _ATTENTION_DEPRECATION = (
 )
 
 
-
 @crew.command(name="host", hidden=True)
 @click.option(
     "--owner-pid",
     type=int,
     default=None,
-    help="The Claude process this host lives for; defaults to the parent."
+    help="The Claude process this host lives for; defaults to the parent.",
 )
 @click.option(
     "--owner-start",
@@ -2361,9 +2333,7 @@ def crew_host(
             "start_time": owner_start
             or (session_host_module.process_start_time(owner_pid) or ""),
         }
-    follower_argv = (
-        json_module.loads(follower_command) if follower_command else None
-    )
+    follower_argv = json_module.loads(follower_command) if follower_command else None
     requests = None
     if fd_number is not None:
         requests = os_module.fdopen(fd_number, "r", encoding="utf-8", errors="replace")
@@ -2376,7 +2346,6 @@ def crew_host(
         requests=requests,
         first_request=first_request,
     )
-
 
 
 @crew.command(name="follow")
@@ -2824,7 +2793,6 @@ def crew_follow(
         raise click.ClickException(str(exc)) from exc
 
 
-
 @crew.command(name="watch")
 @click.option("--project", required=True, help="Project whose live fleet to watch.")
 @click.option(
@@ -2986,4 +2954,3 @@ def crew_watch(
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
     _emit_crew_result(result, pretty)
-

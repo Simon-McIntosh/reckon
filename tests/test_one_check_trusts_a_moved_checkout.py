@@ -254,12 +254,10 @@ def test_the_mcp_and_the_follower_share_one_trust_check() -> None:
     """The source holds one import probe, and both readers point at it.
 
     The disagreement that motivated the shared check is a duplicated probe. The
-    follower's probe name must be the same object as the module's, so a reader
-    that changed one could not leave the other behind.
+    probe the MCP runs must be the follower's own text, so a reader that changed
+    one could not leave the other behind.
     """
-    assert crew_follow_commands._FOLLOWER_RELOAD_PROBE is checkout_trust.IMPORT_PROBE, (
-        "the follower's probe must be the shared one, not a copy"
-    )
+    assert checkout_trust._import_probe() == crew_follow_commands._FOLLOWER_RELOAD_PROBE
 
 
 def test_the_source_holds_one_import_probe() -> None:
@@ -268,4 +266,4 @@ def test_the_source_holds_one_import_probe() -> None:
     hits = sorted(
         path for path in SOURCE_PACKAGE.rglob("*.py") if needle in path.read_text()
     )
-    assert hits == [SOURCE_PACKAGE / "checkout_trust.py"], hits
+    assert hits == [SOURCE_PACKAGE / "crew_follow_commands.py"], hits

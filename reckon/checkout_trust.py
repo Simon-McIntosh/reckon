@@ -29,30 +29,19 @@ from pathlib import Path
 
 from reckon.crew.obligation_snapshot import FOLLOWER_RELOAD_PROBE_TIMEOUT_SECONDS
 
-# The one proof that the checkout's current code loads. A fresh interpreter is
-# required: the running process is the wrong place to discover a broken module,
-# because the check must not import the new code into the image it is judging.
-# Every tracked module is compiled first, so a syntax error anywhere is reported
-# as itself, and then imported, so a rename bound at a call site is caught at
-# load rather than at first use.
-IMPORT_PROBE = (
-    "import importlib, pathlib, sys\n"
-    "root = pathlib.Path(sys.argv[1]).resolve()\n"
-    "sys.path.insert(0, str(root))\n"
-    "package = root / 'reckon'\n"
-    "sources = sorted(package.rglob('*.py'))\n"
-    "for path in sources:\n"
-    "    compile(path.read_bytes(), str(path), 'exec')\n"
-    "for path in sources:\n"
-    "    parts = list(path.relative_to(root).with_suffix('').parts)\n"
-    "    if parts and parts[-1] == '__init__':\n"
-    "        parts = parts[:-1]\n"
-    "    if not parts or parts[-1] == '__main__':\n"
-    "        continue\n"
-    "    importlib.import_module('.'.join(parts))\n"
-)
-
+# The one proof that a checkout's current code loads is defined in
+# ``reckon.crew_follow_commands`` as ``_FOLLOWER_RELOAD_PROBE``: the follower
+# runs that exact text, and a reload proof spliced into that module at run time
+# must be the one the follower itself runs. It is fetched lazily here so the
+# module that defines it can import this one without a cycle.
 IMPORT_PROBE_TIMEOUT = FOLLOWER_RELOAD_PROBE_TIMEOUT_SECONDS
+
+
+def _import_probe() -> str:
+    """The shared import proof text, read from its single definition."""
+    from reckon.crew_follow_commands import _FOLLOWER_RELOAD_PROBE
+
+    return _FOLLOWER_RELOAD_PROBE
 
 
 @dataclass(frozen=True)
@@ -117,7 +106,7 @@ def reckon_imports(root: Path) -> tuple[bool, str]:
     """Whether the checkout's current code loads in a throwaway interpreter."""
     try:
         completed = subprocess.run(
-            [sys.executable, "-c", IMPORT_PROBE, str(root)],
+            [sys.executable, "-c", _import_probe(), str(root)],
             capture_output=True,
             text=True,
             timeout=IMPORT_PROBE_TIMEOUT,
