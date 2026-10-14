@@ -379,6 +379,59 @@ def _record_review_dispatch(
         _mutate_pointer(run_id, record)
 
 
+def _composed_review_run_id(
+    project: str, plan_slug: str, node: Mapping[str, Any]
+) -> str:
+    """The review run id a queued pointer's write paths name, or ``""``.
+
+    The composed report directory is the one the review's write paths sit under,
+    so its name is the review run id the delivered record and its store are
+    keyed by. A pointer whose paths name no such directory yields no id rather
+    than a guessed one.
+    """
+    root = plan_review._plan_review_report_root(project, plan_slug)
+    for candidate in node.get("write_paths") or ():
+        directory = Path(str(candidate))
+        if directory.parent == root and directory.name:
+            return directory.name
+    return ""
+
+
+def join_admitted_plan_review(pointer: Mapping[str, Any], launched_run_id: str) -> str:
+    """Join a queued plan review's composed directory to the run that launched it.
+
+    A plan review composed while the lane held records its ``dispatch.json``
+    with the request unlaunched — ``status: lane-paused`` and ``run_id: null`` —
+    and the admission pass later launches it under a new run id. Nothing in that
+    launch writes the id back, so promotion's join finds no run and the delivered
+    report is never stored. Writing the launched id into the composed directory's
+    sidecar is what makes the join resolve, and this is the only place a queued
+    plan review's launch is joined.
+
+    Returns the composed review run id it joined, or ``""`` when the pointer
+    names no plan review or names no composed directory to join.
+    """
+    node = dict(pointer.get("node") or {})
+    node_id = str(node.get("id") or "")
+    prefix = PLAN_REVIEW_NODE_PREFIX
+    if not node_id.startswith(prefix):
+        return ""
+    slug = node_id[len(prefix) :]
+    project = str(pointer.get("project") or "")
+    if not (slug and project and launched_run_id):
+        return ""
+    composed_run_id = _composed_review_run_id(project, slug, node)
+    if not composed_run_id:
+        return ""
+    _record_review_dispatch(
+        {"project": project, "plan_slug": slug, "run_id": composed_run_id},
+        status="dispatched",
+        reason=f"the queued review launched as run {launched_run_id}",
+        review_run_id=launched_run_id,
+    )
+    return composed_run_id
+
+
 def _object_id(text: str) -> str:
     """``text`` when it already names a git object id, otherwise empty."""
     return text if re.fullmatch(r"[0-9A-Fa-f]{40,64}", text) else ""
