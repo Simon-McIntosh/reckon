@@ -49,11 +49,12 @@ rather than a zero, which is the first rule above applied to a second quantity.
 
 from __future__ import annotations
 
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, replace
-from datetime import UTC, datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, Callable, Iterable, Mapping
+from typing import Any
 
 from reckon import _backends, crew, ledger
 from reckon._timestamps import parse_utc
@@ -257,7 +258,7 @@ def withheld_reserves(policy_block: Mapping[str, Any]) -> list[str]:
 
 
 def _now(now: datetime | None = None) -> datetime:
-    return now or datetime.now(tz=timezone.utc)
+    return now or datetime.now(tz=UTC)
 
 
 def _parse_stamp(value: Any) -> datetime | None:
@@ -2822,7 +2823,9 @@ def group_pace(
             session=session,
         )
         effective_block = effective.get("budget") or {}
-        runway = _group_runway(group, members, clocks, records, effective, moment=moment)
+        runway = _group_runway(
+            group, members, clocks, records, effective, moment=moment
+        )
         allowance = _group_allowance(group, reading, clocks, effective, moment=moment)
         lift_id = effective_block.get("lift_id")
         session_lift = None
@@ -2893,7 +2896,7 @@ def _other_session_lift(
         scope = str(lift.get("scope") or "")
         if not scope.startswith(prefix):
             continue
-        owner = scope[len(prefix):]
+        owner = scope[len(prefix) :]
         if not owner or owner == str(session or ""):
             continue
         block = budget_lift.effective_budget(
@@ -3449,9 +3452,12 @@ def recorded_windows(
     receipt only when the run is promoted; meanwhile the session's own rollout
     holds the client's quota readings, which is what the lanes view reports from.
     So each member's newest live run is read by its ``session_id``, and its
-    clocks compete on the same footing as the other two. The age is the run
-    record's, since a rollout receipt carries its windows without a stamp of its
-    own.
+    clocks compete on the same footing as the other two. The age is the rate-limit
+    event's own stamp, read from the session's rollout file through the one reader
+    the lanes view also uses: a receipt carries its windows without a stamp of its
+    own, so dating it by the run record -- whose stamp is never earlier than the
+    report -- would let an older figure outrank a newer one. A rollout with no
+    dated event contributes no candidate rather than borrowing the record's stamp.
 
     Only members of a declared group are read. A lane declaring no wallet has no
     group whose pace it could inform, and reading its stream would spend a file
@@ -3483,7 +3489,7 @@ def recorded_windows(
         live = list(pointers)
     receipts: dict[str, tuple[datetime, Mapping[str, Any]]] = {}
     runs_by_backend: dict[str, list[tuple[str, str]]] = {}
-    sessions: dict[str, tuple[str, str, datetime]] = {}
+    sessions: dict[str, tuple[str, str, str]] = {}
     for row in [*rows, *(record for record in live if isinstance(record, Mapping))]:
         if not isinstance(row, Mapping):
             continue
@@ -3510,13 +3516,13 @@ def recorded_windows(
         if name not in members:
             continue
         session_id = str(record.get("session_id") or "").strip()
-        observed = _run_observed_at(record)
-        if not session_id or observed is None:
+        if not session_id:
             continue
+        run_id = str(record.get("run_id") or "").strip()
         order = _run_order(record)
         known = sessions.get(name)
         if known is None or order > known[0]:
-            sessions[name] = (order, session_id, observed)
+            sessions[name] = (order, session_id, run_id)
 
     windows: dict[str, window_reading.WindowReading] = {}
     for name in sorted(members):
@@ -3528,10 +3534,8 @@ def recorded_windows(
                 candidates.append(candidate)
         session = sessions.get(name)
         if session is not None:
-            candidate = _rollout_reading(
-                _read_rollout(session[1], rollouts),
-                observed_at=session[2],
-                moment=moment,
+            candidate = _rollout_event_reading(
+                _read_live_rollout(session[1], session[2], rollouts), moment=moment
             )
             if candidate.known:
                 candidates.append(candidate)
@@ -3582,11 +3586,12 @@ def _run_order(row: Mapping[str, Any]) -> str:
     )
 
 
-# The durable stamps a run record carries, newest first.  A rollout receipt
-# keys its quota windows without stamping them, so a reading taken from one is
-# dated by the record the session was named by -- and every surface that prices
-# such a receipt must read that date the same way, or two views of one run
-# disagree about how old its figures are.
+# The durable stamps a run record carries, newest first.  A run record's own
+# date -- the freshest of these -- is what a surface reporting on the *run* reads
+# (the lanes view's row, and a run with no dated rollout event).  A rollout
+# figure is not read this way: it is dated by the rate-limit event that carried
+# it, so a run whose record is stamped after another rollout's report cannot make
+# an older figure the newest.
 _RUN_STAMP_KEYS = (
     "observed_at",
     "completed_at",
@@ -3646,6 +3651,43 @@ def _read_rollout(session_id: str, reader: Callable[[str], object] | None) -> ob
     if reader is not None:
         return reader(session_id)
     return rollout_module.read_rollout_receipt(session_id)
+
+
+def _read_live_rollout(
+    session_id: str, run_id: str, reader: Callable[[str], object] | None
+) -> object:
+    """One live session's event-dated rollout, through the reader the lanes use.
+
+    The injected seam takes the session id alone, so a test supplies a reader
+    interchangeable with the production one. Absent an injection the production
+    reader locates the session's rollout under its own harness home and answers
+    ``None`` for a session whose rollout carries no dated rate-limit event rather
+    than raising.
+    """
+    if reader is not None:
+        return reader(session_id)
+    from reckon.crew import paid_lanes
+
+    return paid_lanes.read_session_rollout_event(session_id, run_id=run_id or None)
+
+
+def _rollout_event_reading(
+    event: object, *, moment: datetime
+) -> window_reading.WindowReading:
+    """One rollout event as a reading, aged by the event's own stamp.
+
+    The reader returns the provider's ``rate_limits`` object with the stamp the
+    provider wrote on it, so the reading is dated by its own report. An event
+    that carries no stamp, or no rate-limit object, resolves no clock and so
+    contributes no candidate -- never the run record's later date.
+    """
+    observed_at = getattr(event, "observed_at", None)
+    rate_limits = getattr(event, "rate_limits", None)
+    if not isinstance(observed_at, datetime) or not isinstance(rate_limits, Mapping):
+        return window_reading.WindowReading(
+            reason="the session's rollout carried no dated rate-limit event"
+        )
+    return _rate_limits_reading(rate_limits, observed_at=observed_at, moment=moment)
 
 
 def _rollout_reading(

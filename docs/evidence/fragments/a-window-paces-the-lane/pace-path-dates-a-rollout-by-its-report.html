@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-window-paces-the-lane">
+  <meta name="plan-title" content="The pace path dates a rollout figure by its own report">
+  <meta name="plan-summary" content="recorded_windows dates a live run's rollout figure by the rollout's own rate_limits event, through the one event-dated reader the lanes path uses, rather than by the run record's later stamp.">
+  <meta name="plan-evidence-for" content="reckon:a-window-paces-the-lane">
+  <meta name="plan-node" content="pace-path-dates-a-rollout-by-its-report">
+  <meta name="plan-recorded-at" content="2026-10-14">
+  <meta name="plan-environment" content="Linux fleet node; Python venv at /home/ITER/mcintos/Code/reckon/.venv; pytest -n 8 with an injected rollout reader">
+  <title>The pace path dates a rollout figure by its own report &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1 id="pace-path-dates-a-rollout-by-its-report-title">The pace path dates a rollout figure by its own report</h1>
+    <p class="plan-summary">recorded_windows takes a live run's rollout figure from the event-dated reader the lanes path already uses, so an older figure cannot outrank a newer one.</p>
+  </header>
+
+  <p id="pace-path-dates-a-rollout-by-its-report-landing"><code>recorded_windows</code> in <code>reckon/budget.py</code> now dates a
+  live run's rollout candidate by its own <code>rate_limits</code> event, read through the single reader of rollout files
+  (<code>paid_lanes.read_session_rollout_event</code>, built on the new <code>_read_rollout_event</code> that the account scan
+  <code>_codex_rollout_candidates</code> also uses). The record-stamp dating is removed from this path and a rollout with no dated
+  event contributes no candidate rather than borrowing the record's stamp; <code>tests/test_preflight_pace.py</code> is brought to the
+  event stamp and the new <code>tests/test_pace_dates_a_rollout_by_its_report.py</code> pins the three-source competition. Gate:
+  637 passed at head and 634 at base over the 41 test files that import the write paths, zero failures either side; the declared
+  negative control (record-stamp dating restored) turns two of the new tests red (2 failed, 1 passed, EXIT=1).</p>
+
+  <p id="pace-path-dates-a-rollout-by-its-report-competition">The new test lays the member's three sources at
+  <code>EVENT_STAMP &lt; RECEIPT_STAMP &lt; RECORD_STAMP</code> and asserts the outcome of the recency reconciliation:</p>
+
+  <table id="pace-path-dates-a-rollout-by-its-report-table" class="r-table">
+    <caption>One member's three candidate readings, and which the group reports</caption>
+    <thead>
+      <tr><th scope="col">Source</th><th scope="col">Dated by</th><th scope="col">Seven-day figure</th><th scope="col">Wins?</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>committed lane receipt</td><td><code>RECEIPT_STAMP</code></td><td>0.21</td><td>yes &mdash; newest after the fix</td></tr>
+      <tr><td>live run's rollout</td><td>its <code>rate_limits</code> event (<code>EVENT_STAMP</code>)</td><td>0.66</td><td>no</td></tr>
+      <tr><td>live run's record</td><td><code>RECORD_STAMP</code> (not a dated event)</td><td>&mdash;</td><td>not a candidate</td></tr>
+    </tbody>
+  </table>
+
+  <p id="pace-path-dates-a-rollout-by-its-report-evidence">With the record-stamp dating restored the rollout is lifted to
+  <code>RECORD_STAMP</code> and wins, so the receipt no longer speaks: the declared negative control fails the
+  receipt-wins case and the event-dating case, exactly the two the fix exists to hold.</p>
+
+  <p id="pace-path-dates-a-rollout-by-its-report-artifacts">Artifacts: <code>tests/test_pace_dates_a_rollout_by_its_report.py</code>
+  (three tests) and the updated <code>tests/test_preflight_pace.py</code>; gate logs under the run directory
+  <code>logs/gate-head.log</code> (EXIT=0) and <code>logs/gate-base.log</code> (EXIT=0), negative control at
+  <code>logs/negative-control.log</code> (EXIT=1).</p>
+</main>
+</body>
+</html>
