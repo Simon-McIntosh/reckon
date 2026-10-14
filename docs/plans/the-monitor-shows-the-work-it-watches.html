@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="97">
+<meta name="plan-version" content="98">
 <meta name="plan-modified" content="2026-10-14">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -602,7 +602,10 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
     <div class="r-comment-body"><p>§23 landed. One workstation lift grant now draws one row on a pane however many project streams carry it, through a shared exclusive-create claim per session, lift and transition, keyed on a new structured <code>lift_id</code>. Merged as <code>de04d7b09</code>; gate 725 passed. Review: 100, then 110 after a docstring repair. <a href="/reckon/evidence/archive/the-monitor-shows-the-work-it-watches-landed.html#s23">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s23" data-id="c-run-r-20261014T190832327112-a-lift-is-drawn-once-per-pane" data-who="reckon-build" data-when="2026-10-14T20:26:29.077Z">
-    <div class="r-comment-body"><p>tests/test_a_lift_is_drawn_once_per_pane.py 10/10; a per-session exclusive-create claim (O_CREAT|O_EXCL, keyed on the row&#x27;s new structured lift_id) drawn once per (session, lift id, transition) across a session&#x27;s project followers, pruned by the end row and aged out; head gate 725 passed/0 failed.</p></div>
+    <div class="r-comment-body"><p>tests/test_a_lift_is_drawn_once_per_pane.py 10/10; a per-session exclusive-create claim (O_CREAT|O_EXCL, keyed on the row's new structured lift_id) drawn once per (session, lift id, transition) across a session's project followers, pruned by the end row and aged out; head gate 725 passed/0 failed.</p></div>
+</div>
+<div class="r-comment" data-section="s23" data-id="c-run-r-20261014T202826692283-review-of-a-lift-is-drawn-once-per-pane-6e38a06e27e4" data-who="reckon-build" data-when="2026-10-14T20:44:38.756Z">
+    <div class="r-comment-body"><p>an independent review record for r-20261014T190832327112-a-lift-is-drawn-once-per-pane is stored at &lt;store&gt;/reckon/r-20261014T190832327112-a-lift-is-drawn-once-per-pane.json with status parsed, all six dimensions scored in 0..20, reviewed_base_sha 08e743032449b3baa2002e032d92e78ce8f8261d and reviewed_head_sha 6e38a06e27e494e5d6f2b6dc15135f3dcc0eeb17, added_failure_count 0 and added_failure_ids []; it covers only the single commit the run gained since its prior review (6e38a06e27, a docstring-only repair of tests/test_a_lift_is_drawn_once_per_pane.py).</p></div>
 </div>
 </section>
 </main>
