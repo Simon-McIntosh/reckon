@@ -1,0 +1,10 @@
+<section data-reckon="evidence" id="real-home-guards-fail-only-on-their-own-writes">
+<h3 id="real-home-guards-fail-only-on-their-own-writes-head">Real-home guards fail only on their own test's writes</h3>
+<p id="real-home-guards-fail-only-on-their-own-writes-summary">A shared needle-filtered search, <code>tests/real_home_traces.py</code>, replaces the whole-snapshot comparisons six guards used to prove a test wrote nothing into the real config home. Each guard now searches for an identifier its own test mints — a session, node id, project or mounted path — so a peer session dispatching or arming a follower no longer fails it. The write-side assertion is unchanged.</p>
+<ul id="real-home-guards-fail-only-on-their-own-writes-facts">
+<li>Migrated onto the helper: <code>test_watch_arming_isolation</code>, <code>test_member_registration_commits</code>, <code>test_impl_is_computed</code>, <code>test_rollup_isolates_a_project</code>, <code>test_append_decision_keeps_its_question</code>, <code>test_lanes_view_is_live</code>, <code>test_no_member_dispatch_runs_alone</code>, <code>test_follow_lifetime</code> (its <code>_own_traces</code>) and the four dispatch modules carrying <code>fixture_pointers</code>. No module keeps a private copy of the trace search.</li>
+<li>Gate: <code>tests/test_real_home_traces.py</code> — a foreign entry added between the readings is not reported, while an entry carrying a needle by name or by content is.</li>
+<li>Two negative controls fail with the runner's <code>FAILED</code> line and a non-zero <code>EXIT</code>: the helper reverted to whole-root reporting fails the foreign-entry case; the no-member guard pointed at the test's own temporary home fails naming the pointer <code>r-first.json</code> the test wrote.</li>
+<li>Census of every module resolving the real config home, with needles and reading lines: <code>census.log</code> under the run directory.</li>
+</ul>
+</section>
