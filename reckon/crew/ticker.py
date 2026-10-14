@@ -1890,6 +1890,29 @@ def declares_a_wait(event: Mapping[str, Any]) -> bool:
     return isinstance(event.get("expected_horizon_seconds"), Real)
 
 
+# A wait whose condition no probe has read is not the same situation as one whose
+# probe answered and is still pending: nothing is testing the first, so its
+# condition cannot lift on its own and a reader waiting for it waits for nothing.
+# The record separates them — the probe's verdict (``wait_condition_state``) is
+# absent when no probe has run, while a manifest asking to wait still emits its
+# horizon and overdue flag — so a row marks the unprobed wait with this glyph in
+# the state cell's spare column, beside the word rather than in a cell of its own.
+UNPROBED_WAIT_MARKER = "?"
+
+
+def unprobed_wait(event: Mapping[str, Any]) -> bool:
+    """Whether the row declares a wait no probe has been run for.
+
+    The probe's verdict is written only when a probe answered, so the field's
+    presence is the record of execution and its absence the record of none. A
+    manifest that asks to wait emits its horizon and its overdue flag with the
+    verdict absent — the wait nobody is checking — which is the row this marks,
+    and it is distinguished from an ordinary row, which carries none of the
+    declaration's facts at all.
+    """
+    return declares_a_wait(event) and event.get("wait_condition_state") is None
+
+
 def _agent_label(agent: Any) -> str:
     """The agent column label: alias plus the full effort word, or the record as it stands.
 
@@ -2165,6 +2188,13 @@ class Ticker:
         )
         model_cell, effort_cell = _model_and_effort(event)
         job = _job_name(node, event.get("role"))
+        # A wait no probe has run for is marked beside its destination word, in
+        # the state cell's own spare column: the cell is a fixed ten columns and
+        # the longest pane word is nine, so the glyph rides inside the word's
+        # field and a marked row aligns with an unmarked one rather than
+        # widening the row. The en dash is not the marker — the row already
+        # spends it on an absent value.
+        to_cell = to_state + (UNPROBED_WAIT_MARKER if unprobed_wait(event) else "")
 
         cells: list[tuple[str, Any]] = [
             (f"{local_clock(event.get('observed_at')):<{CLOCK}}", "dim"),
@@ -2190,7 +2220,7 @@ class Ticker:
             cells.append((" " * NEW_STATE_OFFSET, None))
         cells.extend(
             [
-                (f"{to_state:<{STATE_WORD}}", _state_hue(self.theme, to_state)),
+                (f"{to_cell:<{STATE_WORD}}", _state_hue(self.theme, to_state)),
                 (" " * GAP, None),
             ]
         )
