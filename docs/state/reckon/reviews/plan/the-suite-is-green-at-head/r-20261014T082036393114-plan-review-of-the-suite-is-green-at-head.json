@@ -1,0 +1,62 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-14T08:34:14.682Z",
+  "dispatched_at": "2026-10-14T08:22:21Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-suite-is-green-at-head.html:651",
+      "id": "reasoning-1",
+      "reason": "adding it replaces the hand-computed token estimate (208,807/3.5) with the tool's own receipt per resulting module and turns \"no added failure against base\" \u2014 which cannot show a statement was carried unchanged \u2014 into a proven pure-move receipt, so the node's gate and evidence change.",
+      "text": "\u00a76 asserts \"Two cohesive families move out \u2026 as pure moves\" and \"A pure move cannot change behaviour\", but no measurement of purity is named; the repository's `scripts/check_pure_move.py` (landed 2026-10-07, before this section's 2026-10-14 recension) is purpose-built for exactly this split \u2014 it takes `--base <rev> --module reckon/crew/routing.py --into reckon/crew/gc.py --into reckon/crew/process_signal.py`, exits 1 naming every lost, altered or duplicated statement, and prints the per-module `estimated_tokens` the section's \"near 44,000\" margin is hand-derived from",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-suite-is-green-at-head.html:651",
+      "id": "evidence_paths-1",
+      "reason": "the generic clause \"Any helper it still uses from `routing` is reached through a function-level import\" already lets a worker leave them behind without breaking import or the done-when, so noting the enumeration gap does not change what the node builds.",
+      "text": "the process-signalling family enumeration moves `RUN_ID_ENV` but omits the two module constants the family alone uses, `SENDER_RECORD_NAME` (`reckon/crew/routing.py:3176`, read only by `_write_sender_record` at :3270) and `_RUN_WORKER_RECORD` (:3286, read only by `_worker_record` at :3384), even though the sibling gc bullet grants itself \"the constants only they use\"",
+      "type": "evidence_paths",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "cb62eda847c53fa5cef8c0ba64ccc12923134b302f2722f13104c6b940beef4c",
+  "plan_slug": "the-suite-is-green-at-head",
+  "plan_version": 341,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261014T082036393114-plan-review-of-the-suite-is-green-at-head",
+  "reviewed_blob_sha": "1584233e91eeb9e605d5aac00a55cd722131289e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `784d580de`, `2e44591a1` and `c0390eb72` all resolve with the subjects the section gives them; `reckon/crew/routing.py`, `reckon/crew/dispatch_sessions.py` and every named symbol (`garbage_collect`\u2026`_processes_holding`, `signal_worker`\u2026`RUN_ID_ENV`, `GcSweepError`, `_release_worktree_whole`, `_live_pointer_worktrees`, `_stale_run_locks`) exist.",
+    "done_when": "pass \u2014 the done-when is measurable (the window test names none of `routing.py`, `gc.py`, `process_signal.py`; the routing-importing test files show no added failure against base) and names a declared negative control (append the moved families back, and the window test must then name `routing.py`); the target is reachable, since the two families total ~17,000 estimated tokens, leaving `routing.py` near 42,650 against the 50,000 bound.",
+    "evidence_paths": "pass \u2014 the negative control is logged under the run directory (a durable crew run path, not a session scratchpad or node-local temp), and every write path is a repository file.",
+    "naming": "pass \u2014 the new module names (`gc.py`, `process_signal.py`) and every symbol are named by what they do; no plan label, stage name or ticket number reaches code.",
+    "reasoning": "a finding \u2014 the stated root cause holds (`784d580de` took `routing.py` from 174,608 bytes/49,888 tokens at its parent to 176,890 bytes/50,540 at the commit, so the window test passes at the parent and fails at the commit), and the mechanism does produce the done-when; the defect is that the section rests its correctness on the axiom \"A pure move cannot change behaviour\" without naming the measurement that proves the move is pure.",
+    "single_goal": "pass \u2014 \u00a76 carries one deliverable, making `routing.py` fit a worker window; moving two families is one goal, not two.",
+    "wiring": "pass \u2014 \u00a76's section element declares no depends-on/gates and plan-standalone says the plan gates no other plan; the section's only outbound references (merge `2e44591a1`, merge `c0390eb72`, and `<a href=\"/reckon/plans/a-run-has-one-live-writer\">`, which resolves to `docs/plans/a-run-has-one-live-writer.html`) all resolve, and the two runs it waited on have merged."
+  },
+  "section_digests": {
+    "_document": "83bc4eebbeaf35e1f8769b1cefa72ecf8466fb0d23d3dd350bf2e642790b97e5",
+    "s1": "93d7e8eb3f04bb8d9aad0f5ac7d68a9d009b7fe7feaa6f4932738242154d8d4d",
+    "s10": "9633fb928a6c720c8fae74ed3da0a5f7ed555c4230f29ebf2ee89e5432566bb1",
+    "s11": "3e9c94371cc0b22adeb21c71a08fdd16433d8b4c1a22e73cd63d1171332089ba",
+    "s12": "dd8650523d29d87e6fa41408db7d0440cf17dfbd57f0ab6da0d5fcd223692d95",
+    "s13": "7b00f23667f49ba7de16f8823860c86ad35a562eebddf434fd1a6b9f1f5e9993",
+    "s14": "1469c86b5327d2429ce07b9ddd2fbca586d8831acb94119f8a187e315f48dcf7",
+    "s15": "f84dc4d4bef37307ff05d71bd4f7071e9208e789832e7cb00be82c37bcfde97e",
+    "s16": "4ab9d42bd2e71d070a1cc5393ebea66e1ec71d06dad51f1a82505c91ce309234",
+    "s2": "d8e1d44eab3d041cfa8f08f045885bcf9a783d27f0cb613fe7de2c0476c13887",
+    "s3": "d6efa514940aeb662c9b7fdee7f663c86e4da2526ec9a01c6977f967e30d886a",
+    "s4": "e7003c1b5457d6229da28b7d90f825f0e3ef67be2a012291c12a2daf14bf2273",
+    "s5": "934ff53a2b41de523672b7760ab4bbe2e8be5d3da6b580c600383ac0217825a2",
+    "s6": "d60195e6aaf0a078c7e371ae9e5b6b2f13987ec0926fd5a555754cbd5b111755",
+    "s7": "655ef45aae9c9f31c0c67cb28422cff4a16611cfce488326c298768a23f58efd",
+    "s8": "c78e67e053ac3d61a73df4b965e8209a12ca4d9b745535a102b0b0040cce3adc",
+    "s9": "f4ef4f0dc18779331d3654037d55a7dd1c27d3769bfbfe753867fccbb53f9a28"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T08:43:43.021463+00:00"
+}
