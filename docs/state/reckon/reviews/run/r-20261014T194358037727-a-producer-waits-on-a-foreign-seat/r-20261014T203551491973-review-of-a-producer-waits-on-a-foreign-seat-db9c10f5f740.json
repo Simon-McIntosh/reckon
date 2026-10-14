@@ -1,0 +1,51 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:2288",
+    "reckon/crew/recovery_watch.py:2467",
+    "reckon/crew/watch_unit.py:143"
+  ],
+  "completed_at": "2026-10-14T20:49:10.490Z",
+  "dispatched_at": "2026-10-14T20:36:20Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "production call sites reaching the change: reckon/crew/recovery_watch.py:2288 (the `with _watch_registration(project, stall_window, sleeper=sleeper)` inside watch_ticker), reckon/crew/recovery_watch.py:2467 (watch_ticker invoked by the transitions wrapper), and reckon/crew/watch_unit.py:143 (the shared seat_names_a_live_foreign_producer the loop now consumes); the node's own test file is excluded.",
+    "diff": "read the single commit db9c10f5f740925e8aefebdbcdebd4a3a36c1055 against base 9677c89ed7411f96d716bcad44dd1c102025a303; two files changed, +352/-27, recovery_watch.py:334-375 adding FOREIGN_SEAT_REREAD_SECONDS and the wait-and-re-read loop in _watch_registration, recovery_watch.py:2288 relocating the published-states seed read to after seat acquisition, and the new test file; every changed path is inside the declared write paths.",
+    "done_when": "the done_when names tests/test_a_producer_waits_on_a_foreign_seat.py with the crew home pointed at a temporary directory (RECKON_HOME via the home fixture), an injected sleeper standing for the simulated clock, a foreign seat with a fresh stream still running after three re-read intervals having yielded no row and taken no seat, a stale stream taking the seat and publishing from a seed read after the wait, a same-host seat behaving as before, the real crew home fingerprinted untouched, and the watch calling seat_names_a_live_foreign_producer and composing no second copy; the manifest records the base arm (384 passed, EXIT=0) and head arm (388 passed, EXIT=0) and the ruff delta, and the four cases assert each clause.",
+    "goal": "the node goal is to keep a producer that finds the project seat held on another host waiting and re-reading the seat instead of exiting; reckon/crew/recovery_watch.py:352-375 now loops on _project_watch_claim, sleeping FOREIGN_SEAT_REREAD_SECONDS and re-reading the seat while seat_names_a_live_foreign_producer reports a live foreign holder, taking the seat on the first re-read that acquires the seat (later commits than the earlier standing work; the goal is delivered by this change).",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T194358037727-a-producer-waits-on-a-foreign-seat/manifest.md; it records commit db9c10f5f, the four-case test run green at head (4 passed EXIT=0) and the same file with the wait removed (3 failed of 4, EXIT=1), the base and head gate arms, the ruff delta, and names gate-base.log, gate-head.log and negative-control.log in test_logs.",
+    "write_paths": "the source node was fenced to reckon/crew/recovery_watch.py, tests/test_a_producer_waits_on_a_foreign_seat.py, and the evidence fragment/figure paths; git diff --stat shows the change touches only reckon/crew/recovery_watch.py and tests/test_a_producer_waits_on_a_foreign_seat.py, both inside the declared paths (the fragment and figure were not produced, as the manifest's follow_ons notes)."
+  },
+  "justifications": {
+    "durability": "negative-control.log records 3 of 4 cases failing with the wait removed (EXIT=1) and tests/test_a_producer_waits_on_a_foreign_seat.py:211 asserts row[\"from_state\"]==\"working\", which reddens if the seed were read before the wait rather than after seat acquisition.",
+    "evidence": "tests/test_a_producer_waits_on_a_foreign_seat.py asserts each clause of the done_when and gate-head.log records the named suite green at db9c10f5f (388 passed, EXIT=0).",
+    "fit": "reckon/crew/recovery_watch.py:334 declares FOREIGN_SEAT_REREAD_SECONDS in the module's existing UPPER_SNAKE constant idiom and the mechanism comment at lines 328-333 carries no plan, ticket or version identifier.",
+    "goal_fidelity": "reckon/crew/recovery_watch.py:352-375 loops on _project_watch_claim and sleeps only while seat_names_a_live_foreign_producer reports a live foreign holder, waiting and re-reading the seat rather than yielding a terminal row, exactly the goal.",
+    "reuse": "reckon/crew/recovery_watch.py:44 imports and calls the shared watch_unit.seat_names_a_live_foreign_producer owner (reckon/crew/watch_unit.py:143) for the foreign-seat judgement rather than composing a second copy; the search over reckon/crew found that owner and no other foreign-seat predicate.",
+    "scope_discipline": "git diff --stat against base shows only reckon/crew/recovery_watch.py and tests/test_a_producer_waits_on_a_foreign_seat.py, both inside the declared write paths and carrying nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to keep a producer that finds the project seat held on another host waiting and re-reading the seat instead of exiting, and reckon/crew/recovery_watch.py:352-375 now loops on _project_watch_claim, waiting FOREIGN_SEAT_REREAD_SECONDS and re-reading the seat, taking it on the first re-read that acquires it.\nVERDICT done_when: the done_when names tests/test_a_producer_waits_on_a_foreign_seat.py with a temporary crew home, an injected sleeper as the simulated clock, a foreign seat with a fresh stream yielding no row and taking no seat over three re-read intervals, a stale stream taking the seat and publishing from a seed read after the wait, a same-host seat behaving as before, the real crew home fingerprinted untouched, and the shared judgement called; the manifest records the base (384 passed EXIT=0) and head (388 passed EXIT=0) gate logs and the ruff delta.\nVERDICT write_paths: the source node was fenced to reckon/crew/recovery_watch.py, tests/test_a_producer_waits_on_a_foreign_seat.py and the evidence fragment/figure paths; git diff --stat shows the change touches only the two Python files, both inside them.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T194358037727-a-producer-waits-on-a-foreign-seat/manifest.md; it records commit db9c10f5f, the four-case test run green, the base and head arms, the negative control (3 failed of 4, EXIT=1), and names gate-base.log, gate-head.log and negative-control.log.\nVERDICT diff: read the single commit db9c10f5f740925e8aefebdbcdebd4a3a36c1055 against base 9677c89ed7411f96d716bcad44dd1c102025a303; two files, +352/-27, recovery_watch.py gaining the waiting loop and relocating the seed read after seat acquisition, plus the new test file, all inside the declared scope.\nCALL_SITES: reckon/crew/recovery_watch.py:2288, reckon/crew/recovery_watch.py:2467, reckon/crew/watch_unit.py:143\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_watch.py:372 waits while seat_names_a_live_foreign_producer reports a live foreign holder rather than yielding a terminal row, exactly the goal.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_a_producer_waits_on_a_foreign_seat.py asserts each done_when clause and gate-head.log records 388 passed EXIT=0 at db9c10f5f.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat shows only reckon/crew/recovery_watch.py and tests/test_a_producer_waits_on_a_foreign_seat.py, both inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: negative-control.log shows 3 of 4 cases fail with the wait removed and tests/test_a_producer_waits_on_a_foreign_seat.py:211 asserts from_state==\"working\", which reddens if the seed is read before the wait.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/recovery_watch.py:334 declares FOREIGN_SEAT_REREAD_SECONDS in the module's existing UPPER_SNAKE idiom and the mechanism comment carries no plan or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/recovery_watch.py:44 imports and calls the shared watch_unit.seat_names_a_live_foreign_producer owner (watch_unit.py:143) rather than composing a second copy.\n",
+  "review_run_id": "r-20261014T203551491973-review-of-a-producer-waits-on-a-foreign-seat-db9c10f5f740",
+  "reviewed_base_sha": "9677c89ed7411f96d716bcad44dd1c102025a303",
+  "reviewed_head_sha": "db9c10f5f740925e8aefebdbcdebd4a3a36c1055",
+  "reviewed_run_id": "r-20261014T194358037727-a-producer-waits-on-a-foreign-seat",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "subject": "review",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T20:43:39.157411+00:00",
+  "total": 116
+}
