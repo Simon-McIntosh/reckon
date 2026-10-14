@@ -107,6 +107,22 @@ def _write_pointer(home: Path, run_id: str, node: str, *, phase: str) -> None:
     )
 
 
+def _transition(run_id: str, *, session: str, state: str, previous: str) -> dict:
+    return {
+        "project": PROJECT,
+        "event": "transition",
+        "run_id": run_id,
+        "node": run_id,
+        "session": session,
+        "from_state": previous,
+        "to_state": state,
+        "working": 1,
+        "blocked": 0,
+        "unpromoted": 0,
+        "observed_at": runs._utc_now(),
+    }
+
+
 def _arm(*, lifetime: float = ARM_LIFETIME, **kwargs) -> list[dict]:
     """Run one arming to its own lifetime and collect the fleet rows it drew."""
     generator = cli._follow_watch_lines(
@@ -161,16 +177,23 @@ def test_a_follower_defers_one_tick_and_keeps_delivering_across_a_config_error(
     reader's degradation does not by itself cover — so the loop's own catch is
     what carries the pane. At base that error escapes the loop and the arming
     ends with nothing delivered. Here the loop catches it, prints one dim
-    deferral line — once, not once per tick — and retries: the next tick's read
-    succeeds and the run's baseline row is delivered. A config a merge broke
-    under a live follower then costs the pane a tick, not the stream.
+    deferral line — once, not once per tick — and retries, so the tick after
+    the read succeeds still delivers. A config a merge broke under a live
+    follower then costs the pane a tick, not the stream.
+
+    The row the failure would have cost is the one the run makes *after* the
+    arming is placed, not the run's standing state: a run already standing when
+    the pane arms is inventory, and the pane is silent about it. So the move is
+    made from the arming's own per-wait pass, which is reached only once the
+    read has stopped raising — the delivery below is therefore evidence the
+    loop survived the error, not evidence it was restarted.
     """
     _break_the_config(home, monkeypatch)
-    # A blocked run lands in a state the pane's policy delivers: a settled, not
-    # an observer, reading of a run that is holding a seat. The row is held for
-    # the settle window and released when the arming ends, so the delivery the
-    # loop must survive the config error to reach is a row the reader acts on.
-    _write_pointer(home, RUN_A, "node-a", phase="blocked")
+    # The run holds a seat while the config is broken. What it is doing is not
+    # what the pane owes a reader; the blocked transition it makes after the
+    # arming is where the pane gets it, and that row is held for the settle
+    # window and released when the arming ends.
+    _write_pointer(home, RUN_A, "node-a", phase="working")
 
     real_cursor = runs.watch_stream_cursor
     attempts = {"n": 0}
@@ -196,9 +219,25 @@ def test_a_follower_defers_one_tick_and_keeps_delivering_across_a_config_error(
 
     monkeypatch.setattr(runs, "watch_stream_cursor", cursor_meeting_a_config_error)
 
-    with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
+    with runs._project_watch_claim(PROJECT, "1h") as (acquired, seat):
         assert acquired, "the arming needs a live producer seat to reach a read"
-        events = _arm()
+        stream_path = Path(seat["stream_path"])
+        appended: list[bool] = []
+
+        def _block_once(_state) -> None:
+            if appended:
+                return
+            appended.append(True)
+            runs._append_watch_lines(
+                stream_path,
+                [
+                    _transition(
+                        RUN_A, session=SESSION, state="blocked", previous="working"
+                    )
+                ],
+            )
+
+        events = _arm(on_poll=_block_once)
 
     printed = capfd.readouterr().out
 

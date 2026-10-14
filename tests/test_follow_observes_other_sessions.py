@@ -22,7 +22,7 @@ from pathlib import Path
 import pytest
 
 from reckon import cli, crew
-from reckon.crew import recovery, runs
+from reckon.crew import follow_checkpoint, recovery, runs
 from reckon.crew.dispatch import WATCHER_LOAD_BOUND_SECONDS
 
 
@@ -86,6 +86,23 @@ def _own_start(run_id: str, *, node: str, session: str) -> dict:
         "unpromoted": 0,
         "observed_at": runs._utc_now(),
     }
+
+
+def _await_arm(project: str, session: str, *, bound: float) -> bool:
+    """Wait until the arming has derived its fleet and opened its read loop.
+
+    A first arming derives the fleet as it stands and records its place in the
+    stream immediately before it reads a line, so the checkpoint's existence is
+    the moment the derivation is behind it. A case that creates the own run
+    before that moment makes the run inventory, not news, and the pane will
+    rightly suppress its start as a re-announcement.
+    """
+    deadline = time.monotonic() + bound
+    while time.monotonic() < deadline:
+        if follow_checkpoint.exists(project, session):
+            return True
+        time.sleep(0.005)
+    return False
 
 
 def _deliver_own_start(
@@ -175,12 +192,16 @@ def _follow_own_start(
     observed: tuple[str, ...] = (),
     until=_any_event,
     bound: float = WATCHER_LOAD_BOUND_SECONDS,
+    prepare=None,
 ) -> list[dict]:
     """Collect a follower's rows while feeding the own session's launch start.
 
     The pane's own session reaches its line on the launch start, so a case that
     wants the own row read feeds that row while the follower is reading rather
-    than by re-announcing the run's current state.
+    than by re-announcing the run's current state. The pane arms first and
+    ``prepare`` — which creates the own run — runs only once the arming has
+    derived its fleet, because a run already standing when the pane arms is
+    inventory the pane rightly holds back, not news.
     """
     received: list[dict] = []
     stop = threading.Event()
@@ -200,6 +221,9 @@ def _follow_own_start(
     thread = threading.Thread(target=reader, daemon=True)
     thread.start()
     try:
+        _await_arm(project, session, bound=bound)
+        if prepare is not None:
+            prepare()
         _deliver_own_start(
             run_id=run_id,
             node=node,
@@ -283,37 +307,23 @@ def test_an_observed_session_row_achieves_the_pane_without_falling_out(home) -> 
     """Deliveries for observed sessions arrive before the follower is stopped."""
     _write_pointer(home, "r-late", "late-node", session="old-a", phase="working")
 
-    received: list[dict] = []
-    stop = threading.Event()
+    with runs._project_watch_claim("proj", "1h"):
+        crew.list_live(project="proj")
+        received = _follow_own_start(
+            "proj",
+            run_id="r-owned",
+            node="owned-node",
+            session="mine",
+            observed=("old-a",),
+            prepare=lambda: _write_pointer(
+                home, "r-owned", "owned-node", session="mine", phase="dispatched"
+            ),
+            until=lambda rows: (
+                any(e["node"] == "owned-node" for e in rows)
+                and any(e["node"] == "late-node" for e in rows)
+            ),
+        )
 
-    def reader() -> None:
-        for event in cli._follow_watch_lines(
-            "proj", session="mine", observed=("old-a",), poll_interval=0.001, stop=stop
-        ):
-            if event.get("event") in {"attached", "reattached"}:
-                continue
-            received.append(event)
-
-    thread = threading.Thread(target=reader, daemon=True)
-    thread.start()
-    try:
-        _write_pointer(home, "r-owned", "owned-node", session="mine", phase="working")
-        with runs._project_watch_claim("proj", "1h"):
-            crew.list_live(project="proj")
-            _wait_for(lambda: any(e["node"] == "late-node" for e in received))
-            _deliver_own_start(
-                run_id="r-owned",
-                node="owned-node",
-                session="mine",
-                until=lambda: any(e["node"] == "owned-node" for e in received),
-                bound=WATCHER_LOAD_BOUND_SECONDS,
-            )
-            _wait_for(lambda: any(e["node"] == "owned-node" for e in received))
-    finally:
-        stop.set()
-        thread.join(timeout=2)
-
-    assert not thread.is_alive()
     assert all(e["node"] in {"owned-node", "late-node"} for e in received)
 
 
@@ -423,7 +433,6 @@ def test_rows_from_an_observed_session_carry_the_foreign_marker_and_own_rows_do_
     render treats the two identically, which is exactly what "no owner column"
     means.
     """
-    _write_pointer(home, "r-mine", "my-node", session="mine", phase="working")
     _write_pointer(home, "r-old", "old-node", session="old-a", phase="working")
 
     with runs._project_watch_claim("proj", "1h"):
@@ -434,6 +443,9 @@ def test_rows_from_an_observed_session_carry_the_foreign_marker_and_own_rows_do_
             node="my-node",
             session="mine",
             observed=("old-a",),
+            prepare=lambda: _write_pointer(
+                home, "r-mine", "my-node", session="mine", phase="dispatched"
+            ),
             until=lambda received: len(received) >= 2,
         )
 
@@ -496,8 +508,6 @@ def test_an_observed_session_that_dispatched_nothing_yields_no_rows_and_no_error
     home,
 ) -> None:
     """Observing a mute session is quiet, not an error."""
-    _write_pointer(home, "r-mine", "my-node", session="mine", phase="working")
-
     with runs._project_watch_claim("proj", "1h"):
         crew.list_live(project="proj")
         events = _follow_own_start(
@@ -506,6 +516,9 @@ def test_an_observed_session_that_dispatched_nothing_yields_no_rows_and_no_error
             node="my-node",
             session="mine",
             observed=("ghost",),
+            prepare=lambda: _write_pointer(
+                home, "r-mine", "my-node", session="mine", phase="dispatched"
+            ),
             until=lambda received: any(e["node"] == "my-node" for e in received),
         )
 
@@ -532,7 +545,6 @@ def test_the_real_configuration_home_gains_no_file(home) -> None:
     # stale one does not read as a write this test made.
     existed = {artifact for artifact in artifacts if artifact.exists()}
 
-    _write_pointer(home, "r-mine", "my-node", session="mine", phase="working")
     _write_pointer(home, "r-old", "old-node", session="old-a", phase="working")
     with runs._project_watch_claim("proj", "1h"):
         crew.list_live(project="proj")
@@ -544,6 +556,9 @@ def test_the_real_configuration_home_gains_no_file(home) -> None:
                 node="my-node",
                 session="mine",
                 observed=("old-a",),
+                prepare=lambda: _write_pointer(
+                    home, "r-mine", "my-node", session="mine", phase="dispatched"
+                ),
                 until=lambda received: len(received) >= 2,
             )
 
