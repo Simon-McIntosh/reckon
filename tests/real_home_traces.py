@@ -22,11 +22,21 @@ from collections.abc import Iterable, Sequence
 from pathlib import Path
 
 
-def _read_text(path: Path) -> str:
+def _read_bytes(path: Path) -> bytes:
+    """The file's own bytes, or nothing where it cannot be read.
+
+    Bytes rather than text because the files a guard may be pointed at are not
+    all text: the shared crew store is a 355 MB SQLite file, and decoding a file
+    that size into a str costs several times its own size in memory once the
+    undecodable runs widen into replacement characters. A search over bytes
+    holds the file's own size and nothing more. A file that has gone, or that
+    cannot be opened, reads as no hit -- the guard asks whether this test left a
+    trace, and one it cannot read is not one it wrote.
+    """
     try:
-        return path.read_text(errors="replace")
+        return path.read_bytes()
     except OSError:
-        return ""
+        return b""
 
 
 def traces_naming(
@@ -45,6 +55,7 @@ def traces_naming(
     equal, or require the after reading empty.
     """
     wanted = [needle for needle in needles if needle]
+    wanted_bytes = [needle.encode("utf-8") for needle in wanted]
     hits: list[str] = []
     for subtree in subtrees:
         target = root / subtree
@@ -52,9 +63,11 @@ def traces_naming(
             # A subtree may name a single file a writer touches directly, such
             # as the home's own budget-lifts.json, so a guard against a leaked
             # write can point at that file without walking the whole tree.
-            if any(needle in target.name for needle in wanted) or any(
-                needle in _read_text(target) for needle in wanted
-            ):
+            if any(needle in target.name for needle in wanted):
+                hits.append(str(target))
+                continue
+            data = _read_bytes(target)
+            if any(needle in data for needle in wanted_bytes):
                 hits.append(str(target))
             continue
         if not target.is_dir():
@@ -63,6 +76,10 @@ def traces_naming(
             if not path.is_file():
                 continue
             named = any(needle in path.name for needle in wanted)
-            if named or any(needle in _read_text(path) for needle in wanted):
+            if named:
+                hits.append(str(path))
+                continue
+            data = _read_bytes(path)
+            if any(needle in data for needle in wanted_bytes):
                 hits.append(str(path))
     return hits

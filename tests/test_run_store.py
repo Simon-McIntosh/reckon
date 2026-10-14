@@ -772,7 +772,8 @@ def test_import_brings_every_ledger_run_into_the_store_and_reports_imported(
 ) -> None:
 
     records = {
-        f"r-{suffix}": _real_record(f"r-{suffix}") for suffix in ("import-a", "import-b", "import-c")
+        f"r-{suffix}": _real_record(f"r-{suffix}")
+        for suffix in ("storefs-import-a", "storefs-import-b", "storefs-import-c")
     }
     _seed_ledger("reckon", list(records.values()))
 
@@ -872,7 +873,8 @@ def test_equality_check_reports_zero_on_all_three_after_import(
     config_home: Path,
 ) -> None:
     records = {
-        f"r-{suffix}": _real_record(f"r-{suffix}") for suffix in ("import-a", "import-b", "import-c")
+        f"r-{suffix}": _real_record(f"r-{suffix}")
+        for suffix in ("import-a", "import-b", "import-c")
     }
     _seed_ledger("reckon", list(records.values()))
     run_store.import_ledger("reckon")
