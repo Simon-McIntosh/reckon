@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured: base-arm.log records 1 failed (the pre-existing test_a_reload_handed_through_crew_follow_defers_the_mismatch) and 296 passed at 8f109242; head-arm.log records the same single failure and 394 passed at 75aedfef4, so head carries no failure absent at base.",
+  "base_log_revision": "8f109242ccb0a364f86ce573565af0114a273e0e",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/runs.py:2176 (_publish_watch_transitions reached from list_live)",
+    "reckon/crew/recovery_watch.py:2432 (watch_follow drives watch_ticker)",
+    "reckon/crew_follow_commands.py:2972 (crew follow drives watch_follow)",
+    "reckon/crew/runs.py:2813 (_publish_watch_stream background sweep)"
+  ],
+  "completed_at": "2026-10-14T19:23:21.087Z",
+  "dispatched_at": "2026-10-14T19:06:17Z",
+  "findings": [
+    {
+      "file": "tests/test_a_replacement_producer_publishes_transitions.py",
+      "line": "185",
+      "severity": "follow-on",
+      "text": "follow-on: `assert row[\"to_state\"] == completed` compares the row's to_state against `_snapshot_state(pointer)`, which calls the same `recovery._watch_snapshot` the production path derives to_state from, so the two sides move together and the assertion cannot fail on a wrong state word; the load-bearing claims (`event == \"transition\"` and `from_state == \"working\"`) are independent and the negative control proves they redden, so this line adds coverage it does not hold."
+    }
+  ],
+  "head_log_revision": "75aedfef46c832f91cd37f3164848a58faf4e203",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read both commits against 8f109242 commit by commit; 75aedfef4 moves the seed from recovery_watch.py into runs.py beside the stream writer, adds `_iter_stream_lines_backwards`, `_earliest_created`, `_seed_published_states` and `_live_created`, wires the sweep at runs.py:2087 and the ticker at recovery_watch.py:2358, and clears the project stream in the parity test's second arm.",
+    "done_when": "the done-when names the .events sweep case, the unseen-run baseline, the unchanged-run baseline, the malformed-head stop and a temporary-home isolation receipt; tests/test_a_replacement_producer_publishes_transitions.py records 7 passed at head (head-arm.log 394 passed, 1 pre-existing failure) and negative-control.log EXIT=1 reddens the moved-run cases.",
+    "goal": "the node goal is a replacement producer seeding its first-poll memory from each live run's last published state; reckon/crew/runs.py:2005 `_seed_published_states` reconstructs that state and reckon/crew/runs.py:2087 and reckon/crew/recovery_watch.py:2204 both take the transition-versus-baseline kind from it, which is the deliverable.",
+    "manifest": "read the reviewed run's manifest.md; status complete, commits e1e2eac62 and 75aedfef4, and it names head-arm.log, base-arm.log and negative-control.log with their results.",
+    "write_paths": "the manifest (orientation_write_paths) declares runs.py, recovery_watch.py, the two test files and the evidence fragment; every one of the five paths in `git diff 8f109242 75aedfef4 --stat` is inside that set."
+  },
+  "justifications": {
+    "durability": "tests/test_a_replacement_producer_publishes_transitions.py:185 and every case redden when `_seed_published_states` returns an empty mapping (negative-control.log, 3 failed EXIT=1), so the guard fails on the reinstated regression; the to_state half of that assertion shares the snapshot derivation under test and is named below.",
+    "evidence": "the gate the done-when names (tests/test_a_replacement_producer_publishes_transitions.py) records 7 passed at head and negative-control.log EXIT=1 fires on the .events case, but the manifest also lists regression.log, a pre-fix red parity run, with no note that it predates the final commit.",
+    "fit": "the four new helpers sit in the private-helper idiom of reckon/crew/runs.py:1926 and carry no plan label, version tag or ticket reference in name or docstring.",
+    "goal_fidelity": "reckon/crew/runs.py:2005 plus the two assignment sites at reckon/crew/runs.py:2087 and reckon/crew/recovery_watch.py:2358 implement exactly the seed and the transition-versus-baseline split the goal states, on both the sweep and the ticker.",
+    "reuse": "searched reckon/crew/runs.py `read_stream_events` and `_seek_to_last_record`, and reckon/serve.py:606 `_read_log_tail`; no owner yields stream lines in reverse, so the new reader forks no capability, though it repeats `_seek_to_last_record`'s chunked backwards scan.",
+    "scope_discipline": "every path in the diff (reckon/crew/runs.py, reckon/crew/recovery_watch.py, tests/test_a_replacement_producer_publishes_transitions.py, tests/test_producer_reads_only_what_changed.py, the evidence fragment) is inside the manifest's declared write_paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is a replacement producer seeding its first-poll memory from each live run's last published state; reckon/crew/runs.py:2005 `_seed_published_states` reconstructs that state and reckon/crew/runs.py:2087 and reckon/crew/recovery_watch.py:2204 both take the transition-versus-baseline kind from it, which is the deliverable.\nVERDICT done_when: the done-when names the .events sweep case, the unseen-run baseline, the unchanged-run baseline, the malformed-head stop and a temporary-home isolation receipt; tests/test_a_replacement_producer_publishes_transitions.py records 7 passed at head (head-arm.log 394 passed, 1 pre-existing failure) and negative-control.log EXIT=1 reddens the moved-run cases.\nVERDICT write_paths: the manifest (orientation_write_paths) declares runs.py, recovery_watch.py, the two test files and the evidence fragment; every one of the five paths in `git diff 8f109242 75aedfef4 --stat` is inside that set.\nVERDICT manifest: read the reviewed run's manifest.md; status complete, commits e1e2eac62 and 75aedfef4, and it names head-arm.log, base-arm.log and negative-control.log with their results.\nVERDICT diff: read both commits against 8f109242 commit by commit; 75aedfef4 moves the seed from recovery_watch.py into runs.py beside the stream writer, adds `_iter_stream_lines_backwards`, `_earliest_created`, `_seed_published_states` and `_live_created`, wires the sweep at runs.py:2087 and the ticker at recovery_watch.py:2358, and clears the project stream in the parity test's second arm.\nCALL_SITES: reckon/crew/runs.py:2176 (_publish_watch_transitions reached from list_live), reckon/crew/recovery_watch.py:2432 (watch_follow drives watch_ticker), reckon/crew_follow_commands.py:2972 (crew follow drives watch_follow), reckon/crew/runs.py:2813 (_publish_watch_stream background sweep)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:2005 plus the two assignment sites at reckon/crew/runs.py:2087 and reckon/crew/recovery_watch.py:2358 implement exactly the seed and the transition-versus-baseline split the goal states, on both the sweep and the ticker.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate the done-when names (tests/test_a_replacement_producer_publishes_transitions.py) records 7 passed at head and negative-control.log EXIT=1 fires on the .events case, but the manifest also lists regression.log, a pre-fix red parity run, with no note that it predates the final commit.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff (reckon/crew/runs.py, reckon/crew/recovery_watch.py, tests/test_a_replacement_producer_publishes_transitions.py, tests/test_producer_reads_only_what_changed.py, the evidence fragment) is inside the manifest's declared write_paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_replacement_producer_publishes_transitions.py:185 and every case redden when `_seed_published_states` returns an empty mapping (negative-control.log, 3 failed EXIT=1), so the guard fails on the reinstated regression; the to_state half of that assertion shares the snapshot derivation under test and is named below.\nSCORE fit: 19\nJUSTIFICATION fit: the four new helpers sit in the private-helper idiom of reckon/crew/runs.py:1926 and carry no plan label, version tag or ticket reference in name or docstring.\nSCORE reuse: 19\nJUSTIFICATION reuse: searched reckon/crew/runs.py `read_stream_events` and `_seek_to_last_record`, and reckon/serve.py:606 `_read_log_tail`; no owner yields stream lines in reverse, so the new reader forks no capability, though it repeats `_seek_to_last_record`'s chunked backwards scan.\nFINDING tests/test_a_replacement_producer_publishes_transitions.py:185 follow-on: `assert row[\"to_state\"] == completed` compares the row's to_state against `_snapshot_state(pointer)`, which calls the same `recovery._watch_snapshot` the production path derives to_state from, so the two sides move together and the assertion cannot fail on a wrong state word; the load-bearing claims (`event == \"transition\"` and `from_state == \"working\"`) are independent and the negative control proves they redden, so this line adds coverage it does not hold.\n",
+  "review_run_id": "r-20261014T190548208914-review-of-a-reloaded-producer-publishes-transitions-75aedfef46c8",
+  "reviewed_base_sha": "8f109242ccb0a364f86ce573565af0114a273e0e",
+  "reviewed_head_sha": "75aedfef46c832f91cd37f3164848a58faf4e203",
+  "reviewed_run_id": "r-20261014T180031043027-a-reloaded-producer-publishes-transitions",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T19:24:25.110359+00:00",
+  "total": 112
+}
