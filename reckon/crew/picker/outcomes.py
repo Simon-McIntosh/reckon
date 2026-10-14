@@ -234,7 +234,6 @@ def record_picker_hold(
     run_id: str = "",
     queued: bool = False,
     now: datetime | None = None,
-    **_legacy: Any,
 ) -> dict[str, Any]:
     """Append one run-free hold with an exclusive lock and durable flush.
 
@@ -243,8 +242,8 @@ def record_picker_hold(
     request was queued rather than launched, so the outcome history shows Jev's
     answer and where it landed instead of a bare hold that never moved.
 
-    A hold is written under the crew home, so no ``docs`` argument is taken; a
-    caller that still passes one has it accepted and ignored.
+    A hold is written under the crew home, so no ``docs`` argument is taken: the
+    write location is resolved from the project, not from a caller's tree.
     """
     path = _hold_path(project)
     path.parent.mkdir(parents=True, exist_ok=True)

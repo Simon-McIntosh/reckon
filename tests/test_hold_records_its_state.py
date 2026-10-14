@@ -151,7 +151,6 @@ def _record(tmp_path, selection) -> dict:
     docs = tmp_path / "docs"
     record_picker_hold(
         project=PROJECT,
-        docs=docs,
         node="held-node",
         plan="",
         selection=selection.as_dict(),

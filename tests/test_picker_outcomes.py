@@ -207,7 +207,6 @@ def test_hold_record_is_durable_and_finds_later_run(tmp_path, monkeypatch):
     docs = tmp_path / "docs"
     hold = outcomes.record_picker_hold(
         project="demo",
-        docs=docs,
         node="one",
         plan="sample",
         selection={"confidence": 0.8},
