@@ -591,3 +591,74 @@ def test_requests_in_different_repositories_over_one_relative_path_do_not_hold(
     }
     assert launched == {"first-repo", "second-repo"}
     assert not result["held"]
+
+
+# --- Case 9: one pass resolves each queued request's claims at most once -------
+
+
+def test_one_pass_resolves_each_requests_claims_at_most_once(
+    admit_repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The pre-check resolves each request's claims once, not once per comparison.
+
+    Every comparison between two queued requests resolves both requests' write
+    paths through ``dispatch_claims._pointer_scope_entries``, which reads each
+    request's repository and mounts. Resolving inside the comparison repeats
+    that read about N-squared times for N requests. One pass resolves each
+    request's claims at most once and hands the same resolved claims to every
+    comparison, so the count stays at the number of requests.
+    """
+    lane = _lane_document(tmp_path, slots={SESSION_A: 6})
+    config = _config(lane)
+    paths = [
+        SHARED,
+        "reckon/crew/second_path.py",
+        "reckon/crew/third_path.py",
+        "reckon/crew/fourth_path.py",
+        "reckon/crew/fifth_path.py",
+        SHARED,
+    ]
+    for index, write_path in enumerate(paths, start=1):
+        runs.queue_dispatch(
+            _queue(
+                admit_repo,
+                node_id=f"req-{index}",
+                run_id=f"r-req-{index}",
+                session=SESSION_A,
+                write_paths=[write_path],
+                queued_at=f"2026-10-14T11:{50 + index:02d}:00+00:00",
+            )
+        )
+
+    resolutions: list[str] = []
+    real_resolve = queue_admission._resolved_request_claims
+
+    def counting_resolve(pointer):
+        resolutions.append(str(pointer["run_id"]))
+        return real_resolve(pointer)
+
+    monkeypatch.setattr(
+        queue_admission, "_resolved_request_claims", counting_resolve
+    )
+
+    result = queue_admission.admit_once(
+        now=START, config_for=lambda _pointer: config, launcher=_launcher([])
+    )
+
+    requests = {f"r-req-{index}" for index in range(1, 7)}
+    # Every request reaches the overlap pre-check rather than being held before
+    # it, so the pass either launched it or held it behind an earlier overlap.
+    assert (
+        len(result["launched"]) + len(result["held"]) == len(requests)
+    ), result
+    # The later request of the overlapping pair is still held, queued and
+    # unfailed, behind the earlier request it shares a path with.
+    assert "r-req-6" in result["held"]
+    assert "r-req-1" in result["hold_detail"]["r-req-6"]
+    later = runs.read_pointer("r-req-6")
+    assert later["phase"] == "queued"
+    assert not later.get("failure")
+    # The pre-check resolved each request's claims at most once.
+    assert len(resolutions) <= len(requests), (
+        f"{len(resolutions)} claim resolutions for {len(requests)} requests"
+    )

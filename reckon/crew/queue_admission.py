@@ -247,8 +247,31 @@ def _resolved_request_claims(
     ]
 
 
+def _pass_claims(
+    pointer: Mapping[str, Any],
+    claims: dict[str, list[tuple[Path | None, Path]]],
+) -> list[tuple[Path | None, Path]]:
+    """A request's resolved claims for this pass, resolved at most once.
+
+    The resolution reads the request's repository and mounts, so resolving
+    inside every comparison would cost a pass about N-squared reads for N
+    requests. The pass hands its own cache to every comparison, so each request
+    is resolved once and a request whose write paths or mounts change is
+    resolved afresh on the next pass, when the cache is new.
+    """
+    run_id = str(pointer.get("run_id") or "")
+    resolved = claims.get(run_id)
+    if resolved is None:
+        resolved = _resolved_request_claims(pointer)
+        claims[run_id] = resolved
+    return resolved
+
+
 def _queued_requests_overlap(
-    first: Mapping[str, Any], second: Mapping[str, Any]
+    first: Mapping[str, Any],
+    second: Mapping[str, Any],
+    *,
+    claims: dict[str, list[tuple[Path | None, Path]]],
 ) -> bool:
     """Whether two queued requests name a write path in one repository.
 
@@ -256,14 +279,14 @@ def _queued_requests_overlap(
     that overlap by component containment. A pair in different repositories never
     overlaps, however their relative spellings read.
     """
-    first_claims = _resolved_request_claims(first)
+    first_claims = _pass_claims(first, claims)
     if not first_claims:
         return False
     return any(
         repository == other_repository
         and runs._scopes_overlap(absolute.as_posix(), other_absolute.as_posix())
         for repository, absolute in first_claims
-        for other_repository, other_absolute in _resolved_request_claims(second)
+        for other_repository, other_absolute in _pass_claims(second, claims)
     )
 
 
@@ -272,6 +295,7 @@ def _earlier_overlapping_request(
     earlier: Sequence[Mapping[str, Any]],
     *,
     moment: datetime,
+    claims: dict[str, list[tuple[Path | None, Path]]],
 ) -> Mapping[str, Any] | None:
     """An earlier-ranked queued request whose write paths overlap this one.
 
@@ -279,7 +303,9 @@ def _earlier_overlapping_request(
     this way. Once this request has waited longer than the starvation age the
     pre-check stops holding it and it may launch ahead under the ordinary claim
     rules, so a later request is never held without end behind an earlier one
-    whose own session is never granted a slot.
+    whose own session is never granted a slot. ``claims`` is the pass's resolved
+    claims, so each comparison reads a request's paths rather than resolving
+    them again.
     """
     queued_at = parse_utc(pointer.get("queued_at"))
     if queued_at is not None and (
@@ -287,7 +313,7 @@ def _earlier_overlapping_request(
     ):
         return None
     for candidate in earlier:
-        if _queued_requests_overlap(pointer, candidate):
+        if _queued_requests_overlap(pointer, candidate, claims=claims):
             return candidate
     return None
 
@@ -631,6 +657,11 @@ def admit_once(
             ]
         order = queue_order.admission_order(queued, live, now=moment)
         remaining: dict[str, float | None] = {}
+        # The pass's own claim resolutions, so every overlap comparison reads a
+        # request's resolved claims rather than resolving them again. A fresh
+        # cache per pass means a request whose write paths or mounts change is
+        # resolved afresh on the next pass.
+        claims: dict[str, list[tuple[Path | None, Path]]] = {}
         for index, pointer in enumerate(order):
             session = str(pointer["session"])
             if session not in remaining:
@@ -661,7 +692,7 @@ def admit_once(
                 )
                 continue
             overlap = _earlier_overlapping_request(
-                pointer, order[:index], moment=moment
+                pointer, order[:index], moment=moment, claims=claims
             )
             if overlap is not None:
                 # An earlier-ranked queued request names a path this one also
