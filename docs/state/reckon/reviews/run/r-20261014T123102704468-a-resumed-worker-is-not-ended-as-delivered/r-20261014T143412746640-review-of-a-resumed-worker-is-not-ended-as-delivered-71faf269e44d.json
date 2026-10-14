@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured: base-importer-population.log records 52 passed EXIT=0 at ece9d52b and importer-population.log records 58 passed EXIT=0 at dfb721cf3 (head); the 6 extra are this node's new test file, and the head arm crew-file.log 192, attempt-supervision-file.log 5 and resume-door-deadline-file.log 2 all pass EXIT=0, so head carries no failure absent at base.",
+  "base_log_revision": "ece9d52b3b527fcdc73da431943b614e4c767297",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/resumption.py:1109 (_resume calls the reset)",
+    "reckon/crew/dispatch_sessions.py:1675 (change_lane calls the reset)",
+    "reckon/crew_run_commands.py:1324 (crew_resume door onto _resume)",
+    "reckon/mcp.py:2262 (_crew_recover door onto _resume)",
+    "reckon/crew/recovery_repair_dispatch.py:914 (repair reflex resumes through _resume)",
+    "reckon/crew/resumption.py:1615 (sweep resumes through _resume)"
+  ],
+  "completed_at": "2026-10-14T14:40:40.409Z",
+  "dispatched_at": "2026-10-14T14:34:39Z",
+  "findings": [
+    {
+      "file": "reckon/crew/resumption.py",
+      "line": "1048",
+      "severity": "follow-on",
+      "text": "follow-on: with record None the reset now derives the kept-copy attempt as 1 (int((record or {}).get(\"attempt\") or 1)) where the replaced code read the pointer for the attempt when record was None, so a recordless call would write manifest.md.attempt-1.asdelivered regardless of the run's real attempt; both current callers pass a record, so it is latent, not reachable."
+    }
+  ],
+  "head_log_revision": "71faf269e44d3f2bbee936c2713dcbb193f72fdb",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read both commits against base d18622888 commit by commit; dfb721cf3 makes _reset_delivered_manifest_status call _manifest_for_repair, _status_line_replaced and AS_DELIVERED_SUFFIX from reckon.crew.runs, 71faf269e repoints test_crew.py and tests/test_every_attempt_is_supervised.py to patch resumption.resume_plan where the launch now composes it, plus identical monkeypatch repoints.",
+    "done_when": "the done_when names tests/test_a_resumed_worker_is_not_ended_as_delivered.py; gate.log records it 6 passed EXIT=0 at 71faf269e, and the importer population records 58 passed head against 52 at base ece9d52b, both EXIT=0.",
+    "goal": "the node goal is one reset function in resumption.py that clears a delivered status before a resumed worker spawns; the delta refactors reckon/crew/resumption.py:1011 _reset_delivered_manifest_status to call the owners in reckon/crew/runs.py rather than restating them, advancing the goal without altering it.",
+    "manifest": "read r-20261014T123102704468-a-resumed-worker-is-not-ended-as-delivered/manifest.md; status complete, commits ce4753e3, d1862288, dfb721cf, 71faf269, with gate/fleet/crew/attempt/resume-door logs EXIT=0 and the reset-removed negative control EXIT=1.",
+    "write_paths": "the manifest declares resumption.py, dispatch_sessions.py, crew_run_commands.py, mcp.py and four test files; every path in the two-commit delta (resumption.py, tests/test_a_resumed_worker_is_not_ended_as_delivered.py, tests/test_crew.py, tests/test_every_attempt_is_supervised.py) is inside that set."
+  },
+  "justifications": {
+    "durability": "tests/test_a_resumed_worker_is_not_ended_as_delivered.py::test_a_completed_run_resumed_through_crew_resume_is_not_ended asserts the manifest reads in-progress and the attempt-named copy holds the delivered text, so a regression in the refactored reset reddens it, and the declared reset-removed control already reddens it (negative-control.log, FAILED, EXIT=1).",
+    "evidence": "gate.log records tests/test_a_resumed_worker_is_not_ended_as_delivered.py 6 passed EXIT=0 at 71faf269e and importer-population.log records 58 passed EXIT=0 against base-importer-population.log 52 passed EXIT=0 at ece9d52b, so the delta's measure is run and recorded, not claimed.",
+    "fit": "reckon/crew/resumption.py:83-97 imports the three private owners alongside the module's existing private runs imports (_manifest_mtime_ns, _pointer_lock, _utc_now, _write_json), and the delta removes the incident-citing comment at tests/test_a_resumed_worker_is_not_ended_as_delivered.py:46 rather than adding one.",
+    "goal_fidelity": "reckon/crew/resumption.py:1011 keeps the single reset function and its two callers resumption.py:1109 and dispatch_sessions.py:1675 unchanged, so the delta refactors the goal's deliverable rather than deviating from it.",
+    "reuse": "reckon/crew/resumption.py:1033-1053 now delegates manifest resolution to _manifest_for_repair (runs.py:1442), the status rewrite to _status_line_replaced (runs.py:1469) and the suffix to AS_DELIVERED_SUFFIX (runs.py:1433), so the reset extends the owner of that capability and adds no duplicate.",
+    "scope_discipline": "every path in the d18622888..71faf269e diff (resumption.py and three test files) is one the manifest declares in its write_paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is one reset function in resumption.py that clears a delivered status before a resumed worker spawns; the delta refactors reckon/crew/resumption.py:1011 _reset_delivered_manifest_status to call the owners in reckon/crew/runs.py rather than restating them, advancing the goal without altering it.\nVERDICT done_when: the done_when names tests/test_a_resumed_worker_is_not_ended_as_delivered.py; gate.log records it 6 passed EXIT=0 at 71faf269e, and the importer population records 58 passed head against 52 at base ece9d52b, both EXIT=0.\nVERDICT write_paths: the manifest declares resumption.py, dispatch_sessions.py, crew_run_commands.py, mcp.py and four test files; every path in the two-commit delta (resumption.py, tests/test_a_resumed_worker_is_not_ended_as_delivered.py, tests/test_crew.py, tests/test_every_attempt_is_supervised.py) is inside that set.\nVERDICT manifest: read r-20261014T123102704468-a-resumed-worker-is-not-ended-as-delivered/manifest.md; status complete, commits ce4753e3, d1862288, dfb721cf, 71faf269, with gate/fleet/crew/attempt/resume-door logs EXIT=0 and the reset-removed negative control EXIT=1.\nVERDICT diff: read both commits against base d18622888 commit by commit; dfb721cf3 makes _reset_delivered_manifest_status call _manifest_for_repair, _status_line_replaced and AS_DELIVERED_SUFFIX from reckon.crew.runs, 71faf269e repoints test_crew.py and tests/test_every_attempt_is_supervised.py to patch resumption.resume_plan where the launch now composes it, plus identical monkeypatch repoints.\nCALL_SITES: reckon/crew/resumption.py:1109 (_resume calls the reset), reckon/crew/dispatch_sessions.py:1675 (change_lane calls the reset), reckon/crew_run_commands.py:1324 (crew_resume door onto _resume), reckon/mcp.py:2262 (_crew_recover door onto _resume), reckon/crew/recovery_repair_dispatch.py:914 (repair reflex resumes through _resume), reckon/crew/resumption.py:1615 (sweep resumes through _resume)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/resumption.py:1011 keeps the single reset function and its two callers resumption.py:1109 and dispatch_sessions.py:1675 unchanged, so the delta refactors the goal's deliverable rather than deviating from it.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate.log records tests/test_a_resumed_worker_is_not_ended_as_delivered.py 6 passed EXIT=0 at 71faf269e and importer-population.log records 58 passed EXIT=0 against base-importer-population.log 52 passed EXIT=0 at ece9d52b, so the delta's measure is run and recorded, not claimed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the d18622888..71faf269e diff (resumption.py and three test files) is one the manifest declares in its write_paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_resumed_worker_is_not_ended_as_delivered.py::test_a_completed_run_resumed_through_crew_resume_is_not_ended asserts the manifest reads in-progress and the attempt-named copy holds the delivered text, so a regression in the refactored reset reddens it, and the declared reset-removed control already reddens it (negative-control.log, FAILED, EXIT=1).\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/resumption.py:83-97 imports the three private owners alongside the module's existing private runs imports (_manifest_mtime_ns, _pointer_lock, _utc_now, _write_json), and the delta removes the incident-citing comment at tests/test_a_resumed_worker_is_not_ended_as_delivered.py:46 rather than adding one.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/resumption.py:1033-1053 now delegates manifest resolution to _manifest_for_repair (runs.py:1442), the status rewrite to _status_line_replaced (runs.py:1469) and the suffix to AS_DELIVERED_SUFFIX (runs.py:1433), so the reset extends the owner of that capability and adds no duplicate.\nFINDING reckon/crew/resumption.py:1048 follow-on: with record None the reset now derives the kept-copy attempt as 1 (int((record or {}).get(\"attempt\") or 1)) where the replaced code read the pointer for the attempt when record was None, so a recordless call would write manifest.md.attempt-1.asdelivered regardless of the run's real attempt; both current callers pass a record, so it is latent, not reachable.\n",
+  "review_run_id": "r-20261014T143412746640-review-of-a-resumed-worker-is-not-ended-as-delivered-71faf269e44d",
+  "reviewed_base_sha": "d186228883205eceba1c5a0e1096136ff57094ec",
+  "reviewed_head_sha": "71faf269e44d3f2bbee936c2713dcbb193f72fdb",
+  "reviewed_run_id": "r-20261014T123102704468-a-resumed-worker-is-not-ended-as-delivered",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T14:38:52.634856+00:00",
+  "total": 113
+}
