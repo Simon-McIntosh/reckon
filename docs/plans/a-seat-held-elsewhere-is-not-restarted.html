@@ -25,7 +25,7 @@
   <title>A Seat Held Elsewhere Is Not Restarted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="8">
+<meta name="plan-version" content="9">
 <meta name="plan-modified" content="2026-10-14">
 </head>
 <body>
@@ -63,8 +63,8 @@
     <p>
       <strong>Deliverable.</strong> When <code>reckon crew watch</code> finds the project's seat held by a live producer on another
       host, it stays up and re-reads the seat at a bounded interval, taking the seat when that producer's stream goes stale, instead
-      of exiting into the unit's restart. The foreign-seat judgement reuses <code>_seat_names_a_foreign_host</code> and
-      <code>_seat_stream_fresh</code> in <code>reckon/crew/watch_unit.py</code>. The unit's restart policy stays as it is, because
+      of exiting into the unit's restart. The foreign-seat judgement is <code>seat_names_a_live_foreign_producer</code> in <code>reckon/crew/watch_unit.py</code>, the composite of <code>_seat_names_a_foreign_host</code> and
+      <code>_seat_stream_fresh</code> that the obligation snapshot producer already reads (<code>reckon/crew/obligation_snapshot.py</code>, <code>_foreign_seat_is_live</code>). The watch calls it rather than composing the two primitives again, so the watch and the snapshot producer share one judgement. The unit's restart policy stays as it is, because
       a crash should still restart it. Reporting a cycling unit is §5's deliverable.
     </p>
     <p>
@@ -108,7 +108,7 @@
       carry yet. <code>reckon/crew/follower_registration.py</code> writes the project, session, pids, delivery, scope and start time,
       but no host. So the registration gains the host it was written on, spelled as the producer seat spells its own
       (<code>runs._seat_host</code>), and a registration naming another host is never put to this host's process table. How such a
-      registration's liveness is judged instead, for example from a stamp the follower refreshes, is this section's to settle. Both consumers read the result, and neither gains a second liveness rule of its own.
+      registration's liveness is judged instead, for example from a stamp the follower refreshes, is this section's to settle. The precedent is <code>watch_observer_alive</code> in <code>reckon/crew/runs.py</code>, which already returns unknown rather than dead for a watcher registration naming another host. The follower rule follows the same shape and does not settle the question a second way. Both consumers read the result, and neither gains a second liveness rule of its own. <strong>Six readers share this value, not two.</strong> <code>_follower_liveness</code> in <code>reckon/crew/follower_registration.py</code> is the single reader, and its <code>live</code> value is read by: the obligation producer (<code>runs.py</code>, the snapshot selection); <code>project_watch_visibility</code> (<code>runs.py</code>); <code>watch_state</code> (<code>watch_unit.py</code>), whose attached reading feeds dispatch admission; <code>_foreign_live_follower</code> (<code>session_host.py</code>), which decides whether a follower this host did not start holds the session's pair; the peer-delivery listing (<code>dispatch_watch.py</code>); and the review reflex (<code>recovery_watch.py</code>). Two of these are guards. The manifest names each reader and what it reads for a foreign registration before and after the change. A guard whose new answer would be wrong is reported as a blocker, not changed, because this section's write scope does not include those modules.
       <strong>Done when</strong>, in addition to the above: the same two-host fixture finds the review reflex dispatching a review
       for a scoring run whose session's follower is on the second host. Negative control: with liveness read from the local
       process table again, the reflex reports that run as awaiting its coordinator.
@@ -116,7 +116,7 @@
 
     <h2 id="s5">§5 — A cycling unit is reported as cycling</h2>
 <section data-reckon="section" data-id="s5" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
-<p><strong>Deliverable.</strong> <code>reckon crew watch --ensure</code> reads the unit's restart count twice, a few seconds apart. When the count rises between the readings, it reports the unit as cycling, not healthy, with both readings. On 2026-10-13 it reported "already active on an unchanged unit; started nothing" for a unit that had restarted 2,376 times. This is independent of §2: it is how a cycle of any cause becomes visible.</p><p><strong>Done when</strong> a test gives <code>--ensure</code> a unit whose restart count rises between its two readings and finds it reported as cycling with both counts, while a unit whose count holds is reported as before. The unit test files show no added failure against base. Negative control: with only one reading taken, the rising unit must read as healthy, reproducing 2026-10-13.</p>
+<p><strong>Deliverable.</strong> <code>reckon crew watch --ensure</code> reads the unit's restart count twice, a few seconds apart. The count is read by <code>SystemdUserUnitManager</code> in <code>reckon/service.py</code>, which owns every systemd unit query, through a unit-property reader added beside its <code>active()</code>. <code>ensure_watcher_service</code> reaches it through the <code>manager</code> seam it already takes, so the watch module does not become a second systemd client and the existing watch tests can supply a fake manager. When the count rises between the readings, it reports the unit as cycling, not healthy, with both readings. On 2026-10-13 it reported "already active on an unchanged unit; started nothing" for a unit that had restarted 2,376 times. This is independent of §2: it is how a cycle of any cause becomes visible.</p><p><strong>Done when</strong> a test gives <code>--ensure</code> a unit whose restart count rises between its two readings and finds it reported as cycling with both counts, while a unit whose count holds is reported as before. The unit test files show no added failure against base. Negative control: with only one reading taken, the rising unit must read as healthy, reproducing 2026-10-13.</p>
 
     <h2 id="s6">§6 — A stale producer&#x27;s remedy names what its reader can run</h2>
 <section data-reckon="section" data-id="s6" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
