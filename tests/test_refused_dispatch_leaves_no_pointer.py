@@ -435,4 +435,7 @@ def test_a_refusal_over_an_existing_worktree_leaves_no_new_trace(
     _publish_transitions()
     rows_naming_node = transition_rows_naming(config_home, NODE_ID)
     assert rows_naming_node != []
-    assert all(earlier_run_id in json.dumps(row) for row in rows_naming_node)
+    rows_naming_another_run = [
+        row for row in rows_naming_node if earlier_run_id not in json.dumps(row)
+    ]
+    assert not rows_naming_another_run, rows_naming_another_run
