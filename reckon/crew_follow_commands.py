@@ -1,12 +1,14 @@
 import hashlib
 import json
 import os
+import re
 import shlex
 import signal
 import sys
 import threading
 import time
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
+from contextlib import suppress
 from pathlib import Path
 from typing import Any
 
@@ -861,6 +863,110 @@ def _follow_resume_plan(
 
 
 
+# The fixed age past which a lift claim is stale. A claim is normally removed
+# when its lift ends; this bounds one whose end row never reached the pane, so a
+# later grant of the same lift id is not blocked forever.
+LIFT_CLAIM_MAX_AGE_SECONDS = 24 * 60 * 60.0
+
+
+def lift_claim_dir(session: str | None) -> Path:
+    """The directory holding one pane's lift claims, shared by its followers.
+
+    One pane is one session, and a session's followers all write that one pane,
+    so the claims live under the session's own directory beneath the crew home's
+    watch directory. An exclusive create there is the arbitration every follower
+    of the session shares, whether they run in one process or several on the
+    same shared home.
+    """
+    from reckon.crew.runs import crew_home
+
+    name = re.sub(r"[^A-Za-z0-9._-]", "-", str(session or "")).strip("-")
+    return crew_home() / "watch" / "lifts" / (name or "pane")
+
+
+def _lift_claim_token(text: str) -> str:
+    return re.sub(r"[^A-Za-z0-9._-]", "-", str(text)).strip("-") or "lift"
+
+
+def _lift_claim_path(session: str | None, lift_id: str, transition: str) -> Path:
+    return lift_claim_dir(session) / f"{_lift_claim_token(lift_id)}__{transition}"
+
+
+def _lift_claimed(session: str | None, lift_id: str) -> bool:
+    """Whether any transition of this lift is already claimed for the pane."""
+    directory = lift_claim_dir(session)
+    if not directory.is_dir():
+        return False
+    return next(directory.glob(f"{_lift_claim_token(lift_id)}__*"), None) is not None
+
+
+def _prune_lift_claims(session: str | None, lift_id: str) -> None:
+    """Remove every claim for one lift id, so the directory keeps no standing one."""
+    directory = lift_claim_dir(session)
+    for stale in directory.glob(f"{_lift_claim_token(lift_id)}__*"):
+        with suppress(OSError):
+            stale.unlink()
+
+
+def take_lift_claim(
+    session: str | None, lift_id: str, transition: str, *, now: float | None = None
+) -> bool:
+    """Whether this follower should draw one lift transition on the pane.
+
+    Every project's producer sweeps the workstation's whole lift document into
+    its own event stream, so the same grant reaches a session's pane once per
+    project the session follows. The followers of one session share one claim
+    per (session, lift id, transition) — a file created with an exclusive
+    create, which the shared home makes atomic across processes and nodes. The
+    first follower to reach the row creates the claim and draws it; the rest
+    find it taken and draw nothing. A claim is taken when the row would print,
+    never earlier, so no follower claims and then withholds.
+
+    A baseline in-force row is inventory of a lift already on the pane, so it
+    draws nothing when any claim for the lift already exists — a peer follower
+    has shown it. A stale claim, older than :data:`LIFT_CLAIM_MAX_AGE_SECONDS`,
+    is cleared and retaken, so a lift whose end row never reached the pane does
+    not block a later grant. When the end row is drawn the lift's other claims
+    are pruned, so the directory keeps no standing claim for the lift id.
+
+    A claim that cannot be written at all leaves the row drawn rather than
+    dropped: a pane that stops showing a live grant is worse than a repeated row.
+    """
+    from reckon.crew.ticker import LIFT_ENDED, LIFT_IN_FORCE
+
+    moment = time.time() if now is None else float(now)
+    if transition == LIFT_IN_FORCE and _lift_claimed(session, lift_id):
+        return False
+    path = _lift_claim_path(session, lift_id, transition)
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        return True
+    for _ in range(2):
+        try:
+            descriptor = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+        except FileExistsError:
+            try:
+                age = moment - path.stat().st_mtime
+            except OSError:
+                return False
+            if age < LIFT_CLAIM_MAX_AGE_SECONDS:
+                return False
+            try:
+                path.unlink()
+            except OSError:
+                return False
+            continue
+        except OSError:
+            return True
+        else:
+            os.close(descriptor)
+            if transition == LIFT_ENDED:
+                _prune_lift_claims(session, lift_id)
+            return True
+    return False
+
+
 def follower_row_path(
     *,
     session: str | None = None,
@@ -868,6 +974,7 @@ def follower_row_path(
     run_ids: Iterable[str] = (),
     reported: Mapping[str, str] | None = None,
     lift_groups: Iterable[str] = (),
+    lift_claim: Callable[[str, str], bool] | None = None,
 ):
     """The row path a follower runs on, for a reader that has to measure one.
 
@@ -875,11 +982,21 @@ def follower_row_path(
     offered it. This builds the very object the follower feeds — the same
     selection function, the same policy, the same memory — so a measurement
     taken through it is the pane's own answer rather than a second opinion.
+
+    The pane's lift claim is bound to the follower's own session unless a caller
+    supplies its own, so a live follower draws each lift transition once however
+    many projects it follows. A caller that supplies ``lift_claim`` replaces it
+    outright; a caller measuring lift rows without a shared home passes one that
+    always permits.
     """
     from reckon.crew import ticker as ticker_module
 
     observed_sessions = frozenset(observed)
     selected_runs = tuple(run_ids)
+    if lift_claim is None:
+        lift_claim = lambda lift_id, transition: take_lift_claim(  # noqa: E731
+            session, lift_id, transition
+        )
     return ticker_module.PaneRowPath(
         selects=lambda event: _follow_selects(
             event, session=session, observed=observed_sessions, run_ids=selected_runs
@@ -900,6 +1017,10 @@ def follower_row_path(
         # reload hands across, so the memory of them starts where the previous
         # image left it rather than empty.
         lift_groups=lift_groups,
+        # The pane's shared lift claim: the session's followers draw each lift
+        # transition once between them, and a live follower bound to its session
+        # draws the grant once no matter how many projects it follows.
+        lift_claim=lift_claim,
     )
 
 

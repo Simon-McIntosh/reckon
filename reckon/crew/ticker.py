@@ -1133,6 +1133,7 @@ class RowPolicy:
         own_session: str | None = None,
         observed_sessions: Iterable[str] = (),
         lift_groups: Iterable[str] = (),
+        lift_claim: Callable[[str, str], bool] | None = None,
     ) -> None:
         self._show_observer = bool(show_observer)
         # The session this pane follows. A start row is delivered for this
@@ -1177,6 +1178,14 @@ class RowPolicy:
         self._lift_groups: set[str] = {
             str(group) for group in (lift_groups or ()) if group
         }
+        # One grant is one event, but a session's followers each write the same
+        # pane, and every project's producer sweeps the whole lift document into
+        # its own stream, so the same grant reaches this pane once per project
+        # followed. ``lift_claim`` is the shared, on-disk claim (per session, lift
+        # id and transition) that lets whichever follower reaches a lift row
+        # first take it and the rest draw nothing. ``None`` draws every lift row
+        # on this pane's own memory alone, the behaviour before the claim.
+        self._lift_claim = lift_claim
 
     @property
     def lift_groups(self) -> frozenset[str]:
@@ -1676,17 +1685,54 @@ class RowPolicy:
         has not drawn: a first attach shows the standing lift once, and the
         baseline a reloaded watcher re-announces for a group already drawn adds
         no row. A row with no group cannot be keyed, so it prints as before.
+
+        A row the pane keeps is then offered to the session's shared claim on
+        (session, lift id, transition): the followers of one session write one
+        pane, and every project's producer carries the same grant, so whichever
+        follower reaches a lift row first takes the claim and draws it, and the
+        others draw nothing. The claim is taken here, at the point the row would
+        print, after every hold has decided — a follower that claimed and then
+        held the row would leave no pane drawing it. A follower that loses the
+        claim keeps no memory of a lift it did not show, so its grant's end is a
+        peer follower's to draw: the group memory holds only what this follower
+        itself drew. A row carrying no lift id cannot be keyed and prints on this
+        pane's own memory alone.
         """
         group = str(event.get("node") or "")
-        if group:
-            if to_state == LIFT_ENDED:
-                self._lift_groups.discard(group)
-            elif to_state == LIFT_GRANTED:
-                self._lift_groups.add(group)
-            elif group in self._lift_groups:
+        lift_id = str(event.get("lift_id") or "")
+        claim = self._lift_claim if lift_id else None
+
+        if to_state == LIFT_GRANTED:
+            if claim is not None and not claim(lift_id, to_state):
                 return out
-            else:
+            if group:
                 self._lift_groups.add(group)
+            out.append(event)
+            return out
+
+        if to_state == LIFT_ENDED:
+            if claim is not None and group and group not in self._lift_groups:
+                # This pane never showed the grant — a peer follower did — so
+                # its end is not this follower's to draw.
+                return out
+            if claim is not None and not claim(lift_id, to_state):
+                if group:
+                    self._lift_groups.discard(group)
+                return out
+            if group:
+                self._lift_groups.discard(group)
+            out.append(event)
+            return out
+
+        # A baseline in-force row: inventory of a standing lift. A group this
+        # follower already drew draws nothing, and the claim picks the one
+        # follower that shows a group it has not.
+        if group and group in self._lift_groups:
+            return out
+        if claim is not None and not claim(lift_id, to_state):
+            return out
+        if group:
+            self._lift_groups.add(group)
         out.append(event)
         return out
 
@@ -1723,6 +1769,7 @@ class PaneRowPath:
         own_session: str | None = None,
         observed_sessions: Iterable[str] = (),
         lift_groups: Iterable[str] = (),
+        lift_claim: Callable[[str, str], bool] | None = None,
     ) -> None:
         self._selects = selects
         self._show_observer = bool(show_observer)
@@ -1730,6 +1777,7 @@ class PaneRowPath:
         self._observed_sessions = frozenset(
             str(name) for name in observed_sessions if name
         )
+        self._lift_claim = lift_claim
         self.reported: dict[str, str] = {
             str(run_id): str(state) for run_id, state in dict(reported or {}).items()
         }
@@ -1738,6 +1786,7 @@ class PaneRowPath:
             own_session=self._own_session,
             observed_sessions=self._observed_sessions,
             lift_groups=lift_groups,
+            lift_claim=lift_claim,
         )
         for run_id, state in self.reported.items():
             self._policy.seed(run_id, state)
@@ -1784,6 +1833,7 @@ class PaneRowPath:
             own_session=self._own_session,
             observed_sessions=self._observed_sessions,
             lift_groups=lift_groups,
+            lift_claim=self._lift_claim,
         )
         for run_id, state in self.reported.items():
             self._policy.seed(run_id, state)
