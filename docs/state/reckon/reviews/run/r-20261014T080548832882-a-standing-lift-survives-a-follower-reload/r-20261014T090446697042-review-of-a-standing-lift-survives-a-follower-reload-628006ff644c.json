@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "38cba50acc33430f25deb2a08c42856424f620fb",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:1254 follower_row_path",
+    "reckon/crew_follow_commands.py:1428 follow_checkpoint.write",
+    "reckon/crew_follow_commands.py:1804 _follow_resume_plan",
+    "reckon/crew_follow_commands.py:1829 path.reseed",
+    "reckon/crew_follow_commands.py:1895 follow_checkpoint.seed_lift_groups",
+    "reckon/crew_follow_commands.py:2866 append_history(group=node)"
+  ],
+  "completed_at": "2026-10-14T09:15:59.262Z",
+  "dispatched_at": "2026-10-14T09:05:14Z",
+  "findings": [
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": "1895",
+      "severity": "follow-on",
+      "text": "follow-on: the re-arm seeding of the drawn groups from stored history is reached by no test - none drives _follow_watch_lines, and the reviewed manifest's own negative_control_note records that dropping the history seeding left 5 of 6 tests green (1 failed, 5 passed), so a regression in this wiring would ship unseen."
+    },
+    {
+      "file": "tests/test_a_standing_lift_survives_a_follower_reload.py",
+      "line": "156",
+      "severity": "follow-on",
+      "text": "follow-on: the printed-rows assertion is made on a path built from groups, the value seed_lift_groups returned two lines above, and PaneRowPath holds any group handed to it, so this line cannot detect a seed_lift_groups regression - only the independent assert groups == {GROUP} at line 153 can."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T080029971139-a-standing-lift-survives-a-follower-reload/manifest.md",
+      "line": "20",
+      "severity": "follow-on",
+      "text": "follow-on: the 6-passed result for the deliverable test file is claimed but unlogged - test_logs names only the two arms and the negative control, whose new-file run is red by design, so the record cannot itself show the measure green."
+    }
+  ],
+  "head_log_revision": "628006ff644c6b77ee9c8696fc83892d1e0c7846",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read against base 38cba50acc33; the single commit 628006ff6 touches the four write paths plus the evidence fragment, threading lift_groups through ticker.py, follow_checkpoint.py and crew_follow_commands.py.",
+    "done_when": "the done_when asks a new test to drive the reload (no pane row), a re-arm from stored history, a first attach and the grant/end cases plus a base and head gate over the importing files; tests/test_a_standing_lift_survives_a_follower_reload.py carries all six cases and I re-ran that file at the reviewed head for 6 passed, with both arms 127 passed EXIT=0.",
+    "goal": "the node's goal is to carry a pane's memory of the drawn lift groups across the follower's own in-place reload and re-arm; reckon/crew_follow_commands.py:1829 reseeds the row path from the carried checkpoint and :1895 restores the groups from the stored history, both before the first row is fed.",
+    "manifest": "read; it states the new file 6 passed, the twelve ticker-importing files at 127 passed head and base with zero added failures, and names its three logs.",
+    "write_paths": "read the manifest's declared paths - reckon/crew/ticker.py, reckon/crew/follow_checkpoint.py, reckon/crew_follow_commands.py, the new test file and the evidence fragment; every path the diff touches is inside them and only the declared figures directory is unused."
+  },
+  "justifications": {
+    "durability": "the reload arm is guarded (the declared negative control turns tests/test_a_standing_lift_survives_a_follower_reload.py::test_a_reload_holding_the_drawn_groups_draws_no_row_for_the_baseline red, 1 failed EXIT=1), but no test fails if the re-arm wiring at reckon/crew_follow_commands.py:1895 regresses.",
+    "evidence": "both arms at reckon/crew/runs/gate-base.log and gate-head-confirm.log ran to their 127 passed summary lines with zero added failures, but the measure file's own green run has no log and the head arm's recorded command names a bare python rather than the interpreter the done_when names.",
+    "fit": "reckon/crew/follow_checkpoint.py:313 seed_lift_groups and reckon/crew/ticker.py:1161 lift_groups follow the surrounding module idioms and name the mechanism with no plan or ticket label.",
+    "goal_fidelity": "reckon/crew_follow_commands.py:1829 passes the carried groups into path.reseed and :1895 rebuilds them from history, so both carriers the goal names reach the row policy before its first feed.",
+    "reuse": "seed_lift_groups at reckon/crew/follow_checkpoint.py:313 extends the seeding idiom of seed_states beside it, and the search over reckon/crew found no other owner of a group-keyed lift memory.",
+    "scope_discipline": "every path in the commit 628006ff6 diff is one of the declared write paths in the manifest, with no file outside them modified."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to carry a pane's memory of the drawn lift groups across the follower's own in-place reload and re-arm; reckon/crew_follow_commands.py:1829 reseeds the row path from the carried checkpoint and :1895 restores the groups from the stored history, both before the first row is fed.\nVERDICT done_when: the done_when asks a new test to drive the reload (no pane row), a re-arm from stored history, a first attach and the grant/end cases plus a base and head gate over the importing files; tests/test_a_standing_lift_survives_a_follower_reload.py carries all six cases and I re-ran that file at the reviewed head for 6 passed, with both arms 127 passed EXIT=0.\nVERDICT write_paths: read the manifest's declared paths - reckon/crew/ticker.py, reckon/crew/follow_checkpoint.py, reckon/crew_follow_commands.py, the new test file and the evidence fragment; every path the diff touches is inside them and only the declared figures directory is unused.\nVERDICT manifest: read; it states the new file 6 passed, the twelve ticker-importing files at 127 passed head and base with zero added failures, and names its three logs.\nVERDICT diff: read against base 38cba50acc33; the single commit 628006ff6 touches the four write paths plus the evidence fragment, threading lift_groups through ticker.py, follow_checkpoint.py and crew_follow_commands.py.\nCALL_SITES: reckon/crew_follow_commands.py:1254 follower_row_path, reckon/crew_follow_commands.py:1428 follow_checkpoint.write, reckon/crew_follow_commands.py:1804 _follow_resume_plan, reckon/crew_follow_commands.py:1829 path.reseed, reckon/crew_follow_commands.py:1895 follow_checkpoint.seed_lift_groups, reckon/crew_follow_commands.py:2866 append_history(group=node)\nREVIEWED_BASE_SHA: 38cba50acc33430f25deb2a08c42856424f620fb\nREVIEWED_HEAD_SHA: 628006ff644c6b77ee9c8696fc83892d1e0c7846\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_follow_commands.py:1829 passes the carried groups into path.reseed and :1895 rebuilds them from history, so both carriers the goal names reach the row policy before its first feed.\nSCORE evidence: 15\nJUSTIFICATION evidence: both arms at reckon/crew/runs/gate-base.log and gate-head-confirm.log ran to their 127 passed summary lines with zero added failures, but the measure file's own green run has no log and the head arm's recorded command names a bare python rather than the interpreter the done_when names.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the commit 628006ff6 diff is one of the declared write paths in the manifest, with no file outside them modified.\nSCORE durability: 12\nJUSTIFICATION durability: the reload arm is guarded (the declared negative control turns tests/test_a_standing_lift_survives_a_follower_reload.py::test_a_reload_holding_the_drawn_groups_draws_no_row_for_the_baseline red, 1 failed EXIT=1), but no test fails if the re-arm wiring at reckon/crew_follow_commands.py:1895 regresses.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/follow_checkpoint.py:313 seed_lift_groups and reckon/crew/ticker.py:1161 lift_groups follow the surrounding module idioms and name the mechanism with no plan or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: seed_lift_groups at reckon/crew/follow_checkpoint.py:313 extends the seeding idiom of seed_states beside it, and the search over reckon/crew found no other owner of a group-keyed lift memory.\nFINDING reckon/crew_follow_commands.py:1895 follow-on: the re-arm seeding of the drawn groups from stored history is reached by no test - none drives _follow_watch_lines, and the reviewed manifest's own negative_control_note records that dropping the history seeding left 5 of 6 tests green (1 failed, 5 passed), so a regression in this wiring would ship unseen.\nFINDING tests/test_a_standing_lift_survives_a_follower_reload.py:156 follow-on: the printed-rows assertion is made on a path built from groups, the value seed_lift_groups returned two lines above, and PaneRowPath holds any group handed to it, so this line cannot detect a seed_lift_groups regression - only the independent assert groups == {GROUP} at line 153 can.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T080029971139-a-standing-lift-survives-a-follower-reload/manifest.md:20 follow-on: the 6-passed result for the deliverable test file is claimed but unlogged - test_logs names only the two arms and the negative control, whose new-file run is red by design, so the record cannot itself show the measure green.\n",
+  "review_run_id": "r-20261014T090446697042-review-of-a-standing-lift-survives-a-follower-reload-628006ff644c",
+  "reviewed_base_sha": "38cba50acc33430f25deb2a08c42856424f620fb",
+  "reviewed_head_sha": "628006ff644c6b77ee9c8696fc83892d1e0c7846",
+  "reviewed_run_id": "r-20261014T080548832882-a-standing-lift-survives-a-follower-reload",
+  "scores": {
+    "durability": 12,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T09:14:12.463814+00:00",
+  "total": 103
+}
