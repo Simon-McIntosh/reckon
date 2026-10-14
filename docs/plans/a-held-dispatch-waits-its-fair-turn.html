@@ -24,7 +24,7 @@
   <title>A Held Dispatch Waits Its Fair Turn | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="119">
+<meta name="plan-version" content="120">
 <meta name="plan-modified" content="2026-10-14">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;implementable&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="3c837fc1">
@@ -436,6 +436,9 @@
 </div>
 <div class="r-comment" data-section="s21" data-id="c-close-s21" data-who="reckon-build" data-when="2026-10-14T09:40:00Z">
     <div class="r-comment-body"><p>§21 landed at <code>e92a48f8c</code>. The occupied-worktree refusal case now asserts that the refused dispatch leaves no watch row of its own. Every row naming the node after the refusal carries the earlier run's id, and the control with a kept pointer fails naming that run. Gate: 6 passed. Arms: 0 added. Review: 118. <a href="/reckon/evidence/archive/a-held-dispatch-waits-its-fair-turn-landed.html#s21-refusal-no-watch-row">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s21" data-id="c-run-r-20261014T090025554907-the-occupied-worktree-refusal-asserts-no-watch-row" data-who="reckon-build" data-when="2026-10-14T09:25:35.681Z">
+    <div class="r-comment-body"><p>tests/test_refused_dispatch_leaves_no_pointer.py::test_a_refusal_over_an_existing_worktree_leaves_no_new_trace now publishes the project&#x27;s watcher transitions via _publish_transitions before the second dispatch and again after the refusal, and requires every row naming the node to carry the earlier run&#x27;s run_id exactly; after arm 6 passed EXIT=0, no added failure against base (0 to 0), negative control fails naming the kept run id.</p></div>
 </div>
 </section>
 </main>
