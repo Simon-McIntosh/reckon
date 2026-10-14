@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_stored_phase_advances.py::test_stored_phase_advances_from_starting_to_working_to_complete"
+  ],
+  "base_log_revision": "65e6c32a6f35290596e4d90cf317ab33f1639d68",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew_run_commands.py:39 sweep command imports resumption.sweep",
+    "reckon/crew_follow_commands.py:98 follower imports resumption.sweep",
+    "reckon/crew/dispatch.py:2001 _prepare_attempt_records call",
+    "reckon/crew/dispatch_sessions.py:1043 resume_plan calls live_attempt_refusal",
+    "reckon/crew/resumption.py:828 sweep prediction calls live_attempt_refusal",
+    "reckon/crew/dispatch_sessions.py:1927 record_resumption drops the in-flight marker"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-14T08:03:34Z",
+  "findings": [
+    {
+      "file": "reckon/crew/resumption.py",
+      "line": "1043",
+      "severity": "follow-on",
+      "text": "follow-on: the per-process launch registry _LAUNCHES_IN_THIS_PROCESS is added to at resumption.py:1043, but the discarded in the finally at :1079 is inside the try, so a failure of mark_resume_launching at :1044 leaks the run id into the registry and a long-lived follower refuses that run's sweep launches for the rest of the process."
+    },
+    {
+      "file": "reckon/crew/resumption.py",
+      "line": "189",
+      "severity": "follow-on",
+      "text": "follow-on: the registry separates two passes of one sweep but resume_plan still consults only launch_in_flight, whose pid==os.getpid() exemption at :189 exempts a mark naming the current process, so a sweep launch beside a direct crew resume inside one process remains unseparated."
+    }
+  ],
+  "head_log_revision": "4cf6dd160fb192d5d0734dde525932cb77d2479a",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s): sweep is reached from crew_run_commands.py:39 and crew_follow_commands.py:98, _prepare_attempt_records from dispatch.py:2001, and the in-flight refusal from resume_plan (dispatch_sessions.py:1043), the sweep prediction (resumption.py:828) and record_resumption (dispatch_sessions.py:1927).",
+    "diff": "read 4cf6dd160 against 272cfe92a; four commits across four files (resumption.py, dispatch_launch.py, tests/test_resume_refuses_a_live_worker.py, the evidence fragment), all inside the widened scope, adding the start-tick to the in-flight mark, deleting _live_attempt_holder for live_worker_pid, and adding the per-process launch registry.",
+    "done_when": "the done_when extends tests/test_resume_refuses_a_live_worker.py with the reused-pid, environment-marked-worker and two-sweep-pass cases; the manifest records the repair gate at 30 passed and the four-file re-run at 34 passed, with the negative control red.",
+    "goal": "the node's goal is to make crew resume refuse, inside resume_plan's own check, a resume of a run whose current attempt is alive, storing the refused advice for that attempt's next resume; the delta hardens that guard (resumption.py:175 launch_in_flight, dispatch_launch.py:1604 live_worker_pid) without changing its purpose.",
+    "manifest": "read r-20261014T080250692824/manifest.md; it records commits a78371282..272cfe92a, the importer-population base/head pair and its repair arm, the repair gate at 30 passed, the negative-control log path and note, and the coordinator's reproduction.",
+    "write_paths": "read the source node's dispatched paths plus reckon/crew/dispatch_launch.py, granted by the coordinator's resume advice with crew widen; every path in the delta is inside them."
+  },
+  "justifications": {
+    "durability": "each added test reddens on the exact regression it guards: reverting launch_in_flight to a bare process_alive(pid) fails test_a_mark_naming_a_reused_pid_is_not_in_flight_and_the_resume_goes_ahead, reverting _prepare_attempt_records to the private holder fails test_a_worker_reachable_only_by_its_run_environment_is_not_retired, and removing _LAUNCHES_IN_THIS_PROCESS fails test_two_sweep_passes_over_one_run_whose_resume_is_in_flight_launch_one_attempt, which the negative-control log confirms for the first.",
+    "evidence": "the matched population pair in the reviewed run's logs (base 65e6c32a6, 4 failed/1055 passed; head 4cf6dd160, 3 failed/1060 passed) leaves one head-only failure, tests/test_stored_phase_advances.py::test_stored_phase_advances_from_starting_to_working_to_complete, which the prior review re-ran serially at 5 passed.",
+    "fit": "the new helpers follow resumption.py's module-local idiom and carry no plan or ticket label, though resumption.py:68 aliases the private process_liveness._process_start_time into a public name rather than a public accessor.",
+    "goal_fidelity": "the delta closes the two gaps the first landing left: the sweep's own launch path now holds its window (resumption.py:1042-1044) and the launch guard reads the owner's live_worker_pid (dispatch_launch.py:1604) instead of a weaker private copy.",
+    "reuse": "the forked _live_attempt_holder is deleted and dispatch_launch.py:1604 now extends live_worker_pid, and launch_in_flight (resumption.py:191) delegates to process_liveness.record_process_alive; no capability is re-implemented.",
+    "scope_discipline": "every changed path is inside the declared write paths including the crew widen grant of dispatch_launch.py, and the unrelated formatter reflows the first landing carried were reverted, leaving only the three substantive hunks."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make crew resume refuse, inside resume_plan's own check, a resume of a run whose current attempt is alive, storing the refused advice for that attempt's next resume; the delta hardens that guard at resumption.py:175 launch_in_flight and dispatch_launch.py:1604 live_worker_pid without changing its purpose.\nVERDICT done_when: the done_when extends tests/test_resume_refuses_a_live_worker.py with the reused-pid, environment-marked-worker and two-sweep-pass cases; the manifest records the repair gate at 30 passed and the four-file re-run at 34 passed, with the negative control red.\nVERDICT write_paths: read the source node's dispatched paths plus reckon/crew/dispatch_launch.py, granted by the coordinator's resume advice with crew widen; every path in the delta is inside them.\nVERDICT manifest: read; it records commits a78371282..272cfe92a, the importer-population base/head pair and its repair arm, the repair gate at 30 passed, the negative-control log path and note, and the coordinator's reproduction.\nVERDICT diff: read 4cf6dd160 against 272cfe92a; four commits across four files, all inside the widened scope, adding the start-tick to the in-flight mark, deleting _live_attempt_holder for live_worker_pid, and adding the per-process launch registry.\nCALL_SITES: reckon/crew_run_commands.py:39 sweep command imports resumption.sweep, reckon/crew_follow_commands.py:98 follower imports resumption.sweep, reckon/crew/dispatch.py:2001 _prepare_attempt_records call, reckon/crew/dispatch_sessions.py:1043 resume_plan calls live_attempt_refusal, reckon/crew/resumption.py:828 sweep prediction calls live_attempt_refusal, reckon/crew/dispatch_sessions.py:1927 record_resumption drops the in-flight marker\nREVIEWED_BASE_SHA: 4cf6dd160fb192d5d0734dde525932cb77d2479a\nREVIEWED_HEAD_SHA: 272cfe92ae73356ecbf358e7561886884e18108b\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the delta closes the two gaps the first landing left: the sweep's own launch path now holds its window (resumption.py:1042-1044) and the launch guard reads the owner's live_worker_pid (dispatch_launch.py:1604) instead of a weaker private copy.\nSCORE evidence: 15\nJUSTIFICATION evidence: the matched population pair in the reviewed run's logs (base 65e6c32a6, 4 failed/1055 passed; head 4cf6dd160, 3 failed/1060 passed) leaves one head-only failure, tests/test_stored_phase_advances.py::test_stored_phase_advances_from_starting_to_working_to_complete, which the prior review re-ran serially at 5 passed.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every changed path is inside the declared write paths including the crew widen grant of dispatch_launch.py, and the unrelated formatter reflows the first landing carried were reverted, leaving only the three substantive hunks.\nSCORE durability: 19\nJUSTIFICATION durability: each added test reddens on the exact regression it guards: reverting launch_in_flight to a bare process_alive(pid) fails the reused-pid case, reverting _prepare_attempt_records to the private holder fails the environment-marked-worker case, and removing _LAUNCHES_IN_THIS_PROCESS fails the two-sweep-pass case, which the negative-control log confirms for the first.\nSCORE fit: 17\nJUSTIFICATION fit: the new helpers follow resumption.py's module-local idiom and carry no plan or ticket label, though resumption.py:68 aliases the private process_liveness._process_start_time into a public name rather than a public accessor.\nSCORE reuse: 20\nJUSTIFICATION reuse: the forked _live_attempt_holder is deleted and dispatch_launch.py:1604 now extends live_worker_pid, and launch_in_flight (resumption.py:191) delegates to process_liveness.record_process_alive; no capability is re-implemented.\nFINDING reckon/crew/resumption.py:1043 follow-on: the per-process launch registry is added to before the try that discards it, so a failure in mark_resume_launching at resumption.py:1044 leaks the run id into _LAUNCHES_IN_THIS_PROCESS and a long-lived follower refuses that run's sweep launches for the rest of the process.\nFINDING reckon/crew/resumption.py:189 follow-on: _LAUNCHES_IN_THIS_PROCESS separates two sweep passes but resume_plan still consults only launch_in_flight, which exempts a mark naming the current pid, so a sweep launch beside a direct crew resume inside one process remains unseparated.\n",
+  "review_run_id": "legacy-74232e2a1ded",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "4cf6dd160fb192d5d0734dde525932cb77d2479a",
+  "reviewed_head_sha": "272cfe92ae73356ecbf358e7561886884e18108b",
+  "reviewed_run_id": "r-20261014T080250692824-a-resume-never-launches-beside-a-live-attempt",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T11:22:00+00:00",
+  "total": 107
+}
