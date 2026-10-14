@@ -10,6 +10,25 @@
   <title>Replacement producer publishes transitions</title>
 </head>
 <body>
-<article id="a-reloaded-producer-publishes-transitions-landing" data-node="a-reloaded-producer-publishes-transitions" data-reckon="landed"></article>
+<article id="a-reloaded-producer-publishes-transitions-landing" data-node="a-reloaded-producer-publishes-transitions" data-reckon="landed">
+  <p>The rows a session's follower reads, and that wake a coordinator, are the
+  ones the producer's sweep appends to the project's event stream. A replacement
+  producer began that sweep with no memory of what its predecessor published, so
+  a run whose state changed while the seat was down was appended as a baseline
+  and woke no one.</p>
+
+  <p>The seed now lives beside the stream's writer, reads the stream backwards
+  from its end before the sweep appends anything of its own, and stops as soon
+  as every live run is named or the rows it reaches predate the earliest
+  creation instant among the runs it has not found. Both the sweep's first pass
+  and the ticker's first poll take their memory from it. A run whose state
+  differs from the last state the stream published for it is appended as a
+  transition from that state; a run the stream never named, and a run standing
+  where it last did, are appended as baselines exactly as before.</p>
+
+  <p>Measured: with the seed forced to return an empty mapping, as the code
+  stood before, the moved-run cases on both paths and the malformed-head case
+  turn red while the two baseline cases stay green.</p>
+</article>
 </body>
 </html>

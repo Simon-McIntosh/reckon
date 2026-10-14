@@ -1958,6 +1958,106 @@ def _stream_transition(
     )
 
 
+def _iter_stream_lines_backwards(
+    path: Path, *, chunk: int = 64 * 1024
+) -> Iterable[str]:
+    """Yield a stream file's lines from its last to its first.
+
+    The read is taken from the end in fixed-size chunks, so recovering an
+    earlier state costs only the tail a caller walks rather than the whole
+    history. A line that does not decode is yielded with replacement
+    characters and left to the caller to skip: a tail caught mid-append by a
+    live writer is not a reason to end the read.
+    """
+    try:
+        size = path.stat().st_size
+    except OSError:
+        return
+    if size <= 0:
+        return
+    try:
+        with path.open("rb") as stream:
+            end = size
+            held = b""
+            while end > 0:
+                start = max(0, end - chunk)
+                stream.seek(start)
+                block = stream.read(end - start)
+                end = start
+                parts = (block + held).split(b"\n")
+                held = parts[0]
+                for segment in reversed(parts[1:]):
+                    if segment.strip():
+                        yield segment.decode("utf-8", "replace")
+            if held.strip():
+                yield held.decode("utf-8", "replace")
+    except OSError:
+        return
+
+
+def _earliest_created(created: Iterable[str]) -> datetime | None:
+    """The earliest parseable creation instant among these runs, or None."""
+    stamps = [parse_utc(value) for value in created]
+    present = [stamp for stamp in stamps if stamp is not None]
+    return min(present) if present else None
+
+
+def _seed_published_states(
+    path: Path, live_created: Mapping[str, str]
+) -> dict[str, str]:
+    """The state a stream last published for each live run, read from its end.
+
+    The producer holds memory only for its own life, so a replacement starting
+    over a stream its predecessor wrote has nothing to compare against: a run
+    whose state moved while the seat was down would then read as inventory and
+    draw a baseline, and a baseline is not the news a follower wakes on. The
+    state to continue from is the last one the stream carries for each live run.
+
+    The read walks the stream backwards so a long history costs only the tail
+    that names a live run, and stops as soon as every live run is found or the
+    rows it reaches predate the earliest ``created_at`` among the live runs it
+    has not found: no run is published before it is created, so nothing older
+    can name one still outstanding. A row that cannot be read is skipped rather
+    than ending the read, because a tail caught mid-append by the producer is
+    not worth the memory this read is reconstructing.
+    """
+    found: dict[str, str] = {}
+    outstanding = {
+        run_id: str(created) for run_id, created in live_created.items() if run_id
+    }
+    if not outstanding:
+        return found
+    for line in _iter_stream_lines_backwards(path):
+        try:
+            row = json.loads(line)
+        except (TypeError, ValueError):
+            continue
+        if not isinstance(row, Mapping):
+            continue
+        run_id = str(row.get("run_id") or "")
+        if run_id in outstanding:
+            outstanding.pop(run_id)
+            state = row.get("to_state")
+            if state:
+                found[run_id] = str(state)
+            if not outstanding:
+                break
+        reached = parse_utc(row.get("observed_at"))
+        earliest = _earliest_created(outstanding.values())
+        if reached is not None and earliest is not None and reached < earliest:
+            break
+    return found
+
+
+def _live_created(records: Iterable[Mapping[str, Any]]) -> dict[str, str]:
+    """Each live run's creation instant, keyed by run id."""
+    return {
+        str(record.get("run_id") or ""): str(record.get("created_at") or "")
+        for record in records
+        if record.get("run_id")
+    }
+
+
 def _publish_watch_transitions(
     project: str,
     producer: _WatchStreamProducer,
@@ -1987,24 +2087,40 @@ def _publish_watch_transitions(
     # pointer listing as this tick can, so a request an admission pass holds
     # mid-launch reads as still queued rather than withdrawn.
     handed = handover_run_ids(project)
+    # Held, because the first sweep reads the same records twice: once for the
+    # snapshots it publishes and once for the creation instants the seed bounds
+    # its read with.
+    records = list(records)
     current = _watch_stream_snapshots(records, stall_window=producer.stall_window)
     if not current and not producer.fleet_seen:
         return False
 
     try:
         if not producer.fleet_seen:
+            # Read the stream's memory before this sweep appends to it, so the
+            # seed is the predecessor's last word for a run rather than this
+            # producer's own first row. A run the stream named at another state
+            # moved while the seat was down, and that row is the news a follower
+            # wakes on; a run the stream never named, or that stands where it
+            # last did, is inventory and is published as a baseline.
+            published = _seed_published_states(producer.path, _live_created(records))
             baseline = {run_id: dict(snapshot) for run_id, snapshot in current.items()}
             counts = _transition_counts(current)
-            lines = [
-                _stream_transition(
-                    project,
-                    snapshot=snapshot,
-                    previous=None,
-                    current=str(snapshot["state"]),
-                    counts=counts,
+            lines = []
+            for run_id, snapshot in current.items():
+                state = str(snapshot["state"])
+                seeded = published.get(run_id)
+                lines.append(
+                    _stream_transition(
+                        project,
+                        snapshot=snapshot,
+                        previous=(
+                            seeded if seeded is not None and seeded != state else None
+                        ),
+                        current=state,
+                        counts=counts,
+                    )
                 )
-                for snapshot in current.values()
-            ]
             _append_watch_lines(producer.path, lines)
             producer.fleet_seen = True
             producer.known = baseline

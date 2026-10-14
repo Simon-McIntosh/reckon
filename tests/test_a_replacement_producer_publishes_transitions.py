@@ -262,3 +262,112 @@ def test_the_seed_stops_before_a_malformed_head_it_never_needs(home) -> None:
 
     assert row["event"] == "transition", row
     assert row["from_state"] == "working", row
+
+
+def _sweep_rows() -> list[dict[str, Any]]:
+    """Drive one production first sweep and return the rows the stream holds.
+
+    This is the path a session's follower reads and a coordinator wakes on: the
+    producer registered for the project with no memory, as a replacement has,
+    then a live listing, which is what appends to the project's event stream.
+    The sweep runs off the transition path, so the thread it starts is joined
+    before the rows are read rather than left to outlive the case.
+    """
+    producer = runs._WatchStreamProducer(
+        path=runs.watch_stream_path(PROJECT), known={}, stall_window="1h"
+    )
+    runs._WATCH_STREAM_PRODUCERS[PROJECT] = producer
+    try:
+        runs.list_live(project=PROJECT)
+        if producer.sweep_thread is not None:
+            producer.sweep_thread.join(timeout=10)
+    finally:
+        runs._WATCH_STREAM_PRODUCERS.pop(PROJECT, None)
+    return list(runs.read_stream_events(producer.path))
+
+
+def _appended_row(run_id: str, *, before: int) -> dict[str, Any]:
+    """The row one sweep appended for a run, past the rows already published."""
+    rows = _sweep_rows()
+    assert len(rows) > before, rows
+    appended = [row for row in rows[before:] if row.get("run_id") == run_id]
+    assert appended, rows
+    return appended[-1]
+
+
+def test_the_sweep_appends_a_transition_for_a_run_that_moved(home) -> None:
+    """The stream a follower reads carries the transition, not a baseline."""
+    run_id = "r-swept-moved"
+    pointer = _write_pointer(
+        run_id,
+        phase="complete",
+        manifest_status="complete",
+        process_alive=False,
+        created_at=NOW - timedelta(hours=2),
+    )
+    _write_stream(
+        _row_line(
+            _row(
+                run_id,
+                to_state="working",
+                from_state="dispatched",
+                at=NOW - timedelta(hours=1),
+            )
+        )
+    )
+
+    completed = _snapshot_state(pointer)
+    assert completed != "working"
+
+    row = _appended_row(run_id, before=1)
+
+    assert row["event"] == "transition", row
+    assert row["from_state"] == "working", row
+    assert row["to_state"] == completed, row
+
+
+def test_the_sweep_appends_a_baseline_for_a_run_the_stream_never_named(home) -> None:
+    """A run absent from the stream is inventory on the stream too."""
+    run_id = "r-swept-unseen"
+    _write_pointer(
+        run_id,
+        phase="complete",
+        manifest_status="complete",
+        process_alive=False,
+        created_at=NOW - timedelta(hours=2),
+    )
+    # The stream names only another run, so this one was never published.
+    _write_stream(
+        _row_line(
+            _row("r-swept-someone-else", to_state="working", from_state="", at=NOW)
+        )
+    )
+
+    row = _appended_row(run_id, before=1)
+
+    assert row["event"] == "baseline", row
+    assert row["from_state"] is None, row
+
+
+def test_the_sweep_keeps_the_baseline_for_a_run_standing_where_it_last_did(
+    home,
+) -> None:
+    """A run the stream already published at its current state is inventory."""
+    run_id = "r-swept-still"
+    pointer = _write_pointer(
+        run_id,
+        phase="complete",
+        manifest_status="complete",
+        process_alive=False,
+        created_at=NOW - timedelta(hours=2),
+    )
+    standing = _snapshot_state(pointer)
+    _write_stream(
+        _row_line(_row(run_id, to_state=standing, from_state="dispatched", at=NOW))
+    )
+
+    row = _appended_row(run_id, before=1)
+
+    assert row["event"] == "baseline", row
+    assert row["from_state"] is None, row
+    assert row["to_state"] == standing, row
