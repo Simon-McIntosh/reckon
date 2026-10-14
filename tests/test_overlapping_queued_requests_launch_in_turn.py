@@ -637,9 +637,7 @@ def test_one_pass_resolves_each_requests_claims_at_most_once(
         resolutions.append(str(pointer["run_id"]))
         return real_resolve(pointer)
 
-    monkeypatch.setattr(
-        queue_admission, "_resolved_request_claims", counting_resolve
-    )
+    monkeypatch.setattr(queue_admission, "_resolved_request_claims", counting_resolve)
 
     result = queue_admission.admit_once(
         now=START, config_for=lambda _pointer: config, launcher=_launcher([])
@@ -648,9 +646,7 @@ def test_one_pass_resolves_each_requests_claims_at_most_once(
     requests = {f"r-req-{index}" for index in range(1, 7)}
     # Every request reaches the overlap pre-check rather than being held before
     # it, so the pass either launched it or held it behind an earlier overlap.
-    assert (
-        len(result["launched"]) + len(result["held"]) == len(requests)
-    ), result
+    assert len(result["launched"]) + len(result["held"]) == len(requests), result
     # The later request of the overlapping pair is still held, queued and
     # unfailed, behind the earlier request it shares a path with.
     assert "r-req-6" in result["held"]
