@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-after" content="the-review-loop-runs-without-hand-steps">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;}">
   <title>A Seat Held Elsewhere Is Not Restarted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="6">
-<meta name="plan-modified" content="2026-10-13">
+<meta name="plan-version" content="7">
+<meta name="plan-modified" content="2026-10-14">
 </head>
 <body>
   <main class="plan-doc">
@@ -115,6 +115,10 @@
 <section data-reckon="section" data-id="s5" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
 <p><strong>Deliverable.</strong> <code>reckon crew watch --ensure</code> reads the unit's restart count twice, a few seconds apart. When the count rises between the readings, it reports the unit as cycling, not healthy, with both readings. On 2026-10-13 it reported "already active on an unchanged unit; started nothing" for a unit that had restarted 2,376 times. This is independent of §2: it is how a cycle of any cause becomes visible.</p><p><strong>Done when</strong> a test gives <code>--ensure</code> a unit whose restart count rises between its two readings and finds it reported as cycling with both counts, while a unit whose count holds is reported as before. The unit test files show no added failure against base. Negative control: with only one reading taken, the rising unit must read as healthy, reproducing 2026-10-13.</p>
 
+    <h2 id="s6">§6 — A stale producer&#x27;s remedy names what its reader can run</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+<p><strong>Why.</strong> On 2026-10-13 followers on clu-2002 told every session that its producer ran older code, with the remedy <code>reckon crew unwatch --project &lt;p&gt; &amp;&amp; reckon crew watch --ensure --project &lt;p&gt;</code>. The seat was held on another host, and <code>unwatch</code> refuses a seat it does not hold. Sessions were told to run a command their own tool refuses, and reported that reckon was blocking them.</p><p><strong>What landed.</strong> In <code>reckon/crew_follow_commands.py</code>, <code>_follow_watch_lines</code> reads the seat's host through <code>runs.watch_lock_path</code>, <code>runs._read_watch_record</code>, <code>runs._seat_host</code> and <code>runs._seat_names_a_foreign_host</code>. For a seat on another host, <code>_producer_stale_event</code> names that host and says the producer reloads itself when the code changes. The event then carries a <code>host</code> field and no remedy. A seat on this host keeps the cycle command. The work ran as <code>r-20261013T222214371236-stale-producer-remedy-runs-from-here</code>: commit <code>7ebf0de29</code>, with four tests in <code>tests/test_stale_producer_remedy_runs_from_here.py</code> and a negative control logged under its run directory. Its review was <code>r-20261014T015605522579</code>. The review's blocking finding was a truncated gate log, answered by a serial rerun to a complete log. The change merged as <code>ed650e36b</code>. The §4 defect is unchanged: sessions on the seat-less host still read no producer.</p>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-sheinr-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-13" data-recommends-skill="/reckon-build a-seat-held-elsewhere-is-not-restarted §2" data-resolved-at="" data-resolved-by="">
@@ -132,6 +136,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-13T09:35:00Z">
     <div class="r-comment-body"><p>§3 landed: the producer skips a follower attached from another host because follower liveness probes its pids in the producer host's own <code>/proc</code> (<code>follower_registration.py:506-533</code>), so no snapshot is published and the hook prints "no producer". Same cause as §4's premise; reproduced in an isolated fixture and re-run by a claims review (3/3 reproduced). <a href="/reckon/evidence/archive/a-seat-held-elsewhere-is-not-restarted-landed.html#s3">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-close-s6" data-who="reckon-build" data-when="2026-10-14T05:02:00Z">
+    <div class="r-comment-body"><p>§6 landed: a follower names a foreign seat's host and offers no cycle command its reader cannot run. Merged as <code>ed650e36b</code>. Recorded after the fact, because the change went out on a brief rather than as a section. <a href="/reckon/evidence/archive/a-seat-held-elsewhere-is-not-restarted-landed.html#s6">evidence</a></p></div>
 </div>
 </section>
 </main>

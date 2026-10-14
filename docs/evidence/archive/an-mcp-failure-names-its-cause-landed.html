@@ -65,6 +65,11 @@
     <p><code>reckon doctor</code> now reads every stdio MCP server registered for Claude Code: the user-scope entries in <code>~/.claude.json</code> and the <code>.mcp.json</code> at each mounted project's checkout. It flags a <code>uv run</code> launch that omits <code>--no-sync</code>, names no absolute <code>--project</code>, carries a literal <code>/home/&lt;user&gt;</code> path, or names a <code>--project</code> directory that does not exist; it prints the corrected <code>uv run --no-sync --project ${HOME}/…</code> command and exits non-zero. Commits <code>736bf9ad0</code>, <code>056bfb015</code> and <code>7057e2474</code>; <code>tests/test_doctor_mcp_launch.py</code> 3 passed, and both declared controls fail the cases the head passes. The independent review stored 108/120. With the run merged onto main <code>516809cd1</code>, the 6 modules importing the doctor module or the census pass, 63 tests.</p><p>Run read-only from the merged tree against this workstation on 2026-10-08, doctor flags five launches, all for syncing: the user-scope reckon entry, which also names one user's home; three imas-codex entries, two of them also naming one user's home; and one imas-efit entry. The user-scope entry is the operator's to change. The project entries belong to imas-codex and imas-efit and are not edited from here; their owners were told. The review's follow-ons: the launch reader re-reads <code>mounts.json</code> beside <code>_list_projects</code> in <code>reckon/mcp.py</code>, and through <code>_mounts_path()</code> where doctor's mounts section reads the config home, so the two sections can read different files under <code>RECKON_MOUNTS_PATH</code>; and the literal-home pattern misses a home path joined by a separator other than whitespace or <code>=</code>.</p>
   </section>
 
+  <section id="s14">
+    <h2>§14 — A failed call on a moved checkout names the reconnect, landed</h2>
+    <p>Run <code>r-20261013T202356776371-mcp-server-serves-current-code</code>, commits <code>203882d19</code> and <code>f591f7211</code> (<code>reckon/mcp.py</code> and <code>tests/test_mcp_server_serves_current_code.py</code>). Review <code>r-20261013T211958771791</code>. Merged to <code>main</code> as <code>136e48434</code> on 2026-10-13, and recorded on this plan on 2026-10-14.</p>
+  </section>
+
 </main>
 </body>
 </html>

@@ -21,13 +21,13 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="reckon-reads-answer-in-seconds">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;implementable&quot;}">
   <title>An MCP Failure Names Its Cause | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.75">
-<meta name="plan-version" content="87">
-<meta name="plan-modified" content="2026-10-09">
+<meta name="plan-version" content="88">
+<meta name="plan-modified" content="2026-10-14">
 <meta name="plan-commits" content="cff2bbed,e52b056f,abb84ca7,7057e247">
 </head>
 <body>
@@ -191,6 +191,14 @@
       <code>reckon/mcp_census.py</code>, <code>reckon/project_maintenance_commands.py</code> and <code>tests/test_mcp_census.py</code>; it runs
       after §5, which edits the doctor module too.</p>
 
+    <h2 id="s14">§14 — A failed call on a moved checkout names the reconnect</h2>
+<section data-reckon="section" data-id="s14" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+<p><strong>Why.</strong> On 2026-10-13 at 19:39 UTC, a peer session's reckon MCP server failed to read <code>flight-defaults.yaml</code> with <code>budget.lift: Extra inputs are not permitted</code>. The server had started on 2026-10-08, before <code>budget.lift</code> existed. It kept validating new configuration against the classes it had imported at start, and its error said nothing about a stale server or the reconnect that would fix it.</p><p><strong>What landed.</strong> <code>_refuse_when_stale</code> in <code>reckon/mcp.py</code> wraps every registered tool. A call that returns normally is untouched. When a call fails, the server checks two things: whether the code stamp has moved since it started, and whether the moved checkout loads in a throwaway interpreter. If both hold, it answers <code>stale_server_code</code>, naming its start time, both stamps, the original error and the reconnect. The work ran as <code>r-20261013T202356776371-mcp-server-serves-current-code</code>: commits <code>203882d19</code> and <code>f591f7211</code>, with tests in <code>tests/test_mcp_server_serves_current_code.py</code>. Its review was <code>r-20261013T211958771791</code>, and it merged as <code>136e48434</code>. A server started before the merge still needs one manual reconnect.</p>
+
+    <h2 id="s15">§15 — One check decides whether a moved checkout can be trusted</h2>
+<section data-reckon="section" data-id="s15" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> §14 gave <code>reckon/mcp.py</code> its own probe of a moved checkout, <code>_CODE_IMPORT_PROBE</code>. It compiles every module and imports only <code>reckon.mcp</code>. The follower has its own copy, <code>_FOLLOWER_RELOAD_PROBE</code> with <code>_replacement_imports</code> in <code>reckon/crew_follow_commands.py</code>, and the two now disagree. Since <a href="/reckon/plans/the-monitor-shows-the-work-it-watches">the-monitor-shows-the-work-it-watches</a> §18, the follower imports every module and defers while any tracked file under <code>reckon/</code> differs from <code>HEAD</code> (<code>_tracked_reckon_tree_is_dirty</code>). The MCP probe makes neither check. On a half-edited tree, the MCP therefore tells its caller to reconnect onto code the followers refuse to load. That is the tree that crashed five producers on 2026-10-13.</p><p><strong>Deliverable.</strong> One function answers whether a moved checkout can be trusted: it is clean against <code>HEAD</code> under <code>reckon/</code> and every module imports. The follower's reloader and the MCP's stale response both call it, and no second probe remains. The MCP answers <code>stale_server_code</code> only when that function trusts the tree. Otherwise the original failure stands, as it does today for a tree that does not import.</p><p><strong>Done when</strong> a test sets up a temporary repository with a moved code stamp and a tracked <code>reckon/</code> file modified against <code>HEAD</code>. In that state the MCP wrapper returns the original failure, not <code>stale_server_code</code>. With the tree committed, clean and importable, it returns <code>stale_server_code</code>. The tests from monitor §18 and <code>tests/test_mcp_server_serves_current_code.py</code> still pass, and the source holds one import-probe definition. The test files importing <code>reckon/mcp.py</code> or <code>reckon/crew_follow_commands.py</code> show no added failure against base. For the negative control, restore the MCP's own probe; the dirty-tree case must then answer <code>stale_server_code</code>. The control is logged under the run directory. This node writes <code>crew_follow_commands.py</code>, so it runs after <a href="/reckon/plans/the-monitor-shows-the-work-it-watches">the-monitor-shows-the-work-it-watches</a> §21. Write paths: <code>reckon/mcp.py</code>, <code>reckon/crew_follow_commands.py</code>, a new <code>reckon/checkout_trust.py</code> if the function moves out, and <code>tests/test_one_check_trusts_a_moved_checkout.py</code>.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="launch-form" data-choice="uv-no-sync" data-by="Simon McIntosh" data-when="2026-10-08T01:52:37+00:00">
@@ -310,6 +318,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-s5-flag-correction" data-who="reckon-build" data-when="2026-10-08T22:12:00Z">
     <div class="r-comment-body"><p>Correction to the §5 landing record, which said three imas-codex entries. The five launches doctor flags are: the user-scope <code>reckon</code> entry in <code>~/.claude.json</code> (syncs, names one user's home); the <code>imas-cx</code> server as launched from three repositories' <code>.mcp.json</code>, imas-ambix (syncs, names one user's home), imas-codex (syncs, resolves from its working directory) and nova (syncs, names one user's home); and imas-efit's <code>efit</code> (syncs, resolves from its working directory). Each fix is <code>uv run --no-sync --project ${HOME}/Code/&lt;repo&gt; …</code>.</p></div>
+</div>
+<div class="r-comment" data-section="s14" data-id="c-close-s14" data-who="reckon-build" data-when="2026-10-14T05:00:00Z">
+    <div class="r-comment-body"><p>§14 landed: a call that fails on a moved checkout answers <code>stale_server_code</code> and names the reconnect. Merged as <code>136e48434</code>. Recorded after the fact, because the change went out on a brief rather than as a section; its probe now duplicates the follower's, which §15 fixes. <a href="/reckon/evidence/archive/an-mcp-failure-names-its-cause-landed.html#s14">evidence</a></p></div>
 </div>
 </section>
 </main>
