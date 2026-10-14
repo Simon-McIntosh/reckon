@@ -39,9 +39,22 @@
       "finding": "thin_wrapper-1",
       "reason": "the second harness-home table landed with the carry in earlier sections; section 8, the next node, changes only how the shims start their interpreter and touches neither table. Merging the tables is a refactor for the plan's owner, not judged wrong here",
       "when": "2026-10-14T05:31:10.519943+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "duplicate_owner-1",
+      "reason": "the shim's own live-pointer read in _run_worktree landed in an earlier section; section 8 leaves that read unchanged and fixes the interpreter's path, which is what crashed. Routing the three readers through runs.read_pointer is a consolidation left for its own section, not judged wrong here",
+      "when": "2026-10-14T05:31:22.254205+00:00"
     }
   ],
   "responses": {
+    "duplicate_owner-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "the shim's own live-pointer read in _run_worktree landed in an earlier section; section 8 leaves that read unchanged and fixes the interpreter's path, which is what crashed. Routing the three readers through runs.read_pointer is a consolidation left for its own section, not judged wrong here",
+      "when": "2026-10-14T05:31:22.254205+00:00"
+    },
     "thin_wrapper-1": {
       "action": "declined",
       "by": "",
