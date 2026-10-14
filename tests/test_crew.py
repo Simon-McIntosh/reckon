@@ -27,7 +27,7 @@ import reckon.crew.dispatch_plan as dispatch_plan_module
 import reckon.crew.dispatch_sessions as dispatch_sessions_module
 from reckon import cli as cli_module
 from reckon import crew, crew_dispatch_commands, crew_run_commands, flight, ledger
-from reckon.crew import process_signal, recovery, recovery_stream, review, runs
+from reckon.crew import process_signal, recovery, recovery_stream, resumption, review, runs
 from reckon.crew.refusals import format_refusal
 from tests import test_a_live_run_never_reads_dead as liveness
 from tests.conftest import TEST_TEMP_ROOT_ENV
@@ -3892,7 +3892,7 @@ def test_cli_resume_resolves_the_run_projects_budget_policy(
     }
     resolved_calls = []
     passed_configs = []
-    original_resume = crew.resume_plan
+    original_resume = resumption.resume_plan
 
     def resolve(_module, project, checkout_path, overrides):
         resolved_calls.append((project, checkout_path, overrides))
@@ -3903,7 +3903,10 @@ def test_cli_resume_resolves_the_run_projects_budget_policy(
         return original_resume(run_id, advice, config=config)
 
     monkeypatch.setattr(crew_run_commands, "_resolved_flight", resolve)
-    monkeypatch.setattr(crew, "resume_plan", resume)
+    # The resume command reaches the launch through resumption._resume, which
+    # composes the plan from its own module, and hands it the config this door
+    # resolved for the run's own project.
+    monkeypatch.setattr(resumption, "resume_plan", resume)
 
     result = CliRunner().invoke(
         cli_module.main,

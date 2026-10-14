@@ -2222,10 +2222,22 @@ def _crew_recover(
                 "run_id": run_id,
                 "detail": str(exc),
             }
-    from reckon.crew.dispatch import LanePaused, _require_fleet_gate_open
+    from reckon.crew.dispatch import LanePaused
 
     try:
-        plan = crew_module.resume_plan(run_id, advice, config=config)
+        # The MCP door reaches the same launch the sweep and the command line
+        # do, so the done-status reset, the in-flight marker and the attempt
+        # record are not re-composed here where they could drift from the
+        # launcher that writes the attempt. The spawn is the package attribute
+        # this door has always launched through, handed in so an override
+        # installed on it still reaches the launch.
+        result = resumption_module._resume(
+            run_id,
+            record,
+            config=config,
+            advice=advice,
+            launcher=crew_module._spawn,
+        )
     except LanePaused as exc:
         return {
             "ok": False,
@@ -2250,47 +2262,14 @@ def _crew_recover(
             "run_id": run_id,
             "detail": str(exc),
         }
-    directory = crew_module.run_dir(run_id)
-    turn = len(list(directory.glob("resume-*.jsonl"))) + 1
-    advice_path = directory / f"resume-{turn}-advice.txt"
-    resumption_module._write_resume_prompt(advice_path, plan=plan, advice=advice)
-    log_path = directory / f"resume-{turn}.jsonl"
-    stderr_path = directory / f"resume-{turn}.stderr.log"
-    current = crew_module.read_pointer(run_id)
-    manifest_baseline_mtime_ns = crew_module._manifest_mtime_ns(
-        current.get("manifest_path") or ""
-    )
-    attempt_started_at = crew_module._utc_now()
-    try:
-        _require_fleet_gate_open()
-        pid = crew_module._spawn(
-            plan, log_path=log_path, stderr_path=stderr_path, prompt_path=advice_path
-        )
-    except LanePaused as exc:
-        return {
-            "ok": False,
-            "error": "lane-paused",
-            "run_id": run_id,
-            "detail": str(exc),
-            "reason": exc.gate.get("reason"),
-            "lane_gate": exc.gate,
-        }
-    crew_module.record_resumption(
-        run_id,
-        pid=pid,
-        turn=turn,
-        log_path=log_path,
-        stderr_path=stderr_path,
-        attempt_started_at=attempt_started_at,
-        manifest_baseline_mtime_ns=manifest_baseline_mtime_ns,
-    )
+    plan = result["plan"]
     return {
         "ok": True,
         "action": action,
         "run_id": run_id,
-        "pid": pid,
-        "log_path": str(log_path),
-        "resumed_turn": turn,
+        "pid": result["pid"],
+        "log_path": result["log_path"],
+        "resumed_turn": result["turn"],
         "session_id": resolved["session_id"],
         "session_source": resolved["source"],
         **plan.as_dict(),

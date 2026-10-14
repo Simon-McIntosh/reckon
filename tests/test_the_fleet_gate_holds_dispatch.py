@@ -291,13 +291,20 @@ def test_recovery_launch_surfaces_hold_and_admit(
     monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
     plan = SimpleNamespace(stdin_text="continue", as_dict=dict)
     starts = []
+    # Both doors delegate to resumption._resume, which resolves these
+    # collaborators from its own module, so they are patched there. The doors
+    # read the pointer themselves and hand the record in, so that one is
+    # patched on both surfaces.
     monkeypatch.setattr(crew, "read_pointer", lambda _run: {"project": ""})
-    monkeypatch.setattr(crew, "resume_plan", lambda *_a, **_k: plan)
-    monkeypatch.setattr(crew, "run_dir", lambda _run: tmp_path)
-    monkeypatch.setattr(crew, "_manifest_mtime_ns", lambda _path: 0)
-    monkeypatch.setattr(crew, "_utc_now", lambda: "2026-10-07T00:00:00Z")
+    monkeypatch.setattr(resumption, "read_pointer", lambda _run: {"project": ""})
+    monkeypatch.setattr(resumption, "resume_plan", lambda *_a, **_k: plan)
+    monkeypatch.setattr(resumption, "run_dir", lambda _run: tmp_path)
+    monkeypatch.setattr(resumption, "_manifest_mtime_ns", lambda _path: 0)
+    monkeypatch.setattr(resumption, "_utc_now", lambda: "2026-10-07T00:00:00Z")
+    # The spawn is handed to _resume by the door rather than read from the
+    # resumption module, so it is patched where the door reads it.
     monkeypatch.setattr(crew, "_spawn", lambda *_a, **_k: starts.append("spawn") or 42)
-    monkeypatch.setattr(crew, "record_resumption", lambda *_a, **_k: None)
+    monkeypatch.setattr(resumption, "record_resumption", lambda *_a, **_k: None)
     monkeypatch.setattr(
         mcp.resumption_module,
         "resolve_session",
@@ -783,11 +790,15 @@ def test_launch_callers_reach_the_shared_gate() -> None:
         ("reckon/crew/dispatch_launch.py", "_start_supervisor"),
         ("reckon/crew/resumption.py", "_spawn"),
     }
+    # The resume command and the MCP recovery action are doors onto _resume
+    # rather than launchers of their own: they hand it the run and render what
+    # it returns. _resume is enumerated here, and the loop above requires the
+    # gate of everything that reaches _spawn, so a door that stops going
+    # through _resume loses its gate coverage and the assertion below fails.
     assert launchers >= {
         ("reckon/crew/dispatch.py", "dispatch"),
         ("reckon/crew/dispatch_launch.py", "supervised_launch"),
         ("reckon/crew/resumption.py", "_resume"),
-        ("reckon/crew_run_commands.py", "crew_resume"),
-        ("reckon/mcp.py", "_crew_recover"),
     }
+    assert ("reckon/crew/resumption.py", "_resume") in launchers
     _assert_primitive_launch_paths_reach_gate(root)
