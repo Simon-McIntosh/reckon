@@ -24,7 +24,7 @@
   <title>A Held Dispatch Waits Its Fair Turn | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="106">
+<meta name="plan-version" content="107">
 <meta name="plan-modified" content="2026-10-14">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="3c837fc1">
@@ -400,6 +400,9 @@
 </div>
 <div class="r-comment" data-section="s15" data-id="c-close-s15" data-who="reckon-build" data-when="2026-10-14T02:25:00Z">
     <div class="r-comment-body"><p>§15 landed. A plan review that queued and was launched later is now joined to its launched run at admission, so promotion stores it with that run's times, and no later dispatch has to sweep it up. Merged <code>209216f5d</code> as <code>ef4079795</code>; the gate replayed green there. Population: 174 to 176 passed, 0 added. Review: 115. This removes the hand step of running <code>store_delivered_reviews</code> after a queued plan review delivers, once the admit service runs the new code. <a href="/reckon/evidence/archive/a-held-dispatch-waits-its-fair-turn-landed.html#s15-queued-review-stored">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s19" data-id="c-run-r-20261014T042323442964-the-occupied-worktree-refusal-test-keeps-its-intent" data-who="reckon-build" data-when="2026-10-14T04:37:15.825Z">
+    <div class="r-comment-body"><p>test(crew): the occupied-worktree refusal case now commits in the earlier run&#x27;s tree before dropping its pointer, so the leftover-tree release keeps the tree, the second dispatch meets the refusal and the refusal is asserted to name that commit; the comment naming that refusal was reworded off a plan section label; gate 1 passed EXIT=0 at b25d7da1, negative control FAILED DID NOT RAISE EXIT=1, base 1 failed/9 passed -&gt; after 10 passed (0 added failures).</p></div>
 </div>
 </section>
 </main>
