@@ -25,7 +25,7 @@
   <title>A Seat Held Elsewhere Is Not Restarted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="7">
+<meta name="plan-version" content="8">
 <meta name="plan-modified" content="2026-10-14">
 </head>
 <body>
@@ -104,8 +104,11 @@
       (<code>reckon/crew/recovery_watch.py</code>), so the review reflex is lost to the same sessions. On 2026-10-13 a delivered
       investigation of session <code>f653840f</code>, whose follower runs on a different node from the producer, had no reflex
       review after eight minutes and was reviewed only by hand. The change is therefore made once, where liveness is read: a
-      registration made on another host is not judged gone from this host's process table. How it is judged instead is this
-      section's to settle. Both consumers read the result, and neither gains a second liveness rule of its own.
+      registration made on another host is not judged gone from this host's process table. That needs a fact the record does not
+      carry yet. <code>reckon/crew/follower_registration.py</code> writes the project, session, pids, delivery, scope and start time,
+      but no host. So the registration gains the host it was written on, spelled as the producer seat spells its own
+      (<code>runs._seat_host</code>), and a registration naming another host is never put to this host's process table. How such a
+      registration's liveness is judged instead, for example from a stamp the follower refreshes, is this section's to settle. Both consumers read the result, and neither gains a second liveness rule of its own.
       <strong>Done when</strong>, in addition to the above: the same two-host fixture finds the review reflex dispatching a review
       for a scoring run whose session's follower is on the second host. Negative control: with liveness read from the local
       process table again, the reflex reports that run as awaiting its coordinator.
