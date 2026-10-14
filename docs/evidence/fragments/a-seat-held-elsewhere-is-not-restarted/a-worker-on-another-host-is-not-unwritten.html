@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-seat-held-elsewhere-is-not-restarted">
+  <meta name="plan-evidence-for" content="a-seat-held-elsewhere-is-not-restarted">
+  <title>A worker writing its first status on another host is not drawn halted | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <section id="a-worker-on-another-host-is-not-unwritten-landing">
+      <h2>A worker writing its first status on another host is not drawn halted</h2>
+      <p>A run launched on another host carries a pid this reader's process table cannot look up, so <code>local_liveness</code> answers unknown, and <code>_orientation_write_of_a_run_in_motion</code> in
+      <code>reckon/crew/recovery_liveness.py</code> returned early on any answer other than <code>True</code>. A run between its orientation write and its first status therefore read <code>unwritten</code> and was told to
+      resume work in flight. The liveness gate now refuses only a proven-<code>False</code> answer and decides the unknown case from the run's own stream through the new <code>_newest_stream_in_motion</code>: an assistant
+      turn in the newest stream written within the stall window the stall clock already applies (<code>LOG_STALE_AFTER_SECONDS</code>, no second window) is a run in motion and keeps its classification; a quiet stream
+      still reads <code>unwritten</code>, and a proven-live process is decided as before. Measure: <code>tests/test_a_worker_on_another_host_is_not_unwritten.py</code> &mdash; 4 passed. Negative control, the early
+      return for any liveness other than <code>True</code> restored, 1 failed / 3 passed (EXIT=1), the first case reading <code>unwritten</code>. Gate: the 18 test files importing the write path are 177 passed at base
+      and 181 passed at head, no failure at head absent at base.</p>
+    </section>
+  </main>
+</body>
+</html>
