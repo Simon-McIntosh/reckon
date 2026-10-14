@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.75">
-<meta name="plan-version" content="90">
+<meta name="plan-version" content="91">
 <meta name="plan-modified" content="2026-10-14">
 <meta name="plan-commits" content="cff2bbed,e52b056f,abb84ca7,7057e247">
 </head>
@@ -327,6 +327,9 @@
 </div>
 <div class="r-comment" data-section="s15" data-id="c-close-s15" data-who="reckon-build" data-when="2026-10-14T12:40:00Z">
     <div class="r-comment-body"><p>§15 landed: the MCP's stale-code answer and the follower's reload share one check of a moved checkout. The MCP can no longer tell a caller to reconnect onto a half-edited tree the followers refuse. Merged as <code>096844cd8</code>, reviewed at 104/120. <a href="/reckon/evidence/archive/an-mcp-failure-names-its-cause-landed.html#s15">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s15" data-id="c-run-r-20261014T102752892402-one-check-trusts-a-moved-checkout" data-who="reckon-build" data-when="2026-10-14T12:21:16.722Z">
+    <div class="r-comment-body"><p>one-check-trusts-a-moved-checkout: the follower&#x27;s reloader and the MCP&#x27;s stale response now share one check of whether a moved checkout can be trusted. New reckon/checkout_trust.py holds moved_checkout_is_trustworthy (clean under reckon/ against HEAD and every module imports), plus tracked_reckon_tree_is_dirty and reckon_imports; the import-probe text is defined once in crew_follow_commands._FOLLOWER_RELOAD_PROBE and checkout_trust reads it rather than holding a copy. mcp._stale_code_response answers stale_server_code only when that function trusts the tree; crew_follow_commands._replacement_imports delegates to the shared module. Measure: tests/test_one_check_trusts_a_moved_checkout.py 3 passed — a dirty moved checkout keeps the original crew_error, a committed clean importable one answers stale_server_code, and the source holds one import-probe definition. An independent review found a formatting sweep, a false docstring and a tautological assertion; all three are fixed in follow-up commits without rewriting the earlier ones.</p></div>
 </div>
 </section>
 </main>
