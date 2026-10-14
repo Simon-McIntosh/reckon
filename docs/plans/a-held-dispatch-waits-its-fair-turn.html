@@ -24,7 +24,7 @@
   <title>A Held Dispatch Waits Its Fair Turn | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="122">
+<meta name="plan-version" content="123">
 <meta name="plan-modified" content="2026-10-14">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="3c837fc1">
@@ -445,6 +445,9 @@
 </div>
 <div class="r-comment" data-section="s20" data-id="c-close-s20" data-who="reckon-build" data-when="2026-10-14T09:55:00Z">
     <div class="r-comment-body"><p>§20 landed at <code>7a1fdc171</code>. One admission pass resolves each queued request's claims at most once. Without the cache, the control measures 22 resolutions for 6 requests. Gate: 11 passed. Arms: 49 to 50 passed, 0 added. Review: 118. Like §15 and §18, it takes effect on the lane only after the admit service restarts. §22 is next, and it shares <code>queue_admission.py</code>. <a href="/reckon/evidence/archive/a-held-dispatch-waits-its-fair-turn-landed.html#s20-claims-once-per-pass">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s20" data-id="c-run-r-20261014T085916023917-an-admission-pass-resolves-each-request-once" data-who="reckon-build" data-when="2026-10-14T09:35:11.387Z">
+    <div class="r-comment-body"><p>landing: `_pass_claims` in `reckon/crew/queue_admission.py` resolves a queued request&#x27;s claims at most once per admission pass, and `_queued_requests_overlap`/`_earlier_overlapping_request` read the pass&#x27;s resolved claims for every comparison; measure: one pass over six queued requests with one overlapping pair resolves 6 claim resolutions against 22 before (head-green.log 1 passed EXIT=0; negative control 22 &gt; 6 FAILED EXIT=1).</p></div>
 </div>
 </section>
 </main>
