@@ -344,6 +344,29 @@ class SystemdUserUnitManager:
             == 0
         )
 
+    def restart_count(self, project: str) -> int | None:
+        """Return the unit's restart count, or ``None`` when it cannot be read.
+
+        Read as a unit property through ``systemctl show`` because the count
+        systemd keeps is runtime state that no unit file carries. A manager that
+        does not answer leaves the count unknown rather than zero, so a caller
+        never reads an unreadable unit as one that has never restarted.
+        """
+        completed = systemctl(
+            "show",
+            "--property",
+            "NRestarts",
+            "--value",
+            self._unit_name(project),
+            check=False,
+        )
+        if completed.returncode != 0:
+            return None
+        try:
+            return int((completed.stdout or "").strip())
+        except ValueError:
+            return None
+
     def lingering(self) -> bool:
         return linger_enabled()
 
