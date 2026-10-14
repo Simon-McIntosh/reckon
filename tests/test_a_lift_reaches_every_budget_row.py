@@ -302,7 +302,7 @@ def test_a_moved_seven_day_reset_ends_a_session_lift_on_routings_path(tmp_path, 
     lifted = _verdict_ceiling(config, tmp_path, SESSION, [_clocks(reading)])
     assert lifted == pytest.approx(ceiling)
 
-    moved = _reading(week_resets_at=_week_reset() + timedelta(hours=1))
+    moved = _reading(week_resets_at=_week_reset() + timedelta(days=7))
     ended = _verdict_ceiling(config, tmp_path, SESSION, [_clocks(moved)])
     assert ended == pytest.approx(configured)
 

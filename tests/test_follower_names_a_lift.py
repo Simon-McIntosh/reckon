@@ -236,7 +236,9 @@ def test_a_moved_reset_ends_the_lift(tmp_path):
     _grant(config, [readings.reading])
     seen = _sweep(stream, readings, config, seen={})
 
-    readings.reading = _reading(week_utilisation=0.21, elapsed_hours=0.0)
+    readings.reading = _reading(
+        week_utilisation=0.21, elapsed_hours=22.0 - WEEK_HOURS
+    )
     _sweep(stream, readings, config, seen=seen)
 
     rows = _rows(stream)

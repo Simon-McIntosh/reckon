@@ -263,7 +263,7 @@ def test_effective_budget_is_unchanged_for_a_moved_reset():
     moved = _reading(
         week_utilisation=0.22,
         elapsed_hours=22.0,
-        week_resets_at=_reset(elapsed_hours=22.0) + timedelta(hours=1),
+        week_resets_at=_reset(elapsed_hours=22.0) + timedelta(days=7),
     )
     assert (
         bl.effective_budget(config, group=GROUP, readings=[moved], now=NOW)
