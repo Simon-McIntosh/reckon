@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed run carries no baseline_suite/after_suite pair in its manifest; derived from the two gate arms it names -- gate5-base.log (base arm, the answering change absent, 2 failed 70 passed EXIT=1) and gate5.log (head arm, 59ae0da, 72 passed EXIT=0). The head arm reported no FAILED/ERROR node id, so the added set is empty and the count is a measured 0.",
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/dispatch_sessions.py:1787",
+    "reckon/crew/dispatch_sessions.py:1623",
+    "reckon/crew/dispatch.py:2094",
+    "reckon/crew/promotion_checks.py:236",
+    "reckon/crew/promotion_release.py:441",
+    "reckon/crew/recovery_review_delivery.py:221",
+    "reckon/crew/recovery_stream.py:347",
+    "reckon/crew/recovery_watch.py:393"
+  ],
+  "completed_at": "2026-10-14T07:08:58.914Z",
+  "dispatched_at": "2026-10-14T06:45:31Z",
+  "findings": [
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "3649",
+      "severity": "blocking",
+      "text": "blocking: the guard swallows ProcessLookupError/PermissionError from os.getpgid and execution falls through to the identity check at reckon/crew/routing.py:3673, which raises CrewError for the same pid; reckon/crew/recovery_watch.py:400 catches only ProcessLookupError, so unwatch now raises an uncaught CrewError on the watcher-exited race where it previously reported \"watcher-exited\", a regression the guard was not needed to introduce."
+    },
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "3650",
+      "severity": "follow-on",
+      "text": "follow-on: the comment claims the dead-pid lookup \"must not crash the stop that follows\", but for a pid with no process the identity check at reckon/crew/routing.py:3673 raises CrewError regardless of the guard, so the guard does not prevent the crash it is justified by and no test demonstrates it prevents anything."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 8 production call site(s)",
+    "diff": "read commit by commit against 512152937; ca425008 narrows terminate's identity-checked branch to a pid that still names a process and wraps the os.getpgid group lookup, and 59ae0da updates the evidence fragment prose; four files, no other change.",
+    "done_when": "the done_when names tests/test_a_worker_never_outlives_its_supervisor.py with real child processes and its declared negative control; the manifest records gate5.log (72 passed EXIT=0 at 59ae0da) and gate5-base.log (2 failed at base, including the gained reap test), so the gate the worker ran asserts the named measure.",
+    "goal": "the source node's goal is to extend signal_worker so a stopped or exited supervisor leaves no worker alive (prompt.txt:30); the gained commits repair terminate so a run whose recorded supervisor pid is gone while its start tick remains reaps the reparented worker (reckon/crew/dispatch_sessions.py:1787) and add a group-lookup guard (reckon/crew/routing.py:3645), though that guard's blast radius reaches six other callers.",
+    "manifest": "read manifest.md; it lists commits a6852ed6b..59ae0da, records the head gate (72 passed, EXIT=0) and the declared negative control at head, and names the repaired stop path as finding f580e154b17 acted at ca425008.",
+    "write_paths": "read the manifest's declared write paths; git diff 512152937..59ae0da touches exactly reckon/crew/dispatch_sessions.py, reckon/crew/routing.py, tests/test_a_worker_never_outlives_its_supervisor.py and docs/evidence/fragments/a-run-has-one-live-writer/a-worker-never-outlives-its-supervisor.html, all inside the fence and nothing outside."
+  },
+  "justifications": {
+    "durability": "tests/test_a_worker_never_outlives_its_supervisor.py:285 is a real guard (it fails at base per gate5-base.log), but the reckon/crew/routing.py:3645 guard has no assertion: reverting it alone leaves the suite green because the fixed terminate no longer routes a dead pid there.",
+    "evidence": "the manifest records gate5.log (72 passed, EXIT=0 at 59ae0da) with a literal command and gate5-base.log, whose red arm the harness reduces for the added-failure count.",
+    "fit": "no new symbol is introduced and the change follows the surrounding idiom of reckon/crew/dispatch_sessions.py:1775, though the comment at reckon/crew/routing.py:3650 asserts a purpose the code does not achieve.",
+    "goal_fidelity": "reckon/crew/dispatch_sessions.py:1787 now takes the identity-checked path only for a live recorded pid and reaches the run's environment mark otherwise, which is what the goal's extension needs for a gone supervisor.",
+    "reuse": "the diff adds no definition; it modifies the owner of the signal capability in place (reckon/crew/routing.py:3605) rather than forking a second mechanism.",
+    "scope_discipline": "all four changed paths are inside the fence, but the reckon/crew/routing.py:3645 guard changes the exception a shared helper raises for six callers beyond the node's subject."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is to extend signal_worker so a stopped or exited supervisor leaves no worker alive (prompt.txt:30); the gained commits repair terminate so a run whose recorded supervisor pid is gone while its start tick remains reaps the reparented worker (reckon/crew/dispatch_sessions.py:1787) and add a group-lookup guard (reckon/crew/routing.py:3645), though that guard's blast radius reaches six other callers.\nVERDICT done_when: the done_when names tests/test_a_worker_never_outlives_its_supervisor.py with real child processes and its declared negative control; the manifest records gate5.log (72 passed EXIT=0 at 59ae0da) and gate5-base.log (2 failed at base, including the gained reap test), so the gate the worker ran asserts the named measure.\nVERDICT write_paths: read the manifest's declared write paths; git diff 512152937..59ae0da touches exactly reckon/crew/dispatch_sessions.py, reckon/crew/routing.py, tests/test_a_worker_never_outlives_its_supervisor.py and docs/evidence/fragments/a-run-has-one-live-writer/a-worker-never-outlives-its-supervisor.html, all inside the fence and nothing outside.\nVERDICT manifest: read manifest.md; it lists commits a6852ed6b..59ae0da, records the head gate (72 passed, EXIT=0) and the declared negative control at head, and names the repaired stop path as finding f580e154b17 acted at ca425008.\nVERDICT diff: read commit by commit against 512152937; ca425008 narrows terminate's identity-checked branch to a pid that still names a process and wraps the os.getpgid group lookup, and 59ae0da updates the evidence fragment prose; four files, no other change.\nCALL_SITES: reckon/crew/dispatch_sessions.py:1787, reckon/crew/dispatch_sessions.py:1623, reckon/crew/dispatch.py:2094, reckon/crew/promotion_checks.py:236, reckon/crew/promotion_release.py:441, reckon/crew/recovery_review_delivery.py:221, reckon/crew/recovery_stream.py:347, reckon/crew/recovery_watch.py:393\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_sessions.py:1787 now takes the identity-checked path only for a live recorded pid and reaches the run's environment mark otherwise, which is what the goal's extension needs for a gone supervisor.\nSCORE evidence: 16\nJUSTIFICATION evidence: the manifest records gate5.log (72 passed, EXIT=0 at 59ae0da) with a literal command and gate5-base.log, whose red arm the harness reduces for the added-failure count.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: all four changed paths are inside the fence, but the reckon/crew/routing.py:3645 guard changes the exception a shared helper raises for six callers beyond the node's subject.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_a_worker_never_outlives_its_supervisor.py:285 is a real guard (it fails at base per gate5-base.log), but the reckon/crew/routing.py:3645 guard has no assertion: reverting it alone leaves the suite green because the fixed terminate no longer routes a dead pid there.\nSCORE fit: 16\nJUSTIFICATION fit: no new symbol is introduced and the change follows the surrounding idiom of reckon/crew/dispatch_sessions.py:1775, though the comment at reckon/crew/routing.py:3650 asserts a purpose the code does not achieve.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition; it modifies the owner of the signal capability in place (reckon/crew/routing.py:3605) rather than forking a second mechanism.\nFINDING reckon/crew/routing.py:3649 blocking: the guard swallows ProcessLookupError/PermissionError from os.getpgid and execution falls through to the identity check at reckon/crew/routing.py:3673, which raises CrewError for the same pid; reckon/crew/recovery_watch.py:400 catches only ProcessLookupError, so unwatch now raises an uncaught CrewError on the watcher-exited race where it previously reported \"watcher-exited\", a regression the guard was not needed to introduce.\nFINDING reckon/crew/routing.py:3650 follow-on: the comment claims the dead-pid lookup \"must not crash the stop that follows\", but for a pid with no process the identity check at reckon/crew/routing.py:3673 raises CrewError regardless of the guard, so the guard does not prevent the crash it is justified by and no test demonstrates it prevents anything.\n",
+  "review_run_id": "r-20261014T064502074634-review-of-a-worker-never-outlives-its-supervisor-59ae0daae45b",
+  "reviewed_base_sha": "512152937c714d1580f2c97689ab2a235a20bf81",
+  "reviewed_head_sha": "59ae0daae45b3ce2f08e9a27338d0a0ae7bc7657",
+  "reviewed_run_id": "r-20261014T035021276657-a-worker-never-outlives-its-supervisor",
+  "reviewer": "review-of-a-worker-never-outlives-its-supervisor-59ae0daae45b",
+  "scores": {
+    "durability": 13,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 15,
+    "reuse": 20,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T07:04:26.211218+00:00",
+  "total": 94
+}
