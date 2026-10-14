@@ -43,15 +43,15 @@
     <strong>The hold recorder drops an argument it never used.</strong>
     <code>record_picker_hold</code> in
     <code>reckon/crew/picker/outcomes.py</code> writes its hold under the crew
-    home, so its <code>docs</code> parameter was dead weight; the recorder no
-    longer declares it and both call sites in
-    <code>reckon/crew/dispatch.py</code> stop passing it. Because three test
-    files outside this node's write scope still call the recorder with
-    <code>docs=</code>, the recorder accepts and ignores it through a
-    <code>**_legacy</code> catch-all, so those callers keep working and still
-    record their hold. This is the one place the implementation departs from the
-    node's spec, which assumed the parameter could be dropped outright; it is
-    recorded in the manifest as a deviation. The shared crew-home log helper in
+    home, so its <code>docs</code> parameter was dead weight: the recorder no
+    longer declares it, both call sites in
+    <code>reckon/crew/dispatch.py</code> stop passing it, and the three tests
+    that did — <code>tests/test_a_hold_is_kept_in_the_crew_home.py</code>,
+    <code>tests/test_picker_outcomes.py</code> and
+    <code>tests/test_hold_records_its_state.py</code> — stop passing it without
+    changing anything else they assert. A check pins the recorder's signature as
+    taking no <code>docs</code>, and another pins that both dispatch sites still
+    record a hold. The shared crew-home log helper in
     <code>reckon/crew/picker/__init__.py</code> now states its never-fail
     contract for both its callers — the pick's own timing line and the state
     render's per-read counter.
