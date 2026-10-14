@@ -92,11 +92,14 @@
 
   <p id="a-resume-never-launches-beside-a-live-attempt-evidence-repair-sweep">
     The sweep's own launch path sets and clears the same mark. Its passes share
-    one long-lived process, so the exemption that lets a door ignore its own
-    mark cannot separate two wait-lifts of one run; a fresh read of the pointer
-    with no exemption closes that. The case added takes a second sweep pass
-    inside the first pass's own launch and requires it to refuse and start
-    nothing. The formatter's incidental rewraps of lines this work did not
+    one long-lived process, so a mark on the pointer cannot separate two
+    wait-lifts of one run: it necessarily names that same process, and a process
+    is never refused for a mark it wrote. The window a launch opens is therefore
+    held as a fact about the process rather than read back off the pointer, and
+    it is entered and left around the launch alone. The case added takes a
+    second sweep pass inside the first pass's own launch and requires it to
+    refuse and start nothing, while a door that built a plan and then launched
+    it by hand still proceeds. The formatter's incidental rewraps of lines this work did not
     otherwise change were reverted, so the change reads as the change.
   </p>
 </section>

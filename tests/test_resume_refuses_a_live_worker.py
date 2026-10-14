@@ -610,11 +610,11 @@ def test_two_sweep_passes_over_one_run_whose_resume_is_in_flight_launch_one_atte
 ) -> None:
     """One wait-lift starting two supervisors starts one attempt, not two.
 
-    Two supervisors from a single wait-lift share the sweep's own long-lived
-    process, so the mark's own-process exemption cannot separate them and the
-    re-read a launch performs before it retires an attempt's records is the only
-    thing between them. The second pass, taken while the first launch has begun
-    and has not recorded its attempt, must therefore refuse and start nothing.
+    Two passes of the sweep share one long-lived process, so a mark on the
+    pointer cannot separate them: it necessarily names that same process, and a
+    process is never refused for a mark it wrote. The launch this pass began is
+    therefore held as a fact about this process, and the second pass, taken
+    inside the first pass's own launch, must refuse and start nothing.
     """
     pointer = _pointer(tmp_path, "r-launch-in-flight", pid=_absent_pid(), parked=True)
     # A command this host can resolve, so both passes reach the launch rather

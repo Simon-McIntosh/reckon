@@ -243,27 +243,30 @@ def _in_flight_refusal(run_id: str, marker: Mapping[str, Any]) -> CrewError:
     )
 
 
+# The runs whose launch this process has begun and not yet finished. The pointer
+# mark separates one process from another; it cannot separate two passes of one
+# sweep, which share this process, and whose mark therefore necessarily names
+# it. This registry is the same fact kept where the two passes can be told
+# apart.
+_LAUNCHES_IN_THIS_PROCESS: set[str] = set()
+
+
 def _refuse_a_launch_already_running(run_id: str) -> None:
-    """Refuse when a mark names a launcher still running, whoever wrote it.
+    """Refuse a second launch of this run begun inside this process.
 
     The reading above exempts a process from its own mark, because a door that
     composed a plan and then chose not to launch must not hold off its own next
     resume. A sweep is the door that exemption leaves open: its passes share the
     one long-lived process that follows a fleet, so two wait-lifts of one run
     would be separated by nothing but the re-read a launch performs before it
-    retires an attempt's records. This door therefore asks the mark on a fresh
-    read of the pointer and with no exemption.
+    retires an attempt's records. The window a launch opens is per run in this
+    process, so it is kept here rather than read back off the pointer: a pointer
+    mark naming this process cannot say whether it is a live launch or the
+    residue of one that was built and then abandoned.
     """
-    try:
-        current = read_pointer(run_id)
-    except CrewError:
+    if run_id not in _LAUNCHES_IN_THIS_PROCESS:
         return
-    marker = current.get(RESUME_LAUNCH_IN_FLIGHT)
-    if not isinstance(marker, Mapping):
-        return
-    if record_process_alive(marker) is not True:
-        return
-    raise _in_flight_refusal(run_id, marker)
+    raise _in_flight_refusal(run_id, {})
 
 
 # How often the follower may sweep. Long enough that a tight poll loop cannot
@@ -1030,6 +1033,7 @@ def _resume(
             f"{failure['remedy']}) and resume it by hand, or complete it"
         )
     _refuse_a_launch_already_running(run_id)
+    _LAUNCHES_IN_THIS_PROCESS.add(run_id)
     mark_resume_launching(run_id)
     try:
         plan = resume_plan(run_id, advice, config=config)
@@ -1064,6 +1068,8 @@ def _resume(
         # gone, so the marker goes with the launch that raised.
         clear_resume_launching(run_id)
         raise
+    finally:
+        _LAUNCHES_IN_THIS_PROCESS.discard(run_id)
     record_resumption(
         run_id,
         pid=pid,
