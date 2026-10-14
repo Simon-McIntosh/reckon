@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "3b13a7480926d0aa86b96889d3d58bd4817a338a",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-10-14T09:01:11Z",
+  "findings": [
+    {
+      "file": "tests/test_refused_dispatch_leaves_no_pointer.py",
+      "line": "227",
+      "severity": "follow-on",
+      "text": "follow-on: transition_rows_naming selects rows by a whole-row substring of the node id, so the assertion at :450 counts any row that merely mentions 'node-refused' anywhere as a row naming the node; a row carrying the node id in a field other than the node would be attributed to the refusal, though in this fixture every row is pointer-derived so the over-inclusion is inert."
+    }
+  ],
+  "head_log_revision": "1dc52e7e4ee0df718c4768f812a54b56a628ab86",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read against base 3b13a7480; four commits add two _publish_transitions() calls and an assertion over the run ids of the rows naming the node, reusing the module's existing helpers with no new definition.",
+    "done_when": "the done-when asks the case to pass at head with a logged literal command, revision and EXIT=0, plus a negative control logged with the runner's FAILED line and a non-zero EXIT, and no added failure for the file against base; base-gate.log and after-gate.log each end 6 passed EXIT=0 and I re-ran the file at 1dc52e7e4 for 6 passed EXIT=0.",
+    "goal": "the node goal is the held-dispatch plan section's deliverable, that the occupied-worktree refusal case publish the project's transitions before the second dispatch and again after the refusal and assert every row naming the node names the earlier run's id; tests/test_refused_dispatch_leaves_no_pointer.py:410 and :435 are the two publishes and :436-450 the assertion, with no product code touched.",
+    "manifest": "read; it names the file, the after arm at 1dc52e7e4, both arms at 6 passed EXIT=0, the negative control naming r-negative-control-kept-pointer-node-refused, and its four commits, every one carrying a body.",
+    "write_paths": "the manifest declares tests/test_refused_dispatch_leaves_no_pointer.py as its only write path, and the diff 3b13a7480..1dc52e7e4 touches only that file, 25 insertions and 0 deletions."
+  },
+  "justifications": {
+    "durability": "the added assertion at tests/test_refused_dispatch_leaves_no_pointer.py:450 is independent, comparing stream-derived run ids against earlier_run_id taken from the first dispatch, and the declared negative control reddens exactly that line with AssertionError ['r-negative-control-kept-pointer-node-refused'], though the row set it inspects is drawn by a whole-row node-id substring at :227.",
+    "evidence": "the run's base-gate.log and after-gate.log each end 6 passed EXIT=0 at their recorded revisions and negative-control.log ends 1 failed EXIT=1 naming the kept run id, and I re-ran the file at head for 6 passed EXIT=0, though head-gate.log names the intermediate commit bbfb7517b rather than the final head.",
+    "fit": "the two added calls reuse the module's helpers and the added comments and docstring describe the mechanism with no plan, ticket or version label.",
+    "goal_fidelity": "tests/test_refused_dispatch_leaves_no_pointer.py:410 and :435 publish the transitions before the second dispatch and after the refusal, and :436-450 asserts every row naming the node names earlier_run_id, exactly the deliverable with no product code changed.",
+    "reuse": "the diff adds no definition, calling the module's existing _publish_transitions (line 230) and transition_rows_naming (line 226), so no capability is forked.",
+    "scope_discipline": "the diff 3b13a7480..1dc52e7e4 touches only tests/test_refused_dispatch_leaves_no_pointer.py, the manifest's single declared write path, with no product file changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is the held-dispatch plan section's deliverable, that the occupied-worktree refusal case publish the project's transitions before the second dispatch and again after the refusal and assert every row naming the node names the earlier run's id; tests/test_refused_dispatch_leaves_no_pointer.py:410 and :435 are the two publishes and :436-450 the assertion, with no product code touched.\nVERDICT done_when: the done-when asks the case to pass at head with a logged literal command, revision and EXIT=0, plus a negative control logged with the runner's FAILED line and a non-zero EXIT, and no added failure for the file against base; base-gate.log and after-gate.log each end 6 passed EXIT=0 and I re-ran the file at 1dc52e7e4 for 6 passed EXIT=0.\nVERDICT write_paths: the manifest declares tests/test_refused_dispatch_leaves_no_pointer.py as its only write path, and the diff 3b13a7480..1dc52e7e4 touches only that file, 25 insertions and 0 deletions.\nVERDICT manifest: read; it names the file, the after arm at 1dc52e7e4, both arms at 6 passed EXIT=0, the negative control naming r-negative-control-kept-pointer-node-refused, and its four commits, every one carrying a body.\nVERDICT diff: read against base 3b13a7480; four commits add two _publish_transitions() calls and an assertion over the run ids of the rows naming the node, reusing the module's existing helpers with no new definition.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_refused_dispatch_leaves_no_pointer.py:410 and :435 publish the transitions before the second dispatch and after the refusal, and :436-450 asserts every row naming the node names earlier_run_id, exactly the deliverable with no product code changed.\nSCORE evidence: 19\nJUSTIFICATION evidence: the run's base-gate.log and after-gate.log each end 6 passed EXIT=0 at their recorded revisions and negative-control.log ends 1 failed EXIT=1 naming the kept run id, and I re-ran the file at head for 6 passed EXIT=0, though head-gate.log names the intermediate commit bbfb7517b rather than the final head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff 3b13a7480..1dc52e7e4 touches only tests/test_refused_dispatch_leaves_no_pointer.py, the manifest's single declared write path, with no product file changed.\nSCORE durability: 19\nJUSTIFICATION durability: the added assertion at tests/test_refused_dispatch_leaves_no_pointer.py:450 is independent, comparing stream-derived run ids against earlier_run_id taken from the first dispatch, and the declared negative control reddens exactly that line with AssertionError ['r-negative-control-kept-pointer-node-refused'], though the row set it inspects is drawn by a whole-row node-id substring at :227.\nSCORE fit: 20\nJUSTIFICATION fit: the two added calls reuse the module's helpers and the added comments and docstring describe the mechanism with no plan, ticket or version label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition, calling the module's existing _publish_transitions (line 230) and transition_rows_naming (line 226), so no capability is forked.\nFINDING tests/test_refused_dispatch_leaves_no_pointer.py:227 follow-on: transition_rows_naming selects rows by a whole-row substring of the node id, so the assertion at :450 counts any row that merely mentions 'node-refused' anywhere as a row naming the node; a row carrying the node id in a field other than the node would be attributed to the refusal, though in this fixture every row is pointer-derived so the over-inclusion is inert.\n",
+  "review_run_id": "legacy-be88ce57c332",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "3b13a7480926d0aa86b96889d3d58bd4817a338a",
+  "reviewed_head_sha": "1dc52e7e4ee0df718c4768f812a54b56a628ab86",
+  "reviewed_run_id": "r-20261014T090025554907-the-occupied-worktree-refusal-asserts-no-watch-row",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T09:32:56.282097+00:00",
+  "total": 118
+}
