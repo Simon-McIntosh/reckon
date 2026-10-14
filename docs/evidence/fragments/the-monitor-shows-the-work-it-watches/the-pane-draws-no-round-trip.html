@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s16">
+  <meta name="plan-recorded-at" content="2026-10-14">
+  <title>The pane draws no round trip | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="the-pane-draws-no-round-trip-landing" data-node="the-pane-draws-no-round-trip" data-reckon="landed" data-when="2026-10-14">
+  <h2>RowPolicy holds a departure that returns to the pane's shown word</h2>
+  <p><code>RowPolicy</code> in <code>reckon/crew/ticker.py</code> now records the word the pane actually showed for a run (written where rows are released, never for a withheld row) and holds a row that takes the run away from that word into a settled state or the dropped word. If the run returns to the shown word inside the settle window the departure is dropped with the return, so the round trip <code>queued → withdrawn → dispatched → queued</code> draws no row; a departure that does not return is delivered when the window passes, and a coordinator duty arriving while the run is away prints ahead of the held departure. The departure is judged at the two points where the policy has already decided the pane would draw the row — after the observer hold — so the rule can only subtract a row the pane would have shown: a terminal echo the observer hold withholds, such as <code>complete → recorded</code> for a run whose completion the pane already drew, stays withheld whether or not it is a departure. <code>tests/test_the_pane_draws_no_round_trip.py</code> passes its five cases, and every test file importing <code>reckon/crew/ticker.py</code> or <code>reckon/crew/follow_commands</code> passes with no added failure.</p>
+</article>
+</body>
+</html>

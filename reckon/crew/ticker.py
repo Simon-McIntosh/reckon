@@ -1099,6 +1099,18 @@ class _Hold(NamedTuple):
     first_held: float
 
 
+# A departure held for the round trip: the row that took a run away from the
+# word the pane last showed, the word it left, and the moment its window closes.
+# Only a row the pane would otherwise draw is ever held here, so the hold can
+# subtract a row and never add one. A run that returns to that word before the
+# deadline drops the departure with the return; one that does not is delivered
+# when the window passes, exactly as it would have been delivered unheld.
+class _Departure(NamedTuple):
+    deadline: float
+    event: Mapping[str, Any]
+    word: str
+
+
 class RowPolicy:
     """Decide which rows reach the pane, holding back the ones that ask for none.
 
@@ -1136,6 +1148,15 @@ class RowPolicy:
             str(name) for name in observed_sessions if name
         )
         self._reported: dict[str, str] = {}
+        # run_id -> the word the pane last actually showed for the round trip's
+        # judgement, written only when a row prints or the pane is seeded. A
+        # withheld row never sets it, so a departure is measured against "the
+        # word the pane last showed for it". Not the state a held row left.
+        self._shown: dict[str, str] = {}
+        # run_id -> a departure held for the round trip. A run that leaves the
+        # shown word and returns to it inside the settle window drops the
+        # departure with the return, so the pane draws neither half.
+        self._departures: dict[str, _Departure] = {}
         # run_id -> the withheld row and its hold. A run carries one hold at
         # most: a second hold for the same run supersedes the first where the
         # settle rule says so, and is otherwise handled on its own account.
@@ -1183,8 +1204,39 @@ class RowPolicy:
         """
         if run_id and state:
             self._reported[str(run_id)] = str(state)
+            self._shown[str(run_id)] = _remembered_word(state)
             if self._lands_in_an_action_state({"to_state": str(state)}):
                 self._told[str(run_id)] = True
+
+    @staticmethod
+    def _pane_word(event: Mapping[str, Any]) -> str:
+        """The pane word a row's destination draws, as the renderer reads it.
+
+        A cause-specific recovery word the producer supplied for a stop or an
+        unproducible wait stands in for the raw destination exactly as the
+        renderer substitutes it, so the policy judges a departure by the word
+        the pane would show rather than by the event's own field.
+        """
+        typed = str(event.get("recovery_classification") or "")
+        entry = (
+            typed
+            if typed in {"held", "needs-help", "unwritten"}
+            else str(event.get("to_state") or "")
+        )
+        return _display_state(entry)
+
+    def _note_shown(self, rows: Iterable[Mapping[str, Any]]) -> None:
+        """Record the word the pane showed for each run a printed row names.
+
+        The round-trip rule measures a departure against the word the pane
+        actually shows, so this is written where rows are released rather than
+        where they are noted — a withheld row has reached nobody, and reading it
+        as shown would suppress a real departure later.
+        """
+        for event in rows:
+            run_id = str(event.get("run_id") or "")
+            if run_id:
+                self._shown[run_id] = self._pane_word(event)
 
     def _row_class(self, event: Mapping[str, Any], kind: tuple[Any, Any]) -> str:
         """The class of a row: coordinator, observer or counter.
@@ -1271,6 +1323,29 @@ class RowPolicy:
         """
         return self._row_class(event, kind) == ROW_COORDINATOR
 
+    def _hold_departure(
+        self, event: Mapping[str, Any], run_id: str, now: float
+    ) -> bool:
+        """Hold a row that takes a run away from the word the pane last showed.
+
+        The round trip is the whole of the news: a run that leaves the word the
+        pane drew for it and comes back to that word inside the settle window
+        shows the reader nothing they did not already have. This is called only
+        where the policy has already decided the row would print — after the
+        observer hold has judged it — because the hold may subtract a row the
+        pane would draw and must never make a hidden row visible. A row that
+        asks the coordinator for something is never held: that news is the row's
+        own, whatever word the run left.
+        """
+        shown = self._shown.get(run_id) if run_id else None
+        word = self._pane_word(event)
+        if not run_id or shown in (None, word) or self._actionable(event):
+            return False
+        if str(event.get("to_state") or "") not in SETTLED_STATES and word != "dropped":
+            return False
+        self._departures[run_id] = _Departure(now + SETTLE_WINDOW, event, shown)
+        return True
+
     def _note_printed(
         self, run_id: str, event: Mapping[str, Any], *, observed: bool = False
     ) -> None:
@@ -1298,6 +1373,14 @@ class RowPolicy:
             hold = self._held.pop(run_id)
             out.append(hold.opener)
             self._note_printed(run_id, hold.opener)
+        # A departure that never returns is a real one, so it is delivered once
+        # its window passes, exactly as it would have been delivered unheld.
+        for run_id in [
+            r for r in list(self._departures) if self._departures[r].deadline <= now
+        ]:
+            departure = self._departures.pop(run_id)
+            out.append(departure.event)
+            self._note_printed(run_id, departure.event)
 
     def _observer_exception(self, event: Mapping[str, Any], run_id: str) -> bool:
         """Whether an observer row prints despite the hold.
@@ -1381,6 +1464,12 @@ class RowPolicy:
 
     def feed(self, event: Mapping[str, Any], *, now: float) -> list[Mapping[str, Any]]:
         """Take one delivered row and return the rows that should print for it."""
+        out = self._feed(event, now=now)
+        self._note_shown(out)
+        return out
+
+    def _feed(self, event: Mapping[str, Any], *, now: float) -> list[Mapping[str, Any]]:
+        """The policy's own pass over one row; ``feed`` records what printed."""
         out: list[Mapping[str, Any]] = []
         self._release_expired(now, out)
 
@@ -1388,6 +1477,24 @@ class RowPolicy:
         from_state = event.get("from_state")
         to_state = str(event.get("to_state") or "")
         kind = (from_state, to_state)
+
+        # A departure is held while the run is away. A row that lands the run
+        # back in the word the pane last showed cancels the hold and drops both
+        # halves; a row that asks for the coordinator while the run is away is
+        # real news, so the departure prints ahead of it and the row is handled
+        # below; anything else the run does while away is drawn as the round
+        # trip's middle, which the pane is not shown.
+        departure = self._departures.pop(run_id, None) if run_id else None
+        if departure is not None:
+            if self._pane_word(event) == departure.word:
+                return out
+            if self._row_class(event, kind) != ROW_COORDINATOR and not self._actionable(
+                event
+            ):
+                self._departures[run_id] = departure
+                return out
+            out.append(departure.event)
+            self._note_printed(run_id, departure.event)
 
         # A settle hold stands until a coordinator row supersedes it. A row that
         # is not a coordinator row leaves the hold in place and is judged on its
@@ -1507,6 +1614,14 @@ class RowPolicy:
             return self._feed_lift(out, event, to_state=to_state)
 
         cls = self._row_class(event, kind)
+
+        # A row that takes a run away from the word the pane last showed for it
+        # is a departure held for the round trip — but only where the policy has
+        # already decided the row would print. The observer hold below is
+        # consulted first, so this rule can subtract a row the pane would draw
+        # and can never add one the contract hides: a terminal echo that
+        # supersedes nothing is withheld whether or not it is a departure.
+
         if cls == ROW_COORDINATOR:
             if self._show_observer or not run_id:
                 out.append(event)
@@ -1531,10 +1646,14 @@ class RowPolicy:
             # delivered is the row as it stands: a replayed history row (such as
             # ``working`` with no left side) arrives without being held, because
             # seeing the observed session's shape is the point of observing it.
+            if self._hold_departure(event, run_id, now):
+                return out
             out.append(event)
             self._note_printed(run_id, event, observed=True)
             return out
         if self._observer_exception(event, run_id):
+            if self._hold_departure(event, run_id, now):
+                return out
             out.append(event)
             self._note_printed(run_id, event, observed=True)
             return out
@@ -1575,6 +1694,7 @@ class RowPolicy:
         """Print every opener still held whose window has closed by ``now``."""
         out: list[Mapping[str, Any]] = []
         self._release_expired(now, out)
+        self._note_shown(out)
         return out
 
 
