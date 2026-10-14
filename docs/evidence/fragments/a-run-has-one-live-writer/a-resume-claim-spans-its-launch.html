@@ -7,7 +7,14 @@
     until <code>record_resumption</code> has written the attempt or the launch
     has raised, so a raised in-flight mark cannot leak the entry and a second
     pass in the same process is refused until the attempt is recorded.
-    tests/test_a_resume_claim_spans_its_launch.py: 2 passed; on the pre-fix
-    placement both cases fail (EXIT=1).
+    The in-flight mark is cleared only by a launch that failed before a worker
+    existed: the marking <code>except</code> covers the launch alone, so a
+    failure recording the attempt after a pid exists leaves the mark on the
+    pointer and drops only the in-process entry.
+    tests/test_a_resume_claim_spans_its_launch.py: 3 passed. Each declared
+    control was run separately — moving the registry add and the mark back
+    before the guarded block turns the raised-mark case red, and moving the
+    discard back before <code>record_resumption</code> turns the
+    concurrent-pass case red — each 1 failed, 2 passed, EXIT=1.
   </p>
 </section>
