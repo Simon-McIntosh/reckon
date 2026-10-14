@@ -849,15 +849,19 @@ def local_liveness(record: Mapping[str, Any]) -> tuple[bool | None, bool]:
     if launched_here and alive is not True and _worker_record_liveness(record) is True:
         alive = True
         proven = True
-    if launched_here and alive is not True and _worker_record(record) is not None:
+    if (
+        launched_here
+        and alive is not True
+        and _worker_record(record) is not None
+        and _env_scan_run_pid(record) is not None
+    ):
         # Both recorded pids are gone: the pointer's supervisor and the pid the
         # worker record names. A worker started through an intermediary is
         # reparented away from both, so the environment mark is the last place
         # the run's own process can be found — without which a live run reads
         # as ended and is classified from its manifest as complete or scoring.
-        if _env_scan_run_pid(record) is not None:
-            alive = True
-            proven = True
+        alive = True
+        proven = True
     return alive, proven
 
 

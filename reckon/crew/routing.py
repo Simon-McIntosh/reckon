@@ -3591,6 +3591,14 @@ def _signal_process_group(
     A guard that refuses the signal writes its own record carrying the
     ``refused`` outcome and the guard's reason, so a refusal is not read later
     as a SIGTERM that went out.
+
+    Every caller that is ending a run hands over that run's directory, and the
+    reach then covers the whole run rather than the handed pid alone: the run id
+    is the directory's own name, so a worker reparented to init and outside the
+    handed pid's group is still reached. The identity and self-group checks stay
+    on the handed pid — they protect the caller, not the run. A caller that only
+    holds a pid to stop, with no run of its own, passes no directory and keeps
+    the single-pid behaviour.
     """
     own_pid = os.getpid()
     if pid == own_pid or os.getpgid(pid) == os.getpgid(own_pid):
@@ -3625,7 +3633,19 @@ def _signal_process_group(
             project=project,
         )
         raise CrewError(detail)
-    signal_worker(pid, signal.SIGTERM, reason=reason, run_dir=run_dir, project=project)
+    if run_dir is None:
+        signal_worker(pid, signal.SIGTERM, reason=reason, project=project)
+        return
+    run_id = Path(run_dir).name
+    signal_worker(
+        pid,
+        signal.SIGTERM,
+        reason=reason,
+        run_dir=run_dir,
+        project=project,
+        run_id=run_id,
+        reach_run=True,
+    )
 
 
 def _base_commit(repo: Path, base: str) -> str:

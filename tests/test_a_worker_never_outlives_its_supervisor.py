@@ -19,9 +19,9 @@ import signal
 import socket
 import sys
 import time
+from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterator
 
 import pytest
 
@@ -76,7 +76,11 @@ os.read(hold, 1)
 
 
 def _fork_holder(
-    *, run_id: str | None = None, children: int = 0, cwd: Path | None = None
+    *,
+    run_id: str | None = None,
+    children: int = 0,
+    cwd: Path | None = None,
+    new_session: bool = False,
 ) -> tuple[int, int]:
     """Start a root process that holds, with ``children`` holdable children.
 
@@ -97,11 +101,17 @@ def _fork_holder(
     if pid == 0:
         os.close(ready_r)
         os.close(hold_w)
+        if new_session:
+            os.setsid()
         environment = dict(os.environ)
         if run_id is not None:
             environment[MARK] = run_id
         try:
-            os.execvpe(
+            # The child is exec'd, not forked and left running, so its
+            # environment is the one the kernel will report: a launcher's run
+            # id mark must be visible in /proc/<pid>/environ, which reflects
+            # the exec-time environment rather than later in-process changes.
+            os.execvpe(  # noqa: S606 — a fixed interpreter and argv, no shell
                 sys.executable,
                 [
                     sys.executable,
@@ -125,10 +135,16 @@ def _fork_holder(
 
 @contextmanager
 def _tree(
-    run_id: str | None, *, children: int = 0, cwd: Path | None = None
+    run_id: str | None,
+    *,
+    children: int = 0,
+    cwd: Path | None = None,
+    new_session: bool = False,
 ) -> Iterator[list[int]]:
     """A running process tree, released and checked by pid on the way out."""
-    root, hold_w = _fork_holder(run_id=run_id, children=children, cwd=cwd)
+    root, hold_w = _fork_holder(
+        run_id=run_id, children=children, cwd=cwd, new_session=new_session
+    )
     pids = [root]
     try:
         yield pids
@@ -264,6 +280,39 @@ def test_crew_stop_ends_a_reparented_worker_and_its_children(
         assert record["alive_after"] == []
         assert set(record["ended_pids"]) >= set(pids)
         assert _wait_gone(pids), f"a process of the run survived: {pids}"
+
+
+def test_an_identity_checked_signal_with_a_run_dir_reaches_the_whole_run(
+    crew_home: Path,
+) -> None:
+    # Every caller ending a run goes through the identity-checked signal, which
+    # hands over the run's directory. The reach runs from the pid it was handed
+    # to the whole run: a worker reparented to init and its child, carrying the
+    # run's env mark and unrelated to the handed pid, are ended too. The handed
+    # pid leads its own session, the shape a caller that signalled its own group
+    # would take down with it, and the identity check still guards it.
+    run_id = "r-process-group-reach"
+    with (
+        _tree(run_id, children=1) as reparented,
+        _tree(None, new_session=True) as handed,
+    ):
+        worker = reparented[0]
+        reparented[:] = _with_children(worker)
+        assert len(reparented) == 2, f"expected a worker and its child: {reparented}"
+        handed_pid = handed[0]
+        record_dir = run_dir(run_id)
+        record_dir.mkdir(parents=True, exist_ok=True)
+        _write_worker_record(run_id, pid=_absent_pid(), start_time=None)
+
+        routing._signal_process_group(
+            handed_pid,
+            routing._process_start_time(handed_pid),
+            run_dir=record_dir,
+            reason="promotion-release",
+        )
+
+        all_pids = [handed_pid, *reparented]
+        assert _wait_gone(all_pids), f"a process of the run survived: {all_pids}"
 
 
 def test_a_worktree_holder_with_no_mark_is_listed_and_left_alive(
