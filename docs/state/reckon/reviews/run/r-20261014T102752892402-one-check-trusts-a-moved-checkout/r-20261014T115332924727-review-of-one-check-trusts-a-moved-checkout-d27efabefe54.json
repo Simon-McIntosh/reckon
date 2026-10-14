@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived by hand from the reviewed run's own arm logs (base-focused.log: 50 passed EXIT=0; head-focused7.log: 50 passed EXIT=0), because manifest.md records baseline_suite: null and after_suite: null, so the read-time annotate_review_of_run will report the arm pair unmeasured",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/mcp.py:294 _stale_code_response",
+    "reckon/crew_follow_commands.py:252 _FollowerReloader._replacement_imports",
+    "reckon/crew_follow_commands.py:293 _FollowerReloader.poll"
+  ],
+  "completed_at": "2026-10-14T12:08:25.724Z",
+  "dispatched_at": "2026-10-14T11:54:20Z",
+  "findings": [
+    {
+      "file": "tests/test_one_check_trusts_a_moved_checkout.py",
+      "line": "260",
+      "severity": "follow-on",
+      "text": "follow-on: the assertion compares checkout_trust._import_probe() against crew_follow_commands._FOLLOWER_RELOAD_PROBE, the exact attribute _import_probe returns (reckon/checkout_trust.py:40-43, `return _FOLLOWER_RELOAD_PROBE`), so its two sides move together and it cannot fail on any forked-probe regression the docstring claims to guard; the real guard against a second probe is line 269's textual single-definition search, which this assertion does not add to."
+    },
+    {
+      "file": "reckon/checkout_trust.py",
+      "line": "18",
+      "severity": "follow-on",
+      "text": "follow-on: the module docstring says \"This module holds the only import probe in the source\", but commit 30a960669 moved the probe text to reckon/crew_follow_commands.py:165-181 and this module only imports it, so the docstring and the matching sentence in docs/evidence/fragments/an-mcp-failure-names-its-cause/one-check-trusts-a-moved-checkout.html describe a layout the head does not have."
+    },
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": "61",
+      "severity": "follow-on",
+      "text": "follow-on: commit 30a960669 strips a blank line at every top-level definition through the module (58 lines), folding a formatting sweep unrelated to the shared check into a refactor commit, which is the bundling the repository's formatting rule separates so a reviewer can see what the commit did."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T102752892402-one-check-trusts-a-moved-checkout/manifest.md",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest records baseline_suite: null and after_suite: null although it ran a base arm and a head arm to base-focused.log and head-focused7.log, so no reader that keys on those fields can derive the added-failure delta the done_when requires, and base-focused.log's first run resolved to the worktree rather than the base tree before it was re-run."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commits 90ea1a360 (the shared check and its tests), 30a960669 (the probe text moved back into crew_follow_commands with checkout_trust reading it) and d27efabef (the evidence fragment) against base 197b54c81; four source/test files plus the fragment, +418/-168, all inside the declared scope, and 30a960669 also strips 58 blank lines through crew_follow_commands.py.",
+    "done_when": "section 15 requires a new tests/test_one_check_trusts_a_moved_checkout.py (a dirty moved checkout keeps the original failure, a clean importable one answers stale_server_code), the follower clean-tree reload tests plus tests/test_mcp_server_serves_current_code.py still passing, one import-probe definition, and base/head gate arms logged with no failure at head absent at base; the manifest records those logs and a negative control, but its baseline_suite and after_suite fields are null, so the arm pair the store reads from is unrecorded.",
+    "goal": "the node's goal is one shared check of whether a moved checkout can be trusted; the landed reckon/checkout_trust.py:123 moved_checkout_is_trustworthy holds it (clean under reckon/ against HEAD, then every module imports) and both readers call into that module (reckon/mcp.py:294, reckon/crew_follow_commands.py:252 and :293).",
+    "manifest": "read r-20261014T102752892402-one-check-trusts-a-moved-checkout/manifest.md; status complete, commits 90ea1a360/30a960669/d27efabef, gate \"50 passed EXIT=0\" over the seven impacted test files, negative-control.log \"1 failed EXIT=1\", changed_paths matching the diff, and baseline_suite/after_suite null.",
+    "write_paths": "read the manifest's declared set (reckon/mcp.py, reckon/crew_follow_commands.py, reckon/checkout_trust.py, tests/test_one_check_trusts_a_moved_checkout.py, the fragment, and a figure directory); the diff touches four of those source/test paths plus the fragment, every path inside the declared set, and the figure directory is unused."
+  },
+  "justifications": {
+    "durability": "tests/test_one_check_trusts_a_moved_checkout.py:225 reddens if the dirty case answers stale_server_code (negative-control.log shows it red), but line 260 of the same file compares checkout_trust._import_probe() against the very attribute that function returns.",
+    "evidence": "the two arm logs the manifest names, base-focused.log and head-focused7.log, each read \"50 passed EXIT=0\" and I re-ran tests/test_one_check_trusts_a_moved_checkout.py at head (4 passed), but baseline_suite/after_suite are null so the store's arm pair is unmeasured and base-focused.log's first run resolved to the worktree rather than the base tree.",
+    "fit": "no plan, version, ticket or author label is introduced, but reckon/checkout_trust.py:18 claims the module \"holds the only import probe in the source\" while the probe text lives at reckon/crew_follow_commands.py:165.",
+    "goal_fidelity": "reckon/checkout_trust.py:123 moved_checkout_is_trustworthy holds the one two-condition check and both readers call it at reckon/mcp.py:294 and reckon/crew_follow_commands.py:252/293, so the MCP and the follower can no longer disagree about a moved tree.",
+    "reuse": "the change consolidates rather than forks, deleting reckon/mcp.py:289 _changed_checkout_imports and reckon/crew_follow_commands.py:165 _tracked_reckon_tree_is_dirty into one owner at reckon/checkout_trust.py:123 rather than reimplementing them.",
+    "scope_discipline": "every path in the diff is inside the declared write paths, but commit 30a960669 removes 58 blank lines throughout reckon/crew_follow_commands.py:61 onward, reformatting the node's goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is one shared check of whether a moved checkout can be trusted; the landed reckon/checkout_trust.py:123 moved_checkout_is_trustworthy holds it (clean under reckon/ against HEAD, then every module imports) and both readers call into that module (reckon/mcp.py:294, reckon/crew_follow_commands.py:252 and :293).\nVERDICT done_when: section 15 requires a new tests/test_one_check_trusts_a_moved_checkout.py (a dirty moved checkout keeps the original failure, a clean importable one answers stale_server_code), the follower clean-tree reload tests plus tests/test_mcp_server_serves_current_code.py still passing, one import-probe definition, and base/head gate arms logged with no failure at head absent at base; the manifest records those logs and a negative control, but its baseline_suite and after_suite fields are null, so the arm pair the store reads from is unrecorded.\nVERDICT write_paths: read the manifest's declared set (reckon/mcp.py, reckon/crew_follow_commands.py, reckon/checkout_trust.py, tests/test_one_check_trusts_a_moved_checkout.py, the fragment, and a figure directory); the diff touches four of those source/test paths plus the fragment, every path inside the declared set, and the figure directory is unused.\nVERDICT manifest: read r-20261014T102752892402-one-check-trusts-a-moved-checkout/manifest.md; status complete, commits 90ea1a360/30a960669/d27efabef, gate \"50 passed EXIT=0\" over the seven impacted test files, negative-control.log \"1 failed EXIT=1\", changed_paths matching the diff, and baseline_suite/after_suite null.\nVERDICT diff: read commits 90ea1a360 (the shared check and its tests), 30a960669 (the probe text moved back into crew_follow_commands with checkout_trust reading it) and d27efabef (the evidence fragment) against base 197b54c81; four source/test files plus the fragment, +418/-168, all inside the declared scope, and 30a960669 also strips 58 blank lines through crew_follow_commands.py.\nCALL_SITES: reckon/mcp.py:294 _stale_code_response, reckon/crew_follow_commands.py:252 _FollowerReloader._replacement_imports, reckon/crew_follow_commands.py:293 _FollowerReloader.poll\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/checkout_trust.py:123 moved_checkout_is_trustworthy holds the one two-condition check and both readers call it at reckon/mcp.py:294 and reckon/crew_follow_commands.py:252/293, so the MCP and the follower can no longer disagree about a moved tree.\nSCORE evidence: 14\nJUSTIFICATION evidence: the two arm logs the manifest names, base-focused.log and head-focused7.log, each read \"50 passed EXIT=0\" and I re-ran tests/test_one_check_trusts_a_moved_checkout.py at head (4 passed), but baseline_suite/after_suite are null so the store's arm pair is unmeasured and base-focused.log's first run resolved to the worktree rather than the base tree.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared write paths, but commit 30a960669 removes 58 blank lines throughout reckon/crew_follow_commands.py:61 onward, reformatting the node's goal does not imply.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_one_check_trusts_a_moved_checkout.py:225 reddens if the dirty case answers stale_server_code (negative-control.log shows it red), but line 260 of the same file compares checkout_trust._import_probe() against the very attribute that function returns.\nSCORE fit: 16\nJUSTIFICATION fit: no plan, version, ticket or author label is introduced, but reckon/checkout_trust.py:18 claims the module \"holds the only import probe in the source\" while the probe text lives at reckon/crew_follow_commands.py:165.\nSCORE reuse: 19\nJUSTIFICATION reuse: the change consolidates rather than forks, deleting reckon/mcp.py:289 _changed_checkout_imports and reckon/crew_follow_commands.py:165 _tracked_reckon_tree_is_dirty into one owner at reckon/checkout_trust.py:123 rather than reimplementing them.\nFINDING tests/test_one_check_trusts_a_moved_checkout.py:260 follow-on: the assertion compares checkout_trust._import_probe() against crew_follow_commands._FOLLOWER_RELOAD_PROBE, the exact attribute _import_probe returns (reckon/checkout_trust.py:40-43, `return _FOLLOWER_RELOAD_PROBE`), so its two sides move together and it cannot fail on any forked-probe regression the docstring claims to guard; the real guard against a second probe is line 269's textual single-definition search, which this assertion does not add to.\nFINDING reckon/checkout_trust.py:18 follow-on: the module docstring says \"This module holds the only import probe in the source\", but commit 30a960669 moved the probe text to reckon/crew_follow_commands.py:165-181 and this module only imports it, so the docstring and the matching sentence in docs/evidence/fragments/an-mcp-failure-names-its-cause/one-check-trusts-a-moved-checkout.html describe a layout the head does not have.\nFINDING reckon/crew_follow_commands.py:61 follow-on: commit 30a960669 strips a blank line at every top-level definition through the module (58 lines), folding a formatting sweep unrelated to the shared check into a refactor commit, which is the bundling the repository's formatting rule separates so a reviewer can see what the commit did.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T102752892402-one-check-trusts-a-moved-checkout/manifest.md:1 follow-on: the reviewed manifest records baseline_suite: null and after_suite: null although it ran a base arm and a head arm to base-focused.log and head-focused7.log, so no reader that keys on those fields can derive the added-failure delta the done_when requires, and base-focused.log's first run resolved to the worktree rather than the base tree before it was re-run.\n",
+  "review_run_id": "r-20261014T115332924727-review-of-one-check-trusts-a-moved-checkout-d27efabefe54",
+  "reviewed_base_sha": "197b54c81f2ed2e3a19be947f021b13c1bfa777e",
+  "reviewed_head_sha": "d27efabefe546d9c10e391725194f11bc06cfe33",
+  "reviewed_run_id": "r-20261014T102752892402-one-check-trusts-a-moved-checkout",
+  "scores": {
+    "durability": 17,
+    "evidence": 14,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T12:05:44.296268+00:00",
+  "total": 100
+}
