@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the two gate arms the reviewed run names: gate-before-compat-fix.log (rev c90682a28, base) against gate2.log (rev 4bd4a889b, head, 52 passed EXIT=0); the head arm reported zero failures so the added set is empty. The reviewed manifest carries no baseline_suite/after_suite pair, so these named arms stand in.",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/dispatch_sessions.py:1759 (terminate from crew stop)",
+    "reckon/crew_run_commands.py:1476 (crew stop call)",
+    "reckon/crew/recovery_classification.py:149 (classify_pointer to local_liveness)",
+    "reckon/crew/recovery_watch.py:1002",
+    "reckon/crew/dispatch_launch.py:2997 (_reap_the_launched_worker)",
+    "reckon/crew/resumption.py:714 (live_worker_pid)",
+    "reckon/sprint_liveness.py:153"
+  ],
+  "completed_at": "2026-10-14T04:37:23.068Z",
+  "dispatched_at": "2026-10-14T04:22:18Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_liveness.py",
+      "line": "852",
+      "severity": "follow-on",
+      "text": "follow-on: the new nested if introduces a SIM102 finding in a file that ruff reported \"All checks passed\" at base, so the commit adds a finding where the repo's AGENTS.md requires it add none."
+    },
+    {
+      "file": "tests/test_a_worker_never_outlives_its_supervisor.py",
+      "line": "331",
+      "severity": "follow-on",
+      "text": "follow-on: the new test file adds three ruff findings on a brand-new file -- W292 (no newline at end of file, so ruff format would reformat it), UP035 at :24, and S606 at :104 -- against the same \"your commit adds no findings\" obligation."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T035021276657-a-worker-never-outlives-its-supervisor/manifest.md",
+      "line": "7",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest commits line names c90682a28 and 4bd4a889b while the source worktree head is 9e2fbed6d (whose pair a6852ed6b and 9e2fbed6d carry identical trees), so a reader comparing the review's reviewed_head_sha against the promoted commits sees a sha that is not the promoted commit and the pair should be reconciled."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "read commit by commit against d8b1b9cf2; two commits add the reach (routing.py helpers and signal_worker), thread ended_pids through dispatch_launch.py, rework crew stop in dispatch_sessions.py, add the environment-scan fallback in recovery_liveness.py, and add the test file and the fragment -- all inside the declared scope.",
+    "done_when": "the done_when names tests/test_a_worker_never_outlives_its_supervisor.py with real child processes -- the SIGTERM-to-supervisor case, the reparented-worker crew stop, the unmarked worktree holder, and the run whose supervisor exited -- plus its declared negative control; the manifest records the gate result and the file's four cases assert exactly those behaviours.",
+    "goal": "the goal is to extend signal_worker to end a run's own processes, and reckon/crew/routing.py:3503 (the reach_run branch at :3550) plus reckon/crew/routing.py:3414 (_run_process_pids) end every process named by descent from the run's recorded supervisor and worker.json pid or by RECKON_RUN_ID in its environment; reckon/crew/dispatch_sessions.py:1782 routes crew stop through it.",
+    "manifest": "read; it states the gate \"52 passed in 91.71s, EXIT=0 at revision 4bd4a889b\" and names gate2.log and negative-control.log, but its commits line names c90682a28 and 4bd4a889b, which are not reachable from the worktree head.",
+    "write_paths": "read the manifest's declared write paths; every path in git diff d8b1b9cf2 HEAD is inside them (reckon/crew/routing.py, reckon/crew/dispatch_launch.py, reckon/crew/dispatch_sessions.py, reckon/crew/recovery_liveness.py, the new test file, the evidence fragment), and the declared-but-unused reckon/crew/recovery_classification.py is not modified."
+  },
+  "justifications": {
+    "durability": "tests/test_a_worker_never_outlives_its_supervisor.py:220 (assert _wait_gone(pids)) and :264 (assert record[\"alive_after\"] == []) redden under the declared mutation reach_run=False, exactly as negative-control.log records.",
+    "evidence": "the manifest's gate runs tests/test_a_worker_never_outlives_its_supervisor.py with eight related modules, recorded as 52 passed in 91.71s EXIT=0 in gate2.log, and negative-control.log records EXIT=1 with the described case failing.",
+    "fit": "the helpers match the surrounding idiom and add no banned name, but reckon/crew/recovery_liveness.py:852 adds a fresh SIM102 finding where the file was ruff-clean at base, against the repo's \"your commit adds no findings\" obligation.",
+    "goal_fidelity": "reckon/crew/routing.py:3550 makes reach_run end every process _run_process_pids names, by descent from the recorded supervisor and worker pids and by RECKON_RUN_ID, which is the node's deliverable.",
+    "reuse": "signal_worker extends its own owner and _running_descendants reuses recovery_liveness._process_children; no owner of an environment-mark proc scan exists (searched routing.py, recovery_liveness.py and the repo for environ/cmdline/descendant scans; _processes_holding reads cwd and fds, _live_descendant reads one child level).",
+    "scope_discipline": "every file in git diff d8b1b9cf2 HEAD is inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to extend signal_worker to end a run's own processes, and reckon/crew/routing.py:3503 (the reach_run branch at :3550) plus reckon/crew/routing.py:3414 (_run_process_pids) end every process named by descent from the run's recorded supervisor and worker.json pid or by RECKON_RUN_ID in its environment; reckon/crew/dispatch_sessions.py:1782 routes crew stop through it.\nVERDICT done_when: the done_when names tests/test_a_worker_never_outlives_its_supervisor.py with real child processes -- the SIGTERM-to-supervisor case, the reparented-worker crew stop, the unmarked worktree holder, and the run whose supervisor exited -- plus its declared negative control; the manifest records the gate result and the file's four cases assert exactly those behaviours.\nVERDICT write_paths: read the manifest's declared write paths; every path in git diff d8b1b9cf2 HEAD is inside them (reckon/crew/routing.py, reckon/crew/dispatch_launch.py, reckon/crew/dispatch_sessions.py, reckon/crew/recovery_liveness.py, the new test file, the evidence fragment), and the declared-but-unused reckon/crew/recovery_classification.py is not modified.\nVERDICT manifest: read; it states the gate \"52 passed in 91.71s, EXIT=0 at revision 4bd4a889b\" and names gate2.log and negative-control.log, but its commits line names c90682a28 and 4bd4a889b, which are not reachable from the worktree head.\nVERDICT diff: read commit by commit against d8b1b9cf2; two commits add the reach (routing.py helpers and signal_worker), thread ended_pids through dispatch_launch.py, rework crew stop in dispatch_sessions.py, add the environment-scan fallback in recovery_liveness.py, and add the test file and the fragment -- all inside the declared scope.\nCALL_SITES: reckon/crew/dispatch_sessions.py:1759 (terminate from crew stop), reckon/crew_run_commands.py:1476 (crew stop call), reckon/crew/recovery_classification.py:149 (classify_pointer to local_liveness), reckon/crew/recovery_watch.py:1002, reckon/crew/dispatch_launch.py:2997 (_reap_the_launched_worker), reckon/crew/resumption.py:714 (live_worker_pid), reckon/sprint_liveness.py:153\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/routing.py:3550 makes reach_run end every process _run_process_pids names, by descent from the recorded supervisor and worker pids and by RECKON_RUN_ID, which is the node's deliverable.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest's gate runs tests/test_a_worker_never_outlives_its_supervisor.py with eight related modules, recorded as 52 passed in 91.71s EXIT=0 in gate2.log, and negative-control.log records EXIT=1 with the described case failing.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every file in git diff d8b1b9cf2 HEAD is inside the manifest's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_worker_never_outlives_its_supervisor.py:220 (assert _wait_gone(pids)) and :264 (assert record[\"alive_after\"] == []) redden under the declared mutation reach_run=False, exactly as negative-control.log records.\nSCORE fit: 15\nJUSTIFICATION fit: the helpers match the surrounding idiom and add no banned name, but reckon/crew/recovery_liveness.py:852 adds a fresh SIM102 finding where the file was ruff-clean at base, against the repo's \"your commit adds no findings\" obligation.\nSCORE reuse: 20\nJUSTIFICATION reuse: signal_worker extends its own owner and _running_descendants reuses recovery_liveness._process_children; no owner of an environment-mark proc scan exists (searched routing.py, recovery_liveness.py and the repo for environ/cmdline/descendant scans; _processes_holding reads cwd and fds, _live_descendant reads one child level).\nFINDING reckon/crew/recovery_liveness.py:852 follow-on: the new nested if introduces a SIM102 finding in a file that ruff reported \"All checks passed\" at base, so the commit adds a finding where the repo's AGENTS.md requires it add none.\nFINDING tests/test_a_worker_never_outlives_its_supervisor.py:331 follow-on: the new test file adds three ruff findings on a brand-new file -- W292 (no newline at end of file, so ruff format would reformat it), UP035 at :24, and S606 at :104 -- against the same \"your commit adds no findings\" obligation.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T035021276657-a-worker-never-outlives-its-supervisor/manifest.md:7 follow-on: the manifest commits line names c90682a28 and 4bd4a889b while the source worktree head is 9e2fbed6d (whose pair a6852ed6b and 9e2fbed6d carry identical trees), so a reader comparing the review's reviewed_head_sha against the promoted commits sees a sha that is not the promoted commit and the pair should be reconciled.\n",
+  "review_run_id": "r-20261014T042138283879-review-of-a-worker-never-outlives-its-supervisor-4bd4a889b046",
+  "reviewed_base_sha": "d8b1b9cf2444308c3b0c2ecda11c1277e0fa334d",
+  "reviewed_head_sha": "4bd4a889b046e25f1baf05c857f34a220b7b49a0",
+  "reviewed_run_id": "r-20261014T035021276657-a-worker-never-outlives-its-supervisor",
+  "reviewer": "review-of-a-worker-never-outlives-its-supervisor-4bd4a889b046",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 15,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T04:34:10.424731+00:00",
+  "total": 110
+}

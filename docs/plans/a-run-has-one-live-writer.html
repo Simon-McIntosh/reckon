@@ -25,7 +25,7 @@
   <title>A Run Has One Live Writer | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="10">
+<meta name="plan-version" content="11">
 <meta name="plan-modified" content="2026-10-14">
 </head>
 <body>
@@ -124,6 +124,9 @@
 <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s3" data-id="c-s3-double-sweep-resume-1013" data-who="reckon-build (health-review-1010)" data-when="2026-10-13T03:52:00Z">
     <div class="r-comment-body"><p>A third instance, reported by nova on 2026-10-12. Run <code>r-20261012T143631303990-exterior-fixture-delegation</code> (clive) had its wait on H200 job 1283901 lift at COMPLETED. At about 15:16Z two supervisors started within the same second. One was 3987233, which the pointer tracks as attempt 3; the other was 3987234, which nothing tracked. Each launched its own claude worker (3990557 and 3990556) in the same worktree. The event before it read "wait-key defect: this declaration already lifted the run and has come back", which suggests the wait-lift path and the wait-aged path both resumed the run. The clive lane has no thread-store lock like codex's, so nothing refused the second. nova ended the untracked tree by pid after about 15 s, with no stray edits. This section's liveness check must therefore cover the sweep's own two resume paths, under one per-run launch lock taken before spawning, not only a coordinator's <code>crew resume</code>.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261014T042138283879-review-of-a-worker-never-outlives-its-supervisor-4bd4a889b046" data-who="reckon-build" data-when="2026-10-14T04:37:23.068Z">
+    <div class="r-comment-body"><p>a-run-has-one-live-writer §2 — independent review of r-20261014T035021276657-a-worker-never-outlives-its-supervisor stored at the two fenced review paths: parsed, complete, scores goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 15, reuse 20 (total 110), reviewed_base_sha d8b1b9cf2444308c3b0c2ecda11c1277e0fa334d and reviewed_head_sha 4bd4a889b046e25f1baf05c857f34a220b7b49a0, added_failure_count 0 with no ids, three follow-on findings (no blocking).</p></div>
 </div>
 </section>
 <section data-reckon="followups" id="followups" class="r-followups">
