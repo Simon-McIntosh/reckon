@@ -1,0 +1,72 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-14T09:06:55.191Z",
+  "dispatched_at": "2026-10-14T08:51:17Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-window-paces-the-lane.html#s16",
+      "id": "done_when-1",
+      "reason": "the plan removes one jitter test by name but leaves this one to be edited into vacuity, so the node that implements \u00a716 would land a test that measures nothing and a name that claims a mechanism \u00a716 deleted; the plan should direct this test removed (or folded into the one-second case) exactly as it does for `test_the_provider_jitter_is_the_spread_of_the_stamp_history`.",
+      "text": "the done-when says \"any assertion there that a move larger than the jitter but smaller than half a window ends a lift is brought to the new rule\", and the first arm of `test_the_tolerance_is_measured_from_the_stored_readings` (tests/test_a_lift_survives_reset_jitter.py:177, a two-second move must return END_RESET) is exactly such an assertion; once its expectation flips to None it is identical to that test's second arm (:184, already None), so the test degenerates into two assertions of the same value and no longer distinguishes the history-derived tolerance \u00a712 built from any other reading \u2014 a suite that now passes for a reason it does not name",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-window-paces-the-lane.html:1990",
+      "id": "anchors_resolve-1",
+      "reason": "inverting the cited map yields the same 2.5-hour and 3.5-day figures, so the mechanism and its numbers are unaffected; only the citation is imprecise, and a worker reading the module would reach for the local `CLOCK_HOURS` regardless.",
+      "text": "the deliverable states the half-window figure is \"read from the window lengths reckon already declares (`WINDOW_MINUTES_CLOCK` in `reckon/budget.py`)\", but `WINDOW_MINUTES_CLOCK` (reckon/budget.py:3368) is a length-to-clock-name map, so the clock-to-length values the rule needs must be inverted from it, while `CLOCK_HOURS = {seven_day: 168.0, five_hour: 5.0}` (reckon/crew/budget_lift.py:76) is the declaration that carries them as lengths and is already used two functions away at the site being replaced (:882)",
+      "type": "anchors_resolve",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/a-window-paces-the-lane.html#s16",
+      "id": "reasoning-1",
+      "reason": "the withdrawn design is superseded by the half-window threshold on grounds that stand independently (a stale or oscillating stamp is under half a window either way), so only the rationale is loose, not the deliverable; a reader who followed the faulty reason might mistakenly believe intermittent drift defeats a confirming second reading.",
+      "text": "the section withdraws the draft's second-reading confirmation because \"the drifted stamp persists across readings, so it would have confirmed the false reset and ended the lifts for good\", but the same Why paragraph states the opposite of persistence \u2014 \"readings alternate between the old stamp and the drifted one\" \u2014 and an alternating stamp is precisely what a two-reading confirmation would fail to confirm on a half of its pairs, so the cited evidence does not support the reason given for the withdrawal",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "95495204a5b12b3ebcad7e9bdcc39509bf83ba421d2b3986d0fc804db844200e",
+  "plan_slug": "a-window-paces-the-lane",
+  "plan_version": 219,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261014T085037684587-plan-review-of-a-window-paces-the-lane",
+  "reviewed_blob_sha": "037686f93507e884382d23eecb694709b43c9f7a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the deliverable cites `WINDOW_MINUTES_CLOCK` in `reckon/budget.py` for the window lengths, but that constant maps length to clock name and the lengths this rule needs are declared as `CLOCK_HOURS` in the module being edited.",
+    "done_when": "a finding \u2014 the done-when tells the node to bring the jitter-tolerance assertions in `tests/test_a_lift_survives_reset_jitter.py` to the new rule, which leaves `test_the_tolerance_is_measured_from_the_stored_readings` asserting nothing.",
+    "evidence_paths": "pass \u2014 the control is \"logged under the run directory\" and the fixture points the config home and the watch stream at a temporary directory, so no gate writes a session scratchpad or a node-local path.",
+    "naming": "pass \u2014 \u00a716 introduces no plan labels, ticket numbers or version tags; the new file is named `test_a_reset_moves_the_window.py` by mechanism, and its only symbol removals are for names that carry no tracker reference.",
+    "reasoning": "a finding \u2014 the stated reason for withdrawing the second-reading design (\"the drifted stamp persists across readings\") contradicts the Why's own observation that readings alternate between the two stamps.",
+    "single_goal": "pass \u2014 \u00a716 carries one deliverable (replace the stamp signal's measured-jitter threshold with half the clock's window) inside one declared write scope (`reckon/crew/budget_lift.py` and two test files).",
+    "wiring": "pass \u2014 \u00a716 declares no depends-on or gates, matching every other section in this plan (s10\u2013s15 also carry `data-links=\"\"`) and its only declared relationship, the plan-level `plan-informs` to background-agent-fitness-and-dispatch-scope, is unchanged and resolves."
+  },
+  "section_digests": {
+    "_document": "fda3b02b7cdf1aaf51dcc28b302e76dbfa5532ff457c61b6cacd4458d68c0b30",
+    "s1": "fd232b0e9e301983eea254fa355a00f9cfdad5e4ba397415c196946997e8b78a",
+    "s10": "cff30d466dd7580b4623ab4ba85a967692183d1c1fbf0a887b817140c3fe2bf9",
+    "s11": "4f344761a1c7f9eeda684c28b5399f6cc6c50a6961808244c50f4f385a8dfb83",
+    "s12": "d332f915a715e0ce7c1efdd5027285714154977800a9ec70d7b055bf5762609f",
+    "s13": "627916281462553dd6f077d4f3ad0d176f2e5177a66b12b43e0c6d7b6788b3d7",
+    "s14": "5c54d28fac7106fc49f1eb45cc396fb761556bbd5ae16f469c6cf14cdd342fc8",
+    "s15": "5acca22c78776d5b829195bb01b2c5d660f4787c61cd3b04e511e66046bc7cf0",
+    "s16": "4c0c16b24c04662ef0e5b5965d2ac0419940e430356860133b91758e47269b38",
+    "s2": "0c4f642bff7cb6b87908ea9e036cb3161c15e31cb3285273e06bb2ac1f5c368c",
+    "s3": "ae3d7625321a46e7fa6a9ee3bac0272ee77d236811612140ef03b79670883261",
+    "s4": "8f3ac850d09e4745435c5274237c26be090ce2db03ac422e941c3329841d8563",
+    "s5": "3bc104a16d90fb6279e9ab8c70555e1041253ad31f6376c64b455da33489c6b0",
+    "s5b": "1be686d2a1165f13c4f4e81a29ca56c362c3b069dfc80759cf370cca59440d41",
+    "s6": "8e4ab80a317b73fb60010fe92858cbe3b073511ce10c4547c6eb8952a89829f0",
+    "s6-the-probe-reader-and-the-undeclared-dialect": "c463be6993bc79b07591a01d9e1a1d92d699a48d4c322b2cc395a0e78a2d097d",
+    "s7": "39b7111a3bfa256531f953bd33de123967e24fa4ffc75e6d1cbeca26a45c565d",
+    "s8": "9d68431496117798ca30bbebd6828adc5853e02df969ac62de3bb2dcd41512a4",
+    "s9": "5f72c27f2288b837b6513304ec92d0bf2e8950d169b0389c4c3ffeba27c23b6b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T09:18:21.863934+00:00"
+}
