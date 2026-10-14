@@ -28,7 +28,7 @@ from pathlib import Path
 import pytest
 
 from reckon import ledger
-from reckon.crew import dispatch_sections, routing
+from reckon.crew import dispatch_sections, gc, routing
 from reckon.crew.node import TaskNode
 
 PROJECT = "sample"
@@ -290,7 +290,7 @@ def test_the_orphan_sweep_removes_by_the_stated_grace(
         "inside-grace": float(stated) - 1.0,
         "outside-grace": float(stated) + 1.0,
     }
-    monkeypatch.setattr(routing, "_scratch_ctime", lambda path: now - ages[path.name])
+    monkeypatch.setattr(gc, "_scratch_ctime", lambda path: now - ages[path.name])
 
     result = routing.garbage_collect_orphan_scratch(apply=True, now=now)
     removed = {Path(path).name for path in result["removed"]}

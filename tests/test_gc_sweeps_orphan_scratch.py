@@ -12,7 +12,7 @@ from unittest.mock import patch
 from click.testing import CliRunner
 
 from reckon import cli
-from reckon.crew import routing
+from reckon.crew import gc, routing
 
 
 def _fixture(tmp_path, monkeypatch):
@@ -57,9 +57,9 @@ def test_sweep_reports_and_removes_only_old_unclaimed_scratch(tmp_path, monkeypa
     pointers.mkdir(parents=True)
     (pointers / "live.json").write_text(json.dumps({"run_id": "live"}))
     now = time.time()
-    original_ctime = routing._scratch_ctime
+    original_ctime = gc._scratch_ctime
     monkeypatch.setattr(
-        routing,
+        gc,
         "_scratch_ctime",
         lambda path: (
             now - 7201 if path.name in {"live", "held", "old"} else original_ctime(path)
@@ -86,7 +86,7 @@ def test_sweep_reports_and_removes_only_old_unclaimed_scratch(tmp_path, monkeypa
         assert dry["would_free_bytes"] == len(b"fixture")
         assert all(path.exists() for path in (live, held, young, old))
         with patch.object(
-            routing.shutil, "rmtree", wraps=routing.shutil.rmtree
+            gc.shutil, "rmtree", wraps=gc.shutil.rmtree
         ) as remove:
             applied = routing.garbage_collect_orphan_scratch(apply=True, now=now)
         removed_targets = [Path(call.args[0]) for call in remove.call_args_list]
@@ -128,7 +128,7 @@ def test_ordinary_gc_includes_scratch_without_applying_it(tmp_path, monkeypatch)
     root, _, real_root = _fixture(tmp_path, monkeypatch)
     old = _entry(root, "orphan")
     now = time.time()
-    monkeypatch.setattr(routing, "_scratch_ctime", lambda path: now - 7201)
+    monkeypatch.setattr(gc, "_scratch_ctime", lambda path: now - 7201)
     repo = tmp_path / "repo"
     repo.mkdir()
     subprocess.run(["git", "init", "-q", "-b", "main"], cwd=repo, check=True)

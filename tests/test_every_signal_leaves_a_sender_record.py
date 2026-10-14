@@ -19,7 +19,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import routing
+from reckon.crew import process_signal, routing
 
 
 class _LiveRun:
@@ -73,9 +73,9 @@ def test_signal_process_group_writes_a_sender_record_naming_the_reason(
     """
     delivered: list[tuple[str, int]] = []
     monkey = pytest.MonkeyPatch()
-    monkey.setattr(routing.os, "kill", lambda pid, sig: delivered.append(("kill", pid)))
+    monkey.setattr(process_signal.os, "kill", lambda pid, sig: delivered.append(("kill", pid)))
     monkey.setattr(
-        routing.os, "killpg", lambda pgid, sig: delivered.append(("killpg", pgid))
+        process_signal.os, "killpg", lambda pgid, sig: delivered.append(("killpg", pgid))
     )
     try:
         routing._signal_process_group(
@@ -115,8 +115,8 @@ def test_signal_worker_writes_the_record_before_delivering(
         raise ProcessLookupError
 
     monkey = pytest.MonkeyPatch()
-    monkey.setattr(routing.os, "kill", vanish)
-    monkey.setattr(routing.os, "killpg", vanish)
+    monkey.setattr(process_signal.os, "kill", vanish)
+    monkey.setattr(process_signal.os, "killpg", vanish)
     try:
         result = routing.signal_worker(
             live_run.process.pid,
@@ -170,8 +170,8 @@ def test_no_run_directory_leaves_no_record(live_run: _LiveRun) -> None:
     same home, and neither has a run directory to write into.
     """
     monkey = pytest.MonkeyPatch()
-    monkey.setattr(routing.os, "kill", lambda pid, sig: None)
-    monkey.setattr(routing.os, "killpg", lambda pgid, sig: None)
+    monkey.setattr(process_signal.os, "kill", lambda pid, sig: None)
+    monkey.setattr(process_signal.os, "killpg", lambda pgid, sig: None)
     try:
         routing.signal_worker(live_run.process.pid, signal.SIGTERM)
     finally:

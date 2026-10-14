@@ -12,14 +12,14 @@ from __future__ import annotations
 import os
 import signal
 
-from reckon.crew import routing
+from reckon.crew import process_signal, routing
 
 
 def _record(monkeypatch, group_of):
     calls: list[tuple[str, int]] = []
-    monkeypatch.setattr(routing.os, "getpgid", group_of)
-    monkeypatch.setattr(routing.os, "killpg", lambda g, s: calls.append(("killpg", g)))
-    monkeypatch.setattr(routing.os, "kill", lambda p, s: calls.append(("kill", p)))
+    monkeypatch.setattr(process_signal.os, "getpgid", group_of)
+    monkeypatch.setattr(process_signal.os, "killpg", lambda g, s: calls.append(("killpg", g)))
+    monkeypatch.setattr(process_signal.os, "kill", lambda p, s: calls.append(("kill", p)))
     return calls
 
 
@@ -56,5 +56,5 @@ def test_a_vanished_process_is_not_an_error(monkeypatch):
     def gone(pid):
         raise ProcessLookupError
 
-    monkeypatch.setattr(routing.os, "getpgid", gone)
+    monkeypatch.setattr(process_signal.os, "getpgid", gone)
     assert routing.signal_worker(9999, signal.SIGTERM) is False

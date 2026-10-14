@@ -11,7 +11,7 @@ from typing import Any
 from click.testing import CliRunner
 
 from reckon import cli, ledger
-from reckon.crew import routing
+from reckon.crew import gc, routing
 
 SCRIPT = (
     Path(__file__).parents[1]
@@ -788,7 +788,7 @@ def test_gc_reads_the_declared_field_set_so_a_new_figure_protects_the_source(
     assert before["run_directories"][0]["action"] == "prune"
 
     monkeypatch.setattr(
-        routing,
+        gc,
         "STREAM_DERIVED_FIELDS",
         ("orientation_input_tokens", "tool_steps", "input_tokens"),
     )
@@ -980,7 +980,7 @@ def test_a_declared_figure_added_later_inherits_both_retention_behaviours(
     assert all(item["action"] == "prune" for item in before["run_directories"])
 
     monkeypatch.setattr(
-        routing,
+        gc,
         "STREAM_DERIVED_FIELDS",
         ("orientation_input_tokens", "tool_steps", "input_tokens"),
     )
