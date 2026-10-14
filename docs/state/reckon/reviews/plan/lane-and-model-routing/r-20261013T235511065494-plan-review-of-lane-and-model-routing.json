@@ -1,0 +1,124 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-14T00:13:42.625Z",
+  "dispatched_at": "2026-10-13T23:55:49Z",
+  "findings": [
+    {
+      "anchor": "plan.html:144",
+      "id": "done_when-1",
+      "reason": "the node cannot satisfy the done-when as written without also un-stubbing `picker.pick` in that test (or restate the clause), a scope change the plan does not name.",
+      "text": "\u00a722's done-when requires the dispatch-bound test to \"name[] the step that ran in each case\" with the context estimate stubbed both slower and faster than the deadline, but that test (`tests/test_picker_in_dispatch.py::test_dispatch_survives_a_picker_past_the_bound`, line 192) still replaces `picker.pick` wholesale; when the estimate is stubbed faster than the deadline the expiry lands in the unmarked pick call, so no step is named and the clause is unsatisfiable without a change \u00a722 does not state",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:144",
+      "id": "reasoning-1",
+      "reason": "a worker reading \u00a722 as written cannot tell whether the docstring at `reckon/crew/dispatch_picker.py` is still in scope for the update, and must reconstruct the file path by guessing, so the deliverable text must be repaired before dispatch.",
+      "text": "the Deliverable sentence is broken by a mid-span splice: the text reads \"the docstring at `<code>reckon/crew/dispatch_picker.` That test replaces `picker.pick` wholesale \u2026 expires in `pick:jev</code>.py` that documents the bare reading are both updated to the named step\", so the `<code>` element is split in two and the claim \"both [the test and the docstring] are updated\" is severed from its subject",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:144",
+      "id": "reasoning-2",
+      "reason": "the done-when states the literal strings, so a node keys on those and notices its own test failing if it emits the raw keys; but the plan should state the transform so \"using `pick()`'s own step names\" and the literals agree.",
+      "text": "the deliverable says the expiry \"names the step of `pick()` that was running, using `pick()`'s own step names\", but `pick()`'s own step keys are `state_render_ms` and `jev_ms` (`reckon/crew/picker/__init__.py:302,304`); the required emitted strings are `timeout in pick:state-render` / `timeout in pick:jev`, which are a re-spelled form (underscores to hyphens, `_ms` dropped) the plan never defines",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "9fd702145b3d12e3adaac0c76c4a104629ee1d6f87f243416325f08125826796",
+  "plan_slug": "lane-and-model-routing",
+  "plan_version": 153,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-14T00:13:26.639036+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-14T00:13:42.309658+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "",
+      "when": "2026-10-14T00:13:57.991866+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-14T00:13:26.639036+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-14T00:13:42.309658+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-14T00:13:57.991866+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-lane-and-model-routing.v153.json",
+  "review_run_id": "r-20261013T235511065494-plan-review-of-lane-and-model-routing",
+  "reviewed_blob_sha": "03a01c9b41f336a499f16f4d3c8dd8e41f33240e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every file \u00a722 names resolves in the tree (`reckon/crew/dispatch_picker.py`, `reckon/crew/picker/__init__.py`, `reckon/crew/picker/outcomes.py`, `reckon/crew/dispatch.py`, and the three test modules), and the `test_slow_client_still_times_out_as_a_recorded_fallback` test exists and does pin the bare reading as claimed.",
+    "done_when": "a finding \u2014 the dispatch-bound clause (\"names the step that ran in each case\") cannot be met for the estimate-faster-than-deadline arm, because `tests/test_picker_in_dispatch.py` still replaces `picker.pick` wholesale (line 192).",
+    "evidence_paths": "pass \u2014 the pick timings and state-read timings \u00a722 reasons from live on durable paths under the crew home (`~/.config/reckon/crew/pick-timings.jsonl`, `state-read-timings.jsonl`), and the node's own evidence is its tests under `tests/`, not a scratchpad or node-local temporary.",
+    "naming": "pass \u2014 \u00a722 introduces no plan label, stage name, ticket number or version tag into code, symbols or comments; the strings it adds (`timeout in pick:state-render`) name a mechanism, and its own \"left behind by \u00a724/\u00a726\" phrasing lives in the plan, not in source.",
+    "reasoning": "a finding \u2014 the Deliverable paragraph at plan.html:144 is syntactically broken: the `<code>` span holding `reckon/crew/dispatch_picker.py` is severed by a clause inserted mid-span, so the sentence stating which docstring is updated cannot be read as written. Otherwise the section's reasoning holds: its root cause (the dispatcher's `jev` stage times the whole `pick()` call, so an expiry there keeps the bare `timeout`) matches the cited code, and its conclusion (most over-4 s picks are spent in local work, not in Jev) reproduces independently \u2014 an independent parse of `~/.config/reckon/crew/pick-timings.jsonl` over 2026-10-12/13 puts the state render as the slowest step in 286 of 413 over-4 s picks against 59 for the Jev call, the same direction as \u00a722's 161-of-258.",
+    "single_goal": "pass \u2014 the two clean-ups (\u00a722's text: dropping `record_picker_hold`'s unused `docs` parameter, and restated the shared crew-home log helper's contract) are declared to ride with the stage-naming deliverable because \u00a722 already writes those files, which is the remedy a prior review's `single_goal-1` asked for; the section's verdict still turns on one deliverable.",
+    "wiring": "pass \u2014 \u00a722's declared dependency (`plan-section-depends-on` s22 \u2192 s26) resolves to a node that exists and is done, and every section \u00a722 needs (the \u00a720 stage machinery it extends, the \u00a724 log helper it re-documents, and \u00a726 whose `docs` parameter it drops) is already landed; no edge it declares points at the wrong node and no needed edge is missing."
+  },
+  "section_digests": {
+    "_document": "61dd5e25832a6f78b8feb8d7391ef888e535a8fe929721f5f1b94c129acfe9fe",
+    "s0": "6e04ec2c2da6b7aa6a120157e2ea4f499c385f6c8f599c9dd4e1fcb27ceb84d5",
+    "s1": "6760f63ebdb0d0db10c3c004f30d4f4253bfb7582bc7a0e4054fed73e017a02d",
+    "s10": "9f3b98da9be42bc1d1dad77d11079186c59e62315308454b2f442bdfffa7755c",
+    "s11": "2e566713b8ee8cbfcf94503cba2640bac78329b96f748ff0334a858e08287755",
+    "s12": "8a7841af15c5beacc75bf716eab0a317f722daab3a302ec190299ce0c3315350",
+    "s13": "6cc9f5f5d1d9a0d7a981363b2961d554bc1670d016cf5da011e18fd20d24b604",
+    "s14": "f4192a6b66ca1a9df3c0c8b84d6a76f9b7e2708145600fc43403217b7a52c540",
+    "s15": "f771307d6c5f071d884953878a527fd166185d3d25c88171a3028f27f2a174b8",
+    "s16": "f223e6b5a96e8c6195a47af2261f3ffdb2da6592ac65ab36dc87669411b7f75d",
+    "s17": "db5f3a60a7771988ff06ffcf6122eeedf774dd3127c63cb5d2553e30aff138df",
+    "s18": "a8fdaccbcc00dea2d881e6f33dbca396f55ac9a48a784860531f01f14666d645",
+    "s19": "e1a470831773831c7253aa2402eab63c6a03e418004a6c140215f11e2aff3722",
+    "s2": "0c6488cdae0f23d0600410d02191390e773858e9bc75008234f71cc66f01889b",
+    "s20": "9dca86a7ea316e5b22b94c70024ba182f82622bb73f8243655562dc2cb4fc8d3",
+    "s21": "8dc7453f756c4d2310baaa5a97b36e69467be72d1cb4221107161ac2abe26293",
+    "s22": "c0286718ae688ebc1ce43bff8568a0c87911c90895f1692db01882e43947c017",
+    "s23": "10a05db6298f320a13762d348e0d6fc166aad25921753c17b3936ee7f9e25239",
+    "s24": "d5f6d292f47236016559d0a135c6fbf9b38d6a20fc8fa81171485a3df0c421e8",
+    "s25": "8de857403f88ebb44d1c2c152b208a3da0a6765205ccd0f3c52e77bb1501698a",
+    "s26": "72f1cee40ef0441bc758c97eb285db4beeaca94cc5bc7136636f2b5260cb20c5",
+    "s3": "6cb602347e0232fe459028eff2010884381d987053d550c4565f581c23032095",
+    "s4": "aa5a29a8662005607992ae17fc914d47e8e48c68b7e65395b4865f6d33ea37f4",
+    "s5": "2ffa1a3b1d2b09433f25a83f8a7a59b1774249bac29b945f2c2273ace57cb1ba",
+    "s6": "6c8117bcfdc7d4b0bafdc4fb2185779998c71b1730b07a0d900b543f02c08ec1",
+    "s7": "07952e2e354db24e76860530568500cc2066b69b4255c020db83677e46cb18e2",
+    "s8": "7ca129403c95fcbc111273a2b419b29279191bc54c157bb6f7d8de0d5b160d34",
+    "s9": "0c546f1c0ce99eb4f03333edf6955f597fcb37c49baa31305dfd52c6b03364d8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T00:13:14.654524+00:00"
+}
