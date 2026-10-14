@@ -29,8 +29,6 @@ from __future__ import annotations
 
 import json
 import logging
-import subprocess
-import sys
 from collections.abc import Callable, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
@@ -47,6 +45,7 @@ except ImportError:
     FastMCP = None  # type: ignore[assignment,misc]
 
 import reckon.crew.resumption as resumption_module
+from reckon.checkout_trust import moved_checkout_is_trustworthy
 from reckon.crew.follower_registration import follower_code_stamp
 from reckon import (
     _plan_html,
@@ -254,51 +253,23 @@ _LOGGER = logging.getLogger("reckon.mcp")
 # Only when a call raises or returns an error result does the tool compare the
 # checkout's code stamp, the one the producers and followers already compute,
 # against the stamp this image started with. When it has moved and the new code
-# imports, the original failure is replaced by one refusal naming the server's
-# start time, the change and the reconnect remedy, carrying the original error
-# text. When the stamp has not moved, or the checkout does not import, the
-# original failure is returned unchanged — a tree mid-merge must never take a
-# running server down.
+# can be trusted — clean under ``reckon/`` against ``HEAD`` and importable — the
+# original failure is replaced by one refusal naming the server's start time,
+# the change and the reconnect remedy, carrying the original error text. When
+# the stamp has not moved, or the tree is not trusted, the original failure is
+# returned unchanged — a tree mid-merge must never take a running server down.
+#
+# The trust check is shared with the follower's reloader, so the MCP points its
+# caller only at a tree the followers would themselves load.
 _SERVER_STARTED_AT = datetime.now(UTC)
 _SERVER_CODE_STAMP = follower_code_stamp()
 
 _RECONNECT_REMEDY = "reconnect the reckon MCP server: /mcp → reckon → reconnect"
 
-# A fresh interpreter proves the checkout still loads before the server tells
-# its caller to reconnect onto it, the way a follower proves a reload safe
-# before it replaces its image. The running process is the wrong place to
-# discover a broken module: the check must not import the new code into the
-# image it would be judging.
-_CODE_IMPORT_PROBE = (
-    "import pathlib, sys\n"
-    "root = sys.argv[1]\n"
-    "sys.path.insert(0, root)\n"
-    "package = pathlib.Path(root, 'reckon')\n"
-    "for path in sorted(package.rglob('*.py')):\n"
-    "    compile(path.read_bytes(), str(path), 'exec')\n"
-    "import reckon.mcp\n"
-)
-_CODE_IMPORT_PROBE_TIMEOUT = 30
-
 
 def _import_root() -> Path:
     """The sys.path root that supplied this imported package."""
     return Path(__file__).resolve().parent.parent
-
-
-def _changed_checkout_imports() -> bool:
-    """Whether the checkout's current code loads in a throwaway interpreter."""
-    try:
-        completed = subprocess.run(
-            [sys.executable, "-c", _CODE_IMPORT_PROBE, str(_import_root())],
-            capture_output=True,
-            text=True,
-            timeout=_CODE_IMPORT_PROBE_TIMEOUT,
-            check=False,
-        )
-    except (OSError, subprocess.SubprocessError):
-        return False
-    return completed.returncode == 0
 
 
 def _error_text(result: Any) -> str | None:
@@ -314,12 +285,13 @@ def _stale_code_response(original_error: str | None) -> dict[str, Any] | None:
 
     Called only once a call has failed. ``None`` means the failure is not the
     stale image's: either the code is the image this process started with, or
-    the checkout does not import and the original failure stands.
+    the checkout cannot be trusted — a tracked file differs from ``HEAD``, or
+    the checkout does not import — and the original failure stands.
     """
     current = follower_code_stamp()
     if current == _SERVER_CODE_STAMP:
         return None
-    if not _changed_checkout_imports():
+    if not moved_checkout_is_trustworthy(_import_root()).trusted:
         return None
     started = _SERVER_STARTED_AT.isoformat()
     response: dict[str, Any] = {
