@@ -1,0 +1,56 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-14T08:48:33.183Z",
+  "dispatched_at": "2026-10-14T08:37:08Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-window-paces-the-lane.html#s16",
+      "id": "done_when-1",
+      "reason": "without a clause naming the fate of `_provider_jitter` and its test, the node can land a dead function plus a green test that asserts a superseded mechanism, so the file's green is no evidence the stamp signal changed \u2014 which is the failure the done-when rubric exists to catch.",
+      "text": "the done-when replaces the measured-jitter threshold with half the clock's window, which leaves `_provider_jitter` (reckon/crew/budget_lift.py:864) with no production caller \u2014 its only caller is `_stamp_moved_past_jitter` (:842,825) \u2014 and leaves `tests/test_a_lift_survives_reset_jitter.py::test_the_provider_jitter_is_the_spread_of_the_stamp_history` (:188) asserting the rule the plan removed; the plan says the file \"keeps its one-second and full-window cases\" and brings only assertions \"that a move larger than the jitter but smaller than half a window ends a lift\" to the new rule, so nothing directs the orphaned function or its test to be retired, and the done-when's \"no added failure against base\" is satisfied precisely because that test passes identically before and after the change",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "fe457633763e230a44c5a5fcae0aa21b1cdfff3dfe8d3adef775ad7ac6d81deb",
+  "plan_slug": "a-window-paces-the-lane",
+  "plan_version": 218,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261014T083239341499-plan-review-of-a-window-paces-the-lane",
+  "reviewed_blob_sha": "2916f229e8995e7949718f76e3cbc3cf51275895",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_reset_observed` (reckon/crew/budget_lift.py:802), `_stamp_moved_past_jitter` (:842), `_provider_jitter` (:864), `end_cause` + its `lift_watch` callers (reckon/crew/lift_watch.py:62,127), `published_readings` (reckon/crew/budget_lift.py:181, single-reading docstring), `WINDOW_MINUTES_CLOCK` (reckon/budget.py:3368, keys 300/10080 minutes giving the stated 2.5 h and 3.5 d halves), `tests/test_a_lift_survives_reset_jitter.py`, and \u00a712/\u00a714/\u00a715 all resolve; the one extensionless h2 target resolves as `.html`.",
+    "done_when": "a finding \u2014 \u00a716's done-when retires the measured-jitter threshold the stamp signal is built on but says nothing about `_provider_jitter` or its test, so a node can satisfy every bullet while leaving a function and a test that assert the rule the plan removed.",
+    "evidence_paths": "pass \u2014 the negative-control log goes \"under the run directory\" (a durable crew run path), and the gate is the repository's own test tree, neither a session scratchpad nor a node-local temporary directory.",
+    "naming": "pass \u2014 \u00a716 introduces no symbol and names its new test file by what it measures (`tests/test_a_reset_moves_the_window.py`); no plan label, ticket number or version tag reaches a code path.",
+    "reasoning": "pass \u2014 the stated root cause (a drifted `resets_at` stamp read as a rollover) is what the cited sample shows (utilisation 0.64 sits above the 0.06 grant figure, so neither utilisation signal can be the cause, leaving the stamp signal); the half-window threshold is capable of the done-when's measures; and the mechanism runs on the real code path \u2014 `_reset_observed` \u2190 `end_cause` \u2190 `lift_watch.sweep` (the watch stream) and \u2190 `_in_force` \u2190 `effective_budget`, whose pace-path caller `reckon/budget.py:2632` does supply a multi-reading history built by `_lift_history`, so the back-to-back reading the earlier review asked about has a producer.",
+    "single_goal": "pass \u2014 \u00a716 carries one deliverable, the stamp threshold in `_reset_observed`.",
+    "wiring": "pass \u2014 \u00a716 declares no per-node depends-on/informs/gates (every section in this plan carries `data-links=\"\"`, relationships live at plan level as `plan-informs=background-agent-fitness-and-dispatch-scope`), and the section it supersedes (\u00a712, `data-status=\"done\"`) resolves (docs/plans/a-window-paces-the-lane.html#s12)."
+  },
+  "section_digests": {
+    "_document": "fda3b02b7cdf1aaf51dcc28b302e76dbfa5532ff457c61b6cacd4458d68c0b30",
+    "s1": "fd232b0e9e301983eea254fa355a00f9cfdad5e4ba397415c196946997e8b78a",
+    "s10": "cff30d466dd7580b4623ab4ba85a967692183d1c1fbf0a887b817140c3fe2bf9",
+    "s11": "4f344761a1c7f9eeda684c28b5399f6cc6c50a6961808244c50f4f385a8dfb83",
+    "s12": "d332f915a715e0ce7c1efdd5027285714154977800a9ec70d7b055bf5762609f",
+    "s13": "627916281462553dd6f077d4f3ad0d176f2e5177a66b12b43e0c6d7b6788b3d7",
+    "s14": "5c54d28fac7106fc49f1eb45cc396fb761556bbd5ae16f469c6cf14cdd342fc8",
+    "s15": "5acca22c78776d5b829195bb01b2c5d660f4787c61cd3b04e511e66046bc7cf0",
+    "s16": "5fb3a1e2ac0ab9698f38d79cbe1d2cfd0fd5b87d4614899e15f5d3e8104fc76a",
+    "s2": "0c4f642bff7cb6b87908ea9e036cb3161c15e31cb3285273e06bb2ac1f5c368c",
+    "s3": "ae3d7625321a46e7fa6a9ee3bac0272ee77d236811612140ef03b79670883261",
+    "s4": "8f3ac850d09e4745435c5274237c26be090ce2db03ac422e941c3329841d8563",
+    "s5": "3bc104a16d90fb6279e9ab8c70555e1041253ad31f6376c64b455da33489c6b0",
+    "s5b": "1be686d2a1165f13c4f4e81a29ca56c362c3b069dfc80759cf370cca59440d41",
+    "s6": "8e4ab80a317b73fb60010fe92858cbe3b073511ce10c4547c6eb8952a89829f0",
+    "s6-the-probe-reader-and-the-undeclared-dialect": "c463be6993bc79b07591a01d9e1a1d92d699a48d4c322b2cc395a0e78a2d097d",
+    "s7": "39b7111a3bfa256531f953bd33de123967e24fa4ffc75e6d1cbeca26a45c565d",
+    "s8": "9d68431496117798ca30bbebd6828adc5853e02df969ac62de3bb2dcd41512a4",
+    "s9": "5f72c27f2288b837b6513304ec92d0bf2e8950d169b0389c4c3ffeba27c23b6b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T08:49:08.143769+00:00"
+}
