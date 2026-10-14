@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch.py:dispatch",
+    "reckon/crew/dispatch_sessions.py:resume_plan",
+    "reckon/crew/dispatch_sessions.py:change_lane",
+    "reckon/crew_dispatch_commands.py:crew_dispatch",
+    "reckon/crew/dispatch_sessions.py:_recorded_task_node"
+  ],
+  "completed_at": "2026-10-14T21:40:49.903Z",
+  "dispatched_at": "2026-10-14T21:21:05Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "17",
+      "severity": "follow-on",
+      "text": "follow-on: the done_when's clause that the files importing reckon/crew/node.py show no added failure against base is not measured \u2014 baseline_suite and after_suite name a nine-file dispatch subset, and the 162-file importer population is declared in follow_ons, so the coordinator's merge-time population run is still owed."
+    },
+    {
+      "file": "tests/test_dispatch_attaches_the_figures.py",
+      "line": "343",
+      "severity": "follow-on",
+      "text": "follow-on: the clive refusal is asserted only as the substring 'clive' in the error text, so a regression that replaced the lane refusal with any other CrewError mentioning the backend name would keep the test green."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against base cc4e4a05; two commits, six files, +506 lines, all inside the declared scope \u00b7 the production delta is the images field, three launch_plan call sites and the CLI option.",
+    "done_when": "the done_when names four properties plus the importer-population clause; tests/test_dispatch_attaches_the_figures.py exercises all four (two -i flags on a codex argv, the clive refusal by name, the --image CLI path, and the resume and change_lane argv), while the importer clause is declared rather than measured.",
+    "goal": "the source node's goal is to carry each node's figures through every launch path; reckon/crew/node.py:754 adds TaskNode.images and reckon/crew/dispatch.py:1842, reckon/crew/dispatch_sessions.py:1153 and :1589, and reckon/crew_dispatch_commands.py:1259 thread it into launch_plan, so the goal is delivered as stated.",
+    "manifest": "read; it records both commits (368ce9e17, 941c81d11), the 5-passed gate for the named test, base 79 passed / head 84 passed recorded to importer-base.log and importer-head.log, and the three-arm negative control to negative-control.log ending EXIT=1.",
+    "write_paths": "the node was fenced to the five named files plus the evidence fragment and figure directory; every path in the diff (reckon/crew/node.py, reckon/crew/dispatch.py, reckon/crew/dispatch_sessions.py, reckon/crew_dispatch_commands.py, tests/test_dispatch_attaches_the_figures.py, docs/evidence/fragments/a-review-can-see-the-figure/the-dispatch-carries-a-nodes-figures.html) is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_dispatch_attaches_the_figures.py:324 reddens when the images are dropped at reckon/crew/dispatch.py:1842, shown by arm 1 of negative-control.log, while the clive assertion at :343 is weaker.",
+    "evidence": "importer-head.log ends \"84 passed\" and \"EXIT=0\" and is named in the manifest, but the nine-file subset it measured leaves the done_when's importer-population clause unmeasured.",
+    "fit": "the images field mirrors peer_scopes at reckon/crew/node.py:753 as a default-empty list carried by as_dict, and no added name violates the repository naming rules.",
+    "goal_fidelity": "reckon/crew/node.py:754 adds the images list and reckon/crew/dispatch.py:1842 passes node.images to launch_plan, exactly as \u00a76 states.",
+    "reuse": "launch_plan's images parameter at reckon/_backends.py:2091 already owns the capability; the diff extends that owner rather than adding a second image path, and no new definition duplicates a capability the repository owns.",
+    "scope_discipline": "every changed path, including the evidence fragment at docs/evidence/fragments/a-review-can-see-the-figure/the-dispatch-carries-a-nodes-figures.html, is inside the node's fenced write paths and nothing the goal does not imply is carried."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is to carry each node's figures through every launch path; reckon/crew/node.py:754 adds TaskNode.images and reckon/crew/dispatch.py:1842, reckon/crew/dispatch_sessions.py:1153 and :1589, and reckon/crew_dispatch_commands.py:1259 thread it into launch_plan, so the goal is delivered as stated.\nVERDICT done_when: the done_when names four properties plus the importer-population clause; tests/test_dispatch_attaches_the_figures.py exercises all four (two -i flags on a codex argv, the clive refusal by name, the --image CLI path, and the resume and change_lane argv), while the importer clause is declared rather than measured.\nVERDICT write_paths: the node was fenced to the five named files plus the evidence fragment and figure directory; every path in the diff (reckon/crew/node.py, reckon/crew/dispatch.py, reckon/crew/dispatch_sessions.py, reckon/crew_dispatch_commands.py, tests/test_dispatch_attaches_the_figures.py, docs/evidence/fragments/a-review-can-see-the-figure/the-dispatch-carries-a-nodes-figures.html) is inside them.\nVERDICT manifest: read; it records both commits (368ce9e17, 941c81d11), the 5-passed gate for the named test, base 79 passed / head 84 passed recorded to importer-base.log and importer-head.log, and the three-arm negative control to negative-control.log ending EXIT=1.\nVERDICT diff: read commit by commit against base cc4e4a05; two commits, six files, +506 lines, all inside the declared scope \u00b7 the production delta is the images field, three launch_plan call sites and the CLI option.\nCALL_SITES: reckon/crew/dispatch.py:dispatch, reckon/crew/dispatch_sessions.py:resume_plan, reckon/crew/dispatch_sessions.py:change_lane, reckon/crew_dispatch_commands.py:crew_dispatch, reckon/crew/dispatch_sessions.py:_recorded_task_node\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/node.py:754 adds the images list and reckon/crew/dispatch.py:1842 passes node.images to launch_plan, exactly as \u00a76 states.\nSCORE evidence: 15\nJUSTIFICATION evidence: importer-head.log ends \"84 passed\" and \"EXIT=0\" and is named in the manifest, but the nine-file subset it measured leaves the done_when's importer-population clause unmeasured.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every changed path, including the evidence fragment at docs/evidence/fragments/a-review-can-see-the-figure/the-dispatch-carries-a-nodes-figures.html, is inside the node's fenced write paths and nothing the goal does not imply is carried.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_dispatch_attaches_the_figures.py:324 reddens when the images are dropped at reckon/crew/dispatch.py:1842, shown by arm 1 of negative-control.log, while the clive assertion at :343 is weaker.\nSCORE fit: 18\nJUSTIFICATION fit: the images field mirrors peer_scopes at reckon/crew/node.py:753 as a default-empty list carried by as_dict, and no added name violates the repository naming rules.\nSCORE reuse: 20\nJUSTIFICATION reuse: launch_plan's images parameter at reckon/_backends.py:2091 already owns the capability; the diff extends that owner rather than adding a second image path, and no new definition duplicates a capability the repository owns.\nFINDING manifest.md:17 follow-on: the done_when's clause that the files importing reckon/crew/node.py show no added failure against base is not measured \u2014 baseline_suite and after_suite name a nine-file dispatch subset, and the 162-file importer population is declared in follow_ons, so the coordinator's merge-time population run is still owed.\nFINDING tests/test_dispatch_attaches_the_figures.py:343 follow-on: the clive refusal is asserted only as the substring 'clive' in the error text, so a regression that replaced the lane refusal with any other CrewError mentioning the backend name would keep the test green.",
+  "review_run_id": "r-20261014T212039144579-review-of-the-dispatch-carries-a-nodes-figures-941c81d11859",
+  "reviewed_base_sha": "cc4e4a05bfac594e85aa5d141bcffe8552a2ba7b",
+  "reviewed_head_sha": "941c81d118594d9466e1a8624b96c6768dfec8af",
+  "reviewed_run_id": "r-20261014T200124202622-the-dispatch-carries-a-nodes-figures",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "subject": "review",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T21:24:00+00:00",
+  "total": 108
+}
