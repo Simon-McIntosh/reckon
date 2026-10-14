@@ -34,13 +34,15 @@ if [ -z "$interpreter" ]; then
   exit 127
 fi
 
-# Start reckon's interpreter with only reckon's import root on its path, and no
-# user site (-s). A job that ran `module load` puts its own site-packages on
-# PYTHONPATH, and appending the caller's PYTHONPATH would let a 3.11 copy of a
-# dependency shadow the one in reckon's own environment, breaking the import
-# before git is reached. The caller's interpreter-path variables are set aside
-# under RECKON_SHIM_CALLER_* and put back by the module before it runs the real
-# program, which still receives the caller's environment unchanged.
+# Only reckon's import root is on the interpreter's PYTHONPATH, and the user
+# site is dropped (-s). A job that ran `module load` puts another Python's
+# site-packages on PYTHONPATH; left ahead of reckon's own packages, a 3.11 copy
+# of a dependency shadows the one reckon needs and the import fails before git
+# is reached. The caller's interpreter-path variables are parked under
+# RECKON_SHIM_CALLER_* here: the module hands them back to the program the shim
+# runs, and the bootstrap below appends the caller's PYTHONPATH after reckon's
+# own packages, so a caller's sitecustomize still runs while its packages
+# cannot shadow reckon's.
 # -P keeps the working directory off sys.path, so the package imported is the
 # one this shim belongs to rather than whatever checkout happens to be the cwd.
 if [ "${PYTHONPATH+set}" = set ]; then
@@ -59,7 +61,16 @@ unset PYTHONPATH PYTHONHOME PYTHONSTARTUP
 
 PYTHONPATH="$repo_root" \
   exec "$interpreter" -P -s -c '
+import os
 import sys
+
+_extra = os.environ.get("RECKON_SHIM_CALLER_PYTHONPATH", "")
+if _extra:
+    sys.path.extend(_part for _part in _extra.split(os.pathsep) if _part)
+    try:
+        import sitecustomize  # noqa: F401
+    except ModuleNotFoundError:
+        pass
 
 from reckon.worker_git_shim import main
 
