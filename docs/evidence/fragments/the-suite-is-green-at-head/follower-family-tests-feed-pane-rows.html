@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>follower-family-tests-feed-pane-rows</title>
+<meta name="reckon-type" content="evidence-fragment">
+<meta name="reckon-plan" content="the-suite-is-green-at-head">
+<meta name="reckon-node" content="follower-family-tests-feed-pane-rows">
+</head>
+<body>
+<article class="r-fragment" id="follower-family-tests-feed-pane-rows">
+<h2>follower-family-tests-feed-pane-rows</h2>
+
+<p><strong>Outcome.</strong> The pane delivers an observed session's rows and
+the own session's start past the observer-context hold — commit
+<code>36f853918</code> <em>feat(crew): deliver an observed session's rows and
+the own launch start</em>, in <code>reckon/crew/ticker.py</code> and
+<code>reckon/crew_follow_commands.py</code>. The follower family then feeds
+rows a live pane actually delivers: commits <code>b9ad4075d</code> and
+<code>13bc76841</code>, which supersedes the earlier attempt to park the
+observing cases' own run at <code>dispatched</code>. The fifteen named ids pass
+alone at head — <strong>24 passed, 0 failed, EXIT=0</strong>
+(<code>logs/thirteen-ids-2.log</code>), and
+<code>tests/test_follow_settled_rows.py</code> and
+<code>tests/test_row_policy_holds_observer_context.py</code> are inside that
+run.</p>
+
+<p><strong>Cause, named.</strong> The family's cases built the row they awaited
+out of a launch the pane had already read as working. The pane's live baseline
+derivation reports a run as <code>(None, working)</code> whatever its pointer's
+phase — measured for a pointer at <code>phase&nbsp;=&nbsp;"dispatched"</code>,
+which the row path fed as <code>from_state=None, to_state=working</code>. A
+start arriving afterwards for that same run is therefore a re-announcement, and
+<code>RowPolicy</code>'s state-dedup guard drops the launch
+<code>(dispatched, working)</code> as one. So the cases were waiting for a row
+a live pane never makes, and the failures were the fixture's premise rather
+than the delivery: fed directly, with no prior baseline, the row path delivers
+that same start, and the follower's own selection admits it.</p>
+
+<p><strong>Repair.</strong> The source delivers what the pane is asked about.
+A row belonging to a session the pane was told to observe is printed however
+the classifier classes its kind (<code>_is_observed</code> in
+<code>RowPolicy.feed</code>), and the own session's start is recognised for
+both start pairs — a fresh launch's <code>dispatched&nbsp;&rarr;&nbsp;working</code>
+and a resumed attempt's <code>starting&nbsp;&rarr;&nbsp;working</code>
+(<code>_is_own_start</code>, <code>START_KINDS</code>) — and the follower's row
+path is built with the naming it needs to make either decision
+(<code>follower_row_path</code>, which now passes <code>own_session</code> and
+<code>observed_sessions</code> to <code>PaneRowPath</code>). The family's cases
+now arm first and feed the move the run makes <em>after</em> the arming, so
+every delivery they measure is one a live pane makes; the observing cases gate
+the write of their own run's arrival on the checkpoint a finished first arming
+leaves. Each case that measures a delivery counts the rows before it asserts
+their shape, because the shape assertions are quantified over what was
+delivered and an empty list satisfies every one of them.</p>
+
+<p><strong>Measured.</strong> Fifteen named ids, head: <strong>24 passed, 0
+failed</strong>, EXIT=0 (<code>logs/thirteen-ids-2.log</code>). The same ids
+with the source at the base revision <code>f3d3c028b</code>: <strong>13 failed,
+1 passed</strong> (<code>logs/base-14ids.log</code>). The importer population —
+the 43 test modules that import <code>reckon.crew.ticker</code> or
+<code>reckon.crew_follow_commands</code> by name — run at each revision over
+the same file list: base <strong>667 passed, 0 failed</strong>
+(<code>logs/population-base.log</code>, base tree exported to a temporary tree
+and run with <code>PYTHONPATH</code> pointed at it), head <strong>667 passed, 0
+failed</strong> (<code>logs/population-head.log</code>). <strong>No added
+failure id.</strong> That population reaches the changed modules by name, so it
+excludes the family's own files, which reach them through
+<code>reckon.cli</code>; the family's base-to-head result is the fifteen-id
+pair above. Both population runs read the tree that commit
+<code>13bc76841</code> lands; the head log's header names
+<code>242373e0f</code> because that was HEAD when the run started.</p>
+
+<p><strong>Declared negative controls, executed and logged.</strong> Mutation
+A: drop the observed-session delivery (<code>RowPolicy.feed</code>'s
+<code>_is_observed</code> branch forced off) — the target file fails,
+<strong>3 failed, 8 passed, EXIT=1</strong>
+(<code>logs/negative-control-a.log</code>). Mutation B: narrow
+<code>_is_own_start</code> back to the fresh-launch pair alone — the freshness
+file fails, <strong>2 failed, 8 passed, EXIT=1</strong>
+(<code>logs/negative-control-b.log</code>). Both source mutations were reverted
+immediately; <code>git diff</code> against HEAD over the two source files is
+empty afterwards, which is how the head measurements above stand.</p>
+
+<p><img src="/reckon/figures/the-suite-is-green-at-head/follower-family-tests-feed-pane-rows/family-gate-and-controls.svg"
+     alt="Four rows of failing-id counts. The importer population, 43 test modules, shows 0 failing of 667 at the base revision f3d3c028b and 667 passing at head. The node's own files show 0 failing of 24 unmutated, 3 failing of 11 when the observed-session delivery is disabled, and 2 failing of 10 when the own-session start is narrowed to the fresh-launch pair."/></p>
+
+<p><strong>Follow-ons.</strong> None in this node's scope. The base arm
+resolves 14 tests where the head resolves 24, because the base tree does not
+carry the re-anchored cases; the two arms are therefore compared by which ids
+fail, not by counts. The coordinator runs the importer population at merge.</p>
+</article>
+</body>
+</html>
