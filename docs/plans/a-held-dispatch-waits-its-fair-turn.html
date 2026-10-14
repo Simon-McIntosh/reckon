@@ -24,7 +24,7 @@
   <title>A Held Dispatch Waits Its Fair Turn | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="125">
+<meta name="plan-version" content="126">
 <meta name="plan-modified" content="2026-10-14">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="3c837fc1">
@@ -437,6 +437,9 @@
 </div>
 <div class="r-comment" data-section="s22" data-id="c-close-s22" data-who="reckon-build" data-when="2026-10-14T10:50:00Z">
     <div class="r-comment-body"><p>§22 landed at <code>f12b13cc4</code>. A queued request launched under a new run id now writes its manifest, and any default write paths, under its own run directory. A queued-launched run's review and promoted ledger record then find the manifest where they look. Gate: 22 passed. Control: both targeted cases fail. Arms: 50 to 54 passed, 0 added. Review: 114. It takes effect on the lane only after the admit service restarts, as §15, §18 and §20 do. <a href="/reckon/evidence/archive/a-held-dispatch-waits-its-fair-turn-landed.html#s22-launched-run-own-directory">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s22" data-id="c-run-r-20261014T095105250235-a-launched-request-delivers-into-its-own-run-directory" data-who="reckon-build" data-when="2026-10-14T10:26:43.365Z">
+    <div class="r-comment-body"><p>An admission pass now rebuilds a queued request&#x27;s node without any manifest path or write path inside the queued run&#x27;s own directory, so dispatch derives them afresh from the launched run id; tests/test_a_queued_run_is_admitted.py reports 22 passed EXIT=0, the negative control (paths carried over unchanged) fails the first and fourth cases with EXIT=1, and the eight files importing queue_admission show 54 passed at head against 50 passed at base with zero failures added.</p></div>
 </div>
 <div class="r-comment" data-section="s21" data-id="c-run-r-20261014T092419966312-review-of-the-occupied-worktree-refusal-asserts-no-watch-row" data-who="reckon-build" data-when="2026-10-14T09:34:17.760Z">
     <div class="r-comment-body"><p>review attached to run r-20261014T090025554907-the-occupied-worktree-refusal-asserts-no-watch-row at head 1dc52e7e4 (base 3b13a7480) with scores goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 20, reuse 20 (total 118), one follow-on finding, and added_failure_count 0 derived from the reviewed run's own arm logs; the review does not block the node.</p></div>
