@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "984cb5efbd688a6c7f39c59406d4cd721b91abdd",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:862",
+    "reckon/mcp.py:2001",
+    "reckon/crew/picker/snapshot.py:468",
+    "reckon/budget.py:3671"
+  ],
+  "completed_at": "2026-10-14T06:39:52.329Z",
+  "dispatched_at": "2026-10-14T06:21:25Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T052927236914-pace-path-dates-a-rollout-by-its-report/logs/gate-base.log",
+      "line": "5",
+      "severity": "follow-on",
+      "text": "follow-on: the base arm did not measure the base revision -- it records cwd as the head worktree and module.__file__ as that worktree's reckon/budget.py, so the PYTHONPATH scratch tree was shadowed and the arm ran head code, leaving the baseline_suite row's revision attribution unsupported (bounded because the head arm reports zero failures and nothing needed attributing)."
+    },
+    {
+      "file": "tests/test_pace_dates_a_rollout_by_its_report.py",
+      "line": "145",
+      "severity": "follow-on",
+      "text": "follow-on: the utilisation assertions at :145-146 compare against the values the test handed in at :142 and hold under the reinstated record-stamp regression, so they are wiring checks, not coverage of the dating fix whose guard is :147."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T052927236914-pace-path-dates-a-rollout-by-its-report/logs/negative-control.log",
+      "line": "16",
+      "severity": "follow-on",
+      "text": "follow-on: the negative-control log quotes a test revision naming the stamps T0/T1/T2 and reports the first failure at line 123, one line off the committed test text, so the merged assertions were not the artefact it reddened."
+    }
+  ],
+  "head_log_revision": "9f9209bc2fcd848921468e9c057b00a21592121b",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against 984cb5efb; the single gained commit 9f9209bc2 extracts a shared _read_rollout_event out of paid_lanes._codex_rollout_candidates, adds RolloutEvent/_session_rollout_paths/read_session_rollout_event, points budget._read_live_rollout at that reader, and reworks the two test files plus the evidence fragment.",
+    "done_when": "the done_when names a three-source competition in tests/test_pace_dates_a_rollout_by_its_report.py plus the event-stamp rewrite of tests/test_preflight_pace.py::test_a_live_session_is_read_for_the_rollout_receipt_of_its_own_run; both are present and green, and the manifest records the head gate 637 passed EXIT=0 and the negative control 2 failed EXIT=1, but the recorded base arm does not measure the base revision.",
+    "goal": "the source node's goal is to date a live run's rollout figure on the pace path by its own rate_limits event; commit 9f9209bc2 makes reckon/budget.py:3537 build the live session's candidate from paid_lanes.read_session_rollout_event, whose RolloutEvent carries the provider's own stamp at reckon/crew/paid_lanes.py:936.",
+    "manifest": "read; it declares status complete and commit 9f9209bc2, gate head 637 passed EXIT=0 and base 634 passed EXIT=0 over the budget-importing test files, the declared negative control red (2 failed, 1 passed, EXIT=1), and names gate-base.log/gate-head.log/negative-control.log as its logs.",
+    "write_paths": "read the source dispatch fence (reckon/budget.py, reckon/crew/paid_lanes.py, tests/test_preflight_pace.py, tests/test_pace_dates_a_rollout_by_its_report.py, the plan evidence fragment and its figure dir); git diff 984cb5efb..9f9209bc2 touches only those paths and nothing outside."
+  },
+  "justifications": {
+    "durability": "tests/test_pace_dates_a_rollout_by_its_report.py:124 and :147 fail when record-stamp dating is restored (negative control 2 failed EXIT=1), but the utilisation assertions at :145-146 hold under that regression because the rollout is the only candidate there.",
+    "evidence": "gate-base.log:5 records module.__file__ as the head worktree's reckon/budget.py, so the base arm ran head code and the done_when's no-added-failure-against-base clause rests on the head arm's zero failures rather than on a genuine base measurement.",
+    "fit": "the lazy import of paid_lanes at reckon/budget.py:3668 avoids the cycle that paid_lanes' own budget._read_rollout use at paid_lanes.py:815 would otherwise create, and the new names carry no plan or ticket identifier.",
+    "goal_fidelity": "reckon/budget.py:3537 dates the live session's candidate from _read_live_rollout, which resolves paid_lanes.read_session_rollout_event and takes the event's own stamp at reckon/crew/paid_lanes.py:936, so an older figure can no longer outrank a newer one.",
+    "reuse": "reckon/crew/paid_lanes.py:892 extracts _read_rollout_event out of the tail-reader previously inlined in _codex_rollout_candidates, and both the account scan and budget.py's pace path resolve through read_session_rollout_event, so no capability is forked.",
+    "scope_discipline": "every diff path is inside the fence, but reckon/budget.py:261, :2826 and :2899 carry unrelated ruff reformatting (timezone.utc to UTC, slice spacing, an argument wrap) the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is to date a live run's rollout figure on the pace path by its own rate_limits event; commit 9f9209bc2 makes reckon/budget.py:3537 build the live session's candidate from paid_lanes.read_session_rollout_event, whose RolloutEvent carries the provider's own stamp at reckon/crew/paid_lanes.py:936.\nVERDICT done_when: the done_when names a three-source competition in tests/test_pace_dates_a_rollout_by_its_report.py plus the event-stamp rewrite of tests/test_preflight_pace.py::test_a_live_session_is_read_for_the_rollout_receipt_of_its_own_run; both are present and green, and the manifest records the head gate 637 passed EXIT=0 and the negative control 2 failed EXIT=1, but the recorded base arm does not measure the base revision.\nVERDICT write_paths: read the source dispatch fence (reckon/budget.py, reckon/crew/paid_lanes.py, tests/test_preflight_pace.py, tests/test_pace_dates_a_rollout_by_its_report.py, the plan evidence fragment and its figure dir); git diff 984cb5efb..9f9209bc2 touches only those paths and nothing outside.\nVERDICT manifest: read; it declares status complete and commit 9f9209bc2, gate head 637 passed EXIT=0 and base 634 passed EXIT=0 over the budget-importing test files, the declared negative control red (2 failed, 1 passed, EXIT=1), and names gate-base.log/gate-head.log/negative-control.log as its logs.\nVERDICT diff: read commit by commit against 984cb5efb; the single gained commit 9f9209bc2 extracts a shared _read_rollout_event out of paid_lanes._codex_rollout_candidates, adds RolloutEvent/_session_rollout_paths/read_session_rollout_event, points budget._read_live_rollout at that reader, and reworks the two test files plus the evidence fragment.\nCALL_SITES: reckon/crew_dispatch_commands.py:862, reckon/mcp.py:2001, reckon/crew/picker/snapshot.py:468, reckon/budget.py:3671\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/budget.py:3537 dates the live session's candidate from _read_live_rollout, which resolves paid_lanes.read_session_rollout_event and takes the event's own stamp at reckon/crew/paid_lanes.py:936, so an older figure can no longer outrank a newer one.\nSCORE evidence: 13\nJUSTIFICATION evidence: gate-base.log:5 records module.__file__ as the head worktree's reckon/budget.py, so the base arm ran head code and the done_when's no-added-failure-against-base clause rests on the head arm's zero failures rather than on a genuine base measurement.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: every diff path is inside the fence, but reckon/budget.py:261, :2826 and :2899 carry unrelated ruff reformatting (timezone.utc to UTC, slice spacing, an argument wrap) the goal does not imply.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_pace_dates_a_rollout_by_its_report.py:124 and :147 fail when record-stamp dating is restored (negative control 2 failed EXIT=1), but the utilisation assertions at :145-146 hold under that regression because the rollout is the only candidate there.\nSCORE fit: 17\nJUSTIFICATION fit: the lazy import of paid_lanes at reckon/budget.py:3668 avoids the cycle that paid_lanes' own budget._read_rollout use at paid_lanes.py:815 would otherwise create, and the new names carry no plan or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/paid_lanes.py:892 extracts _read_rollout_event out of the tail-reader previously inlined in _codex_rollout_candidates, and both the account scan and budget.py's pace path resolve through read_session_rollout_event, so no capability is forked.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T052927236914-pace-path-dates-a-rollout-by-its-report/logs/gate-base.log:5 follow-on: the base arm did not measure the base revision -- it records cwd as the head worktree and module.__file__ as that worktree's reckon/budget.py, so the PYTHONPATH scratch tree was shadowed and the arm ran head code, leaving the baseline_suite row's revision attribution unsupported (bounded because the head arm reports zero failures and nothing needed attributing).\nFINDING tests/test_pace_dates_a_rollout_by_its_report.py:145 follow-on: the utilisation assertions at :145-146 compare against the values the test handed in at :142 and hold under the reinstated record-stamp regression, so they are wiring checks, not coverage of the dating fix whose guard is :147.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261014T052927236914-pace-path-dates-a-rollout-by-its-report/logs/negative-control.log:16 follow-on: the negative-control log quotes a test revision naming the stamps T0/T1/T2 and reports the first failure at line 123, one line off the committed test text, so the merged assertions were not the artefact it reddened.\n",
+  "review_run_id": "r-20261014T062053594169-review-of-pace-path-dates-a-rollout-by-its-report-9f9209bc2fcd",
+  "reviewed_base_sha": "984cb5efbd688a6c7f39c59406d4cd721b91abdd",
+  "reviewed_head_sha": "9f9209bc2fcd848921468e9c057b00a21592121b",
+  "reviewed_run_id": "r-20261014T052927236914-pace-path-dates-a-rollout-by-its-report",
+  "reviewer": "review-of-pace-path-dates-a-rollout-by-its-report-9f9209bc2fcd",
+  "scores": {
+    "durability": 17,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-14T06:35:58.248711+00:00",
+  "total": 102
+}
