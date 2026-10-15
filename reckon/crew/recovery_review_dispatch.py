@@ -1388,26 +1388,6 @@ def _no_lane_reason(
 HELD_REVIEW_DISPATCH_STATUSES = frozenset({"lane-paused", "awaiting-lane"})
 
 
-def _review_lane_family(config: Mapping[str, Any], name: str) -> str:
-    """The lane a configured backend belongs to, read as the picker reads it.
-
-    The lane is the local marker or the backend's resolved dialect, the same
-    derivation the picker's own exclusion uses, so a converted lane is left out
-    of the offering as one lane rather than by a backend name list kept here.
-    """
-    if name and name == str(config.get("local_backend") or "").strip():
-        return "local"
-    from reckon import _backends
-
-    settings = (config.get("backends") or {}).get(name)
-    if not isinstance(settings, Mapping):
-        return name
-    try:
-        return _backends.dialect_for(settings).name
-    except _backends.BackendError:
-        return str(settings.get("launch") or name)
-
-
 def _zero_slot_held_lane(
     record: Mapping[str, Any], *, config: Mapping[str, Any], session: str
 ) -> str:
@@ -1489,10 +1469,12 @@ def _reroute_held_review(
         return None
     from reckon.crew import dispatch_picker
 
-    lane = _review_lane_family(config, refusing)
-    selection = dispatch_picker.dispatch_picker_selection(
+    lane = dispatch_picker.lane_family(config, refusing)
+    selection = dispatch_picker._ask_excluding_lane(
+        lane,
+        {"action": "held", "backend": refusing, "lane": lane},
         node=node,
-        config=dispatch_picker._config_without_lane(config, lane),
+        config=config,
         project=project,
         repo=Path(repo),
         session=session,
@@ -1501,10 +1483,7 @@ def _reroute_held_review(
     backend = str(selection.get("backend") or "")
     if action == "fallback":
         return None
-    asks = [
-        {"action": "held", "backend": refusing, "lane": lane},
-        dispatch_picker._ask_summary(selection),
-    ]
+    asks = selection["asks"]
     if action == "route" and backend in (config.get("backends") or {}):
         return {"backend": backend, "asks": asks}
     return {

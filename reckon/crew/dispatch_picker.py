@@ -545,6 +545,36 @@ def _zero_slot_lane(selection: Mapping[str, Any], config: Mapping[str, Any]) -> 
     return ""
 
 
+def lane_family(
+    config: Mapping[str, Any],
+    name: str,
+    backend: Mapping[str, Any] | None = None,
+) -> str:
+    """The lane family one configured backend belongs to, read as the state reads it.
+
+    A candidate's lane is the local marker, the backend's resolved dialect, or --
+    when its command names no dialect -- its launch kind. The local marker is the
+    backend the configuration names as its ``local_backend``; every other backend
+    is read through :func:`reckon._backends.dialect_for` on the backend mapping
+    handed in, which a caller may pass already resolved against a role overlay.
+    One owner for the derivation so a candidate's lane and an exclusion's lane are
+    the same reading, never a backend's declared ``lane`` key, which a
+    configuration need not set.
+    """
+    if name and name == str(config.get("local_backend") or ""):
+        return "local"
+    if backend is None:
+        backend = (config.get("backends") or {}).get(name)
+    if not isinstance(backend, Mapping):
+        return name
+    from reckon import _backends
+
+    try:
+        return _backends.dialect_for(backend).name
+    except _backends.BackendError:
+        return str(backend.get("launch") or name)
+
+
 def _lane_backend_names(config: Mapping[str, Any], lane: str) -> set[str]:
     """The configured backends belonging to one lane, read as the state reads it.
 
@@ -553,18 +583,11 @@ def _lane_backend_names(config: Mapping[str, Any], lane: str) -> set[str]:
     ``lane`` key, which a configuration need not set and which would leave a
     metered lane's backends behind unexcluded.
     """
-    from reckon import _backends
-
     names: set[str] = set()
     for name, backend in (config.get("backends") or {}).items():
         if not isinstance(backend, Mapping):
             continue
-        local = str(name) == config.get("local_backend")
-        try:
-            family = "local" if local else _backends.dialect_for(backend).name
-        except _backends.BackendError:
-            family = str(backend.get("launch") or name)
-        if family == lane:
+        if lane_family(config, str(name), backend) == lane:
             names.add(str(name))
     return names
 
@@ -597,6 +620,42 @@ def _ask_summary(selection: Mapping[str, Any]) -> dict[str, Any]:
             if isinstance(row, Mapping)
         ],
     }
+
+
+def _ask_excluding_lane(
+    lane: str,
+    first_ask: Mapping[str, Any],
+    *,
+    node: Any,
+    config: Mapping[str, Any],
+    project: str,
+    repo: Path,
+    session: str,
+    comment: str = "",
+    authority: Mapping[str, Any] | None = None,
+    authority_error: str | None = None,
+) -> dict[str, Any]:
+    """Ask Jev once more with one lane left out of the offering, keeping both asks.
+
+    The zero-slot re-ask and the reflex's held-review retry are the same question
+    with different triggers: each asks a second time with the refusing lane
+    excluded and records the first ask beside the answer, so the decision is
+    visible. The second ask is asked with the re-ask disabled, so a hold it lands
+    on is not chased further. Its selection is returned with ``asks`` carrying the
+    recorded pair -- the first ask as the caller summarized it, and the second.
+    """
+    second = dispatch_picker_selection(
+        node=node,
+        config=_config_without_lane(config, lane),
+        project=project,
+        repo=repo,
+        session=session,
+        comment=comment,
+        authority=authority,
+        authority_error=authority_error,
+        _allow_reask=False,
+    )
+    return {**second, "asks": [dict(first_ask), _ask_summary(second)]}
 
 
 def _reask_off_zero_slot_lane(
@@ -634,23 +693,23 @@ def _reask_off_zero_slot_lane(
     spec_level = str(getattr(node, "spec_level", "") or "")
     if spec_level not in _ZERO_SLOT_REASK_SPEC_LEVELS:
         return dict(selection)
-    second = dispatch_picker_selection(
+    second = _ask_excluding_lane(
+        lane,
+        _ask_summary(selection),
         node=node,
-        config=_config_without_lane(config, lane),
+        config=config,
         project=project,
         repo=repo,
         session=session,
         comment=comment,
         authority=authority,
         authority_error=authority_error,
-        _allow_reask=False,
     )
     return {
         **second,
         "action": second.get("action") or "refuse",
         "excluded_zero_slot_lane": lane,
         "reissued": True,
-        "asks": [_ask_summary(selection), _ask_summary(second)],
     }
 
 

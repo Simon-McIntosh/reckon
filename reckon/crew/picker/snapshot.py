@@ -17,6 +17,7 @@ from reckon._timestamps import parse_utc
 from reckon.crew import (
     budget_lift,
     budget_reset,
+    dispatch_picker,
     lane_document,
     paid_lanes,
     recovery,
@@ -924,10 +925,7 @@ def candidates(
             availability = str(observation.get("status") or "unknown")
             if availability in {"refused", "unavailable", "logged-out"}:
                 reasons.append("availability: " + availability)
-        try:
-            family = "local" if local else _backends.dialect_for(backend).name
-        except _backends.BackendError:
-            family = str(backend.get("launch") or name)
+        family = dispatch_picker.lane_family(config, name, backend)
         reset = parse_utc(str(budget_facts.get("resets_at") or ""))
         days_to_reset = (
             max(0.0, (reset - now).total_seconds() / 86400) if reset else None
