@@ -1,0 +1,67 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-15T14:57:24.000Z",
+  "dispatched_at": "2026-10-15T14:51:43Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-seat-held-elsewhere-is-not-restarted.html#s8:136",
+      "id": "reasoning-1",
+      "reason": "the worker would break every local follower registration the section says it preserves, and would need the plan to say how the lock survives the rewrite or to scope the rename to foreign registrations only.",
+      "text": "\u00a78 sets the renewal write to replace the registration by rename, but the follower holds `flock(LOCK_EX)` on the registration inode (reckon/crew/follower_registration.py:293) and `_write_watch_record` writes in place precisely to keep that inode (reckon/crew/run_paths.py:50, \"without replacing the inode carrying its lock\"); a rename unlinks that inode, so a same-node reader's `flock` in `_follower_liveness` succeeds and the local registration reads `registered: False` \u2014 gone \u2014 contradicting the section's own guarantee that a same-host registration keeps its lock",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-seat-held-elsewhere-is-not-restarted.html#s9:143",
+      "id": "wiring-1",
+      "reason": "the plan must serialize \u00a79 against \u00a713 (and \u00a78/\u00a712 against \u00a713 on crew_follow_commands.py) or the nodes collide on the same functions and one change is merged blind.",
+      "text": "\u00a79's write paths are `reckon/crew/watch_unit.py`, `reckon/crew/obligation_snapshot.py` and `reckon/hooks/coordinator_obligations.py`, and \u00a713's are `reckon/hooks/coordinator_obligations.py`, `reckon/crew/obligation_snapshot.py` and `reckon/crew_follow_commands.py`; \u00a78 and \u00a712 also write `reckon/crew_follow_commands.py`, and neither a gate nor a followup orders any pair, so two nodes editing `not_fresh_line` and `freshness` at once \u2014 the exact functions \u00a79 and \u00a713 both change \u2014 are declared independent by omission",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-seat-held-elsewhere-is-not-restarted.html#s12:162",
+      "id": "single_goal-1",
+      "reason": "the parse test guards the very count the exit-status change acts on and both sit on one surface, so splitting earns little and the author may reasonably decline.",
+      "text": "\u00a712's title and deliverable join two tasks \u00a75's own review listed separately (\"first, the command still exits 0 \u2026 second, `restart_count` \u2026 no test pins that parse\"): the `--ensure` exit-status change and a new parse test, so one verdict must close two deliverables",
+      "type": "single_goal",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "439d5cb99961f4d25fdb23839b459a80b360dc100fc276e1b949902d5e9daf31",
+  "plan_slug": "a-seat-held-elsewhere-is-not-restarted",
+  "plan_version": 41,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261015T145107656333-plan-review-of-a-seat-held-elsewhere-is-not-restarted",
+  "reviewed_blob_sha": "abff5361e3f0834a028c3926c1617547ee9b8033",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 \u00a78's `_write_watch_record` (reckon/crew/run_paths.py:50), `renew_producer_lease` (reckon/crew/runs.py:1764), `producer_lease_seconds` (runs.py:1702) and `_follower_liveness` (reckon/crew/follower_registration.py:482); \u00a711's `resume_plan` (reckon/crew/dispatch_sessions.py:1008) with its mirror guard (reckon/crew/resumption.py:820) and `launch_in_flight` (resumption.py:179); \u00a712's `restart_count` (reckon/service.py:347); \u00a713's `reload_in_progress` (reckon/crew/obligation_snapshot.py:445) and `not_fresh_line` (reckon/hooks/coordinator_obligations.py:729); \u00a710/\u00a711's `_newest_stream_in_motion` (reckon/crew/recovery_liveness.py:194) all resolve, and the cited evidence archive docs/evidence/archive/a-seat-held-elsewhere-is-not-restarted-landed.html exists.",
+    "done_when": "pass \u2014 each changed node declares a negative control that can fail: \u00a78 restores the lock judgement so the fresh-renewal case reads gone, \u00a711 removes the exclusive claim so both resume doors launch, \u00a712 leaves the exit status at 0 so the cycling case reads healthy, \u00a713 restores the direct `not_fresh_line` print so the stop line shows `--ensure`.",
+    "evidence_paths": "pass \u2014 \u00a78, \u00a711, \u00a712 and \u00a713 log their negative controls \"under the run directory\", a durable path under the shared crew home, not a node-local scratch directory or a session scratchpad.",
+    "naming": "pass \u2014 the changed sections introduce no plan labels, stage names, ticket numbers or version tags; new symbols are named by mechanism (`_newest_stream_in_motion`, `cycling`, `reload_in_progress`) and the test files by behaviour.",
+    "reasoning": "a finding \u2014 \u00a78 states \"A registration from this host keeps its lock and pid probes\" while its own mechanism, a renewing write that \"replaces the file atomically, with a temporary file and a rename\", replaces the inode the follower holds its exclusive lock on, so a same-node reader opens an unlocked file and reads the local registration gone.",
+    "single_goal": "a finding \u2014 \u00a712 carries two deliverables (make `--ensure` exit non-zero on a cycling unit, and add a parse test for `SystemdUserUnitManager.restart_count`), the two \u00a75 follow-ons merged into one node.",
+    "wiring": "a finding \u2014 \u00a79 and \u00a713 both write `reckon/hooks/coordinator_obligations.py` and `reckon/crew/obligation_snapshot.py`, and \u00a78, \u00a712 and \u00a713 all write `reckon/crew_follow_commands.py`, but no gate or followup orders them, so dispatched together they collide on the same functions."
+  },
+  "section_digests": {
+    "_document": "2a12ae1bfb7b8840a644fedc41a387ccabcdf737c579e1f3eceb60d0131a14cb",
+    "s1": "e775b15757e63b277715e69df2ef97f2cf13db4e6364fc83b2f4ad6aa3bc858c",
+    "s10": "fd9ced512f1fc6a0610cb111ec8c734e3c55a84ea11034055f5f1c9e60e0c649",
+    "s11": "9d7552bb9a0f7179067d09a67e819e7194fbbac1e34cf450bb6dd2631508389d",
+    "s12": "41b7e2f138ff584e94cdef995cae4ab65e47e6e0efb43dc6d30b0045664f611d",
+    "s13": "441358f17906d8fa159ba5911fc62cfb32cabff650e9ae63b1300701b43f7b6d",
+    "s2": "0ed10d108f8d1ab2183625c90b68b4eafa74562e02814b07bb8c2079f5f67566",
+    "s3": "738aba9bff855c84122fa9ea72b1f1ef13486345a013a765e54c0cfa391a20c0",
+    "s4": "ca75c5c574381e50431d8d43b8f5532df7925573cf2dee356bea7941fcbd55cb",
+    "s5": "96d5fc1c72a25970cab856a7dde0a3cab839fd87c83786b7b49ffc4c1dabb1ab",
+    "s6": "c7b09760750dbf67efa83f9127581fea7578c7bf1e30b595ecd6c313b7505bad",
+    "s7": "d3e16f60d17ef3ee4666f9cd189aa6cd8e26f038173b65ee34b68f3f2cd822e7",
+    "s8": "12c4cb986014c15380900000e922c04d50387c5cfa14062e4ab4bc90d348001d",
+    "s9": "a2cb7135c4bd3f1439c3ec948d6146c2f5b7527da59b1bbd4c7ce4c141ec3055"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T14:57:43.859435+00:00"
+}
