@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/serve.py:_send_project_changes",
+    "reckon/serve.py:do_GET"
+  ],
+  "completed_at": "2026-10-15T14:29:25.087Z",
+  "dispatched_at": "2026-10-15T14:19:56Z",
+  "findings": [
+    {
+      "anchor": "reckon/serve.py:447",
+      "id": "reuse-1",
+      "text": "`_notify` snapshots the subscriber list under `self._lock` but writes to each pipe outside it, so a stream whose `close()` runs in that window has already closed both descriptors \u2014 a closed fd raises and is suppressed, but a descriptor number reused by another pipe in the meantime silently receives the byte and reports a spurious change."
+    },
+    {
+      "anchor": "reckon/serve.py:3702",
+      "id": "test_debt-1",
+      "text": "the done_when requires the `/_index` and `/_discover` handlers each to stamp their tree's read, and only reckon/serve.py:3625 (`/_index`) is exercised; no case in tests/test_cross_node_writes_refresh_the_index.py issues a `/_discover` request, so this arm is unguarded."
+    },
+    {
+      "anchor": "tests/test_cross_node_writes_refresh_the_index.py:532",
+      "id": "test_debt-2",
+      "text": "`assert serve._head_identity(repo) == head_before` takes both sides from the same call on the same path, so it holds whether or not the git-index write is seen; the clause it is meant to serve is carried by the `assert ran == []` assertion that follows it."
+    }
+  ],
+  "head_log_revision": "10495672479587c9c3287c68fa8a3bf5da329c38",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "2 production call sites verified: reckon/serve.py:_send_project_changes (the /_changes/ stream), and reckon/serve.py:do_GET, which reaches the detector through start_fleet_change_watch at reckon/serve.py:4394 and stamps reads at reckon/serve.py:3625 and 3702.",
+    "diff": "read commit by commit against 4350620cd; one commit, three files, +933/-12; reckon/serve.py gains the detector thread, `_TreeSignal`/`_TreeWake`, the subscription registry, `_subscribe_tree`/`_note_tree_read` and the `_FleetChangeWatch(mounts)` shape; the test file adds 14 cases; the fragment adds the landing anchor.",
+    "done_when": "the done_when's measure is tests/test_cross_node_writes_refresh_the_index.py over a served process with every kernel watch muted; the reviewed run records 57 passed EXIT=0 in logs/gate-cross-node.log and I re-ran that named file at 104956724 myself (14 passed, EXIT=0); the one clause with no case is the `/_discover` read stamp.",
+    "goal": "the node delivers a cross-node detector beside the inotify loop \u2014 reckon/serve.py:451 `_detector_run` runs `_fast_tree` (reckon/serve.py:484) and `_index`/`_slow_tree` (reckon/serve.py:537), each calling `_invalidate_tree_views` and `_notify` (reckon/serve.py:522-523 and 547-548), which is the goal's two halves.",
+    "manifest": "read; status complete; one commit 104956724; it records the 57-passed gate and its log, the negative control, the fast/slow pass stat counts over the imas-ambix tree and the fleet-index answer; it records no baseline_suite or after_suite arm.",
+    "write_paths": "the run declares reckon/serve.py, tests/test_cross_node_writes_refresh_the_index.py, the evidence fragment and a figures dir; `git diff --name-only 4350620cd..104956724` lists exactly reckon/serve.py, the test file and docs/evidence/fragments/a-write-on-any-node-reaches-the-page/cross-node-writes-refresh-the-index.html, all inside that declaration."
+  },
+  "justifications": {
+    "durability": "disabling the detector reddens tests/test_cross_node_writes_refresh_the_index.py::test_a_new_document_appears_within_a_fast_interval (negative-control.log, EXIT=1), so the change is guarded, but reckon/serve.py:3702 has no case and tests/test_cross_node_writes_refresh_the_index.py:532 cannot fail from this change.",
+    "evidence": "the gate log logs/gate-cross-node.log ends `57 passed in 65.97s` with `EXIT=0`, and I reproduced the named file's own green at 104956724 (14 passed, EXIT=0).",
+    "fit": "reckon/serve.py:439 follows the file's idioms \u2014 `self._lock`, `contextlib.suppress`, `LOGGER.warning`, a `threading.Event` for the pass wait \u2014 and adds no name carrying a plan or version identifier.",
+    "goal_fidelity": "reckon/serve.py:522-523 drops the tree's derived views and wakes its open streams from the detector thread, which is the goal's two halves in one pass.",
+    "reuse": "the detector reads its stamps and signals through the existing owners (`metadata_index._dir_identity`, `metadata_index._load_dir_stamps`, `_head_identity`, `_file_identity`, `_git_directory`, `_walk_discovery_signature`), and a search over reckon/ for an existing wake or subscribe mechanism found none.",
+    "scope_discipline": "every path in `git diff --name-only 4350620cd..104956724` is inside the manifest's declared write paths, and ruff adds no finding on either changed source file."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 4350620cda75f555365153dca8f758942f4060aa\nreviewed_head_sha: 10495672479587c9c3287c68fa8a3bf5da329c38\nVERDICT goal: the node delivers a cross-node detector beside the inotify loop \u2014 reckon/serve.py:451 `_detector_run` runs `_fast_tree` (reckon/serve.py:484) and `_slow_tree` (reckon/serve.py:537), each calling `_invalidate_tree_views` and `_notify` (reckon/serve.py:522-523 and 547-548), which is the goal's two halves.\nVERDICT done_when: the done_when's measure is tests/test_cross_node_writes_refresh_the_index.py over a served process with every kernel watch muted; the reviewed run records `57 passed in 65.97s` EXIT=0 in logs/gate-cross-node.log and I re-ran that named file at 104956724 myself (14 passed, EXIT=0); the one clause with no case is the `/_discover` read stamp.\nVERDICT write_paths: the run declares reckon/serve.py, tests/test_cross_node_writes_refresh_the_index.py, the evidence fragment and a figures dir; `git diff --name-only 4350620cd..104956724` lists exactly reckon/serve.py, the test file and docs/evidence/fragments/a-write-on-any-node-reaches-the-page/cross-node-writes-refresh-the-index.html, all inside that declaration.\nVERDICT manifest: read; status complete; one commit 104956724; it records the 57-passed gate and its log, the negative control, the fast/slow pass stat counts over the imas-ambix tree and the fleet-index answer; it records no baseline_suite or after_suite arm.\nVERDICT diff: read commit by commit against 4350620cd; one commit, three files, +933/-12; reckon/serve.py gains the detector thread, `_TreeSignal`/`_TreeWake`, the subscription registry, `_subscribe_tree`/`_note_tree_read` and the `_FleetChangeWatch(mounts)` shape; the test file adds 14 cases; the fragment adds the landing anchor.\nCALL_SITES: reckon/serve.py:_send_project_changes, reckon/serve.py:do_GET\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/serve.py:522-523 drops the tree's derived views and wakes its open streams from the detector thread, which is the goal's two halves in one pass.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate log logs/gate-cross-node.log ends `57 passed in 65.97s` with `EXIT=0`, and I reproduced the named file's own green at 104956724 (14 passed, EXIT=0); the log's first line names the command and tree but not the revision.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in `git diff --name-only 4350620cd..104956724` is inside the manifest's declared write paths, and ruff adds no finding on either changed source file.\nSCORE durability: 17\nJUSTIFICATION durability: disabling the detector reddens tests/test_cross_node_writes_refresh_the_index.py::test_a_new_document_appears_within_a_fast_interval (negative-control.log, EXIT=1), so the change is guarded, but reckon/serve.py:3702 has no case and tests/test_cross_node_writes_refresh_the_index.py:532 cannot fail from this change.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/serve.py:439 follows the file's idioms \u2014 `self._lock`, `contextlib.suppress`, `LOGGER.warning`, a `threading.Event` for the pass wait \u2014 and adds no name carrying a plan or version identifier.\nSCORE reuse: 18\nJUSTIFICATION reuse: the detector reads its stamps and signals through the existing owners (`metadata_index._dir_identity`, `metadata_index._load_dir_stamps`, `_head_identity`, `_file_identity`, `_git_directory`, `_walk_discovery_signature`), and a search over reckon/ for an existing wake or subscribe mechanism found none, so `_TreeWake` follows the stop-pipe idiom the class already uses.\nFINDING reckon/serve.py:447 follow-on: `_notify` snapshots the subscriber list under `self._lock` but writes to each pipe outside it, so a stream whose `close()` runs in that window has already closed both descriptors \u2014 a closed fd raises and is suppressed, but a descriptor number reused by another pipe in the meantime silently receives the byte and reports a spurious change; the lock should cover the write or the wake should be marked dead first.\nFINDING reckon/serve.py:3702 follow-on: the done_when requires the `/_index` and `/_discover` handlers each to stamp their tree's read, and only reckon/serve.py:3625 (`/_index`) is exercised; no case in tests/test_cross_node_writes_refresh_the_index.py issues a `/_discover` request, so this arm is unguarded.\nFINDING tests/test_cross_node_writes_refresh_the_index.py:532 follow-on: `assert serve._head_identity(repo) == head_before` takes both sides from the same call on the same path, so it holds whether or not the git-index write is seen; the clause it is meant to serve is carried by the `assert ran == []` assertion that follows it.",
+  "review_run_id": "r-20261015T141925745018-review-of-cross-node-writes-refresh-the-index-104956724795",
+  "reviewed_base_sha": "4350620cda75f555365153dca8f758942f4060aa",
+  "reviewed_head_sha": "10495672479587c9c3287c68fa8a3bf5da329c38",
+  "reviewed_run_id": "r-20261015T134211685404-cross-node-writes-refresh-the-index",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T14:27:16.454096+00:00",
+  "total": 108
+}
