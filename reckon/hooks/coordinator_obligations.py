@@ -727,7 +727,12 @@ def producer_lease_is_live(project: str, *, now: float | None = None) -> bool:
 
 
 def not_fresh_line(
-    state: str, *, project: str, session: str, document: Mapping[str, Any] | None
+    state: str,
+    *,
+    project: str,
+    session: str,
+    document: Mapping[str, Any] | None,
+    foreign_host: str | None = None,
 ) -> str:
     """One line naming why the session's snapshot is not fresh, and the remedy.
 
@@ -758,7 +763,11 @@ def not_fresh_line(
             else f"the snapshot is {age}s old"
         )
     elif state == module.NO_FOLLOWER:
-        host = module.live_foreign_seat_host(project)
+        host = (
+            module.live_foreign_seat_host(project)
+            if foreign_host is None
+            else foreign_host
+        )
         reason = (
             f"the seat is held on {host}, whose producer has published no "
             "snapshot for this session"
@@ -782,6 +791,30 @@ def not_fresh_line(
     return (
         f"reckon obligations for session {session} (project {project}) are not "
         f"current: {reason}; {remedy}"
+    )
+
+
+def deferred_reload_line(
+    *, project: str, session: str, deferral: Mapping[str, Any]
+) -> str:
+    """Name the producer's recorded reason and files while it waits to reload."""
+    paths = deferral.get("paths")
+    named = [str(path) for path in paths if path] if isinstance(paths, list) else []
+    reason = str(deferral.get("reason") or "checkout changes")
+    files = ", ".join(f"`{path}`" for path in named) or "the checkout"
+    return (
+        f"reckon obligations for session {session} (project {project}) are not "
+        f"current: the producer deferred its reload ({reason}) and is waiting "
+        f"for {files} to be committed"
+    )
+
+
+def reloading_line(*, project: str, session: str, document: Mapping[str, Any]) -> str:
+    """Name the reload from the last snapshot without offering a seat command."""
+    age = snapshot_module().snapshot_age_seconds(document) or 0
+    return (
+        f"reckon obligations for session {session} (project {project}) are not "
+        f"current: producer reloading, last snapshot {_format_age(age)} old"
     )
 
 
@@ -887,7 +920,7 @@ def _prompt(payload: dict[str, Any]) -> int:
     project, session = located
     module = snapshot_module()
     document = module.read_snapshot(project, session)
-    state = module.freshness(document, project=project)
+    state, foreign_host = module.freshness_reading(document, project=project)
     if state == module.FRESH:
         _inject_list(
             payload,
@@ -899,10 +932,17 @@ def _prompt(payload: dict[str, Any]) -> int:
             reloading=False,
         )
         return 0
+    reload_started_at, deferral = module.watch_reload_state(project)
+    if deferral is not None:
+        inject(
+            payload,
+            deferred_reload_line(project=project, session=session, deferral=deferral),
+        )
+        return 0
     if document is not None and module.reload_in_progress(
         document,
         state=state,
-        reload_started_at=module.watch_reload_started_at(project),
+        reload_started_at=reload_started_at,
     ):
         age = module.snapshot_age_seconds(document) or 0
         _inject_list(
@@ -918,7 +958,13 @@ def _prompt(payload: dict[str, Any]) -> int:
         return 0
     inject(
         payload,
-        not_fresh_line(state, project=project, session=session, document=document),
+        not_fresh_line(
+            state,
+            project=project,
+            session=session,
+            document=document,
+            foreign_host=foreign_host,
+        ),
     )
     return 0
 
@@ -1107,7 +1153,7 @@ def _stop(payload: dict[str, Any]) -> int:
     path, and the verdict is read from what it lists minus the kinds a reflex
     already owns and minus the deferrals in force, so an acknowledgement
     written after the snapshot was computed is honoured before a refusal. A
-    snapshot that is not fresh -- for any of its three reasons
+    snapshot that is not fresh -- for any of its four reasons
     -- sends the hook to the derivation, imported lazily and run under the
     bounded budget, because a stop is a verdict on the turn and a list no
     producer stands behind must not decide it. If the budget runs out, the stop
@@ -1120,7 +1166,7 @@ def _stop(payload: dict[str, Any]) -> int:
     project, session = located
     module = snapshot_module()
     document = module.read_snapshot(project, session)
-    state = module.freshness(document, project=project)
+    state, foreign_host = module.freshness_reading(document, project=project)
     if state == module.FRESH:
         resolved = recheck_worktree_held_rows(
             module.live_payload(document), project=project
@@ -1129,9 +1175,25 @@ def _stop(payload: dict[str, Any]) -> int:
         resolved = derive_within_budget(project, session, stop_derivation_budget())
         if resolved is None:
             if not payload.get("stop_hook_active"):
-                line = not_fresh_line(
-                    state, project=project, session=session, document=document
-                )
+                reload_started_at, deferral = module.watch_reload_state(project)
+                if deferral is not None:
+                    line = deferred_reload_line(
+                        project=project, session=session, deferral=deferral
+                    )
+                elif document is not None and module.reload_in_progress(
+                    document, state=state, reload_started_at=reload_started_at
+                ):
+                    line = reloading_line(
+                        project=project, session=session, document=document
+                    )
+                else:
+                    line = not_fresh_line(
+                        state,
+                        project=project,
+                        session=session,
+                        document=document,
+                        foreign_host=foreign_host,
+                    )
                 sys.stdout.write(json.dumps({"systemMessage": line}))
             return 0
     follow_each_local_lane(resolved, project=project)

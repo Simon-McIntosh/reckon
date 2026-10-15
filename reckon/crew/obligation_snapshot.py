@@ -371,14 +371,14 @@ def source_code_stamp(package_dir: Path | None = None) -> str:
     return stamp.hexdigest()
 
 
-def freshness(
+def freshness_reading(
     document: Mapping[str, Any] | None,
     *,
     project: str | None = None,
     current_stamp: str | None = None,
     now: datetime | None = None,
-) -> str:
-    """Classify a stored snapshot: ``fresh`` or one of four fixed reasons.
+) -> tuple[str, str]:
+    """Classify a snapshot and carry the foreign host used for that verdict.
 
     ``project`` names the seat to consult when no snapshot is held, and when the
     recorded pid is not running on this host. A snapshot published by a producer
@@ -396,25 +396,42 @@ def freshness(
     an aged publication.
     """
     if not isinstance(document, Mapping) or not document:
-        return NO_FOLLOWER if live_foreign_seat_host(project) else NO_PRODUCER
+        host = live_foreign_seat_host(project)
+        return (NO_FOLLOWER if host else NO_PRODUCER), host
     producer = document.get("producer")
     producer = producer if isinstance(producer, Mapping) else {}
     # The seat is consulted only when the recorded producer is not live on this
     # host: it crosses the shared home, and reaching for the watch module to
     # read it pulls in the crew facade, which the prompt path must not touch
     # while a live snapshot already answers the reading.
-    if not _records_the_live_producer(producer) and not live_foreign_seat_host(project):
-        return NO_PRODUCER
+    host = ""
+    if not _records_the_live_producer(producer):
+        host = live_foreign_seat_host(project)
+        if not host:
+            return NO_PRODUCER, host
     stamp = source_code_stamp() if current_stamp is None else current_stamp
     if str(producer.get("code_stamp") or "") != stamp:
-        return STALE_CODE
+        return STALE_CODE, host
     computed = _parse_instant(document.get("computed_at"))
     if computed is None:
-        return STALE_SNAPSHOT
+        return STALE_SNAPSHOT, host
     instant = _utc_now() if now is None else now
     if (instant - computed).total_seconds() > FRESHNESS_WINDOW_SECONDS:
-        return STALE_SNAPSHOT
-    return FRESH
+        return STALE_SNAPSHOT, host
+    return FRESH, host
+
+
+def freshness(
+    document: Mapping[str, Any] | None,
+    *,
+    project: str | None = None,
+    current_stamp: str | None = None,
+    now: datetime | None = None,
+) -> str:
+    """Return the snapshot's freshness state for callers needing no host."""
+    return freshness_reading(
+        document, project=project, current_stamp=current_stamp, now=now
+    )[0]
 
 
 def snapshot_age_seconds(
@@ -438,8 +455,8 @@ def producer_reload_window_seconds() -> float:
     return PRODUCER_RELOAD_WINDOW_SECONDS
 
 
-def watch_reload_started_at(project: str) -> str | None:
-    """The instant the project's watch seat recorded for its reload, or None.
+def watch_reload_state(project: str) -> tuple[str | None, dict[str, Any] | None]:
+    """The project's recorded reload intent and deferral from one seat read.
 
     The seat writes the key as it begins an in-place replacement, and the
     replacement clears it by rewriting the record, so its presence marks a
@@ -452,11 +469,19 @@ def watch_reload_started_at(project: str) -> str | None:
     try:
         record = json.loads(path.read_text(encoding="utf-8") or "{}")
     except (OSError, ValueError):
-        return None
+        return None, None
     if not isinstance(record, dict):
-        return None
+        return None, None
     value = record.get("reload_started_at")
-    return str(value) if value else None
+    deferred = record.get("reload_deferral")
+    return str(value) if value else None, deferred if isinstance(
+        deferred, dict
+    ) else None
+
+
+def watch_reload_started_at(project: str) -> str | None:
+    """The instant the project's watch seat recorded for its reload, or None."""
+    return watch_reload_state(project)[0]
 
 
 def reload_in_progress(
