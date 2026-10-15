@@ -1270,11 +1270,17 @@ def _control_failure_ids(log_text: str) -> set[str]:
 
     Only the ids the log enumerates are a fact: a runner's summary saying how
     many tests failed states that something did fail, not which test, and the
-    comparison needs the identity rather than the tally. The log's own short
-    summary marks them FAILED or ERROR, read through the review module's reader
-    so both sides of the comparison are canonical.
+    comparison needs the identity rather than the tally. The log is read through
+    the review module's format-aware reader, so both sides of the comparison are
+    canonical and one log cannot be read two ways there and here: a pytest log
+    yields its ``FAILED``/``ERROR`` node ids and a ctest log the entries of its
+    failure block, keyed by test name. A log in neither format names nothing the
+    reader can read, so the empty set is returned — the caller then adds no
+    failure against the reference arm and refuses the control as one never shown
+    to fail, which is the safe direction for a control whose text is unreadable.
     """
-    return review_module._pytest_failure_ids(log_text)
+    ids = review_module.gate_log_failure_ids(log_text)
+    return ids if ids is not None else set()
 
 
 def _baseline_suite_failure_ids(manifest: Mapping[str, Any] | None) -> set[str] | None:

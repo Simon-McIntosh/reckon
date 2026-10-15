@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-title" content="promotion reads a ctest gate log the way the review does">
+  <meta name="plan-summary" content="One format-aware reader in the review module names a gate log's failing ids whatever format the log is written in; the promotion head-arm and control readers go through it, so a ctest log's failure block is read, a log in neither format makes the head reader return None, and a ctest-gated run that adds failures is no longer admitted against a red base.">
+  <meta name="plan-evidence-for" content="reckon:every-review-is-kept-as-a-committed-record">
+  <meta name="plan-verifies" content="reckon:every-review-is-kept-as-a-committed-record#s19">
+  <meta name="plan-recorded-at" content="2026-10-16">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,promotion,review,ctest,gate">
+  <title>promotion reads a ctest gate log the way the review does — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-ctest-gate-is-read-at-promotion" data-node="a-ctest-gate-is-read-at-promotion" data-reckon="landed" data-when="2026-10-16">
+  <h2>promotion reads a ctest gate log the way the review does</h2>
+  <p>One format-aware reader, <code>gate_log_failure_ids</code> in <code>reckon/crew/review.py</code>, names a gate log's failing ids in whichever format the log is written: a pytest log's <code>FAILED</code>/<code>ERROR</code> node ids, or the entries of a ctest log's <code>The following tests FAILED:</code> block keyed by test name, or <code>None</code> for a log in neither format. The review's <code>added_failures_from_gate_logs</code> and the two promotion-side readers go through it, so the review and promotion cannot disagree about one log. <code>_head_arm_log_failure_ids</code> in <code>reckon/crew/promotion_evidence.py</code> now calls it; a head log in neither format returns <code>None</code>, so <code>_zero_added_against_a_red_base</code> refuses rather than measuring an empty set that is a subset of every red base. <code>_control_failure_ids</code> in <code>reckon/crew/promotion_checks.py</code> keeps its set return, reading a ctest control's failure block and returning the empty set for a log in neither format, which the negative-control check then refuses as never shown to fail.</p>
+  <p>The declared mutation — pointing both promotion readers back at <code>review._pytest_failure_ids</code> — makes the red-base case with one unrelated baseline id return true, and its log records <code>EXIT=1</code> with <code>test_a_ctest_head_log_widens_a_red_base</code> among three failing ids.</p>
+</article>
+</body>
+</html>

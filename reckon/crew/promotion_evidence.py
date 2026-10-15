@@ -1139,12 +1139,16 @@ def _head_arm_log_failure_ids(gate_check: Mapping[str, Any] | None) -> set[str] 
     """The failing ids the head arm's log reports, or ``None`` when it is unreadable.
 
     The head arm of a gated measurement is the run's own check, so its log is
-    the one the promotion cites: the ids are read from that log's own
-    ``FAILED``/``ERROR`` summary lines, canonicalised the way every other arm
-    reader canonicalises them. A citation that names no path, or one that
-    cannot be read from here, reports ``None`` rather than an empty set — an
-    unread log is not a log that failed nothing, and a comparison taken over an
-    empty set would claim exactly that.
+    the one the promotion cites: the failings are read through the review
+    module's format-aware reader, so a ctest head log's failure block is read
+    the way the review reads it and one log cannot be read two ways. A citation
+    that names no path, one that cannot be read from here, or a log in neither
+    recognised format reports ``None`` rather than an empty set — an unread log
+    is not a log that failed nothing, and the red-base clause, taken over an
+    empty set, would claim exactly that. Returning ``None`` here rather than the
+    empty set the control reader returns is why this reader calls the
+    format-aware reader directly: the two need the same ids but not the same
+    reading of an unreadable log.
     """
     if not isinstance(gate_check, Mapping):
         return None
@@ -1155,7 +1159,7 @@ def _head_arm_log_failure_ids(gate_check: Mapping[str, Any] | None) -> set[str] 
         log_text = Path(raw).expanduser().read_text(encoding="utf-8", errors="replace")
     except OSError:
         return None
-    return _control_failure_ids(log_text)
+    return review_module.gate_log_failure_ids(log_text)
 
 
 def _zero_added_against_a_red_base(
@@ -1331,7 +1335,6 @@ def _recorded_disposition(record: Mapping[str, Any]) -> str:
 
 
 from reckon.crew.promotion_checks import (
-    _control_failure_ids,
     _fresh_manifest,
 )
 from reckon.crew.promotion_release import (
