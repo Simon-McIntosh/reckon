@@ -1,0 +1,56 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-15T14:27:51.291Z",
+  "dispatched_at": "2026-10-15T14:22:28Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-seat-held-elsewhere-is-not-restarted.html#s8",
+      "id": "done_when-1",
+      "reason": "\u00a77, \u00a72 and \u00a710 each fence their suite delta while \u00a78, the most invasive change of the three, does not, so a builder either lands a red suite in a file it was not granted or silently ignores it.",
+      "text": "\u00a78's done-when carries no suite-delta clause even though its change redefines the registered, live and released fields for a foreign registration, which every one of the six readers it lists consumes, and the landed test asserting the old lock judgement (tests/test_a_snapshot_is_published_for_every_host.py, 325 lines, cited in the \u00a74 landings) is outside \u00a78's declared write paths (follower_registration.py, crew_follow_commands.py, tests/test_a_follower_on_another_node_renews_a_lease.py)",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-seat-held-elsewhere-is-not-restarted.html#s9",
+      "id": "done_when-2",
+      "reason": "the section's brief should name the gate and the file whose assertions move with the new state, as \u00a710 does for its own shared reader.",
+      "text": "\u00a79 adds a fourth state to freshness whose docstring fixes the vocabulary at \"fresh or one of three fixed reasons\" (reckon/crew/obligation_snapshot.py:369-371) and declares no suite-delta, while the obligation-snapshot tests that assert that vocabulary (tests/test_obligations_snapshot_is_published.py) are outside \u00a79's write paths",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "1b7267125e6c583b1e2b798fade31667795bc654e50d23a0149ca7ed0dd91a31",
+  "plan_slug": "a-seat-held-elsewhere-is-not-restarted",
+  "plan_version": 35,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261015T142153597926-plan-review-of-a-seat-held-elsewhere-is-not-restarted",
+  "reviewed_blob_sha": "751959145b4fc571f221bae51aacee1e8abc0e86",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 renew_producer_lease (reckon/crew/runs.py:1764), producer_lease_seconds (runs.py:1702), the _renew_producer_lease wait pass (crew_follow_commands.py:1578/1624), seat_names_a_live_foreign_producer (watch_unit.py:143), watch_state (watch_unit.py:161), freshness (obligation_snapshot.py:369), not_fresh_line (coordinator_obligations.py:729), _newest_stream_in_motion (recovery_liveness.py:194), _orientation_write_of_a_run_in_motion (recovery_liveness.py:152), process_gone (recovery_classification.py:409) and session_follower_released (dispatch_watch.py:708) all resolve.",
+    "done_when": "a finding \u2014 \u00a78 and \u00a79 each change a shared reader and declare no suite-delta, and \u00a78's change breaks a landed test that sits outside its write paths.",
+    "evidence_paths": "pass \u2014 \u00a79's post-merge confirmation path (~/.config/reckon/crew/obligations/reckon/) and the \"logged under the run directory\" controls for \u00a78/\u00a79/\u00a710 are durable crew-home paths, not a scratchpad or node-local temporary directory.",
+    "naming": "pass \u2014 the three sections introduce no plan label, stage name, ticket number or version tag in a symbol, file or comment.",
+    "reasoning": "pass \u2014 \u00a78's premise is the code's: _follower_liveness does derive registered from the node-local flock (follower_registration.py:501) and released from it (follower_registration.py:606), and the snapshot sweep does read through that single reader (runs.py:2294 filters list_followers, which calls _follower_liveness at follower_registration.py:634), so correcting it reaches the sweep the done-when names; \u00a78's lease window is the producer's own (producer_lease_seconds, runs.py:1702); \u00a79's cited defect is exact (obligation_snapshot.py:376 returns NO_PRODUCER for a missing document before consulting the seat) and both freshness call sites (coordinator_obligations.py:875 and :1108) route to not_fresh_line, which already receives project; \u00a710's quoted defect is the code's line (recovery_classification.py:409) and its unreadable arm is the process_gone-gated one at recovery_classification.py:811.",
+    "single_goal": "pass \u2014 \u00a78 (lease judgement), \u00a79 (hook line for a missing snapshot), \u00a710 (unknown liveness in the hoisted verdict) each name one deliverable.",
+    "wiring": "pass \u2014 \u00a79's dependency on \u00a78 is declared as gate g-sheinr-1 (data-section=\"s9\", data-gated-sections=\"s9\", required evidence a-seat-held-elsewhere-is-not-restarted#s8), matching the followup f-sheinr-003 ordering, and \u00a710's reuse of \u00a77's landed helper introduces no undeclared edge."
+  },
+  "section_digests": {
+    "_document": "501722d015c953998d87d14ceb24f7761da89b669c7c8050797fa7b95a32756a",
+    "s1": "e775b15757e63b277715e69df2ef97f2cf13db4e6364fc83b2f4ad6aa3bc858c",
+    "s10": "fd9ced512f1fc6a0610cb111ec8c734e3c55a84ea11034055f5f1c9e60e0c649",
+    "s2": "0ed10d108f8d1ab2183625c90b68b4eafa74562e02814b07bb8c2079f5f67566",
+    "s3": "738aba9bff855c84122fa9ea72b1f1ef13486345a013a765e54c0cfa391a20c0",
+    "s4": "ca75c5c574381e50431d8d43b8f5532df7925573cf2dee356bea7941fcbd55cb",
+    "s5": "96d5fc1c72a25970cab856a7dde0a3cab839fd87c83786b7b49ffc4c1dabb1ab",
+    "s6": "c7b09760750dbf67efa83f9127581fea7578c7bf1e30b595ecd6c313b7505bad",
+    "s7": "d3e16f60d17ef3ee4666f9cd189aa6cd8e26f038173b65ee34b68f3f2cd822e7",
+    "s8": "f52731d818aa76f9668946702069f4c7cde71000afd92127a3cdec60511738ac",
+    "s9": "eeda5454cadc10004c9b220e65a2c61feeb2dc82077c2284b09ad42b674e2289"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T14:29:24.016280+00:00"
+}
