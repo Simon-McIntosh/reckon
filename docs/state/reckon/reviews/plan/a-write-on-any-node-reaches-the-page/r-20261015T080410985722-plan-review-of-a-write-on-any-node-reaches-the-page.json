@@ -1,0 +1,48 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-15T08:16:10.449Z",
+  "dispatched_at": "2026-10-15T08:08:37Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-write-on-any-node-reaches-the-page.html:56",
+      "id": "done_when-1",
+      "reason": "the done-when must name the exact activation condition it negates (no open stream AND no read in the last ten minutes) or the node writes a test against the wrong input and closes on an unsound negative.",
+      "text": "the negative half \"is not detected while no reader is active\" is measured against a mechanism (:43) whose slow signal also runs for any tree \"read in the last ten minutes\", a superset of \"a reader is active\"; a test that closes the stream but read the tree seconds earlier still satisfies \"no reader is active\" while the slow signal keeps firing, so the assertion can fail (or needs an unstated ten-minute wait) as written",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-write-on-any-node-reaches-the-page.html:43",
+      "id": "reasoning-1",
+      "reason": "as stated the mechanism does not run on the real code path; the plan must say how project identity (and state_root) reach the detector, or name the constructor change that carries the mounts mapping.",
+      "text": "the mechanism reuses project-keyed owners (`_reuse_covered(docs_dir, project)`, `_walk_discovery_signature(docs_dir, project, state_root)`) from `_FleetChangeWatch`, which today is built from `mounts.values()` and holds only tree paths (serve.py:4017, class at serve.py:225), so the detector cannot invoke the owners the plan cites without a project identity and a state_root the watch does not carry",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "c8c40c9109f4c9678da9eb2d5fd319dc88e95d65af62e35c7670aa09f9775752",
+  "plan_slug": "a-write-on-any-node-reaches-the-page",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261015T080410985722-plan-review-of-a-write-on-any-node-reaches-the-page",
+  "reviewed_blob_sha": "68e97eb6bcd9ee3063c85acae0a44abd29acd197",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 each cited anchor resolves against the tree: serve.py:844 (`fleet_index.compute_project_row`), serve.py:1262 `_file_identity`, serve.py:1291 `_head_identity`, serve.py:1659 `_walk_discovery_signature`, serve.py:1771 `_invalidate_tree_views`, serve.py:2782 `_ProjectChangeWatch(docs_dir)`; metadata_index `_reuse_covered`/`_load_dir_stamps`/`_dir_identity`/`_covered_files`/`index_rows`/`invalidate_tree`; tests/test_changes_push_rows.py, tests/test_agent_readers_use_the_index.py and reckon/fleet_index.py all exist (no extensionless hrefs are cited).",
+    "done_when": "a finding \u2014 \u00a72's negative half \"is not detected while no reader is active\" (:56) is narrower than the mechanism's slow-signal activation, which ALSO runs for a tree \"read in the last ten minutes\" (:43), so the assertion as written does not pin the condition that actually gates the signal.",
+    "evidence_paths": "pass \u2014 the done-when's evidence lands in the manifest (durable run record) and the new test file in the repository; no gate log is directed at a session scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 the node and test file are mechanism-named (`cross-node-writes-refresh-the-index`, `tests/test_cross_node_writes_refresh_the_index.py`), the new env vars follow `RECKON_*`, and no plan label, stage name, ticket number or version tag reaches a code path.",
+    "reasoning": "a finding \u2014 \u00a72's mechanism claims the detector reads its signals \"through an existing owner\" by reusing `metadata_index._reuse_covered(docs_dir, project)` and `_walk_discovery_signature(docs_dir, project, state_root)`, but `_FleetChangeWatch` is constructed from `mounts.values()` (tree paths only) and carries neither the project name nor `state_root`, so the cited owners are not callable from the caller the plan names.",
+    "single_goal": "pass \u2014 the node `cross-node-writes-refresh-the-index` carries one deliverable (a cross-node backstop that refreshes the index and wakes open streams); its three writes (serve.py, metadata_index.py, one test) are one deliverable's surfaces, closed on one verdict.",
+    "wiring": "pass \u2014 the plan declares itself standalone (`plan-standalone`: \"no live plan waits on it and it waits on none\") and carries no depends-on/informs/gates, which is consistent: no other plan or state file references this slug, and \u00a72's only prerequisite (\u00a71, `done`) is in-plan."
+  },
+  "section_digests": {
+    "_document": "375c8a0250252dfd8391140955e2378dc5d099cc39e269da05940553993894d2",
+    "s1": "58a6ee92b653b4651357b52cc08c1e80b329e4482143b6bc8ae18570764bcd52",
+    "s2": "4c18d88370b851e35b574b254182a2893b391cab8ad51569162c02ad85ee086e"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T10:18:31.097867+00:00"
+}
