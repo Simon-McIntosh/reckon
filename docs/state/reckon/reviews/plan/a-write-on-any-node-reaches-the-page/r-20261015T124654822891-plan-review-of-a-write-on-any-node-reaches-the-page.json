@@ -1,0 +1,40 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-15T12:54:56.358Z",
+  "dispatched_at": "2026-10-15T12:47:51Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-write-on-any-node-reaches-the-page.html:50",
+      "id": "reasoning-1",
+      "reason": "without a named stop and join for the detector thread, `close()` returns with the thread still polling GPFS, so the plan must state that the detector thread shares the watch's stop signal and is joined on close, or a node implementing it literally leaks a background poller in every test server that starts a fleet watch.",
+      "text": "the changed sentence introduces a second thread in `_FleetChangeWatch` but names no stop path for it, while `close()` (serve.py:302) writes only `_stop_writer` and joins only `self._thread` (serve.py:308), and `_run` (serve.py:284) exits solely on an empty watch set or a readable `_stop_reader`; a detector thread started \"beside\" the loop therefore has no signal it can observe and survives `close()`, leaking a thread that keeps statting every mounted tree over GPFS (the plan's own \"36 reads every 10 s across 18 mounted trees\"), and leaving the plan's \"the watch thread\" (line 48, and the done-when's \"leaves the watch thread running\") ambiguous between the two",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "8d786b03f9b10bd5e5637c26e808e7c2c5c1a521166f3eaca6e7154a6cafe24c",
+  "plan_slug": "a-write-on-any-node-reaches-the-page",
+  "plan_version": 7,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261015T124654822891-plan-review-of-a-write-on-any-node-reaches-the-page",
+  "reviewed_blob_sha": "d177ee7a2b1b1ab88d84eae0e6d259c64916b331",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every anchor in the changed unit resolves: `_FLEET_WATCH` serve.py:1102, `start_fleet_change_watch` serve.py:4007 called from `main()` serve.py:4058, `_ProjectChangeWatch(docs_dir)` serve.py:2782, `mounts.values()` serve.py:4017, and the untimed `select.select` at serve.py:285.",
+    "done_when": "pass \u2014 the done-when (plan.html:59) is measurable and its negative control (\"disables the detector, and the new-document test must then fail\") can fail, since with both inotify watches silenced a disabled detector leaves the added document unseen; the revision did not touch this paragraph.",
+    "evidence_paths": "pass \u2014 the gate is a pytest suite, the stat/wall-time figures go in the manifest, and the post-restart live measure (plan.html:51, :60) is named as the coordinator's; nothing is directed at a scratchpad or node-local `/tmp`.",
+    "naming": "pass \u2014 the changed unit adds no symbol or path name; the only new public names remain the three environment variables, and the test file is named for its mechanism.",
+    "reasoning": "a finding \u2014 the revision moves the detector's passes onto \"a thread of their own that `_FleetChangeWatch` starts beside its event loop\", but the watch's only stop path, `close()` (serve.py:302), signals `_stop_writer` and joins `self._thread` alone, so the new thread has neither a stop signal nor a join.",
+    "single_goal": "pass \u2014 the node lands one deliverable (a cross-node backstop plus a stream wake) in `reckon/serve.py`, and the fleet-index question stays a manifest report rather than a second code deliverable.",
+    "wiring": "pass \u2014 the plan declares itself standalone (`plan.html` line 21, `plan-standalone`: \"no live plan waits on it and it waits on none\"), and every collaborator the changed unit names exists (`_FleetChangeWatch` serve.py:225, `_FLEET_WATCH` serve.py:1102, `start_fleet_change_watch` serve.py:4007, `_ProjectChangeWatch(docs_dir)` serve.py:2782); no depends-on/informs/gates is claimed, so none is missing."
+  },
+  "section_digests": {
+    "_document": "375c8a0250252dfd8391140955e2378dc5d099cc39e269da05940553993894d2",
+    "s1": "58a6ee92b653b4651357b52cc08c1e80b329e4482143b6bc8ae18570764bcd52",
+    "s2": "f0f41bff6a3aec32e3cdb056c91c61cf58fabe20327baadd0511c1b58a63f7d8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T12:55:01.933448+00:00"
+}
