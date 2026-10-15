@@ -1,0 +1,86 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "local",
+  "base_log_revision": "91f8944b0725d3eb7a7f874a456fb879790960f9",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch.py:808 (dispatch_picker_selection call)",
+    "reckon/crew/picker/__init__.py:442 (in-process pick)",
+    "reckon/crew/picker/snapshot.py:750 (recovery._review_excluded_backends)",
+    "reckon/crew/recovery_review_dispatch.py:1265 (_ordered_review_lanes)"
+  ],
+  "completed_at": "2026-10-15T09:40:43.302Z",
+  "dispatched_at": "2026-10-15T09:21:41Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": "1096",
+      "severity": "blocking",
+      "text": "blocking: _lifted_backends resolves the lift with readings=None and no session, unlike every other caller of budget_lift.effective_budget (reckon/budget.py:2651 passes the group's window history, reckon/crew/budget_group.py:210 passes history and session), so _reset_observed (budget_lift.py:816) returns False and a reset-anchored lift reads as in force after the pace path has ended it, while _applies (budget_lift.py:710) refuses every session-scoped lift so a session lift never reaches the reflex; the reflex can therefore disagree with the snapshot about the same lane, which is the parity the done_when requires."
+    },
+    {
+      "file": "tests/test_hold_records_its_state.py",
+      "line": "162",
+      "severity": "follow-on",
+      "text": "follow-on: the file is written although it is not among the node's nine declared write paths; the repair is legitimate (the enlarged guidance pushes the default hold fixture past HOLD_PAYLOAD_INLINE_LIMIT) but the record must be widened or the diff carries an out-of-scope edit."
+    },
+    {
+      "file": "tests/test_jev_routes_with_the_session_admission_and_the_lift.py",
+      "line": "336",
+      "severity": "follow-on",
+      "text": "follow-on: test_an_open_node_may_still_hold_on_a_zero_slot_lane supplies action hold, which _zero_slot_lane (dispatch_picker.py:520) short-circuits before the role and spec checks at dispatch_picker.py:624, so no assertion fails if _ZERO_SLOT_REASK_ROLES or _ZERO_SLOT_REASK_SPEC_LEVELS is removed."
+    },
+    {
+      "file": "reckon/crew/dispatch_picker.py",
+      "line": "553",
+      "severity": "follow-on",
+      "text": "follow-on: the lane derivation (the local marker, else _backends.dialect_for) is copied from reckon/crew/picker/snapshot.py:890 into a second reader, so a change to one silently leaves the re-ask excluding the wrong backend set."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T075223938148-jev-routes-with-the-session-admission-and-the-lift/manifest.md",
+      "line": "16",
+      "severity": "follow-on",
+      "text": "follow-on: the after_suite command field reads \"cd <worktree> && PYTHONPATH=<worktree> ...\", so the record's own command is not the literal command the store expects even though log_path resolves to a log whose header carries it."
+    }
+  ],
+  "head_log_revision": "ad7d1b87f1f213e4413f63aeba6bf552cdf9af39",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit from 91f8944b0725d3eb7a7f874a456fb879790960f9 to ebcb2cbc4436cb3f65bebd74bd54a37f74f1b4e0; five commits touch 8 files, and the recorded gate delta is corroborated by gate-base.log and gate-head-round2.log, which show the same two congested-lane failures and the same single setup error on both sides.",
+    "done_when": "the done_when names tests/test_jev_routes_with_the_session_admission_and_the_lift.py and a base/head gate over the importers of the changed modules; the file exists at 479 lines with 9 tests, and the manifest records both arms with their logs.",
+    "goal": "the node's goal is that Jev's rendered state and guidance carry the session's own worker slots and any lift in force; reckon/crew/picker/snapshot.py:815 renders Candidate.worker_slots through the one allowance helper for every backend whose router publishes a lane document and rides the budget group's lift on the candidate's congestion block, with the wording added at reckon/crew/picker/prompts.py:59 and in reckon/crew/picker/templates/questions.jinja:1.",
+    "manifest": "read at runs/r-20261015T075223938148-jev-routes-with-the-session-admission-and-the-lift/manifest.md; status complete, and it records the commits, the two gate logs, the negative control, and the write-scope entry as its own follow-on.",
+    "write_paths": "the node declares nine write paths; the diff writes eight, and one of them, tests/test_hold_records_its_state.py:162, is not among the declared nine."
+  },
+  "justifications": {
+    "durability": "tests/test_jev_routes_with_the_session_admission_and_the_lift.py:336 cannot fail on the specification gate it names, so the role and spec-level branches of reckon/crew/dispatch_picker.py:624,566 are unguarded.",
+    "evidence": "the gate named in the manifest ran at both arms and its delta (2 failed of 856 base, 2 failed of 866 head, no added id) holds in gate-base.log and gate-head-round2.log, but the ruff obligation is asserted in the manifest checkpoint with no log recorded and the after_suite command carries placeholders.",
+    "fit": "the helpers added at reckon/crew/dispatch_picker.py:508-600 follow the surrounding module's naming and comment style and introduce no plan, sprint or ticket identifier.",
+    "goal_fidelity": "reckon/crew/picker/snapshot.py:815-837 carries the session's slots for every lane_document backend and the group's lift on congestion, which is what the goal asks Jev to see.",
+    "reuse": "reckon/crew/picker/snapshot.py:273 and reckon/crew/recovery_review_dispatch.py:1096 both extend existing owners, but the lane-to-backends derivation is stated twice at snapshot.py:890 and dispatch_picker.py:553.",
+    "scope_discipline": "the diff is inside the declared nine except for the hold-row repair at tests/test_hold_records_its_state.py:162, which was not granted, and the manifest discloses that entry rather than carrying it silently."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 91f8944b0725d3eb7a7f874a456fb879790960f9\nreviewed_head_sha: ebcb2cbc4436cb3f65bebd74bd54a37f74f1b4e0\nVERDICT goal: the node's goal is that Jev's rendered state and guidance carry the session's own worker slots and any lift in force; reckon/crew/picker/snapshot.py:815 renders Candidate.worker_slots through the one allowance helper for every backend whose router publishes a lane document and rides the budget group's lift on the candidate's congestion block, with the wording added at reckon/crew/picker/prompts.py:59 and in reckon/crew/picker/templates/questions.jinja:1.\nVERDICT done_when: the done_when names tests/test_jev_routes_with_the_session_admission_and_the_lift.py and a base/head gate over the importers of the changed modules; the file exists at 479 lines with 9 tests, and the manifest records both arms with their logs.\nVERDICT write_paths: the node declares nine write paths; the diff writes eight, and one of them, tests/test_hold_records_its_state.py:162, is not among the declared nine.\nVERDICT manifest: read at runs/r-20261015T075223938148-jev-routes-with-the-session-admission-and-the-lift/manifest.md; status complete, and it records the commits, the two gate logs, the negative control, and the write-scope entry as its own follow-on.\nVERDICT diff: read commit by commit from 91f8944b0725d3eb7a7f874a456fb879790960f9 to ebcb2cbc4436cb3f65bebd74bd54a37f74f1b4e0; five commits touch 8 files, and the recorded gate delta is corroborated by gate-base.log and gate-head-round2.log, which show the same two congested-lane failures and the same single setup error on both sides.\nCALL_SITES: reckon/crew/dispatch.py:808 (dispatch_picker_selection call), reckon/crew/picker/__init__.py:442 (in-process pick), reckon/crew/picker/snapshot.py:750 (recovery._review_excluded_backends), reckon/crew/recovery_review_dispatch.py:1265 (_ordered_review_lanes)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/picker/snapshot.py:815-837 carries the session's slots for every lane_document backend and the group's lift on congestion, which is what the goal asks Jev to see.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate named in the manifest ran at both arms and its delta (2 failed of 856 base, 2 failed of 866 head, no added id) holds in gate-base.log and gate-head-round2.log, but the ruff obligation is asserted in the manifest checkpoint with no log recorded and the after_suite command carries placeholders.\nSCORE scope_discipline: 12\nJUSTIFICATION scope_discipline: the diff is inside the declared nine except for the hold-row repair at tests/test_hold_records_its_state.py:162, which was not granted, and the manifest discloses that entry rather than carrying it silently.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_jev_routes_with_the_session_admission_and_the_lift.py:336 cannot fail on the specification gate it names, so the role and spec-level branches of reckon/crew/dispatch_picker.py:624,566 are unguarded.\nSCORE fit: 17\nJUSTIFICATION fit: the helpers added at reckon/crew/dispatch_picker.py:508-600 follow the surrounding module's naming and comment style and introduce no plan, sprint or ticket identifier.\nSCORE reuse: 17\nJUSTIFICATION reuse: reckon/crew/picker/snapshot.py:273 and reckon/crew/recovery_review_dispatch.py:1096 both extend existing owners, but the lane-to-backends derivation is stated twice at snapshot.py:890 and dispatch_picker.py:553.\nFINDING reckon/crew/recovery_review_dispatch.py:1096 blocking: _lifted_backends resolves the lift with readings=None and no session, unlike every other caller of budget_lift.effective_budget (reckon/budget.py:2651 passes the group's window history, reckon/crew/budget_group.py:210 passes history and session), so _reset_observed (budget_lift.py:816) returns False and a reset-anchored lift reads as in force after the pace path has ended it, while _applies (budget_lift.py:710) refuses every session-scoped lift so a session lift never reaches the reflex; the reflex can therefore disagree with the snapshot about the same lane, which is the parity the done_when requires.\nFINDING tests/test_hold_records_its_state.py:162 follow-on: the file is written although it is not among the node's nine declared write paths; the repair is legitimate (the enlarged guidance pushes the default hold fixture past HOLD_PAYLOAD_INLINE_LIMIT) but the record must be widened or the diff carries an out-of-scope edit.\nFINDING tests/test_jev_routes_with_the_session_admission_and_the_lift.py:336 follow-on: test_an_open_node_may_still_hold_on_a_zero_slot_lane supplies action hold, which _zero_slot_lane (dispatch_picker.py:520) short-circuits before the role and spec checks at dispatch_picker.py:624, so no assertion fails if _ZERO_SLOT_REASK_ROLES or _ZERO_SLOT_REASK_SPEC_LEVELS is removed.\nFINDING reckon/crew/dispatch_picker.py:553 follow-on: the lane derivation (the local marker, else _backends.dialect_for) is copied from reckon/crew/picker/snapshot.py:890 into a second reader, so a change to one silently leaves the re-ask excluding the wrong backend set.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T075223938148-jev-routes-with-the-session-admission-and-the-lift/manifest.md:16 follow-on: the after_suite command field reads \"cd <worktree> && PYTHONPATH=<worktree> ...\", so the record's own command is not the literal command the store expects even though log_path resolves to a log whose header carries it.",
+  "review_run_id": "r-20261015T092113080272-review-of-jev-routes-with-the-session-admission-and-the-lift-ebcb2cbc4436",
+  "reviewed_base_sha": "91f8944b0725d3eb7a7f874a456fb879790960f9",
+  "reviewed_head_sha": "ebcb2cbc4436cb3f65bebd74bd54a37f74f1b4e0",
+  "reviewed_run_id": "r-20261015T075223938148-jev-routes-with-the-session-admission-and-the-lift",
+  "scores": {
+    "durability": 13,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 12
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T09:34:58.253214+00:00",
+  "total": 93
+}
