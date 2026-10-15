@@ -271,6 +271,38 @@ class _FollowerReloader:
             line = _dim_history_line(line)
         _echo_follow_line(line, stream=self.stream)
 
+    def _record_reload_deferral(self, reason: str) -> None:
+        """Keep a producer's reload refusal beside its live seat identity."""
+        if not self.seat:
+            return
+        from reckon.crew import runs
+
+        handle = runs._WATCH_SEAT_HANDLES.get(self.project)
+        if handle is None:
+            return
+        record = runs._read_watch_record(handle)
+        deferral = {
+            "reason": reason,
+            "paths": sorted(set(re.findall(r"reckon/[A-Za-z0-9_./-]+", reason))),
+        }
+        if record.get("reload_deferral") != deferral:
+            record["reload_deferral"] = deferral
+            runs._write_watch_record(handle, record)
+
+    def _clear_reload_deferral(self) -> None:
+        """Clear the refusal as this producer begins its replacement."""
+        if not self.seat:
+            return
+        from reckon.crew import runs
+
+        handle = runs._WATCH_SEAT_HANDLES.get(self.project)
+        if handle is None:
+            return
+        record = runs._read_watch_record(handle)
+        if "reload_deferral" in record:
+            record.pop("reload_deferral")
+            runs._write_watch_record(handle, record)
+
     def poll(self, checkpoint: Mapping[str, Any]) -> None:
         """Check at a bounded cadence and re-exec with the reader checkpoint."""
         from reckon.crew import runs
@@ -301,6 +333,9 @@ class _FollowerReloader:
         # can tell the reload it may now proceed.
         dirty, detail = checkout_trust.tracked_reckon_tree_is_dirty(self.import_root)
         if dirty:
+            self._record_reload_deferral(
+                f"tracked files modified against HEAD ({detail})"
+            )
             if not self.dirty_deferral:
                 self.dirty_deferral = True
                 self._echo_deferred_dirty(detail)
@@ -308,6 +343,7 @@ class _FollowerReloader:
         self.dirty_deferral = False
         reloadable, reason = self._replacement_imports()
         if not reloadable:
+            self._record_reload_deferral(f"new image does not import ({reason})")
             self.deferred_stamp = current_stamp
             line = (
                 f"reckon {self.label} deferred its reload: the new image does not "
@@ -360,6 +396,7 @@ class _FollowerReloader:
             # replacement would otherwise close and release; naming the held
             # descriptor in the replacement's environment keeps the seat held
             # across the exec rather than re-entered against a race.
+            self._clear_reload_deferral()
             seat_fd = runs.prepare_watch_seat_reexec(self.project)
             if seat_fd is not None:
                 exec_environment[runs._WATCH_SEAT_ENV] = str(seat_fd)
@@ -3220,4 +3257,3 @@ def crew_watch(
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
     _emit_crew_result(result, pretty)
-
