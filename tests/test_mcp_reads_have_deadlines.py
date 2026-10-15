@@ -26,7 +26,7 @@ import pytest
 
 import reckon.mcp as mcp_module
 from reckon import mcp_deadlines
-from reckon._mcp_tools import STORAGE_SLOW
+from reckon._mcp_tools import _INFLIGHT_WRITE_HINT, STORAGE_SLOW
 
 DEADLINE_ENV = mcp_module.DEADLINE_ENV
 LANDING_GRACE_ENV = mcp_module.LANDING_GRACE_ENV
@@ -243,7 +243,18 @@ def test_a_write_that_lands_after_its_deadline_reports_landed(tmp_path, monkeypa
     assert target.read_text(encoding="utf-8") == "landed"
 
 
-def test_a_write_that_never_lands_reports_not_landed(tmp_path, monkeypatch):
+def test_a_write_whose_body_is_still_running_reports_landed_unknown(
+    tmp_path, monkeypatch
+):
+    """A body still running when the grace ends may yet land, so unknown.
+
+    The abandoned body holds on an event through the landing grace, so the file
+    is unchanged while the body is still running. The landing state is ``None``
+    — unknown, not false — and the hint says to read the resource back rather
+    than retry, because a blind retry could duplicate a write that lands later.
+    Only a body that has finished with the file unchanged is ``landed False``.
+    """
+
     target = tmp_path / "plan.html"
     monkeypatch.setenv(DEADLINE_ENV, "0.2")
     monkeypatch.setenv(LANDING_GRACE_ENV, "0.3")
@@ -263,8 +274,11 @@ def test_a_write_that_never_lands_reports_not_landed(tmp_path, monkeypatch):
     result = asyncio.run(scenario())
 
     assert result["error"] == STORAGE_SLOW
-    assert result["landed"] is False
+    assert result["kind"] == "write"
+    assert result["landed"] is None
     assert not target.exists()
+    assert "still in flight" in result["message"]
+    assert result["hint"] == _INFLIGHT_WRITE_HINT
 
 
 def test_a_stalled_landing_stat_still_lets_a_concurrent_read_answer(
