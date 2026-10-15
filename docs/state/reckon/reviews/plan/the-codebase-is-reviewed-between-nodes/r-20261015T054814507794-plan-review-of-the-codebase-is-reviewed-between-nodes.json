@@ -1,0 +1,60 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-15T06:05:21.780Z",
+  "dispatched_at": "2026-10-15T05:48:49Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-codebase-is-reviewed-between-nodes.html:288",
+      "id": "reasoning-1",
+      "reason": "\u00a714 must add `reckon/crew/review.py` to its write paths and state how a code review is filed in the committed tree (a code-review destination beside `run/` and `plan/`), which its \"No new store, key or option is added\" and its two-path write scope both currently forbid; without it the dispatched node is fenced out of the module it must change, or lands a promotion that refuses.",
+      "text": "\u00a714's deliverable says \"The stored code review record is among the review payloads the promotion commits\", but the payload returned by `_staging_review_record_by_run` is filed by `review.store_committed_review` (`reckon/crew/review.py:2589`), which requires `names_a_review_subject` \u2014 a non-empty `reviewed_run_id` or a `plan_slug` with an integer `plan_version` (`review.py:1756`). A path-only code review carries neither: the nova delivery `code-98773e8b1367.json` has neither field, `names_a_review_subject` returns False, and `store_committed_review` raises `review record names neither a reviewed run nor a plan, so it has no subject to be filed under` (reproduced). nova's committed tree `docs/state/nova/reviews/` holds `plan/` and `run/` and no `code-*` file, so a code review has never been committed. Worse, this call site is `reckon/crew/promotion.py:1261-1279`, which catches the `ValueError` and raises a landing refusal (\"cannot store the review record for run \u2026 so the landing was rolled back\") \u2014 so adding the payload as described turns promotion of a code review into a rolled-back landing, not an uncommitted record",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-codebase-is-reviewed-between-nodes.html:288",
+      "id": "anchors_resolve-1",
+      "reason": "\u00a714's mechanism resolves the delivery by the neighbourhood key (`code_review_identity` \u2192 `a8eb488cc578`) and never uses the composed id, so the truncated spelling misleads a reader but changes no node's work.",
+      "text": "\u00a714's \"composed as `r-20261015T053316274650`\" names a run id that resolves to no run directory and is not the id the delivery records; the code review's `code-review.json` sidecar carries `review_run_id: r-20261015T053316274650-review-code-a8eb488cc578`",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "87de4c12a55facf21742f4110ad4680134a705f2c4e6f4b32256332ff9df696e",
+  "plan_slug": "the-codebase-is-reviewed-between-nodes",
+  "plan_version": 69,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261015T054814507794-plan-review-of-the-codebase-is-reviewed-between-nodes",
+  "reviewed_blob_sha": "609358f6e14bfacb9d74ff01c7add70be373adff",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a714's \"composed as `r-20261015T053316274650`\" names no run or directory; the delivery's own sidecar records the composed id as `r-20261015T053316274650-review-code-a8eb488cc578`.",
+    "done_when": "pass \u2014 \u00a714 enumerates six cases with a declared negative control (remove the code-review branch; case 1 must fail), so its gate can fail on the unfixed code.",
+    "evidence_paths": "pass \u2014 \u00a714's logs land under the crew run directory, a durable path, not a scratchpad.",
+    "naming": "pass \u2014 \u00a714's new test file and prose are named by mechanism; no plan label, stage name or ticket number reaches a symbol.",
+    "reasoning": "a finding \u2014 \u00a714's mechanism cannot produce its own done-when: `store_committed_review` refuses a review record that names neither a reviewed run nor a plan, which is exactly the `--path` code review \u00a714 is about.",
+    "single_goal": "pass \u2014 \u00a714 carries one deliverable: promotion stores and commits a code review under the neighbourhood key.",
+    "wiring": "pass \u2014 the new section declaration (`s14: implementable`) and the followup `f-tcirbn-s14` point at the section that exists, and no depends-on/informs/gates edge names a node that does not."
+  },
+  "section_digests": {
+    "_document": "f954db6904e07df8b9bc68b5dcbf09270f97017757c597551761991066a47547",
+    "s1": "9b90bb5d52612fe5176b665cf841e1e32b7f38a28ba1b61073a75cc3d069801a",
+    "s10": "fd23d07301f3cad0c97fef7db3a37873185ea49a190df387e6b4c9c4842520cc",
+    "s11": "9e366a36d7c955b9e20809f7f939f7e5341dea805985ebb4bbd30a8a826983f7",
+    "s12": "d13bdfd65326c7fc01350bcfd52b0cfd2f0f9bf518e2856c3614ffd58d62d013",
+    "s13": "ff8a71976e59f6c5e61ed4c147a4ed36bd28c9212e11574be2670a50b225b0f9",
+    "s14": "c787efba0f02f484cc4de0e49910fdf060d842fcfda25bfe8a13b3baa9a40381",
+    "s2": "449650cf3f83a3d58ac9fd8300f391af35ba5aa8ae747d9364d73ed77c82aa7e",
+    "s3": "2c449e0173e76fffe6ccc80b5373b095fe1d7916e7948747fa0976dfb315f33e",
+    "s4": "d90c4e0ae9e513908951452540ead3c635b9c43faa46f9400dd8449543cce1d6",
+    "s5": "6ffcc77242984ec10be759d78f7a93debe73b3743dc9186527661e58ccfe8316",
+    "s6": "cff9b0b879d09b64cc4138b82c72e4814e531c6cf053920f3c05931bbf43abc4",
+    "s7": "d4bab6166d5c436fc12815244f86a04121deb2ca67fc71c1fd66d0498d89fbcf",
+    "s8": "1b50194c1f0c6912b871f624cbfcfc01fc0e693a036d87844203a29ba311f17b",
+    "s9": "f03878914cabdb64631b914dba06b3963c765228e774c1419ab91b13e71b1e9d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T06:07:05.251367+00:00"
+}
