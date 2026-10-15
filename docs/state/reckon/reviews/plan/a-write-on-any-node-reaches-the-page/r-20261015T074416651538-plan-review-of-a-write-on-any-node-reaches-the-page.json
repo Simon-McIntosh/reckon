@@ -1,0 +1,48 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-15T08:01:24.567Z",
+  "dispatched_at": "2026-10-15T07:44:54Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-write-on-any-node-reaches-the-page.html:38",
+      "id": "done_when-1",
+      "reason": "the done-when is the node's gate, and an obligation stated only in the prose passes or fails nothing, so a node can omit it and still close.",
+      "text": "\u00a72's scope paragraph instructs the node to \"check whether the fleet index also misses a cross-node write and report the answer in its manifest\", but the Done when paragraph (\u00a72, line 56) lists no assertion or manifest field for it, so this obligation is unmeasurable at the gate",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-write-on-any-node-reaches-the-page.html:53",
+      "id": "naming-1",
+      "reason": "the declared deliverable path is part of what the node is dispatched to create; naming it after the mechanism (e.g. `tests/test_cross_node_refresh.py`) both satisfies the repo's naming rule and keeps the file meaningful once the plan is deleted, and the repo's own convention differs from the slug (`test_page_paints_from_the_index.py` for plan `the-page-paints-from-an-index`).",
+      "text": "the node's Writes column and the done-when name the deliverable `tests/test_a_write_on_any_node_reaches_the_page.py`, which is the plan slug (`plan-slug: a-write-on-any-node-reaches-the-page`) verbatim, leaking the plan-document name into a source path",
+      "type": "naming",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "1d8e8b90f3aa496a74468d526978cb0a3beed410d1dc2ff06d94bf63232a1132",
+  "plan_slug": "a-write-on-any-node-reaches-the-page",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261015T074416651538-plan-review-of-a-write-on-any-node-reaches-the-page",
+  "reviewed_blob_sha": "d1d3e9acdd32ee206023f1ffcfdd1fe34e5a03dd",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited anchor resolves: serve.py:844 (fleet_index read), 1262 (_file_identity), 1291 (_head_identity), 1659 (_walk_discovery_signature, fed over metadata_index._covered_files), 2782 (_ProjectChangeWatch(docs_dir)); _invalidate_tree_views (1771), _FleetChangeWatch (225), metadata_index._reuse_covered (215), _load_dir_stamps (842), _dir_identity (563), _common_git_directory (1270), RECKON_DISCOVERY_REUSE_S (4003) and `reckon service restart` (project_maintenance_commands.py) all exist.",
+    "done_when": "a finding \u2014 \u00a72's scope paragraph imposes a fleet-index check-and-report on the node but the done-when does not carry it, so the node is asked for a result its gate does not measure.",
+    "evidence_paths": "pass \u2014 the measure is recorded against the node's durable crew manifest and the two cited suites are repository paths; nothing is placed on a node-local temporary path.",
+    "naming": "a finding \u2014 the done-when's deliverable test path is the plan slug verbatim (`tests/test_a_write_on_any_node_reaches_the_page.py`), which is the plan-document name in a source filename.",
+    "reasoning": "pass \u2014 the stated root cause matches the cited evidence (the index answers from _CACHE until invalidate_tree, refresh reached only through an inotify event), the mechanism runs on the real code path (/_index/<project> is served by _served_index_rows, which calls metadata_index.index_rows with revalidate=False and so is refreshed by the same _invalidate_tree_views the detector would call), and the caller is named (_FleetChangeWatch's reader thread, started by start_fleet_change_watch from main()).",
+    "single_goal": "pass \u2014 \u00a72's node is one deliverable (a cross-node change detector that refreshes the derived views and wakes the change streams); both assertions share the one node in the table and no second node exists.",
+    "wiring": "pass \u2014 the plan declares no depends-on/informs/gates and none is required; it is standalone by design and no other plan references its slug, so no edge is missing or mis-pointed."
+  },
+  "section_digests": {
+    "_document": "375c8a0250252dfd8391140955e2378dc5d099cc39e269da05940553993894d2",
+    "s1": "58a6ee92b653b4651357b52cc08c1e80b329e4482143b6bc8ae18570764bcd52",
+    "s2": "2d1060d3358f0721fd0a4a6b8f26fdf8ad683c14a3aa6ab40e14c44af255cee4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T08:01:59.128670+00:00"
+}
