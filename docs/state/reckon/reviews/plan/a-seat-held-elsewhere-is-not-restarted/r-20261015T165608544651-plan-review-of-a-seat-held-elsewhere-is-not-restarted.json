@@ -1,0 +1,55 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-15T17:03:07.752Z",
+  "dispatched_at": "2026-10-15T16:56:53Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-seat-held-elsewhere-is-not-restarted.html#s16",
+      "id": "reasoning-1",
+      "reason": "the deliverable's interface must be restated (a per-iteration path provider, or the advancement kept in the caller) before a builder can consolidate without silently changing resumption's attempt numbering.",
+      "text": "the shared function is specified to take \"the claim path, the record to write and a staleness predicate\", but claim_next_attempt derives its path from a per-iteration variable (`path = attempt_claim_path(run_id, claimed)`, reckon/crew/resumption.py:391) and after a reclaim advances it (`if current > claimed: claimed = current + 1`, resumption.py:401-405); a single fixed path plus a boolean predicate cannot express that, so a builder implementing the interface as written drops the advancement and re-creates a claim at a superseded attempt number, contradicting \u00a716's \"Neither caller changes its behaviour\" \u2014 and no test covers the branch (tests/test_a_resume_never_launches_beside_another_node.py:317-337 passes a record at attempt 1 with a claim at attempt 2, so current \u2264 claimed in every case), so \u00a716's own \"\u00a711's tests pass unchanged\" control would not catch the loss.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "f64a290b814a18189e5e41c0fef27fd166b607353aa8653c3e8826e1b88c6776",
+  "plan_slug": "a-seat-held-elsewhere-is-not-restarted",
+  "plan_version": 59,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261015T165608544651-plan-review-of-a-seat-held-elsewhere-is-not-restarted",
+  "reviewed_blob_sha": "71dc8a2cf742ee857c5d61e7d98658abe669fd2e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every symbol \u00a716 cites resolves at ac28fc989: claim_next_attempt and _create_attempt_claim (reckon/crew/resumption.py:380,310), _claim_node_dispatch, _reclaim_stale_node_dispatch_claim and _empty_claim_is_stale (reckon/crew/dispatch_claims.py:491,439,420), and the lift claim it scopes out (reckon/crew_follow_commands.py, os.open O_CREAT|O_EXCL at :982, age-bounded by LIFT_CLAIM_MAX_AGE_SECONDS at :988).",
+    "done_when": "pass \u2014 \u00a716's done-when measures the consolidated call sites (\"neither dispatch_claims.py nor resumption.py makes an exclusive-create claim except through the shared function\"), the unchanged test ids, and the new always-stale/never-stale predicate cases, and it names a declared negative control (\"with the shared function never reclaiming, the always-stale case is refused\").",
+    "evidence_paths": "pass \u2014 the negative control is logged \"under the run directory\" (~/.config/reckon/crew/runs/<run>/), a durable path, not a scratchpad or node-local temporary.",
+    "naming": "pass \u2014 \u00a716's new symbols carry no plan, stage or ticket labels; its references to \"\u00a711\" and \"\u00a711's review\" are plan-internal section text, not code.",
+    "reasoning": "a finding \u2014 the shared function is specified as taking \"the claim path\" (one, fixed), but resumption.claim_next_attempt re-derives its path each loop iteration and advances the attempt number after a reclaim, so the stated interface cannot carry both callers unchanged.",
+    "single_goal": "pass \u2014 one deliverable: a single shared function performing the exclusive create and the bounded reclaim loop, called by both claim mechanisms.",
+    "wiring": "pass \u2014 \u00a716 and \u00a717 both write reckon/crew/resumption.py, and gate g-sheinr-3 (\u00a717 gated on \u00a716) plus followup f-sheinr-004's line \"\u00a717 is gated on \u00a716\" both record that collision; \u00a716 sits in f-sheinr-004's \u00a79 \u00a714 \u00a715 \u00a716 batch with no unmet dependency (its prerequisite \u00a711 is landed as 474754591)."
+  },
+  "section_digests": {
+    "_document": "f180498b8f793af67775a76678df57d150914051aacab2b021f8bfbb9ca7d748",
+    "s1": "e775b15757e63b277715e69df2ef97f2cf13db4e6364fc83b2f4ad6aa3bc858c",
+    "s10": "fd9ced512f1fc6a0610cb111ec8c734e3c55a84ea11034055f5f1c9e60e0c649",
+    "s11": "9d7552bb9a0f7179067d09a67e819e7194fbbac1e34cf450bb6dd2631508389d",
+    "s12": "41b7e2f138ff584e94cdef995cae4ab65e47e6e0efb43dc6d30b0045664f611d",
+    "s13": "441358f17906d8fa159ba5911fc62cfb32cabff650e9ae63b1300701b43f7b6d",
+    "s14": "15dd48418b8a42e818c6a6c93d4914efb531dc5439e368a148fd7168b3a89faa",
+    "s15": "707b8d39391cbd7e59f3dbd9cc4748c655d8870e48f237e84889148855f5b9e7",
+    "s16": "e185fa1e0f4aa25f213b2df34164fcfb48751f19156d05a48ec1118841ee463d",
+    "s17": "73a4699a4193793731da87cf3a489de8f9e91df7e596e68dad4897797177cb9e",
+    "s2": "0ed10d108f8d1ab2183625c90b68b4eafa74562e02814b07bb8c2079f5f67566",
+    "s3": "738aba9bff855c84122fa9ea72b1f1ef13486345a013a765e54c0cfa391a20c0",
+    "s4": "ca75c5c574381e50431d8d43b8f5532df7925573cf2dee356bea7941fcbd55cb",
+    "s5": "96d5fc1c72a25970cab856a7dde0a3cab839fd87c83786b7b49ffc4c1dabb1ab",
+    "s6": "c7b09760750dbf67efa83f9127581fea7578c7bf1e30b595ecd6c313b7505bad",
+    "s7": "d3e16f60d17ef3ee4666f9cd189aa6cd8e26f038173b65ee34b68f3f2cd822e7",
+    "s8": "b41130ef26282f759c1b7be0de0136701972d055ed7878e2f2d9cd21c96b4f63",
+    "s9": "a2cb7135c4bd3f1439c3ec948d6146c2f5b7527da59b1bbd4c7ce4c141ec3055"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T17:03:14.670717+00:00"
+}
