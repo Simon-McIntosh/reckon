@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-seat-held-elsewhere-is-not-restarted">
+  <meta name="plan-evidence-for" content="a-seat-held-elsewhere-is-not-restarted">
+  <title>A cycling unit fails --ensure | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <section id="a-cycling-unit-fails-ensure-landing">
+      <h2>A cycling unit fails --ensure</h2>
+      <p><code>reckon crew watch --ensure</code> now exits non-zero when it reports a unit as cycling, keeping the JSON it prints. <code>SystemdUserUnitManager.restart_count</code> reads the
+      <code>NRestarts=&lt;int&gt;</code> property line <code>systemctl show</code> emits, so output carrying no such line reads as unknown rather than zero. Measure:
+      <code>tests/test_a_cycling_unit_fails_ensure.py</code> &mdash; counts 3 then 5 print <code>cycling: true</code> and exit non-zero, counts 3 then 3 exit 0, and the parse of a counted unit, a unit at zero and absent output is pinned.</p>
+    </section>
+  </main>
+</body>
+</html>

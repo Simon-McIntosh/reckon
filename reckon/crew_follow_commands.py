@@ -3180,6 +3180,11 @@ def crew_watch(
         except crew_module.CrewError as exc:
             raise click.ClickException(str(exc)) from exc
         _emit_crew_result(result, pretty)
+        if result.get("cycling"):
+            # A cycling unit is the fault ``ensure`` exists to surface, so its
+            # verdict carries a non-zero exit for a script or hook that reads
+            # the status rather than the JSON that is also printed above.
+            sys.exit(1)
         return
     # --exit-on-empty only means anything to the single-event mode, so asking
     # for it selects that mode rather than being silently ignored.
