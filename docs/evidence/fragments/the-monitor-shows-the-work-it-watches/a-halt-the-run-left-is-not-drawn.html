@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s29">
+  <title>A halt the run has already left is not drawn</title>
+</head>
+<body>
+<article id="a-halt-the-run-left-is-not-drawn-landing" data-node="a-halt-the-run-left-is-not-drawn" data-reckon="landed"></article>
+
+<section id="a-halt-the-run-left-is-not-drawn-record">
+  <h3 id="a-halt-the-run-left-is-not-drawn-record-title">What changed</h3>
+  <p>A held settle row is resolved on the later row that moves its run on to a
+  live pane word, rather than left to expire. When that later row returns the
+  run to the word the pane already shows (a redispatch or a resume inside the
+  window), the held halt and the return are dropped together as one round trip;
+  when it lands on a different live word, the held halt prints at once, ahead of
+  it. A later row landing in a settled word — the terminal echo — still
+  supersedes nothing. <code>LIVE_PANE_WORDS</code> in <code>reckon/crew/ticker.py</code>
+  names the three words.</p>
+  <p>Measure: <code>tests/test_a_halt_the_run_left_is_not_drawn.py</code> passes
+  at head (4 passed). Replaying the fast-read rows at base releases three rows,
+  including <code>working → stopped</code>; at head it releases exactly the
+  start and the block drawn <code>working → halted</code>.</p>
+</section>
+</body>
+</html>

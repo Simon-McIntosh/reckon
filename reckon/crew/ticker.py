@@ -1056,6 +1056,14 @@ START_KINDS: frozenset[tuple[Any, Any]] = frozenset(
 SETTLE_WINDOW = 20.0
 SETTLE_CAP = 120.0
 
+# The pane words a run is still going concerns on. A held settle row is the
+# pane's tidings that a run has fallen over; once a later row shows the run live
+# again, that record is stale and must never be released. The words are the
+# three a run arrives in and moves among while it is being worked on, so a
+# settled destination — the terminal echo ``complete -> recorded`` and its kin —
+# is not one of them.
+LIVE_PANE_WORDS = frozenset({"working", "waiting", "queued"})
+
 
 def _arrival_resolution(event: Mapping[str, Any]) -> Mapping[str, Any]:
     """A resolving row rewritten to carry the arrival's own left side.
@@ -1515,6 +1523,27 @@ class RowPolicy:
                 chain_start = held.first_held
                 self._held.pop(run_id, None)
                 held = None
+            elif self._pane_word(event) in LIVE_PANE_WORDS:
+                # The run has moved on to a live pane word, so the held settle
+                # row is stale: releasing it when its window closed would draw
+                # the pane a halt for a run a later row has already shown
+                # working, waiting or queued. The hold is resolved here, on the
+                # row that moved the run on, rather than left to expire.
+                self._held.pop(run_id, None)
+                opener = held.opener
+                held = None
+                if self._pane_word(event) == self._shown.get(run_id):
+                    # The run came back to the word the pane last showed for it,
+                    # so the held row and this return are one round trip and
+                    # neither is drawn — exactly as the departure rule drops a
+                    # run that leaves its shown word and returns to it.
+                    if run_id:
+                        self._reported[run_id] = to_state
+                    return out
+                # Live somewhere else, the held row prints at once, ahead of
+                # this row, and this row is judged with the run already told.
+                out.append(opener)
+                self._note_printed(run_id, opener)
             else:
                 held = None
 
