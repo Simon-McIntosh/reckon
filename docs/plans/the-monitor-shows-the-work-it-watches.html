@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="132">
+<meta name="plan-version" content="133">
 <meta name="plan-modified" content="2026-10-15">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -701,6 +701,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261015T113314443143-a-halt-the-run-left-is-not-drawn" data-who="reckon-build" data-when="2026-10-15T12:29:53.995Z">
     <div class="r-comment-body"><p>§29 landed in reckon/crew/ticker.py — a held settle row is now resolved on the later row that moves its run on to a live pane word (working/waiting/queued): a return to the word the pane already shows drops the held row and the return together, another live word prints the held halt at once ahead of it, and a later row into a settled word still supersedes nothing. Measure: tests/test_a_halt_the_run_left_is_not_drawn.py 4 passed at head, and the fast-read replay releases exactly the start plus the block drawn working → halted (2 rows) at head against 3 rows at base including the stale working → stopped.</p></div>
+</div>
+<div class="r-comment" data-section="s30" data-id="c-run-r-20261015T134036795022-review-of-a-released-run-row-is-never-blank-65c84f7fcd47" data-who="reckon-build" data-when="2026-10-15T13:55:31.398Z">
+    <div class="r-comment-body"><p>review record stored for r-20261015T125032724695-a-released-run-row-is-never-blank at reviewed_head_sha 65c84f7fcd47706d69744eb756dc1d139b275d6a (base 15adacba85355fba461917bf2733ca462e046709); scores goal_fidelity 19, evidence 17, scope_discipline 19, durability 18, fit 19, reuse 19 (total 111); 0 added failures against the reviewed run&#x27;s own base arm; three follow-on findings, none blocking.</p></div>
 </div>
 </section>
 </main>

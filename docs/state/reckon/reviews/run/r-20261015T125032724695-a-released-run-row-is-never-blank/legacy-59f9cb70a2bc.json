@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own two gate arms on its manifest: baseline_suite at 15adacba85355fba461917bf2733ca462e046709 reads 596 passed, 0 failed, completed true (logs/base-ticker-suite.log) and after_suite at 65c84f7fcd47706d69744eb756dc1d139b275d6a reads 601 passed, 0 failed, completed true (logs/head-ticker-suite.log); the head set minus the base set is zero added failing tests, so added_failure_count is 0 with no ids.",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:1221",
+    "reckon/crew_follow_commands.py:2101",
+    "reckon/crew_follow_commands.py:2186",
+    "reckon/crew_follow_commands.py:2201",
+    "reckon/crew_follow_commands.py:2224",
+    "reckon/crew_follow_commands.py:2234",
+    "reckon/crew/recovery_watch.py:2143"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-15T12:51:38Z",
+  "findings": [
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": 1061,
+      "severity": "follow-on",
+      "text": "at the reviewed head the comment above LIVE_PANE_WORDS (reckon/crew/ticker.py:1059-1062) still says the held settle row 'is stale and is never released' once a later row moves the run on, but the branch it documents (reckon/crew/ticker.py:1519-1546) resolves the hold \u2014 printing it at once on a move to another live word and dropping it with a return to the shown word \u2014 so a reader is told the row merely expires, which the section's done_when forbids; commit f2bc280e1, made after the reviewed revision, rewrites the comment to state both halves, so nothing blocks landing at the worktree head, but the clause is unmet at 65c84f7fc and no test covers a comment."
+    },
+    {
+      "file": "tests/test_a_released_run_row_is_never_blank.py",
+      "line": 106,
+      "severity": "follow-on",
+      "text": "assert released[-1][0][\"to_state\"] == \"blocked\" compares the released row's own field against the literal the test supplied through _row(*BLOCK); the released object is the input event passed in, so the assertion holds whatever the renderer does and survives the blank-line regression it sits beside \u2014 it identifies which row was released rather than guarding the drawing, and the real guard is the independent all(text ...) and \"halted\" in ... assertions at lines 104-105."
+    },
+    {
+      "file": "tests/test_a_released_run_row_is_never_blank.py",
+      "line": 168,
+      "severity": "follow-on",
+      "text": "assert released[-1][0][\"expected_horizon_seconds\"] == 600 has the same non-independent shape as line 106: it compares a field of the input event the test handed in against the literal 600 the test itself supplied, so it cannot redden on the regression this file exists to catch, which is instead caught by the all(text ...) and \"waiting\" in ... assertions at lines 167 and 169."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s): reckon/crew_follow_commands.py:1221, 2101, 2186, 2201, 2224 and 2234 call PaneRowPath.feed/flush that now read _pane_word and same_word_row_is_news, and reckon/crew/recovery_watch.py:2143 calls Ticker.render whose same-word branch reads the predicate.",
+    "diff": "read commit by commit against base 15adacba8; 0ad4470fc hoists RowPolicy._pane_word to module scope as _pane_word, extracts _actionable_recovery, adds same_word_row_is_news and the render/feed same-word branches (+82/-37 in ticker.py) plus a 195-line test, and 65c84f7fc adds a 15-line evidence fragment and reformats one test assertion; nothing else moves.",
+    "done_when": "the done_when's render, withhold, wait, pair-loop, importer-suite and negative-control clauses are met and recorded (tests/test_a_released_run_row_is_never_blank.py 5 passed EXIT=0; 601 head vs 596 base with 0 added failures; the control reddening two cases), but its comment clause is unmet at this revision: the comment above the LIVE_PANE_WORDS constant (reckon/crew/ticker.py:1063) is at lines 1059-1062 and still says the held row 'is never released', contradicting the branch at :1519-1546, and commit f2bc280e1, made after the reviewed head, repairs exactly that.",
+    "goal": "the node goal is to render every released run row as a non-empty line through one same-word predicate the row policy and the renderer share; reckon/crew/ticker.py:2008 defines same_word_row_is_news and both reckon/crew/ticker.py:1614 (RowPolicy._feed) and :2297 (Ticker.render) read it, which is exactly that single shared predicate.",
+    "manifest": "read; it records status in-progress, commits 0ad4470fc, 65c84f7fc and f2bc280e1, the after_suite arm at 65c84f7fc reading 601 passed EXIT=0 against the base arm at 15adacba reading 596 passed EXIT=0, and a negative_control_log path whose log reddens test_a_block_the_pane_already_shows_prints_its_duty and test_a_declared_wait_prints_when_the_word_repeats under the declared mutation.",
+    "write_paths": "the manifest declares four fenced paths (reckon/crew/ticker.py, tests/test_a_released_run_row_is_never_blank.py, the evidence fragment under docs/evidence/fragments/the-monitor-shows-the-work-it-watches/ and a figures directory); git show --name-only over 15adacba8..65c84f7fc lists only the module, the new test and the evidence fragment, all inside that scope."
+  },
+  "justifications": {
+    "durability": "the declared negative control reinstates the regression \u2014 the renderer returning an empty string for every same-word row \u2014 and logs/negative-control.log records 2 failed, EXIT=1 on test_a_block_the_pane_already_shows_prints_its_duty and test_a_declared_wait_prints_when_the_word_repeats, and the pair-loop assertion at tests/test_a_released_run_row_is_never_blank.py:193 reddens on any released row drawing blank, but the assertions at :106 and :168 are not independent of their input and guard nothing.",
+    "evidence": "logs/head-ticker-suite.log records 601 passed EXIT=0 at 65c84f7fc and logs/base-ticker-suite.log records 596 passed EXIT=0 at 15adacba for the 36-file importing set the done_when names, so the suite delta is recorded rather than claimed, though the head log's contaminated twin had to be set aside and the base log's capture header was written in afterwards (head-ticker-suite.contaminated.log is documented in the manifest artifacts) and the comment clause of the done_when is asserted by no check.",
+    "fit": "same_word_row_is_news, _actionable_recovery and the hoisted _pane_word at reckon/crew/ticker.py:2008, :1994 and :1120 follow the file's own module-level predicate idiom with mechanism docstrings, carry no plan, sprint or ticket identifier, and both commits carry a conventional subject with a body and no attribution trailer.",
+    "goal_fidelity": "reckon/crew/ticker.py:2289-2300 now draws a same-word duty row instead of returning the empty string, and :1610-1617 withholds a same-word row that carries no duty, so every released row renders non-empty as the goal states, though the reviewed revision leaves the LIVE_PANE_WORDS comment describing the old behaviour.",
+    "reuse": "the change extends shared owners rather than forking them: _actionable_recovery at reckon/crew/ticker.py:1994 is the single body both RowPolicy._actionable and same_word_row_is_news call, and the hoisted _pane_word at :1120 replaces RowPolicy's private copy, though Ticker.render's inline destination-word mapping at :2258-2263 reproduces _pane_word's body and was left un-unified.",
+    "scope_discipline": "git show --name-only over 15adacba8..65c84f7fc lists only reckon/crew/ticker.py, tests/test_a_released_run_row_is_never_blank.py and the one evidence fragment, all inside the manifest's four declared write paths and carrying nothing the goal does not imply (the fragment is a landing anchor, no figure was written to the granted figures directory)."
+  },
+  "node": "review-of-a-released-run-row-is-never-blank-65c84f7fcd47",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to render every released run row as a non-empty line through one same-word predicate the row policy and the renderer share; reckon/crew/ticker.py:2008 defines same_word_row_is_news and both reckon/crew/ticker.py:1614 (RowPolicy._feed) and :2297 (Ticker.render) read it, which is exactly that single shared predicate.\nVERDICT done_when: the done_when's render, withhold, wait, pair-loop and importer-suite clauses are met and recorded (5 passed EXIT=0 for the node test, 601 head vs 596 base with 0 added failures, the negative control reddening two cases), but its comment clause is unmet at this revision \u2014 the comment above the LIVE_PANE_WORDS constant at reckon/crew/ticker.py:1063 is the one at :1059-1062, which still says the held row 'is never released' while the branch resolves it, and commit f2bc280e1 (after the reviewed head) repairs exactly that.\nVERDICT write_paths: the manifest declares four fenced paths; git show --name-only over 15adacba8..65c84f7fc lists reckon/crew/ticker.py, tests/test_a_released_run_row_is_never_blank.py and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-released-run-row-is-never-blank.html, all inside that scope.\nVERDICT manifest: read; it records status in-progress, commits 0ad4470fc, 65c84f7fc and f2bc280e1, the after_suite arm at 65c84f7fc reading 601 passed EXIT=0 against the base arm at 15adacba reading 596 passed EXIT=0, and a negative_control_log whose log reddens two node tests under the declared mutation.\nVERDICT diff: read commit by commit against base 15adacba8; 0ad4470fc hoists RowPolicy._pane_word to module scope as _pane_word, extracts _actionable_recovery, adds same_word_row_is_news and the render/feed same-word branches (+82/-37 in ticker.py) plus a 195-line test, and 65c84f7fc adds a 15-line evidence fragment and reformats one test assertion; nothing else moves.\nCALL_SITES: reckon/crew_follow_commands.py:1221, reckon/crew_follow_commands.py:2101, reckon/crew_follow_commands.py:2186, reckon/crew_follow_commands.py:2201, reckon/crew_follow_commands.py:2224, reckon/crew_follow_commands.py:2234, reckon/crew/recovery_watch.py:2143\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/ticker.py:2289-2300 now draws a same-word duty row instead of returning the empty string and :1610-1617 withholds a same-word row that carries no duty, so every released row renders non-empty as the goal states.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/head-ticker-suite.log records 601 passed EXIT=0 at 65c84f7fc and logs/base-ticker-suite.log records 596 passed EXIT=0 at 15adacba for the 36-file importing set the done_when names, but the head log's contaminated twin had to be set aside, the base log's capture header was written in afterwards, and the comment clause of the done_when is asserted by no check.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git show --name-only over 15adacba8..65c84f7fc lists only reckon/crew/ticker.py, tests/test_a_released_run_row_is_never_blank.py and the one evidence fragment, all inside the manifest's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: the declared negative control reinstates the regression and logs/negative-control.log records 2 failed, EXIT=1 on the two duty cases, and the pair-loop assertion at tests/test_a_released_run_row_is_never_blank.py:193 reddens on any blank released row, but the assertions at :106 and :168 are not independent of the values the test supplied.\nSCORE fit: 19\nJUSTIFICATION fit: same_word_row_is_news, _actionable_recovery and the hoisted _pane_word at reckon/crew/ticker.py:2008, :1994 and :1120 follow the file's module-level predicate idiom with mechanism docstrings and carry no plan, sprint or ticket identifier.\nSCORE reuse: 19\nJUSTIFICATION reuse: _actionable_recovery at reckon/crew/ticker.py:1994 is the single body both RowPolicy._actionable and same_word_row_is_news call and the hoisted _pane_word at :1120 replaces RowPolicy's private copy, though Ticker.render's inline destination-word mapping at :2258-2263 reproduces _pane_word's body and was left un-unified.\nFINDING reckon/crew/ticker.py:1061 follow-on: at the reviewed head the comment above LIVE_PANE_WORDS still says the held settle row 'is never released', contradicting the branch at :1519-1546 that resolves it by printing at once or dropping it with a return; the done_when forbids this and commit f2bc280e1 (after the reviewed revision) repairs the comment, so nothing blocks landing at the worktree head.\nFINDING tests/test_a_released_run_row_is_never_blank.py:106 follow-on: assert released[-1][0][\"to_state\"] == \"blocked\" compares a field of the input event the test itself passed to the literal it passed, so it holds whatever the renderer does and guards nothing; the guard is the independent assertions at :104-105.\nFINDING tests/test_a_released_run_row_is_never_blank.py:168 follow-on: assert released[-1][0][\"expected_horizon_seconds\"] == 600 has the same non-independent shape as :106 and cannot redden on the regression it was added beside; the independent guards are at :167 and :169.",
+  "review_run_id": "legacy-59f9cb70a2bc",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "15adacba85355fba461917bf2733ca462e046709",
+  "reviewed_head_sha": "65c84f7fcd47706d69744eb756dc1d139b275d6a",
+  "reviewed_run_id": "r-20261015T125032724695-a-released-run-row-is-never-blank",
+  "reviewer_run_id": "r-20261015T134036795022-review-of-a-released-run-row-is-never-blank-65c84f7fcd47",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T13:52:00+00:00",
+  "total": 111
+}
