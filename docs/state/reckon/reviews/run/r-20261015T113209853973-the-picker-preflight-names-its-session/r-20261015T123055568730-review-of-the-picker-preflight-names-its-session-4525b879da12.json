@@ -1,0 +1,88 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/dispatch.py:807 dispatch -> build_picker_inputs(session=session)",
+    "reckon/crew_dispatch_commands.py:1326 crew_dispatch dry-run -> build_picker_inputs(session=session)",
+    "reckon/crew/picker/__init__.py:352 pick -> budget_view(session=request.session)",
+    "reckon/crew/picker/snapshot.py:733 candidates -> budget_view(session=request.session)",
+    "reckon/crew/dispatch_picker.py:405 dispatch_picker_selection -> build_picker_inputs(session=session)",
+    "reckon/crew/dispatch_picker.py:699 _record_shadow_picker_selection -> build_picker_inputs(session=spec[\"session\"])",
+    "reckon/crew/picker/replay.py:41 replay -> budget_view (no session)"
+  ],
+  "completed_at": "2026-10-15T12:49:09.460Z",
+  "dispatched_at": "2026-10-15T12:31:25Z",
+  "findings": [
+    {
+      "file": "reckon/crew/picker/replay.py",
+      "line": "41",
+      "severity": "follow-on",
+      "text": "follow-on: the launch-replay path composes snapshot.budget_view with no session, so a replayed pick cannot see a session-scoped lift and reads the sessionless figures; the reviewed manifest discloses this under follow_ons and it is outside the node's declared write paths."
+    },
+    {
+      "file": "docs/evidence/fragments/a-window-paces-the-lane/the-picker-preflight-names-its-session.html",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment carries only an empty anchor and the dispatch went on to fence docs/figures/a-window-paces-the-lane/the-picker-preflight-names-its-session, for which no figure was produced, so the landing record for a decision-visible routing change states no figure or metric."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T113209853973-the-picker-preflight-names-its-session/logs/base-gate.log",
+      "line": "16",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed run's base arm stopped at EXIT=143 before its summary line and its manifest carries no baseline_suite, so the done-when clause \"test files that import the changed modules show no added failure against base\" is evidenced only by isolated re-runs and this record's added-failure pair is unmeasured."
+    },
+    {
+      "file": "tests/test_the_picker_preflight_names_its_session.py",
+      "line": "108",
+      "severity": "follow-on",
+      "text": "follow-on: test_the_dry_run_budget_read_names_the_session_it_was_asked_about calls dispatch_picker._picker_budget_snapshot directly rather than the dry-run CLI crew_dispatch, so the wiring from the CLI argument through build_picker_inputs is covered only by the spy at :120, not end-to-end."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "read commit by commit against base 344805c9; 9f41127db adds a session parameter to _picker_budget_snapshot, build_picker_inputs and budget_view, threads it from four callers, and adds \"session\" to the cache key at snapshot.py:456 (16 lines in dispatch_picker.py, 50 in snapshot.py, 7 in picker/__init__.py, 4 in dispatch.py, 2 in crew_dispatch_commands.py, 197 lines of new test, a 19-line fragment), and 4525b879d opens the fragment.",
+    "done_when": "the done-when names a temporary-config-home test that grants a codex-sub lift scoped to session A at a 95% reading and checks A released (effective_ceiling_pct 100), B held at the reserve ceiling (92) inside A's cache lifetime, and a pick() for A released; tests/test_the_picker_preflight_names_its_session.py:88 and :135 assert exactly those, and the run's head gate logs 5 passed for the file.",
+    "goal": "the node's goal is to carry the routing session from dispatch, the dry run and pick into the picker's budget view; reckon/crew/dispatch.py:807 and reckon/crew_dispatch_commands.py:1326 pass session=session into build_picker_inputs and reckon/crew/picker/__init__.py:352 passes session=request.session into budget_view, so all three named paths carry it.",
+    "manifest": "read at the run directory; status complete, commit 9f41127db named, head-gate.log and base-gate.log named, the negative-control path and its declared string recorded, and the after_suite pair filled; its one follow_on records that the base arm did not reach its summary line.",
+    "write_paths": "the source fence named reckon/crew/dispatch_picker.py, reckon/crew/dispatch.py, reckon/crew_dispatch_commands.py, reckon/crew/picker/__init__.py, reckon/crew/picker/snapshot.py, tests/test_the_picker_preflight_names_its_session.py, the evidence fragment and a figures directory; git diff --stat 344805c9..4525b879d changes the first six and the fragment, every one inside the fence."
+  },
+  "justifications": {
+    "durability": "tests/test_the_picker_preflight_names_its_session.py:173 asserts session A and B differ across one cache_root, and the run's negative control (session dropped from _budget_view_request_key) reddens exactly that test and the builder test at EXIT=1, so the guard fails if the change regresses.",
+    "evidence": "tests/test_the_picker_preflight_names_its_session.py:88 asserts A released (100) and B held (92) off the same reading and :158 asserts B is not served A's release, matching the done_when, but the reviewed run's base arm stopped at base-gate.log:16 with EXIT=143 before its summary line, so the \"no added failure against base\" clause rests on isolated re-runs and the record's added-failure pair is unmeasured from the reviewed manifest.",
+    "fit": "the new session parameters default to \"\" and are threaded by keyword beside the sibling arguments at reckon/crew/dispatch_picker.py:198 and reckon/crew/picker/snapshot.py:623, matching the module's idiom, and no added name carries a plan, sprint or ticket identifier.",
+    "goal_fidelity": "reckon/crew/picker/snapshot.py:456 keys the cache on the session and snapshot.py:685 passes it to the request key, so a figure composed for one session is never served to another, but reckon/crew/picker/replay.py:41 composes a view with no session, so one reachable composition site still reads the sessionless figures.",
+    "reuse": "the diff adds no function, class or module, extending instead the existing budget-view owner reckon/crew/picker/snapshot.py:605 (budget_view) and the session-scope owner reckon/budget.py:1570 (preflight); a search over reckon/ for a second budget-view composer or a parallel session-keyed cache found none.",
+    "scope_discipline": "git diff --stat 344805c9..4525b879d lists only the declared source, test and fragment paths with no file outside the fence, but the fenced docs/figures/a-window-paces-the-lane/the-picker-preflight-names-its-session path produced nothing."
+  },
+  "node": "review-of-the-picker-preflight-names-its-session-4525b879da12",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to carry the routing session from dispatch, the dry run and pick into the picker's budget view; reckon/crew/dispatch.py:807 and reckon/crew_dispatch_commands.py:1326 pass session=session into build_picker_inputs and reckon/crew/picker/__init__.py:352 passes session=request.session into budget_view, so all three named paths carry it.\nVERDICT done_when: the done-when names a temporary-config-home test that grants a codex-sub lift scoped to session A at a 95% reading and checks A released (effective_ceiling_pct 100), B held at the reserve ceiling (92) inside A's cache lifetime, and a pick() for A released; tests/test_the_picker_preflight_names_its_session.py:88 and :135 assert exactly those, and the run's head gate logs 5 passed for the file.\nVERDICT write_paths: the source fence named reckon/crew/dispatch_picker.py, reckon/crew/dispatch.py, reckon/crew_dispatch_commands.py, reckon/crew/picker/__init__.py, reckon/crew/picker/snapshot.py, tests/test_the_picker_preflight_names_its_session.py, the evidence fragment and a figures directory; git diff --stat 344805c9..4525b879d changes the first six and the fragment, every one inside the fence.\nVERDICT manifest: read at the run directory; status complete, commit 9f41127db named, head-gate.log and base-gate.log named, the negative-control path and its declared string recorded, and the after_suite pair filled; its one follow_on records that the base arm did not reach its summary line.\nVERDICT diff: read commit by commit against base 344805c9; 9f41127db adds a session parameter to _picker_budget_snapshot, build_picker_inputs and budget_view, threads it from four callers, and adds \"session\" to the cache key at snapshot.py:456 (16 lines in dispatch_picker.py, 50 in snapshot.py, 7 in picker/__init__.py, 4 in dispatch.py, 2 in crew_dispatch_commands.py, 197 lines of new test, a 19-line fragment), and 4525b879d opens the fragment.\nCALL_SITES: reckon/crew/dispatch.py:807 dispatch -> build_picker_inputs(session=session), reckon/crew_dispatch_commands.py:1326 crew_dispatch dry-run -> build_picker_inputs(session=session), reckon/crew/picker/__init__.py:352 pick -> budget_view(session=request.session), reckon/crew/picker/snapshot.py:733 candidates -> budget_view(session=request.session), reckon/crew/dispatch_picker.py:405 dispatch_picker_selection -> build_picker_inputs(session=session), reckon/crew/dispatch_picker.py:699 _record_shadow_picker_selection -> build_picker_inputs(session=spec[\"session\"]), reckon/crew/picker/replay.py:41 replay -> budget_view (no session)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/picker/snapshot.py:456 keys the cache on the session and snapshot.py:685 passes it to the request key, so a figure composed for one session is never served to another, but reckon/crew/picker/replay.py:41 composes a view with no session, so one reachable composition site still reads the sessionless figures.\nSCORE evidence: 16\nJUSTIFICATION evidence: tests/test_the_picker_preflight_names_its_session.py:88 asserts A released (100) and B held (92) off the same reading and :158 asserts B is not served A's release, matching the done_when, but the reviewed run's base arm stopped at base-gate.log:16 with EXIT=143 before its summary line, so the \"no added failure against base\" clause rests on isolated re-runs and the record's added-failure pair is unmeasured from the reviewed manifest.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 344805c9..4525b879d lists only the declared source, test and fragment paths with no file outside the fence, but the fenced docs/figures/a-window-paces-the-lane/the-picker-preflight-names-its-session path produced nothing.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_the_picker_preflight_names_its_session.py:173 asserts session A and B differ across one cache_root, and the page's negative control (session dropped from _budget_view_request_key) reddens exactly that test and the builder test at EXIT=1, so the guard fails if the change regresses.\nSCORE fit: 19\nJUSTIFICATION fit: the new session parameters default to \"\" and are threaded by keyword beside the sibling arguments at reckon/crew/dispatch_picker.py:198 and reckon/crew/picker/snapshot.py:623, matching the module's idiom, and no added name carries a plan, sprint or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module, extending instead the existing budget-view owner reckon/crew/picker/snapshot.py:605 (budget_view) and the session-scope owner reckon/budget.py:1570 (preflight); a search over reckon/ for a second budget-view composer or a parallel session-keyed cache found none.\nFINDING reckon/crew/picker/replay.py:41 follow-on: the launch-replay path composes snapshot.budget_view with no session, so a replayed pick cannot see a session-scoped lift and reads the sessionless figures; the reviewed manifest discloses this under follow_ons and it is outside the node's declared write paths.\nFINDING docs/evidence/fragments/a-window-paces-the-lane/the-picker-preflight-names-its-session.html:1 follow-on: the fragment carries only an empty anchor and the dispatch went on to fence docs/figures/a-window-paces-the-lane/the-picker-preflight-names-its-session, for which no figure was produced, so the landing record for a decision-visible routing change states no figure or metric.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261015T113209853973-the-picker-preflight-names-its-session/logs/base-gate.log:16 follow-on: the reviewed run's base arm stopped at EXIT=143 before its summary line and its manifest carries no baseline_suite, so the done-when clause \"test files that import the changed modules show no added failure against base\" is evidenced only by isolated re-runs and this record's added-failure pair is unmeasured.\nFINDING tests/test_the_picker_preflight_names_its_session.py:108 follow-on: test_the_dry_run_budget_read_names_the_session_it_was_asked_about calls dispatch_picker._picker_budget_snapshot directly rather than the dry-run CLI crew_dispatch, so the wiring from the CLI argument through build_picker_inputs is covered only by the spy at :120, not end-to-end.\n",
+  "review_run_id": "r-20261015T123055568730-review-of-the-picker-preflight-names-its-session-4525b879da12",
+  "reviewed_base_sha": "344805c9613487e59bcc8001ffc0302a55f8ae50",
+  "reviewed_head_sha": "4525b879da12f9af90cc266bdb1230eb7f739e70",
+  "reviewed_run_id": "r-20261015T113209853973-the-picker-preflight-names-its-session",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T12:45:44.733567+00:00",
+  "total": 112
+}
