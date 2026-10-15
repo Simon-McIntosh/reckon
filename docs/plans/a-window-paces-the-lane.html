@@ -23,10 +23,10 @@
   <title>A Window Paces The Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s6-the-probe-reader-and-the-undeclared-dialect&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s6-the-probe-reader-and-the-undeclared-dialect&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="e302ad39,04a479ef,4ef8356f,e219aa99,b2594d65,bacd8e17,6a915fd7,4d043fd0,fd4a158f,95ba8ea7,cb69a87f,768a9285,e5cf008e,6001f577,e6dd0dc4,c011b6f9,82095575,87c98418,8e70585c,b7ba4786,3f0e9621,798f87f8,e37ac897,d34eaf27">
 <meta name="plan-impl" content="0.97">
-<meta name="plan-version" content="237">
+<meta name="plan-version" content="238">
 <meta name="plan-modified" content="2026-10-15">
 </head>
 <body>
@@ -2002,7 +2002,7 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
 <p><strong>Done when</strong> a test, with the config home pointed at a temporary directory, grants a <code>codex-sub</code> lift scoped to session A at a 95% reading. It finds a dry-run dispatch for session A sees codex not held with <code>effective_ceiling_pct</code> 100, and one for session B, made inside A's cache lifetime, sees codex held at the reserve ceiling. A <code>pick()</code> for session A sees the release. The test files that import the changed modules show no added failure against base. For the negative control, drop the session from the cache key: B's call must then be served A's release. The control is logged under the run directory. This section runs after §17. Write paths: <code>reckon/crew/dispatch_picker.py</code>, <code>reckon/crew/dispatch.py</code>, <code>reckon/crew_dispatch_commands.py</code>, <code>reckon/crew/picker/__init__.py</code>, <code>reckon/crew/picker/snapshot.py</code> and <code>tests/test_the_picker_preflight_names_its_session.py</code>.</p>
 
     <h2 id="s19">§19 — A replayed pick reads each dispatch&#x27;s own session</h2>
-<section data-reckon="section" data-id="s19" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s19" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> §18 carries the session into the picker's budget view on dispatch, on the dry run and in <code>pick()</code>, so a session-scoped lift releases reserves for that session alone. One caller was left out. <code>reckon/crew/picker/replay.py</code> builds one budget view, <code>snapshot.budget_view(project, config, repo, records)</code>, with no session, and passes it as <code>budget_snapshot</code> to every replayed <code>pick()</code>. A supplied snapshot bypasses the view <code>pick()</code> would compose for the request's own session. Each replayed request carries its record's session, but the budget it is judged against belongs to none. A replay is the instrument used to compare routing decisions, so a session-scoped lift is invisible to exactly the measurement meant to show its effect.</p>
 <p><strong>Deliverable.</strong> A replay judges each dispatch against the budget view for that dispatch's own session. It composes at most one view per distinct session in the replayed set, so a replay of many dispatches from one session still composes one view, and a record with no session uses the session-less view as today. The view is composed by the same <code>snapshot.budget_view</code> call with <code>session</code> passed. Its cache key already includes the session (§18), so no new caching is added. The replay's reported <code>budget_snapshot</code> and its latency field keep their meaning for a single-session replay.</p>
 <p><strong>Done when</strong> a test, with the config home pointed at a temporary directory, grants a lift scoped to session A on a group read at 95%. It replays two recorded dispatches, one from session A and one from session B. The A dispatch sees the group not held, and the B dispatch sees it held at the reserve ceiling. A replay of dispatches from one session composes one view. The test files that import <code>reckon/crew/picker/replay.py</code> give the same pass and fail ids at head as at base, apart from the new file. Negative control: with the single session-less view restored, the A dispatch reads held; the control is logged under the run directory. Write paths: <code>reckon/crew/picker/replay.py</code> and <code>tests/test_a_replayed_pick_reads_its_own_session.py</code>.</p>
@@ -2127,10 +2127,11 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     <pre class="r-fu-prompt">/reckon-build a-window-paces-the-lane §13</pre>
     <p class="r-fu-outcome"><p>Landed at <code>349a93925</code>; done, no followup from this section.</p></p>
     </article>
-<article class="r-fu" data-id="f-20261015-replay-session" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-15" data-recommends-skill="/reckon-build a-window-paces-the-lane §19" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-20261015-replay-session" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-15" data-recommends-skill="/reckon-build a-window-paces-the-lane §19" data-resolved-at="2026-10-15T15:07:54+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Judge each replayed dispatch against its own session&#x27;s budget view</h4>
     <div class="r-fu-body"><p>§19 is small and independent: the picker replay composes one view per session in place of one shared session-less view.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-window-paces-the-lane §19</pre>
+    <p class="r-fu-outcome"><p>§19 landed as <code>4d444c110</code>. No open section remains on this plan; done, no followup.</p></p>
     </article>
 </section>
 
@@ -2590,6 +2591,9 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
 </div>
 <div class="r-comment" data-section="s19" data-id="c-run-r-20261015T145232011669-review-of-a-replayed-pick-reads-its-own-session-f11aa7d218ec" data-who="reckon-build" data-when="2026-10-15T15:02:02.639Z">
     <div class="r-comment-body"><p>Independent review of r-20261015T144150634437-a-replayed-pick-reads-its-own-session at f11aa7d21 scored all six dimensions (total 106: goal_fidelity 19, evidence 15, scope_discipline 18, durability 19, fit 18, reuse 17), no blocking finding, and recorded added_failure_count 0 with reviewed_base_sha a8f4caba4 / reviewed_head_sha f11aa7d21.</p></div>
+</div>
+<div class="r-comment" data-section="s19" data-id="c-close-s19" data-who="reckon-build" data-when="2026-10-15T15:10:00Z">
+    <div class="r-comment-body"><p>§19 landed. A replay judges each dispatch against its own session's budget view, so a session-scoped lift shows in the replay meant to measure it. Merged as <code>4d444c110</code>. Gate: 46 passed at head against 43 at base over the replay's importers, with no failures. Review: 106/120. <a href="/reckon/evidence/archive/a-window-paces-the-lane-landed.html#s19">evidence</a></p></div>
 </div>
 </section>
 </main>
