@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:1005",
+    "reckon/crew_follow_commands.py:1363"
+  ],
+  "completed_at": "2026-10-15T16:19:26.321Z",
+  "dispatched_at": "2026-10-15T16:08:26Z",
+  "findings": [
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": "1075",
+      "severity": "follow-on",
+      "text": "follow-on: FINISHED_PANE_WORDS is {\"delivered\", \"landed\"}, and holding a departure out of the landed word extends the fix beyond the node goal and the plan \u00a732 deliverable, which name a departure from delivered only; the landed arm is untested here (tests/test_a_delivered_row_does_not_round_trip.py drives the delivered word alone) and changes the pane's behaviour for a run it drew as promoted or recorded, so a real landed\u2192working move now waits one settle window. The generalisation is reasoned in the commit message (a run with a written record) and low risk, so it does not hold the node."
+    },
+    {
+      "file": "tests/test_a_delivered_row_does_not_round_trip.py",
+      "line": "112",
+      "severity": "follow-on",
+      "text": "follow-on: this assertion compares the released rows' (from_state, to_state) against DELIVERED and AWAY, the two constants the test itself passes into _row(), so its right side is the test's own input rather than an independent source; it does still fail when the fix is reverted (the list is empty then), so it is not vacuous, but its real content is row count and identity, not the word pair. The durability judgement does not rest on it: the empty-list assertions at :93 and :107/:109 are what the negative control reddens."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read the single commit 656d8ea439a625ed00c8f8a8395d1e9a826211c2 against 473c32736543ac584f6aae37836d3604491eb558; it changes three files (+151/-1): the FINISHED_PANE_WORDS constant and the extra arm in RowPolicy._hold_departure at reckon/crew/ticker.py:1375-1377, the two-case test tests/test_a_delivered_row_does_not_round_trip.py, and the landing anchor fragment.",
+    "done_when": "the done_when's cases are asserted in tests/test_a_delivered_row_does_not_round_trip.py (round trip releases nothing at :93; a departure with no return releases once the window passes at :107-:115) and its result is recorded, not claimed, in logs/head-arm.log (432 passed, EXIT=0), logs/base-arm.log (432 passed, EXIT=0), logs/head-arm-new-test.log (2 passed, EXIT=0) and logs/negative-control.log (2 failed, EXIT=1).",
+    "goal": "the node goal is that a delivered row's departure and return inside the settle window draws nothing; reckon/crew/ticker.py:1376 now holds a departure whose shown word is inside FINISHED_PANE_WORDS, so the round trip is dropped while a departure with no return still releases when the window passes.",
+    "manifest": "read; status complete; commit 656d8ea43; it records baseline_suite (base EXIT=0, 0 failures), after_suite (head EXIT=0, 0 failures), measurement_module and measurement_cwd for the scratch base tree, the negative_control_log and note, the reproduction and the rule that drew the pair; no ruff line or log is recorded.",
+    "write_paths": "the source manifest declares reckon/crew/ticker.py, tests/test_a_delivered_row_does_not_round_trip.py and the evidence-fragment and figure paths; git diff --stat 473c327..656d8ea lists exactly those three written paths and nothing else."
+  },
+  "justifications": {
+    "durability": "deleting the new arm reddens both ids as logs/negative-control.log shows (2 failed, EXIT=1, the first failure printing the released delivered->working row), and tests/test_a_delivered_row_does_not_round_trip.py:93 asserts against an empty literal rather than a value the test passed in.",
+    "evidence": "the gate's result is recorded, not claimed: logs/base-arm.log and logs/head-arm.log each end EXIT=0 with 432 passed / 0 failed and the same ids, logs/negative-control.log ends EXIT=1, and the live pair is at ~/.config/reckon/crew/watch/reckon-18dc8a86709b.events 14:55:19Z/14:55:20Z; the done_when's ruff clause is unrecorded though ruff check and ruff format --check are clean on the two changed Python files.",
+    "fit": "FINISHED_PANE_WORDS at reckon/crew/ticker.py:1075 mirrors the LIVE_PANE_WORDS constant directly above it (same frozenset-of-pane-words idiom, its own explanatory comment) and neither changed file carries a plan, ticket or version label.",
+    "goal_fidelity": "reckon/crew/ticker.py:1376 holds exactly the departure the goal names, and the round trip it suppresses is the row the pane drew at 14:55:19Z/14:55:20Z on r-20261015T143441103048-a-lane-family-has-one-owner.",
+    "reuse": "no owner of a \"finished pane word\" concept exists \u2014 a search over reckon/crew for a set combining delivered and landed found none, and the seven pane words live only in PANE_STATES \u2014 so the change extends the departure hold at reckon/crew/ticker.py:1348 rather than adding a second hold.",
+    "scope_discipline": "git diff --stat 473c327..656d8ea lists only the declared write paths, but FINISHED_PANE_WORDS at reckon/crew/ticker.py:1075 additionally names \"landed\", which the goal and done_when do not."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a delivered row's departure and return inside the settle window draws nothing; reckon/crew/ticker.py:1376 now holds a departure whose shown word is inside FINISHED_PANE_WORDS, so the round trip is dropped while a departure with no return still releases when the window passes.\nVERDICT done_when: the done_when's cases are asserted in tests/test_a_delivered_row_does_not_round_trip.py (round trip releases nothing at :93; a departure with no return releases once the window passes at :107-:115) and its result is recorded, not claimed, in logs/head-arm.log (432 passed, EXIT=0), logs/base-arm.log (432 passed, EXIT=0), logs/head-arm-new-test.log (2 passed, EXIT=0) and logs/negative-control.log (2 failed, EXIT=1).\nVERDICT write_paths: the source manifest declares reckon/crew/ticker.py, tests/test_a_delivered_row_does_not_round_trip.py and the evidence-fragment and figure paths; git diff --stat 473c327..656d8ea lists exactly those three written paths and nothing else.\nVERDICT manifest: read; status complete; commit 656d8ea43; it records baseline_suite (base EXIT=0, 0 failures), after_suite (head EXIT=0, 0 failures), measurement_module and measurement_cwd for the scratch base tree, the negative_control_log and note, the reproduction and the rule that drew the pair; no ruff line or log is recorded.\nVERDICT diff: read the single commit 656d8ea439a625ed00c8f8a8395d1e9a826211c2 against 473c32736543ac584f6aae37836d3604491eb558; it changes three files (+151/-1): the FINISHED_PANE_WORDS constant and the extra arm in RowPolicy._hold_departure at reckon/crew/ticker.py:1375-1377, the two-case test tests/test_a_delivered_row_does_not_round_trip.py, and the landing anchor fragment.\nCALL_SITES: reckon/crew_follow_commands.py:1005, reckon/crew_follow_commands.py:1363\nSCORE goal_fidelity: 19\nSCORE evidence: 17\nSCORE scope_discipline: 18\nSCORE durability: 18\nSCORE fit: 19\nSCORE reuse: 20\nJUSTIFICATION goal_fidelity: reckon/crew/ticker.py:1376 holds exactly the departure the goal names, and the round trip it suppresses is the row the pane drew at 14:55:19Z/14:55:20Z on r-20261015T143441103048-a-lane-family-has-one-owner.\nJUSTIFICATION evidence: the gate's result is recorded, not claimed: logs/base-arm.log and logs/head-arm.log each end EXIT=0 with 432 passed / 0 failed and the same ids, logs/negative-control.log ends EXIT=1, and the live pair is at ~/.config/reckon/crew/watch/reckon-18dc8a86709b.events 14:55:19Z/14:55:20Z; the done_when's ruff clause is unrecorded though ruff check and ruff format --check are clean on the two changed Python files.\nJUSTIFICATION scope_discipline: git diff --stat 473c327..656d8ea lists only the declared write paths, but FINISHED_PANE_WORDS at reckon/crew/ticker.py:1075 additionally names \"landed\", which the goal and done_when do not.\nJUSTIFICATION durability: deleting the new arm reddens both ids as logs/negative-control.log shows (2 failed, EXIT=1, the first failure printing the released delivered->working row), and tests/test_a_delivered_row_does_not_round_trip.py:93 asserts against an empty literal rather than a value the test passed in.\nJUSTIFICATION fit: FINISHED_PANE_WORDS at reckon/crew/ticker.py:1075 mirrors the LIVE_PANE_WORDS constant directly above it (same frozenset-of-pane-words idiom, its own explanatory comment) and neither changed file carries a plan, ticket or version label.\nJUSTIFICATION reuse: no owner of a \"finished pane word\" concept exists \u2014 a search over reckon/crew for a set combining delivered and landed found none, and the seven pane words live only in PANE_STATES \u2014 so the change extends the departure hold at reckon/crew/ticker.py:1348 rather than adding a second hold.\nFINDING reckon/crew/ticker.py:1075 follow-on: FINISHED_PANE_WORDS is {\"delivered\", \"landed\"}, and holding a departure out of the landed word extends the fix beyond the node goal and the plan \u00a732 deliverable, which name a departure from delivered only; the landed arm is untested here and changes the pane's behaviour for a run it drew as promoted or recorded.\nFINDING tests/test_a_delivered_row_does_not_round_trip.py:112 follow-on: this assertion compares the released rows' (from_state, to_state) against DELIVERED and AWAY, the constants the test itself passes into _row(), so its right side is the test's own input rather than an independent source; it still fails when the fix is reverted, so it is not vacuous, but the durability judgement rests on the empty-list assertions at :93 and :107/:109 instead.\n",
+  "review_run_id": "r-20261015T160734783938-review-of-a-delivered-row-does-not-round-trip-656d8ea439a6",
+  "reviewed_base_sha": "473c32736543ac584f6aae37836d3604491eb558",
+  "reviewed_head_sha": "656d8ea439a625ed00c8f8a8395d1e9a826211c2",
+  "reviewed_run_id": "r-20261015T151856051712-a-delivered-row-does-not-round-trip",
+  "role": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T16:15:00+00:00",
+  "total": 111
+}
