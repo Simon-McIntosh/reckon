@@ -1,0 +1,63 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-15T16:49:48.160Z",
+  "dispatched_at": "2026-10-15T16:41:10Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-seat-held-elsewhere-is-not-restarted.html#s16",
+      "id": "done_when-1",
+      "reason": "the node's gate is red on arrival as written, so the measure must be narrowed to the two consolidated callers or crew_follow_commands.py added to the write scope.",
+      "text": "\u00a716's done-when requires that \"no other module calls os.open with O_EXCL to make a claim\", but only two callers are consolidated and a third exclusive-create claim with its own bounded stale reclaim remains in reckon/crew_follow_commands.py:982 (the lift claim, docstring at :961 \"any claim for the lift already exists\", stale reclaim via LIFT_CLAIM_MAX_AGE_SECONDS at :988), a module outside \u00a716's write paths",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-seat-held-elsewhere-is-not-restarted.html#s16",
+      "id": "reasoning-1",
+      "reason": "the deliverable's decomposition must drop the empty-claim grace from the shared responsibilities and leave it inside the caller-supplied staleness predicate, or the attempt caller's reclaim semantics silently change.",
+      "text": "\u00a716 lists \"the empty-claim grace\" as part of the shared function while also stating the two staleness rules differ, but that grace is itself the dispatch path's staleness rule `_empty_claim_is_stale` (reckon/crew/dispatch_claims.py:420, keyed on _NODE_CLAIM_EMPTY_RECORD_STALE_SECONDS) and the attempt path has no equivalent \u2014 claim_next_attempt's grace is the pointer-and-LAUNCH_WINDOW_SECONDS rule in `_claim_may_be_reclaimed` (reckon/crew/resumption.py:357) \u2014 so a shared function performing it would change claim_next_attempt's behaviour, contradicting the same deliverable's \"Neither caller changes its behaviour\"",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "d24619ec027635abf5bc964dd07638018422ce6dffed7a66d4fea281904d0434",
+  "plan_slug": "a-seat-held-elsewhere-is-not-restarted",
+  "plan_version": 57,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261015T164035278688-plan-review-of-a-seat-held-elsewhere-is-not-restarted",
+  "reviewed_blob_sha": "165b9eb45ed2ef977293549ee4d34331c1041a92",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited symbols resolve (reckon/crew/dispatch_claims.py:420/439/491 _empty_claim_is_stale / _reclaim_stale_node_dispatch_claim / _claim_node_dispatch; reckon/crew/resumption.py:310/380/924/991 _create_attempt_claim / claim_next_attempt / _launcher_refusal / _observed_end_refusal), tests/test_dry_run_predicts_the_launcher.py and tests/test_a_resume_never_launches_beside_another_node.py exist, and the extensionless evidence hrefs resolve as `<path>.html`.",
+    "done_when": "a finding \u2014 \u00a716's done-when asserts a repo-wide property (\"no other module calls os.open with O_EXCL to make a claim\") that its write scope cannot satisfy, because a third exclusive-create claim sits in crew_follow_commands.py (see FINDING done_when).",
+    "evidence_paths": "pass \u2014 \u00a716's and \u00a717's controls are \"logged under the run directory\" and the gate evidence points at the plan's own section and the landed evidence archive, not a scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags enter the symbols or comments \u00a716 and \u00a717 propose, and no changelog prose is introduced.",
+    "reasoning": "a finding \u2014 \u00a717's reasoning holds (the launcher resume_plan applies the observed-end stream reading at reckon/crew/dispatch_sessions.py:1109 while the prediction _launcher_refusal does not, a real parity gap), but \u00a716's deliverable is internally inconsistent about the \"empty-claim grace\" it must share (see FINDING reasoning).",
+    "single_goal": "pass \u2014 \u00a716 names one deliverable (one shared claim function) and \u00a717 one (the launcher/observed-end parity fix), each closable on a single verdict.",
+    "wiring": "pass \u2014 s17\u2190s16 (gate g-sheinr-3), s9\u2190s8 (gate g-sheinr-1) and s13\u2190s9 (gate g-sheinr-2) all resolve to the nodes they name, s16's dependency on the landed \u00a711 is stated, and no relationship points at a wrong node."
+  },
+  "section_digests": {
+    "_document": "f180498b8f793af67775a76678df57d150914051aacab2b021f8bfbb9ca7d748",
+    "s1": "e775b15757e63b277715e69df2ef97f2cf13db4e6364fc83b2f4ad6aa3bc858c",
+    "s10": "fd9ced512f1fc6a0610cb111ec8c734e3c55a84ea11034055f5f1c9e60e0c649",
+    "s11": "9d7552bb9a0f7179067d09a67e819e7194fbbac1e34cf450bb6dd2631508389d",
+    "s12": "41b7e2f138ff584e94cdef995cae4ab65e47e6e0efb43dc6d30b0045664f611d",
+    "s13": "441358f17906d8fa159ba5911fc62cfb32cabff650e9ae63b1300701b43f7b6d",
+    "s14": "15dd48418b8a42e818c6a6c93d4914efb531dc5439e368a148fd7168b3a89faa",
+    "s15": "707b8d39391cbd7e59f3dbd9cc4748c655d8870e48f237e84889148855f5b9e7",
+    "s16": "cc3ab3627b3ed3e3321d81e8d465034b1f06bf0c4eacb299a0b29fe2c7ea5d21",
+    "s17": "73a4699a4193793731da87cf3a489de8f9e91df7e596e68dad4897797177cb9e",
+    "s2": "0ed10d108f8d1ab2183625c90b68b4eafa74562e02814b07bb8c2079f5f67566",
+    "s3": "738aba9bff855c84122fa9ea72b1f1ef13486345a013a765e54c0cfa391a20c0",
+    "s4": "ca75c5c574381e50431d8d43b8f5532df7925573cf2dee356bea7941fcbd55cb",
+    "s5": "96d5fc1c72a25970cab856a7dde0a3cab839fd87c83786b7b49ffc4c1dabb1ab",
+    "s6": "c7b09760750dbf67efa83f9127581fea7578c7bf1e30b595ecd6c313b7505bad",
+    "s7": "d3e16f60d17ef3ee4666f9cd189aa6cd8e26f038173b65ee34b68f3f2cd822e7",
+    "s8": "b41130ef26282f759c1b7be0de0136701972d055ed7878e2f2d9cd21c96b4f63",
+    "s9": "a2cb7135c4bd3f1439c3ec948d6146c2f5b7527da59b1bbd4c7ce4c141ec3055"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T16:49:53.500498+00:00"
+}
