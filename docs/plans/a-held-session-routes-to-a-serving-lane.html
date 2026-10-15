@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-after" content="a-held-dispatch-waits-its-fair-turn">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
   <title>A Held Session Routes To A Serving Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="18">
+<meta name="plan-version" content="19">
 <meta name="plan-modified" content="2026-10-15">
 </head>
 <body>
@@ -152,7 +152,7 @@
     </p>
 
     <h2 id="s4">§4 — A lane change keeps the run's recorded waivers</h2>
-<section data-reckon="section" data-id="s4" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s4" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p>
       <strong>Deliverable.</strong> <code>reckon crew redispatch</code> carries the waivers recorded in the original run's
       <code>dispatch_options</code> (<code>allow_unreviewed_plan</code>, <code>accept_directory_claim</code> and the reason in
@@ -183,12 +183,22 @@
       §2's single re-ask is enough or whether the router allowance belongs in the first ask only.
     </p>
 
+    <h2 id="s6">§6 — A backend&#x27;s lane family and the zero-slot re-ask each have one owner</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> The review of §4's reflex node (106/120, reuse 12) found two duplications. First, the rule mapping a backend to its lane family (the local marker for the local backend, otherwise its resolved dialect, falling back to its launch kind) is now stated in <code>reckon/crew/recovery_review_dispatch.py</code> (<code>_review_lane_family</code>), in <code>reckon/crew/dispatch_picker.py</code> (<code>_lane_backend_names</code>) and inline in <code>reckon/crew/picker/snapshot.py</code>, so a change to that rule must be made in each place. Second, <code>_reroute_held_review</code> restates the steps of <code>dispatch_picker._reask_off_zero_slot_lane</code>: ask once with the zero-slot lane excluded and record both asks. It shares that function's answer summary only by convention.</p><p><strong>Deliverable.</strong> One function in <code>reckon/crew/dispatch_picker.py</code> maps a backend to its lane family, and the other places call it. The reflex's retry and the dispatch re-ask share one helper for the excluded-lane ask and its recorded pair, while each keeps its own trigger: a recorded hold for the reflex, a fresh selection for dispatch. No behaviour changes.</p><p><strong>Done when</strong> no other module derives a lane family. A grep of <code>reckon/</code> for <code>dialect_for(</code> used to build a lane name finds only the owner. The test files that import any of the three modules give the same pass and fail ids at head as at base. Negative control: a test that pins the owner's mapping for a local backend, a dialect backend and a backend without a dialect fails when the owner returns the backend name unchanged. Write paths: <code>reckon/crew/dispatch_picker.py</code>, <code>reckon/crew/recovery_review_dispatch.py</code>, <code>reckon/crew/picker/snapshot.py</code> and <code>tests/test_a_lane_family_has_one_owner.py</code>.</p>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-hsrs-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-13" data-recommends-skill="/reckon-build a-held-session-routes-to-a-serving-lane §2" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-hsrs-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-13" data-recommends-skill="/reckon-build a-held-session-routes-to-a-serving-lane §2" data-resolved-at="2026-10-15T14:12:09+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Route well-defined work away from a lane that grants the session nothing</h4>
     <div class="r-fu-body"><p>§2 is the lead's routing rule made mechanical. §3 and §4 are small and independent of it. §5 can run first, read-only, to size §2.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-held-session-routes-to-a-serving-lane §2</pre>
+    <p class="r-fu-outcome"><p>§2, §3, §4 and §5 landed on 2026-10-15 (§2 <code>0249aeaa5</code>, §3 <code>101c2ff40</code>, §4 <code>7722ccd7d</code>). The review's reuse follow-ons are §6, carried by f-hsrs-002.</p></p>
+    </article>
+<article class="r-fu" data-id="f-hsrs-002" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-15" data-recommends-skill="/reckon-build a-held-session-routes-to-a-serving-lane §6" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Give a backend&#x27;s lane family and the zero-slot re-ask one owner each</h4>
+    <div class="r-fu-body"><p>A behaviour-preserving consolidation that §4's review found. Small, independent of the other plans.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-held-session-routes-to-a-serving-lane §6</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -209,6 +219,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261015T072542993460-review-of-a-lane-change-keeps-its-waivers-e783582985d9" data-who="reckon-build" data-when="2026-10-15T07:40:29.606Z">
     <div class="r-comment-body"><p>review of r-20261015T062741541341-a-lane-change-keeps-its-waivers stored under .config/reckon/crew/reviews/reckon/ as r-20261015T062741541341-a-lane-change-keeps-its-waivers.json and its revision-pinned twin .at-e783582985d954029413f8c3128431fd3bbb972a.json: 6/6 dimensions scored (goal_fidelity 18, evidence 18, scope_discipline 20, durability 18, fit 18, reuse 19, total 111), one follow-on finding.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-10-15T14:15:00Z">
+    <div class="r-comment-body"><p>§4 landed. A lane change keeps the run's waivers (queued move, merged earlier). Now a review held on a lane that grants the session no worker is re-routed once through the picker with that lane left out, and both asks are recorded. Without a lift it re-queues locally as before. Merged as <code>7722ccd7d</code>. Gate over the full set of importing files: 259 passed at head against 256 at base, no failures in either arm. Review: 106/120. Two reuse follow-ons are filed as §6. <a href="/reckon/evidence/archive/a-held-session-routes-to-a-serving-lane-landed.html#s4-review-reflex">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261015T092113080272-review-of-jev-routes-with-the-session-admission-and-the-lift-ebcb2cbc4436" data-who="reckon-build" data-when="2026-10-15T09:40:43.302Z">
     <div class="r-comment-body"><p>review of run r-20261015T075223938148-jev-routes-with-the-session-admission-and-the-lift at head ebcb2cbc44: goal_fidelity 19, evidence 15, scope_discipline 12, durability 13, fit 17, reuse 17 (total 93); one blocking finding (reckon/crew/recovery_review_dispatch.py:1096 resolves the lift with readings=None and no session, so the reflex can disagree with the snapshot about whether a lift stands) and four follow-on findings. Add to §2 of the plan the outcome that Jev's state and guidance now carry the session's own worker slots plus any lift, with the review's blocking finding recorded against the lift resolver's reader.</p></div>
