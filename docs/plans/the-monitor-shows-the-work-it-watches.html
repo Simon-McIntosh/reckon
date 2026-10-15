@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="160">
+<meta name="plan-version" content="161">
 <meta name="plan-modified" content="2026-10-15">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -756,6 +756,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s32" data-id="c-run-r-20261015T151856051712-a-delivered-row-does-not-round-trip" data-who="reckon-build" data-when="2026-10-15T16:07:08.867Z">
     <div class="r-comment-body"><p>§32 landed — RowPolicy's departure hold now also covers a run leaving a word the pane draws for finished work (delivered/landed), so the manifest-rewrite round trip delivered → working → delivered one second apart releases no row while a departure with no return still releases once the settle window passes; gate 432 passed / 0 failed identical at base and head, new file 2 passed.</p></div>
+</div>
+<div class="r-comment" data-section="s33" data-id="c-run-r-20261015T201741088920-review-of-a-delivered-run-on-another-node-reads-running-0a379c30c971" data-who="reckon-build" data-when="2026-10-15T20:36:55.066Z">
+    <div class="r-comment-body"><p>independent review of run r-20261015T191658811597-a-delivered-run-on-another-node-reads-running stored as a parsed record at both the plain and .at-0a379c30c971 paths, scoring all six dimensions 0..20 (goal_fidelity 19, evidence 16, scope_discipline 20, durability 18, fit 18, reuse 20; total 111), naming reviewed_base_sha cbe8c91fb664397b4d293e80053b013a3d34bef5 and reviewed_head_sha 0a379c30c971daa74b8f3bd9da5ea579b842e250, carrying added_failure_count 0 and added_failure_ids [] derived from the reviewed run&#x27;s base and head gate logs, with 12 production call sites and no findings.</p></div>
 </div>
 </section>
 </main>
