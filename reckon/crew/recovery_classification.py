@@ -61,11 +61,15 @@ def _manifest_predates_the_current_attempt(
     own clock is what says so: the pointer's pid, in the resume window, is its
     predecessor's, so its death is not this attempt's. An end the run itself
     recorded, or an attempt quiet past the window, is left to the readings that
-    name an end, so this guard never revives a run nothing holds.
+    name an end, so this guard never revives a run nothing holds. A run whose own
+    process the table reports gone is an end observed, not one unobserved, so its
+    manifest is the last thing the run itself said and stands untouched.
     """
     if attempt_started_seconds is None:
         return False
     if ended_exit is not None:
+        return False
+    if alive is False:
         return False
     try:
         written = manifest.stat().st_mtime
