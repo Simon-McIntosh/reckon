@@ -18,10 +18,12 @@ A snapshot is ``fresh`` when all three hold: a process with the recorded pid is
 alive and carries the recorded start time (so a reused pid does not pass), its
 code stamp equals the stamp computed for the source a restarted producer would
 run, and ``computed_at`` is within :data:`FRESHNESS_WINDOW_SECONDS`. Otherwise
-it reads as one of three fixed words: ``no-producer`` when no snapshot was
-published or its producer is not running, ``producer-stale-code`` when the
-producer runs source other than what a restarted one would run, and
-``stale-snapshot`` when the snapshot is older than the window.
+it reads as one of four fixed words: ``no-producer`` when no snapshot was
+published or its producer is not running, ``no-follower`` when this session has
+no snapshot at all while the project's seat names a live producer on another
+host, ``producer-stale-code`` when the producer runs source other than what a
+restarted one would run, and ``stale-snapshot`` when the snapshot is older than
+the window.
 
 A not-fresh snapshot whose producer is plausibly mid-reload is a fourth
 reading, outside :func:`freshness`'s fixed words: :func:`reload_in_progress`
@@ -54,6 +56,7 @@ FLOOR_TICK_SECONDS = 60.0
 
 FRESH = "fresh"
 NO_PRODUCER = "no-producer"
+NO_FOLLOWER = "no-follower"
 STALE_CODE = "producer-stale-code"
 STALE_SNAPSHOT = "stale-snapshot"
 
@@ -298,19 +301,21 @@ def _records_the_live_producer(producer: Mapping[str, Any]) -> bool:
     return process_start_time(pid) == recorded
 
 
-def _foreign_seat_is_live(project: str | None) -> bool:
-    """Whether another host's seat names a live producer for the project.
+def live_foreign_seat_host(project: str | None) -> str:
+    """The host a live foreign seat names, or an empty string.
 
     The watch module owns the judgement of whether a seat names a foreign host
     whose stream is still fresh, so it is asked rather than re-derived here;
     the import is deferred to this call so the reader's module-level surface,
-    which the prompt hook loads on a turn's opening, stays free of it.
+    which the prompt hook loads on a turn's opening, stays free of it. The host
+    is returned rather than a flag so a reader can name the node a live
+    producer is on, and every caller that needs only the yes/no tests this.
     """
     if not project:
-        return False
+        return ""
     from reckon.crew import watch_unit
 
-    return watch_unit.seat_names_a_live_foreign_producer(project)
+    return watch_unit.live_foreign_seat_host(project)
 
 
 # ── Code stamp ──────────────────────────────────────────────────────────────
@@ -373,20 +378,32 @@ def freshness(
     current_stamp: str | None = None,
     now: datetime | None = None,
 ) -> str:
-    """Classify a stored snapshot: ``fresh`` or one of three fixed reasons.
+    """Classify a stored snapshot: ``fresh`` or one of four fixed reasons.
 
-    ``project`` names the seat to consult when the recorded pid is not running
-    on this host. A snapshot published by a producer on another node records
-    that node's pid, which this host's process table answers for only by
-    accident, so a locally-absent pid is not by itself an absence; the project's
-    seat, which crosses the shared home, is asked whether it names a foreign
-    host whose stream is still fresh, and a yes counts as a live producer.
+    ``project`` names the seat to consult when no snapshot is held, and when the
+    recorded pid is not running on this host. A snapshot published by a producer
+    on another node records that node's pid, which this host's process table
+    answers for only by accident, so a locally-absent pid is not by itself an
+    absence; the project's seat, which crosses the shared home, is asked whether
+    it names a foreign host whose stream is still fresh, and a yes counts as a
+    live producer.
+
+    The four not-fresh reasons are ``no-producer`` for an absent producer with
+    no live seat behind it, ``no-follower`` for no snapshot at all while a live
+    producer stands on another host -- the reading a session earns when it has
+    no follower of its own with a fresh lease -- ``producer-stale-code`` for a
+    producer running source other than the checkout, and ``stale-snapshot`` for
+    an aged publication.
     """
     if not isinstance(document, Mapping) or not document:
-        return NO_PRODUCER
+        return NO_FOLLOWER if live_foreign_seat_host(project) else NO_PRODUCER
     producer = document.get("producer")
     producer = producer if isinstance(producer, Mapping) else {}
-    if not _records_the_live_producer(producer) and not _foreign_seat_is_live(project):
+    # The seat is consulted only when the recorded producer is not live on this
+    # host: it crosses the shared home, and reaching for the watch module to
+    # read it pulls in the crew facade, which the prompt path must not touch
+    # while a live snapshot already answers the reading.
+    if not _records_the_live_producer(producer) and not live_foreign_seat_host(project):
         return NO_PRODUCER
     stamp = source_code_stamp() if current_stamp is None else current_stamp
     if str(producer.get("code_stamp") or "") != stamp:
