@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:2188",
+    "reckon/crew/plan_review.py:code_review_subject",
+    "reckon/crew/plan_review.py:_expand_code_review_paths"
+  ],
+  "completed_at": "2026-10-15T05:27:42.352Z",
+  "dispatched_at": "2026-10-15T05:17:09Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "a three-call separator and whitespace cleanup duplicated beside dotted_token, which also strips the package prefix and .py suffix, so sharing it needs a normaliser split; not worth a resume. Recorded on the section's close comment for the next change to path normalisation",
+      "recorded_at": "2026-10-15T05:27:58.056886+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/served_code.py",
+      "line": "837",
+      "severity": "follow-on",
+      "text": "follow-on: _holds normalises its token with the same str(path).replace('\\\\','/').strip().rstrip('/') that dotted_token at reckon/served_code.py:911 declares to be the single place a review's path normalisation happens, so the two copies can drift apart on a future change to that rule."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit; the single commit cbeb33e1a adds _candidate_import_name/_holds/_package_from_paths in reckon/served_code.py, threads a paths argument through package_directory/package_modules/neighbourhood/_package_snapshot, and passes the --path tokens from _expand_code_review_paths (reckon/crew/plan_review.py:2455); reached() is untouched.",
+    "done_when": "the done_when names tests/test_a_code_review_reads_its_projects_package.py with acme_tools/apps/refusal cases, a negative control naming 'acme_tools','apps','benchmarks', and an importer-population arm; the manifest records 9 passed EXIT=0 in head-target.log, the control 3 failed/6 passed EXIT=1 in negative-control.log with that refusal quoted, and the population 82 passed (head) against 78 (base), 0 added.",
+    "goal": "\u00a713's goal is a code review that reads the package holding the paths it names; reckon/served_code.py:867 package_directory now takes the review's named paths and resolves them through _package_from_paths (reckon/served_code.py:845) before the declared-name and single-candidate fallbacks.",
+    "manifest": "read; status complete; baseline_suite at 0cd2d5541 (0 failed/78 passed, completed) and after_suite at cbeb33e1a (0 failed/82 passed, completed) both end in an EXIT=0 line, so added_failure_count is 0.",
+    "write_paths": "the run declares reckon/served_code.py, reckon/crew/plan_review.py, tests/test_a_code_review_reads_its_projects_package.py and the evidence fragment; git diff --name-only 0cd2d5541..cbeb33e1a lists exactly those four."
+  },
+  "justifications": {
+    "durability": "tests/test_a_code_review_reads_its_projects_package.py:test_a_named_path_settles_the_package fails when package_directory ignores the named paths, which negative-control.log reproduces (3 failed EXIT=1), and the acme/apps/refusal cases each fail on that regression rather than moving with the value under test.",
+    "evidence": "head-target.log (9 passed EXIT=0) and negative-control.log (3 failed EXIT=1 quoting the refusal naming the three candidates) are logged with rev, tree, module.__file__ and EXIT headers, but the done-when's ruff-clean clause is asserted only in the manifest's evidence_inputs, with no ruff log on disk.",
+    "fit": "the additions follow the module's private-helper and dataclass idiom (reckon/served_code.py:808-818) and introduce no plan, ticket or version token in a name or docstring.",
+    "goal_fidelity": "reckon/served_code.py:882-885 resolves an unambiguous named-path holder first and 891-896 otherwise refuses naming the candidates, which is exactly the deliverable \u00a713 states; _expand_code_review_paths passes its tokens at reckon/crew/plan_review.py:2455 and no option is added.",
+    "reuse": "_holds repeats the path-normalisation line of dotted_token (reckon/served_code.py:911) rather than calling the helper that docstring declares to be the one place a review's path normalisation happens.",
+    "scope_discipline": "git diff --name-only 0cd2d5541..cbeb33e1a lists exactly the three declared sources plus the evidence fragment, with no out-of-scope edit."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 0cd2d5541d30dc730dbabb595c021b873dfb2535\nreviewed_head_sha: cbeb33e1a13082d0f502e913507e1430f2a51dc5\nVERDICT goal: \u00a713's goal is a code review that reads the package holding the paths it names; reckon/served_code.py:867 package_directory now takes the review's named paths and resolves them through _package_from_paths (reckon/served_code.py:845) before the declared-name and single-candidate fallbacks.\nVERDICT done_when: the done_when names tests/test_a_code_review_reads_its_projects_package.py with acme_tools/apps/refusal cases, a negative control naming 'acme_tools','apps','benchmarks', and an importer-population arm; the manifest records 9 passed EXIT=0 in head-target.log, the control 3 failed/6 passed EXIT=1 in negative-control.log with that refusal quoted, and the population 82 passed (head) against 78 (base), 0 added.\nVERDICT write_paths: the run declares reckon/served_code.py, reckon/crew/plan_review.py, tests/test_a_code_review_reads_its_projects_package.py and the evidence fragment; git diff --name-only 0cd2d5541..cbeb33e1a lists exactly those four.\nVERDICT manifest: read; status complete; baseline_suite at 0cd2d5541 (0 failed/78 passed, completed) and after_suite at cbeb33e1a (0 failed/82 passed, completed) both end in an EXIT=0 line, so added_failure_count is 0.\nVERDICT diff: read commit by commit against the base; the single commit cbeb33e1a adds _candidate_import_name/_holds/_package_from_paths in reckon/served_code.py, threads a paths argument through package_directory/package_modules/neighbourhood/_package_snapshot, and passes the --path tokens from _expand_code_review_paths (reckon/crew/plan_review.py:2455); reached() is untouched.\nCALL_SITES: reckon/crew_dispatch_commands.py:2188, reckon/crew/plan_review.py:code_review_subject, reckon/crew/plan_review.py:_expand_code_review_paths\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/served_code.py:882-885 resolves an unambiguous named-path holder first and 891-896 otherwise refuses naming the candidates, which is exactly the deliverable \u00a713 states; _expand_code_review_paths passes its tokens at reckon/crew/plan_review.py:2455 and no option is added.\nSCORE evidence: 18\nJUSTIFICATION evidence: head-target.log (9 passed EXIT=0) and negative-control.log (3 failed EXIT=1 quoting the refusal naming the three candidates) are logged with rev, tree, module.__file__ and EXIT headers, but the done-when's ruff-clean clause is asserted only in the manifest's evidence_inputs, with no ruff log on disk.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --name-only 0cd2d5541..cbeb33e1a lists exactly the three declared sources plus the evidence fragment, with no out-of-scope edit.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_code_review_reads_its_projects_package.py:test_a_named_path_settles_the_package fails when package_directory ignores the named paths, which negative-control.log reproduces (3 failed EXIT=1), and the acme/apps/refusal cases each fail on that regression rather than moving with the value under test.\nSCORE fit: 20\nJUSTIFICATION fit: the additions follow the module's private-helper and dataclass idiom (reckon/served_code.py:808-818) and introduce no plan, ticket or version token in a name or docstring.\nSCORE reuse: 16\nJUSTIFICATION reuse: _holds repeats the path-normalisation line of dotted_token (reckon/served_code.py:911) rather than calling the helper that docstring declares to be the one place a review's path normalisation happens.\nFINDING reckon/served_code.py:837 follow-on: _holds normalises its token with the same str(path).replace('\\\\','/').strip().rstrip('/') that dotted_token at reckon/served_code.py:911 declares to be the single place a review's path normalisation happens, so the two copies can drift apart on a future change to that rule.\n",
+  "review_run_id": "r-20261015T051618979572-review-of-a-code-review-reads-the-package-its-paths-name-cbeb33e1a130",
+  "reviewed_base_sha": "0cd2d5541d30dc730dbabb595c021b873dfb2535",
+  "reviewed_head_sha": "cbeb33e1a13082d0f502e913507e1430f2a51dc5",
+  "reviewed_run_id": "r-20261015T044418574767-a-code-review-reads-the-package-its-paths-name",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T05:24:58.526853+00:00",
+  "total": 112
+}
