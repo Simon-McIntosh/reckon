@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-seat-held-elsewhere-is-not-restarted">
+  <meta name="plan-evidence-for" content="a-seat-held-elsewhere-is-not-restarted">
+  <title>A resume never launches beside another node | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <section id="a-resume-never-launches-beside-another-node-landing">
+      <header>
+        <p class="eyebrow">Execution evidence &middot; fragment</p>
+        <h2>A resume never launches beside an attempt on another node</h2>
+      </header>
+      <p id="a-resume-never-launches-beside-another-node-note">
+        Two facts about a run's current attempt cross hosts, and neither was
+        readable by the guards a resume had. A pid issued on another machine
+        means nothing in this host's process table, so a door that refused only
+        a <em>proven</em> live process answered nothing for a foreign attempt and
+        started a worker beside a live one; and the pointer's advisory lock,
+        which the doors already used to serialise their launches, is coherent on
+        one node and not across two.
+      </p>
+      <p id="a-resume-never-launches-beside-another-node-claim">
+        <code>reckon/crew/resumption.py</code> now reserves each attempt number
+        with an exclusive create &mdash; <code>os.open(path, O_CREAT | O_EXCL)</code>
+        on <code>attempt-&lt;n&gt;.claim</code> in the run directory &mdash; which
+        is a fact of the shared filesystem rather than of one kernel. Of two
+        doors that read the same current attempt, the first creates the claim and
+        launches; the second finds it, raises the run's existing in-flight
+        wording (<code>already has a resume launching</code>), and keeps the
+        coordinator's advice for the run's next resume rather than dropping it. A
+        claim is reclaimed rather than left to wedge the run when the pointer's
+        attempt has already moved past it, or when its launch has exceeded
+        <code>LAUNCH_WINDOW_SECONDS</code> without the launcher recording that
+        attempt. A claim is released only when no worker started; a launch that
+        reached the spawn keeps its claim. No refusal family is added.
+      </p>
+      <p id="a-resume-never-launches-beside-another-node-stream">
+        When the current attempt's liveness is unknown because its pid belongs to
+        another host, <code>_observed_end_refusal</code> now reads the run's own
+        stream through the recovery module's <code>_newest_stream_in_motion</code>,
+        the same reading the stalled-row surface uses. A stream carrying an
+        assistant record and quiet within the stall window is a life this host
+        can read, and the resume is refused as a live pid is refused; a stream
+        that has gone quiet past the window licenses the resume. A stream holding
+        no assistant record is unchanged &mdash; it is not an end, so the
+        unknown-liveness refusal stands.
+      </p>
+      <p id="a-resume-never-launches-beside-another-node-tests">
+        <code>tests/test_a_resume_never_launches_beside_another_node.py</code>
+        holds five cases with the crew home pointed at a temporary directory and
+        the real home asserted untouched afterwards: two doors that read one
+        current attempt launch exactly once and the loser refuses naming the run
+        with its advice stored; a foreign pid with a stream in motion inside the
+        stall window refuses; the same pid with a stream past the window
+        launches; an abandoned claim is reclaimed after the launch window; and a
+        fresh claim still guards a launcher composing. The declared mutation
+        &mdash; removing the exclusive claim, so both doors launch &mdash; turns
+        two of the five red, logged to <code>negative-control.log</code> with the
+        mutation verbatim on its first line and a bare
+        <code>EXIT=1</code> as its last.
+      </p>
+    </section>
+  </main>
+</body>
+</html>
