@@ -1268,7 +1268,31 @@ def parse_health_review(text: str) -> dict[str, Any]:
 # measurement the reviewer made.
 ADDED_FAILURES_TOTAL_CAP = REVIEW_MAX_SCORE // 4
 
-_GATE_FAILURE_RE = re.compile(r"^(?:FAILED|ERROR)\s+(\S+)")
+_GATE_FAILURE_RE = re.compile(r"^(?:FAILED|ERROR)\s+(\S+)", re.MULTILINE)
+
+# A ctest gate log's failure summary. Every entry under the block header is a
+# failure, so a test reported ``(Not Run)`` counts as one. The entry shape is
+# ``<index> - <name> (<reason>)``, where the reason may itself contain spaces,
+# as ``Not Run`` and ``Subprocess aborted`` do.
+_CTEST_FAILED_HEADER_RE = re.compile(r"^The following tests FAILED:\s*$", re.MULTILINE)
+_CTEST_ENTRY_RE = re.compile(r"^\s*\d+\s*-\s*(.+?)\s+\(([^)]*)\)\s*$")
+
+# The lines a log carries when it is a ctest run, with or without failures. A
+# green ctest log has no failure block, so its format is recognised from the
+# run summary ctest always prints; without one the extractor cannot tell a
+# green ctest log from a log that records nothing.
+_CTEST_SUMMARY_RE = re.compile(
+    r"tests passed,|tests failed out of|Total Test time"
+)
+
+# The lines a log carries when it is a pytest run, with or without failures. A
+# green pytest log has no ``FAILED`` line, so its format is recognised from the
+# pytest summary, which is also what a run that failed nothing prints.
+_PYTEST_SUMMARY_RE = re.compile(
+    r"\b\d+\s+(?:passed|failed|error|errors|skipped|xfailed|xpassed|deselected)\b"
+    r"|no tests ran|short test summary info|=\s*(?:FAILURES|ERRORS)\s*=",
+    re.MULTILINE,
+)
 
 # A manifest line that opens a top-level field. The value is everything after
 # the first colon, which for the two suite fields is a JSON object on one line.
@@ -1510,6 +1534,55 @@ def _pytest_failure_ids(
         if match:
             ids.add(canonical_node_id(match.group(1), arm_directory))
     return ids
+
+
+def _ctest_failure_ids(log_text: str) -> set[str]:
+    """Return the test names a ctest gate log reports in its FAILED block.
+
+    A ctest run writes every failing test, and every test it could not run,
+    as one ``<index> - <name> (<reason>)`` entry beneath the line ``The
+    following tests FAILED:``. Each entry is a failure whatever its reason, so
+    a test reported ``Not Run`` behind a build break is read the same as one
+    that ran and failed. The name is taken verbatim: a ctest name is the
+    label the project gave the test, not a path relative to a working
+    directory, so it needs no reduction against the arm that printed it.
+    """
+    ids: set[str] = set()
+    in_block = False
+    for raw in log_text.splitlines():
+        if _CTEST_FAILED_HEADER_RE.match(raw.strip()):
+            in_block = True
+            continue
+        if not in_block:
+            continue
+        match = _CTEST_ENTRY_RE.match(raw)
+        if match:
+            ids.add(match.group(1))
+            continue
+        if raw.strip():
+            break
+    return ids
+
+
+def _gate_log_format(log_text: str) -> str | None:
+    """Return the format a gate log is written in, or ``None`` when unreadable.
+
+    ``"ctest"`` and ``"pytest"`` are the two formats a gate log in this fleet
+    takes, told apart by the summary each always prints — a log that recorded
+    no failures prints one too, so a green run is recognised rather than read
+    as a log that records nothing. ctest is tested first because a failing
+    ctest run with output-on-failure can carry a captured subprocess's own
+    pytest-shaped text, which belongs to the test rather than to the gate.
+
+    ``None`` means the log carries no marker of either format, so the extractor
+    cannot tell whether it recorded failures; the caller reads that as
+    unmeasured rather than as a zero.
+    """
+    if _CTEST_FAILED_HEADER_RE.search(log_text) or _CTEST_SUMMARY_RE.search(log_text):
+        return "ctest"
+    if _GATE_FAILURE_RE.search(log_text) or _PYTEST_SUMMARY_RE.search(log_text):
+        return "pytest"
+    return None
 
 
 def _manifest_field_lines(manifest_text: str, field: str) -> list[str]:
@@ -1997,22 +2070,39 @@ def added_failures_from_gate_logs(
 ) -> tuple[int | None, list[str]]:
     """Return the added-failure count and ids the two gate logs support.
 
-    The count is the pytest node ids reported FAILED or ERROR in the head log
-    that do not appear in the base log. ``(None, [])`` means unmeasured: one or
-    both logs are absent, and a count that was never taken must not be stored as
-    a measured zero. A count of ``0`` with no ids means both logs were read and
-    the run added no failing test.
+    The count is the failing tests the head log reports that the base log does
+    not. A pytest log's failures are the node ids it reports FAILED or ERROR; a
+    ctest log's are the entries of its "The following tests FAILED:" block,
+    including those marked Not Run, keyed by test name. The two arms are
+    compared only when both are the same format: a ctest name and a pytest node
+    id name different things, so a difference taken across the two would report
+    every head entry as added.
 
-    Each log is read against its own arm's recorded working directory, so ids an
-    arm printed from inside a scratch tree are compared in the
+    ``(None, [])`` means unmeasured: one or both logs are absent, or a log is
+    in neither format, or the two logs are in different formats. A count that
+    was never taken must not be stored as a measured zero. A count of ``0`` with
+    no ids means both logs were read, in one format, and the run added no
+    failing test.
+
+    Each pytest log is read against its own arm's recorded working directory, so
+    ids an arm printed from inside a scratch tree are compared in the
     repository-relative form rather than under the prefix that tree
     contributed.
     """
     if base_text is None or head_text is None:
         return None, []
+    base_format = _gate_log_format(base_text)
+    head_format = _gate_log_format(head_text)
+    if base_format is None or head_format is None or base_format != head_format:
+        return None, []
+
+    def failures(text: str, arm_directory: str | Path | None) -> set[str]:
+        if base_format == "ctest":
+            return _ctest_failure_ids(text)
+        return _pytest_failure_ids(text, arm_directory)
+
     added = sorted(
-        _pytest_failure_ids(head_text, head_directory)
-        - _pytest_failure_ids(base_text, base_directory)
+        failures(head_text, head_directory) - failures(base_text, base_directory)
     )
     return len(added), added
 
