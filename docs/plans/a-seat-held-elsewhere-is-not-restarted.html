@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-after" content="the-review-loop-runs-without-hand-steps">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;}">
   <title>A Seat Held Elsewhere Is Not Restarted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="25">
-<meta name="plan-modified" content="2026-10-14">
+<meta name="plan-version" content="27">
+<meta name="plan-modified" content="2026-10-15">
 </head>
 <body>
   <main class="plan-doc">
@@ -59,7 +59,7 @@
     </p>
 
     <h2 id="s2">§2 — A producer finding a foreign seat waits instead of exiting</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p>
       <strong>Deliverable.</strong> When <code>reckon crew watch</code> finds the project's seat held by a live producer on another
       host, it stays up and re-reads the seat at a bounded interval, taking the seat when that producer's stream goes stale, instead
@@ -182,6 +182,12 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261014T203551491973-review-of-a-producer-waits-on-a-foreign-seat-db9c10f5f740" data-who="reckon-build" data-when="2026-10-14T20:49:10.490Z">
     <div class="r-comment-body"><p>Reviewed landed node a-producer-waits-on-a-foreign-seat (base 9677c89ed7411f96d716bcad44dd1c102025a303, head db9c10f5f740925e8aefebdbcdebd4a3a36c1055): the watch now waits out a project seat held by a live producer on another host and re-reads it instead of exiting; six dimensions scored goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 19, reuse 20 (total 116), no findings, added_failure_count 0.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-10-15T06:10:00Z">
+    <div class="r-comment-body"><p>§2 landed. A producer that finds the seat held by a live producer on another host waits and re-reads the seat every 5 s instead of exiting into a restart loop, and takes the seat once that stream goes stale. One stream seed now serves both the sweep and the ticker. Merged as <code>77bfa2b96</code>. The gate's first run had one load-flaky follower test, recorded as an infrastructure failure. Review: 110/120, after a repair round caught by reckon-cd. <a href="/reckon/evidence/archive/a-seat-held-elsewhere-is-not-restarted-landed.html#s2">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261014T211737909806-review-of-a-producer-waits-on-a-foreign-seat-a0efd2253a95" data-who="reckon-build" data-when="2026-10-14T21:43:25.979Z">
+    <div class="r-comment-body"><p>reviewed run r-20261014T194358037727-a-producer-waits-on-a-foreign-seat at base 9677c89ed7411f96d716bcad44dd1c102025a303 and head a0efd2253a958398e459b743913030bd7d3809a8: goal_fidelity 20, evidence 18, scope_discipline 15, durability 19, fit 18, reuse 20 (total 110), added_failure_count 0, two follow-on findings (a hung foreign holder whose seat lock outlives its stream still exits and cycles the unit; the reviewed manifest&#x27;s baseline_suite/after_suite are prose so the derived added-failure count reads as unmeasured), stored as a parsed record.</p></div>
 </div>
 </section>
 </main>
