@@ -581,7 +581,9 @@ def _ask_summary(selection: Mapping[str, Any]) -> dict[str, Any]:
         "confidence": selection.get("confidence"),
         "probabilities": dict(selection.get("probabilities") or {}),
         "offered": [
-            row.get("backend") for row in selection.get("offered") or () if isinstance(row, Mapping)
+            row.get("backend")
+            for row in selection.get("offered") or ()
+            if isinstance(row, Mapping)
         ],
     }
 

@@ -18,7 +18,7 @@ from datetime import datetime
 import pytest
 
 from reckon.crew.node import TaskNode
-from reckon.crew.picker import PickRequest, lane_context, pick
+from reckon.crew.picker import PickRequest, lane_context, outcomes, pick
 from reckon.crew.picker.outcomes import (
     HOLD_LOG_DIR,
     HOLD_LOG_FILENAME,
@@ -160,7 +160,13 @@ def _record(tmp_path, selection) -> dict:
 
 
 def test_hold_row_carries_the_exact_request(tmp_path):
-    """The persisted row stores the state, the questions and both digests."""
+    """The persisted row reads back as the request Jev was shown, either path.
+
+    The row stores its request inline or, when the request is larger than the
+    inline limit, beside the log behind a reference. The reader is the replay,
+    so this holds whichever path the row took and does not depend on the size of
+    a rendered state.
+    """
 
     selection, _ = _hold_pick(tmp_path)
     assert selection.action == "hold"
@@ -171,8 +177,9 @@ def test_hold_row_carries_the_exact_request(tmp_path):
 
     # The digest is over the same state and questions the selection carries, so
     # the row and the selection agree by construction.
-    assert row["state"] == selection.rendered_state
-    assert row["questions"] == selection.questions
+    replay = replay_hold(row, project=PROJECT)
+    assert replay["state"] == selection.rendered_state
+    assert replay["questions"] == selection.questions
     assert row["template_digest"] == selection.template_digest
     assert row["template_digest"] != ""
     assert row["request_digest"] == hold_request_digest(
@@ -215,13 +222,33 @@ def test_oversized_request_is_stored_by_reference_and_still_replays(tmp_path):
     assert replay["request_digest"] == row["request_digest"]
 
 
-def test_a_tampered_row_is_refused_by_its_digest(tmp_path):
-    """An edited state fails the digest rather than replaying a different request."""
+@pytest.mark.parametrize("inline", [True, False])
+def test_a_tampered_row_is_refused_by_its_digest(tmp_path, monkeypatch, inline):
+    """An edited request fails the digest, on either storage path."""
 
+    # The stored fixture is the size it is, so the path this test exercises is
+    # chosen by the limit rather than by padding a node: a limit above any
+    # request keeps the row inline, and a limit of one byte puts it behind a
+    # reference. Neither branch raises the production limit.
+    monkeypatch.setattr(
+        outcomes,
+        "HOLD_PAYLOAD_INLINE_LIMIT",
+        HOLD_PAYLOAD_INLINE_LIMIT * 100 if inline else 1,
+    )
     selection, _ = _hold_pick(tmp_path)
     _record(tmp_path, selection)
     row = _hold_rows()[0]
-    row["state"] = row["state"] + " "
+    assert ("state" in row) is inline
+
+    if inline:
+        row["state"] = row["state"] + " "
+    else:
+        payload_path = _crew_hold_log().parent / row["payload_ref"]
+        stored = json.loads(payload_path.read_text(encoding="utf-8"))
+        stored["state"] = stored["state"] + " "
+        payload_path.write_text(
+            json.dumps(stored, separators=(",", ":"), sort_keys=True)
+        )
 
     with pytest.raises(ValueError, match="digest mismatch"):
         replay_hold(row, project=PROJECT)
@@ -233,9 +260,10 @@ def test_the_recorded_size_of_a_hold_is_measurable(tmp_path):
     selection, _ = _hold_pick(tmp_path)
     _record(tmp_path, selection)
     row = _hold_rows()[0]
+    replay = replay_hold(row, project=PROJECT)
     assert row["payload_bytes"] == len(
         json.dumps(
-            {"state": row["state"], "questions": row["questions"]},
+            {"state": replay["state"], "questions": replay["questions"]},
             separators=(",", ":"),
             sort_keys=True,
         ).encode("utf-8")
