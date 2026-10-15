@@ -1,0 +1,40 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-15T13:06:12.652Z",
+  "dispatched_at": "2026-10-15T12:57:03Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-write-on-any-node-reaches-the-page.html:42",
+      "id": "reasoning-1",
+      "reason": "if the state root arrives as a required parameter those two tests raise at call/patch time and the node, fenced to serve.py and its own new test file, cannot repair them, so the plan must either state the parameter is optional (or read from the `_STATE_ROOT` global main already sets) or add those two paths to the node's Writes.",
+      "text": "\u00a72 makes `main()` hand the state root to `start_fleet_change_watch`, but that function is already called with one argument by tests/test_rollup_reuses_watched_walks.py:107 (`serve.start_fleet_change_watch(mounts)`) and patched with a one-argument lambda at tests/test_served_code_drift.py:276 (`lambda mounts: None`, with `serve.main` driven in a thread), neither of which is in the node's Writes column, while the Done when's regression list names only tests/test_changes_push_rows.py and tests/test_agent_readers_use_the_index.py",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "b9fbc741dad605934e6441597d98359009fc37c55294c1194cca1457c856a5a8",
+  "plan_slug": "a-write-on-any-node-reaches-the-page",
+  "plan_version": 8,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261015T125628288167-plan-review-of-a-write-on-any-node-reaches-the-page",
+  "reviewed_blob_sha": "835c73c0e05c9a4d271c711651c60595fa7f6e60",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited anchors resolve to the statements they are attached to (serve.py:2782 the per-stream watch, :1588 `repo_dir = docs_dir.parent`, :1291 `_head_identity`, :1262 `_file_identity`, :1659 `_walk_discovery_signature`, :3282 and :3358 the two handlers, :4017 the fleet watch build, :844 the fleet index read), and the two regression tests named (tests/test_changes_push_rows.py, tests/test_agent_readers_use_the_index.py) exist.",
+    "done_when": "pass \u2014 the Done when at line 59 names its negative control (\"The declared negative control disables the detector, and the new-document test must then fail\") and every other assertion names an observable (a row in `/_index/<project>`, a `change` event on the stream, no second `_invalidate_tree_views` call, no detector thread alive after `close()`).",
+    "evidence_paths": "pass \u2014 the gate is a repository test file and the two pass measurements land in the node's manifest on its run path; no scratchpad or node-local path is named as an evidence store.",
+    "naming": "pass \u2014 the test file is named for its mechanism (tests/test_cross_node_writes_refresh_the_index.py) and the only new names are RECKON_-prefixed environment variables; no plan label, stage name or ticket number reaches code.",
+    "reasoning": "a finding \u2014 line 42 has `main()` pass the state root into `start_fleet_change_watch`, a call shape existing tests already use with one argument and which the node's Writes column does not cover.",
+    "single_goal": "pass \u2014 the node carries one deliverable, the cross-node backstop for one tree's views plus the stream wake; the fleet-index question is a manifest report, not a second thing to build.",
+    "wiring": "pass \u2014 \u00a72 has one node whose declared files resolve (reckon/serve.py, tests/test_cross_node_writes_refresh_the_index.py) and the plan declares itself standalone (`plan-standalone`), with no depends-on, informs or gates left dangling."
+  },
+  "section_digests": {
+    "_document": "375c8a0250252dfd8391140955e2378dc5d099cc39e269da05940553993894d2",
+    "s1": "58a6ee92b653b4651357b52cc08c1e80b329e4482143b6bc8ae18570764bcd52",
+    "s2": "269162ef638ea5d3a60f3bad9682a6c9faea3c560719291df1016a58b2706f8a"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T13:15:00.325187+00:00"
+}
