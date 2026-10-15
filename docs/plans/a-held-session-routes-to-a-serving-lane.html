@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-after" content="a-held-dispatch-waits-its-fair-turn">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;}">
   <title>A Held Session Routes To A Serving Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="13">
+<meta name="plan-version" content="14">
 <meta name="plan-modified" content="2026-10-15">
 </head>
 <body>
@@ -90,7 +90,7 @@
     </p>
 
     <h2 id="s2">§2 — Jev reads the session's own admission before it routes</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p>
       <strong>Deliverable.</strong> The state rendered for Jev carries, for each lane with a router, the worker slots
       the router would grant this coordinator session, taken from the lane document's
@@ -214,7 +214,10 @@
     <div class="r-comment-body"><p>review of run r-20261015T075223938148-jev-routes-with-the-session-admission-and-the-lift at head ebcb2cbc44: goal_fidelity 19, evidence 15, scope_discipline 12, durability 13, fit 17, reuse 17 (total 93); one blocking finding (reckon/crew/recovery_review_dispatch.py:1096 resolves the lift with readings=None and no session, so the reflex can disagree with the snapshot about whether a lift stands) and four follow-on findings. Add to §2 of the plan the outcome that Jev's state and guidance now carry the session's own worker slots plus any lift, with the review's blocking finding recorded against the lift resolver's reader.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261015T103301042368-review-of-jev-routes-with-the-session-admission-and-the-lift-81867f41ce84" data-who="reckon-build" data-when="2026-10-15T10:45:19.475Z">
-    <div class="r-comment-body"><p>review of r-20261015T075223938148-jev-routes-with-the-session-admission-and-the-lift at head 81867f41ce84 covered the two gained commits (1b1a5d5ac, 81867f41c) over the prior reviewed head ebcb2cbc44; stored at .config/reckon/crew/reviews/reckon/ as the run JSON and its revision-pinned twin; 6/6 dimensions scored (goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 18, reuse 19, total 112); no added failure against the reviewed run&#x27;s own gates; three follow-on findings, no blocking finding.</p></div>
+    <div class="r-comment-body"><p>review of r-20261015T075223938148-jev-routes-with-the-session-admission-and-the-lift at head 81867f41ce84 covered the two gained commits (1b1a5d5ac, 81867f41c) over the prior reviewed head ebcb2cbc44; stored at .config/reckon/crew/reviews/reckon/ as the run JSON and its revision-pinned twin; 6/6 dimensions scored (goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 18, reuse 19, total 112); no added failure against the reviewed run's own gates; three follow-on findings, no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-10-15T11:35:00Z">
+    <div class="r-comment-body"><p>§2 landed. Jev routes with the session's own slots and any lift in view: a well-defined node routed onto a zero-slot lane is re-asked once without it, a lifted lane's burn does not press it, and reviews are offered the lifted lane's cheaper models. Merged as <code>0249aeaa5</code>; gate 869 passed with the same three failures and setup error as base. Review: 112/120. <a href="/reckon/evidence/archive/a-held-session-routes-to-a-serving-lane-landed.html#s2">evidence</a></p></div>
 </div>
 </section>
 </main>
