@@ -25,7 +25,7 @@
   <title>A Seat Held Elsewhere Is Not Restarted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="51">
+<meta name="plan-version" content="52">
 <meta name="plan-modified" content="2026-10-15">
 </head>
 <body>
@@ -273,6 +273,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261015T152637789069-a-follower-on-another-node-renews-a-lease" data-who="reckon-build" data-when="2026-10-15T16:07:58.609Z">
     <div class="r-comment-body"><p>a follower registration naming another host is judged by a lease it renews beside its registration, not by its node-local advisory lock; the lease (follower_registration.follower_lease_path / renew_follower_lease, published as a whole record by run_paths._write_json_atomically) decides registered, live and released for a foreign registration, while a same-host registration keeps its lock and process probes.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-s8-live-check" data-who="reckon-build" data-when="2026-10-15T16:28:05Z">
+    <div class="r-comment-body"><p>Live check passed. The seated producer, pid 960706 on clu-2018, reloaded to the current code stamp <code>6b3bc56fefd7</code>. At 16:27:16Z it published a fresh obligations snapshot for session <code>f653840f</code>, whose follower runs on clu-2002. It is the first reckon snapshot written since 2026-10-08T00:06Z, and <code>obligation_snapshot.freshness</code> reads it as <code>fresh</code>. The hook's false "no producer" line has stopped for this session.</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
