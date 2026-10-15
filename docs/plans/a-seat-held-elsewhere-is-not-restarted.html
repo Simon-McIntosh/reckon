@@ -25,7 +25,7 @@
   <title>A Seat Held Elsewhere Is Not Restarted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="76">
+<meta name="plan-version" content="77">
 <meta name="plan-modified" content="2026-10-15">
 </head>
 <body>
@@ -354,6 +354,9 @@
 </div>
 <div class="r-comment" data-section="s17" data-id="c-close-s17" data-who="reckon-build" data-when="2026-10-15T19:38:00Z">
     <div class="r-comment-body"><p>§17 landed. A dry-run resume now predicts the launcher's refusal for a run on another node whose stream is moving. Merged as <code>7ecf39fbf</code>. Its gate's unfinished chunk, which includes the crew-recover tests, was closed by a resume: 255 tests passed in each arm. Review: 109/120. <a href="/reckon/evidence/archive/a-seat-held-elsewhere-is-not-restarted-landed.html#s17">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s17" data-id="c-run-r-20261015T171245560090-a-dry-run-resume-predicts-the-stream-reading" data-who="reckon-build" data-when="2026-10-15T19:33:16.081Z">
+    <div class="r-comment-body"><p>reckon:a-seat-held-elsewhere-is-not-restarted §17 — `_launcher_refusal` now applies the launcher&#x27;s stream reading through one shared helper (`_observed_process_reading` + `_stream_reading_refusal`, both also used by `_observed_end_refusal`); at base a foreign-host pointer with a moving stream had `_launcher_refusal` return None while `_observed_end_refusal` refused, and the new parity case in tests/test_dry_run_predicts_the_launcher.py now holds both doors to one refusal (8 passed at head against 7 at base).</p></div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261015T185543491241-review-of-a-stop-during-a-reload-says-so-40127ddb716a" data-who="reckon-build" data-when="2026-10-15T19:10:21.155Z">
     <div class="r-comment-body"><p>Stored one parsed review of r-20261015T180136509714-a-stop-during-a-reload-says-so at head 40127ddb7, base 1460998113: six dimensions scored 19/14/19/18/17/19 (total 106), one follow-on finding, no blocking finding.</p></div>
