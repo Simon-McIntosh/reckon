@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/hooks/coordinator_obligations.py:890",
+    "reckon/hooks/coordinator_obligations.py:906",
+    "reckon/hooks/coordinator_obligations.py:1117",
+    "reckon/hooks/coordinator_obligations.py:1123",
+    "reckon/crew/recovery_watch.py:372"
+  ],
+  "completed_at": "2026-10-15T17:34:11.480Z",
+  "dispatched_at": "2026-10-15T17:27:18Z",
+  "findings": [
+    {
+      "file": "reckon/hooks/coordinator_obligations.py",
+      "line": "1110",
+      "severity": "follow-on",
+      "text": "follow-on: the stop-path docstring still reads 'A snapshot that is not fresh -- for any of its three reasons', but this node's change makes freshness return four fixed states (no-follower added at reckon/crew/obligation_snapshot.py:59); the sibling docstring at :734 was updated to four and this one in the same file was left stale."
+    },
+    {
+      "file": "reckon/hooks/coordinator_obligations.py",
+      "line": "761",
+      "severity": "follow-on",
+      "text": "follow-on: not_fresh_line re-derives the host with module.live_foreign_seat_host(project) for a state that the caller computed by a separate earlier call (freshness at :890/:1123), so if the seat changes between the two reads the line can render 'the seat is held on , whose producer has published no snapshot' with an empty host, a malformed sentence rather than a refusal."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against base f97504536; a39f25465 lands one commit changing exactly the six declared paths (reckon/crew/watch_unit.py, reckon/crew/obligation_snapshot.py, reckon/hooks/coordinator_obligations.py, tests/test_obligations_snapshot_is_published.py, tests/test_a_missing_snapshot_names_a_live_seat.py, docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/a-missing-snapshot-names-a-live-seat.html).",
+    "done_when": "the done_when's measure is a new hook-driving test naming the host and the follower arming line with neither 'no producer' nor 'watch --ensure', a fourth freshness state, watch_unit gaining one host function with seat_names_a_live_foreign_producer a test on it, the three-reason test updated to four, and a two-arm gate with no head-only failure; the manifest records all of these and the tests/test_a_missing_snapshot_names_a_live_seat.py file drives the hook as the harness does.",
+    "goal": "the goal is to name a live seat on another host and offer the follower arming line when a session's snapshot is missing; obligation_snapshot.py:399 returns the new no-follower state and coordinator_obligations.py:760-777 render the host and the arming line, so the goal lands.",
+    "manifest": "read; it reports the 5-test new file passing, the two-arm gate 237 head / 232 base with 0 failures either arm, a negative control reddening 2 of 5, and names its 8 gate logs and the negative control log.",
+    "write_paths": "read the seven declared paths (reckon/crew/watch_unit.py, reckon/crew/obligation_snapshot.py, reckon/hooks/coordinator_obligations.py, tests/test_obligations_snapshot_is_published.py, tests/test_a_missing_snapshot_names_a_live_seat.py, docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/a-missing-snapshot-names-a-live-seat.html, docs/figures/a-seat-held-elsewhere-is-not-restarted/a-missing-snapshot-names-a-live-seat); the diff's six files are exactly six of those, with no path outside them and no figure written."
+  },
+  "justifications": {
+    "durability": "tests/test_a_missing_snapshot_names_a_live_seat.py:161 and :232 assert the emitted hook line names the host and the arming command, and the recorded negative control (gate_negative_control.log) reddens exactly those two when freshness again returns no-producer; the value-equality assertion at :209 compares the host against the fixture the test wrote, but its paired stalled case at :213 makes both directions independent.",
+    "evidence": "the gate is recorded in the reviewed run's own gate_head_*.log (head 41/69/93/34 passed, EXIT=0 each) and gate_base_*.log (base 53/64/88/27 passed), each chunk reaching its summary line, though the head logs name revision 'working-tree' rather than the head sha a39f25465.",
+    "fit": "the new function sits beside _seat_host in reckon/crew/watch_unit.py:143 and reuses it, and the hook branch mirrors the existing STALE_SNAPSHOT follower-arming idiom at coordinator_obligations.py:766, though the sibling stale 'three reasons' docstring at :1110 was left behind.",
+    "goal_fidelity": "reckon/crew/obligation_snapshot.py:399 returns no-follower for a missing snapshot beside a live foreign seat and coordinator_obligations.py:760-777 name the host and offer the follower arming line, which is the goal exactly.",
+    "reuse": "the change extends the existing owner: watch_unit.live_foreign_seat_host is the one seat judgement and seat_names_a_live_foreign_producer is now its boolean test, and the obligation_snapshot wrapper delegates rather than reimplementing the seat read, so no capability is forked.",
+    "scope_discipline": "the diff touches exactly the six declared write paths and carries nothing the goal does not imply; no path outside them is changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to name a live seat on another host and offer the follower arming line when a session's snapshot is missing; obligation_snapshot.py:399 returns the new no-follower state and coordinator_obligations.py:760-777 render the host and the arming line, so the goal lands.\nVERDICT done_when: the done_when's measure is a new hook-driving test naming the host and the follower arming line with neither 'no producer' nor 'watch --ensure', a fourth freshness state, watch_unit gaining one host function with seat_names_a_live_foreign_producer a test on it, the three-reason test updated to four, and a two-arm gate with no head-only failure; the manifest records all of these and the tests/test_a_missing_snapshot_names_a_live_seat.py file drives the hook as the harness does.\nVERDICT write_paths: read the seven declared paths; the diff's six files are exactly six of those (reckon/crew/watch_unit.py, reckon/crew/obligation_snapshot.py, reckon/hooks/coordinator_obligations.py, tests/test_obligations_snapshot_is_published.py, tests/test_a_missing_snapshot_names_a_live_seat.py, docs/evidence/fragments/a-seat-held-elsewhere-is-not-restarted/a-missing-snapshot-names-a-live-seat.html), with no path outside them and no figure written.\nVERDICT manifest: read; it reports the 5-test new file passing, the two-arm gate 237 head / 232 base with 0 failures either arm, a negative control reddening 2 of 5, and names its 8 gate logs and the negative control log.\nVERDICT diff: read commit by commit against base f97504536; a39f25465 lands one commit changing exactly the six declared paths.\nCALL_SITES: reckon/hooks/coordinator_obligations.py:890, reckon/hooks/coordinator_obligations.py:906, reckon/hooks/coordinator_obligations.py:1117, reckon/hooks/coordinator_obligations.py:1123, reckon/crew/recovery_watch.py:372\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/obligation_snapshot.py:399 returns no-follower for a missing snapshot beside a live foreign seat and coordinator_obligations.py:760-777 name the host and offer the follower arming line, which is the goal exactly.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate is recorded in the reviewed run's own gate_head_*.log (head 41/69/93/34 passed, EXIT=0 each) and gate_base_*.log (base 53/64/88/27 passed), each chunk reaching its summary line, though the head logs name revision 'working-tree' rather than the head sha a39f25465.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared write paths (diffstat names exactly the six changed files, none outside).\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_missing_snapshot_names_a_live_seat.py:161 and :232 assert the emitted hook line names the host and the arming command, and the recorded negative control reddens exactly those two when freshness again returns no-producer; the equality assertion at :209 rides the fixture it wrote but its paired stalled case at :213 makes both directions independent.\nSCORE fit: 17\nJUSTIFICATION fit: the new function sits beside _seat_host in reckon/crew/watch_unit.py:143 and reuses it, and the hook branch mirrors the STALE_SNAPSHOT arming idiom at coordinator_obligations.py:766, though the sibling 'three reasons' docstring at :1110 was left stale.\nSCORE reuse: 20\nJUSTIFICATION reuse: watch_unit.live_foreign_seat_host is the one seat judgement and seat_names_a_live_foreign_producer is now its boolean test, so the change extends the existing owner rather than forking it.\nFINDING reckon/hooks/coordinator_obligations.py:1110 follow-on: the stop-path docstring still reads 'for any of its three reasons', but this change makes freshness return four fixed states (obligation_snapshot.py:59 adds no-follower) and the sibling docstring at :734 was updated to four while this one was left stale.\nFINDING reckon/hooks/coordinator_obligations.py:761 follow-on: not_fresh_line re-derives the host for a state its caller computed by a separate earlier call, so a seat change between the two reads can render 'the seat is held on , whose producer has published no snapshot' with an empty host.\nreviewed_base_sha: f9750453628b1fe25ced67547fa3d1a46117fac3\nreviewed_head_sha: a39f2546541bed83bd031fb5e6f530a265ae67e5\n",
+  "review_run_id": "r-20261015T172639174761-review-of-a-missing-snapshot-names-a-live-seat-a39f2546541b",
+  "reviewed_base_sha": "f9750453628b1fe25ced67547fa3d1a46117fac3",
+  "reviewed_head_sha": "a39f2546541bed83bd031fb5e6f530a265ae67e5",
+  "reviewed_run_id": "r-20261015T165119232665-a-missing-snapshot-names-a-live-seat",
+  "reviewer": {
+    "backend": "clive",
+    "effort": null,
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261015T172639174761-review-of-a-missing-snapshot-names-a-live-seat-a39f2546541b",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-15T17:33:00+00:00",
+  "total": 114
+}
