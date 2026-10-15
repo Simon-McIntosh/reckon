@@ -56,6 +56,19 @@ _GLOSSARY: dict[str, str] = {
         "its budget_age_s says how old it is. An account-surface reading is "
         "never stale by age."
     ),
+    "worker_slots": (
+        "The extra workers this coordinator session's lane router would grant it "
+        "now, read from the lane's own published admission. Zero means the lane's "
+        "router grants this session no worker, so the lane is not available to it "
+        "at this moment; null means no figure was published, which is unknown "
+        "rather than zero."
+    ),
+    "lift": (
+        "A lift in force on the lane's budget group: its form (uncapped, "
+        "drain_by or multiple), who granted it, and when it ends. A lane under a "
+        "lift is one whose window is meant to be spent, so its burn and pace do "
+        "not press it while the lift stands."
+    ),
     "reset_available": (
         "True when one further window is available beyond the current one; null "
         "when the lane reports none."
