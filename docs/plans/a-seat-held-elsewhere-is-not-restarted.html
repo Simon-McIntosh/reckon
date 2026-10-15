@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-after" content="the-review-loop-runs-without-hand-steps">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;deferred&quot;,&quot;s17&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;deferred&quot;,&quot;s17&quot;:&quot;implementable&quot;}">
   <title>A Seat Held Elsewhere Is Not Restarted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="72">
+<meta name="plan-version" content="74">
 <meta name="plan-modified" content="2026-10-15">
 </head>
 <body>
@@ -163,7 +163,7 @@
 <p><strong>Done when</strong> a test with an injected unit manager reporting counts 3 then 5 finds <code>--ensure</code> printing <code>cycling: true</code> and exiting non-zero, and with counts 3 then 3 exiting 0. The parse test covers the three literal outputs above. The test files that import <code>reckon/service.py</code> or <code>reckon/crew/watch_unit.py</code> give the same pass and fail ids at head as at base, apart from the new file. Negative control: with the exit status left at 0 for a cycling unit, the first case fails; the control is logged under the run directory. Write paths: <code>reckon/service.py</code>, <code>reckon/crew/watch_unit.py</code>, <code>reckon/crew_follow_commands.py</code> and <code>tests/test_a_cycling_unit_fails_ensure.py</code>.</p>
 
     <h2 id="s13">§13 — A stop during a reload says the producer is reloading</h2>
-<section data-reckon="section" data-id="s13" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s13" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> At about 14:45Z on 2026-10-15 the stop hook in nova session s21-nova printed "reckon obligations … are not current: the producer is running older code than the checkout; run <code>reckon crew watch --ensure --project nova</code>". Nova's producer was healthy. It runs on srv-1006, and its log shows it reloading after each merge into <code>reckon/</code>; four such merges landed between 14:02Z and 14:31Z. Earlier, at about 13:40Z, the same producer logged "deferred its reload: tracked files are modified against HEAD (M reckon/crew_dispatch_commands.py); keeping the current image, retrying when the tree is clean". So it kept the old image on purpose while a session had an uncommitted source edit in the main checkout. In neither case can <code>--ensure</code> help. A reload completes by itself, and a deferral ends only when the tree is clean.</p>
 <p><strong>Where the fault is.</strong> The prompt path in <code>reckon/hooks/coordinator_obligations.py</code> sends a stale reading through <code>obligation_snapshot.reload_in_progress</code>, which treats a stale code stamp as a reload still catching up. The stop path does not. When the snapshot is not fresh and the inline derivation runs out of its budget, it prints <code>not_fresh_line</code> directly, so every session that stops inside a reload window is given the <code>--ensure</code> remedy. A deferred reload is written only to the producer's log (<code>reckon/crew_follow_commands.py</code>), so neither path can say that the producer is waiting on a clean tree, or which file it is waiting on.</p>
 <p><strong>Deliverable.</strong> The stop path asks <code>reload_in_progress</code> exactly as the prompt path does. A reload in progress prints the prompt path's reload wording and offers no command. The producer records a deferral on its seat record, with the reason and the paths it named, and clears it when the reload starts. While a deferral is recorded, both paths say the producer is waiting for those files to be committed, and name them, rather than offering <code>--ensure</code>. A stale stamp with neither a reload nor a deferral in progress keeps today's line.</p>
@@ -351,6 +351,12 @@
 </div>
 <div class="r-comment" data-section="s17" data-id="c-run-r-20261015T182526575333-review-of-a-dry-run-resume-predicts-the-stream-reading-49d7b6d5b16f" data-who="reckon-build" data-when="2026-10-15T18:46:41.209Z">
     <div class="r-comment-body"><p>Independent review of r-20261015T171245560090-a-dry-run-resume-predicts-the-stream-reading at head 49d7b6d5b16f9090703fca7d9187528a8aabfedb against base d68b2d592bb444b1ed1e8c4c8f30ae76fb44b5e9: goal_fidelity 18, evidence 14, scope_discipline 20, durability 19, fit 18, reuse 20 (total 109); three follow-on findings, no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261015T185543491241-review-of-a-stop-during-a-reload-says-so-40127ddb716a" data-who="reckon-build" data-when="2026-10-15T19:10:21.155Z">
+    <div class="r-comment-body"><p>Stored one parsed review of r-20261015T180136509714-a-stop-during-a-reload-says-so at head 40127ddb7, base 1460998113: six dimensions scored 19/14/19/18/17/19 (total 106), one follow-on finding, no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-close-s13" data-who="reckon-build" data-when="2026-10-15T19:12:00Z">
+    <div class="r-comment-body"><p>§13 landed. A session that stops during a producer reload is told the producer is reloading, not to run <code>--ensure</code>, and a deferred reload names the files it waits on. Merged as <code>7ea6bc332</code>. Its gate adds no failure against base. Review: 106/120. §12 is unblocked. <a href="/reckon/evidence/archive/a-seat-held-elsewhere-is-not-restarted-landed.html#s13">evidence</a></p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
