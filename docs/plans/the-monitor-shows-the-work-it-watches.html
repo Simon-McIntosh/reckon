@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="162">
+<meta name="plan-version" content="163">
 <meta name="plan-modified" content="2026-10-15">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -762,6 +762,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s33" data-id="c-close-s33" data-who="reckon-build" data-when="2026-10-15T20:41:00Z">
     <div class="r-comment-body"><p>§33 landed. A delivered run on another node, still finishing its final turn, now reads running rather than scoring, so the stop hook no longer demands a review the reflex is about to launch. Its exit record ends the hold. Merged as <code>e22d78980</code>. Gate: every chunk exits 0 at base and head. Review: 111/120. §34 is unblocked. <a href="/reckon/evidence/archive/the-monitor-shows-the-work-it-watches-landed.html#s33">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s33" data-id="c-run-r-20261015T191658811597-a-delivered-run-on-another-node-reads-running" data-who="reckon-build" data-when="2026-10-15T20:19:31.688Z">
+    <div class="r-comment-body"><p>deferred_outcome now holds a delivered run at running when the hoisted, stream-aware process_gone verdict says the worker is not gone (not only when alive is True), so a delivered run on another node reads running while its stream is in motion and raises no review duty; a present exit record forces alive false so the deferral does not fire and such a run reads scoring at once. Covered by tests/test_a_delivered_run_waits_for_the_reflex.py (moving stream -&gt; running no duty; quieted stream -&gt; scoring review-missing; exit record + moving stream -&gt; scoring at once).</p></div>
 </div>
 </section>
 </main>
