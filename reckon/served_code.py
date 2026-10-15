@@ -818,17 +818,71 @@ def _package_candidates(directories: Iterable[str]) -> list[str]:
     return found
 
 
-def package_directory(repo, revision) -> str:
+def _candidate_import_name(candidate: str) -> str:
+    """The import name of a candidate package directory (``src/acme`` → ``acme``)."""
+
+    return candidate.rsplit("/", 1)[-1]
+
+
+def _holds(candidate: str, path: str) -> bool:
+    """Whether a named path is held by the candidate package directory.
+
+    A path is held when it lies under the candidate's directory
+    (``nova/equilibrium/topology.py``, ``src/acme/core.py``), or when its first
+    dotted component is the candidate's import name
+    (``nova.equilibrium.topology``). A token naming something else — a
+    package-relative path such as ``crew/runs.py`` — is held by no candidate.
+    """
+
+    text = str(path).replace("\\", "/").strip().rstrip("/")
+    if not text:
+        return False
+    if text == candidate or text.startswith(candidate + "/"):
+        return True
+    return text.split(".", 1)[0] == _candidate_import_name(candidate)
+
+
+def _package_from_paths(candidates: Iterable[str], paths: Iterable[str]) -> str | None:
+    """The one candidate holding every named path a candidate holds, or None.
+
+    A named path held by no candidate is ignored, so a package-relative token
+    leaves the choice to the declared name. When every held path is held by the
+    same candidate, that candidate is the package; held paths pointing at two
+    or more candidates are refused, naming them.
+    """
+
+    holders: list[str] = []
+    for path in paths:
+        for candidate in candidates:
+            if _holds(candidate, path) and candidate not in holders:
+                holders.append(candidate)
+    if not holders:
+        return None
+    if len(holders) == 1:
+        return holders[0]
+    named = ", ".join(repr(candidate) for candidate in sorted(holders))
+    raise PackageNotFoundError(f"no single import package to review: {named}")
+
+
+def package_directory(repo, revision, paths: Iterable[str] = ()) -> str:
     """The reviewed repository's own import package, as a repo-relative path.
 
-    The package is the directory the code under review imports: the project's
-    declared name when a directory of that name (or ``src/<name>``) holds a
-    tracked ``__init__.py``, otherwise the single top-level package directory
-    (or ``src/`` child) that does. A repository that declares none, or several,
-    is refused by name rather than guessed at.
+    The named paths the review carries settle the choice when the repository
+    declares several candidates: the package is the candidate that holds every
+    named path any candidate holds (``nova/equilibrium/topology.py`` and
+    ``nova.equilibrium.topology`` both name ``nova``), and paths held by two or
+    more candidates are refused by name. A path held by no candidate changes
+    nothing. Otherwise the package is the project's declared name when a
+    directory of that name (or ``src/<name>``) holds a tracked ``__init__.py``,
+    then the single top-level package directory (or ``src/`` child) that does.
+    A repository that declares none, or several, is refused by name rather than
+    guessed at.
     """
 
     directories = _tracked_init_dirs(repo, revision)
+    chosen = _package_from_paths(_package_candidates(directories), paths)
+    if chosen is not None:
+        return chosen
     name = _project_name_at(repo, revision)
     if name is not None:
         for candidate in (name, f"src/{name}"):
@@ -881,12 +935,12 @@ def as_module(name: str, modules: Iterable[str], package: str) -> str | None:
     return None
 
 
-def _package_snapshot(repo, revision) -> SourceSnapshot:
+def _package_snapshot(repo, revision, paths: Iterable[str] = ()) -> SourceSnapshot:
     """Read the reviewed package's tree into a snapshot keyed package-relative."""
 
     from reckon.velocity import read_sources
 
-    directory = package_directory(repo, revision)
+    directory = package_directory(repo, revision, paths)
     sources: dict[str, str] = {}
     files: dict[str, tuple[_Signature, str]] = {}
     for path, text in read_sources(repo, revision, prefix=directory).items():
@@ -1119,10 +1173,15 @@ def reached(repo, revision) -> Reach:
     return result
 
 
-def package_modules(repo, revision) -> frozenset[str]:
-    """Every module name under the reviewed package at ``revision``."""
+def package_modules(repo, revision, paths: Iterable[str] = ()) -> frozenset[str]:
+    """Every module name under the reviewed package at ``revision``.
 
-    snapshot = _package_snapshot(repo, revision)
+    ``paths`` are the review's named paths, which settle the package choice
+    when the repository declares several candidates (see
+    :func:`package_directory`).
+    """
+
+    snapshot = _package_snapshot(repo, revision, paths)
     return frozenset(
         _module_name(snapshot.root.name, relative) for relative in snapshot.sources
     )
@@ -1133,10 +1192,12 @@ def neighbourhood(repo, revision, paths) -> frozenset[str]:
 
     ``paths`` are module names or package-relative file paths. The result
     holds every module that imports one of the named modules and every module one
-    of them imports, excluding the named modules themselves.
+    of them imports, excluding the named modules themselves. The named paths
+    also settle the package choice when the repository declares several
+    candidates (see :func:`package_directory`).
     """
 
-    snapshot = _package_snapshot(repo, revision)
+    snapshot = _package_snapshot(repo, revision, paths)
     module_of = {
         _module_name(snapshot.root.name, relative): relative
         for relative in snapshot.sources

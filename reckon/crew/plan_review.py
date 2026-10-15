@@ -2443,16 +2443,20 @@ def _expand_code_review_paths(
     rather than matching nothing. A path naming a file or a leaf module is kept
     verbatim, so a single-file subject composes as it did before directories
     were accepted. A path resolving to no production module is refused by name
-    rather than composing a brief with no neighbourhood.
+    rather than composing a brief with no neighbourhood. The tokens also settle
+    the reviewed package when the repository declares several candidates, so
+    ``--path nova/equilibrium/topology.py`` reads ``nova`` rather than being
+    refused.
     """
     from reckon import served_code
     from reckon.crew.node import CrewError
 
-    modules = served_code.package_modules(repository, head)
+    requested = [str(path).strip() for path in paths]
+    modules = served_code.package_modules(repository, head, requested)
     package = next((m.split(".", 1)[0] for m in modules), "")
     named: list[str] = []
-    for path in paths:
-        text = str(path).strip()
+    for path in requested:
+        text = path
         if not text:
             continue
         expanded = _modules_beneath(text, modules, package)
